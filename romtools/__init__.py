@@ -44,9 +44,5 @@ Abstract base classes include:
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
 '''
 
-from pkg_resources import get_distribution
-
-__version__ = get_distribution('romtools').version
-
 from romtools.trial_space import *
 from romtools.snapshot_data import *
