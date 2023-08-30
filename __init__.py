@@ -1,8 +1,8 @@
-# rom-tools-and-workflows
+'''
 The ROM tools and workflows Python library comprises a set of algorithms for constructing and exploiting ROMs that rely on *abstract base classes* that encapsulate all the information needed to run a given algorithm. The philosophy is that, for any given application, the user simply needs to "fill out" a class that meets the required API of the abstract base class. Once this class is complete, the user gains access to all of our existing algorithms.
 
 
-## What is in the rom-tools-and-workflows library?
+What is in the rom-tools-and-workflows library?
 
 
 Algorithms:
@@ -19,9 +19,9 @@ Algorithms:
 
 Abstract base classes include:
 
-- `AbstractSnapshotData`
+- AbstractSnapshotData
   - This class defines the minimum API requirements for a "snapshot_data" class that will be used in the construction of a trial space.
-- `AbstractTrialSpace`
+- AbstractTrialSpace
   - This class defines the minimum API requirements for a trial space
   - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and concrete implementations, exist for:
     - orthogonalizers
@@ -29,22 +29,7 @@ Abstract base classes include:
     - shifters
     - splitters
     - truncaters
-- `AbstractParameterSpace`
+- AbstractParameterSpace
   - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
-
-## To setup environment, you need to add rom-tools-and-workflows to your path
-```bash
-export PYTHONPATH=my-path/rom-tools-and-workflows$:PYTHONPATH
-```
-
-## To run tests
-
-Note: you need `pytest` installed 
-
-```bash
-cd my-path/rom-tools-and-workflows
-mkdir my_tests && cd my_tests
-pytest ../
-```
-
+'''
