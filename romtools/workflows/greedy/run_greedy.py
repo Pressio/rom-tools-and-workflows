@@ -28,13 +28,7 @@ This will adaptively scale the error estimate to match the QoI error as closely 
 import numpy as np
 import time
 import os
-import csv
-import sys
-import scipy
 import numpy as np
-import argparse
-
-
 
 def runGreedy(greedyCoupler,tolerance,testing_sample_size=10):
   '''
@@ -223,5 +217,3 @@ class qoi_vs_error_indicator_regressor:
 
   def predict(self,x):
     return self.__c*x
-
-

@@ -22,7 +22,6 @@ The Scaler encapsulates this information
 '''
 import numpy as np
 import scipy
-import sys
 import abc
 class AbstractScaler(abc.ABC):
     """
@@ -195,4 +194,3 @@ class VariableAndVectorScaler(AbstractScaler):
     def postScaling(self,data_matrix):
         data_matrix = self.__myVectorScaler.postScaling(data_matrix)
         return self.__myVariableScaler.postScaling(data_matrix)
-
