@@ -1,0 +1,63 @@
+name: Install and test romtools
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: CI-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # true -> cancel all jobs if any fails
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Check environment
+        run: |
+          echo ======================================================
+          echo CPU Threads: $(grep -c processor /proc/cpuinfo)
+          echo ======================================================
+          echo ======================================================
+          echo $(which python) --version
+          python --version
+          echo ======================================================
+          echo $(which pip) --version
+          python --version
+          echo ======================================================
+          echo Source directory: $ROMTOOLS_HOME
+          echo Build directory: $BUILD_DIR
+          echo ======================================================
+          git --version
+          echo $PWD
+          echo $GITHUB_WORKSPACE
+          git status
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest numpy scipy matplotlib setuptools
+          pip list
+          #if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Install package
+        run: |
+          pip install .
+
+      - name: Run tests
+        run: |
+          mkdir mytest && cd mytest
+          pytest -s ..
