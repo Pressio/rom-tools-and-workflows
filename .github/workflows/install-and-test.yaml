@@ -38,9 +38,6 @@ jobs:
           echo $(which pip) --version
           python --version
           echo ======================================================
-          echo Source directory: $ROMTOOLS_HOME
-          echo Build directory: $BUILD_DIR
-          echo ======================================================
           git --version
           echo $PWD
           echo $GITHUB_WORKSPACE
