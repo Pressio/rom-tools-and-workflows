@@ -45,9 +45,10 @@ Note: you need `pytest` installed
 
 ```bash
 cd my-path/rom-tools-and-workflows
-mkdir my_tests && cd my_tests
-pytest ../
+pytest
 ```
+Note: some tests actually generate some auxiliary/temporary files which
+are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html.
 
 
 ## Building the documentation
