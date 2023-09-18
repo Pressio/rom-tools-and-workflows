@@ -20,11 +20,11 @@ by virtue of providing access to a basis matrix, a shift vector, and the dimensi
 import abc
 import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
-from romtools.trial_space_utils.truncater import AbstractTruncater
-from romtools.trial_space_utils.shifter import AbstractShifter
-from romtools.trial_space_utils.scaler import AbstractScaler
-from romtools.trial_space_utils.splitter import AbstractSplitter
-from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer
+from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
+from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
+from romtools.trial_space_utils.scaler import AbstractScaler, NoOpScaler
+from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
+from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
 
 class AbstractTrialSpace(abc.ABC):
     """Abstract implementation"""
@@ -103,23 +103,32 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     of singular values; please refer to the documentation for the truncater.
     """
 
-    def __init__(self, snapshot_data: AbstractSnapshotData,
-                 truncater: AbstractTruncater,
-                 shifter: AbstractShifter,
-                 splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data,
-        #           methods to read it and other metadata such as variable set type
-        # truncater: class that truncates the basis
-        # shifter:   class that shifts the basis
+    def __init__(self,
+                 snapshot_data:  AbstractSnapshotData,
+                 truncater:      AbstractTruncater      = NoOpTruncater(),
+                 shifter:        AbstractShifter        = NoOpShifter(),
+                 splitter:       AbstractSplitter       = NoOpSplitter(),
+                 orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
+                 svdFnc = None):
+        """
+        parameters:
+        `fom_data`      : snapshot_data object,
+        `truncater`     : object derived from AbstractTruncater for truncating the basis,
+        `shifter`       : object derived from AbstractShifter for shifting the basis,
+        `splitter`      : object derived from AbstractSplitter for splitting the basis,
+        `orthogonalizer`: object derived from AbstractOrthogonalizer for orthogonalize the basis
+        """
 
         # compute basis
         snapshots = snapshot_data.getSnapshotsAsArray()
-        shifted_snapshots,self.__shift_vector = shifter(snapshots)
-        shifted_snapshots = splitter(shifted_snapshots)
-        left_singular_vectors,singular_values,_ = np.linalg.svd(shifted_snapshots,full_matrices=False)
-        self.__basis = truncater(left_singular_vectors,singular_values)
+        shifted_snapshots, self.__shift_vector = shifter(snapshots)
+        shifted_split_snapshots = splitter(shifted_snapshots)
+
+        svdDoer = np.linalg.svd if svdFnc == None else svdFnc
+        lsv, svals, _ = svdDoer(shifted_split_snapshots, full_matrices=False, \
+                                compute_uv=True, hermitian=False)
+
+        self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
         self.__dimension = self.__basis.shape[1]
 
@@ -170,8 +179,8 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.preScaling(shifted_snapshots)
         scaled_shifted_and_split_snapshots = splitter(scaled_shifted_snapshots)
-        left_singular_vectors,singular_values,_ = np.linalg.svd(scaled_shifted_and_split_snapshots,full_matrices=False)
-        self.__basis = truncater(left_singular_vectors,singular_values)
+        lsv,svals,_ = np.linalg.svd(scaled_shifted_and_split_snapshots,full_matrices=False)
+        self.__basis = truncater(lsv,svals)
         self.__basis = scaler.postScaling(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
         self.__dimension = self.__basis.shape[1]
