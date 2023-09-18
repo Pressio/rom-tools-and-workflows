@@ -48,3 +48,13 @@ cd my-path/rom-tools-and-workflows
 mkdir my_tests && cd my_tests
 pytest ../
 ```
+
+
+## Building the documentation
+
+```
+pdoc <path-to-romtools> --math
+```
+
+this opens a browser with the module documentation.
+More info about `pdoc` can be found [here](https://pdoc.dev/docs/pdoc.html)
