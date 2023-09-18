@@ -1,11 +1,14 @@
 """
-Most ROM formulations require access to so-called snapshot data to construct a reduced trial space. A snapshot is typically a
-solution to a full-order model. As an example, consider a (discretized) parameterized PDE defined by
+Most ROM formulations require access to so-called snapshot data to construct a reduced trial space.
+A snapshot is typically a solution to a full-order model.
+As an example, consider a (discretized) parameterized PDE defined by
 
 $$\\boldsymbol r( \\mathbf{u}(\\boldsymbol \\mu);\\boldsymbol \\mu)$$
 
-where $\\boldsymbol r$ is the residual operator, $\\mathbf{u}$ is the state, and $\\boldsymbol \\mu$ are system parameters.
-Suppose we have solved the PDE for a set of $M$ training parameters to obtain the so-called snapshot matrix
+where $\\boldsymbol r$ is the residual operator, $\\mathbf{u}$ is the state,
+and $\\boldsymbol \\mu$ are system parameters.
+Suppose we have solved the PDE for a set of $M$ training parameters to obtain
+the so-called snapshot matrix
 
 $$\\mathbf{S} = \\begin{bmatrix}
 \\mathbf{u} (\\boldsymbol \\mu_1 ) &
@@ -15,7 +18,8 @@ $$\\mathbf{S} = \\begin{bmatrix}
 $$
 
 
-The SnapshotData class encapsulates the information contained in set of snapshots, and is the main class used in the construction of trial spaces
+The SnapshotData class encapsulates the information contained in set of snapshots,
+and is the main class used in the construction of trial spaces
 """
 
 import numpy as np
@@ -29,10 +33,6 @@ class AbstractSnapshotData(abc.ABC):
     @abc.abstractmethod
     def __init__(self, **kwargs):
         pass
-
-    def getSnapshotsAsArray(self) -> np.ndarray:
-        snapshot_array = listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
-        return snapshot_array
 
     @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
@@ -48,6 +48,10 @@ class AbstractSnapshotData(abc.ABC):
         Returns global ids associated with mesh points (used for hyper-reduction)
         """
         pass
+
+    def getSnapshotsAsArray(self) -> np.ndarray:
+        snapshot_array = listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
+        return snapshot_array
 
     def getVariableNames(self) -> list:
         """
