@@ -104,23 +104,36 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     """
 
     def __init__(self,
-                 snapshot_data:  AbstractSnapshotData,
+                 snapshots:      AbstractSnapshotData,
                  truncater:      AbstractTruncater      = NoOpTruncater(),
                  shifter:        AbstractShifter        = NoOpShifter(),
                  splitter:       AbstractSplitter       = NoOpSplitter(),
                  orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
         """
-        parameters:
-        `fom_data`      : snapshot_data object,
-        `truncater`     : object derived from AbstractTruncater for truncating the basis,
-        `shifter`       : object derived from AbstractShifter for shifting the basis,
-        `splitter`      : object derived from AbstractSplitter for splitting the basis,
-        `orthogonalizer`: object derived from AbstractOrthogonalizer for orthogonalize the basis
+        Constructor
+
+        Args:
+
+            snapshots (AbstractSnapshotData): snapshot data
+
+            truncater (AbstractTruncater): object for truncating the basis.
+
+            shifter (AbstractShifter): object for shifting the basis
+
+            splitter (AbstractSplitter): object for splitting the basis
+
+            orthogonalizer (AbstractOrthogonalizer): object for orthogonalize the basis
+
+            svdFnc: a callable to use for computing the SVD on the snapshots data.
+                    IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
+                    If `None`, internally we use `np.linalg.svd`.
+                    Note: this is useful when you want to use a custom svd, for example when your snapshots are distributed with MPI,
+                    or maybe you have a fancy svd function that you can use.
+
         """
 
-        # compute basis
-        snapshots = snapshot_data.getSnapshotsAsArray()
+        snapshots = snapshots.getSnapshotsAsArray()
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         shifted_split_snapshots = splitter(shifted_snapshots)
 

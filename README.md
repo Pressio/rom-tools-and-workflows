@@ -53,7 +53,7 @@ pytest ../
 ## Building the documentation
 
 ```
-pdoc <path-to-romtools> --math
+pdoc <path-to-romtools> --math --docformat google
 ```
 
 this opens a browser with the module documentation.
