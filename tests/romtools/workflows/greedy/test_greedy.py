@@ -1,6 +1,7 @@
 from romtools.workflows.greedy import *
 from romtools.workflows.parameter_spaces import *
 import numpy as np
+import pytest
 
 class ConcreteGreedyCoupler(GreedyCouplerBase):
   def __init__(self,template_directory,template_fom_file,template_rom_file):
@@ -10,9 +11,9 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
     self.template_fom_file = template_fom_file
 
     my_error_estimates = np.array([1.,2.,3.,1.5,4.]) # First iteration, should identify 5th entry as the sample to run
-    my_error_estimates_iteration_2 = np.array([0.9,0.4,0.6]) 
-    my_error_estimates_iteration_3 = np.array([0.09,0.1,0.06]) 
-    my_error_estimates_iteration_4 = np.array([1e-7,1e-6,1e-5]) 
+    my_error_estimates_iteration_2 = np.array([0.9,0.4,0.6])
+    my_error_estimates_iteration_3 = np.array([0.09,0.1,0.06])
+    my_error_estimates_iteration_4 = np.array([1e-7,1e-6,1e-5])
     my_error_estimates = np.append(my_error_estimates,my_error_estimates_iteration_2)
     my_error_estimates = np.append(my_error_estimates,my_error_estimates_iteration_3)
     self.my_error_estimates_ = np.append(my_error_estimates,my_error_estimates_iteration_4)
@@ -33,13 +34,13 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
   def computeError(self,arg1,arg2):
     error = self.my_errors_[self.my_errors_counter_]
     self.my_errors_counter_ += 1
-    return error 
+    return error
 
   def computeErrorIndicator(self):
     error_estimate = self.my_error_estimates_[self.error_estimate_counter_]
     self.error_estimate_counter_ += 1
     return error_estimate
-   
+
   def computeQoi(self):
     return 0
 
@@ -53,13 +54,14 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
     pass
 
   def getParameterSpace(self):
-    return self.myParameterSpace 
+    return self.myParameterSpace
 
-
+@pytest.mark.mpi_skip
 def test_greedy_coupler_builder():
   my_dir = os.path.realpath(os.path.dirname(__file__))
   myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat')
 
+@pytest.mark.mpi_skip
 def test_greedy():
   my_dir = os.path.realpath(os.path.dirname(__file__))
   myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat')
