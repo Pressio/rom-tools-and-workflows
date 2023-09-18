@@ -91,7 +91,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     """
     ##POD trial space (constructed via SVD).
 
-    Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
+    Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
 
     $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{truncate}( \\boldsymbol U ))$$
