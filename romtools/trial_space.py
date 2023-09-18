@@ -124,9 +124,9 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         shifted_split_snapshots = splitter(shifted_snapshots)
 
-        svdDoer = np.linalg.svd if svdFnc == None else svdFnc
-        lsv, svals, _ = svdDoer(shifted_split_snapshots, full_matrices=False, \
-                                compute_uv=True, hermitian=False)
+        svdPicked = np.linalg.svd if svdFnc == None else svdFnc
+        lsv, svals, _ = svdPicked(shifted_split_snapshots, full_matrices=False, \
+                                  compute_uv=True, hermitian=False)
 
         self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
