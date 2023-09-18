@@ -8,8 +8,8 @@ dynamic = ["version"]
 requires-python = ">=3.8"
 dependencies = [
     'docutils', 'importlib-metadata',
-    'numpy', 'scipy', 'pdoc',
-    'pytest-mpi>=0.6'
+    'numpy', 'scipy', 'matplotlib', 'pdoc',
+    'pytest', 'pytest-mpi>=0.6'
 ]
 
 [tool.setuptools.dynamic]
