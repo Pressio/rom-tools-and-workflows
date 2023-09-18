@@ -51,5 +51,4 @@ jobs:
 
       - name: Run tests
         run: |
-          mkdir mytest && cd mytest
-          pytest -s ..
+          pytest -s
