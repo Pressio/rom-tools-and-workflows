@@ -20,11 +20,11 @@ by virtue of providing access to a basis matrix, a shift vector, and the dimensi
 import abc
 import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
-from romtools.trial_space_utils.truncater import AbstractTruncater
-from romtools.trial_space_utils.shifter import AbstractShifter
-from romtools.trial_space_utils.scaler import AbstractScaler
-from romtools.trial_space_utils.splitter import AbstractSplitter
-from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer
+from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
+from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
+from romtools.trial_space_utils.scaler import AbstractScaler, NoOpScaler
+from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
+from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
 
 class AbstractTrialSpace(abc.ABC):
     """Abstract implementation"""
@@ -91,7 +91,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     """
     ##POD trial space (constructed via SVD).
 
-    Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
+    Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
 
     $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{truncate}( \\boldsymbol U ))$$
@@ -103,23 +103,45 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     of singular values; please refer to the documentation for the truncater.
     """
 
-    def __init__(self, snapshot_data: AbstractSnapshotData,
-                 truncater: AbstractTruncater,
-                 shifter: AbstractShifter,
-                 splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data,
-        #           methods to read it and other metadata such as variable set type
-        # truncater: class that truncates the basis
-        # shifter:   class that shifts the basis
+    def __init__(self,
+                 snapshots:      AbstractSnapshotData,
+                 truncater:      AbstractTruncater      = NoOpTruncater(),
+                 shifter:        AbstractShifter        = NoOpShifter(),
+                 splitter:       AbstractSplitter       = NoOpSplitter(),
+                 orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
+                 svdFnc = None):
+        """
+        Constructor
 
-        # compute basis
-        snapshots = snapshot_data.getSnapshotsAsArray()
-        shifted_snapshots,self.__shift_vector = shifter(snapshots)
-        shifted_snapshots = splitter(shifted_snapshots)
-        left_singular_vectors,singular_values,_ = np.linalg.svd(shifted_snapshots,full_matrices=False)
-        self.__basis = truncater(left_singular_vectors,singular_values)
+        Args:
+
+            snapshots (AbstractSnapshotData): snapshot data
+
+            truncater (AbstractTruncater): object for truncating the basis.
+
+            shifter (AbstractShifter): object for shifting the basis
+
+            splitter (AbstractSplitter): object for splitting the basis
+
+            orthogonalizer (AbstractOrthogonalizer): object for orthogonalize the basis
+
+            svdFnc: a callable to use for computing the SVD on the snapshots data.
+                    IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
+                    If `None`, internally we use `np.linalg.svd`.
+                    Note: this is useful when you want to use a custom svd, for example when your snapshots are distributed with MPI,
+                    or maybe you have a fancy svd function that you can use.
+
+        """
+
+        snapshots = snapshots.getSnapshotsAsArray()
+        shifted_snapshots, self.__shift_vector = shifter(snapshots)
+        shifted_split_snapshots = splitter(shifted_snapshots)
+
+        svdPicked = np.linalg.svd if svdFnc == None else svdFnc
+        lsv, svals, _ = svdPicked(shifted_split_snapshots, full_matrices=False, \
+                                  compute_uv=True, hermitian=False)
+
+        self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
         self.__dimension = self.__basis.shape[1]
 
@@ -170,8 +192,8 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.preScaling(shifted_snapshots)
         scaled_shifted_and_split_snapshots = splitter(scaled_shifted_snapshots)
-        left_singular_vectors,singular_values,_ = np.linalg.svd(scaled_shifted_and_split_snapshots,full_matrices=False)
-        self.__basis = truncater(left_singular_vectors,singular_values)
+        lsv,svals,_ = np.linalg.svd(scaled_shifted_and_split_snapshots,full_matrices=False)
+        self.__basis = truncater(lsv,svals)
         self.__basis = scaler.postScaling(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
         self.__dimension = self.__basis.shape[1]
