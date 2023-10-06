@@ -133,3 +133,4 @@ __docformat__ = "markdown"  # explicitly disable rST processing in the examples 
 
 from romtools.snapshot_data import *
 from romtools.trial_space import *
+from romtools.hyper_reduction import *
