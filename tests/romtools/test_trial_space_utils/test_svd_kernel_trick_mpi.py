@@ -33,7 +33,7 @@ def construct_full_data():
     myData = np.append(myData,myDataThree,axis=0)
     return myData
 
-
+@pytest.mark.mpi(min_size=3)
 def test_parallel_kernel_trick_on_three_cores():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -54,7 +54,7 @@ def test_parallel_kernel_trick_on_three_cores():
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
 
-
+@pytest.mark.mpi(min_size=3)
 def test_class_parallel_kernel_trick_on_three_cores():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
