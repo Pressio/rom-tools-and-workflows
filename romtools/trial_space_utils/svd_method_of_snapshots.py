@@ -35,6 +35,18 @@ class svdMethodOfSnapshots:
     return U,s,'not_computed_in_method_of_snapshots'
 
 
+class svdMethodOfSnapshotsForQr:
+  '''
+  Same as svdMethodOfSnapshots, but call only returns two arguments to be compatible with QR routine. 
+  '''    
+  def __init__(self,comm):
+    self._comm = comm
+        
+  def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False,hermitian=False):
+    U,s = svdMethodOfSnapshotsImpl(snapshots,self._comm)
+    return U,'not_computed_in_method_of_snapshots'
+
+
 def __svdMethodOfSnapshotsImpl(snapshots,comm):
   #
   # outputs:
