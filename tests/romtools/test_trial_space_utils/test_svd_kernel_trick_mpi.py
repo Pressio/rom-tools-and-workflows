@@ -40,7 +40,7 @@ def test_parallel_kernel_trick_on_three_cores():
     if comm.Get_size() == 3:
         data = construct_distributed_data(comm)
         data_full = construct_full_data() 
-        U,sigma = utils.svdMethodOfSnapshotsImpl(data,comm)
+        U,sigma = utils.__svdMethodOfSnapshotsImpl(data,comm)
         Uf,sigmaf,_ = np.linalg.svd(data_full,full_matrices=False)
 
         if rank == 0:

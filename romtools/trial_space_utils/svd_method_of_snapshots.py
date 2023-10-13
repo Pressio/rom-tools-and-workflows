@@ -7,19 +7,35 @@ except ModuleNotFoundError:
   mpi_rank = 0
   num_processes = 1
 
-
-
-
 class svdMethodOfSnapshots:
+  '''
+  #Parallel implementation of the method of snapshots to mimic the SVD for basis construction
+  Sample usage: 
+
+                mySvd = svdMethodOfSnapshots(comm)
+                U,s,_ = mySvd(snapshots)
+
+  where snapshots is the local portion of a distributed memory array.
+  
+  The standard reduced-basis problem requires solving the optimization problem 
+  $$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N \\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2,$$
+  where $\\mathbf{S} \\in \\mathbb{R}^{N \\times N_s}$, with $N_s$ being the number of snapshots. The standard way to solve this is with the thin SVD. An alternative approach is to use the method of snapshts/kernel trick, see, e.g., https://web.stanford.edu/group/frg/course_work/CME345/CA-CME345-Ch4.pdf. Here, we instead solve the eigenvalue probelm
+  $$ \\mathbf{S}^T \\mathbf{S} \\boldsymbol \\psi_i = \\lambda_i \\boldsymbol \\psi_i$$
+  for $i = 1,\\ldots,N_s$. It can be shown that the left singular vectors from the SVD of $\\mathbf{S}$ are related to the eigen-vectors of the above by
+  $$ \\mathbf{u}_i = \\frac{1}{\\sqrt{\\lambda_i}} \\mathbf{S} \\boldsymbol \\psi_i.$$
+
+  An advantage of the method of snapshots is that it can be easily parallelized and is efficient if we don't have many snapshots. We compute $\\mathbf{S}^T \\mathbf{S}$ in parallel, and then solve the (typically small) eigenvalue problem in serial. 
+  '''
+
   def __init__(self,comm):
-    self.comm = comm
+    self._comm = comm
 
   def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False,hermitian=False):
-    U,s = svdMethodOfSnapshotsImpl(snapshots,self.comm)
+    U,s = svdMethodOfSnapshotsImpl(snapshots,self._comm)
     return U,s,'not_computed_in_method_of_snapshots'
 
 
-def svdMethodOfSnapshotsImpl(snapshots,comm):
+def __svdMethodOfSnapshotsImpl(snapshots,comm):
   #
   # outputs:
   # modes, Phi: numpy array where each column is a POD mode
