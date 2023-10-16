@@ -33,7 +33,8 @@ Abstract base classes include:
   - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
 
-## To setup environment, you need to pip install it
+## Installation
+
 ```bash
 cd my-path/rom-tools-and-workflows
 pip install .
