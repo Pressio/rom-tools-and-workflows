@@ -4,8 +4,13 @@ import numpy as np
 import pytest
 
 class ConcreteGreedyCoupler(GreedyCouplerBase):
-  def __init__(self,template_directory,template_fom_file,template_rom_file):
-    GreedyCouplerBase.__init__(self,template_directory,template_fom_file,template_rom_file)
+  def __init__(self,template_directory, \
+               template_fom_file, \
+               template_rom_file, \
+               workDir= None):
+
+    GreedyCouplerBase.__init__(self,template_directory,template_fom_file,template_rom_file, work_directory = workDir)
+
     self.myParameterSpace = UniformParameterSpace(['u','v','w'],np.array([0,1,2]),np.array([1,2,3]))
     self.counter_ = 0
     self.template_fom_file = template_fom_file
@@ -62,9 +67,13 @@ def test_greedy_coupler_builder():
   myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat')
 
 @pytest.mark.mpi_skip
-def test_greedy():
+def test_greedy(tmp_path):
+  #see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info about tmp_path
+  wdir = str(tmp_path) # does not like posixpaths
+  print('\n', wdir)
+
   my_dir = os.path.realpath(os.path.dirname(__file__))
-  myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat')
+  myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat', workDir=wdir)
   runGreedy(myGreedyCoupler,1e-5,5)
   ## First greedy pass
   base_path = myGreedyCoupler.getBaseDirectory() + '/work/' + myGreedyCoupler.getFomDirectoryBaseName()
