@@ -1,0 +1,21 @@
+{#
+We want to extend the default template instead of defining everything ourselves.
+#}
+{% extends "default/module.html.jinja2" %}
+
+{% block nav_submodules %}
+    {% if module.submodules %}
+        <h2>Submodules</h2>
+        <ul>
+            {# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              hack for now to NOT sort sidebar modules alphabeticall, but
+	      use a logical sorting that makes sense for what these things offer
+            #}
+            {% set myorder = [1,2,3,4,0] %}
+            {% for i in myorder %}
+                {% set ind = module.submodules[i] %}
+                <li>{{ ind.taken_from | link(text=ind.name) if is_public(ind) | trim}}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
