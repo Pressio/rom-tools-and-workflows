@@ -55,7 +55,8 @@ are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how
 ## Building the documentation
 
 ```
-pdoc <path-to-romtools> --math --docformat google
+cd <repo-dir>
+pdoc ./romtools -t ./custom-template --math --docformat google
 ```
 
 this opens a browser with the module documentation.
