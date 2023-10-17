@@ -1,17 +1,21 @@
 '''
-# Scope and Overview
+# Scope and Motivation
 
 The ROM tools and workflows Python library comprises a set of algorithms for
-constructing and exploiting ROMs that rely on *abstract base classes* that encapsulate
+constructing and exploiting ROMs.
+
+# Design and Philosophy
+
+The library is designed internally in terms of *abstract base classes* that encapsulate
 all the information needed to run a given algorithm.
-The philosophy is that, for any given application, the user "simply" needs to "fill out"
+The philosophy is that, for any given application, the user "simply" needs to create
 a class that meets the required API of the abstract base class.
 Once this class is complete, the user gains access to all of our existing algorithms.
 
-
 # What does this library contain?
 
-The core_implementations module contains the abstract interfaces and functions required for, e.g.,
+The Python library, called `romtools`, contains abstract interfaces and functions required for, e.g.,
+
 - Constructing parameter spaces
 - Constructing a snapshot data class
 - Constructing trial spaces
@@ -36,12 +40,14 @@ The core_implementations module contains the abstract interfaces and functions r
 
 - `AbstractTrialSpace`
   - This class defines the minimum API requirements for a trial space
+
   - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and concrete implementations, exist for:
-    - orthogonalizers
-    - scalers
-    - shifters
-    - splitters
-    - truncaters
+
+      - orthogonalizers
+      - scalers
+      - shifters
+      - splitters
+      - truncaters
 
 - `AbstractParameterSpace`
   - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
