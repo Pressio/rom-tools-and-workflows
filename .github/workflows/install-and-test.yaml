@@ -59,7 +59,10 @@ jobs:
           pip list
           pip install .
 
-      - name: Run tests
+      - name: Run tests (Serial)
         run: |
           pytest -s
+
+      - name: Run tests (MPI)
+        run: |
           mpirun -n 4 python -m pytest tests/romtools/* --with-mpi
