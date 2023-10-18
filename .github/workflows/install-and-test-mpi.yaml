@@ -32,10 +32,6 @@ jobs:
         with:
           mpi: ${{ matrix.mpi }}
 
-      - name: Install pytest-mpi
-        run: |
-          pip install pytest-mpi
-
       - name: Check environment
         run: |
           echo ======================================================
