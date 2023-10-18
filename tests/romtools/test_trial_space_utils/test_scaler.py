@@ -84,7 +84,6 @@ def test_variable_scaler():
 
   my_unscaled_basis = scaler.postScaling(my_scaled_basis)
   assert(np.allclose(my_initial_basis,my_unscaled_basis))
-  assert(2 == 4)
  run_test('max_abs')
  run_test('mean_abs')
  run_test('variance')
