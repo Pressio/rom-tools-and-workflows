@@ -34,5 +34,5 @@ jobs:
 
       - name: Run Pylint
         run: |
-          pylint --recursive --rcfile .pylintrc .
+          pylint --recursive y --rcfile .pylintrc .
         continue-on-error: false
