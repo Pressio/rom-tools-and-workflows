@@ -1,4 +1,4 @@
-name: Install and test romtools
+name: Install and test romtools (MPI)
 
 on:
   push:
