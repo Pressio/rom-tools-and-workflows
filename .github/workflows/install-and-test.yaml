@@ -55,10 +55,7 @@ jobs:
           pip list
           pip install .
 
-      - name: Run tests (Serial)
+      - name: Run tests (Serial and MPI)
         run: |
           pytest -s
-
-      - name: Run tests (MPI)
-        run: |
           mpiexec -n 4 python -m pytest
