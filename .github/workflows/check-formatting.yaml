@@ -34,12 +34,5 @@ jobs:
 
       - name: Run Pylint
         run: |
-          pylint --rcfile .pylintrc .
-        continue-on-error: true
-
-      - name: Check Pylint Exit Code
-        run: |
-          if [[ $? -ne 0 ]]; then
-            echo "Pylint failed with a score below 8.5"
-            exit 1
-          fi
+          pylint --recursive --rcfile .pylintrc .
+        continue-on-error: false
