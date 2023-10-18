@@ -34,4 +34,4 @@ jobs:
 
       - name: Run Pylint
         run: |
-          pylint .
+          find . -name '*.py' -exec pylint {} \;

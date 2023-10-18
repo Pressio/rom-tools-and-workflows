@@ -87,8 +87,6 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         logging-fstring-interpolation,
-        missing-module-doctring,
-        missing-class-doctring,
         protected-access
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -570,7 +568,7 @@ preferred-modules=
 
 [EXCEPTIONS]
 
-# Exceptions that will emit a warning when being caught. Defaults to
-# "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+; # Exceptions that will emit a warning when being caught. Defaults to
+; # "BaseException, Exception".
+; overgeneral-exceptions=BaseException,
+;                        Exception
