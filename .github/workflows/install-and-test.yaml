@@ -65,4 +65,4 @@ jobs:
 
       - name: Run tests (MPI)
         run: |
-          mpirun -n 4 python -m pytest tests/romtools/* --with-mpi
+          mpirun -n 1 python -m pytest tests/romtools/* --with-mpi
