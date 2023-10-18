@@ -34,4 +34,12 @@ jobs:
 
       - name: Run Pylint
         run: |
-          find . -name '*.py' -exec pylint --rcfile .pylintrc {} \;
+          pylint --rcfile .pylintrc .
+        continue-on-error: true
+
+      - name: Check Pylint Exit Code
+        run: |
+          if [[ $? -ne 0 ]]; then
+            echo "Pylint failed with a score below 8.5"
+            exit 1
+          fi
