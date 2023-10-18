@@ -11,28 +11,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  common_steps:
+  test_setup:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         mpi: ["openmpi", "mpich"]
 
-
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install package
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - name: Install mpi4py
         run: |
-          python -m pip install --upgrade pip
-          pip list
-          pip install .
-
+          python -m pip install mpi4py
       - name: Check environment
         run: |
           echo ======================================================
@@ -49,26 +47,22 @@ jobs:
           echo $PWD
           echo $GITHUB_WORKSPACE
           git status
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip list
+          pip install .
 
   test_serial:
-    needs: common_steps
+    needs: test_setup
     steps:
       - name: Run tests (Serial)
         run: |
           pytest -s
 
   test_mpi:
-    needs: common_steps
+    needs: test_setup
     steps:
-      - name: Setup MPI
-        uses: mpi4py/setup-mpi@v1
-        with:
-          mpi: ${{ matrix.mpi }}
-
-      - name: Install mpi4py
-        run: |
-          python -m pip install mpi4py
-
       - name: Run tests (MPI)
         run: |
           mpirun -n 1 python -m pytest tests/romtools/* --with-mpi
