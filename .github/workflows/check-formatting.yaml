@@ -1,0 +1,18 @@
+name: Install and test romtools
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.event.repository.name }}-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: True
+
+jobs:
+  check_formatting:
+    runs-on: ubuntu-latest
+
+  - name: Python Style Checker
+    uses: andymckay/pycodestyle-action@0.1.3
