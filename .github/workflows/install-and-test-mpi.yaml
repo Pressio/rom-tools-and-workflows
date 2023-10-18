@@ -61,4 +61,4 @@ jobs:
 
       - name: Run tests
         run: |
-          mpiexec -n 4 python -m pytest --mpi
+          mpiexec -n 4 python -m pytest
