@@ -31,6 +31,8 @@ jobs:
         uses: mpi4py/setup-mpi@v1
         with:
           mpi: ${{ matrix.mpi }}
+        run: |
+          pip install mpi4py
 
       - name: Check environment
         run: |
