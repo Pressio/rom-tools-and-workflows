@@ -28,41 +28,96 @@ from typing import Iterable
 
 class AbstractSnapshotData(abc.ABC):
     """
-    Abstract base class for snapshot data
+    An abstract base class for representing snapshot data.
+
+    This class defines the common interface for classes that store and provide access to snapshot data
+    as part of a simulation or data processing system. Implementations of this class are expected to
+    define the initialization method and various methods for accessing and manipulating the data.
+
+    Attributes:
+        var_names (list): A list of variable names associated with the snapshot data.
+
+    Methods:
     """
+
     @abc.abstractmethod
     def __init__(self, **kwargs):
+        """
+        Initializes an instance of the AbstractSnapshotData class. Subclasses should implement
+        this method to set up the necessary data structures or connections to data sources.
+
+        Args:
+            **kwargs: Additional keyword arguments that subclasses may accept for configuration.
+
+        Note:
+        Subclasses must call this base class constructor and set the `var_names` attribute to
+        define the variable names associated with the snapshot data.
+        """
         pass
 
     @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
         """
-        Return snapshot matrix as list of arrays
-        (e.g., each element in the list could be its own snapshot matrix)
+        Retrieves the snapshots as a list of NumPy arrays. Each array represents a single snapshot.
+
+        Returns:
+            Iterable[np.ndarray]: An iterable of NumPy arrays representing the snapshots.
+
+        Note:
+        Subclasses must implement this method to provide access to the actual snapshot data.
         """
         pass
 
     @abc.abstractmethod
     def getMeshGids(self):
         """
-        Returns global ids associated with mesh points (used for hyper-reduction)
+        Retrieves global ids associated with mesh points (used for hyper-reduction)
+
+        Returns:
+            None or specific data type: The mesh global identifiers, or None if not applicable.
+
+        Note:
+        Subclasses must implement this method to provide access to mesh global identifiers if relevant.
         """
         pass
 
     def getSnapshotsAsArray(self) -> np.ndarray:
+        """
+        Retrieves the snapshots as a single NumPy array by converting the list of snapshots into an array.
+
+        Returns:
+            np.ndarray: A NumPy array containing all the snapshots.
+
+        Note:
+        This method provides a convenient way to access the snapshot data as a single array.
+        Subclasses can use the `getSnapshotsAsListOfArrays()` method to implement this.
+        """
         snapshot_array = listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
         return snapshot_array
 
     def getVariableNames(self) -> list:
         """
-        Returns the names of different state variables
+        Retrieves the names of different state variables associated with the snapshot data.
+
+        Returns:
+            list: A list of variable names.
+
+        Note:
+        Subclasses should ensure that this list is properly defined and set in the constructor.
         """
         return self.var_names
 
     def getNumVars(self) -> int:
         """
-        Returns the number of state variables
+        Returns the number of state variables in the snapshot data
         (e.g., 5 for the compressible Navier--Stokes equations in 3 dimensions)
+
+        Returns:
+            int: The number of variables.
+
+        Note:
+        Subclasses should make sure that this method returns the correct number of variables
+        associated with the snapshot data.
         """
         return len(self.get_variable_names())
 
