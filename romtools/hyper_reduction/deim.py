@@ -55,9 +55,9 @@ def deimGetIndices(U):
   Implementation of the discrete empirical method as described in Algorithm 1 of
   S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
-  Inputs: $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples
+  Args: $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples
 
-  Outputs: $\\mathrm{indices} \\in \\mathbb{I}^{n}$
+  Returns: $\\mathrm{indices} \\in \\mathbb{I}^{n}$
   '''
 
   m = np.shape(U)[1]
