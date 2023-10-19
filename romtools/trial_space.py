@@ -27,24 +27,67 @@ from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
 
 class AbstractTrialSpace(abc.ABC):
-    """Abstract implementation"""
+    """
+    Abstract base class for trial space implementations.
+
+    This abstract class defines the interface for trial space objects, which are used in various computational
+    simulations. A trial space represents a set of data and methods for operating on that data.
+
+    Attributes:
+        snapshots (AbstractSnapshotData): The data source for the trial space.
+
+    Methods:
+    """
+
     @abc.abstractmethod
     def __init__(snapshots: AbstractSnapshotData):
+        """
+        Initialize a new trial space.
+
+        Parameters:
+            snapshots (AbstractSnapshotData): The data source for the trial space.
+
+        This method should be implemented by concrete subclasses to perform necessary initialization of the
+        trial space object using the provided snapshot data.
+        """
         pass
 
     @abc.abstractmethod
     def getDimension(self):
-        """Returns the dimension of the trial space"""
+        """Retrieves the dimension of the trial space
+
+        Returns:
+            int: The dimension of the trial space, representing the number of features or parameters in the space.
+
+        Concrete subclasses should implement this method to return the appropriate dimension for their specific
+        trial space implementation.
+        """
         pass
 
     @abc.abstractmethod
     def getShiftVector(self):
-        """Returns the shift vector"""
+        """
+        Retrieves the shift vector of the trial space.
+
+        Returns:
+            List[float]: The shift vector, a list of floating-point values used to adjust the trial space.
+
+        Concrete subclasses should implement this method to return the shift vector specific to their trial space
+        implementation.
+        """
         pass
 
     @abc.abstractmethod
     def getBasis(self):
-        """Returns the basis"""
+        """
+        Retrieves the basis vectors of the trial space.
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+
+        Concrete subclasses should implement this method to return the basis vectors specific to their trial space
+        implementation.
+        """
         pass
 
 
@@ -60,14 +103,19 @@ class DictionaryTrialSpace(AbstractTrialSpace):
     where the orthogonalization, splitting, and shifts are defined by their respective classes
     """
     def __init__(self,snapshot_data,shifter,splitter,orthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data, methods to read it
-        #           and other metadata such as variable set type
-        # shifter: class that shifts the basis
-        # splitter: class that splits basis
-        # orthogonalizer: class that orthogonalizes basis
+        """
+        Constructor for the reduced basis trial space without truncation.
 
-        # compute basis
+        Args:
+            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other metadata such as variable set type.
+            shifter: Class that shifts the basis.
+            splitter: Class that splitts the basis.
+            orthogonalizer: Class that orthogonalizes the basis.
+
+        This constructor initializes a trial space by performing basis manipulation operations on the provided snapshot data.
+        """
+
+        # Compute basis
         snapshots = snapshot_data.getSnapshotsAsArray()
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         self.__basis = splitter(shifted_snapshots)
@@ -75,15 +123,33 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-      """Returns dimension of trial space"""
+        """
+        Retrieves dimension of trial space, which represents the number of features or parameters
+        in the space.
+
+        Returns:
+            int: The dimension of the trial space.
+        """
       return self.__dimension
 
     def getShiftVector(self):
-      """Returns the shift vector"""
+        """
+        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+
+        Returns:
+            List[float]: The shift vector.
+
+        """
       return self.__shift_vector
 
     def getBasis(self):
-       """Returns the basis"""
+        """
+        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
+        and basis manipulation operations.
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        """
        return self.__basis
 
 
@@ -111,26 +177,22 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
                  orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
         """
-        Constructor
+        Constructor for the POD trial space.
 
         Args:
-
-            snapshots (AbstractSnapshotData): snapshot data
-
-            truncater (AbstractTruncater): object for truncating the basis.
-
-            shifter (AbstractShifter): object for shifting the basis
-
-            splitter (AbstractSplitter): object for splitting the basis
-
-            orthogonalizer (AbstractOrthogonalizer): object for orthogonalize the basis
-
+            snapshots (AbstractSnapshotData): Snapshot data source.
+            truncater (AbstractTruncater): Class that truncates the basis.
+            shifter (AbstractShifter): Class that shifts the basis.
+            splitter (AbstractSplitter): Class that splits the basis.
+            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                     IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
                     If `None`, internally we use `np.linalg.svd`.
                     Note: this is useful when you want to use a custom svd, for example when your snapshots are distributed with MPI,
                     or maybe you have a fancy svd function that you can use.
 
+        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
+        various basis manipulation operations, including truncation, shifting, splitting, and orthogonalization.
         """
 
         snapshots = snapshots.getSnapshotsAsArray()
@@ -146,15 +208,33 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-        """Returns dimension of trial space"""
+        """
+        Retrieves the dimension of the trial space, which represents the number of features or parameters
+        in the space.
+
+        Returns:
+            int: The dimension of the trial space.
+        """
         return self.__dimension
 
     def getShiftVector(self):
-        """Returns the shift vector"""
+        """
+        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+
+        Returns:
+            List[float]: The shift vector.
+
+        """
         return self.__shift_vector
 
     def getBasis(self):
-        """Returns the basis"""
+        """
+        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
+        and basis manipulation operations.
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        """
         return self.__basis
 
 
@@ -180,14 +260,22 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
                  scaler: AbstractScaler,
                  splitter: AbstractSplitter,
                  orthogonalizer: AbstractOrthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data, methods to read it
-        #           and other metadata such as variable set type
-        # truncater: class that truncates the basis
-        # shifter: class that shifts the basis
-        # scaler: class the scales
+        """
+        Constructor for the POD trial space constructed via scaled SVD.
 
-        # compute basis
+        Args:
+            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other metadata such as variable set type.
+            truncater: Class that truncates the basis.
+            shifter: Class that shifts the basis.
+            scaler: Class that scales the basis.
+            splitter: Class that splits the basis.
+            orthogonalizer: Class that orthogonalizes the basis.
+
+        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
+        various basis manipulation operations, including scaling, shifting, truncation, splitting, and orthogonalization.
+        """
+
+        # Compute basis
         snapshots = snapshot_data.getSnapshotsAsArray()
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.preScaling(shifted_snapshots)
@@ -199,13 +287,31 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-        """Returns dimension of trial space"""
+        """
+        Retrieves the dimension of the trial space, which represents the number of features or parameters
+        in the space.
+
+        Returns:
+            int: The dimension of the trial space.
+        """
         return self.__dimension
 
     def getShiftVector(self):
-        """Returns the shift vector"""
+        """
+        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+
+        Returns:
+            List[float]: The shift vector.
+
+        """
         return self.__shift_vector
 
     def getBasis(self):
-        """Returns the basis"""
+        """
+        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
+        and basis manipulation operations.
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        """
         return self.__basis
