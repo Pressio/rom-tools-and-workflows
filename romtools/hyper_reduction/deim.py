@@ -5,7 +5,7 @@ Implementation of DEIM technique for hyper-reduction
 '''
 
 def __getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
-  """helper function to split data"""
+  '''helper function to split data'''
   if variable_ordering == 'F':
     return data_matrix[i::n_var]
   elif variable_ordering == 'C':
@@ -21,7 +21,7 @@ def deimGetApproximationMatrix(functionBasis,sampleIndices):
   which comprises the matrix need for the DEIM approximation to $\\mathbf{f}$  '''
   sampledFunctionBasis = functionBasis[sampleIndices]
   PU_pinv = np.linalg.pinv(sampledFunctionBasis)
-  result =  functionBasis @ PU_pinv  
+  result =  functionBasis @ PU_pinv
   return result
 
 
@@ -32,13 +32,13 @@ def deimGetTestBasis(testBasis,functionBasis,sampleIndices):
   which comprises the "test basis" for the DEIM approximation fo $\\mathbf{\Phi}^T \\mathbf{f}$  '''
   sampledFunctionBasis = functionBasis[sampleIndices]
   PU_pinv = np.linalg.pinv(sampledFunctionBasis)
-  result = (testBasis.transpose() @ functionBasis) @ PU_pinv  
-  return result.transpose() 
+  result = (testBasis.transpose() @ functionBasis) @ PU_pinv
+  return result.transpose()
 
 def vectorDeimGetIndices(U,n_var,variable_ordering='F'):
   '''
   Version of DEIM for multi-state systems.
-  We perform DEIM on each state variable, and 
+  We perform DEIM on each state variable, and
   then return the union of all indices.
   Repeated indices are removed.
   '''
@@ -52,12 +52,12 @@ def vectorDeimGetIndices(U,n_var,variable_ordering='F'):
 
 def deimGetIndices(U):
   '''
-  Implementation of the discrete empirical method as described in Algorithm 1 of 
-  S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.  
+  Implementation of the discrete empirical method as described in Algorithm 1 of
+  S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
   Inputs: $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples
 
-  Outputs: $\\mathrm{indices} \\in \\mathbb{I}^{n}$ 
+  Outputs: $\\mathrm{indices} \\in \\mathbb{I}^{n}$
   '''
 
   m = np.shape(U)[1]
@@ -75,5 +75,5 @@ def deimGetIndices(U):
     residual = U[:,l] - U[:,0:l] @ C
     index_to_add = np.argmax(np.abs(residual))
     indices = np.append(indices,index_to_add)
-  return indices 
+  return indices
 
