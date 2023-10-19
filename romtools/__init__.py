@@ -118,12 +118,15 @@ if __name__=="__main__":
     data = [exact_solution(x, t, alpha) for t in times]
     snapshots = HeatSnapshots(data)
 ```
-
+# License
+```plaintext
+.. include:: ../LICENSE
+```
 '''
 
 __all__ = ['snapshot_data', 'trial_space', 'trial_space_utils', 'workflows', 'hyper_reduction']
 
-__docformat__ = "markdown"  # explicitly disable rST processing in the examples above.
+__docformat__ = "restructuredtext" # required to generate the license
 
 from romtools.snapshot_data import *
 from romtools.trial_space import *
