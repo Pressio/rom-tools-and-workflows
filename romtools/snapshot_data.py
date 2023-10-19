@@ -69,7 +69,7 @@ class AbstractSnapshotData(abc.ABC):
 
 
 def listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
-  '''
-  Helper function to move snapshot list into a matrix
-  '''
-  return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
+    '''
+    Helper function to move snapshot list into a matrix
+    '''
+    return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
