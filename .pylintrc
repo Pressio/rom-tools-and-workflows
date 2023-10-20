@@ -137,7 +137,7 @@ never-returning-functions=sys.exit,argparse.parse_error
 [BASIC]
 
 # Naming style matching correct argument names.
-argument-naming-style=snake_case
+argument-naming-style=any
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
@@ -210,6 +210,8 @@ good-names=i, # loop variable
            s,
            e, # exception
            Run,
+           RHS,
+           LHS,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,

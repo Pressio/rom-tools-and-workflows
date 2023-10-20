@@ -71,6 +71,7 @@ jobs:
 
       - name: Check Formatting (Pylint)
         run: |
+          pip install pylint
           pylint --recursive y --rcfile .pylintrc .
         continue-on-error: false
 
