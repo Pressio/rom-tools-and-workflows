@@ -1,4 +1,4 @@
-'''
+"""
 The OrthogonalizerClass is used to orthogonalize a basis at the end of the construction of a trial space.
 Specifically, given a basis
 $$\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K},$$
@@ -6,7 +6,7 @@ the orthogonalizer will compute a new, orthogonalized basis $\\boldsymbol \\Phi_
 where
 $$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
 In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
-'''
+"""
 import abc
 import numpy as np
 import scipy.sparse
@@ -40,7 +40,7 @@ class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
     $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
     '''
     def __init__(self,qrFnc=None):
-        '''
+        """
         Constructor
         Args:
 
@@ -50,7 +50,7 @@ class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are distributed with MPI,
                     or maybe you have a fancy qr function that you can use.
 
-        '''
+        """
         self.__qrPicked = np.linalg.qr if qrFnc == None else qrFnc
 
     def __call__(self, my_array: np.ndarray):
@@ -64,30 +64,22 @@ class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
     where $\\mathbf{w}$ is the weighting vector. Typically, this inner product is used for orthogonalizing with respect to cell volumes
     '''
     def __init__(self,weighting_vector: np.ndarray,qrFnc=None):
-        '''
-        Constructor for the EuclideanVectorWeightedL2Orthogonalizer that initializes the orthogonalizer with the provided weighting vector and an optional custom QR decomposition function.
+        """
+        Constructor
         Args:
-            weighting_vector (np.ndarray): a 1-D NumPy array that the matrix will be orthogonalized against. The length of the array must match the number of rows in the matrix that will be orthogonalized.
+            weighting_vector: a 1-D numpy array that the matrix will be orthogonalized against. The length of the array must match the number of rows in the matrix that will be orthogonalized.
             qrFnc: a callable to use for computing the QR decomposition.
                     IMPORTANT: must conform to the API of [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
                     If `None`, internally we use `np.linalg.qr`.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are distributed with MPI,
                     or maybe you have a fancy qr function that you can use.
-        '''
+
+        """
 
         self.__weighting_vector = weighting_vector
         self.__qrPicked = np.linalg.qr if qrFnc == None else qrFnc
 
     def __call__(self, my_array: np.ndarray):
-        '''
-        Orthogonalizes the input matrix using the specified weighting vector and returns the orthogonalized matrix.
-
-        Args:
-            my_array (np.ndarray): The input matrix to be orthogonalized.
-
-        Returns:
-            np.ndarray: The orthogonalized matrix.
-        '''
         assert my_array.shape[0] == self.__weighting_vector.size, "Weighting vector does not match basis size"
         tmp = scipy.sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
         my_array,_ = self.__qrPicked(tmp,mode='reduced')

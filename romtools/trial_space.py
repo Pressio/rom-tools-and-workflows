@@ -1,4 +1,4 @@
-'''
+"""
 #Trial space overview
 
 A trial space is foundational to reduced-order models.
@@ -16,7 +16,7 @@ $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathr
 
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
-'''
+"""
 import abc
 import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
@@ -50,7 +50,7 @@ class AbstractTrialSpace(abc.ABC):
 
 
 class DictionaryTrialSpace(AbstractTrialSpace):
-    '''
+    """
     ##Reduced basis trial space (no truncation).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
@@ -58,7 +58,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))$$
 
     where the orthogonalization, splitting, and shifts are defined by their respective classes
-    '''
+    """
     def __init__(self,snapshot_data,shifter,splitter,orthogonalizer):
         # inputs:
         # fom_data: snapshot_data object, contains lists of full model solution data, methods to read it
@@ -88,7 +88,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
 
 
 class TrialSpaceFromPOD(AbstractTrialSpace):
-    '''
+    """
     ##POD trial space (constructed via SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
@@ -101,7 +101,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     For truncation, we enable truncation based on a fixed dimension or the decay
     of singular values; please refer to the documentation for the truncater.
-    '''
+    """
 
     def __init__(self,
                  snapshots:      AbstractSnapshotData,
@@ -159,7 +159,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
 
 class TrialSpaceFromScaledPOD(AbstractTrialSpace):
-    '''
+    """
     ##POD trial space (constructed via scaled SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
@@ -172,7 +172,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     For truncation, we enable truncation based on a fixed dimension or the decay of singular values;
     please refer to the documentation for the truncater.
-    '''
+    """
 
     def __init__(self, snapshot_data: AbstractSnapshotData,
                  truncater: AbstractTruncater,
