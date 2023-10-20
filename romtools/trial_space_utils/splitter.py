@@ -73,14 +73,6 @@ class BlockSplitter(AbstractSplitter):
     **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
     """
     def __init__(self,blocks : list,n_var : int, variable_ordering : str):
-        '''
-        Constructor for BlockSplitter.
-
-        Args:
-            blocks (list): A list of lists, where each inner list contains variable indices to form a block.
-            n_var (int): The total number of variables in the data matrix.
-            variable_ordering (str): The variable ordering, either 'C' or 'F'.
-        '''
         assert variable_ordering == 'C' or variable_ordering == 'F', "Invalid variable ordering, options are F and C"
         self.__variable_ordering = variable_ordering
         self.__n_var = n_var
@@ -95,15 +87,6 @@ class BlockSplitter(AbstractSplitter):
         assert np.allclose(my_vars,np.arange(0,self.__n_var,dtype='int')), "Invalid block input"
 
     def __call__(self, my_array: np.ndarray):
-        '''
-        Splits the input data matrix into smaller blocks as defined by the block list.
-
-        Args:
-            my_array (np.ndarray): The input data array.
-
-        Returns:
-            np.ndarray: A data matrix split into blocks as defined by the input blocks.
-        '''
         d1 = my_array.shape[0]
         d2 = my_array.shape[1]
         n = int(d1/self.__n_var)
@@ -123,20 +106,7 @@ class BlockSplitter(AbstractSplitter):
 
 
 def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
-    """
-    Helper function to split a data matrix based on variable ordering.
-
-    This function takes an input data matrix and splits it based on the variable ordering ('C' or 'F') and the variable index 'i'.
-
-    Args:
-        i (int): The index of the variable to extract.
-        n_var (int): The total number of variables in the data matrix.
-        data_matrix (np.ndarray): The input data matrix to split.
-        variable_ordering (str): The variable ordering, either 'C' or 'F'.
-
-    Returns:
-        np.ndarray: A subset of the input data matrix corresponding to the specified variable index 'i'.
-    """
+    """helper function to split data"""
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
     elif variable_ordering == 'C':
