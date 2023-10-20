@@ -137,7 +137,7 @@ never-returning-functions=sys.exit,argparse.parse_error
 [BASIC]
 
 # Naming style matching correct argument names.
-argument-naming-style=snake_case
+argument-naming-style=any
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
@@ -210,6 +210,10 @@ good-names=i, # loop variable
            s,
            e, # exception
            Run,
+           RHS,
+           LHS,
+           F,
+           C,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -397,7 +401,7 @@ ignore-on-opaque-inference=yes
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of
 # qualified names.
-ignored-classes=optparse.Values,thread._local,_thread._local,lbaf.IO.lbsStatistics.Statistics,argparse.Namespace
+ignored-classes=
 
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
@@ -507,7 +511,7 @@ max-bool-expr=5
 max-branches=12
 
 # Maximum number of locals for function / method body.
-max-locals=15
+max-locals=20
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7
@@ -522,7 +526,7 @@ max-returns=6
 max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=1
 
 
 [IMPORTS]
