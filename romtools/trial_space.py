@@ -7,9 +7,9 @@ Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^N$, we represen
 $$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
 where $\\mathcal{V}$ with
 $\\text{dim}(\\mathcal{V}) = K \\le N$
-is the trial space. Formally, we can describe this low-dimensional representation with a basis and an offine offset,
+is the trial space. Formally, we can describe this low-dimensional representation with a basis and an affine offset,
 $$\\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}$$
-where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \times K}$ is the basis matrix,
+where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}$ is the basis matrix,
 $\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}$ are the reduced, or generalized coordinates,
 $\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^N$ is the shift vector (or affine offset), and, by definition,
 $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$.
@@ -70,7 +70,7 @@ class AbstractTrialSpace(abc.ABC):
         Retrieves the shift vector of the trial space.
 
         Returns:
-            List[float]: The shift vector used to adjust the trial space.
+            np.ndarray: The shift vector used to adjust the trial space.
 
         Concrete subclasses should implement this method to return the shift vector specific to their trial space
         implementation.
