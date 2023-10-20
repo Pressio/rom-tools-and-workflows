@@ -51,10 +51,12 @@ a user should
 2. Use the "run_dakota_sampling" function as their Dakota analysis driver
 '''
 
+import os
 import abc
 import sys
-import os
 import numpy as np
+
+
 class DakotaSamplingCouplerBase(abc.ABC):
     '''
      Abstract class implementation
@@ -96,25 +98,25 @@ class DakotaSamplingCouplerBase(abc.ABC):
 
     @abc.abstractmethod
     def computeQoiAndSaveToFile(self):
-      '''
-      This function should compute a QoI and save to file. The output file should match what is specified in the
-      Dakota input script
-      '''
-      pass
+        '''
+        This function should compute a QoI and save to file. The output file should match what is specified in the
+        Dakota input script
+        '''
+        pass
 
 
 def run_dakota_sampling(DakotaSamplingCoupler):
-  '''
-  Basic Dakota analysis driver leveraging the DakotaSamplingCoupler API
+    '''
+    Basic Dakota analysis driver leveraging the DakotaSamplingCoupler API
 
-  Args:
-    DakotaSamplingCoupler (DakotaSamplingCouplerBase): An instance of a DakotaSamplingCouplerBase-derived class.
+    Args:
+        DakotaSamplingCoupler (DakotaSamplingCouplerBase): An instance of a DakotaSamplingCouplerBase-derived class.
 
-  '''
-  data = np.genfromtxt(sys.argv[1])[:,0]
-  num_vars = int(data[0])
-  param_values = np.array(data[1:1+num_vars])
-  DakotaSamplingCoupler.copyTemplateFile()
-  DakotaSamplingCoupler.setParametersInInput(param_values)
-  DakotaSamplingCoupler.runModel()
-  DakotaSamplingCoupler.computeQoiAndSaveToFile()
+    '''
+    data = np.genfromtxt(sys.argv[1])[:,0]
+    num_vars = int(data[0])
+    param_values = np.array(data[1:1+num_vars])
+    DakotaSamplingCoupler.copyTemplateFile()
+    DakotaSamplingCoupler.setParametersInInput(param_values)
+    DakotaSamplingCoupler.runModel()
+    DakotaSamplingCoupler.computeQoiAndSaveToFile()
