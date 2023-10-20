@@ -77,14 +77,14 @@ class GreedyCouplerBase(abc.ABC):
           work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
       '''
 
-      self.__base_directory = os.getcwd() + '/' if work_directory == None else work_directory
+        self.__base_directory = os.getcwd() + '/' if work_directory == None else work_directory
 
-      strings_to_check = min(5,np.size(template_directory))
-      assert self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check], 'Path to template directory must be an absolute path'
-      self.__template_directory = template_directory
-      self.__template_rom_file = template_rom_file
-      self.__template_fom_file = template_fom_file
-      self.__work_directory_base_name = work_directory_base_name
+        strings_to_check = min(5,np.size(template_directory))
+        assert self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check], 'Path to template directory must be an absolute path'
+        self.__template_directory = template_directory
+        self.__template_rom_file = template_rom_file
+        self.__template_fom_file = template_fom_file
+        self.__work_directory_base_name = work_directory_base_name
 
 
     def getRomInputFileName(self):
@@ -163,10 +163,10 @@ class GreedyCouplerBase(abc.ABC):
       return error
 
     def __setupRomCase(self,path_to_rom_case,parameter_samples):
-      os.chdir(path_to_rom_case)
-      os.system('cp ' + self.__template_directory + '/' + self.__template_rom_file + ' . ')
-      self.setParametersInRomInput(self.__template_rom_file,parameter_samples)
-      os.chdir(self.getBaseDirectory())
+        os.chdir(path_to_rom_case)
+        os.system('cp ' + self.__template_directory + '/' + self.__template_rom_file + ' . ')
+        self.setParametersInRomInput(self.__template_rom_file,parameter_samples)
+        os.chdir(self.getBaseDirectory())
 
     def __setupFomCase(self,path_to_fom_case,parameter_samples):
       '''
