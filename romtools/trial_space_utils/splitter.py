@@ -75,6 +75,7 @@ class BlockSplitter(AbstractSplitter):
     $$
 
     **Notes on variable ordering**
+
     **Order F variable ordering: $[u_1,v_1,w_1,u_2,v_2,w_2,...,u_n,v_n,w_n]$**
 
     **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
