@@ -130,7 +130,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         Returns:
             int: The dimension of the trial space.
         """
-      return self.__dimension
+        return self.__dimension
 
     def getShiftVector(self):
         """
@@ -140,7 +140,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
             np.ndarray: The shift vector.
 
         """
-      return self.__shift_vector
+        return self.__shift_vector
 
     def getBasis(self):
         """
@@ -150,7 +150,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         Returns:
             np.ndarray: The basis of the trial space.
         """
-       return self.__basis
+        return self.__basis
 
 
 class TrialSpaceFromPOD(AbstractTrialSpace):
