@@ -70,9 +70,11 @@ $$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\
 
 The Scaler encapsulates this information
 '''
+
+import abc
 import numpy as np
 import scipy
-import abc
+
 class AbstractScaler(abc.ABC):
     '''
     Abstract base class
