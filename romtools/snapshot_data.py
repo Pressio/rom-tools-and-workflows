@@ -1,4 +1,4 @@
-'''
+"""
 Most ROM formulations require access to so-called snapshot data to construct a reduced trial space.
 A snapshot is typically a solution to a full-order model.
 As an example, consider a (discretized) parameterized PDE defined by
@@ -20,7 +20,7 @@ $$
 
 The SnapshotData class encapsulates the information contained in set of snapshots,
 and is the main class used in the construction of trial spaces
-'''
+"""
 
 import numpy as np
 import abc
