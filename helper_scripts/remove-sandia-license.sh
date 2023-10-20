@@ -38,7 +38,7 @@ do
       fi
   else
       filetmp=$(mktemp)
-      tail -n +48 $file > $filetmp
+      tail -n +45 $file > $filetmp
       mv $filetmp $file
   fi
 done

@@ -32,10 +32,6 @@ do
   filename=$(basename $file)
   filedir=$(dirname $file)
 
-  if [ "$filename" = "__init__.py" ]; then
-    continue
-  fi
-
   if ! grep -q 'Ennio' "$file"
   then
       if [[ "${filedir}" != *"logger"* ]]
@@ -49,3 +45,4 @@ do
 	  mv $filetmp $file
       fi
   fi
+done
