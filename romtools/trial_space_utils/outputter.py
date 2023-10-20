@@ -45,7 +45,9 @@
 
 import numpy as np
 import os
-from romtools.trial_space import AbstractTrialSpace
+import math
+import numpy as np
+import h5py
 
 try:
     import exodus
@@ -59,6 +61,8 @@ except:
 
 import math
 
+
+from romtools.trial_space import AbstractTrialSpace
 
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     '''
@@ -108,7 +112,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
         exodus_output("trial_space.e", "mesh.exo", my_trial_space, var_names=["var1", "var2"])
     '''
     if os.path.isfile(output_filename):
-      os.system(f'rm {output_filename}')
+        os.system(f'rm {output_filename}')
 
     e = exodus.copy_mesh(mesh_filename, output_filename)
     e.close()
@@ -142,4 +146,3 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
             e.put_node_variable_values(field_name, 1, values)
 
     e.close()
-
