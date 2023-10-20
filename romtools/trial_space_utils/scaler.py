@@ -146,7 +146,7 @@ class VectorScaler(AbstractScaler):
 class VariableScaler(AbstractScaler):
     '''
     Concrete implementation designed for snapshot matrices involving multiple state variables.
-    This scaler will scales each variable based on
+    This scaler will scale each variable based on
       - max-abs scaling: for the $i$th state variable $u_i$, we will compute the scaling as
         $s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
       - mean abs: for the $i$th state variable $u_i$, we will compute the scaling as
