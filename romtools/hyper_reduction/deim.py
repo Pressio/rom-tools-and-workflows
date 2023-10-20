@@ -109,19 +109,19 @@ def deimGetIndices(U):
       $\\mathrm{indices} \\in \\mathbb{I}^{n}$
   '''
 
-  m = np.shape(U)[1]
-  n = np.shape(U)[0]
-  first_index = np.argmax(np.abs(U[:,0]))
-  indices = first_index
-  for l in range(1,m):
-    LHS = U[indices,0:l]
-    RHS = U[indices,l]
-    if l == 1:
-      LHS = np.ones((1,1))*LHS
-      RHS = np.ones(1)*RHS
-    C = np.linalg.solve(LHS,RHS)
+    m = np.shape(U)[1]
+    first_index = np.argmax(np.abs(U[:,0]))
+    indices = first_index
+    for l in range(1,m):
+        LHS = U[indices,0:l]
+        RHS = U[indices,l]
+        if l == 1:
+            LHS = np.ones((1,1))*LHS
+            RHS = np.ones(1)*RHS
+        C = np.linalg.solve(LHS,RHS)
 
-    residual = U[:,l] - U[:,0:l] @ C
-    index_to_add = np.argmax(np.abs(residual))
-    indices = np.append(indices,index_to_add)
-  return indices
+        residual = U[:,l] - U[:,0:l] @ C
+        index_to_add = np.argmax(np.abs(residual))
+        indices = np.append(indices,index_to_add)
+    return indices
+
