@@ -70,7 +70,7 @@ class AbstractTrialSpace(abc.ABC):
         Retrieves the shift vector of the trial space.
 
         Returns:
-            List[float]: The shift vector, a list of floating-point values used to adjust the trial space.
+            List[float]: The shift vector used to adjust the trial space.
 
         Concrete subclasses should implement this method to return the shift vector specific to their trial space
         implementation.
@@ -137,7 +137,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
 
         Returns:
-            List[float]: The shift vector.
+            np.ndarray: The shift vector.
 
         """
       return self.__shift_vector
@@ -222,7 +222,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
 
         Returns:
-            List[float]: The shift vector.
+            np.ndarray: The shift vector.
 
         """
         return self.__shift_vector
@@ -301,7 +301,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
 
         Returns:
-            List[float]: The shift vector.
+            np.ndarray: The shift vector.
 
         """
         return self.__shift_vector
