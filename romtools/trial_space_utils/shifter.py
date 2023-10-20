@@ -1,12 +1,14 @@
 '''
 The Shifter class is used to create an affine offset in a trial space.
 
-*What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine trial space,
+*What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
+trial space,
 $$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
 where
 $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$
 is the trial space. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
-Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial conditions.
+Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial
+conditions.
 
 The Shifter class encapsulates the affine offset.
 '''

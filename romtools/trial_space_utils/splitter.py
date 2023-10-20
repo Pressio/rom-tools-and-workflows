@@ -2,9 +2,13 @@
 The Splitter class is used to "split" a snapshot matrix before constructing the trial space.
 
 *What do we mean by splitting a trial space, and why do it?*
-Trial space splitting can be important for vector-valued equations where there are multiple state variables. As an example, we could consider the compressible Euler equations in one dimension in which case the spatially continuous (conserved) variable set is
+Trial space splitting can be important for vector-valued equations where there are multiple state variables. As an
+example, we could consider the compressible Euler equations in one dimension in which case the spatially continuous
+(conserved) variable set is
 $$\\boldsymbol u(x) = \\begin{bmatrix} \\rho(x) &  \\rho u (x)& \\rho E(x) \\end{bmatrix}^T.$$
-There are several ways of constructing ROMs of vector-valued systems. In one approach, we simply stack all of our degrees of freedom and create a global basis. Mathematically, this comprises constructing a basis function that looks as follows
+There are several ways of constructing ROMs of vector-valued systems. In one approach, we simply stack all of our
+degrees of freedom and create a global basis. Mathematically, this comprises constructing a basis function that looks
+as follows
 $$
 \\boldsymbol \\Phi(x) = \\begin{bmatrix}
 \\Phi_{1}^{\\rho}(x) & \\Phi_{2}^{\\rho }(x) & \\cdots & \\Phi_{K}^{\\rho}(x) \\\\\\\\
@@ -16,7 +20,8 @@ and the state is approximated by
 $$\\tilde{\\boldsymbol u}(x) = \\sum_{i=1}^{K} \\Phi_i(x) \\hat{\\boldsymbol u}(t).$$
 With this representation, the different state variables share generalized coordinates $\\hat{\\boldsymbol u}(t)$.
 
-An alternative approach is to ensure that each state variable is linearly independent of the other by employing a block basis. With this approach, this comprises a basis function that looks like
+An alternative approach is to ensure that each state variable is linearly independent of the other by employing a block
+basis. With this approach, this comprises a basis function that looks like
 $$
 \\boldsymbol \\Phi(x) = \\begin{bmatrix}
 \\Phi_{1}^{\\rho}(x) &  0                     &  0  & \\Phi_{2}^{\\rho }(x) & \\cdots \\\\\\\\
@@ -24,9 +29,11 @@ $$
  0                   & 0                      & \\Phi_{1}^{\\rho E}(x) & 0 & \\cdots \\
 \\end{bmatrix}.
 $$
-This "split" representation can be particularly advantageous for problems where different state variables span numerous orders of magnitude.
+This "split" representation can be particularly advantageous for problems where different state variables span numerous
+orders of magnitude.
 
-The splitting class encapsulates this functionality. We note that the splitter is **applied to the snapshot matrix before POD is performed**.
+The splitting class encapsulates this functionality. We note that the splitter is **applied to the snapshot matrix
+before POD is performed**.
 
 '''
 from typing import Tuple
@@ -57,8 +64,8 @@ class NoOpSplitter(AbstractSplitter):
 
 class BlockSplitter(AbstractSplitter):
     """
-    Splits a data matrix into blocks defined by a list, e.g., for our Euler equation example above, we could set blocks = [[0,1],[2]] which
-    would result in
+    Splits a data matrix into blocks defined by a list, e.g., for our Euler equation example above, we could set
+    blocks = [[0,1],[2]] which would result in
     $$
     \\boldsymbol \\Phi(x) = \\begin{bmatrix}
     \\Phi_{1}^{\\rho}(x)   &  0 & \\Phi_{2}^{\\rho}(x) &  0 & \\cdots  \\\\\\\\
@@ -114,11 +121,15 @@ class BlockSplitter(AbstractSplitter):
             end_col = (block_counter+1)*d2
             for var in block:
                 if self.__variable_ordering == 'F':
-                    my_split_array[var::self.__n_var,start_col:end_col] = getDataMatrixForIthVar(var,self.__n_var,my_array,self.__variable_ordering)
+                    my_split_array[var::self.__n_var,start_col:end_col] = getDataMatrixForIthVar(var,
+                                                                                                 self.__n_var,my_array,
+                                                                                                 self.__variable_ordering)
                 elif self.__variable_ordering == 'C':
                     start_index = var*n
                     end_index = (var+1)*n
-                    my_split_array[start_index:end_index,start_col:end_col] = getDataMatrixForIthVar(var,self.__n_var,my_array,self.__variable_ordering)
+                    my_split_array[start_index:end_index,start_col:end_col] = getDataMatrixForIthVar(var,
+                                                                                                     self.__n_var,my_array,
+                                                                                                     self.__variable_ordering)
         return my_split_array
 
 
@@ -126,7 +137,8 @@ def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
     """
     Helper function to split a data matrix based on variable ordering.
 
-    This function takes an input data matrix and splits it based on the variable ordering ('C' or 'F') and the variable index 'i'.
+    This function takes an input data matrix and splits it based on the variable ordering ('C' or 'F') and the
+    variable index 'i'.
 
     Args:
         i (int): The index of the variable to extract.
