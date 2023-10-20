@@ -71,7 +71,7 @@ def globalAbsSumImpl(r):
 
 class svdMethodOfSnapshots:
   '''
-  Parallel implementation of the method of snapshots to mimic the SVD for basis construction
+  #Parallel implementation of the method of snapshots to mimic the SVD for basis construction
   Sample usage:
 
                 mySvd = svdMethodOfSnapshots(comm)
