@@ -67,9 +67,9 @@ The SnapshotData class encapsulates the information contained in set of snapshot
 and is the main class used in the construction of trial spaces
 '''
 
-import numpy as np
-import abc
+import abc, sys
 from typing import Iterable
+import numpy as np
 
 class AbstractSnapshotData(abc.ABC):
     '''
@@ -158,6 +158,6 @@ class AbstractSnapshotData(abc.ABC):
 
 def _listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
     '''
-    Helper function to convert a snapshot list into a matrix
+    Helper function to move snapshot list into a matrix
     '''
     return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])

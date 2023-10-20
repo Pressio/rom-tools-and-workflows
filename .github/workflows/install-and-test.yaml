@@ -69,7 +69,12 @@ jobs:
           pip list
           pip install .
 
-      - name: Run tests (Serial)
+      - name: Check Formatting (Pylint)
+        run: |
+          pylint --recursive y --rcfile .pylintrc .
+        continue-on-error: false
+
+      - name: Run tests
         run: |
           pytest
 

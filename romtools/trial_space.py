@@ -67,7 +67,7 @@ import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
 from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
 from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
-from romtools.trial_space_utils.scaler import AbstractScaler, NoOpScaler
+from romtools.trial_space_utils.scaler import AbstractScaler
 from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
 
@@ -240,7 +240,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         shifted_split_snapshots = splitter(shifted_snapshots)
 
-        svdPicked = np.linalg.svd if svdFnc == None else svdFnc
+        svdPicked = np.linalg.svd if svdFnc is None else svdFnc
         lsv, svals, _ = svdPicked(shifted_split_snapshots, full_matrices=False, \
                                   compute_uv=True, hermitian=False)
 
