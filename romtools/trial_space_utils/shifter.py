@@ -20,11 +20,11 @@ class AbstractShifter(abc.ABC):
     Abstract implmentation
     '''
     @abc.abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abc.abstractmethod
-    def __call__(self, my_array: np.ndarray):
+    def __call__(self, my_array: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         '''
         Overload to apply shift
         '''
