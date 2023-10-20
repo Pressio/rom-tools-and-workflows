@@ -200,7 +200,8 @@ class GreedyCouplerBase(abc.ABC):
     @abc.abstractmethod
     def createTrialSpace(self,training_sample_indices):
       '''
-      This function is called the base directory. Given the FOM runs as defined by training_sample_indices, it needs to compute and save a trial space.
+      This function is called the base directory. Given the FOM runs as defined by training_sample_indices, it needs to
+      compute and save a trial space.
 
       Args:
         training_sample_indices (list): Indices of the training samples.

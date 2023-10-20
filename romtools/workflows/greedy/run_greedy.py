@@ -1,29 +1,40 @@
 '''
-The greedy procedure iteratively constructs a reduced basis ROM until it reaches a desired tolerance. The algorithm is as follows:
- 1. We generate a parameter training set, $\\mathcal{D}_{\\mathrm{train}}, |\\mathcal{D}_{\\mathrm{train}} | = N_{\\mathrm{train}}$
- 2. We select an initial sample, $\\mu_1 \\in \\mathcal{D}_{\\mathrm{train}} \\text{ and set } \\mathcal{D}_{\\mathrm{train}}=\\mathcal{D}_{\\mathrm{train}} - \\{\\mu_1\\}$
+The greedy procedure iteratively constructs a reduced basis ROM until it reaches a desired tolerance.
+The algorithm is as follows:
+ 1. We generate a parameter training set, $\\mathcal{D}_{\\mathrm{train}}, |\\mathcal{D}_{\\mathrm{train}}
+    | = N_{\\mathrm{train}}$
+ 2. We select an initial sample, $\\mu_1 \\in \\mathcal{D}_{\\mathrm{train}} \\text{ and set }
+    \\mathcal{D}_{\\mathrm{train}}=\\mathcal{D}_{\\mathrm{train}} - \\{\\mu_1\\}$
  3. We then solve the FOM to obtain the solution, $\\mathbf{u}(\\mu_1)$.
- 4. We select a second sample, $\\mu_2 \\in \\mathcal{D}_{\\mathrm{train}} \\text{ and set } \\mathcal{D}_{\\mathrm{train}}=\\mathcal{D}_{\\mathrm{train}} - \\{\\mu_2\\}$
+ 4. We select a second sample, $\\mu_2 \\in \\mathcal{D}_{\\mathrm{train}} \\text{ and set }
+    \\mathcal{D}_{\\mathrm{train}}=\\mathcal{D}_{\\mathrm{train}} - \\{\\mu_2\\}$
  4. We then solve the FOM to obtain the solution, $\\mathbf{u}(\\mu_2)$.
  5. We employ the first two solutions to compute the trial space, e.g.,
-    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathbf{u}(\\mu_2)) -  \\mathbf{u}_{\\mathrm{shift}}, \\; \\mathbf{u}_{\\mathrm{shift}} = \\mathbf{u}(\\mu_1)$$
- 6. We then solve the resulting ROM for the remaining parameter samples $\\mathcal{D}_{\\mathrm{train}}$ to generate approximate solutions $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$
- 7. For each ROM solution $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$ we compuate an error estimate, $ e \\left(\\mu \\right) $
+    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathbf{u}(\\mu_2)) -  \\mathbf{u}_{\\mathrm{shift}},
+    \\; \\mathbf{u}_{\\mathrm{shift}} = \\mathbf{u}(\\mu_1)$$
+ 6. We then solve the resulting ROM for the remaining parameter samples $\\mathcal{D}_{\\mathrm{train}}$ to
+    generate approximate solutions $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$
+ 7. For each ROM solution $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$ we compuate an error
+    estimate, $ e \\left(\\mu \\right) $
  8. If the maximum error estimate is less than some tolerance, we exit the algorithm. If not, we:
-   - Set $ \\mu^* = \\underset{ \\mu \\in \\mathcal{D}_{\\mathrm{train}} }{ \\mathrm{arg\\; max} } \\; e \\left(\\mu \\right) $
-   - Remove $\\mu^{\\*}$ from the training set, $\\mathcal{D}_{\\mathrm{train}}=\\mathcal{D}_{\\mathrm{train}} - \\{\\mu^{\\*}\\}$
+   - Set $ \\mu^* = \\underset{ \\mu \\in \\mathcal{D}_{\\mathrm{train}} }{ \\mathrm{arg\\; max} } \\; e
+        \\left(\\mu \\right) $
+   - Remove $\\mu^{\\*}$ from the training set, $\\mathcal{D}_{\\mathrm{train}}=
+        \\mathcal{D}_{\\mathrm{train}} - \\{\\mu^{\\*}\\}$
    - Solve the FOM for $\\mathbf{u}(\\mu^{\\*})$
-   - Set the reduced basis to be $\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\boldsymbol \\Phi, \\mathbf{u}(\\mu^{\\*})) -  \\mathbf{u}_{\\mathrm{shift}}$
+   - Set the reduced basis to be $\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\boldsymbol \\Phi,
+      \\mathbf{u}(\\mu^{\\*})) -  \\mathbf{u}_{\\mathrm{shift}}$
    - Go back to step 6 and continue until convergence.
 
 This function implements the basic greedy workflow. In addition, we enable an adaptive
 error estimate based on a QoI. This is based of the fact that, throughout the greedy algorithm, we have a
 history of error indicators as well as a set of FOM and ROM runs for the same parameter instance. We leverage this data
-to improve the error estimate. Specifically, for the max error estimates over the first $j$ iterations, $e_1,\\ldots,e_j$, we
-additionally can access QoI errors $e^q_1,\\ldots,e^q_j$ from our FOM-ROM runs, and we define a scaling based on
-$$C = \\frac{\\sum_{i=1}^j | e^q_j| }{ \\sum_{i=1}^j | e_j | }.$$
+to improve the error estimate. Specifically, for the max error estimates over the first $j$ iterations,
+$e_1,\\ldots,e_j$, we additionally can access QoI errors $e^q_1,\\ldots,e^q_j$ from our FOM-ROM runs, and we define a
+scaling based on $$C = \\frac{\\sum_{i=1}^j | e^q_j| }{ \\sum_{i=1}^j | e_j | }.$$
 The error at the $j+1$ iteration can be approximated by $C e(\\mu)$.
-This will adaptively scale the error estimate to match the QoI error as closely as possible, which can be helpful for defining exit criterion.
+This will adaptively scale the error estimate to match the QoI error as closely as possible, which can be helpful for
+defining exit criterion.
 '''
 import numpy as np
 import time
