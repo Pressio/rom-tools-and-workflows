@@ -27,7 +27,7 @@ The algorithm is as follows:
    - Go back to step 6 and continue until convergence.
 
 This function implements the basic greedy workflow. In addition, we enable an adaptive
-error estimate based on a QoI. This is based of the fact that, throughout the greedy algorithm, we have a
+error estimate based on a QoI. This is based on the fact that, throughout the greedy algorithm, we have a
 history of error indicators as well as a set of FOM and ROM runs for the same parameter instance. We leverage this data
 to improve the error estimate. Specifically, for the max error estimates over the first $j$ iterations,
 $e_1,\\ldots,e_j$, we additionally can access QoI errors $e^q_1,\\ldots,e^q_j$ from our FOM-ROM runs, and we define a
