@@ -20,9 +20,11 @@ class SamplingCouplerBase(abc.ABC):
       Args:
           template_directory (str): The directory containing input file templates.
           template_input_file (str): The template input file for the model.
-          work_directory (str, optional): The working directory for the sampling. If not provided, the current directory is used.
+          work_directory (str, optional): The working directory for the sampling. If not provided, the current
+              directory is used.
           work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
-          sol_directory_base_name (str, optional): The base name for the solution directories within the working directory. Defaults to 'run_'
+          sol_directory_base_name (str, optional): The base name for the solution directories within the working
+              directory. Defaults to 'run_'
       '''
 
       self.__base_directory = os.getcwd() + '/' if work_directory == None else work_directory
