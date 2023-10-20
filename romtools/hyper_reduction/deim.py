@@ -27,7 +27,8 @@ def deimGetApproximationMatrix(functionBasis,sampleIndices):
 
 def deimGetTestBasis(testBasis,functionBasis,sampleIndices):
   '''
-  Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and sample indices defining $\\mathbf{P}$, we compute
+  Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and sample indices defining $\\mathbf{P}$,
+  we compute
   $$[ \\mathbf{\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
   which comprises the "test basis" for the DEIM approximation fo $\\mathbf{\Phi}^T \\mathbf{f}$  '''
   sampledFunctionBasis = functionBasis[sampleIndices]
@@ -53,7 +54,8 @@ def vectorDeimGetIndices(U,n_var,variable_ordering='F'):
 def deimGetIndices(U):
   '''
   Implementation of the discrete empirical method as described in Algorithm 1 of
-  S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
+  S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for nonlinear model reduction,"
+      doi: 10.1109/CDC.2009.5400045.
 
   Args:
       $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples
