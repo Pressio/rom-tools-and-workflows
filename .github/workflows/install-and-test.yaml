@@ -69,7 +69,14 @@ jobs:
           pip list
           pip install .
 
-      - name: Run tests (Serial)
+      - name: Check formatting (Pylint)
+        run: |
+          mkdir -p artifacts; pylint --recursive y --rcfile .pylintrc --output-format=text,text:artifacts/pylint.txt .
+          if [ -e "./artifacts/pylint.txt" ]; then PYLINT_REPORT_EXISTS="true"; else PYLINT_REPORT_EXISTS="false"; fi
+          echo "pylint_report_exists=$PYLINT_REPORT_EXISTS" >> $GITHUB_OUTPUT
+        continue-on-error: false
+
+      - name: Run tests
         run: |
           pytest
 
