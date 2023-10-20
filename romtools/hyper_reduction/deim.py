@@ -45,19 +45,17 @@
 
 import numpy as np
 
-'''
-Implementation of DEIM technique for hyper-reduction
-'''
+'''Implementation of DEIM technique for hyper-reduction'''
 
 def __getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
-  '''helper function to split data'''
-  if variable_ordering == 'F':
-    return data_matrix[i::n_var]
-  elif variable_ordering == 'C':
-    n = int( data_matrix.shape[0] / n_var)
-    start_index = i*n
-    end_index = (i+1)*n
-    return data_matrix[start_index:end_index]
+    '''helper function to split data'''
+    if variable_ordering == 'F':
+        return data_matrix[i::n_var]
+    elif variable_ordering == 'C':
+        n = int( data_matrix.shape[0] / n_var)
+        start_index = i*n
+        end_index = (i+1)*n
+        return data_matrix[start_index:end_index]
 
 def deimGetApproximationMatrix(functionBasis,sampleIndices):
   '''
@@ -124,4 +122,3 @@ def deimGetIndices(U):
         index_to_add = np.argmax(np.abs(residual))
         indices = np.append(indices,index_to_add)
     return indices
-
