@@ -73,6 +73,8 @@ def A_transpose_dot_bImpl(A, b, comm):
         for j in range(1, num_processes):
             comm.Send(ATb_glob, dest=j)
 
+    if num_processes == 1:
+        return np.dot(A.transpose(),b)
     else:
         comm.Recv(ATb_glob, source=0)
     return np.reshape(ATb_glob, np.shape(tmp))
