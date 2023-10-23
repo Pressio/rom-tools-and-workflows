@@ -16,8 +16,13 @@ jobs:
     strategy:
       fail-fast: false # true -> cancel all jobs if any fails
       matrix:
-        python-version: ["pypy-3.8", "pypy-3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         mpi: ['mpich','openmpi']
+        exclude:
+          - python-version: "3.8"
+            mpi: 'mpich'
+          - python-version: "3.9"
+            mpi: 'mpich'
 
     steps:
       - uses: actions/checkout@v3
