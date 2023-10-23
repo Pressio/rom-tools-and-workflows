@@ -181,6 +181,53 @@ class ECSWsolverNNLS(AbstractECSWsolver):
 
 # ESCW helper functions for specific test basis types
 
+def ConstructLinearSystemForECSWFixedTestBasis(residual_snapshots: np.ndarray, test_basis: np.ndarray, n_vars: int, variable_ordering: str):
+    '''
+    Make linear system for ECSW with a fixed test basis, such as POD-Galerkin projection
+
+    Read in residual snapshots, test basis, and the number of variables, then construct the ECSW linear 
+    system for the entire mesh, including the left-hand-side matrix and right-hand-side vector. Pieces of 
+    the matrix and vector will be used to construct the corresponding linear systems for candidate sample meshes. 
+    
+    Return the matrix and right-hand-side
+    
+    residual_snapshots is a n_dofs*n_vars by n_snaps array, where n_dofs is the number of mesh degrees
+    of freedom, n_vars is the number of residual variables (e.g. for fluid flow, residual variable 
+    could be mass, x-momentum, y-momentum, z-momentum, and energy), and n_snaps is the number of snapshots
+
+    test_basis is a n_dofs*n_vars by n_modes array, where n_modes is the number of modes in the basis.
+
+    variable_ordering is a character specifying the ordering of variables and DoFs in residual snapshots and test_basis. 
+    C: variables are the fastest index
+    F: mesh DoFs are the fastest index
+    '''
+
+    (n_rows,n_snaps) = residual_snapshots.shape
+    n_dofs = int(n_rows / n_vars)
+    n_modes = test_basis.shape[1]
+    # construct ECSW system
+    full_mesh_lhs = np.zeros((n_snaps*n_modes,n_dofs))
+
+    # left-hand side
+    for i in range(n_dofs):
+        # should be projection of all variables for a given mesh DoF
+        if variable_ordering == 'C':
+            Phi_block = test_basis[(i*n_vars):((i+1)*n_vars),:] # n_vars x n_modes
+            resSnaps_block = residual_snapshots[(i*n_vars):((i+1)*n_vars),:] # n_vars x n_snaps
+        elif variable_ordering == 'F':
+            Phi_block = test_basis[i::n_dofs,:] # n_vars x n_modes
+            resSnaps_block = residual_snapshots[i::n_dofs,:] # n_vars x n_snaps
+
+        full_mesh_lhs_block = np.dot(Phi_block.T,resSnaps_block) # Nmodes x Nsnaps matrix
+        full_mesh_lhs[:,i] = np.ravel(full_mesh_lhs_block, order='F')
+
+    # right-hand-side
+    full_mesh_rhs = np.sum(full_mesh_lhs,axis=1)
+
+    return full_mesh_lhs,full_mesh_rhs
+
+
+
 def ECSWFixedTestBasis(ecsw_solver: AbstractECSWsolver, residual_snapshots: np.ndarray, test_basis: np.ndarray, n_vars: int, variable_ordering: str, tau: np.double):
     '''
     ECSW implementation for a fixed test basis, such as POD-Galerkin projection
@@ -205,28 +252,7 @@ def ECSWFixedTestBasis(ecsw_solver: AbstractECSWsolver, residual_snapshots: np.n
     '''
 
     # TODO need to incorporate residual scales here too... Perhaps using scaler.py
-
-    (n_rows,n_snaps) = residual_snapshots.shape
-    n_dofs = int(n_rows / n_vars)
-    n_modes = test_basis.shape[1]
-    # construct ECSW system
-    full_mesh_lhs = np.zeros((n_snaps*n_modes,n_dofs))
-
-    # left-hand side
-    for i in range(n_dofs):
-        # should be projection of all variables for a given mesh DoF
-        if variable_ordering == 'C':
-            Phi_block = test_basis[(i*n_vars):((i+1)*n_vars),:] # n_vars x n_modes
-            resSnaps_block = residual_snapshots[(i*n_vars):((i+1)*n_vars),:] # n_vars x n_snaps
-        elif variable_ordering == 'F':
-            Phi_block = test_basis[i::n_dofs,:] # n_vars x n_modes
-            resSnaps_block = residual_snapshots[i::n_dofs,:] # n_vars x n_snaps
-
-        full_mesh_lhs_block = np.dot(Phi_block.T,resSnaps_block) # Nmodes x Nsnaps matrix
-        full_mesh_lhs[:,i] = np.ravel(full_mesh_lhs_block, order='F')
-
-    # right-hand-side
-    full_mesh_rhs = np.sum(full_mesh_lhs,axis=1)
+    full_mesh_lhs, full_mesh_rhs = ConstructLinearSystemForECSWFixedTestBasis(residual_snapshots,test_basis,n_vars,variable_ordering)
 
     return ecsw_solver(full_mesh_lhs,full_mesh_rhs,tau)
 
