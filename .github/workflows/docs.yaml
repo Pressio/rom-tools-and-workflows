@@ -45,5 +45,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Debug Step
+        run: |
+          echo "Debugging deploy step..."
+          echo "Page URL: ${{ steps.deployment.outputs.page_url }}"
+          ls -l   # List files in the current directory
+          ls -l docs  # List files in the 'docs/' directory
       - id: deployment
         uses: actions/deploy-pages@v2
