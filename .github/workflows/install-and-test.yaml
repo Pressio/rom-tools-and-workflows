@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false # true -> cancel all jobs if any fails
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["pypy-3.8", "pypy-3.9", "3.10", "3.11"]
         mpi: ['mpich','openmpi']
 
     steps:
@@ -63,6 +63,14 @@ jobs:
         run: |
           pytest -s
 
-      - name: Run tests (MPI)
+      - name: Run tests (MPI, n=1)
+        run: |
+          mpirun --allow-run-as-root -n 1 python -m pytest tests/romtools/* --with-mpi
+
+      - name: Run tests (MPI, n=3)
         run: |
           mpirun --allow-run-as-root -n 3 python -m pytest tests/romtools/* --with-mpi
+
+      - name: Run tests (MPI, n=4)
+        run: |
+          mpirun --allow-run-as-root -n 4 python -m pytest tests/romtools/* --with-mpi
