@@ -11,6 +11,17 @@ import math
 import h5py
 
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
+    '''
+    Save trial space information to a compressed or uncompressed NumPy .npz file.
+
+    Args:
+        filename (str): The name of the output file.
+        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+        compress (bool, optional): Whether to compress the output file (default is True).
+
+    Example:
+        npz_output("trial_space.npz", my_trial_space)
+    '''
     if compress:
         np.savez_compressed(filename, shift=trial_space.getShiftVector(),
             basis=trial_space.getBasis())
@@ -19,11 +30,33 @@ def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) ->
             basis=trial_space.getBasis())
 
 def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
+    '''
+    Save trial space information to an HDF5 file.
+
+    Args:
+        output_filename (str): The name of the output HDF5 file.
+        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+
+    Example:
+        hdf5_output("trial_space.h5", my_trial_space)
+    '''
     with h5py.File(output_filename, 'w') as f:
         f.create_dataset('shift', data=trial_space.getShiftVector())
         f.create_dataset('basis', data=trial_space.getBasis())
 
 def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: AbstractTrialSpace, var_names: list = None) -> None:
+    '''
+    Save trial space information to an Exodus file.
+
+    Args:
+        output_filename (str): The name of the output Exodus file.
+        mesh_filename (str): The name of the mesh file.
+        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+        var_names (list, optional): A list of variable names (default is None).
+
+    Example:
+        exodus_output("trial_space.e", "mesh.exo", my_trial_space, var_names=["var1", "var2"])
+    '''
     if os.path.isfile(output_filename):
       os.system(f'rm {output_filename}')
 
