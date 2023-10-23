@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v2
         with:
-          path: docs/
+          path: ./romtools
 
   # Deploy the artifact to GitHub pages.
   # This is a separate job so that only actions/deploy-pages has the necessary permissions.
@@ -45,11 +45,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Debug Step
-        run: |
-          echo "Debugging deploy step..."
-          echo "Page URL: ${{ steps.deployment.outputs.page_url }}"
-          ls -l   # List files in the current directory
-          ls -l docs  # List files in the 'docs/' directory
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v2
