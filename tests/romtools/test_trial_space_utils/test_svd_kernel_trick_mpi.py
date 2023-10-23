@@ -1,5 +1,6 @@
 import romtools as rt
 import romtools.trial_space_utils as utils
+# from romtools.trial_space_utils.svd_method_of_snapshots import svdMethodOfSnapshotsImpl
 import copy
 import numpy as np
 import pytest
@@ -39,8 +40,8 @@ def test_parallel_kernel_trick_on_three_cores():
     rank = comm.Get_rank()
     if comm.Get_size() == 3:
         data = construct_distributed_data(comm)
-        data_full = construct_full_data() 
-        U,sigma = utils.__svdMethodOfSnapshotsImpl(data,comm)
+        data_full = construct_full_data()
+        U,sigma = utils.svdMethodOfSnapshotsImpl(data,comm)
         Uf,sigmaf,_ = np.linalg.svd(data_full,full_matrices=False)
 
         if rank == 0:
@@ -60,9 +61,9 @@ def test_class_parallel_kernel_trick_on_three_cores():
     rank = comm.Get_rank()
     if comm.Get_size() == 3:
         data = construct_distributed_data(comm)
-        data_full = construct_full_data() 
+        data_full = construct_full_data()
         mySvd = utils.svdMethodOfSnapshots(comm)
-        U,sigma,_ = mySvd(data,full_matrices=False) 
+        U,sigma,_ = mySvd(data,full_matrices=False)
         Uf,sigmaf,_ = np.linalg.svd(data_full,full_matrices=False)
 
         if rank == 0:
