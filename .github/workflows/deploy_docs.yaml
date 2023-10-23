@@ -4,7 +4,7 @@ name: deploy-docs
 on:
   push:
     branches:
-      - 45-fix-deploy_docs-yaml
+      - main
     # Alternative: only build for tags.
     # tags:
     #   - '*'
@@ -27,11 +27,11 @@ jobs:
       - run: pip install .
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc ./romtools -t ./custom-template --math --docformat google -o ./docs
+      - run: pdoc ./romtools -t ./custom-template --math --docformat google -o docs/
 
       - uses: actions/upload-pages-artifact@v2
         with:
-          path: ./docs
+          path: docs/
 
   # Deploy the artifact to GitHub pages.
   # This is a separate job so that only actions/deploy-pages has the necessary permissions.
