@@ -1,6 +1,6 @@
 import romtools as rt
 import romtools.trial_space_utils as utils
-# from romtools.trial_space_utils.svd_method_of_snapshots import svdMethodOfSnapshotsImpl
+
 import copy
 import numpy as np
 import pytest
