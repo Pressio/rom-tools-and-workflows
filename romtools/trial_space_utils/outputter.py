@@ -3,12 +3,17 @@ import os
 from romtools.trial_space import AbstractTrialSpace
 
 try:
-  import exodus
+    import exodus
 except:
-  pass
+    pass
+
+try:
+    import h5py
+except:
+    pass
 
 import math
-import h5py
+
 
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     if compress:
