@@ -28,6 +28,7 @@ def exact_solution(x,t, alpha):
 import romtools as rt
 class HeatSnapshots(rt.AbstractSnapshotData):
     def __init__(self, snapshots: list):
+        rt.AbstractSnapshotData.__init__(self, var_names=['T'])
         self.snapshots = snapshots
 
     def getMeshGids(self):
@@ -37,12 +38,6 @@ class HeatSnapshots(rt.AbstractSnapshotData):
 
     def getSnapshotsAsListOfArrays(self):
         return self.snapshots
-
-    def getVariableNames(self):
-        return ['T']
-
-    def getNumVars(self) -> int:
-        return 1
 
 @pytest.mark.mpi_skip
 def test_demo1():

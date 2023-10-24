@@ -97,23 +97,17 @@ def exact_solution(x,t, alpha):
 
 import romtools as rt
 class HeatSnapshots(rt.AbstractSnapshotData):
-
     def __init__(self, snapshots: list):
+        rt.AbstractSnapshotData.__init__(self, var_names=['T'])
         self.snapshots = snapshots
 
-    def getSnapshotsAsListOfArrays(self):
-        return self.snapshots
-
     def getMeshGids(self):
-        # this method is not of interest here, but needs to be defined
+        # this method is a noop for now but needs to be defined
         # since it is an abstract method in the base class
         pass
 
-    def getVariableNames(self):
-        return ['T']
-
-    def getNumVars(self) -> int:
-        return 1
+    def getSnapshotsAsListOfArrays(self):
+        return self.snapshots
 
 if __name__=="__main__":
     numPoints, numTimes = 21, 11
