@@ -47,9 +47,9 @@ def test_demo1():
     alpha = 0.1
     data = [exact_solution(x, t, alpha) for t in times]
     snapshots = HeatSnapshots(data)
-    # assert snapshots.getVariableNames() == ['T']
-    # assert snapshots.getNumVars() == 1
-    # assert len(snapshots.getSnapshotsAsListOfArrays()) == 11
+    assert snapshots.getVariableNames() == ['T']
+    assert snapshots.getNumVars() == 1
+    assert len(snapshots.getSnapshotsAsListOfArrays()) == 11
 
 if __name__=="__main__":
     test_demo1()

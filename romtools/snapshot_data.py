@@ -23,7 +23,7 @@ and is the main class used in the construction of trial spaces
 '''
 
 import numpy as np
-import abc
+import abc, sys
 from typing import Iterable
 
 class AbstractSnapshotData(abc.ABC):
@@ -53,9 +53,12 @@ class AbstractSnapshotData(abc.ABC):
         Subclasses must call this base class constructor and set the `var_names` attribute to
         define the variable names associated with the snapshot data.
         '''
-        assert "var_names" in kwargs
-        for key, value in kwargs.items():
-            print("{} is {}".format(key,value))
+        if "var_names" not in kwargs:
+            print("Invalid initialization of the AbstractSnapshotData class: ")
+            print("in the constructor of a subclass, you must pass a var_names keyword argument")
+            print("for example: rt.AbstractSnapshotData.__init__(self, var_names=['A', 'B'])")
+            sys.exit(1)
+        self.var_names = kwargs['var_names']
 
     @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
@@ -121,7 +124,7 @@ class AbstractSnapshotData(abc.ABC):
         Subclasses should make sure that this method returns the correct number of variables
         associated with the snapshot data.
         '''
-        return len(self.get_variable_names())
+        return len(self.var_names)
 
 
 
