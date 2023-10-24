@@ -71,7 +71,7 @@ jobs:
 
       - name: Run tests (Serial)
         run: |
-          pytest -s
+          pytest
 
       - name: Run tests (MPI, n=1)
         run: |
