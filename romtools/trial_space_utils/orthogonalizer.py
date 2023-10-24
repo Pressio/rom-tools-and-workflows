@@ -55,6 +55,8 @@ In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
 import abc
 import numpy as np
 import scipy.sparse
+
+
 class AbstractOrthogonalizer(abc.ABC):
     '''
     Abstract base class

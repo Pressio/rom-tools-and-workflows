@@ -64,21 +64,21 @@ class DakotaSamplingCouplerBase(abc.ABC):
     __base_directory = os.getcwd() + '/'
 
     def __init__(self,template_directory,template_file):
-      '''
-      Initializes a DakotaSamplingCouplerBase object.
+        '''
+        Initializes a DakotaSamplingCouplerBase object.
 
-      Args:
-          template_directory (str): The directory containing the template file.
-          template_file (str): The name of the template file.
-      '''
-      self.__template_directory = template_directory
-      self.__template_file = template_file
+        Args:
+            template_directory (str): The directory containing the template file.
+            template_file (str): The name of the template file.
+        '''
+        self.__template_directory = template_directory
+        self.__template_file = template_file
 
     def copyTemplateFile(self):
-      '''
-      Copies the template file from the specified directory to the current working directory.
-      '''
-      os.system('cp ' + self.__template_directory + self.__template_file + ' .')
+        '''
+        Copies the template file from the specified directory to the current working directory.
+        '''
+        os.system('cp ' + self.__template_directory + self.__template_file + ' .')
 
     @abc.abstractmethod
     def setParametersInInput(self,parameter_sample):

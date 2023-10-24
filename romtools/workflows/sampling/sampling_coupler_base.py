@@ -61,18 +61,18 @@ class SamplingCouplerBase(abc.ABC):
                  work_directory = None,
                  work_directory_base_name = 'work',\
                  sol_directory_base_name = 'run_'):
-      '''
-      Initialize a SamplingCouplerBase object.
+        '''
+        Initialize a SamplingCouplerBase object.
 
-      Args:
-          template_directory (str): The directory containing input file templates.
-          template_input_file (str): The template input file for the model.
-          work_directory (str, optional): The working directory for the sampling. If not provided, the current
-              directory is used.
-          work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
-          sol_directory_base_name (str, optional): The base name for the solution directories within the working
-              directory. Defaults to 'run_'
-      '''
+        Args:
+            template_directory (str): The directory containing input file templates.
+            template_input_file (str): The template input file for the model.
+            work_directory (str, optional): The working directory for the sampling. If not provided, the current
+                directory is used.
+            work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
+            sol_directory_base_name (str, optional): The base name for the solution directories within the working
+                directory. Defaults to 'run_'
+        '''
 
         self.__base_directory = os.getcwd() + '/' if work_directory is None else work_directory
 
@@ -86,43 +86,43 @@ class SamplingCouplerBase(abc.ABC):
 
 
     def getInputFileName(self):
-      '''Get the name of the template input file.'''
-      return self.__template_input_file
+        '''Get the name of the template input file.'''
+        return self.__template_input_file
 
     def getWorkDirectoryBaseName(self):
-      '''Get the base name for the working directory.'''
-      return self.__work_directory_base_name
+        '''Get the base name for the working directory.'''
+        return self.__work_directory_base_name
 
     def getSolDirectoryBaseName(self):
-      '''Get the base name for the solution directories within the working directory.'''
-      return self.__work_directory_base_name + '/' + self.__sol_directory_base_name
+        '''Get the base name for the solution directories within the working directory.'''
+        return self.__work_directory_base_name + '/' + self.__sol_directory_base_name
 
     def getBaseDirectory(self):
-      '''Get the base directory for sampling.'''
-      return self.__base_directory
+        '''Get the base directory for sampling.'''
+        return self.__base_directory
 
     def createCases(self,starting_sample_no,parameter_samples):
-      '''
-      Create sampling cases with parameter samples.
+        '''
+        Create sampling cases with parameter samples.
 
-      Args:
-          starting_sample_no (int): The starting sample number.
-          parameter_samples (np.ndarray): An array of parameter samples.
-      '''
-      n_samples = parameter_samples.shape[0]
-      path_to_work_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/'
-      if os.path.isdir(path_to_work_dir):
-          pass
-      else:
-          os.mkdir(path_to_work_dir)
+        Args:
+            starting_sample_no (int): The starting sample number.
+            parameter_samples (np.ndarray): An array of parameter samples.
+        '''
+        n_samples = parameter_samples.shape[0]
+        path_to_work_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/'
+        if os.path.isdir(path_to_work_dir):
+            pass
+        else:
+            os.mkdir(path_to_work_dir)
 
-      for sample_no in range(starting_sample_no,starting_sample_no + n_samples):
-          path_to_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/' + self.__sol_directory_base_name + str(sample_no)
-          if os.path.isdir(path_to_dir):
-              pass
-          else:
-              os.mkdir(path_to_dir)
-          self.__setupCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
+        for sample_no in range(starting_sample_no,starting_sample_no + n_samples):
+            path_to_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/' + self.__sol_directory_base_name + str(sample_no)
+            if os.path.isdir(path_to_dir):
+                pass
+            else:
+                os.mkdir(path_to_dir)
+            self.__setupCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
 
     def __setupCase(self,path_to_case,parameter_samples):
         '''
