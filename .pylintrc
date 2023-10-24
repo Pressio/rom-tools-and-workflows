@@ -87,8 +87,8 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         logging-fstring-interpolation,
-        protected-access
-        multiple-imports
+        protected-access,
+        multiple-imports,
         unnecessary-pass
 
 # Enable the message, report, category or checker with the given id(s). You can
