@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 The Splitter class is used to "split" a snapshot matrix before constructing the trial space.
 

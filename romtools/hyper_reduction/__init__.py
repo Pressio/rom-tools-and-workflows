@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 The hyper-reduction library comprises a set of routines for hyper-reduction. Presently, we support algorithms for
 

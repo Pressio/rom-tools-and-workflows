@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 This module implements the abstract class and function required to
 couple a model to Dakota for use in random sampling. To couple to Dakota,

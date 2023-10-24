@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 """
 Most ROM formulations require access to so-called snapshot data to construct a reduced trial space.
 A snapshot is typically a solution to a full-order model.

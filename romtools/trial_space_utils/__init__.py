@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 There are a number of ways to construct a trial space, including affine offsets, scaling, splitting, etc. 
 The trial_space_utils module provides these functionalities

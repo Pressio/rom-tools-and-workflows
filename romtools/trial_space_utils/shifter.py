@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 The Shifter class is used to create an affine offset in a trial space.
 

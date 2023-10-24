@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 """
 Model reduction is often focused on parameterized PDEs, where $\\boldsymbol \\mu$ is the parameter set.
 The ParameterSpace class encapsulates the notion of the parameter space.

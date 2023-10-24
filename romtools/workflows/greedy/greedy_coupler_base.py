@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 The GreedyCoupler is the primary way we interface with an application to perform
 greedy sampling. We can leverage **any** class meeting this API to perform greedy.

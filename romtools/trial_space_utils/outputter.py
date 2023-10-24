@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 import numpy as np
 import os
 from romtools.trial_space import AbstractTrialSpace

@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 The greedy procedure iteratively constructs a reduced basis ROM until it reaches a desired tolerance.
 The algorithm is as follows:

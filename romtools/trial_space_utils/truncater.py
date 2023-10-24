@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 Constructing a basis via POD typically entails computing the SVD of a snapshot matrix,
 $$ \\mathbf{U} ,\\mathbf{\\Sigma} = \\mathrm{svd}(\\mathbf{S})$$

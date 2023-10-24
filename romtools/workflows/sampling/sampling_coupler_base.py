@@ -42,6 +42,7 @@
 #
 # ************************************************************************
 #
+
 '''
 Abstract implementation of the SamplingCoupler class. To gain access to the sampling algorithm, the user needs to
 complete this class for their application
