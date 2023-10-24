@@ -2,10 +2,12 @@ import numpy as np
 from romtools.trial_space_utils.scaler import *
 import copy
 import scipy.sparse
+import pytest
 
+@pytest.mark.mpi_skip
 def test_noop_scaler():
   scaler = NoOpScaler()
-  my_basis = np.random.normal(size=(10,2)) 
+  my_basis = np.random.normal(size=(10,2))
   my_scaled_basis = scaler.preScaling(my_basis)
   my_unscaled_basis = scaler.postScaling(my_scaled_basis)
   assert(np.allclose(my_basis,my_scaled_basis))
@@ -19,12 +21,12 @@ def scaling_op(scaling_type,arg):
   elif scaling_type == 'variance':
     return np.std(arg)
 
-
+@pytest.mark.mpi_skip
 def test_vector_scaler():
   n_var = 3
   nx = 5
   variable_ordering = 'F'
-  my_basis = np.random.normal(size=(int(n_var*nx),5)) 
+  my_basis = np.random.normal(size=(int(n_var*nx),5))
   scales = np.zeros(n_var)
   my_scaling_vector = np.abs(np.random.normal(size=n_var*nx))
   my_initial_basis = copy.deepcopy(my_basis)
@@ -38,13 +40,13 @@ def test_vector_scaler():
   my_unscaled_basis = scaler.postScaling(my_scaled_basis)
   assert(np.allclose(my_initial_basis,my_unscaled_basis))
 
-
+@pytest.mark.mpi_skip
 def test_variable_scaler():
- def run_test(scaling_type): 
+ def run_test(scaling_type):
   n_var = 3
   nx = 5
   variable_ordering = 'F'
-  my_basis = np.random.normal(size=(int(n_var*nx),5)) 
+  my_basis = np.random.normal(size=(int(n_var*nx),5))
   scales = np.zeros(n_var)
   for i in range(0,n_var):
     scales[i] = scaling_op(scaling_type,my_basis[i::n_var])
@@ -63,7 +65,7 @@ def test_variable_scaler():
   n_var = 3
   nx = 5
   variable_ordering = 'C'
-  my_basis = np.random.normal(size=(int(n_var*nx),5)) 
+  my_basis = np.random.normal(size=(int(n_var*nx),5))
   scales = np.zeros(n_var)
   for i in range(0,n_var):
     start = int(i*nx)
@@ -86,13 +88,13 @@ def test_variable_scaler():
  run_test('mean_abs')
  run_test('variance')
 
-
+@pytest.mark.mpi_skip
 def test_variable_and_vector_scaler():
- def run_test(scaling_type): 
+ def run_test(scaling_type):
   n_var = 3
   nx = 5
   variable_ordering = 'F'
-  my_basis = np.random.normal(size=(int(n_var*nx),5)) 
+  my_basis = np.random.normal(size=(int(n_var*nx),5))
   my_scaling_vector = np.abs(np.random.normal(size=n_var*nx))
   my_diag_scales = scipy.sparse.diags(my_scaling_vector)
   my_diag_scales_inv = scipy.sparse.diags(1./my_scaling_vector)
@@ -114,7 +116,7 @@ def test_variable_and_vector_scaler():
   n_var = 3
   nx = 5
   variable_ordering = 'C'
-  my_basis = np.random.normal(size=(int(n_var*nx),5)) 
+  my_basis = np.random.normal(size=(int(n_var*nx),5))
   scales = np.zeros(n_var)
   for i in range(0,n_var):
     start = int(i*nx)

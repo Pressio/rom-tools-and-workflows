@@ -7,3 +7,4 @@ from romtools.trial_space_utils.scaler import *
 from romtools.trial_space_utils.orthogonalizer import *
 from romtools.trial_space_utils.splitter import *
 from romtools.trial_space_utils.truncater import *
+from romtools.trial_space_utils.svd_method_of_snapshots import * 

@@ -1,18 +1,21 @@
 import numpy as np
 from romtools.trial_space_utils.splitter import *
 import copy
+import pytest
 
+@pytest.mark.mpi_skip
 def test_noop_splitter():
   splitter = NoOpSplitter()
-  my_basis = np.random.normal(size=(10,2)) 
+  my_basis = np.random.normal(size=(10,2))
   my_split_basis = splitter(my_basis)
   assert(np.allclose(my_basis,my_split_basis))
 
+@pytest.mark.mpi_skip
 def test_block_splitter_order_f():
   n_var = 3
   nx = 5
   n = int(n_var*nx)
-  my_basis = np.random.normal(size=(n,2)) 
+  my_basis = np.random.normal(size=(n,2))
 
   blocks = [[0,1,2]]
   variable_ordering = 'F'
@@ -67,11 +70,12 @@ def test_block_splitter_order_f():
   assert(np.allclose(my_split_basis[1::n_var,2:4],my_basis[1::n_var,0:2]))
   assert(np.allclose(my_split_basis[2::n_var,2:4],my_basis[2::n_var,0:2]))
 
+@pytest.mark.mpi_skip
 def test_block_splitter_order_c():
   n_var = 3
   n = 5
   N = int(n_var*n)
-  my_basis = np.random.normal(size=(N,2)) 
+  my_basis = np.random.normal(size=(N,2))
 
   blocks = [[0,1,2]]
   variable_ordering = 'C'

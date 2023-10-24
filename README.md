@@ -33,7 +33,8 @@ Abstract base classes include:
   - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
 
-## To setup environment, you need to pip install it
+## Installation
+
 ```bash
 cd my-path/rom-tools-and-workflows
 pip install .
@@ -45,6 +46,18 @@ Note: you need `pytest` installed
 
 ```bash
 cd my-path/rom-tools-and-workflows
-mkdir my_tests && cd my_tests
-pytest ../
+pytest
 ```
+Note: some tests actually generate some auxiliary/temporary files which
+are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html.
+
+
+## Building the documentation
+
+```
+cd <repo-dir>
+pdoc ./romtools -t ./custom-template --math --docformat google
+```
+
+this opens a browser with the module documentation.
+More info about `pdoc` can be found [here](https://pdoc.dev/docs/pdoc.html)

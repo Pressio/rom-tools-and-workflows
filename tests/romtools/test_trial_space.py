@@ -2,6 +2,8 @@ import romtools as rt
 import romtools.trial_space_utils as utils
 import copy
 import numpy as np
+import pytest
+
 class PythonSnapshotData(rt.AbstractSnapshotData):
 
     def __init__(self, snapshots):
@@ -22,6 +24,7 @@ class PythonSnapshotData(rt.AbstractSnapshotData):
     def getNumVars(self) -> int:
         return 3
 
+@pytest.mark.mpi_skip
 def test_list_snapshots_to_array():
     snapshots = [np.random.normal(size=(15,5)), np.random.normal(size=(15,2))]
     snapshot_data = PythonSnapshotData(snapshots)
@@ -29,7 +32,7 @@ def test_list_snapshots_to_array():
     assert matrix.shape[0] == 15
     assert matrix.shape[1] == 7
 
-
+@pytest.mark.mpi_skip
 def test_dictionary_trial_space():
     snapshots = np.random.normal(size=(15,5))
     snapshot_data = PythonSnapshotData(snapshots)
@@ -69,7 +72,7 @@ def test_dictionary_trial_space():
     basis = myTrialSpace.getBasis()
     assert(np.allclose( basis.transpose() @ basis, np.eye(10)))
 
-
+@pytest.mark.mpi_skip
 def test_trial_space_from_pod():
     snapshots = np.random.normal(size=(15,5))
     snapshot_data = PythonSnapshotData(snapshots)
@@ -117,6 +120,7 @@ def test_trial_space_from_pod():
     assert(np.allclose(myTrialSpace.getShiftVector(),np.mean(snapshots,axis=1)))
     assert(np.allclose(myTrialSpace.getDimension(),10))
 
+@pytest.mark.mpi_skip
 def test_trial_space_from_scaled_pod():
     n_var = 3
     snapshots = np.random.normal(size=(15,5))

@@ -1,0 +1,9 @@
+{#
+We want to extend the default template instead of defining everything ourselves.
+#}
+{% extends "default/module.html.jinja2" %}
+
+{% block edit_button %}
+    {% set edit_text = "GitHub" %}
+    <a class="pdoc-button git-button" href="https://github.com/Pressio/rom-tools-and-workflows">{{ edit_text }}</a>
+{% endblock %}
