@@ -50,12 +50,12 @@ from romtools.trial_space import AbstractTrialSpace
 
 try:
     import exodus
-except:
+except ImportError:
     pass
 
 try:
     import h5py
-except:
+except ImportError:
     pass
 
 
@@ -117,8 +117,10 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     num_modes = trial_space.getBasis().shape[1]
     num_modes_str_len = int(math.log10(num_modes))+1
 
-    assert var_names is None or len(var_names) == num_vars,
-        f"len(variable_names), {len(var_names)} != number of variables in basis, {num_vars}"
+    assert (var_names is None or len(var_names) == num_vars), (
+            f"len(variable_names), {len(var_names)} "
+            f"!= number of variables in basis, {num_vars}"
+    )
 
     if var_names is None:
         var_names = [f"{i}" for i in range(num_vars)]

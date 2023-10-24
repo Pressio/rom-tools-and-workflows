@@ -20,15 +20,15 @@ fail-on=E
 fail-under=8.5
 
 # Files or directories to be skipped. They should be base names, not paths.
-ignore=CVS
+# ignore=
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
-ignore-paths=tests,
+# ignore-paths=
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths.
-ignore-patterns=
+# ignore-patterns=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
