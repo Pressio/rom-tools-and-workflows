@@ -30,11 +30,7 @@ class AbstractTrialSpace(abc.ABC):
     '''
     Abstract base class for trial space implementations.
 
-    This abstract class defines the interface for trial space objects, which are used in various computational
-    simulations. A trial space represents a set of data and methods for operating on that data.
-
-    Attributes:
-        snapshots (AbstractSnapshotData): The data source for the trial space.
+    This abstract class defines the interface for a trial space.
 
     Methods:
     '''
@@ -45,7 +41,7 @@ class AbstractTrialSpace(abc.ABC):
         Initialize a new trial space.
 
         Parameters:
-            snapshots (AbstractSnapshotData): The data source for the trial space.
+            snapshots (AbstractSnapshotData): The snapshots to use to compute the trial space.
 
         This method should be implemented by concrete subclasses to perform necessary initialization of the
         trial space object using the provided snapshot data.
@@ -57,7 +53,7 @@ class AbstractTrialSpace(abc.ABC):
         '''Retrieves the dimension of the trial space
 
         Returns:
-            int: The dimension of the trial space, representing the number of features or parameters in the space.
+            int: The dimension of the trial space.
 
         Concrete subclasses should implement this method to return the appropriate dimension for their specific
         trial space implementation.
@@ -70,7 +66,7 @@ class AbstractTrialSpace(abc.ABC):
         Retrieves the shift vector of the trial space.
 
         Returns:
-            np.ndarray: The shift vector used to adjust the trial space.
+            np.ndarray: The shift vector.
 
         Concrete subclasses should implement this method to return the shift vector specific to their trial space
         implementation.
@@ -126,8 +122,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
 
     def getDimension(self):
         '''
-        Retrieves dimension of trial space, which represents the number of features or parameters
-        in the space.
+        Retrieves the dimension of trial space
 
         Returns:
             int: The dimension of the trial space.
@@ -136,7 +131,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
 
     def getShiftVector(self):
         '''
-        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+        Retrieves the shift vector
 
         Returns:
             np.ndarray: The shift vector.
@@ -146,8 +141,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
 
     def getBasis(self):
         '''
-        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
-        and basis manipulation operations.
+        Retrieves the basis of the trial space
 
         Returns:
             np.ndarray: The basis of the trial space.
@@ -211,8 +205,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     def getDimension(self):
         '''
-        Retrieves the dimension of the trial space, which represents the number of features or parameters
-        in the space.
+        Retrieves the dimension of the trial space
 
         Returns:
             int: The dimension of the trial space.
@@ -221,7 +214,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     def getShiftVector(self):
         '''
-        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+        Retrieves the shift vector
 
         Returns:
             np.ndarray: The shift vector.
@@ -231,8 +224,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     def getBasis(self):
         '''
-        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
-        and basis manipulation operations.
+        Retrieves the basis of the trial space
 
         Returns:
             np.ndarray: The basis of the trial space.
@@ -292,8 +284,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     def getDimension(self):
         '''
-        Retrieves the dimension of the trial space, which represents the number of features or parameters
-        in the space.
+        Retrieves the dimension of the trial space
 
         Returns:
             int: The dimension of the trial space.
@@ -302,7 +293,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     def getShiftVector(self):
         '''
-        Retrieves the shift vector, which is a list of floating-point values used to adjust the trial space.
+        Retrieves the shift vector
 
         Returns:
             np.ndarray: The shift vector.
@@ -312,8 +303,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     def getBasis(self):
         '''
-        Retrieves the basis of the trial space, which has been constructed using the provided snapshot data
-        and basis manipulation operations.
+        Retrieves the basis of the trial space
 
         Returns:
             np.ndarray: The basis of the trial space.

@@ -53,7 +53,9 @@ class AbstractSnapshotData(abc.ABC):
         Subclasses must call this base class constructor and set the `var_names` attribute to
         define the variable names associated with the snapshot data.
         '''
-        pass
+        assert "var_names" in kwargs
+        for key, value in kwargs.items():
+            print("{} is {}".format(key,value))
 
     @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
@@ -103,7 +105,7 @@ class AbstractSnapshotData(abc.ABC):
             list: A list of variable names.
 
         Note:
-        Subclasses should ensure that this list is properly defined and set in the constructor.
+        Subclasses must ensure this list is properly defined and set in the constructor.
         '''
         return self.var_names
 
@@ -125,6 +127,6 @@ class AbstractSnapshotData(abc.ABC):
 
 def listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
     '''
-    Helper function to move snapshot list into a matrix
+    Helper function to convert a snapshot list into a matrix
     '''
     return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
