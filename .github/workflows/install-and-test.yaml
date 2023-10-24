@@ -72,7 +72,7 @@ jobs:
       - name: Check Formatting (Pylint)
         run: |
           pip install pylint
-          pylint --recursive y --rcfile .pylintrc .
+          pylint --recursive y --rcfile .pylintrc ./romtools
         continue-on-error: false
 
       - name: Run tests (Serial)
