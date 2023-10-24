@@ -43,7 +43,7 @@
 # ************************************************************************
 #
 
-"""
+'''
 #Trial space overview
 
 A trial space is foundational to reduced-order models.

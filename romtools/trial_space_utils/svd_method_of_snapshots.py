@@ -55,10 +55,10 @@ except ModuleNotFoundError:
 ## Helper functions will be moved to python mpi library at some point
 
 def A_transpose_dot_bImpl(A,b,comm):
-  """
+  '''
   @private
   Compute A^T A when A's columns are distributed
-  """
+  '''
   mpi_rank = comm.Get_rank()
   num_processes = comm.Get_size()
 
@@ -81,7 +81,7 @@ def A_transpose_dot_bImpl(A,b,comm):
     return np.reshape( ATb_glob , np.shape(tmp) )
 
 def svdMethodOfSnapshotsImpl(snapshots,comm):
-  """@private"""
+  '''@private'''
   #
   # outputs:
   # modes, Phi: numpy array where each column is a POD mode
@@ -97,7 +97,7 @@ def svdMethodOfSnapshotsImpl(snapshots,comm):
   return U[:,ordering],sigma[ordering]
 
 def globalAbsSumImpl(r):
-  """@private"""
+  '''@private'''
   if (num_processes == 1):
     return np.sum(r)
   else:

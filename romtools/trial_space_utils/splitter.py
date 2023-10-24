@@ -86,7 +86,7 @@ import abc
 import numpy as np
 
 class AbstractSplitter(abc.ABC):
-    """Abstract class for a splitter"""
+    '''Abstract class for a splitter'''
     @abc.abstractmethod
     def __init__(self) -> None:
         pass
@@ -97,7 +97,7 @@ class AbstractSplitter(abc.ABC):
 
 
 class NoOpSplitter(AbstractSplitter):
-    """Concrete no-op implementation"""
+    '''Concrete no-op implementation'''
     def __init__(self) -> None:
         pass
 
@@ -108,7 +108,7 @@ class NoOpSplitter(AbstractSplitter):
 
 
 class BlockSplitter(AbstractSplitter):
-    """
+    '''
     Splits a data matrix into blocks defined by a list, e.g., for our Euler equation example above, we could set
     blocks = [[0,1],[2]] which would result in
     $$
@@ -124,7 +124,7 @@ class BlockSplitter(AbstractSplitter):
     **Order F variable ordering: $[u_1,v_1,w_1,u_2,v_2,w_2,...,u_n,v_n,w_n]$**
 
     **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
-    """
+    '''
     def __init__(self,blocks : list,n_var : int, variable_ordering : str):
         '''
         Constructor for BlockSplitter.
@@ -180,7 +180,7 @@ class BlockSplitter(AbstractSplitter):
 
 
 def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
-    """
+    '''
     Helper function to split a data matrix based on variable ordering.
 
     This function takes an input data matrix and splits it based on the variable ordering ('C' or 'F') and the
@@ -194,7 +194,7 @@ def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
 
     Returns:
         np.ndarray: A subset of the input data matrix corresponding to the specified variable index 'i'.
-    """
+    '''
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
     elif variable_ordering == 'C':

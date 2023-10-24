@@ -88,16 +88,16 @@ class BasisSizeTruncater(AbstractTruncater):
     Truncates to a specified number of singular vectors, as specified in the constructor
     '''
     def __init__(self, basis_dimension: int) -> None:
-        """
+        '''
         Constructor for the BasisSizeTruncater class.
 
         Args:
             basis_dimension (int): The desired dimension of the truncated basis.
-        """
+        '''
         self.__basis_dimension = basis_dimension
 
     def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
-        """
+        '''
         Truncate the basis based on the specified dimension.
 
         Args:
@@ -106,7 +106,7 @@ class BasisSizeTruncater(AbstractTruncater):
 
         Returns:
             np.ndarray: The truncated basis matrix with the specified dimension.
-        """
+        '''
         return basis[:,:self.__basis_dimension]
 
 
@@ -116,16 +116,16 @@ class EnergyTruncater(AbstractTruncater):
     such that the cumulative energy retained is greater than some threshold.
     '''
     def __init__(self, threshold: float) -> None:
-        """
+        '''
         Constructor for the EnergyTruncater class.
 
         Args:
             threshold (float): The cumulative energy threshold.
-        """
+        '''
         self.energy_threshold_ = threshold
 
     def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
-        """
+        '''
         Truncate the basis based on the energy threshold.
 
         Args:
@@ -134,7 +134,7 @@ class EnergyTruncater(AbstractTruncater):
 
         Returns:
             np.ndarray: The truncated basis matrix based on the energy threshold.
-        """
+        '''
         energy = np.cumsum(singular_values**2)/np.sum(singular_values**2)
         basis_dimension = np.argmax(energy>self.energy_threshold_) + 1
         return basis[:,0:basis_dimension]
