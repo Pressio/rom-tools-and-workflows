@@ -81,7 +81,7 @@ class AbstractTrialSpace(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __init__(snapshots: AbstractSnapshotData):
+    def __init__(self, snapshots: AbstractSnapshotData):
         '''
         Initialize a new trial space.
 

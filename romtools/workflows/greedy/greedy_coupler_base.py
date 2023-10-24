@@ -77,10 +77,13 @@ class GreedyCouplerBase(abc.ABC):
             work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
         '''
 
-        self.__base_directory = os.getcwd() + '/' if work_directory == None else work_directory
+        self.__base_directory = os.getcwd() + '/' if work_directory is None else work_directory
 
         strings_to_check = min(5,np.size(template_directory))
-        assert self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check], 'Path to template directory must be an absolute path'
+        assert (
+            self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check],
+            'Path to template directory must be an absolute path'
+        )
         self.__template_directory = template_directory
         self.__template_rom_file = template_rom_file
         self.__template_fom_file = template_fom_file
@@ -128,14 +131,22 @@ class GreedyCouplerBase(abc.ABC):
             os.mkdir(path_to_work_dir)
 
         for sample_no in range(starting_sample_no,starting_sample_no + n_samples):
-            path_to_dir = self.__base_directory +  '/' + self.__work_directory_base_name + '/' + '/fom_run_' + str(sample_no)
+            path_to_dir = (
+                self.__base_directory +  '/' +
+                self.__work_directory_base_name + '/' +
+                '/fom_run_' + str(sample_no)
+            )
             if os.path.isdir(path_to_dir):
                 pass
             else:
                 os.mkdir(path_to_dir)
             self.__setupFomCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
 
-            path_to_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/' + '/rom_run_' + str(sample_no)
+            path_to_dir = (
+                self.__base_directory + '/' +
+                self.__work_directory_base_name + '/' +
+                '/rom_run_' + str(sample_no)
+            )
             if os.path.isdir(path_to_dir):
                 pass
             else:
@@ -254,7 +265,7 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def getParameterSpace():
+    def getParameterSpace(self):
         '''
         This function should return a ParameterSpace class defining our parameter space.
         '''

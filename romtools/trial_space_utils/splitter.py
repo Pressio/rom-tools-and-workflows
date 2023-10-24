@@ -82,7 +82,6 @@ before POD is performed**.
 
 '''
 import abc
-from typing import Tuple
 import numpy as np
 
 

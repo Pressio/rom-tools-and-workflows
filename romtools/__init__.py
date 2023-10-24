@@ -71,7 +71,8 @@ The Python library, called `romtools`, contains abstract interfaces and function
 - Trial space computation:
   - Reduced-basis methods
   - Proper orthogonal decomposition
-    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization in different inner products
+    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
+      in different inner products
 - Workflows for ROM construction and ROM exploitation:
   - ROM construction via reduced-basis greedy (RB-Greedy)
   - ROM/FOM exploitation via sampling
@@ -81,12 +82,14 @@ The Python library, called `romtools`, contains abstract interfaces and function
 ## Representative abstract base classes
 
 - `AbstractSnapshotData`
-  - This class defines the minimum API requirements for a "snapshot_data" class that will be used in the construction of a trial space.
+  - This class defines the minimum API requirements for a "snapshot_data" class that will be used in the construction
+    of a trial space.
 
 - `AbstractTrialSpace`
   - This class defines the minimum API requirements for a trial space
 
-  - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and concrete implementations, exist for:
+  - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and
+    concrete implementations, exist for:
 
       - orthogonalizers
       - scalers
@@ -95,7 +98,8 @@ The Python library, called `romtools`, contains abstract interfaces and function
       - truncaters
 
 - `AbstractParameterSpace`
-  - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
+  - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for
+    running/building ROMs
 
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
 
