@@ -72,6 +72,9 @@ def test_trial_space_from_pod_mpi():
         elif rank==2:
             assert(np.allclose(U, np.ones((9,2))*2))
             assert np.allclose(2, k)
+    else:
+        if rank == 0:
+            print(f"Test skipped with np = {comm.Get_size()} (requires np = 3)")
 
 if __name__=="__main__":
     test_trial_space_from_pod_mpi()

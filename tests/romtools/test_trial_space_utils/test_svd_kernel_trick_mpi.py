@@ -53,6 +53,9 @@ def test_parallel_kernel_trick_on_three_cores():
         if rank == 2:
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
+    else:
+        if rank == 0:
+            print(f"Test skipped with np = {comm.Get_size()} (requires np = 3)")
 
 @pytest.mark.mpi(min_size=3)
 def test_class_parallel_kernel_trick_on_three_cores():
@@ -75,6 +78,9 @@ def test_class_parallel_kernel_trick_on_three_cores():
         if rank == 2:
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
+    else:
+        if rank == 0:
+            print(f"Test skipped with np = {comm.Get_size()} (requires np = 3)")
 
 
 if __name__=="__main__":
