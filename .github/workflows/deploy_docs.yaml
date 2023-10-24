@@ -27,7 +27,7 @@ jobs:
       - run: pip install .
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc ./romtools -t ./custom-template --math --docformat google
+      - run: pdoc ./romtools -t ./custom-template --math --docformat google -o docs/
 
       - uses: actions/upload-pages-artifact@v2
         with:
@@ -45,5 +45,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v2
