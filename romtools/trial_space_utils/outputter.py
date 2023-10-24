@@ -47,7 +47,7 @@ import numpy as np
 import os
 import math
 import numpy as np
-import h5py
+from romtools.trial_space import AbstractTrialSpace
 
 try:
     import exodus
@@ -61,8 +61,6 @@ except:
 
 import math
 
-
-from romtools.trial_space import AbstractTrialSpace
 
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     '''

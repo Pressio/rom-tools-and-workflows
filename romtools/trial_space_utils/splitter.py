@@ -82,7 +82,9 @@ before POD is performed**.
 
 '''
 import abc
+from typing import Tuple
 import numpy as np
+
 
 class AbstractSplitter(abc.ABC):
     '''Abstract class for a splitter'''
