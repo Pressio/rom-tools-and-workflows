@@ -1,4 +1,5 @@
 import romtools as rt
+from helper_scripts import helpers
 import copy
 import numpy as np
 import pytest
@@ -44,6 +45,8 @@ def test_mpi_snapshots():
         matrix = sd.getSnapshotsAsArray()
         assert matrix.shape[0] == myGids.shape[0] * sd.getNumVars()
         assert matrix.shape[1] == 5
+    else:
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_mpi_snapshots", 3)
 
 if __name__=="__main__":
     test_mpi_snapshots()
