@@ -1,5 +1,6 @@
 import romtools as rt
 import romtools.trial_space_utils as utils
+from helper_scripts import helpers
 import copy
 import numpy as np
 import pytest
@@ -54,8 +55,7 @@ def test_parallel_kernel_trick_on_three_cores():
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
     else:
-        if rank == 0:
-            print(f"Test skipped with np = {comm.Get_size()} (requires np = 3)")
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_parallel_kernel_trick_on_three_cores", 3)
 
 @pytest.mark.mpi(min_size=3)
 def test_class_parallel_kernel_trick_on_three_cores():
@@ -79,8 +79,7 @@ def test_class_parallel_kernel_trick_on_three_cores():
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
     else:
-        if rank == 0:
-            print(f"Test skipped with np = {comm.Get_size()} (requires np = 3)")
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_class_parallel_kernel_trick_on_three_cores", 3)
 
 
 if __name__=="__main__":
