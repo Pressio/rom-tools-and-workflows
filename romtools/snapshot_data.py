@@ -49,15 +49,19 @@ class AbstractSnapshotData(abc.ABC):
         """
         pass
 
-    def getSnapshotsAsArray(self) -> np.ndarray:
-        snapshot_array = listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
-        return snapshot_array
-
+    @abc.abstractmethod
     def getVariableNames(self) -> list:
         """
         Returns the names of different state variables
         """
-        return self.var_names
+        pass
+
+    def getSnapshotsAsArray(self) -> np.ndarray:
+        """
+        Returns numpy array where the list of snapshot arrays are concatenated
+        (assuming each snapshot corresponds to a column vector)
+        """
+        return _listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
 
     def getNumVars(self) -> int:
         """
@@ -66,10 +70,8 @@ class AbstractSnapshotData(abc.ABC):
         """
         return len(self.get_variable_names())
 
-
-
-def listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
-  '''
-  Helper function to move snapshot list into a matrix
-  '''
-  return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
+def _listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
+    '''
+    Helper function to move snapshot list into a matrix
+    '''
+    return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
