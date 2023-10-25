@@ -81,19 +81,19 @@ def deimGetTestBasis(testBasis,functionBasis,sampleIndices):
   result = (testBasis.transpose() @ functionBasis) @ PU_pinv
   return result.transpose()
 
-def vectorDeimGetIndices(U,n_var,variable_ordering='F'):
-  '''
-  Version of DEIM for multi-state systems.
-  We perform DEIM on each state variable, and
-  then return the union of all indices.
-  Repeated indices are removed.
-  '''
-  all_indices = np.zeros(0,dtype=int)
-  for i in range(0,n_var):
-    dataMatrix = getDataMatrixForIthVar(i,n_var,U,variable_ordering)
-    indices = deim(dataMatrix)
-    all_indices = np.unique(np.append(all_indices,indices))
-  return all_indices
+# def vectorDeimGetIndices(U,n_var,variable_ordering='F'):
+#   '''
+#   Version of DEIM for multi-state systems.
+#   We perform DEIM on each state variable, and
+#   then return the union of all indices.
+#   Repeated indices are removed.
+#   '''
+#   all_indices = np.zeros(0,dtype=int)
+#   for i in range(0,n_var):
+#     dataMatrix = __getDataMatrixForIthVar(i,n_var,U,variable_ordering)
+#     indices = deim(dataMatrix)
+#     all_indices = np.unique(np.append(all_indices,indices))
+#   return all_indices
 
 
 def deimGetIndices(U):
@@ -125,4 +125,3 @@ def deimGetIndices(U):
     index_to_add = np.argmax(np.abs(residual))
     indices = np.append(indices,index_to_add)
   return indices
-
