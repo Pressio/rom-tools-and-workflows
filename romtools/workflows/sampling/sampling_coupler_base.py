@@ -78,10 +78,10 @@ class SamplingCouplerBase(abc.ABC):
 
         ## check if template_directory is an absolute path
         strings_to_check = min(5,np.size(template_directory))
-        assert self.__base_directory[0:strings_to_check] == (
-            template_directory[0:strings_to_check],
-            'Path to template directory must be an absolute path'
-        )
+        assert (
+            self.__base_directory[0:strings_to_check] ==
+            template_directory[0:strings_to_check]
+        ), 'Path to template directory must be an absolute path'
         self.__template_directory = template_directory
         self.__template_input_file = template_input_file
         self.__work_directory_base_name = work_directory_base_name
