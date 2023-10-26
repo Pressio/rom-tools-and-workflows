@@ -59,7 +59,7 @@ def A_transpose_dot_bImpl(A, b, comm):
     mpi_rank = comm.Get_rank()
     num_processes = comm.Get_size()
 
-    if (num_processes == 1):
+    if num_processes == 1:
         return np.dot(A.transpose(), b)
 
     tmp = np.dot(A.transpose(), b)
@@ -67,7 +67,7 @@ def A_transpose_dot_bImpl(A, b, comm):
     data = comm.gather(tmp.flatten(), root=0)
 
     ATb_glob = np.zeros(np.size(tmp))
-    if (mpi_rank == 0):
+    if mpi_rank == 0:
         for j in range(0, num_processes):
             ATb_glob[:] += data[j]
         for j in range(1, num_processes):
@@ -105,7 +105,7 @@ def globalAbsSumImpl(r, comm):
 
     data = comm.gather(np.sum(np.abs(r)), root = 0)
     rn_glob = np.zeros(1)
-    if (mpi_rank == 0):
+    if mpi_rank == 0:
         for j in range(0, num_processes):
             rn_glob[:] += data[j]
         for j in range(1, num_processes):
@@ -160,5 +160,3 @@ class svdMethodOfSnapshotsForQr:
     def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False, hermitian=False):
         U, s = svdMethodOfSnapshotsImpl(snapshots, self._comm)
         return U, 'not_computed_in_method_of_snapshots'
-
-
