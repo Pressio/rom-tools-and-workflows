@@ -67,7 +67,7 @@ The SnapshotData class encapsulates the information contained in set of snapshot
 and is the main class used in the construction of trial spaces
 '''
 
-import abc, sys
+import abc
 from typing import Iterable
 import numpy as np
 
