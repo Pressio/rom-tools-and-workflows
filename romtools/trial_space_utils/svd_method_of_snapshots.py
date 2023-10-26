@@ -44,10 +44,6 @@
 #
 
 import numpy as np
-try:
-    from mpi4py import MPI
-except ModuleNotFoundError:
-    print("module 'mpi4py' is not installed")
 
 ## Helper functions will be moved to python mpi library at some point
 
