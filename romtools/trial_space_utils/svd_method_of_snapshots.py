@@ -46,11 +46,8 @@
 import numpy as np
 try:
     from mpi4py import MPI
-    comm = MPI.COMM_WORLD
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
-    mpi_rank = 0
-    num_processes = 1
 
 ## Helper functions will be moved to python mpi library at some point
 
@@ -96,9 +93,12 @@ def svdMethodOfSnapshotsImpl(snapshots, comm):
     ordering = np.argsort(sigma)[::-1]
     return U[:, ordering], sigma[ordering]
 
-def globalAbsSumImpl(r):
+def globalAbsSumImpl(r, comm):
     '''@private'''
-    if (num_processes == 1):
+    mpi_rank = comm.Get_rank()
+    num_processes = comm.Get_size()
+
+    if num_processes == 1:
         return np.sum(r)
 
     data = comm.gather(np.sum(np.abs(r)), root = 0)
