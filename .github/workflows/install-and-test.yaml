@@ -75,7 +75,7 @@ jobs:
           pylint --recursive y --rcfile .pylintrc --output-format=colorized ./romtools
         continue-on-error: false
 
-      - name: Run tests
+      - name: Run tests (Serial)
         run: |
           pytest
 
