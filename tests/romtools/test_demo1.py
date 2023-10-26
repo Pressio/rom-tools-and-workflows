@@ -1,9 +1,7 @@
-import romtools as rt
-import typing
-import copy
-import numpy as np
 import pytest
-import matplotlib.pyplot as plt
+import numpy as np
+import romtools as rt
+
 
 def exact_solution(x,t, alpha):
     '''
@@ -25,7 +23,7 @@ def exact_solution(x,t, alpha):
 
     return f
 
-import romtools as rt
+
 class HeatSnapshots(rt.AbstractSnapshotData):
     def __init__(self, snapshots: list):
         self.snapshots = snapshots

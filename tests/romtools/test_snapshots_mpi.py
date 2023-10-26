@@ -1,8 +1,8 @@
+import pytest
+import numpy as np
 import romtools as rt
 from helper_scripts import helpers
-import copy
-import numpy as np
-import pytest
+
 
 try:
     import mpi4py
