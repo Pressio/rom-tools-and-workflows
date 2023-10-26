@@ -81,9 +81,9 @@ The splitting class encapsulates this functionality. We note that the splitter i
 before POD is performed**.
 
 '''
-from typing import Tuple
 import abc
 import numpy as np
+
 
 class AbstractSplitter(abc.ABC):
     '''Abstract class for a splitter'''
@@ -103,8 +103,6 @@ class NoOpSplitter(AbstractSplitter):
 
     def __call__(self, my_array: np.ndarray):
         return my_array
-
-
 
 
 class BlockSplitter(AbstractSplitter):
@@ -202,4 +200,3 @@ def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
         start_index = i*n
         end_index = (i+1)*n
         return data_matrix[start_index:end_index]
-

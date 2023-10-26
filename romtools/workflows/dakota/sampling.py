@@ -51,10 +51,12 @@ a user should
 2. Use the "run_dakota_sampling" function as their Dakota analysis driver
 '''
 
+import os
 import abc
 import sys
-import os
 import numpy as np
+
+
 class DakotaSamplingCouplerBase(abc.ABC):
     '''
      Abstract class implementation
@@ -62,21 +64,21 @@ class DakotaSamplingCouplerBase(abc.ABC):
     __base_directory = os.getcwd() + '/'
 
     def __init__(self,template_directory,template_file):
-      '''
-      Initializes a DakotaSamplingCouplerBase object.
+        '''
+        Initializes a DakotaSamplingCouplerBase object.
 
-      Args:
-          template_directory (str): The directory containing the template file.
-          template_file (str): The name of the template file.
-      '''
-      self.__template_directory = template_directory
-      self.__template_file = template_file
+        Args:
+            template_directory (str): The directory containing the template file.
+            template_file (str): The name of the template file.
+        '''
+        self.__template_directory = template_directory
+        self.__template_file = template_file
 
     def copyTemplateFile(self):
-      '''
-      Copies the template file from the specified directory to the current working directory.
-      '''
-      os.system('cp ' + self.__template_directory + self.__template_file + ' .')
+        '''
+        Copies the template file from the specified directory to the current working directory.
+        '''
+        os.system('cp ' + self.__template_directory + self.__template_file + ' .')
 
     @abc.abstractmethod
     def setParametersInInput(self,parameter_sample):
@@ -96,25 +98,25 @@ class DakotaSamplingCouplerBase(abc.ABC):
 
     @abc.abstractmethod
     def computeQoiAndSaveToFile(self):
-      '''
-      This function should compute a QoI and save to file. The output file should match what is specified in the
-      Dakota input script
-      '''
-      pass
+        '''
+        This function should compute a QoI and save to file. The output file should match what is specified in the
+        Dakota input script
+        '''
+        pass
 
 
 def run_dakota_sampling(DakotaSamplingCoupler):
-  '''
-  Basic Dakota analysis driver leveraging the DakotaSamplingCoupler API
+    '''
+    Basic Dakota analysis driver leveraging the DakotaSamplingCoupler API
 
-  Args:
-    DakotaSamplingCoupler (DakotaSamplingCouplerBase): An instance of a DakotaSamplingCouplerBase-derived class.
+    Args:
+        DakotaSamplingCoupler (DakotaSamplingCouplerBase): An instance of a DakotaSamplingCouplerBase-derived class.
 
-  '''
-  data = np.genfromtxt(sys.argv[1])[:,0]
-  num_vars = int(data[0])
-  param_values = np.array(data[1:1+num_vars])
-  DakotaSamplingCoupler.copyTemplateFile()
-  DakotaSamplingCoupler.setParametersInInput(param_values)
-  DakotaSamplingCoupler.runModel()
-  DakotaSamplingCoupler.computeQoiAndSaveToFile()
+    '''
+    data = np.genfromtxt(sys.argv[1])[:,0]
+    num_vars = int(data[0])
+    param_values = np.array(data[1:1+num_vars])
+    DakotaSamplingCoupler.copyTemplateFile()
+    DakotaSamplingCoupler.setParametersInInput(param_values)
+    DakotaSamplingCoupler.runModel()
+    DakotaSamplingCoupler.computeQoiAndSaveToFile()

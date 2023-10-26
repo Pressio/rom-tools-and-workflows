@@ -43,21 +43,20 @@
 # ************************************************************************
 #
 
-import numpy as np
 import os
+import math
+import numpy as np
 from romtools.trial_space import AbstractTrialSpace
 
 try:
     import exodus
-except:
+except ImportError:
     pass
 
 try:
     import h5py
-except:
+except ImportError:
     pass
-
-import math
 
 
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
@@ -108,7 +107,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
         exodus_output("trial_space.e", "mesh.exo", my_trial_space, var_names=["var1", "var2"])
     '''
     if os.path.isfile(output_filename):
-      os.system(f'rm {output_filename}')
+        os.system(f'rm {output_filename}')
 
     e = exodus.copy_mesh(mesh_filename, output_filename)
     e.close()
@@ -118,7 +117,10 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     num_modes = trial_space.getBasis().shape[1]
     num_modes_str_len = int(math.log10(num_modes))+1
 
-    assert var_names is None or len(var_names)==num_vars, f"len(variable_names), {len(var_names)} != number of variables in basis, {num_vars}"
+    assert (var_names is None or len(var_names) == num_vars), (
+            f"len(variable_names), {len(var_names)} "
+            f"!= number of variables in basis, {num_vars}"
+    )
 
     if var_names is None:
         var_names = [f"{i}" for i in range(num_vars)]
@@ -142,4 +144,3 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
             e.put_node_variable_values(field_name, 1, values)
 
     e.close()
-

@@ -70,9 +70,11 @@ $$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\
 
 The Scaler encapsulates this information
 '''
+
+import abc
 import numpy as np
 import scipy
-import abc
+
 class AbstractScaler(abc.ABC):
     '''
     Abstract base class
@@ -82,14 +84,14 @@ class AbstractScaler(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def preScaling(self, my_array: np.ndarray) -> np.ndarray:
+    def preScaling(self, data_matrix: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
         '''
         pass
 
     @abc.abstractmethod
-    def postScaling(self, my_array: np.ndarray) -> np.ndarray:
+    def postScaling(self, data_matrix: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
         '''
@@ -100,6 +102,21 @@ class AbstractScaler(abc.ABC):
 #Helper functions
 #=================
 def extractIthVariableData(i,n_var,data_matrix,variable_ordering):
+    '''
+    Extract data corresponding to the i-th variable from a data matrix.
+
+    Args:
+        i (int): The index of the variable to extract.
+        n_var (int): The total number of variables.
+        data_matrix (numpy.ndarray): The data matrix containing variables.
+        variable_ordering (str): The ordering of variables ('F' for Fortran, 'C' for C).
+
+    Returns:
+        numpy.ndarray: A subarray containing data for the i-th variable.
+
+    Example:
+        variable_data = extractIthVariableData(1, 3, my_data_matrix, 'F')
+    '''
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
     elif variable_ordering == 'C':
@@ -109,6 +126,22 @@ def extractIthVariableData(i,n_var,data_matrix,variable_ordering):
         return data_matrix[start_index:end_index]
 
 def scaleDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering,var_scale):
+    '''
+    Scale the data corresponding to the i-th variable in a data matrix.
+
+    Args:
+        i (int): The index of the variable to scale.
+        n_var (int): The total number of variables.
+        data_matrix (numpy.ndarray): The data matrix containing variables to scale.
+        variable_ordering (str): The ordering of variables ('F' for Fortran, 'C' for C).
+        var_scale (float): The scaling factor to apply to the data.
+
+    Returns:
+        numpy.ndarray: The scaled data matrix.
+
+    Example:
+        scaled_matrix = scaleDataMatrixForIthVar(2, 4, my_data_matrix, 'C', 1.5)
+    '''
     if variable_ordering == 'F':
         data_matrix[i::n_var] *= var_scale
     elif variable_ordering == 'C':

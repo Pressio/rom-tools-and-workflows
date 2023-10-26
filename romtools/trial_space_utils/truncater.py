@@ -54,8 +54,8 @@ We provide concrete implementations that truncate based on a specified number of
 the decay of the singular values
 '''
 
-import numpy as np
 import abc
+import numpy as np
 
 class AbstractTruncater(abc.ABC):
     '''

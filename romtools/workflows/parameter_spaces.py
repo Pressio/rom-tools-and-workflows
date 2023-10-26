@@ -54,17 +54,17 @@ class AbstractParameterSpace(abc.ABC):
 
     ''' Abstract implementation'''
     @abc.abstractmethod
-    def getNames() -> list:
+    def getNames(self) -> list:
         '''
-        return a list of parameter names
+        Returns a list of parameter names
         # e.g., ['sigma','beta',...]
         '''
         pass
 
     @abc.abstractmethod
-    def getDimensionality() -> int:
+    def getDimensionality(self) -> int:
         '''
-        returns an integer for the size
+        Returns an integer for the size
         of the parameter domain
         '''
         pass
@@ -72,7 +72,7 @@ class AbstractParameterSpace(abc.ABC):
     @abc.abstractmethod
     def generateSamples(self,number_of_samples):
         '''
-        generates and returns number of parameter samples
+        Generates and returns number of parameter samples
         '''
         pass
 
@@ -86,7 +86,7 @@ class UniformParameterSpace(AbstractParameterSpace):
         self.__upper_bounds = upper_bounds
         self.__n_params = len(self.__lower_bounds)
 
-    def getNames():
+    def getNames(self):
         return self.__parameter_names
 
     def getDimensionality(self):
