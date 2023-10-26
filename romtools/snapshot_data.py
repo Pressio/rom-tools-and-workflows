@@ -68,7 +68,7 @@ and is the main class used in the construction of trial spaces
 '''
 
 import numpy as np
-import abc, sys
+import abc
 from typing import Iterable
 
 class AbstractSnapshotData(abc.ABC):
@@ -79,9 +79,6 @@ class AbstractSnapshotData(abc.ABC):
     as part of a simulation or data processing system. Implementations of this class are expected to
     define the initialization method and various methods for accessing and manipulating the data.
 
-    Attributes:
-        var_names (list): A list of variable names associated with the snapshot data.
-
     Methods:
     '''
 
@@ -90,20 +87,8 @@ class AbstractSnapshotData(abc.ABC):
         '''
         Initializes an instance of the AbstractSnapshotData class. Subclasses should implement
         this method to set up the necessary data structures or connections to data sources.
-
-        Args:
-            **kwargs: Additional keyword arguments that subclasses may accept for configuration.
-
-        Note:
-        Subclasses must call this base class constructor and set the `var_names` attribute to
-        define the variable names associated with the snapshot data.
         '''
-        if "var_names" not in kwargs:
-            print("Invalid initialization of the AbstractSnapshotData class: ")
-            print("in the constructor of a subclass, you must pass a var_names keyword argument")
-            print("for example: rt.AbstractSnapshotData.__init__(self, var_names=['A', 'B'])")
-            sys.exit(1)
-        self.var_names = kwargs['var_names']
+        pass
 
     @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
@@ -131,6 +116,19 @@ class AbstractSnapshotData(abc.ABC):
         '''
         pass
 
+    @abc.abstractmethod
+    def getVariableNames(self) -> Iterable[str]:
+        '''
+        Retrieves the names of different state variables associated with the snapshot data.
+
+        Returns:
+            list: A list of variable names.
+
+        Note:
+        Subclasses must ensure this list is properly defined and set in the constructor.
+        '''
+        pass
+
     def getSnapshotsAsArray(self) -> np.ndarray:
         '''
         Retrieves the snapshots as a single NumPy array by converting the list of snapshots into an array.
@@ -142,20 +140,7 @@ class AbstractSnapshotData(abc.ABC):
         This method provides a convenient way to access the snapshot data as a single array.
         Subclasses can use the `getSnapshotsAsListOfArrays()` method to implement this.
         '''
-        snapshot_array = listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
-        return snapshot_array
-
-    def getVariableNames(self) -> list:
-        '''
-        Retrieves the names of different state variables associated with the snapshot data.
-
-        Returns:
-            list: A list of variable names.
-
-        Note:
-        Subclasses must ensure this list is properly defined and set in the constructor.
-        '''
-        return self.var_names
+        return _listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
 
     def getNumVars(self) -> int:
         '''
@@ -169,11 +154,9 @@ class AbstractSnapshotData(abc.ABC):
         Subclasses should make sure that this method returns the correct number of variables
         associated with the snapshot data.
         '''
-        return len(self.var_names)
+        return len(self.getVariableNames())
 
-
-
-def listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
+def _listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
     '''
     Helper function to convert a snapshot list into a matrix
     '''
