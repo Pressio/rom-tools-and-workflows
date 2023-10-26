@@ -71,6 +71,7 @@ import abc
 from typing import Iterable
 import numpy as np
 
+
 class AbstractSnapshotData(abc.ABC):
     '''
     An abstract base class for representing snapshot data.

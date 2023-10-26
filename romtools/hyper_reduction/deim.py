@@ -43,9 +43,10 @@
 # ************************************************************************
 #
 
+'''Implementation of DEIM technique for hyper-reduction'''
+
 import numpy as np
 
-'''Implementation of DEIM technique for hyper-reduction'''
 
 def __getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
     '''helper function to split data'''

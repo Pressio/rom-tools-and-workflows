@@ -73,7 +73,7 @@ The Scaler encapsulates this information
 
 import abc
 import numpy as np
-import scipy
+import scipy.sparse
 
 class AbstractScaler(abc.ABC):
     '''
@@ -187,8 +187,8 @@ class VectorScaler(AbstractScaler):
 
         This constructor initializes the VectorScaler with the specified scaling vector.
         '''
-        self.__scaling_vector_matrix = scipy.sparse.diags(scaling_vector)
-        self.__scaling_vector_matrix_inv = scipy.sparse.diags(1./scaling_vector)
+        self.__scaling_vector_matrix = sparse.diags(scaling_vector)
+        self.__scaling_vector_matrix_inv = sparse.diags(1./scaling_vector)
 
 
     def preScaling(self, data_matrix):

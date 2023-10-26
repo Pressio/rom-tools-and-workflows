@@ -57,6 +57,7 @@ import os
 import abc
 import numpy as np
 
+
 class GreedyCouplerBase(abc.ABC):
 
     __fom_directory_base_name = 'fom_run'

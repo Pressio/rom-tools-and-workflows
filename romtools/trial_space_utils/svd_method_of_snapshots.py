@@ -49,6 +49,7 @@ try:
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
 
+
 ## Helper functions will be moved to python mpi library at some point
 
 def A_transpose_dot_bImpl(A, b, comm):

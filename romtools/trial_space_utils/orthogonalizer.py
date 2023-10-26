@@ -52,6 +52,7 @@ where
 $$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
 In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
 '''
+
 import abc
 import numpy as np
 import scipy.sparse
@@ -139,7 +140,7 @@ class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
             np.ndarray: The orthogonalized matrix.
         '''
         assert my_array.shape[0] == self.__weighting_vector.size, "Weighting vector does not match basis size"
-        tmp = scipy.sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
+        tmp = sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
         my_array,_ = self.__qrPicked(tmp,mode='reduced')
-        my_array = scipy.sparse.diags(np.sqrt(1./self.__weighting_vector)) @ my_array
+        my_array = sparse.diags(np.sqrt(1./self.__weighting_vector)) @ my_array
         return my_array
