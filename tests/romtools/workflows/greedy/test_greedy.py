@@ -91,6 +91,8 @@ def test_greedy(tmp_path):
   assert np.allclose(greedy_output['max_error_indicators'],np.array([4.,0.9,0.1]))
   assert np.allclose(greedy_output['training_samples'],np.array([0,1,4,2,5]))
   assert np.allclose(greedy_output['qoi_errors'],np.array([0.4,0.09,0.01]))
+  assert greedy_output['parameter_samples'].shape[0] == len(foms_samples_run + foms_samples_not_run) # == 8
+  assert greedy_output['parameter_samples'].shape[1] == len(myGreedyCoupler.getParameterSpace().getNames()) # == 3
 
 if __name__=="__main__":
   test_greedy_coupler_builder()

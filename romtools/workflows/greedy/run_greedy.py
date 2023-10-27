@@ -294,7 +294,8 @@ def runGreedy(greedyCoupler,tolerance,testing_sample_size=10):
                 training_samples=training_samples,
                 fom_time=fom_time,
                 rom_time=rom_time,
-                basis_time=basis_time)
+                basis_time=basis_time,
+                parameter_samples=parameter_samples)
 
     greedy_file.close()
 
