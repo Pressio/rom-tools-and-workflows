@@ -1,15 +1,13 @@
-import romtools as rt
-import romtools.trial_space_utils as utils
-from helper_scripts import helpers
-import copy
-import numpy as np
 import pytest
-
+import numpy as np
+import romtools as rt
+from helper_scripts import helpers
 try:
     import mpi4py
     from mpi4py import MPI
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
+
 
 class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):

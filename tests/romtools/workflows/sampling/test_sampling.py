@@ -1,8 +1,9 @@
+import pytest
+import numpy as np
 from romtools.workflows.sampling.sampling_coupler_base import *
 from romtools.workflows.sampling.sampling import *
 from romtools.workflows.parameter_spaces import *
-import numpy as np
-import pytest
+
 
 class ConcreteSampler(SamplingCouplerBase):
   def __init__(self, template_directory, \

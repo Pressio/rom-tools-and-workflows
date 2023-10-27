@@ -1,7 +1,8 @@
+import pytest
+import numpy as np
 from romtools.workflows.greedy import *
 from romtools.workflows.parameter_spaces import *
-import numpy as np
-import pytest
+
 
 class ConcreteGreedyCoupler(GreedyCouplerBase):
   def __init__(self,template_directory, \
