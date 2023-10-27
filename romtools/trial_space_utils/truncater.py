@@ -57,6 +57,7 @@ the decay of the singular values
 import abc
 import numpy as np
 
+
 class AbstractTruncater(abc.ABC):
     '''
     Abstract implementation

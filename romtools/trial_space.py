@@ -62,6 +62,7 @@ $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathr
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
 '''
+
 import abc
 import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
@@ -70,6 +71,7 @@ from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
 from romtools.trial_space_utils.scaler import AbstractScaler
 from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
+
 
 class AbstractTrialSpace(abc.ABC):
     '''

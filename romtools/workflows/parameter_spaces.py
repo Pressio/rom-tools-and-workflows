@@ -49,6 +49,8 @@ The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
 import numpy as np
+
+
 '''The abstract parameter space'''
 class AbstractParameterSpace(abc.ABC):
 

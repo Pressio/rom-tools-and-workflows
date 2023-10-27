@@ -81,9 +81,11 @@ The error at the $j+1$ iteration can be approximated by $C e(\\mu)$.
 This will adaptively scale the error estimate to match the QoI error as closely as possible, which can be helpful for
 defining exit criterion.
 '''
+
 import os
 import time
 import numpy as np
+
 
 def runGreedy(greedyCoupler,tolerance,testing_sample_size=10):
     '''

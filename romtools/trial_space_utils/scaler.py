@@ -73,7 +73,7 @@ The Scaler encapsulates this information
 
 import abc
 import numpy as np
-import scipy
+import scipy.sparse
 
 class AbstractScaler(abc.ABC):
     '''
