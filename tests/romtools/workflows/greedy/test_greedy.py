@@ -99,7 +99,8 @@ def test_greedy(tmp_path):
 
   # Initialize variables
   in_parameter_samples_block = False
-  parameter_samples_dimensions = []
+  parameter_samples_row_dimensions = []
+  parameter_samples_col_dimensions = []
   row_count = 0
 
   # Find dimensions of parameter_space arrays
@@ -109,18 +110,22 @@ def test_greedy(tmp_path):
               if line.startswith("    Running"):
                   # Check for end of parameter_samples array
                   in_parameter_samples_block = False
-                  parameter_samples_dimensions.append(row_count)
+                  parameter_samples_row_dimensions.append(row_count)
+                  parameter_samples_col_dimensions.append(col_count)
                   row_count = 0
               else:
-                  # Count number of rows in given parameter_samples array
+                  # Count rows & columns in given parameter_samples array
                   row_count += 1
+                  col_count = line.count('.')
           elif "Parameter samples:" in line:
                   in_parameter_samples_block = True
 
-  # Assert correct number of arrays with correct number of rows
-  assert(len(parameter_samples_dimensions) == total_sample_size - init_sample_size + 1)
-  for i in range(len(parameter_samples_dimensions)):
-      assert(parameter_samples_dimensions[i] == init_sample_size + i)
+  # Assert correct number of arrays with correct number of rows & columns
+  assert(len(parameter_samples_row_dimensions) == len(parameter_samples_col_dimensions))
+  assert(len(parameter_samples_row_dimensions) == total_sample_size - init_sample_size + 1)
+  for i in range(len(parameter_samples_row_dimensions)):
+      assert(parameter_samples_row_dimensions[i] == init_sample_size + i)
+      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.getParameterSpace().getNames()))
 
 
 if __name__=="__main__":
