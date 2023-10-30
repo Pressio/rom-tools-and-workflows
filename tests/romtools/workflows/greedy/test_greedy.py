@@ -75,7 +75,8 @@ def test_greedy(tmp_path):
 
   my_dir = os.path.realpath(os.path.dirname(__file__))
   myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat', workDir=wdir)
-  runGreedy(myGreedyCoupler,1e-5,5)
+  init_sample_size = 5
+  runGreedy(myGreedyCoupler,1e-5,init_sample_size)
   ## First greedy pass
   base_path = myGreedyCoupler.getBaseDirectory() + '/work/' + myGreedyCoupler.getFomDirectoryBaseName()
   foms_samples_run = [0,1,4,2,5]
@@ -91,8 +92,19 @@ def test_greedy(tmp_path):
   assert np.allclose(greedy_output['max_error_indicators'],np.array([4.,0.9,0.1]))
   assert np.allclose(greedy_output['training_samples'],np.array([0,1,4,2,5]))
   assert np.allclose(greedy_output['qoi_errors'],np.array([0.4,0.09,0.01]))
-  assert greedy_output['parameter_samples'].shape[0] == len(foms_samples_run + foms_samples_not_run) # == 8
-  assert greedy_output['parameter_samples'].shape[1] == len(myGreedyCoupler.getParameterSpace().getNames()) # == 3
+
+  # Test parameter_samples output in greedy_status.log
+  total_sample_size = len(foms_samples_not_run + foms_samples_run)
+  log_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
+  parameter_space_instances = []
+  with open(os.path.join(log_dir, "greedy_status.log"), 'r', encoding="utf-8") as greedy_log:
+      for line in greedy_log:
+          if "Parameter samples:" in line:
+              parameter_space_instances.append(1)
+
+  # Compare to expected dimensions
+  assert(len(parameter_space_instances) == total_sample_size - init_sample_size + 1)
+
 
 if __name__=="__main__":
   test_greedy_coupler_builder()
