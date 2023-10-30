@@ -96,12 +96,27 @@ def test_greedy(tmp_path):
   # Test parameter_samples output in greedy_status.log
   total_sample_size = len(foms_samples_not_run + foms_samples_run)
   log_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
-  parameter_space_instances = []
+
+  # Initialize variables
+  in_parameter_samples_block = False
+  parameter_samples_dimensions = []
+  row_count = 0
   with open(os.path.join(log_dir, "greedy_status.log"), 'r', encoding="utf-8") as greedy_log:
       for line in greedy_log:
-          if "Parameter samples:" in line:
-              parameter_space_instances.append(1)
-  assert(len(parameter_space_instances) == total_sample_size - init_sample_size + 1)
+          if in_parameter_samples_block:
+              if line.startswith("    Running"):
+                  # Check for end of parameter_samples array
+                  in_parameter_samples_block = False
+                  parameter_samples_dimensions.append(row_count)
+                  row_count = 0
+              else:
+                  # Count number of rows in given parameter_samples array
+                  row_count += 1
+          elif "Parameter samples:" in line:
+                  in_parameter_samples_block = True
+  assert(len(parameter_samples_dimensions) == total_sample_size - init_sample_size + 1)
+  for i in range(len(parameter_samples_dimensions)):
+      assert(parameter_samples_dimensions[i] == init_sample_size + i)
 
 
 if __name__=="__main__":
