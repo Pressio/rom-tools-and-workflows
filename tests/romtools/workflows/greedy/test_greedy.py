@@ -101,8 +101,6 @@ def test_greedy(tmp_path):
       for line in greedy_log:
           if "Parameter samples:" in line:
               parameter_space_instances.append(1)
-
-  # Compare to expected dimensions
   assert(len(parameter_space_instances) == total_sample_size - init_sample_size + 1)
 
 
