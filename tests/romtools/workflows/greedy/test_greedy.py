@@ -103,7 +103,7 @@ def test_greedy(tmp_path):
   parameter_samples_col_dimensions = []
   row_count = 0
 
-  # Find dimensions of parameter_space arrays
+  # Find dimensions of parameter_samples arrays
   with open(os.path.join(log_dir, "greedy_status.log"), 'r', encoding="utf-8") as greedy_log:
       for line in greedy_log:
           if in_parameter_samples_block:
