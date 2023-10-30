@@ -101,6 +101,8 @@ def test_greedy(tmp_path):
   in_parameter_samples_block = False
   parameter_samples_dimensions = []
   row_count = 0
+
+  # Find dimensions of parameter_space arrays
   with open(os.path.join(log_dir, "greedy_status.log"), 'r', encoding="utf-8") as greedy_log:
       for line in greedy_log:
           if in_parameter_samples_block:
@@ -114,6 +116,8 @@ def test_greedy(tmp_path):
                   row_count += 1
           elif "Parameter samples:" in line:
                   in_parameter_samples_block = True
+
+  # Assert correct number of arrays with correct number of rows
   assert(len(parameter_samples_dimensions) == total_sample_size - init_sample_size + 1)
   for i in range(len(parameter_samples_dimensions)):
       assert(parameter_samples_dimensions[i] == init_sample_size + i)
