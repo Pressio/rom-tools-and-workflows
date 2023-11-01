@@ -199,7 +199,8 @@ def runGreedy(greedyCoupler,tolerance,testing_sample_size=10):
         error_indicators = np.zeros(samples_left.size)
         counter = 0
         t0 = time.time()
-        greedy_file.write("Greedy iteration # " + str(outer_loop_counter) + " \n")
+        greedy_file.write("Greedy iteration # " + str(outer_loop_counter) + " \n" +
+                          "Parameter samples: \n " + str(parameter_samples) + " \n")
         greedy_file.flush()
         for i in samples_left:
             rom_directory = (

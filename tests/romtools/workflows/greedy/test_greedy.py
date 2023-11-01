@@ -75,7 +75,8 @@ def test_greedy(tmp_path):
 
   my_dir = os.path.realpath(os.path.dirname(__file__))
   myGreedyCoupler = ConcreteGreedyCoupler(my_dir + '/templates/','test_template.dat','test_template.dat', workDir=wdir)
-  runGreedy(myGreedyCoupler,1e-5,5)
+  init_sample_size = 5
+  runGreedy(myGreedyCoupler,1e-5,init_sample_size)
   ## First greedy pass
   base_path = myGreedyCoupler.getBaseDirectory() + '/work/' + myGreedyCoupler.getFomDirectoryBaseName()
   foms_samples_run = [0,1,4,2,5]
@@ -91,6 +92,41 @@ def test_greedy(tmp_path):
   assert np.allclose(greedy_output['max_error_indicators'],np.array([4.,0.9,0.1]))
   assert np.allclose(greedy_output['training_samples'],np.array([0,1,4,2,5]))
   assert np.allclose(greedy_output['qoi_errors'],np.array([0.4,0.09,0.01]))
+
+  # Test parameter_samples output in greedy_status.log
+  total_sample_size = len(foms_samples_not_run + foms_samples_run)
+  log_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
+
+  # Initialize variables
+  in_parameter_samples_block = False
+  parameter_samples_row_dimensions = []
+  parameter_samples_col_dimensions = []
+  row_count = 0
+
+  # Find dimensions of parameter_samples arrays
+  with open(os.path.join(log_dir, "greedy_status.log"), 'r', encoding="utf-8") as greedy_log:
+      for line in greedy_log:
+          if in_parameter_samples_block:
+              if line.startswith("    Running"):
+                  # Check for end of parameter_samples array
+                  in_parameter_samples_block = False
+                  parameter_samples_row_dimensions.append(row_count)
+                  parameter_samples_col_dimensions.append(col_count)
+                  row_count = 0
+              else:
+                  # Count rows & columns in given parameter_samples array
+                  row_count += 1
+                  col_count = line.count('.')
+          elif "Parameter samples:" in line:
+                  in_parameter_samples_block = True
+
+  # Assert correct number of arrays with correct number of rows & columns
+  assert(len(parameter_samples_row_dimensions) == len(parameter_samples_col_dimensions))
+  assert(len(parameter_samples_row_dimensions) == total_sample_size - init_sample_size + 1)
+  for i in range(len(parameter_samples_row_dimensions)):
+      assert(parameter_samples_row_dimensions[i] == init_sample_size + i)
+      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.getParameterSpace().getNames()))
+
 
 if __name__=="__main__":
   test_greedy_coupler_builder()
