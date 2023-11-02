@@ -62,9 +62,6 @@ class AbstractTruncater(abc.ABC):
     '''
     Abstract implementation
     '''
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        pass
 
     @abc.abstractmethod
     def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:

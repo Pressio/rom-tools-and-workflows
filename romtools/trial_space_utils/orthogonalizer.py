@@ -62,9 +62,6 @@ class AbstractOrthogonalizer(abc.ABC):
     '''
     Abstract base class
     '''
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        pass
 
     @abc.abstractmethod
     def __call__(self, my_array: np.ndarray) -> np.ndarray:

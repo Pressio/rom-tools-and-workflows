@@ -87,9 +87,6 @@ import numpy as np
 
 class AbstractSplitter(abc.ABC):
     '''Abstract class for a splitter'''
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        pass
 
     @abc.abstractmethod
     def __call__(self, my_array: np.ndarray) -> np.ndarray:

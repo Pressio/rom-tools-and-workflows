@@ -83,19 +83,6 @@ class AbstractTrialSpace(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __init__(self, snapshots: AbstractSnapshotData):
-        '''
-        Initialize a new trial space.
-
-        Parameters:
-            snapshots (AbstractSnapshotData): The snapshots to use to compute the trial space.
-
-        This method should be implemented by concrete subclasses to perform necessary initialization of the
-        trial space object using the provided snapshot data.
-        '''
-        pass
-
-    @abc.abstractmethod
     def getDimension(self):
         '''Retrieves the dimension of the trial space
 

@@ -79,9 +79,6 @@ class AbstractScaler(abc.ABC):
     '''
     Abstract base class
     '''
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        pass
 
     @abc.abstractmethod
     def preScaling(self, data_matrix: np.ndarray) -> np.ndarray:
