@@ -84,14 +84,6 @@ class AbstractSnapshotData(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __init__(self, **kwargs):
-        '''
-        Initializes an instance of the AbstractSnapshotData class. Subclasses should implement
-        this method to set up the necessary data structures or connections to data sources.
-        '''
-        pass
-
-    @abc.abstractmethod
     def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
         '''
         Retrieves the snapshots as a list of NumPy arrays. Each array represents a single snapshot.
