@@ -1,7 +1,7 @@
 import numpy as np
 from romtools.hyper_reduction.ecsw import *
 
-
+@pytest.mark.mpi_skip
 def test_ecsw_nnls():
   ## test NNLS routine for small random matrix
   G = np.random.normal(size=(5,10))
@@ -19,6 +19,7 @@ def test_ecsw_nnls():
 
   assert(np.allclose(G@xi,G_red@xi_red))
 
+@pytest.mark.mpi_skip
 def test_ecsw_matrix():
 
   ## test matrix construction for scalar case
@@ -30,9 +31,10 @@ def test_ecsw_matrix():
   ## Check left-hand-side
   assert(np.allclose((np.sum(G,axis=1)).reshape((3,5),order='F'),(Psi.T)@Res))
 
-  ## Check right-hand-side 
+  ## Check right-hand-side
   assert(np.allclose(b.reshape((3,5),order='F'),(Psi.T)@Res))
 
+@pytest.mark.mpi_skip
 def test_full_ecsw():
   ## test ECSW
   nnls = ECSWsolverNNLS()
@@ -56,9 +58,6 @@ def test_full_ecsw():
 
   assert(np.allclose(approx_sm,approx))
 
-
-  
-  
 
 if __name__=="__main__":
     test_full_ecsw()
