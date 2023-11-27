@@ -1,3 +1,48 @@
+#
+# ************************************************************************
+#
+#                         ROM Tools and Workflows
+# Copyright 2019 National Technology & Engineering Solutions of Sandia,LLC
+#                              (NTESS)
+#
+# Under the terms of Contract DE-NA0003525 with NTESS, the
+# U.S. Government retains certain rights in this software.
+#
+# ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived
+# from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Questions? Contact Eric Parish (ejparis@sandia.gov)
+#
+# ************************************************************************
+#
+
 '''
 # Scope and Motivation
 
@@ -26,7 +71,8 @@ The Python library, called `romtools`, contains abstract interfaces and function
 - Trial space computation:
   - Reduced-basis methods
   - Proper orthogonal decomposition
-    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization in different inner products
+    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
+      in different inner products
 - Workflows for ROM construction and ROM exploitation:
   - ROM construction via reduced-basis greedy (RB-Greedy)
   - ROM/FOM exploitation via sampling
@@ -36,12 +82,14 @@ The Python library, called `romtools`, contains abstract interfaces and function
 ## Representative abstract base classes
 
 - `AbstractSnapshotData`
-  - This class defines the minimum API requirements for a "snapshot_data" class that will be used in the construction of a trial space.
+  - This class defines the minimum API requirements for a "snapshot_data" class that will be used in the construction
+    of a trial space.
 
 - `AbstractTrialSpace`
   - This class defines the minimum API requirements for a trial space
 
-  - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and concrete implementations, exist for:
+  - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and
+    concrete implementations, exist for:
 
       - orthogonalizers
       - scalers
@@ -50,7 +98,8 @@ The Python library, called `romtools`, contains abstract interfaces and function
       - truncaters
 
 - `AbstractParameterSpace`
-  - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for running/building ROMs
+  - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for
+    running/building ROMs
 
 - Abstract couplers for greedy sampling, sampling, and coupling to Dakota.
 
@@ -97,23 +146,17 @@ def exact_solution(x,t, alpha):
 
 import romtools as rt
 class HeatSnapshots(rt.AbstractSnapshotData):
-
     def __init__(self, snapshots: list):
+        rt.AbstractSnapshotData.__init__(self, var_names=['T'])
         self.snapshots = snapshots
 
-    def getSnapshotsAsListOfArrays(self):
-        return self.snapshots
-
     def getMeshGids(self):
-        # this method is not of interest here, but needs to be defined
+        # this method is a noop for now but needs to be defined
         # since it is an abstract method in the base class
         pass
 
-    def getVariableNames(self):
-        return ['T']
-
-    def getNumVars(self) -> int:
-        return 1
+    def getSnapshotsAsListOfArrays(self):
+        return self.snapshots
 
 if __name__=="__main__":
     numPoints, numTimes = 21, 11
@@ -124,12 +167,15 @@ if __name__=="__main__":
     data = [exact_solution(x, t, alpha) for t in times]
     snapshots = HeatSnapshots(data)
 ```
-
+# License
+```plaintext
+.. include:: ../LICENSE
+```
 '''
 
 __all__ = ['snapshot_data', 'trial_space', 'trial_space_utils', 'workflows', 'hyper_reduction']
 
-__docformat__ = "markdown"  # explicitly disable rST processing in the examples above.
+__docformat__ = "restructuredtext" # required to generate the license
 
 from romtools.snapshot_data import *
 from romtools.trial_space import *

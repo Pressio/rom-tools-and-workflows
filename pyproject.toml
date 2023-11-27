@@ -21,3 +21,4 @@ where = ["."]
 #https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies
 [project.optional-dependencies]
 WithMPI = ['mpi4py>3.1.4']
+WithH5py = ['h5py']

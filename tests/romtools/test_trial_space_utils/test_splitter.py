@@ -1,7 +1,7 @@
+import pytest
 import numpy as np
 from romtools.trial_space_utils.splitter import *
-import copy
-import pytest
+
 
 @pytest.mark.mpi_skip
 def test_noop_splitter():

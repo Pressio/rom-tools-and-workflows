@@ -1,4 +1,49 @@
-"""
+#
+# ************************************************************************
+#
+#                         ROM Tools and Workflows
+# Copyright 2019 National Technology & Engineering Solutions of Sandia,LLC
+#                              (NTESS)
+#
+# Under the terms of Contract DE-NA0003525 with NTESS, the
+# U.S. Government retains certain rights in this software.
+#
+# ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived
+# from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Questions? Contact Eric Parish (ejparis@sandia.gov)
+#
+# ************************************************************************
+#
+
+'''
 #Trial space overview
 
 A trial space is foundational to reduced-order models.
@@ -7,50 +52,78 @@ Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^N$, we represen
 $$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
 where $\\mathcal{V}$ with
 $\\text{dim}(\\mathcal{V}) = K \\le N$
-is the trial space. Formally, we can describe this low-dimensional representation with a basis and an offine offset,
+is the trial space. Formally, we can describe this low-dimensional representation with a basis and an affine offset,
 $$\\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}$$
-where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \times K}$ is the basis matrix,
+where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}$ is the basis matrix,
 $\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}$ are the reduced, or generalized coordinates,
 $\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^N$ is the shift vector (or affine offset), and, by definition,
 $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$.
 
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
-"""
+'''
+
 import abc
 import numpy as np
 from romtools.snapshot_data import AbstractSnapshotData
 from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
 from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
-from romtools.trial_space_utils.scaler import AbstractScaler, NoOpScaler
+from romtools.trial_space_utils.scaler import AbstractScaler
 from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
 
+
 class AbstractTrialSpace(abc.ABC):
-    """Abstract implementation"""
-    @abc.abstractmethod
-    def __init__(snapshots: AbstractSnapshotData):
-        pass
+    '''
+    Abstract base class for trial space implementations.
+
+    This abstract class defines the interface for a trial space.
+
+    Methods:
+    '''
 
     @abc.abstractmethod
     def getDimension(self):
-        """Returns the dimension of the trial space"""
+        '''Retrieves the dimension of the trial space
+
+        Returns:
+            int: The dimension of the trial space.
+
+        Concrete subclasses should implement this method to return the appropriate dimension for their specific
+        trial space implementation.
+        '''
         pass
 
     @abc.abstractmethod
     def getShiftVector(self):
-        """Returns the shift vector"""
+        '''
+        Retrieves the shift vector of the trial space.
+
+        Returns:
+            np.ndarray: The shift vector.
+
+        Concrete subclasses should implement this method to return the shift vector specific to their trial space
+        implementation.
+        '''
         pass
 
     @abc.abstractmethod
     def getBasis(self):
-        """Returns the basis"""
+        '''
+        Retrieves the basis vectors of the trial space.
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+
+        Concrete subclasses should implement this method to return the basis vectors specific to their trial space
+        implementation.
+        '''
         pass
 
 
 
 class DictionaryTrialSpace(AbstractTrialSpace):
-    """
+    '''
     ##Reduced basis trial space (no truncation).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
@@ -58,16 +131,23 @@ class DictionaryTrialSpace(AbstractTrialSpace):
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))$$
 
     where the orthogonalization, splitting, and shifts are defined by their respective classes
-    """
+    '''
     def __init__(self,snapshot_data,shifter,splitter,orthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data, methods to read it
-        #           and other metadata such as variable set type
-        # shifter: class that shifts the basis
-        # splitter: class that splits basis
-        # orthogonalizer: class that orthogonalizes basis
+        '''
+        Constructor for the reduced basis trial space without truncation.
 
-        # compute basis
+        Args:
+            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other
+                metadata such as variable set type.
+            shifter: Class that shifts the basis.
+            splitter: Class that splitts the basis.
+            orthogonalizer: Class that orthogonalizes the basis.
+
+        This constructor initializes a trial space by performing basis manipulation operations on the provided
+        snapshot data.
+        '''
+
+        # Compute basis
         snapshots = snapshot_data.getSnapshotsAsArray()
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         self.__basis = splitter(shifted_snapshots)
@@ -75,20 +155,36 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-      """Returns dimension of trial space"""
-      return self.__dimension
+        '''
+        Retrieves the dimension of trial space
+
+        Returns:
+            int: The dimension of the trial space.
+        '''
+        return self.__dimension
 
     def getShiftVector(self):
-      """Returns the shift vector"""
-      return self.__shift_vector
+        '''
+        Retrieves the shift vector
+
+        Returns:
+            np.ndarray: The shift vector.
+
+        '''
+        return self.__shift_vector
 
     def getBasis(self):
-       """Returns the basis"""
-       return self.__basis
+        '''
+        Retrieves the basis of the trial space
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        '''
+        return self.__basis
 
 
 class TrialSpaceFromPOD(AbstractTrialSpace):
-    """
+    '''
     ##POD trial space (constructed via SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
@@ -101,7 +197,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     For truncation, we enable truncation based on a fixed dimension or the decay
     of singular values; please refer to the documentation for the truncater.
-    """
+    '''
 
     def __init__(self,
                  snapshots:      AbstractSnapshotData,
@@ -110,34 +206,30 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
                  splitter:       AbstractSplitter       = NoOpSplitter(),
                  orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
-        """
-        Constructor
+        '''
+        Constructor for the POD trial space.
 
         Args:
-
-            snapshots (AbstractSnapshotData): snapshot data
-
-            truncater (AbstractTruncater): object for truncating the basis.
-
-            shifter (AbstractShifter): object for shifting the basis
-
-            splitter (AbstractSplitter): object for splitting the basis
-
-            orthogonalizer (AbstractOrthogonalizer): object for orthogonalize the basis
-
+            snapshots (AbstractSnapshotData): Snapshot data source.
+            truncater (AbstractTruncater): Class that truncates the basis.
+            shifter (AbstractShifter): Class that shifts the basis.
+            splitter (AbstractSplitter): Class that splits the basis.
+            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                     IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
                     If `None`, internally we use `np.linalg.svd`.
-                    Note: this is useful when you want to use a custom svd, for example when your snapshots are distributed with MPI,
-                    or maybe you have a fancy svd function that you can use.
+                    Note: this is useful when you want to use a custom svd, for example when your snapshots are
+                    distributed with MPI, or maybe you have a fancy svd function that you can use.
 
-        """
+        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
+        various basis manipulation operations, including truncation, shifting, splitting, and orthogonalization.
+        '''
 
         snapshots = snapshots.getSnapshotsAsArray()
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         shifted_split_snapshots = splitter(shifted_snapshots)
 
-        svdPicked = np.linalg.svd if svdFnc == None else svdFnc
+        svdPicked = np.linalg.svd if svdFnc is None else svdFnc
         lsv, svals, _ = svdPicked(shifted_split_snapshots, full_matrices=False, \
                                   compute_uv=True, hermitian=False)
 
@@ -146,20 +238,36 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-        """Returns dimension of trial space"""
+        '''
+        Retrieves the dimension of the trial space
+
+        Returns:
+            int: The dimension of the trial space.
+        '''
         return self.__dimension
 
     def getShiftVector(self):
-        """Returns the shift vector"""
+        '''
+        Retrieves the shift vector
+
+        Returns:
+            np.ndarray: The shift vector.
+
+        '''
         return self.__shift_vector
 
     def getBasis(self):
-        """Returns the basis"""
+        '''
+        Retrieves the basis of the trial space
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        '''
         return self.__basis
 
 
 class TrialSpaceFromScaledPOD(AbstractTrialSpace):
-    """
+    '''
     ##POD trial space (constructed via scaled SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
@@ -172,7 +280,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     For truncation, we enable truncation based on a fixed dimension or the decay of singular values;
     please refer to the documentation for the truncater.
-    """
+    '''
 
     def __init__(self, snapshot_data: AbstractSnapshotData,
                  truncater: AbstractTruncater,
@@ -180,14 +288,24 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
                  scaler: AbstractScaler,
                  splitter: AbstractSplitter,
                  orthogonalizer: AbstractOrthogonalizer):
-        # inputs:
-        # fom_data: snapshot_data object, contains lists of full model solution data, methods to read it
-        #           and other metadata such as variable set type
-        # truncater: class that truncates the basis
-        # shifter: class that shifts the basis
-        # scaler: class the scales
+        '''
+        Constructor for the POD trial space constructed via scaled SVD.
 
-        # compute basis
+        Args:
+            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other
+                metadata such as variable set type.
+            truncater: Class that truncates the basis.
+            shifter: Class that shifts the basis.
+            scaler: Class that scales the basis.
+            splitter: Class that splits the basis.
+            orthogonalizer: Class that orthogonalizes the basis.
+
+        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
+        various basis manipulation operations, including scaling, shifting, truncation, splitting, and
+        orthogonalization.
+        '''
+
+        # Compute basis
         snapshots = snapshot_data.getSnapshotsAsArray()
         shifted_snapshots,self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.preScaling(shifted_snapshots)
@@ -199,13 +317,29 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         self.__dimension = self.__basis.shape[1]
 
     def getDimension(self):
-        """Returns dimension of trial space"""
+        '''
+        Retrieves the dimension of the trial space
+
+        Returns:
+            int: The dimension of the trial space.
+        '''
         return self.__dimension
 
     def getShiftVector(self):
-        """Returns the shift vector"""
+        '''
+        Retrieves the shift vector
+
+        Returns:
+            np.ndarray: The shift vector.
+
+        '''
         return self.__shift_vector
 
     def getBasis(self):
-        """Returns the basis"""
+        '''
+        Retrieves the basis of the trial space
+
+        Returns:
+            np.ndarray: The basis of the trial space.
+        '''
         return self.__basis

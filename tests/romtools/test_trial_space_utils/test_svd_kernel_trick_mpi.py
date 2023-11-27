@@ -1,8 +1,7 @@
-import romtools as rt
-import romtools.trial_space_utils as utils
-import copy
-import numpy as np
 import pytest
+import numpy as np
+import romtools.trial_space_utils as utils
+from helper_scripts import helpers
 
 try:
     import mpi4py
@@ -39,8 +38,8 @@ def test_parallel_kernel_trick_on_three_cores():
     rank = comm.Get_rank()
     if comm.Get_size() == 3:
         data = construct_distributed_data(comm)
-        data_full = construct_full_data() 
-        U,sigma = utils.__svdMethodOfSnapshotsImpl(data,comm)
+        data_full = construct_full_data()
+        U,sigma = utils.svdMethodOfSnapshotsImpl(data,comm)
         Uf,sigmaf,_ = np.linalg.svd(data_full,full_matrices=False)
 
         if rank == 0:
@@ -53,6 +52,8 @@ def test_parallel_kernel_trick_on_three_cores():
         if rank == 2:
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
+    else:
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_parallel_kernel_trick_on_three_cores", 3)
 
 @pytest.mark.mpi(min_size=3)
 def test_class_parallel_kernel_trick_on_three_cores():
@@ -60,9 +61,9 @@ def test_class_parallel_kernel_trick_on_three_cores():
     rank = comm.Get_rank()
     if comm.Get_size() == 3:
         data = construct_distributed_data(comm)
-        data_full = construct_full_data() 
+        data_full = construct_full_data()
         mySvd = utils.svdMethodOfSnapshots(comm)
-        U,sigma,_ = mySvd(data,full_matrices=False) 
+        U,sigma,_ = mySvd(data,full_matrices=False)
         Uf,sigmaf,_ = np.linalg.svd(data_full,full_matrices=False)
 
         if rank == 0:
@@ -75,6 +76,8 @@ def test_class_parallel_kernel_trick_on_three_cores():
         if rank == 2:
           assert(np.allclose(sigma,sigmaf))
           assert(np.allclose(np.abs(U),np.abs(Uf)[24::]))
+    else:
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_class_parallel_kernel_trick_on_three_cores", 3)
 
 
 if __name__=="__main__":
