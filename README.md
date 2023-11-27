@@ -13,7 +13,7 @@ cd my-path/rom-tools-and-workflows
 pip install .
 ```
 
-## To run tests
+### Verify installation by running the tests
 
 Note: you need `pytest` installed
 
