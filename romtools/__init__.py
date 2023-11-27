@@ -179,3 +179,4 @@ __docformat__ = "restructuredtext" # required to generate the license
 
 from romtools.snapshot_data import *
 from romtools.trial_space import *
+from romtools.hyper_reduction import *
