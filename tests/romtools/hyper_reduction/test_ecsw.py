@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from romtools.hyper_reduction.ecsw import *
 
 @pytest.mark.mpi_skip
