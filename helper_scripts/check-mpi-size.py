@@ -92,7 +92,7 @@ def print_occurences(changed_files, title):
     for file_name, lines in changed_files.items():
         print("-----")
         print(f"File: {file_name}")
-        print("Changed Lines:", ", ".join(map(str, lines)))
+        print("Invalid PyTest MPI marker:", ", ".join(map(str, lines)))
         print("-----")
 
 
