@@ -13,8 +13,8 @@ def parse_diff_output(changed_files):
     for match in file_pattern.finditer(changed_files):
         file_name = match.group(1)
 
-        # Filtering for python files and excluding certain directories
-        if file_name.endswith((".py")) and all(
+        # Filtering for python files in test directories
+        if file_name.endswith((".py")) and any(
             included in file_name
             for included in [
                 "test/",
