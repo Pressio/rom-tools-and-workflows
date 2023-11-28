@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     if invalid_num_rank_detected:
         print_occurences(
-            invalid_num_rank_detected, "Found test with invalid number of ranks in the following files:"
+            invalid_num_rank_detected, "Found test with invalid number of ranks in the following file(s):"
         )
 
         sys.exit(1)  # Exit with an error code to fail the GitHub Action
