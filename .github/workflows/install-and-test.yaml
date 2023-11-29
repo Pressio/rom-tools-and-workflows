@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for invalid MPI tests
+      - name: Check for MPI tests with invalid rank count
         run: |
           python $GITHUB_WORKSPACE/helper_scripts/check-mpi-size.py \
           --base origin/${{ github.event.pull_request.base.ref }} \
