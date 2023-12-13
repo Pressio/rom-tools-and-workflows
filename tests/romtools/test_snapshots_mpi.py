@@ -13,17 +13,13 @@ class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):
         self.snapshots = myData
 
-    def getSnapshotsAsListOfArrays(self):
+    def getSnapshotTensor(self):
         return self.snapshots
 
     def getMeshGids(self):
         return myGIDs
 
-    def getVariableNames(self):
-        return ['u','v','w']
 
-    def getNumVars(self) -> int:
-        return 3
 
 @pytest.mark.mpi(min_size=3)
 def test_mpi_snapshots():
@@ -32,18 +28,19 @@ def test_mpi_snapshots():
     if comm.Get_size() == 3:
         if rank == 0:
             myGids = np.array([0,1,2])
-            myData = [np.random.normal(size=(9,5))]
+            myData = np.random.normal(size=(3,3,5))
         elif rank==1:
             myGids = np.array([6,7,8,9,10])
-            myData = [np.random.normal(size=(15,5))]
+            myData = np.random.normal(size=(3,5,5))
         else:
             myGids = np.array([3,4,5])
-            myData = [np.random.normal(size=(9,5))]
+            myData = np.random.normal(size=(3,3,5))
 
         sd = DistributedSnapshots(myData, myGids)
-        matrix = sd.getSnapshotsAsArray()
-        assert matrix.shape[0] == myGids.shape[0] * sd.getNumVars()
-        assert matrix.shape[1] == 5
+        tensor = sd.getSnapshotTensor()
+        assert tensor.shape[0] == 3 
+        assert tensor.shape[1] == myGids.shape[0] 
+        assert tensor.shape[2] == 5
 
 if __name__=="__main__":
     test_mpi_snapshots()
