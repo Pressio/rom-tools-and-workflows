@@ -35,12 +35,12 @@ class AbstractSnapshotData(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
+    def getSnapshotTensor(self) -> np.ndarray:
         """
-        Return snapshot matrix as list of arrays
-        (e.g., each element in the list could be its own snapshot matrix)
+        Returns numpy tensor of shape N_vars x N_space x N_samples 
+        (assuming each snapshot corresponds to a column vector)
         """
-        pass
+        pass 
 
     @abc.abstractmethod
     def getMeshGids(self):
@@ -49,29 +49,13 @@ class AbstractSnapshotData(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def getVariableNames(self) -> list:
+    def getSnapshotMatrix(self) -> np.ndarray:
         """
-        Returns the names of different state variables
-        """
-        pass
-
-    def getSnapshotsAsArray(self) -> np.ndarray:
-        """
-        Returns numpy array where the list of snapshot arrays are concatenated
+        Returns numpy matrix of shape N_vars N_space x N_samples 
         (assuming each snapshot corresponds to a column vector)
         """
-        return _listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
-
-    def getNumVars(self) -> int:
-        """
-        Returns the number of state variables
-        (e.g., 5 for the compressible Navier--Stokes equations in 3 dimensions)
-        """
-        return len(self.get_variable_names())
-
-def _listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
-    '''
-    Helper function to move snapshot list into a matrix
-    '''
-    return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
+        variable_ordering = 'C'
+        snapshot_tensor = self.getSnapshotTensor()
+        snapshot_matrix = np.reshape(snapshot_tensor,(snapshot_tensor.shape[0]*snapshot_tensor.shape[1],snapshot_tensor.shape[2]),variable_ordering)
+        return snapshot_matrix 
+       
