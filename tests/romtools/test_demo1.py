@@ -31,18 +31,12 @@ class HeatSnapshots(rt.AbstractSnapshotData):
         self.snapshots = snapshots
 
     def getMeshGids(self):
-        # this method is a noop for now but needs to be defined
-        # since it is an abstract method in the base class
-        pass
+      return np.arange(21,dtype='int')
 
-    def getSnapshotsAsListOfArrays(self):
-        return self.snapshots
+    def getSnapshotTensor(self):
+        ## put into a numpy array of shape N_vars x N_x x N_t
+        return np.array(self.snapshots).transpose()[None]
 
-    def getVariableNames(self):
-        return ['T']
-
-    def getNumVars(self) -> int:
-        return 1
 
 @pytest.mark.mpi_skip
 def test_demo1():
@@ -52,9 +46,9 @@ def test_demo1():
     alpha = 0.1
     data = [exact_solution(x, t, alpha) for t in times]
     snapshots = HeatSnapshots(data)
-    assert snapshots.getVariableNames() == ['T']
-    assert snapshots.getNumVars() == 1
-    assert len(snapshots.getSnapshotsAsListOfArrays()) == 11
+    assert snapshots.getSnapshotTensor().shape[0] == 1
+    assert snapshots.getSnapshotTensor().shape[1] == 21
+    assert snapshots.getSnapshotTensor().shape[2] == 11
 
 if __name__=="__main__":
     test_demo1()
