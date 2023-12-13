@@ -66,13 +66,8 @@ class BlockSplitter(AbstractSplitter):
     0                      & \\Phi_{1}^{\\rho E }(x) & 0 & \\Phi_{2}^{\\rho E }(x) & \\cdots \\
     \\end{bmatrix}.
     $$
-
-    **Notes on variable ordering**
-    **Order F variable ordering: $[u_1,v_1,w_1,u_2,v_2,w_2,...,u_n,v_n,w_n]$**
-
-    **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
     """
-    def __init__(self,blocks : list,n_var : int, variable_ordering : str):
+    def __init__(self,blocks : list,n_var : int, variable_ordering = 'C'):
         assert variable_ordering == 'C' or variable_ordering == 'F', "Invalid variable ordering, options are F and C"
         self.__variable_ordering = variable_ordering
         self.__n_var = n_var
@@ -105,7 +100,7 @@ class BlockSplitter(AbstractSplitter):
         return my_split_array
 
 
-def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering):
+def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering='C'):
     """helper function to split data"""
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
