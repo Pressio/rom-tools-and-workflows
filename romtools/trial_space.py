@@ -215,14 +215,14 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         snapshot_tensor = snapshot_data.get_snapshot_tensor()
         n_var = snapshot_tensor.shape[0]
         shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
-        scaled_shifted_snapshot_tensor = scaler.preScaling(shifted_snapshot_tensor)
+        scaled_shifted_snapshot_tensor = scaler.pre_scaling(shifted_snapshot_tensor)
         snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshot_tensor)
         snapshot_matrix = splitter(snapshot_matrix)
 
         lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
         self.__basis = truncater(lsv, svals)
         self.__basis = matrix_to_tensor(n_var, self.__basis)
-        self.__basis = scaler.postScaling(self.__basis)
+        self.__basis = scaler.post_scaling(self.__basis)
         self.__basis = tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = matrix_to_tensor(n_var, self.__basis)

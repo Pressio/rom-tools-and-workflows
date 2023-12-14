@@ -20,9 +20,11 @@ $$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\
 
 The Scaler encapsulates this information
 '''
-import numpy as np
-import scipy
+
 import abc
+import numpy as np
+
+
 class AbstractScaler(abc.ABC):
     """
     Abstract base class
@@ -32,19 +34,18 @@ class AbstractScaler(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def preScaling(self, my_array: np.ndarray) -> np.ndarray:
+    def pre_scaling(self, my_array: np.ndarray) -> np.ndarray:
         """
         Scales the snapshot matrix before performing SVD
         """
         pass
 
     @abc.abstractmethod
-    def postScaling(self, my_array: np.ndarray) -> np.ndarray:
+    def post_scaling(self, my_array: np.ndarray) -> np.ndarray:
         """
         Scales the left singular vectors after performing SVD
         """
         pass
-
 
 
 class NoOpScaler(AbstractScaler):
@@ -54,10 +55,10 @@ class NoOpScaler(AbstractScaler):
     def __init__(self):
         pass
 
-    def preScaling(self,data_matrix):
+    def pre_scaling(self, data_matrix):
         return data_matrix
 
-    def postScaling(self,data_matrix):
+    def post_scaling(self, data_matrix):
         return data_matrix
 
 
@@ -72,19 +73,19 @@ class VectorScaler(AbstractScaler):
 
     **Note that scaling can cause bases to not be orthonormal; we do not recommend using scalers with the NoOpOrthonormalizer**
     """
-    def __init__(self,scaling_vector):
+    def __init__(self, scaling_vector):
         '''
         Inputs: scaling_vector: array containing the scaling vector for each row in the snapshot matrix
         '''
-        self.__scaling_vector_matrix = scaling_vector 
+        self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1./scaling_vector
 
 
-    def preScaling(self, data_matrix):
-        return self.__scaling_vector_matrix_inv[None,:,None] * data_matrix
+    def pre_scaling(self, data_matrix):
+        return self.__scaling_vector_matrix_inv[None, :, None] * data_matrix
 
-    def postScaling(self,data_matrix):
-        return self.__scaling_vector_matrix[None,:,None] * data_matrix
+    def post_scaling(self, data_matrix):
+        return self.__scaling_vector_matrix[None, :, None] * data_matrix
 
 
 
@@ -104,15 +105,16 @@ class VariableScaler(AbstractScaler):
     For a state with variables $u,v,w$ defined at $n$ discrete points, these orderings are
 
     """
-    def __init__(self,scaling_type):
+    def __init__(self, scaling_type):
         self.__scaling_type = scaling_type
         self.have_scales_been_initialized = False
+        self.var_scales_ = None
 
-    def initializeScalings(self,data_tensor):
+    def initializeScalings(self, data_tensor):
         n_var = data_tensor.shape[0]
         self.var_scales_ = np.ones(n_var)
         for i in range(n_var):
-            ith_var = data_tensor[i] 
+            ith_var = data_tensor[i]
             if self.__scaling_type == 'max_abs':
                 var_scale = np.max(abs(ith_var))
             elif self.__scaling_type == 'mean_abs':
@@ -120,14 +122,14 @@ class VariableScaler(AbstractScaler):
             elif self.__scaling_type == 'variance':
                 var_scale = np.sqrt(np.var(ith_var))
 
-            ## in case of a zero field (e.g., 2D)
+            # in case of a zero field (e.g., 2D)
             if var_scale < 1e-10:
                 var_scale = 1.
             self.var_scales_[i] = var_scale
         self.have_scales_been_initialized = True
 
-    ## These are all inplace operations
-    def preScaling(self, data_tensor):
+    # These are all inplace operations
+    def pre_scaling(self, data_tensor):
         n_var = data_tensor.shape[0]
         if self.have_scales_been_initialized:
             pass
@@ -138,7 +140,7 @@ class VariableScaler(AbstractScaler):
             data_tensor[i] = data_tensor[i] / self.var_scales_[i]
         return data_tensor
 
-    def postScaling(self,data_tensor):
+    def post_scaling(self, data_tensor):
         assert self.have_scales_been_initialized, "Scales in VariableScaler have not been initialized"
         # scale each field
         n_var = data_tensor.shape[0]
@@ -146,25 +148,29 @@ class VariableScaler(AbstractScaler):
             data_tensor[i] = data_tensor[i]*self.var_scales_[i]
         return data_tensor
 
+
 class VariableAndVectorScaler(AbstractScaler):
     """
-    Concrete implementation designed to scale snapshot matrices involving multiple state variables by both the variable magnitudes and an additional vector.
-    This is particularly useful when wishing to perform POD for, e.g., a finite volume method where we want to scale by the cell volumes as well as the variable
-    magnitudes. This implementation combines the VectorScaler and VariableScaler classes
+    Concrete implementation designed to scale snapshot matrices involving
+    multiple state variables by both the variable magnitudes and an additional
+    vector.  This is particularly useful when wishing to perform POD for, e.g.,
+    a finite volume method where we want to scale by the cell volumes as well
+    as the variable magnitudes. This implementation combines the VectorScaler
+    and VariableScaler classes
     """
 
-    def __init__(self,scaling_vector,scaling_type):
+    def __init__(self, scaling_vector, scaling_type):
         '''
         Inputs: scaling_vector: array containing the scaling vector for each row in the snapshot matrix
         scaling_type: 'max_abs','mean_abs', or 'variance'
         '''
-        self.__myVariableScaler = VariableScaler(scaling_type)
-        self.__myVectorScaler =  VectorScaler(scaling_vector)
+        self.__my_variable_scaler = VariableScaler(scaling_type)
+        self.__my_vector_scaler = VectorScaler(scaling_vector)
 
-    def preScaling(self, data_tensor):
-        data_tensor = self.__myVariableScaler.preScaling(data_tensor)
-        return self.__myVectorScaler.preScaling(data_tensor)
+    def pre_scaling(self, data_tensor):
+        data_tensor = self.__my_variable_scaler.pre_scaling(data_tensor)
+        return self.__my_vector_scaler.pre_scaling(data_tensor)
 
-    def postScaling(self,data_tensor):
-        data_tensor = self.__myVectorScaler.postScaling(data_tensor)
-        return self.__myVariableScaler.postScaling(data_tensor)
+    def post_scaling(self, data_tensor):
+        data_tensor = self.__my_vector_scaler.post_scaling(data_tensor)
+        return self.__my_variable_scaler.post_scaling(data_tensor)

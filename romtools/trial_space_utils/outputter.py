@@ -3,29 +3,34 @@ import os
 from romtools.trial_space import AbstractTrialSpace
 
 try:
-  import exodus
-except:
-  pass
+    import exodus
+except ImportError:
+    pass
 
 import math
 import h5py
 
+
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     if compress:
-        np.savez_compressed(filename, shift=trial_space.getShiftVector(),
-            basis=trial_space.getBasis())
+        np.savez_compressed(filename,
+                            shift=trial_space.getShiftVector(),
+                            basis=trial_space.getBasis())
     else:
-        np.savez(filename, shift=trial_space.getShiftVector(),
-            basis=trial_space.getBasis())
+        np.savez(filename,
+                 shift=trial_space.getShiftVector(),
+                 basis=trial_space.getBasis())
+
 
 def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
     with h5py.File(output_filename, 'w') as f:
         f.create_dataset('shift', data=trial_space.getShiftVector())
         f.create_dataset('basis', data=trial_space.getBasis())
 
+
 def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: AbstractTrialSpace, var_names: list = None) -> None:
     if os.path.isfile(output_filename):
-      os.system(f'rm {output_filename}')
+        os.system(f'rm {output_filename}')
 
     e = exodus.copy_mesh(mesh_filename, output_filename)
     e.close()
@@ -35,7 +40,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     num_modes = trial_space.getBasis().shape[1]
     num_modes_str_len = int(math.log10(num_modes))+1
 
-    assert var_names is None or len(var_names)==num_vars, f"len(variable_names), {len(var_names)} != number of variables in basis, {num_vars}"
+    assert var_names is None or len(var_names) == num_vars, f"len(variable_names), {len(var_names)} != number of variables in basis, {num_vars}"
 
     if var_names is None:
         var_names = [f"{i}" for i in range(num_vars)]
@@ -55,8 +60,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
 
         for j in range(num_modes):
             field_name = field_names[i*(num_modes+1) + j]
-            values = trial_space.getBasis()[i*num_nodes:(i+1)*num_nodes,j]
+            values = trial_space.getBasis()[i*num_nodes:(i+1)*num_nodes, j]
             e.put_node_variable_values(field_name, 1, values)
 
     e.close()
-

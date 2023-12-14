@@ -15,6 +15,7 @@ from typing import Tuple
 import abc
 import numpy as np
 
+
 class AbstractShifter(abc.ABC):
     '''
     Abstract implmentation
@@ -30,9 +31,6 @@ class AbstractShifter(abc.ABC):
         '''
         pass
 
-#    @abc.abstractmethod
-#    def getShiftVector(self, my_array: np.ndarray) -> np.ndarray:
-#        pass
 
 class NoOpShifter(AbstractShifter):
     '''
@@ -54,11 +52,12 @@ class ConstantShifter(AbstractShifter):
         self.__shift_value = shift_value
 
     def __call__(self, my_array: np.ndarray):
-        shift_vector = np.empty((my_array.shape[0],my_array.shape[1],))
-        assert(my_array.shape[0] == self.__shift_value.size)
-        for i in range(0,my_array.shape[0]):
-          shift_vector[i] = self.__shift_value[i]
-        return my_array-shift_vector[:,:,None], shift_vector
+        shift_vector = np.empty((my_array.shape[0], my_array.shape[1],))
+        assert my_array.shape[0] == self.__shift_value.size
+        for i in range(0, my_array.shape[0]):
+            shift_vector[i] = self.__shift_value[i]
+        return my_array-shift_vector[:, :, None], shift_vector
+
 
 class VectorShifter(AbstractShifter):
     '''
@@ -68,7 +67,7 @@ class VectorShifter(AbstractShifter):
         self.__shift_vector = shift_vector
 
     def __call__(self, my_array: np.ndarray):
-        return my_array-self.__shift_vector[...,None], self.__shift_vector
+        return my_array-self.__shift_vector[..., None], self.__shift_vector
 
 
 class AverageShifter(AbstractShifter):
@@ -80,7 +79,8 @@ class AverageShifter(AbstractShifter):
 
     def __call__(self, my_array: np.ndarray):
         shift_vector = np.mean(my_array, axis=2)
-        return my_array-shift_vector[:,:,None], shift_vector
+        return my_array-shift_vector[:, :, None], shift_vector
+
 
 class FirstVecShifter(AbstractShifter):
     '''
@@ -90,5 +90,5 @@ class FirstVecShifter(AbstractShifter):
         pass
 
     def __call__(self, my_array: np.ndarray):
-        shift_vector = my_array[:,:,0]
-        return my_array[:,:,1::]-shift_vector[:,:,None], shift_vector
+        shift_vector = my_array[:, :, 0]
+        return my_array[:, :, 1::]-shift_vector[:, :, None], shift_vector

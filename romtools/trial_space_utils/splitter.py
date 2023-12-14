@@ -29,9 +29,10 @@ This "split" representation can be particularly advantageous for problems where 
 The splitting class encapsulates this functionality. We note that the splitter is **applied to the snapshot matrix before POD is performed**.
 
 '''
-from typing import Tuple
+
 import abc
 import numpy as np
+
 
 class AbstractSplitter(abc.ABC):
     """Abstract class for a splitter"""
@@ -53,11 +54,10 @@ class NoOpSplitter(AbstractSplitter):
         return my_array
 
 
-
-
 class BlockSplitter(AbstractSplitter):
     """
-    Splits a data matrix into blocks defined by a list, e.g., for our Euler equation example above, we could set blocks = [[0,1],[2]] which
+    Splits a data matrix into blocks defined by a list, e.g., for our Euler
+    equation example above, we could set blocks = [[0,1],[2]] which
     would result in
     $$
     \\boldsymbol \\Phi(x) = \\begin{bmatrix}
@@ -67,46 +67,45 @@ class BlockSplitter(AbstractSplitter):
     \\end{bmatrix}.
     $$
     """
-    def __init__(self,blocks : list,n_var : int, variable_ordering = 'C'):
+    def __init__(self, blocks: list, n_var: int, variable_ordering: str = 'C'):
         assert variable_ordering == 'C' or variable_ordering == 'F', "Invalid variable ordering, options are F and C"
         self.__variable_ordering = variable_ordering
         self.__n_var = n_var
         self.__n_blocks = len(blocks)
         self.__blocks = blocks
-        ## Check that the block list is valid
-        my_vars = np.zeros(0,dtype='int')
+        # Check that the block list is valid
+        my_vars = np.zeros(0, dtype='int')
         for block in blocks:
             for var in block:
-                my_vars = np.append(my_vars,var)
+                my_vars = np.append(my_vars, var)
         my_vars.sort()
-        assert np.allclose(my_vars,np.arange(0,self.__n_var,dtype='int')), "Invalid block input"
+        assert np.allclose(my_vars, np.arange(0, self.__n_var, dtype='int')), "Invalid block input"
 
     def __call__(self, my_array: np.ndarray):
         d1 = my_array.shape[0]
         d2 = my_array.shape[1]
         n = int(d1/self.__n_var)
         new_d2 = d2*self.__n_blocks
-        my_split_array = np.zeros((d1,new_d2))
+        my_split_array = np.zeros((d1, new_d2))
         for block_counter, block in enumerate(self.__blocks):
             start_col = block_counter*d2
             end_col = (block_counter+1)*d2
             for var in block:
                 if self.__variable_ordering == 'F':
-                    my_split_array[var::self.__n_var,start_col:end_col] = getDataMatrixForIthVar(var,self.__n_var,my_array,self.__variable_ordering)
+                    my_split_array[var::self.__n_var, start_col:end_col] = get_data_matrix_for_ith_var(var, self.__n_var, my_array, self.__variable_ordering)
                 elif self.__variable_ordering == 'C':
                     start_index = var*n
                     end_index = (var+1)*n
-                    my_split_array[start_index:end_index,start_col:end_col] = getDataMatrixForIthVar(var,self.__n_var,my_array,self.__variable_ordering)
+                    my_split_array[start_index:end_index, start_col:end_col] = get_data_matrix_for_ith_var(var, self.__n_var, my_array, self.__variable_ordering)
         return my_split_array
 
 
-def getDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering='C'):
+def get_data_matrix_for_ith_var(i, n_var, data_matrix, variable_ordering='C'):
     """helper function to split data"""
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
     elif variable_ordering == 'C':
-        n = int( data_matrix.shape[0] / n_var)
+        n = int(data_matrix.shape[0] / n_var)
         start_index = i*n
         end_index = (i+1)*n
         return data_matrix[start_index:end_index]
-
