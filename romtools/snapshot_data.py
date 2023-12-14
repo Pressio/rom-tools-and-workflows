@@ -1,6 +1,6 @@
 """
-Most ROM formulations require access to so-called snapshot data to construct a reduced trial space.
-A snapshot is typically a solution to a full-order model.
+Most ROM formulations require access to so-called snapshot data to construct a
+reduced trial space.  A snapshot is typically a solution to a full-order model.
 As an example, consider a (discretized) parameterized PDE defined by
 
 $$\\boldsymbol r( \\mathbf{u}(\\boldsymbol \\mu);\\boldsymbol \\mu)$$
@@ -18,13 +18,13 @@ $$\\mathbf{S} = \\begin{bmatrix}
 $$
 
 
-The SnapshotData class encapsulates the information contained in set of snapshots,
-and is the main class used in the construction of trial spaces
+The SnapshotData class encapsulates the information contained in set of
+snapshots, and is the main class used in the construction of trial spaces
 """
 
-import numpy as np
 import abc
-from typing import Iterable
+import numpy as np
+
 
 class AbstractSnapshotData(abc.ABC):
     """
@@ -35,27 +35,30 @@ class AbstractSnapshotData(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def getSnapshotTensor(self) -> np.ndarray:
+    def get_snapshot_tensor(self) -> np.ndarray:
         """
-        Returns numpy tensor of shape N_vars x N_space x N_samples 
+        Returns numpy tensor of shape N_vars x N_space x N_samples
         (assuming each snapshot corresponds to a column vector)
-        """
-        pass 
-
-    @abc.abstractmethod
-    def getMeshGids(self):
-        """
-        Returns global ids associated with mesh points (used for hyper-reduction)
         """
         pass
 
-    def getSnapshotMatrix(self) -> np.ndarray:
+    @abc.abstractmethod
+    def get_mesh_gids(self):
         """
-        Returns numpy matrix of shape N_vars N_space x N_samples 
+        Returns global ids associated with mesh points (for hyper-reduction)
+        """
+        pass
+
+    def get_snapshot_matrix(self) -> np.ndarray:
+        """
+        Returns numpy matrix of shape N_vars N_space x N_samples
         (assuming each snapshot corresponds to a column vector)
         """
         variable_ordering = 'C'
-        snapshot_tensor = self.getSnapshotTensor()
-        snapshot_matrix = np.reshape(snapshot_tensor,(snapshot_tensor.shape[0]*snapshot_tensor.shape[1],snapshot_tensor.shape[2]),variable_ordering)
-        return snapshot_matrix 
-       
+        snapshot_tensor = self.get_snapshot_tensor()
+        matrix_shape = (snapshot_tensor.shape[0]*snapshot_tensor.shape[1],
+                        snapshot_tensor.shape[2])
+        snapshot_matrix = np.reshape(snapshot_tensor,
+                                     matrix_shape,
+                                     variable_ordering)
+        return snapshot_matrix
