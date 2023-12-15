@@ -1,9 +1,9 @@
-import pytest
-import numpy as np
 import romtools as rt
+import numpy as np
+import pytest
 
 
-def exact_solution(x,t, alpha):
+def exact_solution(x, t, alpha):
     '''
     Returns the exact solution of the 1D heat equation with
     heat source term sin(np.pi*x) and initial condition sin(2*np.pi*x)
@@ -18,8 +18,8 @@ def exact_solution(x,t, alpha):
     f : array of floats, exact solution
     '''
     f = (np.exp(-4*np.pi**2*alpha*t) * np.sin(2*np.pi*x)
-      + 2.0*(1-np.exp(-np.pi**2*alpha*t)) * np.sin(np.pi*x)
-      / (np.pi**2*alpha))
+         + 2.0*(1-np.exp(-np.pi**2*alpha*t)) * np.sin(np.pi*x)
+         / (np.pi**2*alpha))
 
     return f
 
@@ -28,28 +28,26 @@ class HeatSnapshots(rt.AbstractSnapshotData):
     def __init__(self, snapshots: list):
         self.snapshots = snapshots
 
-    def getMeshGids(self):
-        # this method is a noop for now but needs to be defined
-        # since it is an abstract method in the base class
-        pass
+    def get_mesh_gids(self):
+        return np.arange(21, dtype='int')
 
-    def getSnapshotsAsListOfArrays(self):
-        return self.snapshots
+    def get_snapshot_tensor(self):
+        # put into a numpy array of shape N_vars x N_x x N_t
+        return np.array(self.snapshots).transpose()[None]
 
-    def getVariableNames(self):
-        return ['T']
 
 @pytest.mark.mpi_skip
 def test_demo1():
-    numPoints, numTimes = 21, 11
-    x     = np.linspace(0., 1., numPoints)
-    times = np.linspace(0., 5., numTimes)
+    num_points, num_times = 21, 11
+    x = np.linspace(0., 1., num_points)
+    times = np.linspace(0., 5., num_times)
     alpha = 0.1
     data = [exact_solution(x, t, alpha) for t in times]
     snapshots = HeatSnapshots(data)
-    assert snapshots.getVariableNames() == ['T']
-    assert snapshots.getNumVars() == 1
-    assert len(snapshots.getSnapshotsAsListOfArrays()) == 11
+    assert snapshots.get_snapshot_tensor().shape[0] == 1
+    assert snapshots.get_snapshot_tensor().shape[1] == 21
+    assert snapshots.get_snapshot_tensor().shape[2] == 11
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     test_demo1()

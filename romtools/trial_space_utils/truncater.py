@@ -46,12 +46,13 @@
 '''
 Constructing a basis via POD typically entails computing the SVD of a snapshot matrix,
 $$ \\mathbf{U} ,\\mathbf{\\Sigma} = \\mathrm{svd}(\\mathbf{S})$$
-and then selecting the first $K$ left singular vectors (i.e., the first $K$ columns of $\\mathbf{U}$). Typically,
-$K$ is determined through the decay of the singular values.
+and then selecting the first $K$ left singular vectors (i.e., the first $K$
+columns of $\\mathbf{U}$). Typically, $K$ is determined through the decay of
+the singular values.
 
 The truncater class is desined to truncate a basis.
-We provide concrete implementations that truncate based on a specified number of basis vectors and
-the decay of the singular values
+We provide concrete implementations that truncate based on a specified number
+of basis vectors and the decay of the singular values
 '''
 
 import abc
@@ -78,8 +79,9 @@ class NoOpTruncater(AbstractTruncater):
     def __init__(self) -> None:
         pass
 
-    def __call__(self,basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         return basis
+
 
 class BasisSizeTruncater(AbstractTruncater):
     '''
@@ -105,13 +107,14 @@ class BasisSizeTruncater(AbstractTruncater):
         Returns:
             np.ndarray: The truncated basis matrix with the specified dimension.
         '''
-        return basis[:,:self.__basis_dimension]
+        return basis[:, :self.__basis_dimension]
 
 
 class EnergyTruncater(AbstractTruncater):
     '''
-    Truncates based on the decay of singular values, i.e., will define $K$ to be the number of singular values
-    such that the cumulative energy retained is greater than some threshold.
+    Truncates based on the decay of singular values, i.e., will define $K$ to
+    be the number of singular values such that the cumulative energy retained
+    is greater than some threshold.
     '''
     def __init__(self, threshold: float) -> None:
         '''
@@ -134,5 +137,5 @@ class EnergyTruncater(AbstractTruncater):
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
         energy = np.cumsum(singular_values**2)/np.sum(singular_values**2)
-        basis_dimension = np.argmax(energy>self.energy_threshold_) + 1
-        return basis[:,0:basis_dimension]
+        basis_dimension = np.argmax(energy > self.energy_threshold_) + 1
+        return basis[:, 0:basis_dimension]

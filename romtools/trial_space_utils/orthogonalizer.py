@@ -81,10 +81,11 @@ class NoOpOrthogonalizer(AbstractOrthogonalizer):
 
 class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
     '''
-    Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e., the output basis will satisfy
+    Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
+    the output basis will satisfy
     $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
     '''
-    def __init__(self,qrFnc=None):
+    def __init__(self, qrFnc=None):
         '''
         Constructor
         Args:
@@ -99,20 +100,23 @@ class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
         self.__qrPicked = np.linalg.qr if qrFnc is None else qrFnc
 
     def __call__(self, my_array: np.ndarray):
-        my_array,_ = self.__qrPicked(my_array,mode='reduced')
+        my_array, _ = self.__qrPicked(my_array, mode='reduced')
         return my_array
+
 
 class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
     '''
-    Orthogonalizes the basis in vector-weighted Euclidean L2 inner product, i.e., the output basis will satisfy
+    Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
+    i.e., the output basis will satisfy
     $$\\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},$$
-    where $\\mathbf{w}$ is the weighting vector. Typically, this inner product is used for orthogonalizing with
-    respect to cell volumes.
+    where $\\mathbf{w}$ is the weighting vector. Typically, this inner product
+    is used for orthogonalizing with respect to cell volumes
     '''
-    def __init__(self,weighting_vector: np.ndarray,qrFnc=None):
+    def __init__(self, weighting_vector: np.ndarray, qrFnc=None):
         '''
-        Constructor for the EuclideanVectorWeightedL2Orthogonalizer that initializes the orthogonalizer with the
-        provided weighting vector and an optional custom QR decomposition function.
+        Constructor for the EuclideanVectorWeightedL2Orthogonalizer that
+        initializes the orthogonalizer with the provided weighting vector and
+        an optional custom QR decomposition function.
         Args:
             weighting_vector (np.ndarray): a 1-D NumPy array that the matrix will be orthogonalized against. The
                 length of the array must match the number of rows in the matrix that will be orthogonalized.
@@ -138,6 +142,6 @@ class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
         '''
         assert my_array.shape[0] == self.__weighting_vector.size, "Weighting vector does not match basis size"
         tmp = scipy.sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
-        my_array,_ = self.__qrPicked(tmp,mode='reduced')
+        my_array, _ = self.__qrPicked(tmp, mode='reduced')
         my_array = scipy.sparse.diags(np.sqrt(1./self.__weighting_vector)) @ my_array
         return my_array

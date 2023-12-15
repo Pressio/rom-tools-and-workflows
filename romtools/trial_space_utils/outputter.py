@@ -59,6 +59,7 @@ except ImportError:
     pass
 
 
+
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     '''
     Save trial space information to a compressed or uncompressed NumPy .npz file.
@@ -72,11 +73,14 @@ def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) ->
         npz_output("trial_space.npz", my_trial_space)
     '''
     if compress:
-        np.savez_compressed(filename, shift=trial_space.getShiftVector(),
-            basis=trial_space.getBasis())
+        np.savez_compressed(filename,
+                            shift=trial_space.getShiftVector(),
+                            basis=trial_space.getBasis())
     else:
-        np.savez(filename, shift=trial_space.getShiftVector(),
-            basis=trial_space.getBasis())
+        np.savez(filename,
+                 shift=trial_space.getShiftVector(),
+                 basis=trial_space.getBasis())
+
 
 def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
     '''
@@ -92,6 +96,7 @@ def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
     with h5py.File(output_filename, 'w') as f:
         f.create_dataset('shift', data=trial_space.getShiftVector())
         f.create_dataset('basis', data=trial_space.getBasis())
+
 
 def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: AbstractTrialSpace, var_names: list = None) -> None:
     '''
@@ -140,7 +145,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
 
         for j in range(num_modes):
             field_name = field_names[i*(num_modes+1) + j]
-            values = trial_space.getBasis()[i*num_nodes:(i+1)*num_nodes,j]
+            values = trial_space.getBasis()[i*num_nodes:(i+1)*num_nodes, j]
             e.put_node_variable_values(field_name, 1, values)
 
     e.close()

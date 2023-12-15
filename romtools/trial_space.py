@@ -84,7 +84,8 @@ class AbstractTrialSpace(abc.ABC):
 
     @abc.abstractmethod
     def getDimension(self):
-        '''Retrieves the dimension of the trial space
+        '''
+        Retrieves the dimension of the trial space
 
         Returns:
             int: The dimension of the trial space.
@@ -120,6 +121,16 @@ class AbstractTrialSpace(abc.ABC):
         '''
         pass
 
+def tensor_to_matrix(tensor_input):
+    output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
+                                         tensor_input.shape[2])
+    return output_tensor
+
+def matrix_to_tensor(n_var, matrix_input):
+    d1 = int(matrix_input.shape[0] / n_var)
+    d2 = matrix_input.shape[1]
+    output_matrix = matrix_input.reshape(n_var, d1, d2)
+    return output_matrix
 
 
 class DictionaryTrialSpace(AbstractTrialSpace):
@@ -130,9 +141,10 @@ class DictionaryTrialSpace(AbstractTrialSpace):
 
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))$$
 
-    where the orthogonalization, splitting, and shifts are defined by their respective classes
+    where the orthogonalization, splitting, and shifts are defined by their
+    respective classes
     '''
-    def __init__(self,snapshot_data,shifter,splitter,orthogonalizer):
+    def __init__(self, snapshot_data, shifter, splitter, orthogonalizer):
         '''
         Constructor for the reduced basis trial space without truncation.
 
@@ -147,12 +159,15 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         snapshot data.
         '''
 
-        # Compute basis
-        snapshots = snapshot_data.getSnapshotsAsArray()
-        shifted_snapshots,self.__shift_vector = shifter(snapshots)
-        self.__basis = splitter(shifted_snapshots)
+        # compute basis
+        snapshots = snapshot_data.get_snapshot_tensor()
+        n_var = snapshots.shape[0]
+        shifted_snapshots, self.__shift_vector = shifter(snapshots)
+        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
-        self.__dimension = self.__basis.shape[1]
+        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__dimension = self.__basis.shape[2]
 
     def getDimension(self):
         '''
@@ -192,8 +207,9 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{truncate}( \\boldsymbol U ))$$
 
-    where $\\boldsymbol U$ are the left singular vectors and the orthogonalization,
-    truncation, splitting, and shifts are defined by their respective classes.
+    where $\\boldsymbol U$ are the left singular vectors and the
+    orthogonalization, truncation, splitting, and shifts are defined
+    by their respective classes.
 
     For truncation, we enable truncation based on a fixed dimension or the decay
     of singular values; please refer to the documentation for the truncater.
@@ -225,17 +241,20 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         various basis manipulation operations, including truncation, shifting, splitting, and orthogonalization.
         '''
 
-        snapshots = snapshots.getSnapshotsAsArray()
-        shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        shifted_split_snapshots = splitter(shifted_snapshots)
+        snapshot_tensor = snapshots.get_snapshot_tensor()
+        n_var = snapshot_tensor.shape[0]
+        shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
+        snapshot_matrix = tensor_to_matrix(shifted_snapshot_tensor)
+        shifted_split_snapshots = splitter(snapshot_matrix)
 
-        svdPicked = np.linalg.svd if svdFnc is None else svdFnc
-        lsv, svals, _ = svdPicked(shifted_split_snapshots, full_matrices=False, \
-                                  compute_uv=True, hermitian=False)
+        svd_picked = np.linalg.svd if svdFnc is None else svdFnc
+        lsv, svals, _ = svd_picked(shifted_split_snapshots, full_matrices=False,
+                                   compute_uv=True, hermitian=False)
 
         self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
-        self.__dimension = self.__basis.shape[1]
+        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__dimension = self.__basis.shape[2]
 
     def getDimension(self):
         '''
@@ -275,8 +294,9 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
     $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))$$
 
-    where $\\boldsymbol U$ are the left singular vectors and the orthogonalization,
-    truncation, splitting, and shifts are defined by their respective classes.
+    where $\\boldsymbol U$ are the left singular vectors and the
+    orthogonalization, truncation, splitting, and shifts are defined by their
+    respective classes.
 
     For truncation, we enable truncation based on a fixed dimension or the decay of singular values;
     please refer to the documentation for the truncater.
@@ -305,16 +325,22 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         orthogonalization.
         '''
 
-        # Compute basis
-        snapshots = snapshot_data.getSnapshotsAsArray()
-        shifted_snapshots,self.__shift_vector = shifter(snapshots)
-        scaled_shifted_snapshots = scaler.preScaling(shifted_snapshots)
-        scaled_shifted_and_split_snapshots = splitter(scaled_shifted_snapshots)
-        lsv,svals,_ = np.linalg.svd(scaled_shifted_and_split_snapshots,full_matrices=False)
-        self.__basis = truncater(lsv,svals)
-        self.__basis = scaler.postScaling(self.__basis)
+        # compute basis
+        snapshot_tensor = snapshot_data.get_snapshot_tensor()
+        n_var = snapshot_tensor.shape[0]
+        shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
+        scaled_shifted_snapshot_tensor = scaler.pre_scaling(shifted_snapshot_tensor)
+        snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshot_tensor)
+        snapshot_matrix = splitter(snapshot_matrix)
+
+        lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
+        self.__basis = truncater(lsv, svals)
+        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = scaler.post_scaling(self.__basis)
+        self.__basis = tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
-        self.__dimension = self.__basis.shape[1]
+        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__dimension = self.__basis.shape[2]
 
     def getDimension(self):
         '''

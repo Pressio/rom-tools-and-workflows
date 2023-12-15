@@ -13,29 +13,23 @@ class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):
         self.snapshots = myData
 
-    def getSnapshotsAsListOfArrays(self):
+    def get_snapshot_tensor(self):
         return self.snapshots
 
-    def getMeshGids(self):
+    def get_mesh_gids(self):
         return myGIDs
-
-    def getVariableNames(self):
-        return ['u','v','w']
-
-    def getNumVars(self) -> int:
-        return 3
 
 def construct_snapshots(comm):
     rank = comm.Get_rank()
     if rank == 0:
         myGids = np.array([0,1,2])
-        myData = [np.random.normal(size=(9,5))]
+        myData = np.random.normal(size=(3,3,5))
     elif rank==1:
         myGids = np.array([6,7,8,9,10])
-        myData = [np.random.normal(size=(15,5))]
+        myData = np.random.normal(size=(3,5,5))
     else:
         myGids = np.array([3,4,5])
-        myData = [np.random.normal(size=(9,5))]
+        myData = np.random.normal(size=(3,3,5))
 
     return DistributedSnapshots(myData, myGids)
 
@@ -63,13 +57,13 @@ def test_trial_space_from_pod_mpi():
         U = myTrialSpace.getBasis()
         k = myTrialSpace.getDimension()
         if rank == 0:
-            assert np.allclose(U, np.zeros((9,2)))
+            assert np.allclose(U, np.zeros((3,3,2)))
             assert np.allclose(2, k)
         elif rank==1:
-            assert(np.allclose(U, np.ones((15,2))))
+            assert(np.allclose(U, np.ones((3,5,2))))
             assert np.allclose(2, k)
         elif rank==2:
-            assert(np.allclose(U, np.ones((9,2))*2))
+            assert(np.allclose(U, np.ones((3,3,2))*2))
             assert np.allclose(2, k)
     else:
         helpers.mpi_skipped_test_mismatching_commsize(comm, "test_trial_space_from_pod_mpi", 3)

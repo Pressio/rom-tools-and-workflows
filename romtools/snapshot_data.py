@@ -63,8 +63,8 @@ $$\\mathbf{S} = \\begin{bmatrix}
 $$
 
 
-The SnapshotData class encapsulates the information contained in set of snapshots,
-and is the main class used in the construction of trial spaces
+The SnapshotData class encapsulates the information contained in set of
+snapshots, and is the main class used in the construction of trial spaces
 '''
 
 import abc
@@ -84,20 +84,15 @@ class AbstractSnapshotData(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def getSnapshotsAsListOfArrays(self) -> Iterable[np.ndarray]:
+    def get_snapshot_tensor(self) -> np.ndarray:
         '''
-        Retrieves the snapshots as a list of NumPy arrays. Each array represents a single snapshot.
-
-        Returns:
-            Iterable[np.ndarray]: An iterable of NumPy arrays representing the snapshots.
-
-        Note:
-        Subclasses must implement this method to provide access to the actual snapshot data.
+        Returns numpy tensor of shape N_vars x N_space x N_samples
+        (assuming each snapshot corresponds to a column vector)
         '''
         pass
 
     @abc.abstractmethod
-    def getMeshGids(self):
+    def get_mesh_gids(self):
         '''
         Retrieves global ids associated with mesh points (used for hyper-reduction)
 
@@ -109,48 +104,16 @@ class AbstractSnapshotData(abc.ABC):
         '''
         pass
 
-    @abc.abstractmethod
-    def getVariableNames(self) -> Iterable[str]:
+    def get_snapshot_matrix(self) -> np.ndarray:
         '''
-        Retrieves the names of different state variables associated with the snapshot data.
-
-        Returns:
-            list: A list of variable names.
-
-        Note:
-        Subclasses must ensure this list is properly defined and set in the constructor.
+        Returns numpy matrix of shape N_vars N_space x N_samples
+        (assuming each snapshot corresponds to a column vector)
         '''
-        pass
-
-    def getSnapshotsAsArray(self) -> np.ndarray:
-        '''
-        Retrieves the snapshots as a single NumPy array by converting the list of snapshots into an array.
-
-        Returns:
-            np.ndarray: A NumPy array containing all the snapshots.
-
-        Note:
-        This method provides a convenient way to access the snapshot data as a single array.
-        Subclasses can use the `getSnapshotsAsListOfArrays()` method to implement this.
-        '''
-        return _listOfSnapshotsToArray(self.getSnapshotsAsListOfArrays())
-
-    def getNumVars(self) -> int:
-        '''
-        Returns the number of state variables in the snapshot data
-        (e.g., 5 for the compressible Navier--Stokes equations in 3 dimensions)
-
-        Returns:
-            int: The number of variables.
-
-        Note:
-        Subclasses should make sure that this method returns the correct number of variables
-        associated with the snapshot data.
-        '''
-        return len(self.getVariableNames())
-
-def _listOfSnapshotsToArray(list_of_snapshots: Iterable[np.ndarray]) -> np.ndarray:
-    '''
-    Helper function to move snapshot list into a matrix
-    '''
-    return np.hstack([ar.reshape(ar.shape[0],-1) for ar in list_of_snapshots])
+        variable_ordering = 'C'
+        snapshot_tensor = self.get_snapshot_tensor()
+        matrix_shape = (snapshot_tensor.shape[0]*snapshot_tensor.shape[1],
+                        snapshot_tensor.shape[2])
+        snapshot_matrix = np.reshape(snapshot_tensor,
+                                     matrix_shape,
+                                     variable_ordering)
+        return snapshot_matrix

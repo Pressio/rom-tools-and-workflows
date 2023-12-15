@@ -73,7 +73,7 @@ The Scaler encapsulates this information
 
 import abc
 import numpy as np
-import scipy.sparse
+
 
 class AbstractScaler(abc.ABC):
     '''
@@ -81,72 +81,18 @@ class AbstractScaler(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def preScaling(self, data_matrix: np.ndarray) -> np.ndarray:
+    def pre_scaling(self, data_matrix: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
         '''
         pass
 
     @abc.abstractmethod
-    def postScaling(self, data_matrix: np.ndarray) -> np.ndarray:
+    def post_scaling(self, data_matrix: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
         '''
         pass
-
-
-##================
-#Helper functions
-#=================
-def extractIthVariableData(i,n_var,data_matrix,variable_ordering):
-    '''
-    Extract data corresponding to the i-th variable from a data matrix.
-
-    Args:
-        i (int): The index of the variable to extract.
-        n_var (int): The total number of variables.
-        data_matrix (numpy.ndarray): The data matrix containing variables.
-        variable_ordering (str): The ordering of variables ('F' for Fortran, 'C' for C).
-
-    Returns:
-        numpy.ndarray: A subarray containing data for the i-th variable.
-
-    Example:
-        variable_data = extractIthVariableData(1, 3, my_data_matrix, 'F')
-    '''
-    if variable_ordering == 'F':
-        return data_matrix[i::n_var]
-    elif variable_ordering == 'C':
-        nx = int( data_matrix.shape[0] / n_var)
-        start_index = i*nx
-        end_index = (i+1)*nx
-        return data_matrix[start_index:end_index]
-
-def scaleDataMatrixForIthVar(i,n_var,data_matrix,variable_ordering,var_scale):
-    '''
-    Scale the data corresponding to the i-th variable in a data matrix.
-
-    Args:
-        i (int): The index of the variable to scale.
-        n_var (int): The total number of variables.
-        data_matrix (numpy.ndarray): The data matrix containing variables to scale.
-        variable_ordering (str): The ordering of variables ('F' for Fortran, 'C' for C).
-        var_scale (float): The scaling factor to apply to the data.
-
-    Returns:
-        numpy.ndarray: The scaled data matrix.
-
-    Example:
-        scaled_matrix = scaleDataMatrixForIthVar(2, 4, my_data_matrix, 'C', 1.5)
-    '''
-    if variable_ordering == 'F':
-        data_matrix[i::n_var] *= var_scale
-    elif variable_ordering == 'C':
-        nx = int( data_matrix.shape[0] / n_var)
-        start_index = i*nx
-        end_index = (i+1)*nx
-        data_matrix[start_index:end_index] *= var_scale
-    return data_matrix
 
 
 class NoOpScaler(AbstractScaler):
@@ -156,26 +102,26 @@ class NoOpScaler(AbstractScaler):
     def __init__(self):
         pass
 
-    def preScaling(self,data_matrix):
+    def pre_scaling(self, data_matrix):
         return data_matrix
 
-    def postScaling(self,data_matrix):
+    def post_scaling(self, data_matrix):
         return data_matrix
 
 
 class VectorScaler(AbstractScaler):
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
-    For a snapshot matrix $\\mathbf{S} \\in \\mathbb{R}^{N \\times K}$, the VectorScaler
-    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^N$, and scales by
+    For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
+    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N$, and scales by
     $$\\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}$$
     before performing POD (i.e., POD is performed on $\\mathbf{S}^*$). After POD is performed, the bases
     are post-scaled by $$\\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}$$
 
-    **Note that scaling can cause bases to not be orthonormal; we do not recommend using scalers with
-    the NoOpOrthonormalizer**
+    **Note that scaling can cause bases to not be orthonormal; we do not
+    recommend using scalers with the NoOpOrthonormalizer**
     '''
-    def __init__(self,scaling_vector):
+    def __init__(self, scaling_vector):
         '''
         Constructor for the VectorScaler.
 
@@ -184,11 +130,11 @@ class VectorScaler(AbstractScaler):
 
         This constructor initializes the VectorScaler with the specified scaling vector.
         '''
-        self.__scaling_vector_matrix = scipy.sparse.diags(scaling_vector)
-        self.__scaling_vector_matrix_inv = scipy.sparse.diags(1./scaling_vector)
+        self.__scaling_vector_matrix = scaling_vector
+        self.__scaling_vector_matrix_inv = 1./scaling_vector
 
 
-    def preScaling(self, data_matrix):
+    def pre_scaling(self, data_matrix):
         '''
         Scales the input data matrix using the inverse of the scaling vector and returns the scaled matrix.
 
@@ -198,9 +144,9 @@ class VectorScaler(AbstractScaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        return self.__scaling_vector_matrix_inv @ data_matrix
+        return self.__scaling_vector_matrix_inv[None, :, None] * data_matrix
 
-    def postScaling(self,data_matrix):
+    def post_scaling(self, data_matrix):
         '''
         Scales the input data matrix using the scaling vector and returns the scaled matrix.
 
@@ -210,7 +156,7 @@ class VectorScaler(AbstractScaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        return self.__scaling_vector_matrix  @ data_matrix
+        return self.__scaling_vector_matrix[None, :, None] * data_matrix
 
 
 
@@ -228,42 +174,34 @@ class VariableScaler(AbstractScaler):
         $s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
       - variance: for the $i$th state variable $u_i$, we will compute the scaling as
         $s_i = \\mathrm{std}( S_i ) $, where $S_i$ denotes the snapshot matrix of the $i$th variable.
-
-    **This class requires you to specify variable ordering (either 'F' or 'C')**
-    For a state with variables $u,v,w$ defined at $n$ discrete points, these orderings are
-
-    **Order F variable ordering: $[u_1,v_1,w_1,u_2,v_2,w_2,...,u_n,v_n,w_n]$**
-
-    **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
     '''
-    def __init__(self,scaling_type,variable_ordering,n_var):
+    def __init__(self, scaling_type):
         '''
         Constructor for the VariableScaler.
 
         Args:
-            scaling_type (str): The scaling method to use ('max_abs', 'mean_abs', or 'variance').
-            variable_ordering (str): Variable ordering ('F' or 'C').
-            n_var (int): The number of state variables.
+            scaling_type (str): The scaling method to use ('max_abs',
+            'mean_abs', or 'variance').
 
-        This constructor initializes the VariableScaler with the specified scaling type, variable ordering, and
-        number of variables.
+        This constructor initializes the VariableScaler with the specified
+        scaling type, variable ordering, and number of variables.
         '''
-        assert variable_ordering == 'C' or variable_ordering == 'F', "Invalid variable ordering, options are F and C"
         self.__scaling_type = scaling_type
-        self.__variable_ordering = variable_ordering
         self.have_scales_been_initialized = False
-        self.__n_var = n_var
+        self.var_scales_ = None
 
-    def initializeScalings(self,data_matrix):
+    def initializeScalings(self, data_tensor):
         '''
-        Initializes the scaling factors for each state variable based on the specified method.
+        Initializes the scaling factors for each state variable based on the
+        specified method.
 
         Args:
             data_matrix (np.ndarray): The input data matrix.
         '''
-        self.var_scales_ = np.ones(self.__n_var)
-        for i in range(self.__n_var):
-            ith_var = extractIthVariableData(i,self.__n_var,data_matrix,self.__variable_ordering)
+        n_var = data_tensor.shape[0]
+        self.var_scales_ = np.ones(n_var)
+        for i in range(n_var):
+            ith_var = data_tensor[i]
             if self.__scaling_type == 'max_abs':
                 var_scale = np.max(abs(ith_var))
             elif self.__scaling_type == 'mean_abs':
@@ -271,16 +209,17 @@ class VariableScaler(AbstractScaler):
             elif self.__scaling_type == 'variance':
                 var_scale = np.sqrt(np.var(ith_var))
 
-            ## in case of a zero field (e.g., 2D)
+            # in case of a zero field (e.g., 2D)
             if var_scale < 1e-10:
                 var_scale = 1.
             self.var_scales_[i] = var_scale
         self.have_scales_been_initialized = True
 
-    ## These are all inplace operations
-    def preScaling(self, data_matrix):
+    # These are all inplace operations
+    def pre_scaling(self, data_tensor):
         '''
-        Scales the input data matrix before processing, taking into account the previously initialized scaling factors.
+        Scales the input data matrix before processing, taking into account
+        the previously initialized scaling factors.
 
         Args:
             data_matrix (np.ndarray): The input data matrix to be scaled.
@@ -288,47 +227,62 @@ class VariableScaler(AbstractScaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
+        n_var = data_tensor.shape[0]
         if self.have_scales_been_initialized:
             pass
         else:
-            self.initializeScalings(data_matrix)
+            self.initializeScalings(data_tensor)
         # scale each field (variable scaling)
-        for i in range(self.__n_var):
-            data_matrix = scaleDataMatrixForIthVar(i,self.__n_var,data_matrix,self.__variable_ordering,1./self.var_scales_[i])
-        return data_matrix
+        for i in range(n_var):
+            data_tensor[i] = data_tensor[i] / self.var_scales_[i]
+        return data_tensor
 
-    def postScaling(self,data_matrix):
+    def post_scaling(self, data_tensor):
+        '''
+        Scales the input data matrix using the scaling vector and returns the
+        scaled matrix.
+
+        Args:
+            data_matrix (np.ndarray): The input data matrix to be scaled.
+
+        Returns:
+            np.ndarray: The scaled data matrix.
+        '''
         assert self.have_scales_been_initialized, "Scales in VariableScaler have not been initialized"
         # scale each field
-        for i in range(self.__n_var):
-            data_matrix = scaleDataMatrixForIthVar(i,self.__n_var,data_matrix,self.__variable_ordering,self.var_scales_[i])
-        return data_matrix
+        n_var = data_tensor.shape[0]
+        for i in range(n_var):
+            data_tensor[i] = data_tensor[i]*self.var_scales_[i]
+        return data_tensor
+
 
 class VariableAndVectorScaler(AbstractScaler):
     '''
-    Concrete implementation designed to scale snapshot matrices involving multiple state variables by both the variable
-    magnitudes and an additional vector.
-    This is particularly useful when wishing to perform POD for, e.g., a finite volume method where we want to scale by
-    the cell volumes as well as the variable magnitudes. This implementation combines the VectorScaler and
-    VariableScaler classes.
+    Concrete implementation designed to scale snapshot matrices involving
+    multiple state variables by both the variable magnitudes and an additional
+    vector.  This is particularly useful when wishing to perform POD for,
+    e.g., a finite volume method where we want to scale by the cell volumes as
+    well as the variable magnitudes. This implementation combines the
+    VectorScaler and VariableScaler classes.
     '''
 
-    def __init__(self,scaling_vector,scaling_type,variable_ordering,n_var):
+    def __init__(self, scaling_vector, scaling_type):
         '''
         Constructor for the VariableAndVectorScaler.
 
         Args:
-            scaling_vector: Array containing the scaling vector for each row in the snapshot matrix.
-            scaling_type: Scaling method ('max_abs', 'mean_abs', or 'variance') for variable magnitudes.
-            variable_ordering: Variable ordering ('F' or 'C') for state variables.
-            n_var: The number of state variables.
+            scaling_vector: Array containing the scaling vector for each row
+            in the snapshot matrix.
+            scaling_type: Scaling method ('max_abs',
+            'mean_abs', or 'variance') for variable magnitudes.
 
-        This constructor initializes the `VariableAndVectorScaler` with the specified parameters.
+        This constructor initializes the `VariableAndVectorScaler` with the
+        specified parameters.
         '''
-        self.__myVariableScaler = VariableScaler(scaling_type,variable_ordering,n_var)
-        self.__myVectorScaler =  VectorScaler(scaling_vector)
+        self.__my_variable_scaler = VariableScaler(scaling_type)
+        self.__my_vector_scaler = VectorScaler(scaling_vector)
 
-    def preScaling(self, data_matrix):
+    def pre_scaling(self, data_tensor):
         '''
         Scales the input data matrix before processing, first using the `VariableScaler` and then the `VectorScaler`.
 
@@ -338,10 +292,10 @@ class VariableAndVectorScaler(AbstractScaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        data_matrix = self.__myVariableScaler.preScaling(data_matrix)
-        return self.__myVectorScaler.preScaling(data_matrix)
+        data_tensor = self.__my_variable_scaler.pre_scaling(data_tensor)
+        return self.__my_vector_scaler.pre_scaling(data_tensor)
 
-    def postScaling(self,data_matrix):
+    def post_scaling(self, data_tensor):
         '''
         Scales the input data matrix after processing, first using the `VectorScaler` and then the `VariableScaler`.
 
@@ -351,5 +305,5 @@ class VariableAndVectorScaler(AbstractScaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        data_matrix = self.__myVectorScaler.postScaling(data_matrix)
-        return self.__myVariableScaler.postScaling(data_matrix)
+        data_tensor = self.__my_vector_scaler.post_scaling(data_tensor)
+        return self.__my_variable_scaler.post_scaling(data_tensor)
