@@ -57,27 +57,31 @@ class SamplingCouplerBase(abc.ABC):
     Partially explicit implementation
     '''
 
-    def __init__(self, template_directory, template_input_file, \
-                 work_directory = None,
-                 work_directory_base_name = 'work',\
-                 sol_directory_base_name = 'run_'):
+    def __init__(self, template_directory: str,
+                 template_input_file: str,
+                 work_directory: str = None,
+                 work_directory_base_name: str = 'work',
+                 sol_directory_base_name: str = 'run_'):
         '''
         Initialize a SamplingCouplerBase object.
 
         Args:
-            template_directory (str): The directory containing input file templates.
+            template_directory (str): The directory containing input file
+                templates.
             template_input_file (str): The template input file for the model.
-            work_directory (str, optional): The working directory for the sampling. If not provided, the current
-                directory is used.
-            work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
-            sol_directory_base_name (str, optional): The base name for the solution directories within the working
-                directory. Defaults to 'run_'
+            work_directory (str, optional): The working directory for the
+                sampling. If not provided, the current directory is used.
+            work_directory_base_name (str, optional): The base name for the
+                working directory. Defaults to 'work'.
+            sol_directory_base_name (str, optional): The base name for the
+                solution directories within the working directory.
+                Defaults to 'run_'
         '''
 
-        self.__base_directory = os.getcwd() + '/' if work_directory is None else work_directory
+        self.__base_directory = f'{os.getcwd()}/' if work_directory is None else work_directory
 
-        ## check if template_directory is an absolute path
-        strings_to_check = min(5,np.size(template_directory))
+        # check if template_directory is an absolute path
+        strings_to_check = min(5, np.size(template_directory))
         assert (
             self.__base_directory[0:strings_to_check] ==
             template_directory[0:strings_to_check]
@@ -87,24 +91,26 @@ class SamplingCouplerBase(abc.ABC):
         self.__work_directory_base_name = work_directory_base_name
         self.__sol_directory_base_name = sol_directory_base_name
 
-
-    def getInputFileName(self):
+    def get_input_filename(self):
         '''Get the name of the template input file.'''
         return self.__template_input_file
 
-    def getWorkDirectoryBaseName(self):
+    def get_work_directory_basename(self):
         '''Get the base name for the working directory.'''
         return self.__work_directory_base_name
 
-    def getSolDirectoryBaseName(self):
-        '''Get the base name for the solution directories within the working directory.'''
-        return self.__work_directory_base_name + '/' + self.__sol_directory_base_name
+    def get_sol_directory_basename(self):
+        '''
+        Get the base name for the solution directories within the working
+        directory.
+        '''
+        return f'{self.__work_directory_base_name}/{self.__sol_directory_base_name}'
 
-    def getBaseDirectory(self):
+    def get_base_directory(self):
         '''Get the base directory for sampling.'''
         return self.__base_directory
 
-    def createCases(self,starting_sample_no,parameter_samples):
+    def create_cases(self, starting_sample_no, parameter_samples):
         '''
         Create sampling cases with parameter samples.
 
@@ -113,13 +119,11 @@ class SamplingCouplerBase(abc.ABC):
             parameter_samples (np.ndarray): An array of parameter samples.
         '''
         n_samples = parameter_samples.shape[0]
-        path_to_work_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/'
-        if os.path.isdir(path_to_work_dir):
-            pass
-        else:
+        path_to_work_dir = f'{self.__base_directory}/{self.__work_directory_base_name}/'
+        if not os.path.isdir(path_to_work_dir):
             os.mkdir(path_to_work_dir)
 
-        for sample_no in range(starting_sample_no,starting_sample_no + n_samples):
+        for sample_no in range(starting_sample_no, starting_sample_no + n_samples):
             path_to_dir = (
                 self.__base_directory + '/' +
                 self.__work_directory_base_name + '/' +
@@ -129,23 +133,24 @@ class SamplingCouplerBase(abc.ABC):
                 pass
             else:
                 os.mkdir(path_to_dir)
-            self.__setupCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
+            self.__setup_case(path_to_dir, parameter_samples[sample_no - starting_sample_no])
 
-    def __setupCase(self,path_to_case,parameter_samples):
+    def __setup_case(self, path_to_case, parameter_samples):
         '''
         Set up a specific sampling case.
 
         Args:
-            path_to_case (str): The path to the directory for the sampling case.
+            path_to_case (str): The path to the directory for the sampling
+                case.
             parameter_samples (np.ndarray): Parameter samples for the case.
         '''
         os.chdir(path_to_case)
         os.system('cp ' + self.__template_directory + '/' + self.__template_input_file + ' . ')
-        self.setParametersInInput(self.__template_input_file,parameter_samples)
-        os.chdir(self.getBaseDirectory())
+        self.set_parameters_in_input(self.__template_input_file, parameter_samples)
+        os.chdir(self.get_base_directory())
 
     @abc.abstractmethod
-    def setParametersInInput(self,filename,parameter_sample):
+    def set_parameters_in_input(self, filename, parameter_sample):
         '''
         This function is called from a run directory. It needs to update a
         template file with parameter values defined in parameter_sample.
@@ -154,16 +159,16 @@ class SamplingCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def runModel(self,filename,parameter_values):
+    def run_model(self, filename, parameter_values):
         '''
-        This function is called from a run directory. It needs to execute our model.
-        If the model runs succesfully, return 0
-        If fails, return 1
+        This function is called from a run directory. It needs to execute our
+        model.  If the model runs succesfully, return 0.  If fails, return 1.
         '''
         return 0
 
     @abc.abstractmethod
-    def getParameterSpace(self):
+    def get_parameter_space(self):
         '''
-        This function should return a ParameterSpace class defining our parameter space.
+        This function should return a ParameterSpace class defining our
+        parameter space.
         '''
