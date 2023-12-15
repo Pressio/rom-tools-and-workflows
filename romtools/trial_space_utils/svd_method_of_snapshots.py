@@ -70,6 +70,9 @@ def A_transpose_dot_bImpl(A, b, comm):
         for j in range(1, num_processes):
             comm.Send(ATb_glob, dest=j)
 
+    else:
+        comm.Recv(ATb_glob, source=0)
+    return np.reshape(ATb_glob, np.shape(tmp))
 
 def svdMethodOfSnapshotsImpl(snapshots, comm):
     '''@private'''
@@ -79,14 +82,13 @@ def svdMethodOfSnapshotsImpl(snapshots, comm):
     # energy, sigma: energy associated with each mode (singular values)
 
     STS = A_transpose_dot_bImpl(snapshots, snapshots, comm)
-    Lam, E = np.linalg.eig(STS)
+    Lam,E = np.linalg.eig(STS)
     sigma = np.sqrt(Lam)
     U = np.zeros(np.shape(snapshots))
     U[:] = np.dot(snapshots, np.dot(E, np.diag(1./sigma)))
-    # sort by singular values
+    ## sort by singular values
     ordering = np.argsort(sigma)[::-1]
     return U[:, ordering], sigma[ordering]
-
 
 def globalAbsSumImpl(r, comm):
     '''@private'''
@@ -96,7 +98,7 @@ def globalAbsSumImpl(r, comm):
     if num_processes == 1:
         return np.sum(r)
 
-    data = comm.gather(np.sum(np.abs(r)), root=0)
+    data = comm.gather(np.sum(np.abs(r)), root = 0)
     rn_glob = np.zeros(1)
     if mpi_rank == 0:
         for j in range(0, num_processes):
@@ -106,7 +108,6 @@ def globalAbsSumImpl(r, comm):
     else:
         comm.Recv(rn_glob, source=0)
     return rn_glob[0]
-
 
 class svdMethodOfSnapshots:
     '''
@@ -136,11 +137,11 @@ class svdMethodOfSnapshots:
     eigenvalue problem in serial.
     '''
 
-    def __init__(self, comm):
+    def __init__(self,comm):
         self._comm = comm
 
     def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False, hermitian=False):
-        U, s = svdMethodOfSnapshotsImpl(snapshots, self._comm)
+        U, s = svdMethodOfSnapshotsImpl(snapshots,self._comm)
         return U, s, 'not_computed_in_method_of_snapshots'
 
 
