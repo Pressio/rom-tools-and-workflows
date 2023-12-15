@@ -1,7 +1,9 @@
-import numpy as np
-from romtools.trial_space_utils.scaler import *
 import copy
 import pytest
+import numpy as np
+import scipy.sparse
+from romtools.trial_space_utils.scaler import *
+
 
 @pytest.mark.mpi_skip
 def test_noop_scaler():

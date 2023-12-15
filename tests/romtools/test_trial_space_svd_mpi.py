@@ -1,14 +1,13 @@
-import romtools as rt
-import romtools.trial_space_utils as utils
-import copy
-import numpy as np
 import pytest
-
+import numpy as np
+import romtools as rt
+from helper_scripts import helpers
 try:
     import mpi4py
     from mpi4py import MPI
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
+
 
 class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):
@@ -66,6 +65,8 @@ def test_trial_space_from_pod_mpi():
         elif rank==2:
             assert(np.allclose(U, np.ones((3,3,2))*2))
             assert np.allclose(2, k)
+    else:
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_trial_space_from_pod_mpi", 3)
 
 if __name__=="__main__":
     test_trial_space_from_pod_mpi()

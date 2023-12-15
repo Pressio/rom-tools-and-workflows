@@ -1,6 +1,7 @@
+import pytest
 import numpy as np
 from romtools.trial_space_utils.shifter import *
-import pytest
+
 
 @pytest.mark.mpi_skip
 def test_noop_shifter():

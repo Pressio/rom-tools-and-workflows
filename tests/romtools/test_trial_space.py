@@ -1,6 +1,6 @@
 import copy
-import numpy as np
 import pytest
+import numpy as np
 import romtools as rt
 import romtools.trial_space_utils as utils
 

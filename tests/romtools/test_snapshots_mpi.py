@@ -1,7 +1,8 @@
-import romtools as rt
-import copy
-import numpy as np
 import pytest
+import numpy as np
+import romtools as rt
+from helper_scripts import helpers
+
 
 try:
     import mpi4py
@@ -38,8 +39,8 @@ def test_mpi_snapshots():
 
         sd = DistributedSnapshots(myData, myGids)
         tensor = sd.getSnapshotTensor()
-        assert tensor.shape[0] == 3 
-        assert tensor.shape[1] == myGids.shape[0] 
+        assert tensor.shape[0] == 3
+        assert tensor.shape[1] == myGids.shape[0]
         assert tensor.shape[2] == 5
 
 if __name__=="__main__":
