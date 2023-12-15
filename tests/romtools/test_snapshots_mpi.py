@@ -14,10 +14,10 @@ class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):
         self.snapshots = myData
 
-    def getSnapshotTensor(self):
+    def get_snapshot_tensor(self):
         return self.snapshots
 
-    def getMeshGids(self):
+    def get_mesh_gids(self):
         return myGIDs
 
 
@@ -38,7 +38,7 @@ def test_mpi_snapshots():
             myData = np.random.normal(size=(3,3,5))
 
         sd = DistributedSnapshots(myData, myGids)
-        tensor = sd.getSnapshotTensor()
+        tensor = sd.get_snapshot_tensor()
         assert tensor.shape[0] == 3
         assert tensor.shape[1] == myGids.shape[0]
         assert tensor.shape[2] == 5

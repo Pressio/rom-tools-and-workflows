@@ -13,10 +13,10 @@ class DistributedSnapshots(rt.AbstractSnapshotData):
     def __init__(self, myData, myGIDs):
         self.snapshots = myData
 
-    def getSnapshotTensor(self):
+    def get_snapshot_tensor(self):
         return self.snapshots
 
-    def getMeshGids(self):
+    def get_mesh_gids(self):
         return myGIDs
 
 def construct_snapshots(comm):
