@@ -125,7 +125,7 @@ def test_greedy(tmp_path):
   assert(len(parameter_samples_row_dimensions) == total_sample_size - init_sample_size + 1)
   for i in range(len(parameter_samples_row_dimensions)):
       assert(parameter_samples_row_dimensions[i] == init_sample_size + i)
-      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.getParameterSpace().getNames()))
+      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.getParameterSpace().get_names()))
 
 
 if __name__=="__main__":
