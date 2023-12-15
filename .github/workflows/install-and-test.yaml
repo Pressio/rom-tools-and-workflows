@@ -30,11 +30,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      #- name: Check for MPI tests with invalid rank count
-      #  run: |
-      #    python $GITHUB_WORKSPACE/helper_scripts/check-mpi-size.py \
-      #    --base origin/${{ github.event.pull_request.base.ref }} \
-      #    --head ${{ github.event.pull_request.head.sha }}
+      - name: Check for MPI tests with invalid rank count
+        run: |
+          python $GITHUB_WORKSPACE/helper_scripts/check-mpi-size.py
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
