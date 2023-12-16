@@ -51,50 +51,48 @@ import abc
 import numpy as np
 
 
-'''The abstract parameter space'''
 class AbstractParameterSpace(abc.ABC):
 
     ''' Abstract implementation'''
     @abc.abstractmethod
-    def getNames(self) -> list:
+    def get_names(self) -> list:
         '''
         Returns a list of parameter names
         # e.g., ['sigma','beta',...]
         '''
-        pass
 
     @abc.abstractmethod
-    def getDimensionality(self) -> int:
+    def get_dimensionality(self) -> int:
         '''
         Returns an integer for the size
         of the parameter domain
         '''
-        pass
 
     @abc.abstractmethod
-    def generateSamples(self,number_of_samples):
+    def generate_samples(self, number_of_samples):
         '''
         Generates and returns number of parameter samples
         '''
-        pass
 
 
 class UniformParameterSpace(AbstractParameterSpace):
-    '''Concrete implementation for a uniform parameter space with random sampling'''
+    '''
+    Concrete implementation for a uniform parameter space with random sampling
+    '''
 
-    def __init__(self,parameter_names,lower_bounds,upper_bounds):
+    def __init__(self, parameter_names, lower_bounds, upper_bounds):
         self.__parameter_names = parameter_names
         self.__lower_bounds = lower_bounds
         self.__upper_bounds = upper_bounds
         self.__n_params = len(self.__lower_bounds)
 
-    def getNames(self):
+    def get_names(self):
         return self.__parameter_names
 
-    def getDimensionality(self):
+    def get_dimensionality(self):
         return self.__n_params
 
-    def generateSamples(self,number_of_samples):
-        samples = np.random.uniform(self.__lower_bounds,self.__upper_bounds,\
-                                    size=(number_of_samples,self.__n_params))
+    def generate_samples(self, number_of_samples):
+        samples = np.random.uniform(self.__lower_bounds, self.__upper_bounds,
+                                    size=(number_of_samples, self.__n_params))
         return samples

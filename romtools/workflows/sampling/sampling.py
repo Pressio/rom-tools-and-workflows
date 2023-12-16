@@ -60,7 +60,7 @@ def run_sampling(sampling_coupler: SamplingCouplerBase,
 
     # create parameter domain
     parameter_space = sampling_coupler.get_parameter_space()
-    parameter_samples = parameter_space.generateSamples(testing_sample_size)
+    parameter_samples = parameter_space.generate_samples(testing_sample_size)
 
     # Make FOM/ROM directories
     starting_sample_index = 0
