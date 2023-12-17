@@ -17,7 +17,7 @@ def test_ecsw_nnls():
     # test weights from NNLS
     assert np.allclose(full_mesh_lhs@full_mesh_weights, full_mesh_rhs)
 
-    # test indices from NNLS
+    # test sample mesh inices indices from NNLS
     sample_mesh_lhs = full_mesh_lhs[:, sample_mesh_indices]
 
     assert np.allclose(full_mesh_lhs@full_mesh_weights, sample_mesh_lhs@sample_mesh_weights)
@@ -32,10 +32,10 @@ def test_ecsw_matrix():
 
     full_mesh_lhs, full_mesh_rhs = ecsw._construct_linear_system(residual_snapshots, test_basis, 1, 'C')
 
-    # Check left-hand-side
+    # Check that left-hand-side is correctly constructed
     assert np.allclose((np.sum(full_mesh_lhs, axis=1)).reshape((3, 5), order='F'), (test_basis.T)@residual_snapshots)
 
-    # Check right-hand-side
+    # Check right-hand-side is correctly constructed
     assert np.allclose(full_mesh_rhs.reshape((3, 5), order='F'), (test_basis.T)@residual_snapshots)
 
 
@@ -50,13 +50,13 @@ def test_full_ecsw():
     full_mesh_weights = np.zeros(residual_snapshots.shape[0])
     full_mesh_weights[sample_mesh_indices] = sample_mesh_weights
 
-    # Check full approximation
+    # Check that the full approximation of the residual snapshots is correct
     exact = (test_basis.T)@residual_snapshots
     approx = (test_basis.T)@(np.diag(full_mesh_weights)@residual_snapshots)
 
     assert np.allclose(exact, approx)
 
-    # Check indices
+    # Check that the sample mesh indices are correct
     sample_mesh_test_basis = test_basis[sample_mesh_indices, :]
     sample_mesh_residual_snapshots = residual_snapshots[sample_mesh_indices, :]
 

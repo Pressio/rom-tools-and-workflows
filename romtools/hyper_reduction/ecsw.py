@@ -1,4 +1,51 @@
+#
+# ************************************************************************
+#
+#                         ROM Tools and Workflows
+# Copyright 2019 National Technology & Engineering Solutions of Sandia,LLC
+#                              (NTESS)
+#
+# Under the terms of Contract DE-NA0003525 with NTESS, the
+# U.S. Government retains certain rights in this software.
+#
+# ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived
+# from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Questions? Contact Eric Parish (ejparis@sandia.gov)
+#
+# ************************************************************************
+#
+
 '''
+Implementation of Energy-conserving sampling and weighting (ECSW)hyper-reduction
+
 Energy-conserving sampling and weighting (ECSW) is a hyper-reduction approach
 originally developed specifically for solid mechanics problems, but it has
 since been generalized. It is a project-then-approximate hyper-reduction
@@ -37,15 +84,40 @@ import numpy as np
 class AbstractECSWsolver(abc.ABC):
     '''
     Abstract base class for ECSW solvers
+
+    ECSW solvers should take in a linear system constructed from projected residual vector snapshots and the contributions at each mesh degree of freedom to the projected snapshot. The solvers should return arrays with sample mesh indices and weights. 
+
+    Methods:
     '''
     @abc.abstractmethod
     def __init__(self, solver_param_dict: dict = None):
+        '''
+        Set solver parameters to non-default values
+
+        Args: 
+            (optional) solver_param_dict: dictionary, with some of the following keys:
+            max_iters: int, maximum overall iterations
+            max_non_neg_iters: int, maximum inner iterations to enforce non-negativity
+            max_iters_res_unchanged: int, maximum number of iterations without any change in the residual norm before terminating
+            zero_tol: int, tolerance used to check if weights or residual norm changes are near zero
+        '''
         pass
 
     @abc.abstractmethod
-    def __call__(self, G: np.ndarray, b: np.array, tau: np.double) -> Tuple[np.ndarray, np.ndarray]:
+    def __call__(self, full_mesh_lhs: np.ndarray, full_mesh_rhs: np.array, tolerance: np.double) -> Tuple[np.ndarray, np.ndarray]:
         '''
-        Overload to compute mesh DoF indices and weights
+        Compute the sample mesh DoF indices and corresponding weights
+
+        Args:
+            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
+            full_mesh_rhs: (n_snap*n_rom,) numpy array
+            tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
+
+        Returns:
+            Tuple of numpy ndarrays. 
+            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
+            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
+        
         '''
         pass
 
@@ -56,18 +128,8 @@ class AbstractECSWsolver(abc.ABC):
 
 class ECSWsolverNNLS(AbstractECSWsolver):
     '''
-    Takes linears system G,b, returns mesh indices and weights for ECSW
-    computed via non-negative least squares algorithm from Chapman et al. 2016
+    Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs compute sample mesh indices and weights for ECSW using the non-negative least squares algorithm from Chapman et al. 2016
     DOI: 10.1002/nme.5332.
-
-    full_mesh_lhs is a [n_snap*n_rom by n_dof] numpy ndarray, where n_snap is the
-    number of residual snapshots, n_rom is the ROM dimension, and n_dof is
-    the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
-
-    full_mesh_rhs is a [n_snap*n_rom] length numpy array
-
-    tolerance is the ECSW tolerance parameter. Lower values of tolerance will result in
-    more mesh DoF samples
     '''
 
     def __init__(self, solver_param_dict: dict = None):
@@ -88,7 +150,23 @@ class ECSWsolverNNLS(AbstractECSWsolver):
                 self.zero_tol = solver_param_dict['zero_tol']
 
     def __call__(self, full_mesh_lhs: np.ndarray, full_mesh_rhs: np.array, tolerance: np.double):
-        # Solve min || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2^2 s.t. full_mesh_weights >=0, || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2 < tolerance ||full_mesh_rhs||_2
+        '''
+        Compute the sample mesh DoF indices and corresponding weights using the non-negative least squares algorithm from Chapman et al. 2016
+        DOI: 10.1002/nme.5332.
+
+        min || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2^2 s.t. full_mesh_weights >=0, || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2 < tolerance ||full_mesh_rhs||_2
+
+        Args:
+            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
+            full_mesh_rhs: (n_snap*n_rom,) numpy array
+            tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
+
+        Returns:
+            Tuple of numpy ndarrays. 
+            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
+            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
+        
+        '''
 
         n_dof = full_mesh_lhs.shape[1]
 
@@ -174,8 +252,15 @@ class ECSWsolverNNLS(AbstractECSWsolver):
 
     def __max_feasible_step(self, weights, candidate_weights):
         '''
-        determine maximum step size such that:
+        determine maximum update step size such that:
         weights + step_size * (candidate_weights-weights) >=0
+
+        Args: 
+            weights: (n,) array
+            candidate_weights: (n, array)
+
+        Returns:
+            step_size: double
         '''
         inds = np.argwhere(candidate_weights <= 0)
         step_size = 1.0
@@ -195,30 +280,17 @@ def _construct_linear_system(residual_snapshots: np.ndarray,
                              n_var: int,
                              variable_ordering: str):
     '''
-    Make linear system for ECSW with a fixed test basis, such as POD-Galerkin
-    projection
+    Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection. 
 
-    Read in residual snapshots, test basis, and the number of variables, then
-    construct the ECSW linear ystem for the entire mesh, including the
-    left-hand-side matrix and right-hand-side vector. Pieces of the matrix and
-    vector will be used to construct the corresponding linear systems for
-    candidate sample meshes.
+    Args:
+        residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        test_basis: (n_dof*n_var, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        variable_ordering (str): The variable ordering, either 'C' or 'F'. C: variables are the fastest index F: mesh DoFs are the fastest index
 
-    Return the matrix and right-hand-side
-
-    residual_snapshots is a n_dof*n_var by n_snap array, where n_dof is
-    the number of mesh degrees of freedom, n_var is the number of residual
-    variables (e.g. for fluid flow, residual variable could be mass,
-    x-momentum, y-momentum, z-momentum, and energy), and n_snap is the number
-    of snapshots
-
-    test_basis is a n_dof*n_var by n_mode array, where n_mode is the
-    number of modes in the basis.
-
-    variable_ordering is a character specifying the ordering of variables and
-    DoFs in residual snapshots and test_basis.
-    C: variables are the fastest index
-    F: mesh DoFs are the fastest index
+    Returns:
+        full_mesh_lhs: (n_snap*n_mode, n_dof) numpy ndarray, the left-hand side of the linear system required by the ECSW solver
+        full_mesh_rhs: (n_snap*n_rom,) numpy array, the right-hand side of the linear system required by the ECSW solver
     '''
 
     (n_row, n_snap) = residual_snapshots.shape
@@ -255,30 +327,18 @@ def ecsw_fixed_test_basis(ecsw_solver: AbstractECSWsolver,
     '''
     ECSW implementation for a fixed test basis, such as POD-Galerkin projection
 
-    Read in residual snapshots, test basis, and the number of variables, then
-    construct the ECSW linear system for the entire mesh, including the
-    left-hand-side matrix and right-hand-side vector. Pieces of the matrix and
-    vector will be used to construct the corresponding linear systems for
-    candidate sample meshes.
+    Args:
+        ecsw_solver: AbstractECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
+        residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        test_basis: (n_dof*n_var, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        variable_ordering (str): The variable ordering, either 'C' or 'F'. C: variables are the fastest index F: mesh DoFs are the fastest index
+        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
-    Return mesh DoF weights and indices
-
-    residual_snapshots is a n_dof*n_var by n_snap array, where n_dof is
-    the number of mesh degrees of freedom, n_var is the number of residual
-    variables (e.g. for fluid flow, residual variable could be mass,
-    x-momentum, y-momentum, z-momentum, and energy), and n_snap is the number
-    of snapshots
-
-    test_basis is a n_dof*n_var by n_mode array, where n_mode is the
-    number of modes in the basis.
-
-    variable_ordering is a character specifying the ordering of variables and
-    DoFs in residual snapshots and test_basis.
-    C: variables are the fastest index
-    F: mesh DoFs are the fastest index
-
-    tolerance is the tolerance for the ecsw_solver. It is a small (<<1) positive
-    number
+    Returns:
+        Tuple of numpy ndarrays. 
+        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
+        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
     '''
 
     # TODO need to incorporate residual scales here too, perhaps using scaler.py
@@ -294,24 +354,18 @@ def ecsw_varying_test_basis(ecsw_solver: AbstractECSWsolver,
                             full_mesh_rhs: np.ndarray,
                             tolerance: np.double):
     '''
-    ECSW implementation for a fixed test basis, such as POD-Galerkin projection
+    ECSW implementation for a varying test basis, such as Least-Squares Petrov-Galerkin projection
 
-    Read in the ECSW linear system for the entire mesh, including the
-    left-hand-side matrix and right-hand-side vector. Pieces of the matrix and
-    vector will be used to construct the corresponding linear systems for
-    candidate sample meshes.
+    Args:
+        ecsw_solver: AbstractECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
+        full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
+        full_mesh_rhs: (n_snap*n_rom,) numpy array
+        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
-    See ecsw_fixed_test_basis for an example of how to construct full_mesh_lhs
-    and full_mesh_rhs for a fixed test basis.
-
-    full_mesh_lhs is a n_snap*n_mode by n_dof numpy ndarray, where n_snap is the
-    number of residual snapshots, n_mode is the ROM dimension, and n_dof is the
-    number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
-
-    full_mesh_rhs is a n_snap*n_rom length numpy array
-
-    tolerance is the tolerance for the ecsw_solver. It is a small (<<1) positive
-    number
+    Returns:
+        Tuple of numpy ndarrays. 
+        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
+        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
     '''
 
     return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)
