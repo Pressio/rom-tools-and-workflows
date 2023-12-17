@@ -170,7 +170,7 @@ class ECSWsolverNNLS(AbstractECSWsolver):
         print("NNLS complete! Final stats:")
         print("iteration={}  sample mesh size={}  residual norm={:.8e}  ratio to target={:.8e} ".format(iters, len(sample_mesh_indicies), residual_norm, residual_norm/target_norm))
 
-        return sample_mesh_indicies, full_mesh_weights
+        return np.array(sample_mesh_indicies,dtype=int), sample_mesh_weights
 
     def __max_feasible_step(self, weights, candidate_weights):
         '''
@@ -304,11 +304,11 @@ def ecsw_varying_test_basis(ecsw_solver: AbstractECSWsolver,
     See ecsw_fixed_test_basis for an example of how to construct full_mesh_lhs
     and full_mesh_rhs for a fixed test basis.
 
-    full_mesh_lhs is a Nsnaps*Nrom by Ndofs numpy ndarray, where Nsnaps is the
-    number of residual snapshots, Nrom is the ROM dimension, and Ndofs is the
+    full_mesh_lhs is a n_snap*n_mode by n_dof numpy ndarray, where n_snap is the
+    number of residual snapshots, n_mode is the ROM dimension, and n_dof is the
     number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
 
-    full_mesh_rhs is a Nsnaps*Nrom length numpy array
+    full_mesh_rhs is a n_snap*n_rom length numpy array
 
     tolerance is the tolerance for the ecsw_solver. It is a small (<<1) positive
     number
