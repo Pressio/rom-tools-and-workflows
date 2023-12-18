@@ -59,7 +59,6 @@ except ImportError:
     pass
 
 
-
 def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
     '''
     Save trial space information to a compressed or uncompressed NumPy .npz file.
