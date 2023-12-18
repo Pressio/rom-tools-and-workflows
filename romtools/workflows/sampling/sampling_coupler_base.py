@@ -49,6 +49,7 @@ sampling algorithm, the user needs to complete this class for their application
 '''
 import os
 import abc
+from typing import Iterable
 
 from romtools.workflows.workflow_utils import setup_directory
 
@@ -60,9 +61,9 @@ class SamplingCouplerBase(abc.ABC):
 
     def __init__(self, template_directory: str,
                  template_input_file: str,
-                 work_directory: str = None,
-                 work_directory_base_name: str = 'work',
-                 sol_directory_base_name: str = 'run_'):
+                 other_required_files: Iterable = (),
+                 base_directory: str = None,
+                 sol_directory_basename: str = 'run_'):
         '''
         Initialize a SamplingCouplerBase object.
 
@@ -70,38 +71,44 @@ class SamplingCouplerBase(abc.ABC):
             template_directory (str): The directory containing input file
                 templates.
             template_input_file (str): The template input file for the model.
-            work_directory (str, optional): The working directory for the
+            other_required_files (Iterable, optional): other files (besides
+                `template_input_file`) which should be copied into each case
+                directory.
+            base_directory (str, optional): The working directory for the
                 sampling. If not provided, the current directory is used.
-            work_directory_base_name (str, optional): The base name for the
-                working directory. Defaults to 'work'.
-            sol_directory_base_name (str, optional): The base name for the
+            sol_directory_basename (str, optional): The base name for the
                 solution directories within the working directory.
                 Defaults to 'run_'
         '''
 
         self.__base_directory = (os.path.realpath(os.getcwd())
-                                 if work_directory is None
-                                 else work_directory
+                                 if base_directory is None
+                                 else base_directory
                                  )
         self.__template_directory = os.path.realpath(template_directory)
+        self.__sol_directory_basename = sol_directory_basename
+
         self.__template_input_file = template_input_file
-        self.__work_directory_base_name = work_directory_base_name
-        self.__sol_directory_base_name = sol_directory_base_name
+        self.__required_files = [template_input_file] \
+            + [file for file in other_required_files]
 
     def get_input_filename(self):
         '''Get the name of the template input file.'''
         return self.__template_input_file
-
-    def get_work_directory_basename(self):
-        '''Get the base name for the working directory.'''
-        return self.__work_directory_base_name
 
     def get_sol_directory_basename(self):
         '''
         Get the base name for the solution directories within the working
         directory.
         '''
-        return f'{self.__work_directory_base_name}/{self.__sol_directory_base_name}'
+        return self.__sol_directory_basename
+
+    def get_sol_directory(self, idx):
+        '''
+        Get the solution directory for a specific case
+        '''
+        base_dir = self.get_base_directory()
+        return base_dir + f'/{self.get_sol_directory_basename()}{idx}'
 
     def get_base_directory(self):
         '''Get the base directory for sampling.'''
@@ -115,19 +122,14 @@ class SamplingCouplerBase(abc.ABC):
             starting_sample_no (int): The starting sample number.
             parameter_samples (np.ndarray): An array of parameter samples.
         '''
-        n_samples = parameter_samples.shape[0]
+        end_sample_no = starting_sample_no + parameter_samples.shape[0]
 
-        for sample_no in range(starting_sample_no, starting_sample_no + n_samples):
-            path_to_dir = (
-                self.__base_directory + '/' +
-                self.__work_directory_base_name + '/' +
-                self.__sol_directory_base_name + str(sample_no)
-            )
+        for sample_no in range(starting_sample_no, end_sample_no):
             setup_directory(source_dir=self.__template_directory,
-                            target_dir=path_to_dir,
-                            files2copy=(self.__template_input_file, ))
+                            target_dir=self.get_sol_directory(sample_no),
+                            files2copy=self.__required_files)
 
-            os.chdir(path_to_dir)
+            os.chdir(self.get_sol_directory(sample_no))
             self.set_parameters_in_input(self.__template_input_file,
                                          parameter_samples[sample_no])
             os.chdir(self.get_base_directory())
@@ -139,7 +141,6 @@ class SamplingCouplerBase(abc.ABC):
         template file with parameter values defined in parameter_sample.
         For example, this could be done with dprepro
         '''
-        pass
 
     @abc.abstractmethod
     def run_model(self, filename, parameter_values):

@@ -47,7 +47,8 @@ import os
 import time
 import numpy as np
 
-from romtools.workflows.sampling.sampling_coupler_base import SamplingCouplerBase
+from romtools.workflows.sampling.\
+    sampling_coupler_base import SamplingCouplerBase
 
 
 def run_sampling(sampling_coupler: SamplingCouplerBase,
@@ -71,18 +72,14 @@ def run_sampling(sampling_coupler: SamplingCouplerBase,
     for sample_index in range(0, testing_sample_size):
         print("=======  Sample " + str(sample_index) + " ============")
         print("Running")
-        case_directory = f'{sampling_coupler.get_sol_directory_basename()}{sample_index}/'
+        case_directory = sampling_coupler.get_sol_directory(sample_index)
 
         run_times[sample_index] = run_sample(sampling_coupler,
                                              case_directory,
                                              parameter_samples[sample_index])
 
-        work_dir = (
-                    f'{sampling_coupler.get_base_directory()}/'
-                    f'{sampling_coupler.get_work_directory_basename()}'
-                   )
-        np.savez(work_dir + '/sampling_stats', run_times=run_times)
-        os.chdir(sampling_coupler.get_base_directory())
+        np.savez(f'{sampling_coupler.get_base_directory()}/sampling_stats',
+                 run_times=run_times)
 
 
 def run_sample(sampling_coupler: SamplingCouplerBase,
