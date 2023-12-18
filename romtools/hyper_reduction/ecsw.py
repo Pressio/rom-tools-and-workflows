@@ -229,13 +229,13 @@ def _construct_linear_system(residual_snapshots: np.ndarray,
     for i in range(n_dofs):
         # should be projection of all variables for a given mesh DoF
         if variable_ordering == 'C':
-            Phi_block = test_basis[(i*n_vars):((i+1)*n_vars),:]  # n_vars x n_modes
-            resSnaps_block = residual_snapshots[(i*n_vars):((i+1)*n_vars), :]  # n_vars x n_snaps
+            phi_block = test_basis[(i*n_vars):((i+1)*n_vars), :]  # n_vars x n_modes
+            res_snaps_block = residual_snapshots[(i*n_vars):((i+1)*n_vars), :]  # n_vars x n_snaps
         elif variable_ordering == 'F':
-            Phi_block = test_basis[i::n_dofs, :]  # n_vars x n_modes
-            resSnaps_block = residual_snapshots[i::n_dofs, :]  # n_vars x n_snaps
+            phi_block = test_basis[i::n_dofs, :]  # n_vars x n_modes
+            res_snaps_block = residual_snapshots[i::n_dofs, :]  # n_vars x n_snaps
 
-        full_mesh_lhs_block = np.dot(Phi_block.T, resSnaps_block)  # Nmodes x Nsnaps matrix
+        full_mesh_lhs_block = np.dot(phi_block.T, res_snaps_block)  # n_modes x n_snaps matrix
         full_mesh_lhs[:, i] = np.ravel(full_mesh_lhs_block, order='F')
 
     # right-hand-side
