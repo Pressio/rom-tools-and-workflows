@@ -73,12 +73,12 @@ def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) ->
     '''
     if compress:
         np.savez_compressed(filename,
-                            shift=trial_space.getShiftVector(),
-                            basis=trial_space.getBasis())
+                            shift=trial_space.get_shift_vector(),
+                            basis=trial_space.get_basis())
     else:
         np.savez(filename,
-                 shift=trial_space.getShiftVector(),
-                 basis=trial_space.getBasis())
+                 shift=trial_space.get_shift_vector(),
+                 basis=trial_space.get_basis())
 
 
 def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
@@ -93,8 +93,8 @@ def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
         hdf5_output("trial_space.h5", my_trial_space)
     '''
     with h5py.File(output_filename, 'w') as f:
-        f.create_dataset('shift', data=trial_space.getShiftVector())
-        f.create_dataset('basis', data=trial_space.getBasis())
+        f.create_dataset('shift', data=trial_space.get_shift_vector())
+        f.create_dataset('basis', data=trial_space.get_basis())
 
 
 def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: AbstractTrialSpace, var_names: list = None) -> None:
@@ -117,8 +117,8 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     e.close()
     e = exodus.exodus(output_filename, mode='a')
     num_nodes = e.num_nodes()
-    num_vars = int(len(trial_space.getShiftVector())/num_nodes)
-    num_modes = trial_space.getBasis().shape[1]
+    num_vars = int(len(trial_space.get_shift_vector())/num_nodes)
+    num_modes = trial_space.get_basis().shape[1]
     num_modes_str_len = int(math.log10(num_modes))+1
 
     assert (var_names is None or len(var_names) == num_vars), (
@@ -138,13 +138,13 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     exodus.add_variables(e, nodal_vars=field_names)
 
     for i in range(num_vars):
-        values = trial_space.getShiftVector()[i*num_nodes:(i+1)*num_nodes]
+        values = trial_space.get_shift_vector()[i*num_nodes:(i+1)*num_nodes]
         field_name = field_names[i*(num_modes+1)]
         e.put_node_variable_values(field_name, 1, values)
 
         for j in range(num_modes):
             field_name = field_names[i*(num_modes+1) + j]
-            values = trial_space.getBasis()[i*num_nodes:(i+1)*num_nodes, j]
+            values = trial_space.get_basis()[i*num_nodes:(i+1)*num_nodes, j]
             e.put_node_variable_values(field_name, 1, values)
 
     e.close()
