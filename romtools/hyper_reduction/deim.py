@@ -58,7 +58,7 @@ def deim_get_approximation_matrix(function_basis, sample_indices):
         sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
 
     Returns:
-        deim_matrix: (n,$n_s$) array. DEIM approximation basis 
+        deim_matrix: (n,$n_s$) array. DEIM approximation basis
     '''
     sampled_function_basis = function_basis[sample_indices]
     PU_pinv = np.linalg.pinv(sampled_function_basis)
@@ -69,20 +69,20 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
     '''
     For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices
     Args:
-        test_basis: (n_var,m,k) array, n_var is the number of state variables,  m is the number of DOFs and k the number of basis functions. Test basis in projection scheme 
+        test_basis: (n_var,m,k) array, n_var is the number of state variables,  m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
         function_basis: (n_var,m,n) array, where n_var is the number of state variables, m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
         sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
 
     Returns:
-        deim_test_basis: (n_var,n_s,k) array, where n_var is the number of state variables, $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix. 
+        deim_test_basis: (n_var,n_s,k) array, where n_var is the number of state variables, $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
 
     '''
     n_var = function_basis.shape[0]
-    deim_test_basis = deim_get_test_basis(test_basis[0],function_basis[0],sample_indices)
+    deim_test_basis = deim_get_test_basis(test_basis[0], function_basis[0], sample_indices)
     deim_test_basis = deim_test_basis[None]
-    for i in range(1,n_var):
-      deim_test_basis_i = deim_get_test_basis(test_basis[i],function_basis[i],sample_indices)
-      deim_test_basis = np.append(deim_test_basis,deim_test_basis_i[None],axis=0)
+    for i in range(1, n_var):
+        deim_test_basis_i = deim_get_test_basis(test_basis[i], function_basis[i], sample_indices)
+        deim_test_basis = np.append(deim_test_basis, deim_test_basis_i[None], axis=0)
     return deim_test_basis
 
 
@@ -95,12 +95,12 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
     $\\mathbf{\Phi}^T \\mathbf{f}$
 
     Args:
-        test_basis: (m,k) array, where m is the number of DOFs and k the number of basis functions. Test basis in projection scheme 
+        test_basis: (m,k) array, where m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
         function_basis: (m,n) array, where m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
         sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
 
     Returns:
-        deim_test_basis: (n_s,k) array, where $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix. 
+        deim_test_basis: (n_s,k) array, where $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
 
     '''
     sampled_function_basis = function_basis[sample_indices]
@@ -109,28 +109,28 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
     return deim_test_basis.transpose()
 
 def multi_state_deim_get_indices(U):
-   '''
-   Version of DEIM for multi-state systems.
+    '''
+    Version of DEIM for multi-state systems.
 
-   We perform DEIM on each state variable, and
-   then return the union of all indices.
-   Repeated indices are removed.
+    We perform DEIM on each state variable, and
+    then return the union of all indices.
+    Repeated indices are removed.
 
 
-   Args:
-        $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
+    Args:
+         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
 
-   Returns:
-        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+    Returns:
+         $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
 
-   '''
-   all_indices = np.zeros(0,dtype=int)
-   n_var = U.shape[0]
-   for i in range(0,n_var):
-     dataMatrix = U[i]
-     indices = deim_get_indices(dataMatrix)
-     all_indices = np.unique(np.append(all_indices,indices))
-   return all_indices
+    '''
+    all_indices = np.zeros(0, dtype=int)
+    n_var = U.shape[0]
+    for i in range(0, n_var):
+        data_matrix = U[i]
+        indices = deim_get_indices(data_matrix)
+        all_indices = np.unique(np.append(all_indices, indices))
+    return all_indices
 
 
 def deim_get_indices(U):
@@ -140,7 +140,7 @@ def deim_get_indices(U):
     nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
     Args:
-        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format 
+        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format
 
     Returns:
         $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices

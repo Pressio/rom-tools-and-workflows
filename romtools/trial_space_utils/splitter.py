@@ -131,7 +131,7 @@ class BlockSplitter(AbstractSplitter):
             n_var (int): The total number of variables in the data matrix.
             variable_ordering (str): The variable ordering, either 'C' or 'F'.
         '''
-        assert variable_ordering == 'C' or variable_ordering == 'F', "Invalid variable ordering, options are F and C"
+        assert variable_ordering in ('C', 'F'), "Invalid variable ordering, options are F and C"
         self.__variable_ordering = variable_ordering
         self.__n_var = n_var
         self.__n_blocks = len(blocks)
@@ -192,8 +192,9 @@ def get_data_matrix_for_ith_var(i, n_var, data_matrix, variable_ordering='C'):
     '''
     if variable_ordering == 'F':
         return data_matrix[i::n_var]
-    elif variable_ordering == 'C':
+    if variable_ordering == 'C':
         n = int(data_matrix.shape[0] / n_var)
         start_index = i*n
         end_index = (i+1)*n
         return data_matrix[start_index:end_index]
+    raise ValueError(f'Invalid variable Ordering {variable_ordering}')

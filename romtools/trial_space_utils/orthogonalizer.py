@@ -97,10 +97,10 @@ class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
                     distributed with MPI, or maybe you have a fancy qr function that you can use.
 
         '''
-        self.__qrPicked = np.linalg.qr if qrFnc is None else qrFnc
+        self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
     def __call__(self, my_array: np.ndarray):
-        my_array, _ = self.__qrPicked(my_array, mode='reduced')
+        my_array, _ = self.__qr_picked(my_array, mode='reduced')
         return my_array
 
 
@@ -128,7 +128,7 @@ class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
         '''
 
         self.__weighting_vector = weighting_vector
-        self.__qrPicked = np.linalg.qr if qrFnc is None else qrFnc
+        self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
     def __call__(self, my_array: np.ndarray):
         '''
@@ -142,6 +142,6 @@ class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
         '''
         assert my_array.shape[0] == self.__weighting_vector.size, "Weighting vector does not match basis size"
         tmp = scipy.sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
-        my_array, _ = self.__qrPicked(tmp, mode='reduced')
+        my_array, _ = self.__qr_picked(tmp, mode='reduced')
         my_array = scipy.sparse.diags(np.sqrt(1./self.__weighting_vector)) @ my_array
         return my_array
