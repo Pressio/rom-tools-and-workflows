@@ -129,7 +129,7 @@ class SamplingCouplerBase(abc.ABC):
 
             os.chdir(path_to_dir)
             self.set_parameters_in_input(self.__template_input_file,
-                                         parameter_samples)
+                                         parameter_samples[sample_no])
             os.chdir(self.get_base_directory())
 
     @abc.abstractmethod

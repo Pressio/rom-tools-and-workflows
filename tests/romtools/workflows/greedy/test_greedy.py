@@ -28,38 +28,38 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
     self.my_errors_ = np.array([1.,1.,0.4,0.09,0.01,1e-6])
     self.my_errors_counter_ = 0
 
-  def setParametersInRomInput(self,filename,parameter_sample):
+  def set_parameters_in_rom_input(self,filename,parameter_sample):
     pass
 
-  def setParametersInFomInput(self,filename,parameter_sample):
+  def set_parameters_in_fom_input(self,filename,parameter_sample):
     pass
 
   def runModel(self):
     pass
 
-  def computeError(self,arg1,arg2):
+  def compute_error(self,arg1,arg2):
     error = self.my_errors_[self.my_errors_counter_]
     self.my_errors_counter_ += 1
     return error
 
-  def computeErrorIndicator(self):
+  def compute_error_indicator(self):
     error_estimate = self.my_error_estimates_[self.error_estimate_counter_]
     self.error_estimate_counter_ += 1
     return error_estimate
 
-  def computeQoi(self):
+  def compute_qoi(self):
     return 0
 
-  def runRom(self,filename,parameter_values):
+  def run_rom(self, filename, parameter_values):
     pass
 
-  def runFom(self,filename,parameter_values):
-    np.savetxt('fom_succesful.dat',parameter_values)
+  def run_fom(self, filename, parameter_values):
+    np.savetxt('fom_succesful.dat', parameter_values)
 
-  def createTrialSpace(self,training_dirs):
+  def create_trial_space(self, training_dirs):
     pass
 
-  def getParameterSpace(self):
+  def get_parameter_space(self):
     return self.myParameterSpace
 
 @pytest.mark.mpi_skip
@@ -78,7 +78,7 @@ def test_greedy(tmp_path):
   init_sample_size = 5
   runGreedy(myGreedyCoupler,1e-5,init_sample_size)
   ## First greedy pass
-  base_path = myGreedyCoupler.getBaseDirectory() + '/work/' + myGreedyCoupler.getFomDirectoryBaseName()
+  base_path = myGreedyCoupler.get_base_directory() + '/work/' + myGreedyCoupler.get_fom_directory_basename()
   foms_samples_run = [0,1,4,2,5]
   foms_samples_not_run = [3,6,7]
 
@@ -125,7 +125,7 @@ def test_greedy(tmp_path):
   assert(len(parameter_samples_row_dimensions) == total_sample_size - init_sample_size + 1)
   for i in range(len(parameter_samples_row_dimensions)):
       assert(parameter_samples_row_dimensions[i] == init_sample_size + i)
-      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.getParameterSpace().get_names()))
+      assert(parameter_samples_col_dimensions[i] == len(myGreedyCoupler.get_parameter_space().get_names()))
 
 
 if __name__=="__main__":

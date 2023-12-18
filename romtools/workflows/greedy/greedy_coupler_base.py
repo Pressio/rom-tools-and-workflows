@@ -44,18 +44,21 @@
 #
 
 '''
-The GreedyCoupler is the primary way we interface with an application to perform
-greedy sampling. We can leverage **any** class meeting this API to perform greedy.
+The GreedyCoupler is the primary way we interface with an application to
+perform greedy sampling. We can leverage **any** class meeting this API to
+perform greedy.
 
-We provide a partially concrete implementation of the greedy class. Our implementation
-establishes aspects such as directory structure, but leaves the definition of, e.g., how
-a ROM should be run or how the input file should be modified abstract.
-
+We provide a partially concrete implementation of the greedy class. Our
+implementation establishes aspects such as directory structure, but leaves the
+definition of, e.g., how a ROM should be run or how the input file should be
+modified abstract.
 '''
 
 import os
 import abc
 import numpy as np
+
+from romtools.workflows.workflow_utils import setup_directory
 
 
 class GreedyCouplerBase(abc.ABC):
@@ -63,10 +66,10 @@ class GreedyCouplerBase(abc.ABC):
     __fom_directory_base_name = 'fom_run'
     __rom_directory_base_name = 'rom_run'
 
-    def __init__(self, template_directory, template_fom_file, \
-                 template_rom_file, \
-                 work_directory = None, \
-                 work_directory_base_name = 'work'):
+    def __init__(self, template_directory: str, template_fom_file: str,
+                 template_rom_file: str,
+                 work_directory: str = None,
+                 work_directory_base_name: str = 'work'):
         '''
         Initializes a GreedyCouplerBase object.
 
@@ -80,7 +83,7 @@ class GreedyCouplerBase(abc.ABC):
 
         self.__base_directory = os.getcwd() + '/' if work_directory is None else work_directory
 
-        strings_to_check = min(5,np.size(template_directory))
+        strings_to_check = min(5, np.size(template_directory))
         assert (
             self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check],
             'Path to template directory must be an absolute path'
@@ -90,32 +93,31 @@ class GreedyCouplerBase(abc.ABC):
         self.__template_fom_file = template_fom_file
         self.__work_directory_base_name = work_directory_base_name
 
-
-    def getRomInputFileName(self):
+    def get_rom_input_filename(self):
         '''Get the name of the ROM input file.'''
         return self.__template_rom_file
 
-    def getFomInputFileName(self):
+    def get_fom_input_filename(self):
         '''Get the name of the FOM input file.'''
         return self.__template_fom_file
 
-    def getFomDirectoryBaseName(self):
+    def get_fom_directory_basename(self):
         '''Get the base name for the FOM directory.'''
         return self.__fom_directory_base_name
 
-    def getRomDirectoryBaseName(self):
+    def get_rom_directory_basename(self):
         '''Get the base name for the ROM directory.'''
         return self.__rom_directory_base_name
 
-    def getBaseDirectory(self):
+    def get_base_directory(self):
         '''Get the base directory for the coupler.'''
         return self.__base_directory
 
-    def getWorkDirectoryBaseName(self):
+    def get_work_directory_basename(self):
         '''Get the base name for the working directory.'''
         return self.__work_directory_base_name
 
-    def createFomAndRomCases(self,starting_sample_no,parameter_samples):
+    def create_fom_and_rom_cases(self, starting_sample_no, parameter_samples):
         '''
         Create FOM and ROM cases with parameter samples.
 
@@ -125,36 +127,30 @@ class GreedyCouplerBase(abc.ABC):
         '''
         n_samples = parameter_samples.shape[0]
 
-        path_to_work_dir = self.__base_directory + '/' + self.__work_directory_base_name + '/'
-        if os.path.isdir(path_to_work_dir):
-            pass
-        else:
-            os.mkdir(path_to_work_dir)
+        path_to_work_dir = f'{self.__base_directory}/{self.__work_directory_base_name}/'
 
-        for sample_no in range(starting_sample_no,starting_sample_no + n_samples):
-            path_to_dir = (
-                self.__base_directory +  '/' +
-                self.__work_directory_base_name + '/' +
-                '/fom_run_' + str(sample_no)
-            )
-            if os.path.isdir(path_to_dir):
-                pass
-            else:
-                os.mkdir(path_to_dir)
-            self.__setupFomCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
+        for idx in range(n_samples):
+            sample_no = starting_sample_no + idx
+            path_to_dir = f'{path_to_work_dir}/fom_run_{sample_no}'
 
-            path_to_dir = (
-                self.__base_directory + '/' +
-                self.__work_directory_base_name + '/' +
-                '/rom_run_' + str(sample_no)
-            )
-            if os.path.isdir(path_to_dir):
-                pass
-            else:
-                os.mkdir(path_to_dir)
-            self.__setupRomCase(path_to_dir,parameter_samples[sample_no - starting_sample_no])
+            setup_directory(source_dir=self.__template_directory,
+                            target_dir=path_to_dir,
+                            files2copy=(self.__template_fom_file, ))
+            os.chdir(path_to_dir)
+            self.set_parameters_in_fom_input(self.__template_fom_file,
+                                             parameter_samples[idx])
+            os.chdir(self.get_base_directory())
 
-    def computeError(self,rom_directory,fom_directory):
+            path_to_dir = f'{path_to_work_dir}/rom_run_{sample_no}'
+            setup_directory(source_dir=self.__template_directory,
+                            target_dir=path_to_dir,
+                            files2copy=(self.__template_fom_file, ))
+            os.chdir(path_to_dir)
+            self.set_parameters_in_rom_input(self.__template_rom_file,
+                                             parameter_samples[idx])
+            os.chdir(self.get_base_directory())
+
+    def compute_error(self, rom_directory, fom_directory):
         '''
         Compute the error between ROM and FOM cases.
 
@@ -166,35 +162,16 @@ class GreedyCouplerBase(abc.ABC):
             float: The computed error.
         '''
         os.chdir(rom_directory)
-        rom_qoi = self.computeQoi()
+        rom_qoi = self.compute_qoi()
         os.chdir(self.__base_directory)
         os.chdir(fom_directory)
-        fom_qoi = self.computeQoi()
+        fom_qoi = self.compute_qoi()
         os.chdir(self.__base_directory)
         error = np.linalg.norm(fom_qoi - rom_qoi) / np.linalg.norm(fom_qoi)
         return error
 
-    def __setupRomCase(self,path_to_rom_case,parameter_samples):
-        os.chdir(path_to_rom_case)
-        os.system('cp ' + self.__template_directory + '/' + self.__template_rom_file + ' . ')
-        self.setParametersInRomInput(self.__template_rom_file,parameter_samples)
-        os.chdir(self.getBaseDirectory())
-
-    def __setupFomCase(self,path_to_fom_case,parameter_samples):
-        '''
-        Set up a FOM case with parameter samples.
-
-        Args:
-            path_to_fom_case (str): Directory path for the FOM case.
-            parameter_samples (np.ndarray): Parameter samples to be set in the FOM case.
-        '''
-        os.chdir(path_to_fom_case)
-        os.system('cp ' + self.__template_directory + '/' + self.__template_fom_file + ' . ')
-        self.setParametersInFomInput(self.__template_fom_file,parameter_samples)
-        os.chdir(self.getBaseDirectory())
-
     @abc.abstractmethod
-    def setParametersInRomInput(self,filename,parameter_sample):
+    def set_parameters_in_rom_input(self, filename, parameter_sample):
         '''
         This function is called from a run directory. It needs to update a
         template ROM file with parameter values defined in parameter_sample.
@@ -207,7 +184,7 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def setParametersInFomInput(self,filename,parameter_sample):
+    def set_parameters_in_fom_input(self, filename, parameter_sample):
         '''
         This function is called from a run directory. It needs to update a
         template FOM file with parameter values defined in parameter_sample.
@@ -220,23 +197,25 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def computeQoi(self):
+    def compute_qoi(self):
         '''
         This function needs to return a scalar qoi.
         '''
         return 0
 
     @abc.abstractmethod
-    def computeErrorIndicator(self):
+    def compute_error_indicator(self):
         '''
-        This function is called from a run directory. It needs to return a scalar error estimate.
+        This function is called from a run directory. It needs to return a
+        scalar error estimate.
         '''
         return 0
 
     @abc.abstractmethod
-    def runRom(self,filename,parameter_values):
+    def run_rom(self, filename, parameter_values):
         '''
-        This function is called from a run directory. It needs to execute a ROM.
+        This function is called from a run directory. It needs to execute a
+        ROM.
         Args:
           filename (str): The name of the ROM input file.
           parameter_values (np.ndarray): Parameter values for the ROM run.
@@ -244,9 +223,10 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def runFom(self,filename,parameter_values):
+    def run_fom(self, filename, parameter_values):
         '''
-        This function is called from a run directory. It needs to execute a FOM.
+        This function is called from a run directory. It needs to execute a
+        FOM.
 
         Args:
           filename (str): The name of the FOM input file.
@@ -255,10 +235,11 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def createTrialSpace(self,training_sample_indices):
+    def create_trial_space(self, training_sample_indices):
         '''
-        This function is called the base directory. Given the FOM runs as defined by training_sample_indices, it needs to
-        compute and save a trial space.
+        This function is called the base directory. Given the FOM runs as
+        defined by training_sample_indices, it needs to compute and save a
+        trial space.
 
         Args:
           training_sample_indices (list): Indices of the training samples.
@@ -266,8 +247,9 @@ class GreedyCouplerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def getParameterSpace(self):
+    def get_parameter_space(self):
         '''
-        This function should return a ParameterSpace class defining our parameter space.
+        This function should return a ParameterSpace class defining our
+        parameter space.
         '''
         pass
