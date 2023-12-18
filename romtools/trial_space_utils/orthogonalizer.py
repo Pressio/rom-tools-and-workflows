@@ -44,8 +44,8 @@
 #
 
 '''
-The OrthogonalizerClass is used to orthogonalize a basis at the end of the construction of a trial space.
-Specifically, given a basis
+The OrthogonalizerClass is used to orthogonalize a basis at the end of the
+construction of a trial space.  Specifically, given a basis
 $$\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K},$$
 the orthogonalizer will compute a new, orthogonalized basis $\\boldsymbol \\Phi_{\\*}$
 where

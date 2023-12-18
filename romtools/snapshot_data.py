@@ -44,8 +44,8 @@
 #
 
 '''
-Most ROM formulations require access to so-called snapshot data to construct a reduced trial space.
-A snapshot is typically a solution to a full-order model.
+Most ROM formulations require access to so-called snapshot data to construct a
+reduced trial space. A snapshot is typically a solution to a full-order model.
 As an example, consider a (discretized) parameterized PDE defined by
 
 $$\\boldsymbol r( \\mathbf{u}(\\boldsymbol \\mu);\\boldsymbol \\mu)$$
@@ -68,7 +68,6 @@ snapshots, and is the main class used in the construction of trial spaces
 '''
 
 import abc
-from typing import Iterable
 import numpy as np
 
 
@@ -76,9 +75,10 @@ class AbstractSnapshotData(abc.ABC):
     '''
     An abstract base class for representing snapshot data.
 
-    This class defines the common interface for classes that store and provide access to snapshot data
-    as part of a simulation or data processing system. Implementations of this class are expected to
-    define the initialization method and various methods for accessing and manipulating the data.
+    This class defines the common interface for classes that store and provide
+    access to snapshot data as part of a simulation or data processing system.
+    Implementations of this class are expected to define the initialization
+    method and various methods for accessing and manipulating the data.
 
     Methods:
     '''
@@ -89,20 +89,21 @@ class AbstractSnapshotData(abc.ABC):
         Returns numpy tensor of shape N_vars x N_space x N_samples
         (assuming each snapshot corresponds to a column vector)
         '''
-        pass
 
     @abc.abstractmethod
     def get_mesh_gids(self):
         '''
-        Retrieves global ids associated with mesh points (used for hyper-reduction)
+        Retrieves global ids associated with mesh points
+        (used for hyper-reduction)
 
         Returns:
-            None or specific data type: The mesh global identifiers, or None if not applicable.
+            None or specific data type: The mesh global identifiers, or None
+            if not applicable.
 
         Note:
-        Subclasses must implement this method to provide access to mesh global identifiers if relevant.
+            Subclasses must implement this method to provide access to mesh
+            global identifiers if relevant.
         '''
-        pass
 
     def get_snapshot_matrix(self) -> np.ndarray:
         '''

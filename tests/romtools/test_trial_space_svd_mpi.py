@@ -10,26 +10,27 @@ except ModuleNotFoundError:
 
 
 class DistributedSnapshots(rt.AbstractSnapshotData):
-    def __init__(self, myData, myGIDs):
-        self.snapshots = myData
+    def __init__(self, my_data, my_gids):
+        self.snapshots = my_data
+        self.gids = my_gids
 
     def get_snapshot_tensor(self):
         return self.snapshots
 
     def get_mesh_gids(self):
-        return myGIDs
+        return self.gids
 
 def construct_snapshots(comm):
     rank = comm.Get_rank()
     if rank == 0:
-        myGids = np.array([0,1,2])
-        myData = np.random.normal(size=(3,3,5))
+        myGids = np.array([0, 1, 2])
+        myData = np.random.normal(size=(3, 3, 5))
     elif rank==1:
-        myGids = np.array([6,7,8,9,10])
-        myData = np.random.normal(size=(3,5,5))
+        myGids = np.array([6, 7, 8, 9, 10])
+        myData = np.random.normal(size=(3, 5, 5))
     else:
-        myGids = np.array([3,4,5])
-        myData = np.random.normal(size=(3,3,5))
+        myGids = np.array([3, 4, 5])
+        myData = np.random.normal(size=(3, 3, 5))
 
     return DistributedSnapshots(myData, myGids)
 
@@ -54,19 +55,19 @@ def test_trial_space_from_pod_mpi():
     if comm.Get_size() == 3:
         snaps = construct_snapshots(comm)
         myTrialSpace = rt.TrialSpaceFromPOD(snaps, svdFnc=MyFakeSvd(comm))
-        U = myTrialSpace.getBasis()
-        k = myTrialSpace.getDimension()
+        U = myTrialSpace.get_basis()
+        k = myTrialSpace.get_dimension()
         if rank == 0:
-            assert np.allclose(U, np.zeros((3,3,2)))
+            assert np.allclose(U, np.zeros((3, 3, 2)))
             assert np.allclose(2, k)
-        elif rank==1:
-            assert(np.allclose(U, np.ones((3,5,2))))
+        elif rank == 1:
+            assert np.allclose(U, np.ones((3, 5, 2)))
             assert np.allclose(2, k)
-        elif rank==2:
-            assert(np.allclose(U, np.ones((3,3,2))*2))
+        elif rank == 2:
+            assert np.allclose(U, np.ones((3, 3, 2))*2)
             assert np.allclose(2, k)
     else:
         helpers.mpi_skipped_test_mismatching_commsize(comm, "test_trial_space_from_pod_mpi", 3)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     test_trial_space_from_pod_mpi()
