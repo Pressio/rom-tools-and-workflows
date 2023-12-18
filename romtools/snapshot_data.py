@@ -44,6 +44,17 @@
 #
 
 '''
+
+---
+###**Notes**
+The **SnapshotData** class provides rom-tools access to snapshot data in the form of a **snapshot tensor**
+$$\\mathcal{S} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{\\mathrm{snaps}}}.$$
+Here, $ N_{\\mathrm{vars}}$ is the dimensionality of the PDE state (e.g.,  $N_{\\mathrm{vars}} = 3$ for the compressible 
+Navier-Stokes in one-dimension),  $N_{\\mathrm{x}}$ is the number of discrete grid points, and $ N_{\\mathrm{snaps}}$ is the 
+number of snapshots. Note that rom-tools will internally reshape the tensor into a matrix when, e.g., performing an SVD.
+___
+###**Thoery**
+
 Most ROM formulations require access to so-called snapshot data to construct a
 reduced trial space. A snapshot is typically a solution to a full-order model.
 As an example, consider a (discretized) parameterized PDE defined by
@@ -51,20 +62,21 @@ As an example, consider a (discretized) parameterized PDE defined by
 $$\\boldsymbol r( \\mathbf{u}(\\boldsymbol \\mu);\\boldsymbol \\mu)$$
 
 where $\\boldsymbol r$ is the residual operator, $\\mathbf{u}$ is the state,
-and $\\boldsymbol \\mu$ are system parameters.
-Suppose we have solved the PDE for a set of $M$ training parameters to obtain
-the so-called snapshot matrix
+and $\\boldsymbol \\mu$ are system parameters. To build a ROM, we solve the PDE for a set of $M$ training parameters, and collect the solutions into a snapshot matrix
 
 $$\\mathbf{S} = \\begin{bmatrix}
 \\mathbf{u} (\\boldsymbol \\mu_1 ) &
 \\cdots &
 \\mathbf{u}(\\boldsymbol \\mu_M)
-\\end{bmatrix}
+\\end{bmatrix}.
 $$
 
 
-The SnapshotData class encapsulates the information contained in set of
-snapshots, and is the main class used in the construction of trial spaces
+The SnapshotData class encapsulates the information contained in set of snapshots, and is the main class used in the construction of trial spaces. We note that we view the snapshot matrix as a snapshot tensor to easily manipulate data for multistate systems. In the tensor form, the state $\\mathbf{u}$ is viewed as a 2D array of shape $( N_{\\mathrm{vars}} \\times N_{\\mathrm{x}})$.
+___
+___
+
+###**API**
 '''
 
 import abc
@@ -86,8 +98,10 @@ class AbstractSnapshotData(abc.ABC):
     @abc.abstractmethod
     def get_snapshot_tensor(self) -> np.ndarray:
         '''
-        Returns numpy tensor of shape N_vars x N_space x N_samples
-        (assuming each snapshot corresponds to a column vector)
+        Returns numpy snapshot tensor
+
+        Returns:
+          snapshot_tensor: (N_vars, N_space, N_samples) array. Tensor containing the snapshots.
         '''
 
     @abc.abstractmethod
@@ -97,15 +111,14 @@ class AbstractSnapshotData(abc.ABC):
         (used for hyper-reduction)
 
         Returns:
-            None or specific data type: The mesh global identifiers, or None
-            if not applicable.
+          gids: (Nx,) array. Array containing the global ids corresponding to each mesh point. 
 
         Note:
             Subclasses must implement this method to provide access to mesh
             global identifiers if relevant.
         '''
 
-    def get_snapshot_matrix(self) -> np.ndarray:
+    def __get_snapshot_matrix(self) -> np.ndarray:
         '''
         Returns numpy matrix of shape N_vars N_space x N_samples
         (assuming each snapshot corresponds to a column vector)
