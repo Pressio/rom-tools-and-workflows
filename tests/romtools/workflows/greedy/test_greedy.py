@@ -10,7 +10,7 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
                template_rom_file, \
                workDir= None):
 
-    GreedyCouplerBase.__init__(self,template_directory,template_fom_file,template_rom_file, work_directory = workDir)
+    GreedyCouplerBase.__init__(self,template_directory,template_fom_file,template_rom_file, base_directory = workDir)
 
     self.myParameterSpace = UniformParameterSpace(['u','v','w'],np.array([0,1,2]),np.array([1,2,3]))
     self.counter_ = 0

@@ -68,8 +68,8 @@ class GreedyCouplerBase(abc.ABC):
 
     def __init__(self, template_directory: str, template_fom_file: str,
                  template_rom_file: str,
-                 work_directory: str = None,
-                 work_directory_base_name: str = 'work'):
+                 base_directory: str = None,
+                 work_directory_basename: str = 'work'):
         '''
         Initializes a GreedyCouplerBase object.
 
@@ -78,20 +78,17 @@ class GreedyCouplerBase(abc.ABC):
             template_fom_file (str): The name of the template FOM file.
             template_rom_file (str): The name of the template ROM file.
             work_directory (str, optional): The working directory. Defaults to None (current directory).
-            work_directory_base_name (str, optional): The base name for the working directory. Defaults to 'work'.
+            work_directory_basename (str, optional): The base name for the working directory. Defaults to 'work'.
         '''
 
-        self.__base_directory = os.getcwd() + '/' if work_directory is None else work_directory
-
-        strings_to_check = min(5, np.size(template_directory))
-        assert (
-            self.__base_directory[0:strings_to_check] == template_directory[0:strings_to_check],
-            'Path to template directory must be an absolute path'
-        )
-        self.__template_directory = template_directory
+        self.__base_directory = (os.path.realpath(os.getcwd())
+                                 if base_directory is None
+                                 else base_directory
+                                 )
+        self.__template_directory = os.path.realpath(template_directory)
         self.__template_rom_file = template_rom_file
         self.__template_fom_file = template_fom_file
-        self.__work_directory_base_name = work_directory_base_name
+        self.__work_directory_basename = work_directory_basename
 
     def get_rom_input_filename(self):
         '''Get the name of the ROM input file.'''
@@ -115,7 +112,7 @@ class GreedyCouplerBase(abc.ABC):
 
     def get_work_directory_basename(self):
         '''Get the base name for the working directory.'''
-        return self.__work_directory_base_name
+        return self.__work_directory_basename
 
     def create_fom_and_rom_cases(self, starting_sample_no, parameter_samples):
         '''
@@ -127,7 +124,7 @@ class GreedyCouplerBase(abc.ABC):
         '''
         n_samples = parameter_samples.shape[0]
 
-        path_to_work_dir = f'{self.__base_directory}/{self.__work_directory_base_name}/'
+        path_to_work_dir = f'{self.get_base_directory()}/{self.get_work_directory_basename()}/'
 
         for idx in range(n_samples):
             sample_no = starting_sample_no + idx
