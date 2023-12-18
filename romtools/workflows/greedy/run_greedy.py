@@ -99,42 +99,42 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
 
     np.random.seed(1)
     # create parameter domain
-    parameterSpace = greedyCoupler.getParameterSpace()
+    parameterSpace = greedyCoupler.get_parameter_space()
 
     # lower_bounds,upper_bounds = greedyCoupler.get_parameter_bounds()
     parameter_samples = parameterSpace.generate_samples(testing_sample_size)
     # Make FOM/ROM directories
     starting_sample_index = 0
-    greedyCoupler.createFomAndRomCases(starting_sample_index, parameter_samples)
+    greedyCoupler.create_fom_and_rom_cases(starting_sample_index, parameter_samples)
     # Run first FOM case
     fom_directory = (
-        greedyCoupler.getWorkDirectoryBaseName() + '/' +
-        greedyCoupler.getFomDirectoryBaseName() + '_' +
+        greedyCoupler.get_work_directory_basename() + '/' +
+        greedyCoupler.get_fom_directory_basename() + '_' +
         str(starting_sample_index) + '/'
     )
     t0 = time.time()
     greedy_file.write("Running FOM sample 0 \n")
     os.chdir(fom_directory)
-    greedyCoupler.runFom(greedyCoupler.getFomInputFileName(), parameter_samples[0])
-    os.chdir(greedyCoupler.getBaseDirectory())
+    greedyCoupler.run_fom(greedyCoupler.get_fom_input_filename(), parameter_samples[0])
+    os.chdir(greedyCoupler.get_base_directory())
 
     fom_time += time.time() - t0
 
     # Run second FOM case
     fom_directory = (
-        greedyCoupler.getWorkDirectoryBaseName() + '/' +
-        greedyCoupler.getFomDirectoryBaseName() + '_' +
+        greedyCoupler.get_work_directory_basename() + '/' +
+        greedyCoupler.get_fom_directory_basename() + '_' +
         str(starting_sample_index + 1) + '/'
     )
     t0 = time.time()
     greedy_file.write("Running FOM sample 1 \n")
     os.chdir(fom_directory)
-    greedyCoupler.runFom(greedyCoupler.getFomInputFileName(),parameter_samples[1])
-    os.chdir(greedyCoupler.getBaseDirectory())
+    greedyCoupler.run_fom(greedyCoupler.get_fom_input_filename(), parameter_samples[1])
+    os.chdir(greedyCoupler.get_base_directory())
     fom_time += time.time() - t0
 
     # Create ROM cases
-    training_samples = np.array([0,1],dtype='int')
+    training_samples = np.array([0, 1], dtype='int')
     # greedyCoupler.create_rom_cases(starting_sample_index,samples)
     t0 = time.time()
     greedy_file.write("Creating ROM bases \n")
@@ -142,47 +142,46 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
     training_dirs = []
     for i in training_samples:
         path_to_dir = (
-            greedyCoupler.getBaseDirectory() + '/' +
-            greedyCoupler.getWorkDirectoryBaseName() + '/' +
-            greedyCoupler.getFomDirectoryBaseName() + '_' + str(i)
+            greedyCoupler.get_base_directory() + '/' +
+            greedyCoupler.get_work_directory_basename() + '/' +
+            greedyCoupler.get_fom_directory_basename() + '_' + str(i)
         )
         training_dirs.append(path_to_dir)
 
-    greedyCoupler.createTrialSpace(training_dirs)
+    greedyCoupler.create_trial_space(training_dirs)
     basis_time += time.time() - t0
 
     initial_errors = np.zeros(2)
     initial_error_indicators = np.zeros(2)
     greedy_file.write("Running ROM sample 0 \n")
-    rom_directory = greedyCoupler.getWorkDirectoryBaseName() + '/' + greedyCoupler.getRomDirectoryBaseName() + '_0/'
+    rom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_rom_directory_basename() + '_0/'
     t0 = time.time()
     os.chdir(rom_directory)
-    greedyCoupler.runRom(greedyCoupler.getRomInputFileName(),parameter_samples[0])
-    initial_error_indicators[0] = greedyCoupler.computeErrorIndicator()
-    os.chdir(greedyCoupler.getBaseDirectory())
+    greedyCoupler.run_rom(greedyCoupler.get_rom_input_filename(), parameter_samples[0])
+    initial_error_indicators[0] = greedyCoupler.compute_error_indicator()
+    os.chdir(greedyCoupler.get_base_directory())
     rom_time += time.time() - t0
     greedy_file.write("Computing ROM/FOM error for sample 0 \n")
-    fom_directory =  greedyCoupler.getWorkDirectoryBaseName() + '/' + greedyCoupler.getFomDirectoryBaseName() + '_0/'
+    fom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_fom_directory_basename() + '_0/'
 
-    initial_errors[0] = greedyCoupler.computeError(rom_directory,fom_directory)
+    initial_errors[0] = greedyCoupler.compute_error(rom_directory, fom_directory)
 
     greedy_file.write("Running ROM sample 1 \n")
-    rom_directory = greedyCoupler.getWorkDirectoryBaseName() + '/' + greedyCoupler.getRomDirectoryBaseName() + '_1/'
+    rom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_rom_directory_basename() + '_1/'
     t0 = time.time()
     os.chdir(rom_directory)
-    greedyCoupler.runRom(greedyCoupler.getRomInputFileName(),parameter_samples[1])
-    initial_error_indicators[1] = greedyCoupler.computeErrorIndicator()
-    os.chdir(greedyCoupler.getBaseDirectory())
+    greedyCoupler.run_rom(greedyCoupler.get_rom_input_filename(), parameter_samples[1])
+    initial_error_indicators[1] = greedyCoupler.compute_error_indicator()
+    os.chdir(greedyCoupler.get_base_directory())
     rom_time += time.time() - t0
 
     greedy_file.write("Computing ROM/FOM error for sample 1 \n")
-    fom_directory = greedyCoupler.getWorkDirectoryBaseName() + '/' + greedyCoupler.getFomDirectoryBaseName() + '_1/'
-    initial_errors[1] = greedyCoupler.computeError(rom_directory,fom_directory)
+    fom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_fom_directory_basename() + '_1/'
+    initial_errors[1] = greedyCoupler.compute_error(rom_directory, fom_directory)
 
-
-    samples_left = np.arange(0,testing_sample_size)
-    samples_left = np.delete(samples_left,0)
-    samples_left = np.delete(samples_left,0)
+    samples_left = np.arange(0, testing_sample_size)
+    samples_left = np.delete(samples_left, 0)
+    samples_left = np.delete(samples_left, 0)
 
     converged = False
     max_error_indicators = np.zeros(0)
@@ -204,15 +203,15 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
         greedy_file.flush()
         for i in samples_left:
             rom_directory = (
-                greedyCoupler.getWorkDirectoryBaseName() + '/' +
-                greedyCoupler.getRomDirectoryBaseName() + '_' + str(i) + '/'
+                greedyCoupler.get_work_directory_basename() + '/' +
+                greedyCoupler.get_rom_directory_basename() + '_' + str(i) + '/'
             )
             greedy_file.write("    Running ROM sample " + str(i) + " \n")
             greedy_file.flush()
             os.chdir(rom_directory)
-            greedyCoupler.runRom(greedyCoupler.getRomInputFileName(), parameter_samples[i])
-            error_indicators[counter] = greedyCoupler.computeErrorIndicator()
-            os.chdir(greedyCoupler.getBaseDirectory())
+            greedyCoupler.run_rom(greedyCoupler.get_rom_input_filename(), parameter_samples[i])
+            error_indicators[counter] = greedyCoupler.compute_error_indicator()
+            os.chdir(greedyCoupler.get_base_directory())
             counter += 1
         rom_time += time.time() - t0
 
@@ -234,32 +233,32 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
                 break
 
         fom_directory = (
-            greedyCoupler.getWorkDirectoryBaseName() + '/' +
-            greedyCoupler.getFomDirectoryBaseName() + '_' +
+            greedyCoupler.get_work_directory_basename() + '/' +
+            greedyCoupler.get_fom_directory_basename() + '_' +
             str(sample_with_highest_error_indicator)
         )
         t0 = time.time()
         greedy_file.write("Running FOM sample " + str(sample_with_highest_error_indicator) + " \n")
         greedy_file.flush()
         os.chdir(fom_directory)
-        greedyCoupler.runFom(greedyCoupler.getFomInputFileName(), parameter_samples[sample_with_highest_error_indicator])
-        os.chdir(greedyCoupler.getBaseDirectory())
+        greedyCoupler.run_fom(greedyCoupler.get_fom_input_filename(), parameter_samples[sample_with_highest_error_indicator])
+        os.chdir(greedyCoupler.get_base_directory())
         fom_time += time.time() - t0
         training_samples = np.append(training_samples, sample_with_highest_error_indicator)
 
         samples_left = np.delete(samples_left, np.argmax(error_indicators))
 
         rom_directory = (
-            greedyCoupler.getWorkDirectoryBaseName() + '/' +
-            greedyCoupler.getRomDirectoryBaseName() + '_' +
+            greedyCoupler.get_work_directory_basename() + '/' +
+            greedyCoupler.get_rom_directory_basename() + '_' +
             str(sample_with_highest_error_indicator) + '/'
         )
         fom_directory = (
-            greedyCoupler.getWorkDirectoryBaseName() + '/' +
-            greedyCoupler.getFomDirectoryBaseName() + '_' +
+            greedyCoupler.get_work_directory_basename() + '/' +
+            greedyCoupler.get_fom_directory_basename() + '_' +
             str(sample_with_highest_error_indicator) + '/'
         )
-        qoi_error = greedyCoupler.computeError(rom_directory, fom_directory)
+        qoi_error = greedyCoupler.compute_error(rom_directory, fom_directory)
         greedy_file.write("Sample " + str(sample_with_highest_error_indicator) + " had an error of " + str(qoi_error) +  " \n")
         qoi_errors = np.append(qoi_errors, qoi_error)
         reg = qoi_vs_error_indicator_regressor()
@@ -271,19 +270,19 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
         training_dirs = []
         for i in training_samples:
             path_to_dir = (
-                greedyCoupler.getBaseDirectory() + '/' +
-                greedyCoupler.getWorkDirectoryBaseName() + '/' +
-                greedyCoupler.getFomDirectoryBaseName() + '_' + str(i)
+                greedyCoupler.get_base_directory() + '/' +
+                greedyCoupler.get_work_directory_basename() + '/' +
+                greedyCoupler.get_fom_directory_basename() + '_' + str(i)
             )
             training_dirs.append(path_to_dir)
 
-        greedyCoupler.createTrialSpace(training_dirs)
+        greedyCoupler.create_trial_space(training_dirs)
         basis_time += time.time() - t0
         # Add a new sample
         new_parameter_sample = parameterSpace.generate_samples(1)
         parameter_samples = np.append(parameter_samples, new_parameter_sample, axis=0)
         new_sample_number = testing_sample_size + outer_loop_counter - 1
-        greedyCoupler.createFomAndRomCases(new_sample_number, new_parameter_sample)
+        greedyCoupler.create_fom_and_rom_cases(new_sample_number, new_parameter_sample)
         samples_left = np.append(samples_left, new_sample_number)
         greedy_file.flush()
         np.savez('greedy_stats',

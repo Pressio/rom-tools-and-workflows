@@ -83,48 +83,50 @@ class AbstractTrialSpace(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def getDimension(self):
+    def get_dimension(self):
         '''
         Retrieves the dimension of the trial space
 
         Returns:
             int: The dimension of the trial space.
 
-        Concrete subclasses should implement this method to return the appropriate dimension for their specific
-        trial space implementation.
+        Concrete subclasses should implement this method to return the
+        appropriate dimension for their specific trial space implementation.
         '''
         pass
 
     @abc.abstractmethod
-    def getShiftVector(self):
+    def get_shift_vector(self):
         '''
         Retrieves the shift vector of the trial space.
 
         Returns:
             np.ndarray: The shift vector.
 
-        Concrete subclasses should implement this method to return the shift vector specific to their trial space
-        implementation.
+        Concrete subclasses should implement this method to return the shift
+        vector specific to their trial space implementation.
         '''
         pass
 
     @abc.abstractmethod
-    def getBasis(self):
+    def get_basis(self):
         '''
         Retrieves the basis vectors of the trial space.
 
         Returns:
             np.ndarray: The basis of the trial space.
 
-        Concrete subclasses should implement this method to return the basis vectors specific to their trial space
-        implementation.
+        Concrete subclasses should implement this method to return the basis
+        vectors specific to their trial space implementation.
         '''
         pass
+
 
 def tensor_to_matrix(tensor_input):
     output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                          tensor_input.shape[2])
     return output_tensor
+
 
 def matrix_to_tensor(n_var, matrix_input):
     d1 = int(matrix_input.shape[0] / n_var)
@@ -149,14 +151,15 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         Constructor for the reduced basis trial space without truncation.
 
         Args:
-            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other
-                metadata such as variable set type.
+            snapshot_data: Snapshot data object containing full model solution
+                data, methods to read it, and other metadata such as variable
+                set type.
             shifter: Class that shifts the basis.
             splitter: Class that splitts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
-        This constructor initializes a trial space by performing basis manipulation operations on the provided
-        snapshot data.
+        This constructor initializes a trial space by performing basis
+        manipulation operations on the provided snapshot data.
         '''
 
         # compute basis
@@ -169,7 +172,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def getDimension(self):
+    def get_dimension(self):
         '''
         Retrieves the dimension of trial space
 
@@ -178,7 +181,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         '''
         return self.__dimension
 
-    def getShiftVector(self):
+    def get_shift_vector(self):
         '''
         Retrieves the shift vector
 
@@ -188,7 +191,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         '''
         return self.__shift_vector
 
-    def getBasis(self):
+    def get_basis(self):
         '''
         Retrieves the basis of the trial space
 
@@ -211,8 +214,9 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     orthogonalization, truncation, splitting, and shifts are defined
     by their respective classes.
 
-    For truncation, we enable truncation based on a fixed dimension or the decay
-    of singular values; please refer to the documentation for the truncater.
+    For truncation, we enable truncation based on a fixed dimension or the
+    decay of singular values; please refer to the documentation for the
+    truncater.
     '''
 
     def __init__(self,
@@ -230,15 +234,19 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
             truncater (AbstractTruncater): Class that truncates the basis.
             shifter (AbstractShifter): Class that shifts the basis.
             splitter (AbstractSplitter): Class that splits the basis.
-            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes the basis.
+            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes
+                the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
-                    IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
-                    If `None`, internally we use `np.linalg.svd`.
-                    Note: this is useful when you want to use a custom svd, for example when your snapshots are
-                    distributed with MPI, or maybe you have a fancy svd function that you can use.
+                IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
+                If `None`, internally we use `np.linalg.svd`.
+                Note: this is useful when you want to use a custom svd, for
+                    example when your snapshots are distributed with MPI, or
+                    maybe you have a fancy svd function that you can use.
 
-        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
-        various basis manipulation operations, including truncation, shifting, splitting, and orthogonalization.
+        This constructor initializes a POD trial space by performing SVD on
+        the provided snapshot data and applying various basis manipulation
+        operations, including truncation, shifting, splitting, and
+        orthogonalization.
         '''
 
         snapshot_tensor = snapshots.get_snapshot_tensor()
@@ -256,7 +264,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def getDimension(self):
+    def get_dimension(self):
         '''
         Retrieves the dimension of the trial space
 
@@ -265,7 +273,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         '''
         return self.__dimension
 
-    def getShiftVector(self):
+    def get_shift_vector(self):
         '''
         Retrieves the shift vector
 
@@ -275,7 +283,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         '''
         return self.__shift_vector
 
-    def getBasis(self):
+    def get_basis(self):
         '''
         Retrieves the basis of the trial space
 
@@ -298,8 +306,9 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     orthogonalization, truncation, splitting, and shifts are defined by their
     respective classes.
 
-    For truncation, we enable truncation based on a fixed dimension or the decay of singular values;
-    please refer to the documentation for the truncater.
+    For truncation, we enable truncation based on a fixed dimension or the
+    decay of singular values; please refer to the documentation for the
+    truncater.
     '''
 
     def __init__(self, snapshot_data: AbstractSnapshotData,
@@ -312,16 +321,18 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         Constructor for the POD trial space constructed via scaled SVD.
 
         Args:
-            snapshot_data: Snapshot data object containing full model solution data, methods to read it, and other
-                metadata such as variable set type.
+            snapshot_data: Snapshot data object containing full model solution
+                data, methods to read it, and other metadata such as variable
+                set type.
             truncater: Class that truncates the basis.
             shifter: Class that shifts the basis.
             scaler: Class that scales the basis.
             splitter: Class that splits the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
-        This constructor initializes a POD trial space by performing SVD on the provided snapshot data and applying
-        various basis manipulation operations, including scaling, shifting, truncation, splitting, and
+        This constructor initializes a POD trial space by performing SVD on
+        the provided snapshot data and applying various basis manipulation
+        operations, including scaling, shifting, truncation, splitting, and
         orthogonalization.
         '''
 
@@ -342,7 +353,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def getDimension(self):
+    def get_dimension(self):
         '''
         Retrieves the dimension of the trial space
 
@@ -351,7 +362,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         '''
         return self.__dimension
 
-    def getShiftVector(self):
+    def get_shift_vector(self):
         '''
         Retrieves the shift vector
 
@@ -361,7 +372,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         '''
         return self.__shift_vector
 
-    def getBasis(self):
+    def get_basis(self):
         '''
         Retrieves the basis of the trial space
 

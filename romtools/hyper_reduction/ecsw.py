@@ -85,7 +85,7 @@ class AbstractECSWsolver(abc.ABC):
     '''
     Abstract base class for ECSW solvers
 
-    ECSW solvers should take in a linear system constructed from projected residual vector snapshots and the contributions at each mesh degree of freedom to the projected snapshot. The solvers should return arrays with sample mesh indices and weights. 
+    ECSW solvers should take in a linear system constructed from projected residual vector snapshots and the contributions at each mesh degree of freedom to the projected snapshot. The solvers should return arrays with sample mesh indices and weights.
 
     Methods:
     '''
@@ -94,7 +94,7 @@ class AbstractECSWsolver(abc.ABC):
         '''
         Set solver parameters to non-default values
 
-        Args: 
+        Args:
             (optional) solver_param_dict: dictionary, with some of the following keys:
             max_iters: int, maximum overall iterations
             max_non_neg_iters: int, maximum inner iterations to enforce non-negativity
@@ -114,10 +114,10 @@ class AbstractECSWsolver(abc.ABC):
             tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
         Returns:
-            Tuple of numpy ndarrays. 
-            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
-            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
-        
+            Tuple of numpy ndarrays.
+            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
+            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
+
         '''
         pass
 
@@ -162,10 +162,10 @@ class ECSWsolverNNLS(AbstractECSWsolver):
             tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
         Returns:
-            Tuple of numpy ndarrays. 
-            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
-            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
-        
+            Tuple of numpy ndarrays.
+            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
+            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
+
         '''
 
         n_dof = full_mesh_lhs.shape[1]
@@ -255,7 +255,7 @@ class ECSWsolverNNLS(AbstractECSWsolver):
         determine maximum update step size such that:
         weights + step_size * (candidate_weights-weights) >=0
 
-        Args: 
+        Args:
             weights: (n,) array
             candidate_weights: (n, array)
 
@@ -280,7 +280,7 @@ def _construct_linear_system(residual_snapshots: np.ndarray,
                              n_var: int,
                              variable_ordering: str):
     '''
-    Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection. 
+    Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection.
 
     Args:
         residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
@@ -303,13 +303,13 @@ def _construct_linear_system(residual_snapshots: np.ndarray,
     for i in range(n_dof):
         # should be projection of all variables for a given mesh DoF
         if variable_ordering == 'C':
-            Phi_block = test_basis[(i*n_var):((i+1)*n_var),:]  # n_var x n_mode
-            resSnaps_block = residual_snapshots[(i*n_var):((i+1)*n_var), :]  # n_var x n_snap
+            phi_block = test_basis[(i*n_var):((i+1)*n_var),:]  # n_var x n_mode
+            res_snaps_block = residual_snapshots[(i*n_var):((i+1)*n_var), :]  # n_var x n_snap
         elif variable_ordering == 'F':
-            Phi_block = test_basis[i::n_dof, :]  # n_var x n_mode
-            resSnaps_block = residual_snapshots[i::n_dof, :]  # n_var x n_snap
+            phi_block = test_basis[i::n_dof, :]  # n_var x n_mode
+            res_snaps_block = residual_snapshots[i::n_dof, :]  # n_var x n_snap
 
-        full_mesh_lhs_block = np.dot(Phi_block.T, resSnaps_block)  # Nmodes x Nsnaps matrix
+        full_mesh_lhs_block = np.dot(phi_block.T, res_snaps_block)  # n_modes x n_snaps matrix
         full_mesh_lhs[:, i] = np.ravel(full_mesh_lhs_block, order='F')
 
     # right-hand-side
@@ -336,9 +336,9 @@ def ecsw_fixed_test_basis(ecsw_solver: AbstractECSWsolver,
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
-        Tuple of numpy ndarrays. 
-        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
-        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
+        Tuple of numpy ndarrays.
+        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
+        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
     '''
 
     # TODO need to incorporate residual scales here too, perhaps using scaler.py
@@ -363,9 +363,9 @@ def ecsw_varying_test_basis(ecsw_solver: AbstractECSWsolver,
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
-        Tuple of numpy ndarrays. 
-        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh. 
-        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights. 
+        Tuple of numpy ndarrays.
+        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
+        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
     '''
 
     return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)

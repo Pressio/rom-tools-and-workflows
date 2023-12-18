@@ -81,14 +81,14 @@ class AbstractScaler(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def pre_scaling(self, data_matrix: np.ndarray) -> np.ndarray:
+    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
         '''
         pass
 
     @abc.abstractmethod
-    def post_scaling(self, data_matrix: np.ndarray) -> np.ndarray:
+    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
         '''
@@ -102,11 +102,11 @@ class NoOpScaler(AbstractScaler):
     def __init__(self):
         pass
 
-    def pre_scaling(self, data_matrix):
-        return data_matrix
+    def pre_scaling(self, data_tensor):
+        return data_tensor
 
-    def post_scaling(self, data_matrix):
-        return data_matrix
+    def post_scaling(self, data_tensor):
+        return data_tensor
 
 
 class VectorScaler(AbstractScaler):
@@ -126,47 +126,50 @@ class VectorScaler(AbstractScaler):
         Constructor for the VectorScaler.
 
         Args:
-            scaling_vector: Array containing the scaling vector for each row in the snapshot matrix.
+            scaling_vector: Array containing the scaling vector for each row
+                in the snapshot matrix.
 
-        This constructor initializes the VectorScaler with the specified scaling vector.
+        This constructor initializes the VectorScaler with the specified
+        scaling vector.
         '''
         self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1./scaling_vector
 
-
-    def pre_scaling(self, data_matrix):
+    def pre_scaling(self, data_tensor):
         '''
-        Scales the input data matrix using the inverse of the scaling vector and returns the scaled matrix.
+        Scales the input data matrix using the inverse of the scaling vector
+        and returns the scaled matrix.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        return self.__scaling_vector_matrix_inv[None, :, None] * data_matrix
+        return self.__scaling_vector_matrix_inv[None, :, None] * data_tensor
 
-    def post_scaling(self, data_matrix):
+    def post_scaling(self, data_tensor):
         '''
-        Scales the input data matrix using the scaling vector and returns the scaled matrix.
+        Scales the input data matrix using the scaling vector and returns the
+        scaled matrix.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        return self.__scaling_vector_matrix[None, :, None] * data_matrix
+        return self.__scaling_vector_matrix[None, :, None] * data_tensor
 
 
-
-#=========
-#This class is designed to scale a data matrix comprising multiple states
-#(e.g., for the Navier--Stokes, rho, rho u, rhoE)
-#========
 class VariableScaler(AbstractScaler):
     '''
-    Concrete implementation designed for snapshot matrices involving multiple state variables.
+    Concrete implementation designed for snapshot matrices involving multiple
+    state variables.
+
+    This class is designed to scale a data matrix comprising multiple states
+    (e.g., for the Navier--Stokes, rho, rho u, rhoE)
+
     This scaler will scale each variable based on
       - max-abs scaling: for the $i$th state variable $u_i$, we will compute the scaling as
         $s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
@@ -190,13 +193,13 @@ class VariableScaler(AbstractScaler):
         self.have_scales_been_initialized = False
         self.var_scales_ = None
 
-    def initializeScalings(self, data_tensor):
+    def initialize_scalings(self, data_tensor):
         '''
         Initializes the scaling factors for each state variable based on the
         specified method.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix.
+            data_tensor (np.ndarray): The input data matrix.
         '''
         n_var = data_tensor.shape[0]
         self.var_scales_ = np.ones(n_var)
@@ -222,7 +225,7 @@ class VariableScaler(AbstractScaler):
         the previously initialized scaling factors.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.
@@ -231,7 +234,7 @@ class VariableScaler(AbstractScaler):
         if self.have_scales_been_initialized:
             pass
         else:
-            self.initializeScalings(data_tensor)
+            self.initialize_scalings(data_tensor)
         # scale each field (variable scaling)
         for i in range(n_var):
             data_tensor[i] = data_tensor[i] / self.var_scales_[i]
@@ -243,7 +246,7 @@ class VariableScaler(AbstractScaler):
         scaled matrix.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.
@@ -284,10 +287,11 @@ class VariableAndVectorScaler(AbstractScaler):
 
     def pre_scaling(self, data_tensor):
         '''
-        Scales the input data matrix before processing, first using the `VariableScaler` and then the `VectorScaler`.
+        Scales the input data matrix before processing, first using the
+        `VariableScaler` and then the `VectorScaler`.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.
@@ -297,10 +301,11 @@ class VariableAndVectorScaler(AbstractScaler):
 
     def post_scaling(self, data_tensor):
         '''
-        Scales the input data matrix after processing, first using the `VectorScaler` and then the `VariableScaler`.
+        Scales the input data matrix after processing, first using the
+        `VectorScaler` and then the `VariableScaler`.
 
         Args:
-            data_matrix (np.ndarray): The input data matrix to be scaled.
+            data_tensor (np.ndarray): The input data matrix to be scaled.
 
         Returns:
             np.ndarray: The scaled data matrix.

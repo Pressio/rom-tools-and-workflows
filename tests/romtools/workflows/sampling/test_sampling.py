@@ -3,7 +3,8 @@ import os
 import numpy as np
 
 from romtools.workflows.sampling.sampling import run_sampling
-from romtools.workflows.sampling.sampling_coupler_base import SamplingCouplerBase
+from romtools.workflows.sampling.\
+    sampling_coupler_base import SamplingCouplerBase
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 
 
@@ -12,12 +13,12 @@ class ConcreteSampler(SamplingCouplerBase):
                  template_directory,
                  template_file,
                  workDir=None,
-                 sol_directory_base_name='run'):
+                 sol_directory_basename='run'):
 
         super().__init__(template_directory=template_directory,
                          template_input_file=template_file,
-                         work_directory=workDir,
-                         sol_directory_base_name=sol_directory_base_name)
+                         base_directory=workDir,
+                         sol_directory_basename=sol_directory_basename)
 
         self.myParameterSpace = UniformParameterSpace(['u', 'v', 'w'],
                                                       np.array([0, 1, 2]),
@@ -30,7 +31,7 @@ class ConcreteSampler(SamplingCouplerBase):
         np.savetxt(self.template_file, [self.counter_])
         self.counter_ += 1
 
-    def run_model(self, input_filename, parameter_values):
+    def run_model(self, filename, parameter_values):
         return 0
 
     def get_parameter_space(self):
@@ -54,11 +55,12 @@ def test_sampler(tmp_path):
                                  workDir=wdir)
     run_sampling(my_sampler, 10)
     for i in range(0, 10):
-        assert os.path.isdir(wdir + '/work/run' + str(i))
-        data = int(np.genfromtxt(f'{wdir}/work/run{i}/test_template.dat'))
+        assert os.path.isdir(wdir + '/run' + str(i))
+        data = int(np.genfromtxt(f'{wdir}/run{i}/test_template.dat'))
         assert data == i
+    assert os.path.isfile(f'{wdir}/sampling_stats.npz')
 
 
 if __name__ == "__main__":
     test_sampler_builder()
-    test_sampler()
+    test_sampler('.')
