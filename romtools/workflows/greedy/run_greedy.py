@@ -134,49 +134,37 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
     greedy_coupler.create_fom_and_rom_cases(starting_sample_index,
                                             parameter_samples)
 
-    # Run first FOM case
-    t0 = time.time()
-    greedy_file.write("Running FOM sample 0 \n")
-    run_fom_sample(greedy_coupler, parameter_samples, starting_sample_index)
-    fom_time += time.time() - t0
-
-    # Run second FOM case
-    t0 = time.time()
-    greedy_file.write("Running FOM sample 1 \n")
-    run_fom_sample(greedy_coupler, parameter_samples, starting_sample_index+1)
-    fom_time += time.time() - t0
-
     training_samples = np.array([0, 1], dtype='int')
+    samples_left = np.arange(2, testing_sample_size)
+
+    # Run FOM training cases
+    t0 = time.time()
+    for i in training_samples:
+        greedy_file.write(f"Running FOM sample {i} \n")
+        run_fom_sample(greedy_coupler, parameter_samples,
+                       starting_sample_index + i)
+    fom_time += time.time() - t0
 
     # Create ROM bases
     t0 = time.time()
     greedy_file.write("Creating ROM bases \n")
-
     training_dirs = [greedy_coupler.fom_coupler.get_sol_directory(i)
                      for i in training_samples]
     greedy_coupler.create_trial_space(training_dirs)
     basis_time += time.time() - t0
 
     # Evaluate ROM at training samples
+    #     Do we actually need to do this?
     initial_errors = np.zeros(2)
     initial_error_indicators = np.zeros(2)
-    greedy_file.write("Running ROM sample 0 \n")
-    t0 = time.time()
-    initial_error_indicators[0] = run_rom_sample(greedy_coupler,
-                                                 parameter_samples, 0)
-    rom_time += time.time() - t0
-    greedy_file.write("Computing ROM/FOM error for sample 0 \n")
-    initial_errors[0] = greedy_coupler.compute_error(0)
-
-    greedy_file.write("Running ROM sample 1 \n")
-    t0 = time.time()
-    initial_error_indicators[1] = run_rom_sample(greedy_coupler,
-                                                 parameter_samples, 1)
-    rom_time += time.time() - t0
-    greedy_file.write("Computing ROM/FOM error for sample 1 \n")
-    initial_errors[1] = greedy_coupler.compute_error(1)
-
-    samples_left = np.arange(2, testing_sample_size)
+    for i in training_samples:
+        greedy_file.write(f"Running ROM sample {i}\n")
+        t0 = time.time()
+        initial_error_indicators[i] = run_rom_sample(greedy_coupler,
+                                                     parameter_samples, i)
+        rom_time += time.time() - t0
+        greedy_file.write(f"Computing ROM/FOM error for sample {i} \n")
+        initial_errors[i] = greedy_coupler.compute_error(i)
 
     converged = False
     max_error_indicators = np.zeros(0)
