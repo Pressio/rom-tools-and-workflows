@@ -85,7 +85,9 @@ class AbstractECSWsolver(abc.ABC):
     '''
     Abstract base class for ECSW solvers
 
-    ECSW solvers should take in a linear system constructed from projected residual vector snapshots and the contributions at each mesh degree of freedom to the projected snapshot. The solvers should return arrays with sample mesh indices and weights.
+    ECSW solvers should take in a linear system constructed from projected residual vector 
+    snapshots and the contributions at each mesh degree of freedom to the projected snapshot. 
+    The solvers should return arrays with sample mesh indices and weights.
 
     Methods:
     '''
@@ -109,7 +111,8 @@ class AbstractECSWsolver(abc.ABC):
         Compute the sample mesh DoF indices and corresponding weights
 
         Args:
-            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
+            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, 
+            and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
             full_mesh_rhs: (n_snap*n_rom,) numpy array
             tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
@@ -197,6 +200,11 @@ class ECSWsolverNNLS(AbstractECSWsolver):
                 if mesh_index in sample_mesh_indicies:
                     still_searching = True
                     weighted_residual[mesh_index] = np.min(weighted_residual)
+                    if np.all((weighted_residual-weighted_residual[mesh_index])<1e-15):
+                        # All elements are the same, select random element outside of sample mesh
+                        unselected_indicies = np.setdiff1d(np.arange(n_dof),sample_mesh_indicies,assume_unique=True)
+                        mesh_index = unselected_indicies[0]
+                        still_searching = False
                     
 
             # add new mesh entity index
