@@ -65,6 +65,14 @@ class AbstractOrthogonalizer(abc.ABC):
 
     @abc.abstractmethod
     def __call__(self, my_array: np.ndarray) -> np.ndarray:
+        '''
+        Call
+        Args:
+          (N , K) np.ndarray: Input matrix
+
+        Returns
+          (N , K) np.ndarray: Orthogonalized version of input matrix
+        '''
         pass
 
 

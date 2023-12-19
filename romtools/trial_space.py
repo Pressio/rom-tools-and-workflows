@@ -44,7 +44,17 @@
 #
 
 '''
-#Trial space overview
+___
+##**Notes**
+
+Like the snapshot data, the basis and the affine offset for a trial space are viewed as tensors,
+$$\\mathcal{\Phi} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
+$$\\mathcal{u}_{\\mathrm{shift}} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
+Here, $K$ is the number of basis vectors. We emphasize that all tensors are reshaped into 2D matrices, 
+e.g., when performing SVD.
+___
+##**Theory**
+
 
 A trial space is foundational to reduced-order models.
 In a ROM, we restrict a high-dimensional state to live within a low-dimensional trial space.
@@ -61,6 +71,10 @@ $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathr
 
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
+Note that, like the snapshot data, we view the basis as a tensor.
+
+___
+##**API**
 '''
 
 import abc
@@ -101,7 +115,7 @@ class AbstractTrialSpace(abc.ABC):
         Retrieves the shift vector of the trial space.
 
         Returns:
-            np.ndarray: The shift vector.
+            $(N_{\\mathrm{vars}}, N_{\\mathrm{x}})$ np.ndarray: The shift vector.
 
         Concrete subclasses should implement this method to return the shift
         vector specific to their trial space implementation.
@@ -114,7 +128,7 @@ class AbstractTrialSpace(abc.ABC):
         Retrieves the basis vectors of the trial space.
 
         Returns:
-            np.ndarray: The basis of the trial space.
+            $(N_{\\mathrm{vars}}, N_{\\mathrm{x}},K)$ np.ndarray: The basis of the trial space in tensor form.
 
         Concrete subclasses should implement this method to return the basis
         vectors specific to their trial space implementation.
@@ -122,13 +136,13 @@ class AbstractTrialSpace(abc.ABC):
         pass
 
 
-def tensor_to_matrix(tensor_input):
+def __tensor_to_matrix(tensor_input):
     output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                          tensor_input.shape[2])
     return output_tensor
 
 
-def matrix_to_tensor(n_var, matrix_input):
+def __tensor_to_matrix(n_var, matrix_input):
     d1 = int(matrix_input.shape[0] / n_var)
     d2 = matrix_input.shape[1]
     output_matrix = matrix_input.reshape(n_var, d1, d2)
@@ -166,38 +180,19 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         snapshots = snapshot_data.get_snapshot_tensor()
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        snapshot_matrix = __tensor_to_matrix(shifted_snapshots)
         self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = __tensor_to_matrix(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):
-        '''
-        Retrieves the dimension of trial space
-
-        Returns:
-            int: The dimension of the trial space.
-        '''
         return self.__dimension
 
     def get_shift_vector(self):
-        '''
-        Retrieves the shift vector
-
-        Returns:
-            np.ndarray: The shift vector.
-
-        '''
         return self.__shift_vector
 
     def get_basis(self):
-        '''
-        Retrieves the basis of the trial space
-
-        Returns:
-            np.ndarray: The basis of the trial space.
-        '''
         return self.__basis
 
 
@@ -252,7 +247,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         snapshot_tensor = snapshots.get_snapshot_tensor()
         n_var = snapshot_tensor.shape[0]
         shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshot_tensor)
+        snapshot_matrix = __tensor_to_matrix(shifted_snapshot_tensor)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
@@ -261,35 +256,16 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
         self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = __tensor_to_matrix(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):
-        '''
-        Retrieves the dimension of the trial space
-
-        Returns:
-            int: The dimension of the trial space.
-        '''
         return self.__dimension
 
     def get_shift_vector(self):
-        '''
-        Retrieves the shift vector
-
-        Returns:
-            np.ndarray: The shift vector.
-
-        '''
         return self.__shift_vector
 
     def get_basis(self):
-        '''
-        Retrieves the basis of the trial space
-
-        Returns:
-            np.ndarray: The basis of the trial space.
-        '''
         return self.__basis
 
 
@@ -316,7 +292,9 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
                  shifter: AbstractShifter,
                  scaler: AbstractScaler,
                  splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
+                 orthogonalizer: AbstractOrthogonalizer,
+                 svdFnc = None):
+
         '''
         Constructor for the POD trial space constructed via scaled SVD.
 
@@ -329,6 +307,12 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
             scaler: Class that scales the basis.
             splitter: Class that splits the basis.
             orthogonalizer: Class that orthogonalizes the basis.
+            svdFnc: a callable to use for computing the SVD on the snapshots data.
+                IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
+                If `None`, internally we use `np.linalg.svd`.
+                Note: this is useful when you want to use a custom svd, for
+                    example when your snapshots are distributed with MPI, or
+                    maybe you have a fancy svd function that you can use.
 
         This constructor initializes a POD trial space by performing SVD on
         the provided snapshot data and applying various basis manipulation
@@ -341,16 +325,17 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         n_var = snapshot_tensor.shape[0]
         shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
         scaled_shifted_snapshot_tensor = scaler.pre_scaling(shifted_snapshot_tensor)
-        snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshot_tensor)
+        snapshot_matrix = __tensor_to_matrix(scaled_shifted_snapshot_tensor)
         snapshot_matrix = splitter(snapshot_matrix)
 
-        lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
+        svd_picked = np.linalg.svd if svdFnc is None else svdFnc
+        lsv, svals, _ = svd_picked(snapshot_matrix, full_matrices=False)
         self.__basis = truncater(lsv, svals)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = __tensor_to_matrix(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
-        self.__basis = tensor_to_matrix(self.__basis)
+        self.__basis = __tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = __tensor_to_matrix(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):

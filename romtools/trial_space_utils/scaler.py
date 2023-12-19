@@ -44,7 +44,12 @@
 #
 
 '''
-The scaler class is used to performed scaled POD.
+---
+##**Notes**
+The scaler class is used to performed scaled POD. Scaling is applied to tensors of shape $\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K}$. These tensors are then reshaped into matrices when performing SVD.
+
+___
+##**Theory**
 
 *What is scaled POD, and why would I do it?*
 
@@ -69,6 +74,10 @@ $$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\
 \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.$$
 
 The Scaler encapsulates this information
+
+___
+___
+##**API**
 '''
 
 import abc
@@ -84,6 +93,13 @@ class AbstractScaler(abc.ABC):
     def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
+
+        Args:
+          $(N_{\\mathrm{vars}} ,N_{\\mathrm{x}} , K)$ np.ndarray: data matrix in tensor form
+          
+        Returns:
+          $(N_{\\mathrm{vars}} ,N_{\\mathrm{x}} , K)$ np.ndarray: scaled data matrix in tensor form
+
         '''
         pass
 
@@ -91,6 +107,13 @@ class AbstractScaler(abc.ABC):
     def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
+
+        Args:
+          $(N_{\\mathrm{vars}} ,N_{\\mathrm{x}} , K)$ np.ndarray: left singular vectors 
+
+        Returns:
+          $(N_{\\mathrm{vars}} ,N_{\\mathrm{x}} , K)$ np.ndarray: unscaled left singular vectors 
+
         '''
         pass
 
@@ -112,11 +135,13 @@ class NoOpScaler(AbstractScaler):
 class VectorScaler(AbstractScaler):
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
-    For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
-    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N$, and scales by
-    $$\\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}$$
-    before performing POD (i.e., POD is performed on $\\mathbf{S}^*$). After POD is performed, the bases
-    are post-scaled by $$\\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}$$
+    For a snapshot tensor $\\mathcal{S} \\in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K}$, the VectorScaler
+    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N_{\\mathrm{x}}}$, and scales by
+    $$\\mathcal{S}_i^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathcal{S}_i,$$
+    for $i=1,\\ldots, N_{\\mathrm{vars}}$,
+    before performing POD (i.e., POD is performed on matrix form of $\\mathcal{S}^*$). After POD is performed, the tensorized bases
+    are post-scaled by $$\\mathcal{ \\Phi}_i = \\mathrm{diag}(\\mathbf{v}) \\mathcal{U}_i$$
+    for $i=1,\\ldots, N_{\\mathrm{vars}}$ where $\\mathcal{U}_i$ are the tensorized left singular vectors.
 
     **Note that scaling can cause bases to not be orthonormal; we do not
     recommend using scalers with the NoOpOrthonormalizer**
@@ -126,8 +151,7 @@ class VectorScaler(AbstractScaler):
         Constructor for the VectorScaler.
 
         Args:
-            scaling_vector: Array containing the scaling vector for each row
-                in the snapshot matrix.
+            scaling_vector, ($N_{\\mathrm{x}}$) np.ndarray: Array containing the scaling vector
 
         This constructor initializes the VectorScaler with the specified
         scaling vector.
@@ -136,29 +160,9 @@ class VectorScaler(AbstractScaler):
         self.__scaling_vector_matrix_inv = 1./scaling_vector
 
     def pre_scaling(self, data_tensor):
-        '''
-        Scales the input data matrix using the inverse of the scaling vector
-        and returns the scaled matrix.
-
-        Args:
-            data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
-        '''
         return self.__scaling_vector_matrix_inv[None, :, None] * data_tensor
 
     def post_scaling(self, data_tensor):
-        '''
-        Scales the input data matrix using the scaling vector and returns the
-        scaled matrix.
-
-        Args:
-            data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
-        '''
         return self.__scaling_vector_matrix[None, :, None] * data_tensor
 
 
@@ -172,19 +176,18 @@ class VariableScaler(AbstractScaler):
 
     This scaler will scale each variable based on
       - max-abs scaling: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
+        $s_i = \\mathrm{max}( \\mathrm{abs}( \\mathcal{S}_i ) )$, where $\\mathcal{S}_i$ denotes the snapshot matrix of the $i$th variable.
       - mean abs: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
+        $s_i = \\mathrm{mean}( \\mathrm{abs}( \\mathcal{S}_i ) )$, where $\\mathcal{S}_i$ denotes the snapshot matrix of the $i$th variable.
       - variance: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{std}( S_i ) $, where $S_i$ denotes the snapshot matrix of the $i$th variable.
+        $s_i = \\mathrm{std}( \\mathcal{S}_i ) $, where $\\mathcal{S}_i$ denotes the snapshot matrix of the $i$th variable.
     '''
     def __init__(self, scaling_type):
         '''
         Constructor for the VariableScaler.
 
         Args:
-            scaling_type (str): The scaling method to use ('max_abs',
-            'mean_abs', or 'variance').
+            scaling_type (str): The scaling method to use ('max_abs','mean_abs', or 'variance').
 
         This constructor initializes the VariableScaler with the specified
         scaling type, variable ordering, and number of variables.
@@ -199,7 +202,7 @@ class VariableScaler(AbstractScaler):
         specified method.
 
         Args:
-            data_tensor (np.ndarray): The input data matrix.
+            data_tensor, $(N_{\\mathrm{vars}} ,N_{\\mathrm{x}} , K)$ np.ndarray: data matrix in tensor form
         '''
         n_var = data_tensor.shape[0]
         self.var_scales_ = np.ones(n_var)
@@ -220,16 +223,6 @@ class VariableScaler(AbstractScaler):
 
     # These are all inplace operations
     def pre_scaling(self, data_tensor):
-        '''
-        Scales the input data matrix before processing, taking into account
-        the previously initialized scaling factors.
-
-        Args:
-            data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
-        '''
         n_var = data_tensor.shape[0]
         if self.have_scales_been_initialized:
             pass
@@ -241,16 +234,6 @@ class VariableScaler(AbstractScaler):
         return data_tensor
 
     def post_scaling(self, data_tensor):
-        '''
-        Scales the input data matrix using the scaling vector and returns the
-        scaled matrix.
-
-        Args:
-            data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
-        '''
         assert self.have_scales_been_initialized, "Scales in VariableScaler have not been initialized"
         # scale each field
         n_var = data_tensor.shape[0]
@@ -274,10 +257,8 @@ class VariableAndVectorScaler(AbstractScaler):
         Constructor for the VariableAndVectorScaler.
 
         Args:
-            scaling_vector: Array containing the scaling vector for each row
-            in the snapshot matrix.
-            scaling_type: Scaling method ('max_abs',
-            'mean_abs', or 'variance') for variable magnitudes.
+            scaling_vector: Array containing the scaling vector for each row in the snapshot matrix.
+            scaling_type: Scaling method ('max_abs','mean_abs', or 'variance') for variable magnitudes.
 
         This constructor initializes the `VariableAndVectorScaler` with the
         specified parameters.
