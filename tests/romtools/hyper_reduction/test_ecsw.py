@@ -27,7 +27,7 @@ def test_ecsw_matrix():
 
     # test matrix construction for scalar case
     residual_snapshots = np.random.normal(size=(10, 5))
-    test_basis = np.random.normal(size=(10, 3))
+    test_basis,_ = np.linalg.qr(np.random.normal(size=(10, 3)))
 
     full_mesh_lhs, full_mesh_rhs = ecsw._construct_linear_system(residual_snapshots, test_basis, 1, 'C')
 
@@ -43,9 +43,9 @@ def test_full_ecsw():
     # test ECSW
     nnls = ecsw.ECSWsolverNNLS()
     residual_snapshots = np.random.normal(size=(10, 5))
-    test_basis = np.random.normal(size=(10, 3))
+    test_basis,_ = np.linalg.qr(np.random.normal(size=(10, 3)))
 
-    sample_mesh_indices, sample_mesh_weights = ecsw.ecsw_fixed_test_basis(nnls, residual_snapshots, test_basis, 1, 'C', 1e-2)
+    sample_mesh_indices, sample_mesh_weights = ecsw.ecsw_fixed_test_basis(nnls, residual_snapshots, test_basis, 1, 'C', 1e-4)
     full_mesh_weights = np.zeros(residual_snapshots.shape[0])
     full_mesh_weights[sample_mesh_indices] = sample_mesh_weights
 
@@ -68,3 +68,6 @@ if __name__ == "__main__":
     test_full_ecsw()
     test_ecsw_nnls()
     test_ecsw_matrix()
+
+    
+
