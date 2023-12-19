@@ -87,7 +87,7 @@ import time
 import numpy as np
 
 
-def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
+def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     '''
     Main implementation of the greedy algorithm.
     '''
@@ -99,10 +99,10 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
 
     np.random.seed(1)
     # create parameter domain
-    parameterSpace = greedyCoupler.get_parameter_space()
+    parameter_space = greedyCoupler.get_parameter_space()
 
     # lower_bounds,upper_bounds = greedyCoupler.get_parameter_bounds()
-    parameter_samples = parameterSpace.generate_samples(testing_sample_size)
+    parameter_samples = parameter_space.generate_samples(testing_sample_size)
     # Make FOM/ROM directories
     starting_sample_index = 0
     greedyCoupler.create_fom_and_rom_cases(starting_sample_index, parameter_samples)
@@ -261,7 +261,7 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
         qoi_error = greedyCoupler.compute_error(rom_directory, fom_directory)
         greedy_file.write("Sample " + str(sample_with_highest_error_indicator) + " had an error of " + str(qoi_error) +  " \n")
         qoi_errors = np.append(qoi_errors, qoi_error)
-        reg = qoi_vs_error_indicator_regressor()
+        reg = QoIvsErrorIndicatorRegressor()
         reg.fit(max_error_indicators, qoi_errors)
         t0 = time.time()
         greedy_file.write("Computing ROM bases \n")
@@ -279,7 +279,7 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
         greedyCoupler.create_trial_space(training_dirs)
         basis_time += time.time() - t0
         # Add a new sample
-        new_parameter_sample = parameterSpace.generate_samples(1)
+        new_parameter_sample = parameter_space.generate_samples(1)
         parameter_samples = np.append(parameter_samples, new_parameter_sample, axis=0)
         new_sample_number = testing_sample_size + outer_loop_counter - 1
         greedyCoupler.create_fom_and_rom_cases(new_sample_number, new_parameter_sample)
@@ -297,8 +297,7 @@ def runGreedy(greedyCoupler, tolerance, testing_sample_size=10):
     greedy_file.close()
 
 
-
-class qoi_vs_error_indicator_regressor:
+class QoIvsErrorIndicatorRegressor:
     '''
     Regressor for modeling the relationship between QoI error and error
     indicator.

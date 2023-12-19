@@ -89,8 +89,7 @@ class SamplingCouplerBase(abc.ABC):
         self.__sol_directory_basename = sol_directory_basename
 
         self.__template_input_file = template_input_file
-        self.__required_files = [template_input_file] \
-            + [file for file in other_required_files]
+        self.__required_files = [template_input_file] + list(other_required_files)
 
     def get_input_filename(self):
         '''Get the name of the template input file.'''

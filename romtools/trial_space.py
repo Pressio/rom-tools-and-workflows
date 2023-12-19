@@ -123,12 +123,20 @@ class AbstractTrialSpace(abc.ABC):
 
 
 def tensor_to_matrix(tensor_input):
+    '''
+    Converts a tensor of snapshots (N_vars x N_space x N_samples) to a matrix
+    representation in which the first two dimension are collapsed
+    (N_vars*N_space x N_samples).
+    '''
     output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                          tensor_input.shape[2])
     return output_tensor
 
 
 def matrix_to_tensor(n_var, matrix_input):
+    '''
+    Inverse operation of `tensor_to_matrix`
+    '''
     d1 = int(matrix_input.shape[0] / n_var)
     d2 = matrix_input.shape[1]
     output_matrix = matrix_input.reshape(n_var, d1, d2)

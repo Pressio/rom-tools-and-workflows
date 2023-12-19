@@ -2,7 +2,7 @@ import pytest
 import os
 import numpy as np
 from romtools.workflows.greedy.greedy_coupler_base import GreedyCouplerBase
-from romtools.workflows.greedy.run_greedy import runGreedy
+from romtools.workflows.greedy.run_greedy import run_greedy
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 
 
@@ -91,7 +91,7 @@ def test_greedy(tmp_path):
                                               'test_template.dat',
                                               workDir=wdir)
     init_sample_size = 5
-    runGreedy(my_greedy_coupler, 1e-5, init_sample_size)
+    run_greedy(my_greedy_coupler, 1e-5, init_sample_size)
     # First greedy pass
     base_path = f'{my_greedy_coupler.get_base_directory()}/work/{my_greedy_coupler.get_fom_directory_basename()}'
     foms_samples_run = [0, 1, 4, 2, 5]
