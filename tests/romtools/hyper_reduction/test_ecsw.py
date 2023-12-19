@@ -2,68 +2,72 @@ import numpy as np
 import pytest
 from romtools.hyper_reduction import ecsw
 
-
 @pytest.mark.mpi_skip
 def test_ecsw_nnls():
     # test NNLS routine for small random matrix
-    G = np.random.normal(size=(5, 10))
-    b = np.sum(G, axis=1)
+    full_mesh_lhs = np.random.normal(size=(5, 10))
+    full_mesh_rhs = np.sum(full_mesh_lhs, axis=1)
 
     nnls = ecsw.ECSWsolverNNLS()
-    inds, xi = nnls(G, b, 1e-20)
+    sample_mesh_indices, sample_mesh_weights = nnls(full_mesh_lhs, full_mesh_rhs, 1e-20)
+    full_mesh_weights = np.zeros(full_mesh_lhs.shape[1])
+    full_mesh_weights[sample_mesh_indices] = sample_mesh_weights
 
     # test weights from NNLS
-    assert np.allclose(G@xi, b)
+    assert np.allclose(full_mesh_lhs@full_mesh_weights, full_mesh_rhs)
 
-    # test indices from NNLS
-    G_red = G[:, inds]
-    xi_red = xi[inds]
+    # test sample mesh inices indices from NNLS
+    sample_mesh_lhs = full_mesh_lhs[:, sample_mesh_indices]
 
-    assert np.allclose(G@xi, G_red@xi_red)
+    assert np.allclose(full_mesh_lhs@full_mesh_weights, sample_mesh_lhs@sample_mesh_weights)
 
 
 @pytest.mark.mpi_skip
 def test_ecsw_matrix():
 
     # test matrix construction for scalar case
-    Res = np.random.normal(size=(10, 5))
-    Psi = np.random.normal(size=(10, 3))
+    residual_snapshots = np.random.normal(size=(10, 5))
+    test_basis,_ = np.linalg.qr(np.random.normal(size=(10, 3)))
 
-    G, b = ecsw._construct_linear_system(Res, Psi, 1, 'C')
+    full_mesh_lhs, full_mesh_rhs = ecsw._construct_linear_system(residual_snapshots, test_basis, 1, 'C')
 
-    # Check left-hand-side
-    assert np.allclose((np.sum(G, axis=1)).reshape((3, 5), order='F'), (Psi.T)@Res)
+    # Check that left-hand-side is correctly constructed
+    assert np.allclose((np.sum(full_mesh_lhs, axis=1)).reshape((3, 5), order='F'), (test_basis.T)@residual_snapshots)
 
-    # Check right-hand-side
-    assert np.allclose(b.reshape((3, 5), order='F'), (Psi.T)@Res)
+    # Check right-hand-side is correctly constructed
+    assert np.allclose(full_mesh_rhs.reshape((3, 5), order='F'), (test_basis.T)@residual_snapshots)
 
 
 @pytest.mark.mpi_skip
 def test_full_ecsw():
     # test ECSW
     nnls = ecsw.ECSWsolverNNLS()
-    Res = np.random.normal(size=(10, 5))
-    Psi = np.random.normal(size=(10, 3))
+    residual_snapshots = np.random.normal(size=(10, 5))
+    test_basis,_ = np.linalg.qr(np.random.normal(size=(10, 3)))
 
-    inds, xi = ecsw.ecsw_fixed_test_basis(nnls, Res, Psi, 1, 'C', 1e-2)
+    sample_mesh_indices, sample_mesh_weights = ecsw.ecsw_fixed_test_basis(nnls, residual_snapshots, test_basis, 1, 'C', 1e-4)
+    full_mesh_weights = np.zeros(residual_snapshots.shape[0])
+    full_mesh_weights[sample_mesh_indices] = sample_mesh_weights
 
-    # Check full approximation
-    exact = (Psi.T)@Res
-    approx = (Psi.T)@(np.diag(xi)@Res)
+    # Check that the full approximation of the residual snapshots is correct
+    exact = (test_basis.T)@residual_snapshots
+    approx = (test_basis.T)@(np.diag(full_mesh_weights)@residual_snapshots)
 
     assert np.allclose(exact, approx)
 
-    # Check indices
-    Psi_sm = Psi[inds, :]
-    Res_sm = Res[inds, :]
-    xi_sm = xi[inds]
+    # Check that the sample mesh indices are correct
+    sample_mesh_test_basis = test_basis[sample_mesh_indices, :]
+    sample_mesh_residual_snapshots = residual_snapshots[sample_mesh_indices, :]
 
-    approx_sm = (Psi_sm.T)@(np.diag(xi_sm)@Res_sm)
+    sample_mesh_approx = (sample_mesh_test_basis.T)@(np.diag(sample_mesh_weights)@sample_mesh_residual_snapshots)
 
-    assert np.allclose(approx_sm, approx)
+    assert np.allclose(sample_mesh_approx, approx)
 
 
 if __name__ == "__main__":
     test_full_ecsw()
     test_ecsw_nnls()
     test_ecsw_matrix()
+
+    
+
