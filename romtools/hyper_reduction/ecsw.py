@@ -183,12 +183,14 @@ class ECSWsolverNNLS(AbstractECSWsolver):
         residual_norm_unchanged = 0
 
         # add nodes to sample mesh until tolerance is met
-        while (residual_norm > target_norm) and (residual_norm_unchanged < self.max_iters_res_unchanged) and (iters < self.max_iters) and (len(sample_mesh_indicies) < n_dof):
+        while (residual_norm > target_norm) and (residual_norm_unchanged < self.max_iters_res_unchanged) and (iters < self.max_iters):
             # determine new node to add to sample mesh
             weighted_residual = np.dot(full_mesh_lhs.T, residual)
 
             # make sure mesh entity hasn't already been selected
             still_searching = True
+            if (len(sample_mesh_indicies) == n_dof):
+                still_searching = False
             while still_searching:
                 mesh_index = np.argmax(weighted_residual)
                 still_searching = False
@@ -198,7 +200,8 @@ class ECSWsolverNNLS(AbstractECSWsolver):
                     
 
             # add new mesh entity index
-            sample_mesh_indicies.append(mesh_index)
+            if (len(sample_mesh_indicies) < n_dof):
+                sample_mesh_indicies.append(mesh_index)
 
             print("iteration={}  sample mesh size={}  residual norm={:.8e}  ratio to target={:.8e} ".format(iters, len(sample_mesh_indicies), residual_norm, residual_norm/target_norm))
             iters += 1
