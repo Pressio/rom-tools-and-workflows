@@ -176,9 +176,7 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
     greedy_file.write("Computing ROM/FOM error for sample 1 \n")
     initial_errors[1] = greedy_coupler.compute_error(1)
 
-    samples_left = np.arange(0, testing_sample_size)
-    samples_left = np.delete(samples_left, 0)
-    samples_left = np.delete(samples_left, 0)
+    samples_left = np.arange(2, testing_sample_size)
 
     converged = False
     max_error_indicators = np.zeros(0)
