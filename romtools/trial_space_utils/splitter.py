@@ -46,6 +46,13 @@
 '''
 The Splitter class is used to "split" a snapshot matrix before constructing the trial space.
 
+___
+##**Notes**
+The splitter is applied to a snapshot matrix before applying SVD. We note that it is applied to a matrix, not a tensor. 
+
+___
+___
+##**Theory**
 *What do we mean by splitting a trial space, and why do it?*
 Trial space splitting can be important for vector-valued equations where there are multiple state variables. As an
 example, we could consider the compressible Euler equations in one dimension in which case the spatially continuous
@@ -81,6 +88,8 @@ where different state variables span numerous orders of magnitude.
 The splitting class encapsulates this functionality. We note that the splitter is **applied to the snapshot matrix
 before POD is performed**.
 
+___
+##**API**
 '''
 import abc
 import numpy as np
@@ -121,6 +130,8 @@ class BlockSplitter(AbstractSplitter):
     **Order F variable ordering: $[u_1,v_1,w_1,u_2,v_2,w_2,...,u_n,v_n,w_n]$**
 
     **Order C variable ordering: $[u_1,u_2,...,u_n,v_1,...]$**
+
+    By default, rom-tools reshapes a data tensor into order C.
     '''
     def __init__(self, blocks: list, n_var: int, variable_ordering: str = 'C'):
         '''

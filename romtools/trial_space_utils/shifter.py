@@ -44,7 +44,13 @@
 #
 
 '''
-The Shifter class is used to create an affine offset in a trial space.
+___
+##**Notes**
+The vector defining the affine offset for a linear subspace is viewed as a matrix of shape 
+$$\\mathbf{u}_{\\mathrm{shift}} \in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\mathrm{x}} }$$
+
+___
+##**Theory**
 
 *What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
 trial space,
@@ -56,6 +62,9 @@ Affine offsets can be useful for a variety of reasons, including satisfying boun
 conditions.
 
 The Shifter class encapsulates the affine offset.
+
+___
+##**API**
 '''
 
 from typing import Tuple
@@ -97,7 +106,7 @@ class ConstantShifter(AbstractShifter):
         Constructor for ConstantShifter.
 
         Args:
-            shift_value (np.ndarray): The value to shift the data by.
+            shift_value (($N_{\\mathrm{vars}},)$ np.ndarray): The value to shift the data by.
         '''
         self.__shift_value = shift_value
 
@@ -127,7 +136,7 @@ class VectorShifter(AbstractShifter):
         Constructor for VectorShifter.
 
         Args:
-            shift_vector (np.ndarray): The vector to shift the data by.
+            shift_vector (($N_{\\mathrm{vars}} , N_{\mathrm{x}})$ np.ndarray): The vector to shift the data by.
         '''
         self.__shift_vector = shift_vector
 
