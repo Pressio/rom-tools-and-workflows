@@ -4,6 +4,38 @@ import numpy as np
 from romtools.workflows.greedy.greedy_coupler_base import GreedyCouplerBase
 from romtools.workflows.greedy.run_greedy import run_greedy
 from romtools.workflows.parameter_spaces import UniformParameterSpace
+from romtools.workflows.sampling.\
+    sampling_coupler_base import SamplingCouplerBase
+
+
+class ConcreteSampler(SamplingCouplerBase):
+    def __init__(self,
+                 template_directory,
+                 template_file,
+                 workDir=None,
+                 sol_directory_basename='run'):
+
+        super().__init__(template_directory=template_directory,
+                         template_input_file=template_file,
+                         base_directory=workDir,
+                         sol_directory_basename=sol_directory_basename)
+
+        self.myParameterSpace = UniformParameterSpace(['u', 'v', 'w'],
+                                                      np.array([0, 1, 2]),
+                                                      np.array([1, 2, 3]))
+        self.counter_ = 0
+        self.template_file = template_file
+
+    def set_parameters_in_input(self, filename, parameter_sample):
+        file = np.genfromtxt(self.template_file)
+        np.savetxt(self.template_file, [self.counter_])
+        self.counter_ += 1
+
+    def run_model(self, filename, parameter_values):
+        return 0
+
+    def get_parameter_space(self):
+        return self.myParameterSpace
 
 
 class ConcreteGreedyCoupler(GreedyCouplerBase):
@@ -12,15 +44,20 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
                  template_rom_file,
                  workDir=None):
 
-        GreedyCouplerBase.__init__(self,
-                                   template_directory,
-                                   template_fom_file,
-                                   template_rom_file,
-                                   base_directory=workDir)
+        self.my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
+                                                        np.array([0, 1, 2]),
+                                                        np.array([1, 2, 3]))
 
-        self.myParameterSpace = UniformParameterSpace(['u', 'v', 'w'],
-                                                      np.array([0, 1, 2]),
-                                                      np.array([1, 2, 3]))
+        rom_coupler = ConcreteSampler(template_directory=template_directory,
+                                      template_file=template_rom_file,
+                                      workDir=f'{workDir}/rom')
+        fom_coupler = ConcreteSampler(template_directory=template_directory,
+                                      template_file=template_fom_file,
+                                      workDir=f'{workDir}/fom')
+        super().__init__(rom_coupler=rom_coupler,
+                         fom_coupler=fom_coupler,
+                         base_directory=workDir)
+
         self.counter_ = 0
         self.template_fom_file = template_fom_file
 
@@ -39,13 +76,7 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
         self.my_errors_ = np.array([1., 1., 0.4, 0.09, 0.01, 1e-6])
         self.my_errors_counter_ = 0
 
-    def set_parameters_in_rom_input(self, filename, parameter_sample):
-        pass
-
-    def set_parameters_in_fom_input(self, filename, parameter_sample):
-        pass
-
-    def compute_error(self, rom_directory, fom_directory):
+    def compute_error(self, case_num):
         error = self.my_errors_[self.my_errors_counter_]
         self.my_errors_counter_ += 1
         return error
@@ -68,7 +99,7 @@ class ConcreteGreedyCoupler(GreedyCouplerBase):
         pass
 
     def get_parameter_space(self):
-        return self.myParameterSpace
+        return self.my_parameter_space
 
 
 @pytest.mark.mpi_skip
@@ -77,6 +108,7 @@ def test_greedy_coupler_builder():
     ConcreteGreedyCoupler(my_dir + '/templates/',
                           'test_template.dat',
                           'test_template.dat')
+
 
 @pytest.mark.mpi_skip
 def test_greedy(tmp_path):
@@ -93,17 +125,16 @@ def test_greedy(tmp_path):
     init_sample_size = 5
     run_greedy(my_greedy_coupler, 1e-5, init_sample_size)
     # First greedy pass
-    base_path = f'{my_greedy_coupler.get_base_directory()}/work/{my_greedy_coupler.get_fom_directory_basename()}'
     foms_samples_run = [0, 1, 4, 2, 5]
     foms_samples_not_run = [3, 6, 7]
 
     for sample in foms_samples_run:
-        assert os.path.isfile(f'{base_path}_{sample}/fom_succesful.dat'), sample
+        assert os.path.isfile(f'{wdir}/fom/run{sample}/fom_succesful.dat'), sample
 
     for sample in foms_samples_not_run:
-        assert not os.path.isfile(f'{base_path}_{sample}/fom_succesful.dat'), sample
+        assert not os.path.isfile(f'{wdir}/fom/run{sample}/fom_succesful.dat'), sample
 
-    greedy_output = np.load('greedy_stats.npz')
+    greedy_output = np.load(f'{wdir}/rom/greedy_stats.npz')
     assert np.allclose(greedy_output['max_error_indicators'],
                        np.array([4., 0.9, 0.1]))
     assert np.allclose(greedy_output['training_samples'],

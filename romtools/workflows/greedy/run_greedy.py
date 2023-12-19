@@ -107,11 +107,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     starting_sample_index = 0
     greedyCoupler.create_fom_and_rom_cases(starting_sample_index, parameter_samples)
     # Run first FOM case
-    fom_directory = (
-        greedyCoupler.get_work_directory_basename() + '/' +
-        greedyCoupler.get_fom_directory_basename() + '_' +
-        str(starting_sample_index) + '/'
-    )
+    fom_directory = greedyCoupler.fom_coupler.get_sol_directory(starting_sample_index)
     t0 = time.time()
     greedy_file.write("Running FOM sample 0 \n")
     os.chdir(fom_directory)
@@ -121,11 +117,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     fom_time += time.time() - t0
 
     # Run second FOM case
-    fom_directory = (
-        greedyCoupler.get_work_directory_basename() + '/' +
-        greedyCoupler.get_fom_directory_basename() + '_' +
-        str(starting_sample_index + 1) + '/'
-    )
+    fom_directory = greedyCoupler.fom_coupler.get_sol_directory(starting_sample_index + 1)
     t0 = time.time()
     greedy_file.write("Running FOM sample 1 \n")
     os.chdir(fom_directory)
@@ -141,11 +133,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     # Create list of directories for training
     training_dirs = []
     for i in training_samples:
-        path_to_dir = (
-            greedyCoupler.get_base_directory() + '/' +
-            greedyCoupler.get_work_directory_basename() + '/' +
-            greedyCoupler.get_fom_directory_basename() + '_' + str(i)
-        )
+        path_to_dir = greedyCoupler.fom_coupler.get_sol_directory(i)
         training_dirs.append(path_to_dir)
 
     greedyCoupler.create_trial_space(training_dirs)
@@ -154,7 +142,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     initial_errors = np.zeros(2)
     initial_error_indicators = np.zeros(2)
     greedy_file.write("Running ROM sample 0 \n")
-    rom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_rom_directory_basename() + '_0/'
+    rom_directory = greedyCoupler.rom_coupler.get_sol_directory(0)
     t0 = time.time()
     os.chdir(rom_directory)
     greedyCoupler.run_rom(greedyCoupler.get_rom_input_filename(), parameter_samples[0])
@@ -162,22 +150,18 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
     os.chdir(greedyCoupler.get_base_directory())
     rom_time += time.time() - t0
     greedy_file.write("Computing ROM/FOM error for sample 0 \n")
-    fom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_fom_directory_basename() + '_0/'
-
-    initial_errors[0] = greedyCoupler.compute_error(rom_directory, fom_directory)
+    initial_errors[0] = greedyCoupler.compute_error(0)
 
     greedy_file.write("Running ROM sample 1 \n")
-    rom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_rom_directory_basename() + '_1/'
+    rom_directory = greedyCoupler.rom_coupler.get_sol_directory(1)
     t0 = time.time()
     os.chdir(rom_directory)
     greedyCoupler.run_rom(greedyCoupler.get_rom_input_filename(), parameter_samples[1])
     initial_error_indicators[1] = greedyCoupler.compute_error_indicator()
     os.chdir(greedyCoupler.get_base_directory())
     rom_time += time.time() - t0
-
     greedy_file.write("Computing ROM/FOM error for sample 1 \n")
-    fom_directory = greedyCoupler.get_work_directory_basename() + '/' + greedyCoupler.get_fom_directory_basename() + '_1/'
-    initial_errors[1] = greedyCoupler.compute_error(rom_directory, fom_directory)
+    initial_errors[1] = greedyCoupler.compute_error(1)
 
     samples_left = np.arange(0, testing_sample_size)
     samples_left = np.delete(samples_left, 0)
@@ -202,10 +186,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
                           "Parameter samples: \n " + str(parameter_samples) + " \n")
         greedy_file.flush()
         for i in samples_left:
-            rom_directory = (
-                greedyCoupler.get_work_directory_basename() + '/' +
-                greedyCoupler.get_rom_directory_basename() + '_' + str(i) + '/'
-            )
+            rom_directory = greedyCoupler.rom_coupler.get_sol_directory(i)
             greedy_file.write("    Running ROM sample " + str(i) + " \n")
             greedy_file.flush()
             os.chdir(rom_directory)
@@ -232,11 +213,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
                 print('Run converged, max approximate qoi error = ' + str(predicted_max_qoi_error) )
                 break
 
-        fom_directory = (
-            greedyCoupler.get_work_directory_basename() + '/' +
-            greedyCoupler.get_fom_directory_basename() + '_' +
-            str(sample_with_highest_error_indicator)
-        )
+        fom_directory = greedyCoupler.fom_coupler.get_sol_directory(sample_with_highest_error_indicator)
         t0 = time.time()
         greedy_file.write("Running FOM sample " + str(sample_with_highest_error_indicator) + " \n")
         greedy_file.flush()
@@ -248,17 +225,9 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
 
         samples_left = np.delete(samples_left, np.argmax(error_indicators))
 
-        rom_directory = (
-            greedyCoupler.get_work_directory_basename() + '/' +
-            greedyCoupler.get_rom_directory_basename() + '_' +
-            str(sample_with_highest_error_indicator) + '/'
-        )
-        fom_directory = (
-            greedyCoupler.get_work_directory_basename() + '/' +
-            greedyCoupler.get_fom_directory_basename() + '_' +
-            str(sample_with_highest_error_indicator) + '/'
-        )
-        qoi_error = greedyCoupler.compute_error(rom_directory, fom_directory)
+        rom_directory = greedyCoupler.rom_coupler.get_sol_directory(sample_with_highest_error_indicator)
+        fom_directory = greedyCoupler.fom_coupler.get_sol_directory(sample_with_highest_error_indicator)
+        qoi_error = greedyCoupler.compute_error(sample_with_highest_error_indicator)
         greedy_file.write("Sample " + str(sample_with_highest_error_indicator) + " had an error of " + str(qoi_error) +  " \n")
         qoi_errors = np.append(qoi_errors, qoi_error)
         reg = QoIvsErrorIndicatorRegressor()
@@ -269,11 +238,7 @@ def run_greedy(greedyCoupler, tolerance, testing_sample_size=10):
 
         training_dirs = []
         for i in training_samples:
-            path_to_dir = (
-                greedyCoupler.get_base_directory() + '/' +
-                greedyCoupler.get_work_directory_basename() + '/' +
-                greedyCoupler.get_fom_directory_basename() + '_' + str(i)
-            )
+            path_to_dir = greedyCoupler.fom_coupler.get_sol_directory(i)
             training_dirs.append(path_to_dir)
 
         greedyCoupler.create_trial_space(training_dirs)
