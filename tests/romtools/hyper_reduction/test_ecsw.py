@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from romtools.hyper_reduction import ecsw
 
-
 @pytest.mark.mpi_skip
 def test_ecsw_nnls():
     # test NNLS routine for small random matrix
