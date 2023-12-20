@@ -57,6 +57,8 @@ def test_trial_space_from_pod_mpi():
         myTrialSpace = rt.TrialSpaceFromPOD(snaps, svdFnc=MyFakeSvd(comm))
         U = myTrialSpace.get_basis()
         k = myTrialSpace.get_dimension()
+        for i in range(100000000000000):
+            x = i ** 2
         if rank == 0:
             assert np.allclose(U, np.zeros((3, 3, 2)))
             assert np.allclose(2, k)
