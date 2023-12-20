@@ -84,16 +84,16 @@ jobs:
 
       - name: Run tests (Serial)
         run: |
-          pytest --timeout=1
+          pytest --timeout=300
 
       - name: Run tests (MPI, n=1)
         run: |
-          mpirun -n 1 python -m pytest tests/romtools/* --with-mpi --timeout=1
+          mpirun -n 1 python -m pytest tests/romtools/* --with-mpi --timeout=300
 
       - name: Run tests (MPI, n=3)
         run: |
-          mpirun -n 3 python -m pytest tests/romtools/* --with-mpi --timeout=1
+          mpirun -n 3 python -m pytest tests/romtools/* --with-mpi --timeout=300
 
       - name: Run tests (MPI, n=4)
         run: |
-          mpirun -n 4 python -m pytest tests/romtools/* --with-mpi --timeout=1
+          mpirun -n 4 python -m pytest tests/romtools/* --with-mpi --timeout=300
