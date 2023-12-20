@@ -9,7 +9,7 @@ requires-python = ">=3.8"
 dependencies = [
     'docutils', 'importlib-metadata',
     'numpy', 'scipy', 'matplotlib', 'pdoc',
-    'pytest', 'pytest-mpi>=0.6'
+    'pytest', 'pytest-mpi>=0.6', 'pytest-timeout'
 ]
 
 [tool.setuptools.dynamic]
