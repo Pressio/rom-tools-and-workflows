@@ -117,17 +117,17 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     e.close()
     e = exodus.exodus(output_filename, mode='a')
     num_nodes = e.num_nodes()
-    num_vars = int(len(trial_space.get_shift_vector())/num_nodes)
-    num_modes = trial_space.get_basis().shape[1]
+    num_vars = trial_space.get_shift_vector().shape[0]
+    num_modes = trial_space.get_dimension()
     num_modes_str_len = int(math.log10(num_modes))+1
-
-    assert (var_names is None or len(var_names) == num_vars), (
-            f"len(variable_names), {len(var_names)} "
-            f"!= number of variables in basis, {num_vars}"
-    )
 
     if var_names is None:
         var_names = [f"{i}" for i in range(num_vars)]
+
+    assert (len(var_names) == num_vars), (
+            f"len(variable_names), {len(var_names)} "
+            f"!= number of variables in basis, {num_vars}"
+    )
 
     field_names = []
     for var_name in var_names:
@@ -138,13 +138,13 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: Abstract
     exodus.add_variables(e, nodal_vars=field_names)
 
     for i in range(num_vars):
-        values = trial_space.get_shift_vector()[i*num_nodes:(i+1)*num_nodes]
+        shift = trial_space.get_shift_vector()[i, :]
         field_name = field_names[i*(num_modes+1)]
-        e.put_node_variable_values(field_name, 1, values)
+        e.put_node_variable_values(field_name, 1, shift)
 
+        basis = trial_space.get_basis()
         for j in range(num_modes):
             field_name = field_names[i*(num_modes+1) + j]
-            values = trial_space.get_basis()[i*num_nodes:(i+1)*num_nodes, j]
-            e.put_node_variable_values(field_name, 1, values)
+            e.put_node_variable_values(field_name, 1, basis[i, :, j])
 
     e.close()
