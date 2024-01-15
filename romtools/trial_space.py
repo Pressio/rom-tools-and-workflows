@@ -154,14 +154,12 @@ class DictionaryTrialSpace(AbstractTrialSpace):
     where the orthogonalization, splitting, and shifts are defined by their
     respective classes
     '''
-    def __init__(self, snapshot_data, shifter, splitter, orthogonalizer):
+    def __init__(self, snapshots, shifter, splitter, orthogonalizer):
         '''
         Constructor for the reduced basis trial space without truncation.
 
         Args:
-            snapshot_data: Snapshot data object containing full model solution
-                data, methods to read it, and other metadata such as variable
-                set type.
+            snapshots: Snapshot tensor containing solution data 
             shifter: Class that shifts the basis.
             splitter: Class that splitts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
@@ -171,7 +169,6 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         '''
 
         # compute basis
-        snapshots = snapshot_data.get_snapshot_tensor()
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         snapshot_matrix = tensor_to_matrix(shifted_snapshots)
@@ -228,7 +225,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     '''
 
     def __init__(self,
-                 snapshots:      AbstractSnapshotData,
+                 snapshot_tensor,
                  truncater:      AbstractTruncater      = NoOpTruncater(),
                  shifter:        AbstractShifter        = NoOpShifter(),
                  splitter:       AbstractSplitter       = NoOpSplitter(),
@@ -238,7 +235,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         Constructor for the POD trial space.
 
         Args:
-            snapshots (AbstractSnapshotData): Snapshot data source.
+            snapshot_tensor (np.ndarray): Snapshot data tensor
             truncater (AbstractTruncater): Class that truncates the basis.
             shifter (AbstractShifter): Class that shifts the basis.
             splitter (AbstractSplitter): Class that splits the basis.
@@ -257,7 +254,6 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         orthogonalization.
         '''
 
-        snapshot_tensor = snapshots.get_snapshot_tensor()
         n_var = snapshot_tensor.shape[0]
         shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
         snapshot_matrix = tensor_to_matrix(shifted_snapshot_tensor)
@@ -319,7 +315,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     truncater.
     '''
 
-    def __init__(self, snapshot_data: AbstractSnapshotData,
+    def __init__(self, snapshot_tensor,
                  truncater: AbstractTruncater,
                  shifter: AbstractShifter,
                  scaler: AbstractScaler,
@@ -329,9 +325,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         Constructor for the POD trial space constructed via scaled SVD.
 
         Args:
-            snapshot_data: Snapshot data object containing full model solution
-                data, methods to read it, and other metadata such as variable
-                set type.
+            snapshot_tensor: np.ndarray snapshot tensor 
             truncater: Class that truncates the basis.
             shifter: Class that shifts the basis.
             scaler: Class that scales the basis.
@@ -345,7 +339,6 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
         '''
 
         # compute basis
-        snapshot_tensor = snapshot_data.get_snapshot_tensor()
         n_var = snapshot_tensor.shape[0]
         shifted_snapshot_tensor, self.__shift_vector = shifter(snapshot_tensor)
         scaled_shifted_snapshot_tensor = scaler.pre_scaling(shifted_snapshot_tensor)
