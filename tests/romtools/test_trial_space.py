@@ -180,7 +180,7 @@ def test_trial_space_from_scaled_pod():
     my_scaler = utils.VariableScaler('max_abs')
     my_orthogonalizer = utils.NoOpOrthogonalizer()
 
-    my_trial_space = rt.TrialSpaceFromScaledPOD(copy.deepcopy(snapshots),
+    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshots,
                                                 my_truncater,
                                                 my_shifter,
                                                 my_scaler,
