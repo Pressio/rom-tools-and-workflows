@@ -177,6 +177,5 @@ __all__ = ['snapshot_data', 'trial_space', 'trial_space_utils', 'workflows', 'hy
 
 __docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.snapshot_data import *
 from romtools.trial_space import *
 from romtools.hyper_reduction import *

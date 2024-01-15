@@ -65,7 +65,6 @@ by virtue of providing access to a basis matrix, a shift vector, and the dimensi
 
 import abc
 import numpy as np
-from romtools.snapshot_data import AbstractSnapshotData
 from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
 from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
 from romtools.trial_space_utils.scaler import AbstractScaler
