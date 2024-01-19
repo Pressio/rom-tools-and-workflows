@@ -5,17 +5,6 @@ import romtools as rt
 import romtools.trial_space_utils as utils
 
 
-class PythonSnapshotData(rt.AbstractSnapshotData):
-
-    def __init__(self, snapshots):
-        self.snapshots = snapshots
-
-    def get_mesh_gids(self):
-        return np.arange(0, 8)
-
-    def get_snapshot_tensor(self):
-        return self.snapshots
-
 
 #@pytest.mark.mpi_skip
 #def test_list_snapshots_to_array():
@@ -34,12 +23,11 @@ def tensor_to_matrix(tensor_input):
 @pytest.mark.mpi_skip
 def test_dictionary_trial_space():
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(snapshots)
     # default test
     my_shifter = utils.NoOpShifter()
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.DictionaryTrialSpace(snapshot_data,
+    my_trial_space = rt.DictionaryTrialSpace(snapshots,
                                              my_shifter,
                                              my_splitter,
                                              my_orthogonalizer)
@@ -52,7 +40,7 @@ def test_dictionary_trial_space():
     my_shifter = utils.AverageShifter()
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.DictionaryTrialSpace(snapshot_data,
+    my_trial_space = rt.DictionaryTrialSpace(snapshots,
                                              my_shifter,
                                              my_splitter,
                                              my_orthogonalizer)
@@ -66,7 +54,7 @@ def test_dictionary_trial_space():
     my_shifter = utils.AverageShifter()
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.DictionaryTrialSpace(snapshot_data,
+    my_trial_space = rt.DictionaryTrialSpace(snapshots,
                                              my_shifter,
                                              my_splitter,
                                              my_orthogonalizer)
@@ -78,7 +66,7 @@ def test_dictionary_trial_space():
     my_shifter = utils.AverageShifter()
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.EuclideanL2Orthogonalizer()
-    my_trial_space = rt.DictionaryTrialSpace(snapshot_data,
+    my_trial_space = rt.DictionaryTrialSpace(snapshots,
                                              my_shifter,
                                              my_splitter,
                                              my_orthogonalizer)
@@ -93,12 +81,11 @@ def test_dictionary_trial_space():
 @pytest.mark.mpi_skip
 def test_trial_space_from_pod():
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(snapshots)
     my_truncater = utils.NoOpTruncater()
     my_shifter = utils.NoOpShifter()
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.TrialSpaceFromPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromPOD(snapshots,
                                           my_truncater,
                                           my_shifter,
                                           my_splitter,
@@ -115,7 +102,7 @@ def test_trial_space_from_pod():
     my_shifter = utils.AverageShifter()
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.TrialSpaceFromPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromPOD(snapshots,
                                           my_truncater,
                                           my_shifter,
                                           my_splitter,
@@ -131,7 +118,7 @@ def test_trial_space_from_pod():
     my_shifter = utils.AverageShifter()
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.TrialSpaceFromPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromPOD(snapshots,
                                           my_truncater,
                                           my_shifter,
                                           my_splitter,
@@ -148,7 +135,7 @@ def test_trial_space_from_pod():
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     weighting = np.abs(np.random.normal(size=24))
     my_orthogonalizer = utils.EuclideanVectorWeightedL2Orthogonalizer(weighting)
-    my_trial_space = rt.TrialSpaceFromPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromPOD(snapshots,
                                           my_truncater,
                                           my_shifter,
                                           my_splitter,
@@ -165,13 +152,12 @@ def test_trial_space_from_pod():
 @pytest.mark.mpi_skip
 def test_trial_space_from_scaled_pod():
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(copy.deepcopy(snapshots))
     my_truncater = utils.NoOpTruncater()
     my_shifter = utils.NoOpShifter()
     my_scaler = utils.VariableScaler('max_abs')
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromScaledPOD(copy.deepcopy(snapshots),
                                                 my_truncater,
                                                 my_shifter,
                                                 my_scaler,
@@ -189,13 +175,12 @@ def test_trial_space_from_scaled_pod():
 
     # test with a shift
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(copy.deepcopy(snapshots))
     my_shifter = utils.AverageShifter()
     my_splitter = utils.NoOpSplitter()
     my_scaler = utils.VariableScaler('max_abs')
     my_orthogonalizer = utils.NoOpOrthogonalizer()
 
-    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshots,
                                                 my_truncater,
                                                 my_shifter,
                                                 my_scaler,
@@ -216,12 +201,11 @@ def test_trial_space_from_scaled_pod():
 
     # test with a shift and splitting
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(copy.deepcopy(snapshots))
     my_scaler = utils.VariableScaler('max_abs')
     my_shifter = utils.AverageShifter()
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshots,
                                                 my_truncater,
                                                 my_shifter,
                                                 my_scaler,
@@ -243,13 +227,12 @@ def test_trial_space_from_scaled_pod():
 
     # test with a shift, splitting, and orthogonalization
     snapshots = np.random.normal(size=(3, 8, 6))
-    snapshot_data = PythonSnapshotData(copy.deepcopy(snapshots))
     my_scaler = utils.VariableScaler('max_abs')
     my_shifter = utils.AverageShifter()
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     weighting = np.abs(np.random.normal(size=24))
     my_orthogonalizer = utils.EuclideanVectorWeightedL2Orthogonalizer(weighting)
-    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshot_data,
+    my_trial_space = rt.TrialSpaceFromScaledPOD(snapshots,
                                                 my_truncater,
                                                 my_shifter,
                                                 my_scaler,

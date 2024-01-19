@@ -173,10 +173,9 @@ if __name__=="__main__":
 ```
 '''
 
-__all__ = ['snapshot_data', 'trial_space', 'trial_space_utils', 'workflows', 'hyper_reduction']
+__all__ = ['trial_space', 'trial_space_utils', 'workflows', 'hyper_reduction']
 
 __docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.snapshot_data import *
 from romtools.trial_space import *
 from romtools.hyper_reduction import *

@@ -9,30 +9,16 @@ except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
 
 
-class DistributedSnapshots(rt.AbstractSnapshotData):
-    def __init__(self, my_data, my_gids):
-        self.snapshots = my_data
-        self.gids = my_gids
-
-    def get_snapshot_tensor(self):
-        return self.snapshots
-
-    def get_mesh_gids(self):
-        return self.gids
-
 def construct_snapshots(comm):
     rank = comm.Get_rank()
     if rank == 0:
-        myGids = np.array([0, 1, 2])
         myData = np.random.normal(size=(3, 3, 5))
     elif rank==1:
-        myGids = np.array([6, 7, 8, 9, 10])
         myData = np.random.normal(size=(3, 5, 5))
     else:
-        myGids = np.array([3, 4, 5])
         myData = np.random.normal(size=(3, 3, 5))
 
-    return DistributedSnapshots(myData, myGids)
+    return myData 
 
 class MyFakeSvd:
     def __init__(self, comm):
