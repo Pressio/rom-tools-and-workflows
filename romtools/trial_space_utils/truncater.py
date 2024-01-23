@@ -59,7 +59,7 @@ import abc
 import numpy as np
 
 
-class AbstractTruncater(abc.ABC):
+class Truncater(abc.ABC):
     '''
     Abstract implementation
     '''
@@ -72,7 +72,7 @@ class AbstractTruncater(abc.ABC):
         pass
 
 
-class NoOpTruncater(AbstractTruncater):
+class NoOpTruncater(Truncater):
     '''
     No op implementation
     '''
@@ -83,7 +83,7 @@ class NoOpTruncater(AbstractTruncater):
         return basis
 
 
-class BasisSizeTruncater(AbstractTruncater):
+class BasisSizeTruncater(Truncater):
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
     '''
@@ -110,7 +110,7 @@ class BasisSizeTruncater(AbstractTruncater):
         return basis[:, :self.__basis_dimension]
 
 
-class EnergyTruncater(AbstractTruncater):
+class EnergyTruncater(Truncater):
     '''
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
