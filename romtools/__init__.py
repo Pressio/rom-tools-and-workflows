@@ -80,7 +80,7 @@ The Python library, called `romtools`, contains abstract interfaces and function
 
 ## Representative abstract base classes
 
-- `AbstractTrialSpace`
+- `TrialSpace`
   - This class defines the minimum API requirements for a trial space
 
   - Constructing a trial space relies on utilities like truncaters, orthogonalizers, etc. Abstract classes, and
@@ -92,7 +92,7 @@ The Python library, called `romtools`, contains abstract interfaces and function
       - splitters
       - truncaters
 
-- `AbstractParameterSpace`
+- `ParameterSpace`
   - This class defines the minimum API of a parameter space. These parameter spaces are used in workflows for
     running/building ROMs
 

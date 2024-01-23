@@ -72,7 +72,7 @@ from romtools.trial_space_utils.splitter import Splitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
-class AbstractTrialSpace(abc.ABC):
+class TrialSpace(abc.ABC):
     '''
     Abstract base class for trial space implementations.
 
@@ -142,7 +142,7 @@ def matrix_to_tensor(n_var, matrix_input):
     return output_matrix
 
 
-class DictionaryTrialSpace(AbstractTrialSpace):
+class DictionaryTrialSpace(TrialSpace):
     '''
     ##Reduced basis trial space (no truncation).
 
@@ -205,7 +205,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromPOD(AbstractTrialSpace):
+class TrialSpaceFromPOD(TrialSpace):
     '''
     ##POD trial space (constructed via SVD).
 
@@ -296,7 +296,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromScaledPOD(AbstractTrialSpace):
+class TrialSpaceFromScaledPOD(TrialSpace):
     '''
     ##POD trial space (constructed via scaled SVD).
 

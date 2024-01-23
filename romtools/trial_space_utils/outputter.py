@@ -46,7 +46,7 @@
 import os
 import math
 import numpy as np
-from romtools.trial_space import AbstractTrialSpace
+from romtools.trial_space import TrialSpace
 
 try:
     import exodus
@@ -59,13 +59,13 @@ except ImportError:
     pass
 
 
-def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) -> None:
+def npz_output(filename: str, trial_space: TrialSpace, compress=True) -> None:
     '''
     Save trial space information to a compressed or uncompressed NumPy .npz file.
 
     Args:
         filename (str): The name of the output file.
-        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+        trial_space (TrialSpace): The trial space containing shift and basis information.
         compress (bool, optional): Whether to compress the output file (default is True).
 
     Example:
@@ -81,13 +81,13 @@ def npz_output(filename: str, trial_space: AbstractTrialSpace, compress=True) ->
                  basis=trial_space.get_basis())
 
 
-def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
+def hdf5_output(output_filename: str, trial_space: TrialSpace) -> None:
     '''
     Save trial space information to an HDF5 file.
 
     Args:
         output_filename (str): The name of the output HDF5 file.
-        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+        trial_space (TrialSpace): The trial space containing shift and basis information.
 
     Example:
         hdf5_output("trial_space.h5", my_trial_space)
@@ -97,14 +97,14 @@ def hdf5_output(output_filename: str, trial_space: AbstractTrialSpace) -> None:
         f.create_dataset('basis', data=trial_space.get_basis())
 
 
-def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: AbstractTrialSpace, var_names: list = None) -> None:
+def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: TrialSpace, var_names: list = None) -> None:
     '''
     Save trial space information to an Exodus file.
 
     Args:
         output_filename (str): The name of the output Exodus file.
         mesh_filename (str): The name of the mesh file.
-        trial_space (AbstractTrialSpace): The trial space containing shift and basis information.
+        trial_space (TrialSpace): The trial space containing shift and basis information.
         var_names (list, optional): A list of variable names (default is None).
 
     Example:

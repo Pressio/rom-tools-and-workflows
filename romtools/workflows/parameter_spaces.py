@@ -51,7 +51,7 @@ import abc
 import numpy as np
 
 
-class AbstractParameterSpace(abc.ABC):
+class ParameterSpace(abc.ABC):
 
     ''' Abstract implementation'''
     @abc.abstractmethod
@@ -75,7 +75,7 @@ class AbstractParameterSpace(abc.ABC):
         '''
 
 
-class UniformParameterSpace(AbstractParameterSpace):
+class UniformParameterSpace(ParameterSpace):
     '''
     Concrete implementation for a uniform parameter space with random sampling
     '''
