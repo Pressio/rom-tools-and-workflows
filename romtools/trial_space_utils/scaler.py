@@ -75,7 +75,7 @@ import abc
 import numpy as np
 
 
-class AbstractScaler(abc.ABC):
+class Scaler(abc.ABC):
     '''
     Abstract base class
     '''
@@ -95,7 +95,7 @@ class AbstractScaler(abc.ABC):
         pass
 
 
-class NoOpScaler(AbstractScaler):
+class NoOpScaler(Scaler):
     '''
     No op implementation
     '''
@@ -109,7 +109,7 @@ class NoOpScaler(AbstractScaler):
         return data_tensor
 
 
-class VectorScaler(AbstractScaler):
+class VectorScaler(Scaler):
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
     For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
@@ -162,7 +162,7 @@ class VectorScaler(AbstractScaler):
         return self.__scaling_vector_matrix[None, :, None] * data_tensor
 
 
-class VariableScaler(AbstractScaler):
+class VariableScaler(Scaler):
     '''
     Concrete implementation designed for snapshot matrices involving multiple
     state variables.
@@ -259,7 +259,7 @@ class VariableScaler(AbstractScaler):
         return data_tensor
 
 
-class VariableAndVectorScaler(AbstractScaler):
+class VariableAndVectorScaler(Scaler):
     '''
     Concrete implementation designed to scale snapshot matrices involving
     multiple state variables by both the variable magnitudes and an additional

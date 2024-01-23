@@ -67,9 +67,9 @@ import abc
 import numpy as np
 from romtools.trial_space_utils.truncater import Truncater, NoOpTruncater
 from romtools.trial_space_utils.shifter import Shifter, NoOpShifter
-from romtools.trial_space_utils.scaler import AbstractScaler
-from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
-from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
+from romtools.trial_space_utils.scaler import Scaler
+from romtools.trial_space_utils.splitter import Splitter, NoOpSplitter
+from romtools.trial_space_utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
 class AbstractTrialSpace(abc.ABC):
@@ -227,8 +227,8 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
                  snapshot_tensor,
                  truncater:      Truncater      = NoOpTruncater(),
                  shifter:        Shifter        = NoOpShifter(),
-                 splitter:       AbstractSplitter       = NoOpSplitter(),
-                 orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
+                 splitter:       Splitter       = NoOpSplitter(),
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
         '''
         Constructor for the POD trial space.
@@ -237,8 +237,8 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
             snapshot_tensor (np.ndarray): Snapshot data tensor
             truncater (Truncater): Class that truncates the basis.
             shifter (Shifter): Class that shifts the basis.
-            splitter (AbstractSplitter): Class that splits the basis.
-            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes
+            splitter (Splitter): Class that splits the basis.
+            orthogonalizer (Orthogonalizer): Class that orthogonalizes
                 the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                 IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
@@ -317,9 +317,9 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     def __init__(self, snapshot_tensor,
                  truncater: Truncater,
                  shifter: Shifter,
-                 scaler: AbstractScaler,
-                 splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
+                 scaler: Scaler,
+                 splitter: Splitter,
+                 orthogonalizer: Orthogonalizer):
         '''
         Constructor for the POD trial space constructed via scaled SVD.
 
