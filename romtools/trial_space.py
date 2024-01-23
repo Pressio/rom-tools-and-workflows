@@ -66,7 +66,7 @@ by virtue of providing access to a basis matrix, a shift vector, and the dimensi
 import abc
 import numpy as np
 from romtools.trial_space_utils.truncater import Truncater, NoOpTruncater
-from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
+from romtools.trial_space_utils.shifter import Shifter, NoOpShifter
 from romtools.trial_space_utils.scaler import AbstractScaler
 from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
 from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
@@ -226,7 +226,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
     def __init__(self,
                  snapshot_tensor,
                  truncater:      Truncater      = NoOpTruncater(),
-                 shifter:        AbstractShifter        = NoOpShifter(),
+                 shifter:        Shifter        = NoOpShifter(),
                  splitter:       AbstractSplitter       = NoOpSplitter(),
                  orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
@@ -236,7 +236,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         Args:
             snapshot_tensor (np.ndarray): Snapshot data tensor
             truncater (Truncater): Class that truncates the basis.
-            shifter (AbstractShifter): Class that shifts the basis.
+            shifter (Shifter): Class that shifts the basis.
             splitter (AbstractSplitter): Class that splits the basis.
             orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes
                 the basis.
@@ -316,7 +316,7 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
 
     def __init__(self, snapshot_tensor,
                  truncater: Truncater,
-                 shifter: AbstractShifter,
+                 shifter: Shifter,
                  scaler: AbstractScaler,
                  splitter: AbstractSplitter,
                  orthogonalizer: AbstractOrthogonalizer):
