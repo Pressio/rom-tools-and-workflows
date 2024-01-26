@@ -69,9 +69,11 @@ class Parameter(abc.ABC):
         '''
 
     @abc.abstractmethod
-    def generate_samples(self, number_of_samples):
+    def generate_samples(self, number_of_samples) -> np.array:
         '''
         Generates and returns number of parameter samples
+
+        Returns np.array of shape (number_of_samples, self.get_dimensionality())
         '''
 
 
@@ -84,23 +86,25 @@ class ParameterSpace(abc.ABC):
         Returns a list of Parameter objects
         '''
 
-    def get_names(self):
+    def get_names(self) -> Iterable[str]:
         '''
         Returns a list of parameter names
         # e.g., ['sigma','beta',...]
         '''
         return [p.get_name() for p in self.get_parameter_list()]
 
-    def get_dimensionality(self):
+    def get_dimensionality(self) -> int:
         '''
         Returns an integer for the size
         of the parameter domain
         '''
         return sum(p.get_dimensionality() for p in self.get_parameter_list())
 
-    def generate_samples(self, number_of_samples):
+    def generate_samples(self, number_of_samples) -> np.array:
         '''
         Generates and returns number of parameter samples
+
+        Returns np.array of shape (number_of_samples, self.get_dimensionality())
         '''
         samples = [p.generate_samples(number_of_samples)
                    for p in self.get_parameter_list()]
@@ -130,7 +134,7 @@ class UniformParameter(Parameter):
     def get_dimensionality(self) -> int:
         return self._dimension
 
-    def generate_samples(self, number_of_samples):
+    def generate_samples(self, number_of_samples) -> np.array:
         return np.random.uniform(self._lower_bound, self._upper_bound,
                                  size=(number_of_samples,
                                        self.get_dimensionality()))
@@ -150,7 +154,7 @@ class StringParameter(Parameter):
     def get_dimensionality(self) -> int:
         return 1
 
-    def generate_samples(self, number_of_samples):
+    def generate_samples(self, number_of_samples) -> np.array:
         return np.array([[self._parameter_value]] * number_of_samples)
 
 
@@ -159,7 +163,8 @@ class UniformParameterSpace(ParameterSpace):
     Concrete implementation for a uniform parameter space with random sampling
     '''
 
-    def __init__(self, parameter_names, lower_bounds, upper_bounds):
+    def __init__(self, parameter_names: Iterable[str],
+                 lower_bounds, upper_bounds):
         self.parameters = [UniformParameter(name, lb, ub)
                            for name, lb, ub
                            in zip(parameter_names, lower_bounds, upper_bounds)]
@@ -174,7 +179,7 @@ class ConstParameterSpace(ParameterSpace):
 
     Useful if you need to execute workflows in a non-stochastic setting
     '''
-    def __init__(self, parameter_names, parameter_values):
+    def __init__(self, parameter_names: Iterable[str], parameter_values):
         self.parameters = [StringParameter(name, val)
                            for name, val
                            in zip(parameter_names, parameter_values)]
