@@ -100,14 +100,34 @@ class ParameterSpace(abc.ABC):
         '''
         return sum(p.get_dimensionality() for p in self.get_parameter_list())
 
-    def generate_samples(self, number_of_samples) -> np.array:
+
+class Sampler(abc.ABC):
+    '''Abstract implementation'''
+    @abc.abstractmethod
+    def __init__(self, parameter_space: ParameterSpace):
+        '''
+        Constructor
+        '''
+
+    @abc.abstractmethod
+    def generate_samples(self, number_of_samples: int) -> np.array:
         '''
         Generates and returns number of parameter samples
 
-        Returns np.array of shape (number_of_samples, self.get_dimensionality())
+        Returns np.array of shape (number_of_samples, parameter_space.get_dimensionality())
         '''
+
+
+class MonteCarloSampler(Sampler):
+    '''
+    Monte Carlo parameter space sampler
+    '''
+    def __init__(self, parameter_space: ParameterSpace):
+        self._parameter_space = parameter_space
+
+    def generate_samples(self, number_of_samples) -> np.array:
         samples = [p.generate_samples(number_of_samples)
-                   for p in self.get_parameter_list()]
+                   for p in self._parameter_space.get_parameter_list()]
         return np.concatenate(samples, axis=1)
 
 
