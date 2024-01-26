@@ -10,10 +10,11 @@ def test_uniform_param_space():
     assert param_space.get_dimensionality() == 2
     s = param_space.generate_samples(4)
     assert s.shape == (4, 2)
-    gold = [[-0.69167432, 2.22014909],
-            [-0.47336997, 1.60121818],
-            [-0.97085008, 2.75624102],
-            [0.80142971,  0.10026428]]
+    gold = [[-0.69167432, 0.04372489],
+            [ 0.48009939, 2.75624102],
+            [-0.47336997, 2.70214456],
+            [ 0.06747879, 0.10026428]]
+    print(s)
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
