@@ -49,6 +49,7 @@ The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
 import numpy as np
+from typing import Iterable
 
 
 class ParameterSpace(abc.ABC):
@@ -99,7 +100,12 @@ class Parameter(abc.ABC):
 
 
 class UniformParameter(Parameter):
-    def __init__(self, parameter_name, lower_bound, upper_bound):
+    '''
+    Uniformly distributed floating point
+    '''
+    def __init__(self, parameter_name: str,
+                 lower_bound: float = 0,
+                 upper_bound: float = 1):
         self._parameter_name = parameter_name
 
         try:
@@ -123,7 +129,7 @@ class UniformParameter(Parameter):
 
 
 class StringParameter(Parameter):
-    def __init__(self, parameter_name, value):
+    def __init__(self, parameter_name: str, value):
         self._parameter_name = parameter_name
         self._parameter_value = value
 
@@ -166,17 +172,36 @@ class ConstParamSpace(ParameterSpace):
     Useful if you need to execute workflows in a non-stochastic setting
     '''
     def __init__(self, parameter_names, parameter_values):
-        self._parameter_names = parameter_names
-        self._n_params = len(parameter_names)
-        self._parameter_values = np.array(parameter_values, dtype=str)
-        self._parameter_values = self._parameter_values.reshape(1,
-                                                                self._n_params)
+        self.parameters = [StringParameter(name, val)
+                           for name, val
+                           in zip(parameter_names, parameter_values)]
 
     def get_names(self):
-        return self._parameter_names
+        return [p.get_name() for p in self.parameters]
 
     def get_dimensionality(self):
-        return self._n_params
+        return sum(p.get_dimensionality() for p in self.parameters)
 
     def generate_samples(self, number_of_samples):
-        return np.repeat(self._parameter_values, number_of_samples, axis=0)
+        samples = [p.generate_samples(number_of_samples)
+                   for p in self.parameters]
+        return np.concatenate(samples, axis=1)
+
+
+class HeterogeneousParamSpace(ParameterSpace):
+    '''
+    Heterogeneous parameter space consisting of a list of arbitrary Parameter objects
+    '''
+    def __init__(self, parameter_objs: Iterable[Parameter]):
+        self.parameters = parameter_objs
+
+    def get_names(self):
+        return [p.get_name() for p in self.parameters]
+
+    def get_dimensionality(self):
+        return sum(p.get_dimensionality() for p in self.parameters)
+
+    def generate_samples(self, number_of_samples):
+        samples = [p.generate_samples(number_of_samples)
+                   for p in self.parameters]
+        return np.concatenate(samples, axis=1)

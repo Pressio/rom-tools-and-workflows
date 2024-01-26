@@ -3,6 +3,7 @@ from romtools.workflows.parameter_spaces import UniformParameter
 from romtools.workflows.parameter_spaces import StringParameter
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import ConstParamSpace
+from romtools.workflows.parameter_spaces import HeterogeneousParamSpace
 
 
 def test_uniform_parameter():
@@ -51,3 +52,20 @@ def test_const_param_space():
                   ['1', '3', 'p3val'],
                   ['1', '3', 'p3val'],
                   ['1', '3', 'p3val']]).all()
+
+
+def test_hetero_param_space():
+    param1 = UniformParameter('p1', -1, 1)
+    param2 = UniformParameter('p2', 0, 0)
+    param3 = StringParameter('p3', 'p3val')
+    param_space = HeterogeneousParamSpace((param1, param2, param3))
+
+    assert param_space.get_names() == ['p1', 'p2', 'p3']
+    assert param_space.get_dimensionality() == 3
+    s = param_space.generate_samples(4)
+    assert s.shape == (4, 3)
+    print(s)
+    assert (s == [['0.9138986725502336', '0.0', 'p3val'],
+                  ['-0.7255813572878471', '0.0', 'p3val'],
+                  ['-0.4323432940841083', '0.0', 'p3val'],
+                  ['0.21216636871765782', '0.0', 'p3val']]).all()
