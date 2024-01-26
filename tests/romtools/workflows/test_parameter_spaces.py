@@ -55,6 +55,7 @@ def test_const_param_space():
 
 
 def test_hetero_param_space():
+    np.random.seed(12)
     param1 = UniformParameter('p1', -1, 1)
     param2 = UniformParameter('p2', 0, 0)
     param3 = StringParameter('p3', 'p3val')
@@ -65,7 +66,7 @@ def test_hetero_param_space():
     s = param_space.generate_samples(4)
     assert s.shape == (4, 3)
     print(s)
-    assert (s == [['0.9138986725502336', '0.0', 'p3val'],
-                  ['-0.7255813572878471', '0.0', 'p3val'],
-                  ['-0.4323432940841083', '0.0', 'p3val'],
-                  ['0.21216636871765782', '0.0', 'p3val']]).all()
+    assert (s == [['-0.6916743152406553', '0.0', 'p3val'],
+                  ['0.4800993930308095', '0.0', 'p3val'],
+                  ['-0.47336996962973066', '0.0', 'p3val'],
+                  ['0.06747878676059549', '0.0', 'p3val']]).all()
