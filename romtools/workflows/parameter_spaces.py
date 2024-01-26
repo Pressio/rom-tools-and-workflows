@@ -165,7 +165,7 @@ class UniformParameterSpace(ParameterSpace):
         return np.concatenate(samples, axis=1)
 
 
-class ConstParamSpace(ParameterSpace):
+class ConstParameterSpace(ParameterSpace):
     '''
     Constant parameter space which converts all constant values to str-type
 
@@ -188,7 +188,7 @@ class ConstParamSpace(ParameterSpace):
         return np.concatenate(samples, axis=1)
 
 
-class HeterogeneousParamSpace(ParameterSpace):
+class HeterogeneousParameterSpace(ParameterSpace):
     '''
     Heterogeneous parameter space consisting of a list of arbitrary Parameter objects
     '''
