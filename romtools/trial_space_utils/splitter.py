@@ -86,7 +86,7 @@ import abc
 import numpy as np
 
 
-class AbstractSplitter(abc.ABC):
+class Splitter(abc.ABC):
     '''Abstract class for a splitter'''
 
     @abc.abstractmethod
@@ -94,7 +94,7 @@ class AbstractSplitter(abc.ABC):
         pass
 
 
-class NoOpSplitter(AbstractSplitter):
+class NoOpSplitter(Splitter):
     '''Concrete no-op implementation'''
     def __init__(self) -> None:
         pass
@@ -103,7 +103,7 @@ class NoOpSplitter(AbstractSplitter):
         return my_array
 
 
-class BlockSplitter(AbstractSplitter):
+class BlockSplitter(Splitter):
     '''
     Splits a data matrix into blocks defined by a list, e.g., for our Euler
     equation example above, we could set

@@ -63,7 +63,7 @@ import abc
 import numpy as np
 
 
-class AbstractShifter(abc.ABC):
+class Shifter(abc.ABC):
     '''
     Abstract implmentation
     '''
@@ -76,7 +76,7 @@ class AbstractShifter(abc.ABC):
         pass
 
 
-class NoOpShifter(AbstractShifter):
+class NoOpShifter(Shifter):
     '''
     No op implementation
     '''
@@ -88,7 +88,7 @@ class NoOpShifter(AbstractShifter):
         return my_array, shift_vector
 
 
-class ConstantShifter(AbstractShifter):
+class ConstantShifter(Shifter):
     '''
     Shifts the data by a constant value.
     '''
@@ -118,7 +118,7 @@ class ConstantShifter(AbstractShifter):
         return my_array-shift_vector[:, :, None], shift_vector
 
 
-class VectorShifter(AbstractShifter):
+class VectorShifter(Shifter):
     '''
     Shifts the data by a user-input vector.
     '''
@@ -135,7 +135,7 @@ class VectorShifter(AbstractShifter):
         return my_array-self.__shift_vector[..., None], self.__shift_vector
 
 
-class AverageShifter(AbstractShifter):
+class AverageShifter(Shifter):
     '''
     Shifts the data by the average of a data matrix.
     '''
@@ -147,7 +147,7 @@ class AverageShifter(AbstractShifter):
         return my_array-shift_vector[:, :, None], shift_vector
 
 
-class FirstVecShifter(AbstractShifter):
+class FirstVecShifter(Shifter):
     '''
     Shifts the data by the first vector of a data matrix.
     '''

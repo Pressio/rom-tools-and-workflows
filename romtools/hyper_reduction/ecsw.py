@@ -81,7 +81,7 @@ from typing import Tuple
 import numpy as np
 
 
-class AbstractECSWsolver(abc.ABC):
+class ECSWsolver(abc.ABC):
     '''
     Abstract base class for ECSW solvers
 
@@ -129,7 +129,7 @@ class AbstractECSWsolver(abc.ABC):
 #       this function because tau can't be specified
 
 
-class ECSWsolverNNLS(AbstractECSWsolver):
+class ECSWsolverNNLS(ECSWsolver):
     '''
     Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs compute sample mesh indices and weights for ECSW using the non-negative least squares algorithm from Chapman et al. 2016
     DOI: 10.1002/nme.5332.
@@ -330,7 +330,7 @@ def _construct_linear_system(residual_snapshots: np.ndarray,
     return full_mesh_lhs, full_mesh_rhs
 
 
-def ecsw_fixed_test_basis(ecsw_solver: AbstractECSWsolver,
+def ecsw_fixed_test_basis(ecsw_solver: ECSWsolver,
                           residual_snapshots: np.ndarray,
                           test_basis: np.ndarray,
                           n_var: int,
@@ -340,7 +340,7 @@ def ecsw_fixed_test_basis(ecsw_solver: AbstractECSWsolver,
     ECSW implementation for a fixed test basis, such as POD-Galerkin projection
 
     Args:
-        ecsw_solver: AbstractECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
+        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
         residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
         test_basis: (n_dof*n_var, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
         n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
@@ -361,7 +361,7 @@ def ecsw_fixed_test_basis(ecsw_solver: AbstractECSWsolver,
 
     return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)
 
-def ecsw_varying_test_basis(ecsw_solver: AbstractECSWsolver,
+def ecsw_varying_test_basis(ecsw_solver: ECSWsolver,
                             full_mesh_lhs: np.ndarray,
                             full_mesh_rhs: np.ndarray,
                             tolerance: np.double):
@@ -369,7 +369,7 @@ def ecsw_varying_test_basis(ecsw_solver: AbstractECSWsolver,
     ECSW implementation for a varying test basis, such as Least-Squares Petrov-Galerkin projection
 
     Args:
-        ecsw_solver: AbstractECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
+        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
         full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
         full_mesh_rhs: (n_snap*n_rom,) numpy array
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples

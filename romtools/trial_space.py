@@ -65,14 +65,14 @@ by virtue of providing access to a basis matrix, a shift vector, and the dimensi
 
 import abc
 import numpy as np
-from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
-from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
-from romtools.trial_space_utils.scaler import AbstractScaler
-from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
-from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
+from romtools.trial_space_utils.truncater import Truncater, NoOpTruncater
+from romtools.trial_space_utils.shifter import Shifter, NoOpShifter
+from romtools.trial_space_utils.scaler import Scaler
+from romtools.trial_space_utils.splitter import Splitter, NoOpSplitter
+from romtools.trial_space_utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
-class AbstractTrialSpace(abc.ABC):
+class TrialSpace(abc.ABC):
     '''
     Abstract base class for trial space implementations.
 
@@ -142,7 +142,7 @@ def matrix_to_tensor(n_var, matrix_input):
     return output_matrix
 
 
-class DictionaryTrialSpace(AbstractTrialSpace):
+class DictionaryTrialSpace(TrialSpace):
     '''
     ##Reduced basis trial space (no truncation).
 
@@ -205,7 +205,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromPOD(AbstractTrialSpace):
+class TrialSpaceFromPOD(TrialSpace):
     '''
     ##POD trial space (constructed via SVD).
 
@@ -225,20 +225,20 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     def __init__(self,
                  snapshot_tensor,
-                 truncater:      AbstractTruncater      = NoOpTruncater(),
-                 shifter:        AbstractShifter        = NoOpShifter(),
-                 splitter:       AbstractSplitter       = NoOpSplitter(),
-                 orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
+                 truncater:      Truncater      = NoOpTruncater(),
+                 shifter:        Shifter        = NoOpShifter(),
+                 splitter:       Splitter       = NoOpSplitter(),
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
         '''
         Constructor for the POD trial space.
 
         Args:
             snapshot_tensor (np.ndarray): Snapshot data tensor
-            truncater (AbstractTruncater): Class that truncates the basis.
-            shifter (AbstractShifter): Class that shifts the basis.
-            splitter (AbstractSplitter): Class that splits the basis.
-            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes
+            truncater (Truncater): Class that truncates the basis.
+            shifter (Shifter): Class that shifts the basis.
+            splitter (Splitter): Class that splits the basis.
+            orthogonalizer (Orthogonalizer): Class that orthogonalizes
                 the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                 IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
@@ -296,7 +296,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromScaledPOD(AbstractTrialSpace):
+class TrialSpaceFromScaledPOD(TrialSpace):
     '''
     ##POD trial space (constructed via scaled SVD).
 
@@ -315,11 +315,11 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     '''
 
     def __init__(self, snapshot_tensor,
-                 truncater: AbstractTruncater,
-                 shifter: AbstractShifter,
-                 scaler: AbstractScaler,
-                 splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
+                 truncater: Truncater,
+                 shifter: Shifter,
+                 scaler: Scaler,
+                 splitter: Splitter,
+                 orthogonalizer: Orthogonalizer):
         '''
         Constructor for the POD trial space constructed via scaled SVD.
 
