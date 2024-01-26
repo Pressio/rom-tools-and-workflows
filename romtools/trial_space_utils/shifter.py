@@ -44,18 +44,26 @@
 #
 
 '''
-The Shifter class is used to create an affine offset in a trial space.
+___
+##**Notes**
+The vector defining the affine offset for a linear subspace is viewed as a matrix of shape 
+$$\\mathbf{u}_{\\mathrm{shift}} \in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\mathrm{x}} }$$
+
+___
+##**Theory**
 
 *What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
 trial space,
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
+$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where
-$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$
-is the trial space. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
+$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) $. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
 Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial
 conditions.
 
 The Shifter class encapsulates the affine offset.
+
+___
+##**API**
 '''
 
 from typing import Tuple
@@ -63,7 +71,7 @@ import abc
 import numpy as np
 
 
-class AbstractShifter(abc.ABC):
+class Shifter(abc.ABC):
     '''
     Abstract implmentation
     '''
@@ -76,7 +84,7 @@ class AbstractShifter(abc.ABC):
         pass
 
 
-class NoOpShifter(AbstractShifter):
+class NoOpShifter(Shifter):
     '''
     No op implementation
     '''
@@ -88,7 +96,7 @@ class NoOpShifter(AbstractShifter):
         return my_array, shift_vector
 
 
-class ConstantShifter(AbstractShifter):
+class ConstantShifter(Shifter):
     '''
     Shifts the data by a constant value.
     '''
@@ -118,7 +126,7 @@ class ConstantShifter(AbstractShifter):
         return my_array-shift_vector[:, :, None], shift_vector
 
 
-class VectorShifter(AbstractShifter):
+class VectorShifter(Shifter):
     '''
     Shifts the data by a user-input vector.
     '''
@@ -135,7 +143,7 @@ class VectorShifter(AbstractShifter):
         return my_array-self.__shift_vector[..., None], self.__shift_vector
 
 
-class AverageShifter(AbstractShifter):
+class AverageShifter(Shifter):
     '''
     Shifts the data by the average of a data matrix.
     '''
@@ -147,7 +155,7 @@ class AverageShifter(AbstractShifter):
         return my_array-shift_vector[:, :, None], shift_vector
 
 
-class FirstVecShifter(AbstractShifter):
+class FirstVecShifter(Shifter):
     '''
     Shifts the data by the first vector of a data matrix.
     '''

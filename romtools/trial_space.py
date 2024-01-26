@@ -44,35 +44,52 @@
 #
 
 '''
-#Trial space overview
+___
+##**Notes**
+
+Like the snapshot data, the basis and the affine offset for a trial space are viewed as tensors,
+$$\\mathcal{\Phi} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
+$$\\mathcal{u}_{\\mathrm{shift}} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
+Here, $N_{\\mathrm{vars}}$ is the number of PDE variables (e.g., 5 for the compressible Navier-Stokes
+ equations in 3D), $N_{\\mathrm{x}}$ is the number of spatial DOFs, and $K$ is the number of basis 
+vectors. We emphasize that all tensors are reshaped into 2D matrices, 
+e.g., when performing SVD.
+___
+##**Theory**
+
 
 A trial space is foundational to reduced-order models.
 In a ROM, we restrict a high-dimensional state to live within a low-dimensional trial space.
-Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^N$, we represent this as
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
+Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}$, we represent this as
+$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where $\\mathcal{V}$ with
-$\\text{dim}(\\mathcal{V}) = K \\le N$
+$\\text{dim}(\\mathcal{V}) = K \\le N_{\\mathrm{vars}}  N_{\\mathrm{x}}$
 is the trial space. Formally, we can describe this low-dimensional representation with a basis and an affine offset,
 $$\\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}$$
-where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}$ is the basis matrix,
+where $\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}} \\times K}$ is the basis matrix,
 $\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}$ are the reduced, or generalized coordinates,
-$\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^N$ is the shift vector (or affine offset), and, by definition,
-$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$.
+$\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}$ is the shift vector (or affine offset), and, by definition,
+$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)$.
 
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
+Note that, like the snapshot data, we view the basis as a tensor.
+
+___
+##**API**
 '''
+
 
 import abc
 import numpy as np
-from romtools.trial_space_utils.truncater import AbstractTruncater, NoOpTruncater
-from romtools.trial_space_utils.shifter import AbstractShifter, NoOpShifter
-from romtools.trial_space_utils.scaler import AbstractScaler
-from romtools.trial_space_utils.splitter import AbstractSplitter, NoOpSplitter
-from romtools.trial_space_utils.orthogonalizer import AbstractOrthogonalizer, NoOpOrthogonalizer
+from romtools.trial_space_utils.truncater import Truncater, NoOpTruncater
+from romtools.trial_space_utils.shifter import Shifter, NoOpShifter
+from romtools.trial_space_utils.scaler import Scaler
+from romtools.trial_space_utils.splitter import Splitter, NoOpSplitter
+from romtools.trial_space_utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
-class AbstractTrialSpace(abc.ABC):
+class TrialSpace(abc.ABC):
     '''
     Abstract base class for trial space implementations.
 
@@ -142,7 +159,7 @@ def matrix_to_tensor(n_var, matrix_input):
     return output_matrix
 
 
-class DictionaryTrialSpace(AbstractTrialSpace):
+class DictionaryTrialSpace(TrialSpace):
     '''
     ##Reduced basis trial space (no truncation).
 
@@ -205,7 +222,7 @@ class DictionaryTrialSpace(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromPOD(AbstractTrialSpace):
+class TrialSpaceFromPOD(TrialSpace):
     '''
     ##POD trial space (constructed via SVD).
 
@@ -225,20 +242,20 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
 
     def __init__(self,
                  snapshot_tensor,
-                 truncater:      AbstractTruncater      = NoOpTruncater(),
-                 shifter:        AbstractShifter        = NoOpShifter(),
-                 splitter:       AbstractSplitter       = NoOpSplitter(),
-                 orthogonalizer: AbstractOrthogonalizer = NoOpOrthogonalizer(),
+                 truncater:      Truncater      = NoOpTruncater(),
+                 shifter:        Shifter        = NoOpShifter(),
+                 splitter:       Splitter       = NoOpSplitter(),
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  svdFnc = None):
         '''
         Constructor for the POD trial space.
 
         Args:
             snapshot_tensor (np.ndarray): Snapshot data tensor
-            truncater (AbstractTruncater): Class that truncates the basis.
-            shifter (AbstractShifter): Class that shifts the basis.
-            splitter (AbstractSplitter): Class that splits the basis.
-            orthogonalizer (AbstractOrthogonalizer): Class that orthogonalizes
+            truncater (Truncater): Class that truncates the basis.
+            shifter (Shifter): Class that shifts the basis.
+            splitter (Splitter): Class that splits the basis.
+            orthogonalizer (Orthogonalizer): Class that orthogonalizes
                 the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                 IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
@@ -296,7 +313,7 @@ class TrialSpaceFromPOD(AbstractTrialSpace):
         return self.__basis
 
 
-class TrialSpaceFromScaledPOD(AbstractTrialSpace):
+class TrialSpaceFromScaledPOD(TrialSpace):
     '''
     ##POD trial space (constructed via scaled SVD).
 
@@ -315,11 +332,11 @@ class TrialSpaceFromScaledPOD(AbstractTrialSpace):
     '''
 
     def __init__(self, snapshot_tensor,
-                 truncater: AbstractTruncater,
-                 shifter: AbstractShifter,
-                 scaler: AbstractScaler,
-                 splitter: AbstractSplitter,
-                 orthogonalizer: AbstractOrthogonalizer):
+                 truncater: Truncater,
+                 shifter: Shifter,
+                 scaler: Scaler,
+                 splitter: Splitter,
+                 orthogonalizer: Orthogonalizer):
         '''
         Constructor for the POD trial space constructed via scaled SVD.
 

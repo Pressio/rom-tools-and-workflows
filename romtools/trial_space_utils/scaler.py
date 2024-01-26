@@ -44,14 +44,19 @@
 #
 
 '''
-The scaler class is used to performed scaled POD.
+---
+##**Notes**
+The scaler class is used to performed scaled POD. Scaling is applied to tensors of shape $\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}$. These tensors are then reshaped into matrices when performing SVD.
+
+___
+##**Theory**
 
 *What is scaled POD, and why would I do it?*
 
 Standard POD computes a basis that minimizes the projection error in a standard Euclidean $\\ell^2$ inner product,
-i.e., for a snapshot matrix $\\mathbf{S}$, POD computes the basis by solving the minimization problem
+i.e., for a snapshot matrix $\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}$, POD computes the basis by solving the minimization problem
 (assuming no affine offset)
-$$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N \\times K} | \\boldsymbol
+$$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times K} | \\boldsymbol
 \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T
 \\mathbf{S} - \\mathbf{S} \\|_2.$$
 In this minimization problem, errors are measured in a standard $\\ell^2$ norm.
@@ -64,18 +69,21 @@ In scaled POD, we solve a minimization problem on a scaled snapshot matrix.
 Defining $\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}$, where $\\mathbf{W}$ is a weighting matrix
 (e.g., a diagonal matrix containing the max absolute value of each state variable),
 we compute the basis as the solution to the minimization problem
-$$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N \\times K} |\\boldsymbol
+$$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times K} |\\boldsymbol
 \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T
 \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.$$
 
-The Scaler encapsulates this information
+The Scaler encapsulates this information.
+
+___
+##**API**
 '''
 
 import abc
 import numpy as np
 
 
-class AbstractScaler(abc.ABC):
+class Scaler(abc.ABC):
     '''
     Abstract base class
     '''
@@ -95,7 +103,7 @@ class AbstractScaler(abc.ABC):
         pass
 
 
-class NoOpScaler(AbstractScaler):
+class NoOpScaler(Scaler):
     '''
     No op implementation
     '''
@@ -109,11 +117,11 @@ class NoOpScaler(AbstractScaler):
         return data_tensor
 
 
-class VectorScaler(AbstractScaler):
+class VectorScaler(Scaler):
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
     For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
-    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N$, and scales by
+    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N}$, and scales by
     $$\\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}$$
     before performing POD (i.e., POD is performed on $\\mathbf{S}^*$). After POD is performed, the bases
     are post-scaled by $$\\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}$$
@@ -162,7 +170,7 @@ class VectorScaler(AbstractScaler):
         return self.__scaling_vector_matrix[None, :, None] * data_tensor
 
 
-class VariableScaler(AbstractScaler):
+class VariableScaler(Scaler):
     '''
     Concrete implementation designed for snapshot matrices involving multiple
     state variables.
@@ -259,7 +267,7 @@ class VariableScaler(AbstractScaler):
         return data_tensor
 
 
-class VariableAndVectorScaler(AbstractScaler):
+class VariableAndVectorScaler(Scaler):
     '''
     Concrete implementation designed to scale snapshot matrices involving
     multiple state variables by both the variable magnitudes and an additional

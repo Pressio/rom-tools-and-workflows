@@ -58,7 +58,7 @@ import numpy as np
 import scipy.sparse
 
 
-class AbstractOrthogonalizer(abc.ABC):
+class Orthogonalizer(abc.ABC):
     '''
     Abstract base class
     '''
@@ -68,7 +68,7 @@ class AbstractOrthogonalizer(abc.ABC):
         pass
 
 
-class NoOpOrthogonalizer(AbstractOrthogonalizer):
+class NoOpOrthogonalizer(Orthogonalizer):
     '''
     No op class (doesn't do anything)
     '''
@@ -79,7 +79,7 @@ class NoOpOrthogonalizer(AbstractOrthogonalizer):
         return my_array
 
 
-class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
+class EuclideanL2Orthogonalizer(Orthogonalizer):
     '''
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
@@ -104,7 +104,7 @@ class EuclideanL2Orthogonalizer(AbstractOrthogonalizer):
         return my_array
 
 
-class EuclideanVectorWeightedL2Orthogonalizer(AbstractOrthogonalizer):
+class EuclideanVectorWeightedL2Orthogonalizer(Orthogonalizer):
     '''
     Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
