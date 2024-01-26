@@ -75,24 +75,70 @@ class AbstractParameterSpace(abc.ABC):
         '''
 
 
+class Parameter(abc.ABC):
+    '''Abstract implementation'''
+
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        '''
+        Returns parameter name
+        '''
+
+    @abc.abstractmethod
+    def get_dimensionality(self) -> int:
+        '''
+        Returns dimensionality of parameter for vector quantities.
+        Returns 1 for scalar parameters
+        '''
+
+    @abc.abstractmethod
+    def generate_samples(self, number_of_samples):
+        '''
+        Generates and returns number of parameter samples
+        '''
+
+
+class UniformParameter(Parameter):
+    def __init__(self, parameter_name, lower_bound, upper_bound):
+        self._parameter_name = parameter_name
+
+        try:
+            assert len(lower_bound) == len(upper_bound)
+            self._dimension = len(lower_bound)
+        except TypeError:
+            self._dimension = 1
+        self._lower_bound = lower_bound
+        self._upper_bound = upper_bound
+
+    def get_name(self) -> str:
+        return self._parameter_name
+
+    def get_dimensionality(self) -> int:
+        return self._dimension
+
+    def generate_samples(self, number_of_samples):
+        return np.random.uniform(self._lower_bound, self._upper_bound,
+                                 size=(number_of_samples,
+                                       self.get_dimensionality()))
+
+
 class UniformParameterSpace(AbstractParameterSpace):
     '''
     Concrete implementation for a uniform parameter space with random sampling
     '''
 
     def __init__(self, parameter_names, lower_bounds, upper_bounds):
-        self.__parameter_names = parameter_names
-        self.__lower_bounds = lower_bounds
-        self.__upper_bounds = upper_bounds
-        self.__n_params = len(self.__lower_bounds)
+        self.parameters = [UniformParameter(name, lb, ub)
+                           for name, lb, ub
+                           in zip(parameter_names, lower_bounds, upper_bounds)]
 
     def get_names(self):
-        return self.__parameter_names
+        return [p.get_name() for p in self.parameters]
 
     def get_dimensionality(self):
-        return self.__n_params
+        return sum(p.get_dimensionality() for p in self.parameters)
 
     def generate_samples(self, number_of_samples):
-        samples = np.random.uniform(self.__lower_bounds, self.__upper_bounds,
-                                    size=(number_of_samples, self.__n_params))
-        return samples
+        samples = [p.generate_samples(number_of_samples)
+                   for p in self.parameters]
+        return np.concatenate(samples, axis=1)
