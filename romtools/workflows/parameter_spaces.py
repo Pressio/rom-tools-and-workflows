@@ -96,3 +96,26 @@ class UniformParameterSpace(ParameterSpace):
         samples = np.random.uniform(self.__lower_bounds, self.__upper_bounds,
                                     size=(number_of_samples, self.__n_params))
         return samples
+
+
+class ConstParamSpace(ParameterSpace):
+    '''
+    Constant parameter space which converts all constant values to str-type
+
+    Useful if you need to execute workflows in a non-stochastic setting
+    '''
+    def __init__(self, parameter_names, parameter_values):
+        self._parameter_names = parameter_names
+        self._n_params = len(parameter_names)
+        self._parameter_values = np.array(parameter_values, dtype=str)
+        self._parameter_values = self._parameter_values.reshape(1,
+                                                                self._n_params)
+
+    def get_names(self):
+        return self._parameter_names
+
+    def get_dimensionality(self):
+        return self._n_params
+
+    def generate_samples(self, number_of_samples):
+        return np.repeat(self._parameter_values, number_of_samples, axis=0)
