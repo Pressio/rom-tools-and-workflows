@@ -52,30 +52,6 @@ import numpy as np
 from typing import Iterable
 
 
-class ParameterSpace(abc.ABC):
-
-    ''' Abstract implementation'''
-    @abc.abstractmethod
-    def get_names(self) -> list:
-        '''
-        Returns a list of parameter names
-        # e.g., ['sigma','beta',...]
-        '''
-
-    @abc.abstractmethod
-    def get_dimensionality(self) -> int:
-        '''
-        Returns an integer for the size
-        of the parameter domain
-        '''
-
-    @abc.abstractmethod
-    def generate_samples(self, number_of_samples):
-        '''
-        Generates and returns number of parameter samples
-        '''
-
-
 class Parameter(abc.ABC):
     '''Abstract implementation'''
 
@@ -97,6 +73,38 @@ class Parameter(abc.ABC):
         '''
         Generates and returns number of parameter samples
         '''
+
+
+class ParameterSpace(abc.ABC):
+
+    ''' Abstract implementation'''
+    @abc.abstractmethod
+    def get_parameter_list(self) -> Iterable[Parameter]:
+        '''
+        Returns a list of Parameter objects
+        '''
+
+    def get_names(self):
+        '''
+        Returns a list of parameter names
+        # e.g., ['sigma','beta',...]
+        '''
+        return [p.get_name() for p in self.get_parameter_list()]
+
+    def get_dimensionality(self):
+        '''
+        Returns an integer for the size
+        of the parameter domain
+        '''
+        return sum(p.get_dimensionality() for p in self.get_parameter_list())
+
+    def generate_samples(self, number_of_samples):
+        '''
+        Generates and returns number of parameter samples
+        '''
+        samples = [p.generate_samples(number_of_samples)
+                   for p in self.get_parameter_list()]
+        return np.concatenate(samples, axis=1)
 
 
 class UniformParameter(Parameter):
@@ -129,6 +137,9 @@ class UniformParameter(Parameter):
 
 
 class StringParameter(Parameter):
+    '''
+    Constant string-valued parameter
+    '''
     def __init__(self, parameter_name: str, value):
         self._parameter_name = parameter_name
         self._parameter_value = value
@@ -153,16 +164,8 @@ class UniformParameterSpace(ParameterSpace):
                            for name, lb, ub
                            in zip(parameter_names, lower_bounds, upper_bounds)]
 
-    def get_names(self):
-        return [p.get_name() for p in self.parameters]
-
-    def get_dimensionality(self):
-        return sum(p.get_dimensionality() for p in self.parameters)
-
-    def generate_samples(self, number_of_samples):
-        samples = [p.generate_samples(number_of_samples)
-                   for p in self.parameters]
-        return np.concatenate(samples, axis=1)
+    def get_parameter_list(self) -> Iterable[Parameter]:
+        return self.parameters
 
 
 class ConstParameterSpace(ParameterSpace):
@@ -176,16 +179,8 @@ class ConstParameterSpace(ParameterSpace):
                            for name, val
                            in zip(parameter_names, parameter_values)]
 
-    def get_names(self):
-        return [p.get_name() for p in self.parameters]
-
-    def get_dimensionality(self):
-        return sum(p.get_dimensionality() for p in self.parameters)
-
-    def generate_samples(self, number_of_samples):
-        samples = [p.generate_samples(number_of_samples)
-                   for p in self.parameters]
-        return np.concatenate(samples, axis=1)
+    def get_parameter_list(self) -> Iterable[Parameter]:
+        return self.parameters
 
 
 class HeterogeneousParameterSpace(ParameterSpace):
@@ -195,13 +190,5 @@ class HeterogeneousParameterSpace(ParameterSpace):
     def __init__(self, parameter_objs: Iterable[Parameter]):
         self.parameters = parameter_objs
 
-    def get_names(self):
-        return [p.get_name() for p in self.parameters]
-
-    def get_dimensionality(self):
-        return sum(p.get_dimensionality() for p in self.parameters)
-
-    def generate_samples(self, number_of_samples):
-        samples = [p.generate_samples(number_of_samples)
-                   for p in self.parameters]
-        return np.concatenate(samples, axis=1)
+    def get_parameter_list(self) -> Iterable[Parameter]:
+        return self.parameters
