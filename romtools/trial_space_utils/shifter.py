@@ -44,18 +44,26 @@
 #
 
 '''
-The Shifter class is used to create an affine offset in a trial space.
+___
+##**Notes**
+The vector defining the affine offset for a linear subspace is viewed as a matrix of shape 
+$$\\mathbf{u}_{\\mathrm{shift}} \in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\mathrm{x}} }$$
+
+___
+##**Theory**
 
 *What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
 trial space,
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
+$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where
-$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$
-is the trial space. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
+$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) $. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
 Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial
 conditions.
 
 The Shifter class encapsulates the affine offset.
+
+___
+##**API**
 '''
 
 from typing import Tuple
