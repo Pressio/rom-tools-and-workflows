@@ -101,6 +101,8 @@ class UniformParameterSpace(ParameterSpace):
 class ConstParamSpace(ParameterSpace):
     '''
     Constant parameter space which converts all constant values to str-type
+
+    Useful if you need to execute workflows in a non-stochastic setting
     '''
     def __init__(self, parameter_names, parameter_values):
         self._parameter_names = parameter_names
