@@ -44,24 +44,41 @@
 #
 
 '''
-#Trial space overview
+___
+##**Notes**
+
+Like the snapshot data, the basis and the affine offset for a trial space are viewed as tensors,
+$$\\mathcal{\Phi} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
+$$\\mathcal{u}_{\\mathrm{shift}} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
+Here, $N_{\\mathrm{vars}}$ is the number of PDE variables (e.g., 5 for the compressible Navier-Stokes
+ equations in 3D), $N_{\\mathrm{x}}$ is the number of spatial DOFs, and $K$ is the number of basis 
+vectors. We emphasize that all tensors are reshaped into 2D matrices, 
+e.g., when performing SVD.
+___
+##**Theory**
+
 
 A trial space is foundational to reduced-order models.
 In a ROM, we restrict a high-dimensional state to live within a low-dimensional trial space.
-Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^N$, we represent this as
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V}$$
+Mathematically, for a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}$, we represent this as
+$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where $\\mathcal{V}$ with
-$\\text{dim}(\\mathcal{V}) = K \\le N$
+$\\text{dim}(\\mathcal{V}) = K \\le N_{\\mathrm{vars}}  N_{\\mathrm{x}}$
 is the trial space. Formally, we can describe this low-dimensional representation with a basis and an affine offset,
 $$\\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}$$
-where $\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}$ is the basis matrix,
+where $\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}} \\times K}$ is the basis matrix,
 $\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}$ are the reduced, or generalized coordinates,
-$\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^N$ is the shift vector (or affine offset), and, by definition,
-$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) + \\mathbf{u}_{\\mathrm{shift}}$.
+$\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}$ is the shift vector (or affine offset), and, by definition,
+$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)$.
 
 The trial_space class encapsulates the information of an affine trial space, $\\mathcal{V}$,
 by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space.
+Note that, like the snapshot data, we view the basis as a tensor.
+
+___
+##**API**
 '''
+
 
 import abc
 import numpy as np
