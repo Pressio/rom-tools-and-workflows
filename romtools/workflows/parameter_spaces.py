@@ -122,6 +122,21 @@ class UniformParameter(Parameter):
                                        self.get_dimensionality()))
 
 
+class StringParameter(Parameter):
+    def __init__(self, parameter_name, value):
+        self._parameter_name = parameter_name
+        self._parameter_value = value
+
+    def get_name(self) -> str:
+        return self._parameter_name
+
+    def get_dimensionality(self) -> int:
+        return 1
+
+    def generate_samples(self, number_of_samples):
+        return np.array([[self._parameter_value]] * number_of_samples)
+
+
 class UniformParameterSpace(ParameterSpace):
     '''
     Concrete implementation for a uniform parameter space with random sampling
