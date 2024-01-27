@@ -50,6 +50,7 @@ The ParameterSpace class encapsulates the notion of the parameter space.
 import abc
 import numpy as np
 from typing import Iterable
+from scipy.stats import qmc
 
 
 class Parameter(abc.ABC):
@@ -69,11 +70,14 @@ class Parameter(abc.ABC):
         '''
 
     @abc.abstractmethod
-    def generate_samples(self, number_of_samples) -> np.array:
+    def generate_samples(self, uniform_dist_samples) -> np.array:
         '''
-        Generates and returns number of parameter samples
+        Generates samples from the desired distribution given a set of samples
+        from a uniform distribution on (0,1)
 
-        Returns np.array of shape (number_of_samples, self.get_dimensionality())
+        uniform_dist_samples should be of shape (number_of_samples, self.get_dimensionality())
+
+        Returns np.array of the same shape
         '''
 
 
@@ -100,35 +104,33 @@ class ParameterSpace(abc.ABC):
         '''
         return sum(p.get_dimensionality() for p in self.get_parameter_list())
 
-
-class Sampler(abc.ABC):
-    '''Abstract implementation'''
-    @abc.abstractmethod
-    def __init__(self, parameter_space: ParameterSpace):
+    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
         '''
-        Constructor
+        Generates samples from the parameter space given a set of samples
+        from a uniform distribution on (0,1)
+
+        uniform_dist_samples should be of shape (number_of_samples, self.get_dimensionality())
+
+        Returns np.array of the same shape
         '''
-
-    @abc.abstractmethod
-    def generate_samples(self, number_of_samples: int) -> np.array:
-        '''
-        Generates and returns number of parameter samples
-
-        Returns np.array of shape (number_of_samples, parameter_space.get_dimensionality())
-        '''
+        samples = []
+        param_idx = 0
+        for param in self.get_parameter_list():
+            param_samples = param.generate_samples(uniform_dist_samples[:, param_idx:param_idx+param.get_dimensionality()])
+            samples.append(param_samples)
+        return samples
 
 
-class MonteCarloSampler(Sampler):
-    '''
-    Monte Carlo parameter space sampler
-    '''
-    def __init__(self, parameter_space: ParameterSpace):
-        self._parameter_space = parameter_space
+def MonteCarloSample(param_space: ParameterSpace, number_of_samples: int):
+    uniform_dist_sample = np.random.uniform(size=(number_of_samples,
+                                                  param_space.get_dimensionality()))
+    return param_space.generate_samples(uniform_dist_sample)
 
-    def generate_samples(self, number_of_samples) -> np.array:
-        samples = [p.generate_samples(number_of_samples)
-                   for p in self._parameter_space.get_parameter_list()]
-        return np.concatenate(samples, axis=1)
+
+def LatinHypercubeSample(param_space: ParameterSpace, number_of_samples: int):
+    sampler = qmc.LatinHypercube(param_space.get_dimensionality())
+    uniform_dist_sample = sampler.random(n=number_of_samples)
+    return param_space.generate_samples(uniform_dist_sample)
 
 
 class UniformParameter(Parameter):
@@ -154,10 +156,11 @@ class UniformParameter(Parameter):
     def get_dimensionality(self) -> int:
         return self._dimension
 
-    def generate_samples(self, number_of_samples) -> np.array:
-        return np.random.uniform(self._lower_bound, self._upper_bound,
-                                 size=(number_of_samples,
-                                       self.get_dimensionality()))
+    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
+        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
+        return qmc.scale(uniform_dist_samples,
+                         self._lower_bound,
+                         self._upper_bound)
 
 
 class StringParameter(Parameter):
@@ -174,7 +177,9 @@ class StringParameter(Parameter):
     def get_dimensionality(self) -> int:
         return 1
 
-    def generate_samples(self, number_of_samples) -> np.array:
+    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
+        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
+        number_of_samples = uniform_dist_samples.shape[0]
         return np.array([[self._parameter_value]] * number_of_samples)
 
 
