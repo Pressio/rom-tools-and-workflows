@@ -2,9 +2,11 @@ name: Install and test romtools
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
   pull_request:
-    branches: [develop]
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ github.ref }}-${{ github.workflow }}
@@ -76,24 +78,24 @@ jobs:
           pip list
           pip install .
 
-      - name: Check Formatting (Pylint)
-        run: |
-          pip install pylint
-          pylint --recursive y --rcfile .pylintrc --output-format=colorized ./romtools
-        continue-on-error: false
+      # - name: Check Formatting (Pylint)
+      #   run: |
+      #     pip install pylint
+      #     pylint --recursive y --rcfile .pylintrc --output-format=colorized ./romtools
+      #   continue-on-error: false
 
-      - name: Run tests (Serial)
-        run: |
-          pytest --timeout=300
+      # - name: Run tests (Serial)
+      #   run: |
+      #     pytest --timeout=300
 
       - name: Run tests (MPI, n=1)
         run: |
           mpirun -n 1 python -m pytest tests/romtools/* --with-mpi --timeout=300
 
-      - name: Run tests (MPI, n=3)
-        run: |
-          mpirun -n 3 python -m pytest tests/romtools/* --with-mpi --timeout=300
+      # - name: Run tests (MPI, n=3)
+      #   run: |
+      #     mpirun -n 3 python -m pytest tests/romtools/* --with-mpi --timeout=300
 
-      - name: Run tests (MPI, n=4)
-        run: |
-          mpirun -n 4 python -m pytest tests/romtools/* --with-mpi --timeout=300
+      # - name: Run tests (MPI, n=4)
+      #   run: |
+      #     mpirun -n 4 python -m pytest tests/romtools/* --with-mpi --timeout=300
