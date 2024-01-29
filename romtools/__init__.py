@@ -84,7 +84,7 @@ TBD
 ```
 '''
 
-__all__ = ['trial_space', 'trial_space_utils', 'workflows', 'hyper_reduction']
+__all__ = ['trial_space', 'workflows', 'hyper_reduction']
 
 __docformat__ = "restructuredtext" # required to generate the license
 

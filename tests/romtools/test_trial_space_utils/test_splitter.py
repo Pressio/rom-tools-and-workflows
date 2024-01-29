@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from romtools.trial_space_utils.splitter import *
+from romtools.trial_space.utils.splitter import *
 
 
 @pytest.mark.mpi_skip
