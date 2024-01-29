@@ -23,6 +23,20 @@ def test_uniform_parameter():
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
+def test_vector_parameter():
+    param = UniformParameter('p1', [-1, 0], [1, 3])
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 2
+
+    germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.5]])
+    s = param.generate_samples(germ)
+    assert s.shape == (3, 2)
+    gold = [[-0.8, 0.6],
+            [ 0.0, 1.8],
+            [ 0.4, 1.5]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
 def test_string_parameter():
     param = StringParameter('p1', 'p1val')
     assert param.get_name() == 'p1'
@@ -39,12 +53,12 @@ def test_uniform_param_space():
     assert param_space.get_names() == ['p1', 'p2']
     assert param_space.get_dimensionality() == 2
 
-    germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.8]])
+    germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.5]])
     s = param_space.generate_samples(germ)
     assert s.shape == (3, 2)
-    gold = [[-0.8, 0.3],
-            [ 0.0, 1.5],
-            [ 0.4, 2.1]]
+    gold = [[-0.8, 0.6],
+            [ 0.0, 1.8],
+            [ 0.4, 1.5]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
@@ -81,7 +95,7 @@ def test_hetero_param_space():
     assert s.shape == (4, 3)
     np.testing.assert_allclose(s[:, 0].astype(float), [-0.8, -0.2, 0.4, -1.0],
                                rtol=1e-5, atol=1e-8)
-    np.testing.assert_allclose(s[:, 1].astype(float), [0.1, 0.4, 0.7, 0.0],
+    np.testing.assert_allclose(s[:, 1].astype(float), [0.2, 0.5, 0.8, 1.0],
                                rtol=1e-5, atol=1e-8)
     assert (s[:, 2] == ['p3val', 'p3val', 'p3val', 'p3val']).all()
 
@@ -91,10 +105,10 @@ def test_monte_carlo_sample():
     s = monte_carlo_sample(param_space, 4, seed=12)
     assert s.shape == (4, 2)
 
-    gold = [[-0.69167432, 0.46248853],
-            [-0.47336997, 0.78994505],
-            [-0.97085008, 0.04372489],
-            [ 0.80142971, 2.70214456]]
+    gold = [[-0.69167432, 2.22014909],
+            [-0.47336997, 1.60121818],
+            [-0.97085008, 2.75624102],
+            [ 0.80142971, 0.10026428]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
@@ -104,8 +118,8 @@ def test_latin_hypercube_sample():
     s = latin_hypercube_sample(param_space, 4, seed=12)
     assert s.shape == (4, 2)
 
-    gold = [[-0.12541223, 1.31188166],
-            [ 0.40533981, 2.10800971],
-            [ 0.82505538, 2.73758307],
-            [-0.83522287, 0.24716569]]
+    gold = [[-0.12541223, 0.78993529],
+            [ 0.40533981, 2.86553144],
+            [ 0.82505538, 2.07709407],
+            [-0.83522287, 0.66369046]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)

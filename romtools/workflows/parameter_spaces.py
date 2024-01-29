@@ -118,6 +118,7 @@ class ParameterSpace(abc.ABC):
         for param in self.get_parameter_list():
             param_samples = param.generate_samples(uniform_dist_samples[:, param_idx:param_idx+param.get_dimensionality()])
             samples.append(param_samples)
+            param_idx += param.get_dimensionality()
         return np.concatenate(samples, axis=1)
 
 
@@ -227,7 +228,8 @@ class ConstParameterSpace(ParameterSpace):
 
 class HeterogeneousParameterSpace(ParameterSpace):
     '''
-    Heterogeneous parameter space consisting of a list of arbitrary Parameter objects
+    Heterogeneous parameter space consisting of a list of arbitrary Parameter
+    objects
     '''
     def __init__(self, parameter_objs: Iterable[Parameter]):
         self.parameters = parameter_objs
