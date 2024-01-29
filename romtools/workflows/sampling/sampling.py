@@ -49,6 +49,7 @@ import numpy as np
 
 from romtools.workflows.sampling.\
     sampling_coupler_base import SamplingCouplerBase
+from romtools.workflows.parameter_spaces import MonteCarloSample
 
 
 def run_sampling(sampling_coupler: SamplingCouplerBase,
@@ -61,7 +62,7 @@ def run_sampling(sampling_coupler: SamplingCouplerBase,
 
     # create parameter domain
     parameter_space = sampling_coupler.get_parameter_space()
-    parameter_samples = parameter_space.generate_samples(testing_sample_size)
+    parameter_samples = MonteCarloSample(parameter_space, testing_sample_size)
 
     # Make FOM/ROM directories
     starting_sample_index = 0

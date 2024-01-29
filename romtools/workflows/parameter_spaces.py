@@ -118,7 +118,8 @@ class ParameterSpace(abc.ABC):
         for param in self.get_parameter_list():
             param_samples = param.generate_samples(uniform_dist_samples[:, param_idx:param_idx+param.get_dimensionality()])
             samples.append(param_samples)
-        return samples
+            print(param_samples.shape)
+        return np.concatenate(samples, axis=1)
 
 
 def MonteCarloSample(param_space: ParameterSpace, number_of_samples: int):
@@ -158,6 +159,9 @@ class UniformParameter(Parameter):
 
     def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
+        print(self._lower_bound)
+        print(self._upper_bound)
+        print(uniform_dist_samples)
         return qmc.scale(uniform_dist_samples,
                          self._lower_bound,
                          self._upper_bound)
