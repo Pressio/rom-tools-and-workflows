@@ -4,7 +4,7 @@ name: deploy-docs
 on:
   push:
     branches:
-      - main
+      - develop
     # Alternative: only build for tags.
     # tags:
     #   - '*'
