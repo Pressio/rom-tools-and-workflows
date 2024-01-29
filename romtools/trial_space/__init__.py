@@ -360,8 +360,8 @@ class TrialSpaceFromScaledPOD(TrialSpace):
 
 def tensor_to_matrix(tensor_input):
     '''
-    Converts a tensor with shape $[N, M, P]$ to a matrix to a matrix
-    representation in which the first two dimension are collapsed $[N M, P]$.
+    Converts a tensor with shape $[N, M, P]$ to a matrix representation
+    in which the first two dimension are collapsed $[N M, P]$.
     '''
     output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                          tensor_input.shape[2])
