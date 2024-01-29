@@ -5,6 +5,9 @@ from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 
+from romtools.workflows.parameter_spaces import monte_carlo_sample
+from romtools.workflows.parameter_spaces import latin_hypercube_sample
+
 
 def test_uniform_parameter():
     param = UniformParameter('p1', -1, 1)
@@ -32,7 +35,6 @@ def test_string_parameter():
 
 
 def test_uniform_param_space():
-    np.random.seed(12)
     param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
     assert param_space.get_names() == ['p1', 'p2']
     assert param_space.get_dimensionality() == 2
@@ -63,7 +65,6 @@ def test_const_param_space():
 
 
 def test_hetero_param_space():
-    np.random.seed(12)
     param1 = UniformParameter('p1', -1, 1)
     param2 = UniformParameter('p2', 0, 1)
     param3 = StringParameter('p3', 'p3val')
@@ -83,3 +84,28 @@ def test_hetero_param_space():
     np.testing.assert_allclose(s[:, 1].astype(float), [0.1, 0.4, 0.7, 0.0],
                                rtol=1e-5, atol=1e-8)
     assert (s[:, 2] == ['p3val', 'p3val', 'p3val', 'p3val']).all()
+
+
+def test_monte_carlo_sample():
+    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
+    s = monte_carlo_sample(param_space, 4, seed=12)
+    assert s.shape == (4, 2)
+
+    gold = [[-0.69167432, 0.46248853],
+            [-0.47336997, 0.78994505],
+            [-0.97085008, 0.04372489],
+            [ 0.80142971, 2.70214456]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
+def test_latin_hypercube_sample():
+    np.random.seed(12)
+    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
+    s = latin_hypercube_sample(param_space, 4, seed=12)
+    assert s.shape == (4, 2)
+
+    gold = [[-0.12541223, 1.31188166],
+            [ 0.40533981, 2.10800971],
+            [ 0.82505538, 2.73758307],
+            [-0.83522287, 0.24716569]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)

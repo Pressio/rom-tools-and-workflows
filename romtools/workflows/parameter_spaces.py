@@ -118,18 +118,29 @@ class ParameterSpace(abc.ABC):
         for param in self.get_parameter_list():
             param_samples = param.generate_samples(uniform_dist_samples[:, param_idx:param_idx+param.get_dimensionality()])
             samples.append(param_samples)
-            print(param_samples.shape)
         return np.concatenate(samples, axis=1)
 
 
-def MonteCarloSample(param_space: ParameterSpace, number_of_samples: int):
+def monte_carlo_sample(param_space: ParameterSpace,
+                       number_of_samples: int = 1,
+                       seed=None):
+    '''
+    Generate Monte Carlo samples from a given parameter space
+    '''
+    if seed is not None:
+        np.random.seed(seed)
     uniform_dist_sample = np.random.uniform(size=(number_of_samples,
                                                   param_space.get_dimensionality()))
     return param_space.generate_samples(uniform_dist_sample)
 
 
-def LatinHypercubeSample(param_space: ParameterSpace, number_of_samples: int):
-    sampler = qmc.LatinHypercube(param_space.get_dimensionality())
+def latin_hypercube_sample(param_space: ParameterSpace,
+                           number_of_samples: int = 1,
+                           seed=None):
+    '''
+    Generate LHS samples from a given parameter space
+    '''
+    sampler = qmc.LatinHypercube(param_space.get_dimensionality(), seed=seed)
     uniform_dist_sample = sampler.random(n=number_of_samples)
     return param_space.generate_samples(uniform_dist_sample)
 
@@ -159,9 +170,6 @@ class UniformParameter(Parameter):
 
     def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        print(self._lower_bound)
-        print(self._upper_bound)
-        print(uniform_dist_samples)
         return qmc.scale(uniform_dist_samples,
                          self._lower_bound,
                          self._upper_bound)
