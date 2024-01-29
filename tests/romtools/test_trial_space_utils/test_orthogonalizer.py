@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import scipy.sparse
-from romtools.trial_space_utils.orthogonalizer import *
+from romtools.trial_space.utils.orthogonalizer import *
 
 
 @pytest.mark.mpi_skip

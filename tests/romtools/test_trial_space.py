@@ -2,7 +2,7 @@ import copy
 import pytest
 import numpy as np
 import romtools as rt
-import romtools.trial_space_utils as utils
+import romtools.trial_space.utils as utils
 
 
 

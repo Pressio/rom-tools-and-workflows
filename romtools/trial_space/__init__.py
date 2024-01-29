@@ -95,11 +95,11 @@ which derive from the abstract class `TrialSpace`. Additionally, we provide two 
 
 import abc
 import numpy as np
-from romtools.trial_space_utils.truncater import Truncater, NoOpTruncater
-from romtools.trial_space_utils.shifter import Shifter, NoOpShifter
-from romtools.trial_space_utils.scaler import Scaler
-from romtools.trial_space_utils.splitter import Splitter, NoOpSplitter
-from romtools.trial_space_utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
+from romtools.trial_space.utils.truncater import *
+from romtools.trial_space.utils.shifter import *
+from romtools.trial_space.utils.scaler import *
+from romtools.trial_space.utils.splitter import *
+from romtools.trial_space.utils.orthogonalizer import *
 
 class TrialSpace(abc.ABC):
     '''
