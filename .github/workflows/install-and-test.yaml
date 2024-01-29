@@ -2,9 +2,11 @@ name: Install and test romtools
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
   pull_request:
-    branches: [develop]
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ github.ref }}-${{ github.workflow }}

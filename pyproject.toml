@@ -9,8 +9,9 @@ requires-python = ">=3.8"
 dependencies = [
     'docutils', 'importlib-metadata',
     'numpy', 'scipy', 'matplotlib', 'pdoc',
-    'pytest', 'pytest-mpi>=0.6', 'pytest-timeout'
+    'pytest==7.4.4', 'pytest-mpi>=0.6', 'pytest-timeout'
 ]
+# using pytest>=8.0.0 causes CI failures (likely compatibility issues with pytest-mpi)
 
 [tool.setuptools.dynamic]
 version = {file = "version.txt"}
