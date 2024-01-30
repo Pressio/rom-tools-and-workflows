@@ -248,6 +248,21 @@ class HomogeneousParameterSpace(HeterogeneousParameterSpace):
         super().__init__(parameters)
 
 
+class EmptyParameterSpace(ParameterSpace):
+    '''
+    Empty parameter space that is useful for initializations
+    '''
+    def get_names(self) -> list:
+        return []
+
+    def get_dimensionality(self) -> int:
+        return 0
+
+    def generate_samples(self, uniform_dist_samples: np.array):
+        number_of_samples = uniform_dist_samples.shape[0]
+        return np.empty(shape=(number_of_samples, 0))
+
+
 class UniformParameterSpace(HomogeneousParameterSpace):
     '''
     Homogeneous parameter space in which every parameter is a UniformParameter

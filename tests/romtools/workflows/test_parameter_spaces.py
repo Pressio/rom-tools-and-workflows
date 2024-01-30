@@ -1,6 +1,7 @@
 import numpy as np
 from romtools.workflows.parameter_spaces import UniformParameter
 from romtools.workflows.parameter_spaces import StringParameter
+from romtools.workflows.parameter_spaces import EmptyParameterSpace
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
@@ -46,6 +47,16 @@ def test_string_parameter():
     s = param.generate_samples(germ)
     assert s.shape == germ.shape
     assert (s == [['p1val', 'p1val', 'p1val']]).all()
+
+
+def test_empty_param_space():
+    param_space = EmptyParameterSpace()
+    assert param_space.get_names() == []
+    assert param_space.get_dimensionality() == 0
+    germ = np.random.uniform(size=(3, 0))
+    s = param_space.generate_samples(germ)
+    print(s.shape)
+    assert s.shape == (3, 0)
 
 
 def test_uniform_param_space():
