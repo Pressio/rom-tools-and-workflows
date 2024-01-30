@@ -49,8 +49,8 @@ $\\boldsymbol \\mu$ is the parameter set.
 The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
-import numpy as np
 from typing import Iterable
+import numpy as np
 from scipy.stats import qmc
 
 
