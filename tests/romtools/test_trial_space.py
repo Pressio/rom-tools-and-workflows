@@ -12,12 +12,6 @@ import romtools.trial_space.utils as utils
 #    assert matrix.shape[0] == 15
 #    assert matrix.shape[1] == 7
 
-
-# def tensor_to_matrix(tensor_input):
-#     return tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
-#                                 tensor_input.shape[2])
-
-
 @pytest.mark.mpi_skip
 def test_dictionary_trial_space():
     snapshots = np.random.normal(size=(3, 8, 6))
