@@ -46,7 +46,7 @@
 '''
 ___
 ##**Notes**
-The vector defining the affine offset for a linear subspace is viewed as a matrix of shape 
+The vector defining the affine offset for a linear subspace is viewed as a matrix of shape
 $$\\mathbf{u}_{\\mathrm{shift}} \in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\mathrm{x}} }$$
 
 ___
@@ -77,12 +77,18 @@ class Shifter(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __call__(self, my_array: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def apply_shift(self, my_array: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         '''
         Overload to apply shift
         '''
         pass
 
+    @abc.abstractmethod
+    def remove_shift(self, my_array: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        '''
+        Overload to remove shift
+        '''
+        pass
 
 class NoOpShifter(Shifter):
     '''
@@ -91,9 +97,17 @@ class NoOpShifter(Shifter):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray):
-        shift_vector = np.zeros((my_array.shape[0],my_array.shape[1]))
-        return my_array, shift_vector
+    def apply_shift(self,my_array: np.ndarray):
+        self.__shift_vector = np.zeros((my_array.shape[0],my_array.shape[1]))
+        self.__original_matrix = my_array
+        return my_array, self.__shift_vector
+
+    def remove_shift(self,my_array: np.ndarray):
+        try:
+            return self.__original_matrix, self.__shift_vector
+        except AttributeError:
+            print("Warning: Must call apply_shift before remove_shift.")
+            return my_array, None
 
 
 class ConstantShifter(Shifter):
@@ -109,7 +123,7 @@ class ConstantShifter(Shifter):
         '''
         self.__shift_value = shift_value
 
-    def __call__(self, my_array: np.ndarray):
+    def apply_shift(self, my_array: np.ndarray):
         '''
         Shifts the data by a constant value.
 
@@ -119,12 +133,28 @@ class ConstantShifter(Shifter):
         Returns:
             Tuple[np.ndarray, np.ndarray]: A tuple containing the shifted data and the shift vector.
         '''
-        shift_vector = np.empty((my_array.shape[0], my_array.shape[1],))
+        self.__shift_vector = np.empty((my_array.shape[0], my_array.shape[1],))
+        self.__original_matrix = my_array
         assert my_array.shape[0] == self.__shift_value.size
         for i in range(0, my_array.shape[0]):
-            shift_vector[i] = self.__shift_value[i]
-        return my_array-shift_vector[:, :, None], shift_vector
+            self.__shift_vector[i] = self.__shift_value[i]
+        return my_array-self.__shift_vector[:, :, None], self.__shift_vector
 
+    def remove_shift(self, my_array: np.ndarray):
+        '''
+        Shifts the data by a constant value.
+
+        Args:
+            my_array (np.ndarray): The shifted data array.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: A tuple containing the unshifted data and the shift vector.
+        '''
+        try:
+            return self.__original_matrix, self.__shift_vector
+        except AttributeError:
+            print("Warning: Must call apply_shift before remove_shift.")
+            return my_array, None
 
 class VectorShifter(Shifter):
     '''
@@ -139,8 +169,16 @@ class VectorShifter(Shifter):
         '''
         self.__shift_vector = shift_vector
 
-    def __call__(self, my_array: np.ndarray):
+    def apply_shift(self, my_array: np.ndarray):
+        self.__original_matrix = my_array
         return my_array-self.__shift_vector[..., None], self.__shift_vector
+
+    def remove_shift(self, my_array: np.ndarray):
+        try:
+            return self.__original_matrix, self.__shift_vector
+        except AttributeError:
+            print("Warning: Must call apply_shift before remove_shift.")
+            return my_array, None
 
 
 class AverageShifter(Shifter):
@@ -150,9 +188,17 @@ class AverageShifter(Shifter):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray):
-        shift_vector = np.mean(my_array, axis=2)
-        return my_array-shift_vector[:, :, None], shift_vector
+    def apply_shift(self, my_array: np.ndarray):
+        self.__shift_vector = np.mean(my_array, axis=2)
+        self.__original_matrix = my_array
+        return my_array-self.__shift_vector[:, :, None], self.__shift_vector
+
+    def remove_shift(self, my_array: np.ndarray):
+        try:
+            return self.__original_matrix, self.__shift_vector
+        except AttributeError:
+            print("Warning: Must call apply_shift before remove_shift.")
+            return my_array, None
 
 
 class FirstVecShifter(Shifter):
@@ -162,7 +208,7 @@ class FirstVecShifter(Shifter):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray):
+    def apply_shift(self, my_array: np.ndarray):
         '''
         Shifts the data by the first vector of a data matrix.
 
@@ -172,5 +218,22 @@ class FirstVecShifter(Shifter):
         Returns:
             Tuple[np.ndarray, np.ndarray]: A tuple containing the shifted data and the shift vector.
         '''
-        shift_vector = my_array[:, :, 0]
-        return my_array[:, :, 1::]-shift_vector[:, :, None], shift_vector
+        self.__shift_vector = my_array[:, :, 0]
+        self.__original_matrix = my_array
+        return my_array[:, :, 1::]-self.__shift_vector[:, :, None], self.__shift_vector
+
+    def remove_shift(self, my_array: np.ndarray):
+        '''
+        Shifts the data by the first vector of the original data matrix.
+
+        Args:
+            my_array (np.ndarray): The shifted data array.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: A tuple containing the unshifted data and the shift vector.
+        '''
+        try:
+            return self.__original_matrix, self.__shift_vector
+        except AttributeError:
+            print("Warning: Must call apply_shift before remove_shift.")
+            return my_array, None
