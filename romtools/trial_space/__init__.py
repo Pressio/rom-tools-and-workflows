@@ -82,12 +82,7 @@ We currently provide the following concrete classes:
 
 - `TrialSpaceFromScaledPOD`: POD trial space computed via scaled SVD.
 
-which derive from the abstract class `TrialSpace`. Additionally, we provide two helpers free-functions:
-
-- `tensor_to_matrix`: converts a tensor with shape $[N, M, P]$ to a matrix
-    representation in which the first two dimension are collapsed $[N M, P]$
-
-- `matrix_to_tensor`: inverse operation of `tensor_to_matrix`
+which derive from the abstract class `TrialSpace`.
 
 ---
 ##**API**
@@ -95,11 +90,7 @@ which derive from the abstract class `TrialSpace`. Additionally, we provide two 
 
 import abc
 import numpy as np
-from romtools.trial_space.utils.truncater import *
-from romtools.trial_space.utils.shifter import *
-from romtools.trial_space.utils.scaler import *
-from romtools.trial_space.utils.splitter import *
-from romtools.trial_space.utils.orthogonalizer import *
+from romtools.trial_space.utils import *
 
 class TrialSpace(abc.ABC):
     '''
@@ -127,7 +118,7 @@ class TrialSpace(abc.ABC):
         Retrieves the shift vector of the trial space.
 
         Returns:
-            `np.ndarray`: The shift vector in tensorm form.
+            `np.ndarray`: The shift vector in tensor form.
 
         Concrete subclasses should implement this method to return the shift
         vector specific to their trial space implementation.
@@ -251,7 +242,7 @@ class TrialSpaceFromPOD(TrialSpace):
 
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        snapshot_matrix = utils.tensor_to_matrix(shifted_snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
@@ -327,14 +318,14 @@ class TrialSpaceFromScaledPOD(TrialSpace):
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
-        snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+        snapshot_matrix = utils.tensor_to_matrix(scaled_shifted_snapshots)
         snapshot_matrix = splitter(snapshot_matrix)
 
         lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
         self.__basis = truncater(lsv, svals)
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
-        self.__basis = tensor_to_matrix(self.__basis)
+        self.__basis = utils.tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
@@ -356,23 +347,3 @@ class TrialSpaceFromScaledPOD(TrialSpace):
         Concrete implementation of `TrialSpace.get_basis()`
         '''
         return self.__basis
-
-
-def tensor_to_matrix(tensor_input):
-    '''
-    Converts a tensor with shape $[N, M, P]$ to a matrix representation
-    in which the first two dimension are collapsed $[N M, P]$.
-    '''
-    output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
-                                         tensor_input.shape[2])
-    return output_tensor
-
-
-def matrix_to_tensor(n_var, matrix_input):
-    '''
-    Inverse operation of `tensor_to_matrix`
-    '''
-    d1 = int(matrix_input.shape[0] / n_var)
-    d2 = matrix_input.shape[1]
-    output_matrix = matrix_input.reshape(n_var, d1, d2)
-    return output_matrix

@@ -53,3 +53,24 @@ from romtools.trial_space.utils.orthogonalizer import *
 from romtools.trial_space.utils.splitter import *
 from romtools.trial_space.utils.truncater import *
 from romtools.trial_space.utils.svd_method_of_snapshots import *
+
+def tensor_to_matrix(tensor_input):
+    '''
+    @private
+    Converts a tensor with shape $[N, M, P]$ to a matrix representation
+    in which the first two dimension are collapsed $[N M, P]$.
+    '''
+    output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
+                                         tensor_input.shape[2])
+    return output_tensor
+
+
+def matrix_to_tensor(n_var, matrix_input):
+    '''
+    @private
+    Inverse operation of `__tensor_to_matrix`
+    '''
+    d1 = int(matrix_input.shape[0] / n_var)
+    d2 = matrix_input.shape[1]
+    output_matrix = matrix_input.reshape(n_var, d1, d2)
+    return output_matrix
