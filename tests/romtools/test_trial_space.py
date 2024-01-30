@@ -4,6 +4,8 @@ import numpy as np
 import romtools as rt
 import romtools.trial_space.utils as utils
 
+
+
 #@pytest.mark.mpi_skip
 #def test_list_snapshots_to_array():
 #    snapshots = np.random.normal(size=(15,7))
