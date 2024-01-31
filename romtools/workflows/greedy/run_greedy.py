@@ -88,6 +88,7 @@ import numpy as np
 
 from romtools.workflows.greedy.\
     greedy_coupler_base import GreedyCouplerBase
+from romtools.workflows.parameter_spaces import monte_carlo_sample
 
 
 def run_fom_sample(coupler: GreedyCouplerBase,
@@ -128,7 +129,7 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
 
     # create parameter domain
     parameter_space = greedy_coupler.get_parameter_space()
-    parameter_samples = parameter_space.generate_samples(testing_sample_size)
+    parameter_samples = monte_carlo_sample(parameter_space, testing_sample_size)
 
     # Make FOM/ROM directories
     greedy_coupler.create_fom_and_rom_cases(starting_sample_index,
@@ -239,7 +240,7 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
         basis_time += time.time() - t0
 
         # Add a new sample
-        new_parameter_sample = parameter_space.generate_samples(1)
+        new_parameter_sample = monte_carlo_sample(parameter_space, 1)
         parameter_samples = np.append(parameter_samples,
                                       new_parameter_sample, axis=0)
         new_sample_number = testing_sample_size + outer_loop_counter - 1
