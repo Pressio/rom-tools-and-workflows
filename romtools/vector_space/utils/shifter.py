@@ -53,7 +53,7 @@ ___
 ##**Theory**
 
 *What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
-trial space,
+vector space,
 $$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where
 $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) $. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.

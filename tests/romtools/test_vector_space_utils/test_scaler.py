@@ -2,7 +2,7 @@ import copy
 import pytest
 import numpy as np
 import scipy.sparse
-from romtools.trial_space.utils.scaler import *
+from romtools.vector_space.utils.scaler import *
 
 
 @pytest.mark.mpi_skip

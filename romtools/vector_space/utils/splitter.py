@@ -44,10 +44,10 @@
 #
 
 '''
-The Splitter class is used to "split" a snapshot matrix before constructing the trial space.
+The Splitter class is used to "split" a snapshot matrix before constructing the vector space.
 
-*What do we mean by splitting a trial space, and why do it?*
-Trial space splitting can be important for vector-valued equations where there are multiple state variables. As an
+*What do we mean by splitting a vector space, and why do it?*
+Vector space splitting can be important for vector-valued equations where there are multiple state variables. As an
 example, we could consider the compressible Euler equations in one dimension in which case the spatially continuous
 (conserved) variable set is
 $$\\boldsymbol u(x) = \\begin{bmatrix} \\rho(x) &  \\rho u (x)& \\rho E(x) \\end{bmatrix}^T.$$

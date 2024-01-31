@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from romtools.trial_space.utils.shifter import *
+from romtools.vector_space.utils.shifter import *
 
 
 @pytest.mark.mpi_skip
