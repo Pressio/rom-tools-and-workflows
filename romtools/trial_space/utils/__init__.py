@@ -54,7 +54,7 @@ from romtools.trial_space.utils.splitter import *
 from romtools.trial_space.utils.truncater import *
 from romtools.trial_space.utils.svd_method_of_snapshots import *
 
-def tensor_to_matrix(tensor_input):
+def tensor_to_matrix_impl(tensor_input):
     '''
     @private
     Converts a tensor with shape $[N, M, P]$ to a matrix representation
@@ -65,7 +65,7 @@ def tensor_to_matrix(tensor_input):
     return output_tensor
 
 
-def matrix_to_tensor(n_var, matrix_input):
+def matrix_to_tensor_impl(n_var, matrix_input):
     '''
     @private
     Inverse operation of `__tensor_to_matrix`
