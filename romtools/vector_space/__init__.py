@@ -82,12 +82,7 @@ We currently provide the following concrete classes:
 
 - `VectorSpaceFromScaledPOD`: construct a vector subspace computed via scaled SVD.
 
-which derive from the abstract class `VectorSpace`. Additionally, we provide two helpers free-functions:
-
-- `tensor_to_matrix`: converts a tensor with shape $[N, M, P]$ to a matrix
-    representation in which the first two dimension are collapsed $[N M, P]$
-
-- `matrix_to_tensor`: inverse operation of `tensor_to_matrix`
+which derive from the abstract class `VectorSpace`. 
 
 ---
 ##**API**
@@ -176,10 +171,10 @@ class DictionaryVectorSpace(VectorSpace):
         # compute basis
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        snapshot_matrix = _tensor_to_matrix(shifted_snapshots)
         self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):
@@ -251,7 +246,7 @@ class VectorSpaceFromPOD(VectorSpace):
 
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        snapshot_matrix = _tensor_to_matrix(shifted_snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
@@ -260,7 +255,7 @@ class VectorSpaceFromPOD(VectorSpace):
 
         self.__basis = truncater(lsv, svals)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):
@@ -327,16 +322,16 @@ class VectorSpaceFromScaledPOD(VectorSpace):
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
         scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
-        snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+        snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
         snapshot_matrix = splitter(snapshot_matrix)
 
         lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
         self.__basis = truncater(lsv, svals)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
-        self.__basis = tensor_to_matrix(self.__basis)
+        self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
     def get_dimension(self):
@@ -358,7 +353,7 @@ class VectorSpaceFromScaledPOD(VectorSpace):
         return self.__basis
 
 
-def tensor_to_matrix(tensor_input):
+def _tensor_to_matrix(tensor_input):
     '''
     Converts a tensor with shape $[N, M, P]$ to a matrix representation
     in which the first two dimension are collapsed $[N M, P]$.
@@ -368,9 +363,9 @@ def tensor_to_matrix(tensor_input):
     return output_tensor
 
 
-def matrix_to_tensor(n_var, matrix_input):
+def _matrix_to_tensor(n_var, matrix_input):
     '''
-    Inverse operation of `tensor_to_matrix`
+    Inverse operation of `_tensor_to_matrix`
     '''
     d1 = int(matrix_input.shape[0] / n_var)
     d2 = matrix_input.shape[1]

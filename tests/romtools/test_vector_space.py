@@ -15,7 +15,7 @@ import romtools.vector_space.utils as utils
 #    assert matrix.shape[1] == 7
 
 
-def tensor_to_matrix(tensor_input):
+def _tensor_to_matrix(tensor_input):
     return tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                 tensor_input.shape[2])
 
@@ -74,7 +74,7 @@ def test_dictionary_vector_space():
                        np.mean(snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 12)
     basis = my_vector_space.get_basis()
-    basis = tensor_to_matrix(basis)
+    basis = _tensor_to_matrix(basis)
     assert np.allclose(basis.transpose() @ basis, np.eye(12))
 
 
@@ -91,7 +91,7 @@ def test_vector_space_from_pod():
                                           my_splitter,
                                           my_orthogonalizer)
     # truth vector space
-    snapshotMatrix = tensor_to_matrix(snapshots)
+    snapshotMatrix = _tensor_to_matrix(snapshots)
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
@@ -164,7 +164,7 @@ def test_vector_space_from_scaled_pod():
                                                 my_splitter,
                                                 my_orthogonalizer)
     scaled_snapshots = my_scaler.pre_scaling(snapshots)
-    snapshotMatrix = tensor_to_matrix(scaled_snapshots)
+    snapshotMatrix = _tensor_to_matrix(scaled_snapshots)
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     u = u.reshape(basis_tensor.shape)
@@ -189,7 +189,7 @@ def test_vector_space_from_scaled_pod():
     shifted_snapshots, shift_vector = my_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
-    snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+    snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     u = u.reshape(basis_tensor.shape)
@@ -214,7 +214,7 @@ def test_vector_space_from_scaled_pod():
     shifted_snapshots, _ = my_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
-    snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+    snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
@@ -241,7 +241,7 @@ def test_vector_space_from_scaled_pod():
     shifted_snapshots, shift_vector = my_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
-    snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+    snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     ushp = u.shape
