@@ -46,7 +46,7 @@
 import os
 import math
 import numpy as np
-from romtools.trial_space import TrialSpace
+from romtools.vector_space import VectorSpace
 
 try:
     import exodus
@@ -59,56 +59,56 @@ except ImportError:
     pass
 
 
-def npz_output(filename: str, trial_space: TrialSpace, compress=True) -> None:
+def npz_output(filename: str, vector_space: VectorSpace, compress=True) -> None:
     '''
-    Save trial space information to a compressed or uncompressed NumPy .npz file.
+    Save vector space information to a compressed or uncompressed NumPy .npz file.
 
     Args:
         filename (str): The name of the output file.
-        trial_space (TrialSpace): The trial space containing shift and basis information.
+        vector_space (VectorSpace): The vector space containing shift and basis information.
         compress (bool, optional): Whether to compress the output file (default is True).
 
     Example:
-        npz_output("trial_space.npz", my_trial_space)
+        npz_output("vector_space.npz", my_vector_space)
     '''
     if compress:
         np.savez_compressed(filename,
-                            shift=trial_space.get_shift_vector(),
-                            basis=trial_space.get_basis())
+                            shift=vector_space.get_shift_vector(),
+                            basis=vector_space.get_basis())
     else:
         np.savez(filename,
-                 shift=trial_space.get_shift_vector(),
-                 basis=trial_space.get_basis())
+                 shift=vector_space.get_shift_vector(),
+                 basis=vector_space.get_basis())
 
 
-def hdf5_output(output_filename: str, trial_space: TrialSpace) -> None:
+def hdf5_output(output_filename: str, vector_space: VectorSpace) -> None:
     '''
-    Save trial space information to an HDF5 file.
+    Save vector space information to an HDF5 file.
 
     Args:
         output_filename (str): The name of the output HDF5 file.
-        trial_space (TrialSpace): The trial space containing shift and basis information.
+        vector_space (VectorSpace): The vector space containing shift and basis information.
 
     Example:
-        hdf5_output("trial_space.h5", my_trial_space)
+        hdf5_output("vector_space.h5", my_vector_space)
     '''
     with h5py.File(output_filename, 'w') as f:
-        f.create_dataset('shift', data=trial_space.get_shift_vector())
-        f.create_dataset('basis', data=trial_space.get_basis())
+        f.create_dataset('shift', data=vector_space.get_shift_vector())
+        f.create_dataset('basis', data=vector_space.get_basis())
 
 
-def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: TrialSpace, var_names: list = None) -> None:
+def exodus_ouput(output_filename: str, mesh_filename: str, vector_space: VectorSpace, var_names: list = None) -> None:
     '''
-    Save trial space information to an Exodus file.
+    Save vector space information to an Exodus file.
 
     Args:
         output_filename (str): The name of the output Exodus file.
         mesh_filename (str): The name of the mesh file.
-        trial_space (TrialSpace): The trial space containing shift and basis information.
+        vector_space (VectorSpace): The vector space containing shift and basis information.
         var_names (list, optional): A list of variable names (default is None).
 
     Example:
-        exodus_output("trial_space.e", "mesh.exo", my_trial_space, var_names=["var1", "var2"])
+        exodus_output("vector_space.e", "mesh.exo", my_vector_space, var_names=["var1", "var2"])
     '''
     if os.path.isfile(output_filename):
         os.system(f'rm {output_filename}')
@@ -117,8 +117,8 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: TrialSpa
     e.close()
     e = exodus.exodus(output_filename, mode='a')
     num_nodes = e.num_nodes()
-    num_vars = trial_space.get_shift_vector().shape[0]
-    num_modes = trial_space.get_dimension()
+    num_vars = vector_space.get_shift_vector().shape[0]
+    num_modes = vector_space.get_dimension()
     num_modes_str_len = int(math.log10(num_modes))+1
 
     if var_names is None:
@@ -138,11 +138,11 @@ def exodus_ouput(output_filename: str, mesh_filename: str, trial_space: TrialSpa
     exodus.add_variables(e, nodal_vars=field_names)
 
     for i in range(num_vars):
-        shift = trial_space.get_shift_vector()[i, :]
+        shift = vector_space.get_shift_vector()[i, :]
         field_name = field_names[i*(num_modes+1)]
         e.put_node_variable_values(field_name, 1, shift)
 
-        basis = trial_space.get_basis()
+        basis = vector_space.get_basis()
         for j in range(num_modes):
             field_name = field_names[i*(num_modes+1) + j]
             e.put_node_variable_values(field_name, 1, basis[i, :, j])

@@ -35,14 +35,14 @@ class MyFakeSvd:
 
 
 @pytest.mark.mpi(min_size=3)
-def test_trial_space_from_pod_mpi():
+def test_vector_space_from_pod_mpi():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     if comm.Get_size() == 3:
         snaps = construct_snapshots(comm)
-        myTrialSpace = rt.TrialSpaceFromPOD(snaps, svdFnc=MyFakeSvd(comm))
-        U = myTrialSpace.get_basis()
-        k = myTrialSpace.get_dimension()
+        myVectorSpace = rt.VectorSpaceFromPOD(snaps, svdFnc=MyFakeSvd(comm))
+        U = myVectorSpace.get_basis()
+        k = myVectorSpace.get_dimension()
         if rank == 0:
             assert np.allclose(U, np.zeros((3, 3, 2)))
             assert np.allclose(2, k)
@@ -53,7 +53,7 @@ def test_trial_space_from_pod_mpi():
             assert np.allclose(U, np.ones((3, 3, 2))*2)
             assert np.allclose(2, k)
     else:
-        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_trial_space_from_pod_mpi", 3)
+        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_vector_space_from_pod_mpi", 3)
 
 if __name__ == "__main__":
-    test_trial_space_from_pod_mpi()
+    test_vector_space_from_pod_mpi()

@@ -44,9 +44,9 @@
 #
 
 '''
-This module defines the API to work with a trial space.
-A trial space is foundational to reduced-order models.
-In a ROM, a high-dimensional state is restricted to live within a low-dimensional trial space.
+This module defines the API to work with a vector subspace.
+A vector subspace is foundational to reduced-order models.
+In a ROM, a high-dimensional state is restricted to live within a low-dimensional vector space, known as a trial space.
 Mathematically, given a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}$, we can write
 $$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
 where
@@ -61,13 +61,13 @@ where $\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}
 $\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}$ is the shift vector (or affine offset),
 and, by definition, $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)$.
 
-The `TrialSpace` abstract class defined below encapsulates the information of an affine trial space, $\\mathcal{V}$,
-by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the trial space,
+The `VectorSpace` abstract class defined below encapsulates the information of an affine vector space, $\\mathcal{V}$,
+by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the vector space,
 while decoupling this representation from *how* it is computed.
 
 ####We rely on a tensor representation!
 
-Our representation of the basis and the affine offset for a trial space is based on tensors
+Our representation of the basis and the affine offset for a vector space is based on tensors
 $$\\mathcal{\Phi} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
 $$\\mathcal{u}_{\\mathrm{shift}} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
 Internally, we remark that all tensors are reshaped into 2D matrices, e.g., when performing SVD.
@@ -76,13 +76,13 @@ Internally, we remark that all tensors are reshaped into 2D matrices, e.g., when
 
 We currently provide the following concrete classes:
 
-- `DictionaryTrialSpace`: reduced basis trial space without truncation.
+- `DictionaryVectorSpace`: construct a vector space from a matrix without truncation.
 
-- `TrialSpaceFromPOD`: POD trial space computed via SVD.
+- `VectorSpaceFromPOD`: construct a vector subspace computed via SVD.
 
-- `TrialSpaceFromScaledPOD`: POD trial space computed via scaled SVD.
+- `VectorSpaceFromScaledPOD`: construct a vector subspace computed via scaled SVD.
 
-which derive from the abstract class `TrialSpace`. Additionally, we provide two helpers free-functions:
+which derive from the abstract class `VectorSpace`. Additionally, we provide two helpers free-functions:
 
 - `tensor_to_matrix`: converts a tensor with shape $[N, M, P]$ to a matrix
     representation in which the first two dimension are collapsed $[N M, P]$
@@ -95,15 +95,15 @@ which derive from the abstract class `TrialSpace`. Additionally, we provide two 
 
 import abc
 import numpy as np
-from romtools.trial_space.utils.truncater import *
-from romtools.trial_space.utils.shifter import *
-from romtools.trial_space.utils.scaler import *
-from romtools.trial_space.utils.splitter import *
-from romtools.trial_space.utils.orthogonalizer import *
+from romtools.vector_space.utils.truncater import *
+from romtools.vector_space.utils.shifter import *
+from romtools.vector_space.utils.scaler import *
+from romtools.vector_space.utils.splitter import *
+from romtools.vector_space.utils.orthogonalizer import *
 
-class TrialSpace(abc.ABC):
+class VectorSpace(abc.ABC):
     '''
-    Abstract base class for trial space implementations.
+    Abstract base class for vector space implementations.
 
     Methods:
     '''
@@ -111,46 +111,46 @@ class TrialSpace(abc.ABC):
     @abc.abstractmethod
     def get_dimension(self):
         '''
-        Retrieves the dimension of the trial space
+        Retrieves the dimension of the vector space
 
         Returns:
-            `int`: The dimension of the trial space.
+            `int`: The dimension of the vector space.
 
         Concrete subclasses should implement this method to return the
-        appropriate dimension for their specific trial space implementation.
+        appropriate dimension for their specific vector space implementation.
         '''
         pass
 
     @abc.abstractmethod
     def get_shift_vector(self):
         '''
-        Retrieves the shift vector of the trial space.
+        Retrieves the shift vector of the vector space.
 
         Returns:
             `np.ndarray`: The shift vector in tensorm form.
 
         Concrete subclasses should implement this method to return the shift
-        vector specific to their trial space implementation.
+        vector specific to their vector space implementation.
         '''
         pass
 
     @abc.abstractmethod
     def get_basis(self):
         '''
-        Retrieves the basis vectors of the trial space.
+        Retrieves the basis vectors of the vector space.
 
         Returns:
-            `np.ndarray`: The basis of the trial space in tensor form.
+            `np.ndarray`: The basis of the vector space in tensor form.
 
         Concrete subclasses should implement this method to return the basis
-        vectors specific to their trial space implementation.
+        vectors specific to their vector space implementation.
         '''
         pass
 
 
-class DictionaryTrialSpace(TrialSpace):
+class DictionaryVectorSpace(VectorSpace):
     '''
-    Reduced basis trial space (no truncation).
+    Reduced basis vector space (no truncation).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
 
@@ -169,7 +169,7 @@ class DictionaryTrialSpace(TrialSpace):
             splitter: Class that splitts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
-        This constructor initializes a trial space by performing basis
+        This constructor initializes a vector space by performing basis
         manipulation operations on the provided snapshot data.
         '''
 
@@ -184,26 +184,26 @@ class DictionaryTrialSpace(TrialSpace):
 
     def get_dimension(self):
         '''
-        Concrete implementation of `TrialSpace.get_dimension()`
+        Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
     def get_shift_vector(self):
         '''
-        Concrete implementation of `TrialSpace.get_shift_vector()`
+        Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
     def get_basis(self):
         '''
-        Concrete implementation of `TrialSpace.get_basis()`
+        Concrete implementation of `VectorSpace.get_basis()`
         '''
         return self.__basis
 
 
-class TrialSpaceFromPOD(TrialSpace):
+class VectorSpaceFromPOD(VectorSpace):
     '''
-    POD trial space (constructed via SVD).
+    POD vector space (constructed via SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
 
@@ -243,7 +243,7 @@ class TrialSpaceFromPOD(TrialSpace):
                     example when your snapshots are distributed with MPI, or
                     maybe you have a fancy svd function that you can use.
 
-        This constructor initializes a POD trial space by performing SVD on
+        This constructor initializes a POD vector space by performing SVD on
         the provided snapshot data and applying various basis manipulation
         operations, including truncation, shifting, splitting, and
         orthogonalization.
@@ -265,26 +265,26 @@ class TrialSpaceFromPOD(TrialSpace):
 
     def get_dimension(self):
         '''
-        Concrete implementation of `TrialSpace.get_dimension()`
+        Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
     def get_shift_vector(self):
         '''
-        Concrete implementation of `TrialSpace.get_shift_vector()`
+        Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
     def get_basis(self):
         '''
-        Concrete implementation of `TrialSpace.get_basis()`
+        Concrete implementation of `VectorSpace.get_basis()`
         '''
         return self.__basis
 
 
-class TrialSpaceFromScaledPOD(TrialSpace):
+class VectorSpaceFromScaledPOD(VectorSpace):
     '''
-    POD trial space (constructed via scaled SVD).
+    POD vector space (constructed via scaled SVD).
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
 
@@ -317,7 +317,7 @@ class TrialSpaceFromScaledPOD(TrialSpace):
             splitter: Class that splits the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
-        This constructor initializes a POD trial space by performing SVD on
+        This constructor initializes a POD vector space by performing SVD on
         the provided snapshot data and applying various basis manipulation
         operations, including scaling, shifting, truncation, splitting, and
         orthogonalization.
@@ -341,19 +341,19 @@ class TrialSpaceFromScaledPOD(TrialSpace):
 
     def get_dimension(self):
         '''
-        Concrete implementation of `TrialSpace.get_dimension()`
+        Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
     def get_shift_vector(self):
         '''
-        Concrete implementation of `TrialSpace.get_shift_vector()`
+        Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
     def get_basis(self):
         '''
-        Concrete implementation of `TrialSpace.get_basis()`
+        Concrete implementation of `VectorSpace.get_basis()`
         '''
         return self.__basis
 

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import romtools.trial_space.utils as utils
+import romtools.vector_space.utils as utils
 from helper_scripts import helpers
 
 try:

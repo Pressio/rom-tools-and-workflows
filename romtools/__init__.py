@@ -60,7 +60,7 @@ The Python library, called `romtools`, contains abstract interfaces and function
 
 - Constructing parameter spaces
 
-- Constructing trial spaces
+- Constructing vector subspaces
   - Reduced-basis methods
   - Proper orthogonal decomposition
     - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
@@ -84,9 +84,9 @@ TBD
 ```
 '''
 
-__all__ = ['trial_space', 'workflows', 'hyper_reduction']
+__all__ = ['vector_space', 'workflows', 'hyper_reduction']
 
 __docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.trial_space import *
+from romtools.vector_space import *
 from romtools.hyper_reduction import *
