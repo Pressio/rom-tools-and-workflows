@@ -116,7 +116,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, vector_space: VectorS
     e = exodus.copy_mesh(mesh_filename, output_filename)
     e.close()
     e = exodus.exodus(output_filename, mode='a')
-    num_nodes = e.num_nodes()
+
     num_vars = vector_space.get_shift_vector().shape[0]
     num_modes = vector_space.get_dimension()
     num_modes_str_len = int(math.log10(num_modes))+1
@@ -144,7 +144,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, vector_space: VectorS
 
         basis = vector_space.get_basis()
         for j in range(num_modes):
-            field_name = field_names[i*(num_modes+1) + j]
+            field_name = field_names[i*(num_modes+1) + j + 1]
             e.put_node_variable_values(field_name, 1, basis[i, :, j])
 
     e.close()
