@@ -75,7 +75,7 @@ class NoOpOrthogonalizer(Orthogonalizer):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray):
+    def __call__(self, my_array: np.ndarray) -> np.ndarray:
         return my_array
 
 
@@ -85,7 +85,7 @@ class EuclideanL2Orthogonalizer(Orthogonalizer):
     the output basis will satisfy
     $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
     '''
-    def __init__(self, qrFnc=None):
+    def __init__(self, qrFnc=None) -> None:
         '''
         Constructor
         Args:
@@ -99,7 +99,7 @@ class EuclideanL2Orthogonalizer(Orthogonalizer):
         '''
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
-    def __call__(self, my_array: np.ndarray):
+    def __call__(self, my_array: np.ndarray) -> np.ndarray:
         my_array, _ = self.__qr_picked(my_array, mode='reduced')
         return my_array
 
@@ -112,7 +112,7 @@ class EuclideanVectorWeightedL2Orthogonalizer(Orthogonalizer):
     where $\\mathbf{w}$ is the weighting vector. Typically, this inner product
     is used for orthogonalizing with respect to cell volumes
     '''
-    def __init__(self, weighting_vector: np.ndarray, qrFnc=None):
+    def __init__(self, weighting_vector: np.ndarray, qrFnc=None) -> None:
         '''
         Constructor for the EuclideanVectorWeightedL2Orthogonalizer that
         initializes the orthogonalizer with the provided weighting vector and
@@ -130,7 +130,7 @@ class EuclideanVectorWeightedL2Orthogonalizer(Orthogonalizer):
         self.__weighting_vector = weighting_vector
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
-    def __call__(self, my_array: np.ndarray):
+    def __call__(self, my_array: np.ndarray) -> np.ndarray:
         '''
         Orthogonalizes the input matrix using the specified weighting vector and returns the orthogonalized matrix.
 
