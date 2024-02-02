@@ -107,13 +107,13 @@ class NoOpScaler(Scaler):
     '''
     No op implementation
     '''
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def pre_scaling(self, data_tensor):
+    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         return data_tensor
 
-    def post_scaling(self, data_tensor):
+    def post_scaling(self, data_tensor) -> np.ndarray:
         return data_tensor
 
 
@@ -129,7 +129,7 @@ class VectorScaler(Scaler):
     **Note that scaling can cause bases to not be orthonormal; we do not
     recommend using scalers with the NoOpOrthonormalizer**
     '''
-    def __init__(self, scaling_vector):
+    def __init__(self, scaling_vector) -> None:
         '''
         Constructor for the VectorScaler.
 
@@ -143,7 +143,7 @@ class VectorScaler(Scaler):
         self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1./scaling_vector
 
-    def pre_scaling(self, data_tensor):
+    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the inverse of the scaling vector
         and returns the scaled matrix.
@@ -156,7 +156,7 @@ class VectorScaler(Scaler):
         '''
         return self.__scaling_vector_matrix_inv[None, :, None] * data_tensor
 
-    def post_scaling(self, data_tensor):
+    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the scaling vector and returns the
         scaled matrix.
@@ -186,7 +186,7 @@ class VariableScaler(Scaler):
       - variance: for the $i$th state variable $u_i$, we will compute the scaling as
         $s_i = \\mathrm{std}( S_i ) $, where $S_i$ denotes the snapshot matrix of the $i$th variable.
     '''
-    def __init__(self, scaling_type):
+    def __init__(self, scaling_type) -> None:
         '''
         Constructor for the VariableScaler.
 
@@ -201,7 +201,7 @@ class VariableScaler(Scaler):
         self.have_scales_been_initialized = False
         self.var_scales_ = None
 
-    def initialize_scalings(self, data_tensor):
+    def initialize_scalings(self, data_tensor: np.ndarray) -> None:
         '''
         Initializes the scaling factors for each state variable based on the
         specified method.
@@ -227,7 +227,7 @@ class VariableScaler(Scaler):
         self.have_scales_been_initialized = True
 
     # These are all inplace operations
-    def pre_scaling(self, data_tensor):
+    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix before processing, taking into account
         the previously initialized scaling factors.
@@ -248,7 +248,7 @@ class VariableScaler(Scaler):
             data_tensor[i] = data_tensor[i] / self.var_scales_[i]
         return data_tensor
 
-    def post_scaling(self, data_tensor):
+    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the scaling vector and returns the
         scaled matrix.
@@ -277,7 +277,7 @@ class VariableAndVectorScaler(Scaler):
     VectorScaler and VariableScaler classes.
     '''
 
-    def __init__(self, scaling_vector, scaling_type):
+    def __init__(self, scaling_vector, scaling_type) -> None:
         '''
         Constructor for the VariableAndVectorScaler.
 
@@ -293,7 +293,7 @@ class VariableAndVectorScaler(Scaler):
         self.__my_variable_scaler = VariableScaler(scaling_type)
         self.__my_vector_scaler = VectorScaler(scaling_vector)
 
-    def pre_scaling(self, data_tensor):
+    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix before processing, first using the
         `VariableScaler` and then the `VectorScaler`.
@@ -307,7 +307,7 @@ class VariableAndVectorScaler(Scaler):
         data_tensor = self.__my_variable_scaler.pre_scaling(data_tensor)
         return self.__my_vector_scaler.pre_scaling(data_tensor)
 
-    def post_scaling(self, data_tensor):
+    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix after processing, first using the
         `VectorScaler` and then the `VariableScaler`.
