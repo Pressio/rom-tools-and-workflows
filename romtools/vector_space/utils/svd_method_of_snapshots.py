@@ -42,72 +42,13 @@
 #
 # ************************************************************************
 #
-
+from typing import Any, Tuple
 import numpy as np
 
-
-## Helper functions will be moved to python mpi library at some point
-
-def A_transpose_dot_bImpl(A, b, comm):
-    '''
-    @private
-    Compute A^T A when A's columns are distributed
-    '''
-    mpi_rank = comm.Get_rank()
-    num_processes = comm.Get_size()
-
-    if num_processes == 1:
-        return np.dot(A.transpose(), b)
-
-    tmp = np.dot(A.transpose(), b)
-
-    data = comm.gather(tmp.flatten(), root=0)
-
-    ATb_glob = np.zeros(np.size(tmp))
-    if mpi_rank == 0:
-        for j in range(0, num_processes):
-            ATb_glob[:] += data[j]
-        for j in range(1, num_processes):
-            comm.Send(ATb_glob, dest=j)
-
-    else:
-        comm.Recv(ATb_glob, source=0)
-    return np.reshape(ATb_glob, np.shape(tmp))
-
-def svd_method_of_snapshots_impl(snapshots, comm):
-    '''@private'''
-    #
-    # outputs:
-    # modes, Phi: numpy array where each column is a POD mode
-    # energy, sigma: energy associated with each mode (singular values)
-
-    STS = A_transpose_dot_bImpl(snapshots, snapshots, comm)
-    Lam, E = np.linalg.eig(STS)
-    sigma = np.sqrt(Lam)
-    U = np.zeros(np.shape(snapshots))
-    U[:] = np.dot(snapshots, np.dot(E, np.diag(1./sigma)))
-    # sort by singular values
-    ordering = np.argsort(sigma)[::-1]
-    return U[:, ordering], sigma[ordering]
-
-def global_abs_sum_impl(r, comm):
-    '''@private'''
-    mpi_rank = comm.Get_rank()
-    num_processes = comm.Get_size()
-
-    if num_processes == 1:
-        return np.sum(r)
-
-    data = comm.gather(np.sum(np.abs(r)), root=0)
-    rn_glob = np.zeros(1)
-    if mpi_rank == 0:
-        for j in range(0, num_processes):
-            rn_glob[:] += data[j]
-        for j in range(1, num_processes):
-            comm.Send(rn_glob, dest=j)
-    else:
-        comm.Recv(rn_glob, source=0)
-    return rn_glob[0]
+try:
+    from mpi4py import MPI
+except ModuleNotFoundError:
+    print("module 'mpi4py' is not installed")
 
 
 class SvdMethodOfSnapshots:
@@ -138,11 +79,14 @@ class SvdMethodOfSnapshots:
     eigenvalue problem in serial.
     '''
 
-    def __init__(self, comm):
+    def __init__(self, comm: MPI.Commm) -> None:
         self._comm = comm
 
-    def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False, hermitian=False):
-        U, s = svd_method_of_snapshots_impl(snapshots, self._comm)
+    def __call__(self, snapshots: np.ndarray,
+                 full_matrices: bool = False,
+                 compute_uv: bool = False,
+                 hermitian: bool = False) -> Tuple[np.ndarray, np.ndarray, Any]:
+        U, s = _svd_method_of_snapshots_impl(snapshots, self._comm)
         return U, s, 'not_computed_in_method_of_snapshots'
 
 
@@ -151,9 +95,56 @@ class SvdMethodOfSnapshotsForQr:
     Same as SvdMethodOfSnapshots, but call only returns two arguments to be
     compatible with QR routine.
     '''
-    def __init__(self, comm):
+    def __init__(self, comm) -> None:
         self._comm = comm
 
-    def __call__(self, snapshots: np.ndarray, full_matrices=False, compute_uv=False, hermitian=False):
-        U, _ = svd_method_of_snapshots_impl(snapshots, self._comm)
+    def __call__(self, snapshots: np.ndarray,
+                 full_matrices: bool = False,
+                 compute_uv: bool = False,
+                 hermitian: bool = False) -> Tuple[np.ndarray, Any]:
+        U, _ = _svd_method_of_snapshots_impl(snapshots, self._comm)
         return U, 'not_computed_in_method_of_snapshots'
+
+
+# Helper functions will be moved to python mpi library at some point
+def _svd_method_of_snapshots_impl(snapshots: np.ndarray, comm: MPI.Commm) -> Tuple[np.ndarray, np.ndarray]:
+    '''
+    @private
+    outputs:
+        modes, Phi: numpy array where each column is a POD mode
+        energy, sigma: energy associated with each mode (singular values)
+    '''
+    gram_matrix = _A_transpose_dot_bImpl(snapshots, snapshots, comm)
+    eigenvalues, eigenvectors = np.linalg.eig(gram_matrix)
+    sigma = np.sqrt(eigenvalues)
+    modes = np.zeros(np.shape(snapshots))
+    modes[:] = np.dot(snapshots, np.dot(eigenvectors, np.diag(1./sigma)))
+    # sort by singular values
+    ordering = np.argsort(sigma)[::-1]
+    return modes[:, ordering], sigma[ordering]
+
+
+def _A_transpose_dot_bImpl(A: np.ndarray, b: np.ndarray, comm: MPI.Commm) -> np.ndarray:
+    '''
+    @private
+    Compute A^T A when A's columns are distributed
+    '''
+    mpi_rank = comm.Get_rank()
+    num_processes = comm.Get_size()
+
+    if num_processes == 1:
+        return np.dot(A.transpose(), b)
+
+    tmp = np.dot(A.transpose(), b)
+
+    data = comm.gather(tmp.flatten(), root=0)
+
+    result_global = np.zeros(np.size(tmp))
+    if mpi_rank == 0:
+        for j in range(0, num_processes):
+            result_global[:] += data[j]
+        for j in range(1, num_processes):
+            comm.Send(result_global, dest=j)
+    else:
+        comm.Recv(result_global, source=0)
+    return np.reshape(result_global, np.shape(tmp))
