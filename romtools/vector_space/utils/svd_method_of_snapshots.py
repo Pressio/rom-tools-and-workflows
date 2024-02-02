@@ -45,11 +45,6 @@
 from typing import Any, Tuple
 import numpy as np
 
-try:
-    from mpi4py import MPI
-except ModuleNotFoundError:
-    print("module 'mpi4py' is not installed")
-
 
 class SvdMethodOfSnapshots:
     '''
@@ -79,7 +74,7 @@ class SvdMethodOfSnapshots:
     eigenvalue problem in serial.
     '''
 
-    def __init__(self, comm: MPI.Commm) -> None:
+    def __init__(self, comm) -> None:
         self._comm = comm
 
     def __call__(self, snapshots: np.ndarray,
@@ -107,7 +102,7 @@ class SvdMethodOfSnapshotsForQr:
 
 
 # Helper functions will be moved to python mpi library at some point
-def _svd_method_of_snapshots_impl(snapshots: np.ndarray, comm: MPI.Commm) -> Tuple[np.ndarray, np.ndarray]:
+def _svd_method_of_snapshots_impl(snapshots: np.ndarray, comm) -> Tuple[np.ndarray, np.ndarray]:
     '''
     @private
     outputs:
@@ -124,7 +119,7 @@ def _svd_method_of_snapshots_impl(snapshots: np.ndarray, comm: MPI.Commm) -> Tup
     return modes[:, ordering], sigma[ordering]
 
 
-def _A_transpose_dot_bImpl(A: np.ndarray, b: np.ndarray, comm: MPI.Commm) -> np.ndarray:
+def _A_transpose_dot_bImpl(A: np.ndarray, b: np.ndarray, comm) -> np.ndarray:
     '''
     @private
     Compute A^T A when A's columns are distributed
