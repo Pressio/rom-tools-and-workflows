@@ -52,4 +52,3 @@ from romtools.vector_space.utils.scaler import *
 from romtools.vector_space.utils.orthogonalizer import *
 from romtools.vector_space.utils.splitter import *
 from romtools.vector_space.utils.truncater import *
-from romtools.vector_space.utils.svd_method_of_snapshots import *
