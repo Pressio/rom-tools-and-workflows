@@ -82,19 +82,21 @@ We currently provide the following concrete classes:
 
 - `VectorSpaceFromScaledPOD`: construct a vector subspace computed via scaled SVD.
 
-which derive from the abstract class `VectorSpace`. 
+which derive from the abstract class `VectorSpace`.
 
 ---
 ##**API**
 '''
 
 import abc
+from typing import Callable
 import numpy as np
-from romtools.vector_space.utils.truncater import *
-from romtools.vector_space.utils.shifter import *
-from romtools.vector_space.utils.scaler import *
-from romtools.vector_space.utils.splitter import *
-from romtools.vector_space.utils.orthogonalizer import *
+from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
+from romtools.vector_space.utils.shifter import Shifter, NoOpShifter
+from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
+from romtools.vector_space.utils.splitter import Splitter, NoOpSplitter
+from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
+
 
 class VectorSpace(abc.ABC):
     '''
@@ -104,7 +106,7 @@ class VectorSpace(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def get_dimension(self):
+    def get_dimension(self) -> int:
         '''
         Retrieves the dimension of the vector space
 
@@ -117,7 +119,7 @@ class VectorSpace(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_shift_vector(self):
+    def get_shift_vector(self) -> np.ndarray:
         '''
         Retrieves the shift vector of the vector space.
 
@@ -130,7 +132,7 @@ class VectorSpace(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_basis(self):
+    def get_basis(self) -> np.ndarray:
         '''
         Retrieves the basis vectors of the vector space.
 
@@ -154,12 +156,13 @@ class DictionaryVectorSpace(VectorSpace):
     where the orthogonalization, splitting, and shifts are defined by their
     respective classes
     '''
-    def __init__(self, snapshots, shifter, splitter, orthogonalizer):
+    def __init__(self, snapshots, shifter, splitter, orthogonalizer) -> None:
         '''
         Constructor.
 
         Args:
-            snapshots (np.ndarray): Snapshot data in tensor form $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+            snapshots (np.ndarray): Snapshot data in tensor form
+                $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
             shifter: Class that shifts the basis.
             splitter: Class that splitts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
@@ -177,19 +180,19 @@ class DictionaryVectorSpace(VectorSpace):
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def get_dimension(self):
+    def get_dimension(self) -> int:
         '''
         Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
-    def get_shift_vector(self):
+    def get_shift_vector(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
-    def get_basis(self):
+    def get_basis(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_basis()`
         '''
@@ -220,19 +223,21 @@ class VectorSpaceFromPOD(VectorSpace):
                  shifter:        Shifter        = NoOpShifter(),
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
-                 svdFnc = None):
+                 svdFnc:         Callable       = None) -> None:
         '''
         Constructor.
 
         Args:
-            snapshots (np.ndarray): Snapshot data in tensor form $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+            snapshots (np.ndarray): Snapshot data in tensor form
+                $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
             truncater (Truncater): Class that truncates the basis.
             shifter (Shifter): Class that shifts the basis.
             splitter (Splitter): Class that splits the basis.
             orthogonalizer (Orthogonalizer): Class that orthogonalizes
                 the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
-                IMPORTANT: must conform to the API of [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
+                IMPORTANT: must conform to the API of
+                [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
                 If `None`, internally we use `np.linalg.svd`.
                 Note: this is useful when you want to use a custom svd, for
                     example when your snapshots are distributed with MPI, or
@@ -258,19 +263,19 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def get_dimension(self):
+    def get_dimension(self) -> int:
         '''
         Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
-    def get_shift_vector(self):
+    def get_shift_vector(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
-    def get_basis(self):
+    def get_basis(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_basis()`
         '''
@@ -296,11 +301,11 @@ class VectorSpaceFromScaledPOD(VectorSpace):
     '''
 
     def __init__(self, snapshots,
-                 truncater: Truncater,
-                 shifter: Shifter,
-                 scaler: Scaler,
-                 splitter: Splitter,
-                 orthogonalizer: Orthogonalizer):
+                 truncater: Truncater = NoOpTruncater(),
+                 shifter: Shifter = NoOpShifter(),
+                 scaler: Scaler = NoOpScaler(),
+                 splitter: Splitter = NoOpSplitter(),
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer()) -> None:
         '''
         Constructor.
 
@@ -334,26 +339,26 @@ class VectorSpaceFromScaledPOD(VectorSpace):
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
 
-    def get_dimension(self):
+    def get_dimension(self) -> int:
         '''
         Concrete implementation of `VectorSpace.get_dimension()`
         '''
         return self.__dimension
 
-    def get_shift_vector(self):
+    def get_shift_vector(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_shift_vector()`
         '''
         return self.__shift_vector
 
-    def get_basis(self):
+    def get_basis(self) -> np.ndarray:
         '''
         Concrete implementation of `VectorSpace.get_basis()`
         '''
         return self.__basis
 
 
-def _tensor_to_matrix(tensor_input):
+def _tensor_to_matrix(tensor_input: np.ndarray) -> np.ndarray:
     '''
     Converts a tensor with shape $[N, M, P]$ to a matrix representation
     in which the first two dimension are collapsed $[N M, P]$.
@@ -363,7 +368,7 @@ def _tensor_to_matrix(tensor_input):
     return output_tensor
 
 
-def _matrix_to_tensor(n_var, matrix_input):
+def _matrix_to_tensor(n_var: int, matrix_input: np.ndarray) -> np.ndarray:
     '''
     Inverse operation of `_tensor_to_matrix`
     '''
