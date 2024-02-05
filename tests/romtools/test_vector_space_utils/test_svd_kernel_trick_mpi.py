@@ -4,7 +4,6 @@ import romtools.vector_space.utils as utils
 from helper_scripts import helpers
 
 try:
-    import mpi4py
     from mpi4py import MPI
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
@@ -32,30 +31,6 @@ def construct_full_data():
     myData = np.append(myDataOne, myDataTwo, axis=0)
     myData = np.append(myData, myDataThree, axis=0)
     return myData
-
-
-@pytest.mark.mpi(min_size=3)
-def test_parallel_kernel_trick_on_three_cores():
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    if comm.Get_size() == 3:
-        data = construct_distributed_data(comm)
-        data_full = construct_full_data()
-        U, sigma = utils.svd_method_of_snapshots_impl(data, comm)
-        Uf, sigmaf, _ = np.linalg.svd(data_full, full_matrices=False)
-
-        if rank == 0:
-            assert np.allclose(sigma, sigmaf)
-            # Use absolute value due to non-uniqueness of sign
-            assert np.allclose(np.abs(U), np.abs(Uf)[0:9])
-        if rank == 1:
-            assert np.allclose(sigma, sigmaf)
-            assert np.allclose(np.abs(U), np.abs(Uf)[9:24])
-        if rank == 2:
-            assert np.allclose(sigma, sigmaf)
-            assert np.allclose(np.abs(U), np.abs(Uf)[24::])
-    else:
-        helpers.mpi_skipped_test_mismatching_commsize(comm, "test_parallel_kernel_trick_on_three_cores", 3)
 
 
 @pytest.mark.mpi(min_size=3)
