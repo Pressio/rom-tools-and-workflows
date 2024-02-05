@@ -57,6 +57,7 @@ of basis vectors and the decay of the singular values
 
 from typing import Protocol
 import numpy as np
+import warnings
 
 
 class LeftSingularVectorTruncater(Protocol):
@@ -135,7 +136,7 @@ class EnergyBasedTruncater():
         Constructor for the EnergyTruncater class.
 
         Args:
-            threshold (float): The cumulative energy threshold.
+            threshold (float): The cumulative energy threshold. (Recommended: 0.99).
         '''
         self.__energy_threshold_ = threshold
 
