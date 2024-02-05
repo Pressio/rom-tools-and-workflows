@@ -228,7 +228,7 @@ class VectorSpaceFromPOD(VectorSpace):
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
                 $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
-            truncater (Truncater): Concrete implementation of the `Truncater` class for truncating the basis.
+            truncater (Truncater): Concrete implementation for truncating the basis.
             shifter (Shifter): Concrete implementation responsible for shifting the basis.
             splitter (Splitter): Concrete implementation that splits the basis.
             orthogonalizer (Orthogonalizer): Concrete implementation that orthogonalizes the basis.
