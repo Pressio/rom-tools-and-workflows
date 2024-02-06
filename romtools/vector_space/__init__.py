@@ -80,8 +80,6 @@ We currently provide the following concrete classes:
 
 - `VectorSpaceFromPOD`: construct a vector subspace computed via SVD.
 
-- `VectorSpaceFromScaledPOD`: construct a vector subspace computed via scaled SVD.
-
 which derive from the abstract class `VectorSpace`.
 
 ---
@@ -205,16 +203,15 @@ class VectorSpaceFromPOD(VectorSpace):
 
     Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
 
-    $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
-    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{truncate}( \\boldsymbol U ))$$
+
+    $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
+    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))$$
 
     where $\\boldsymbol U$ are the left singular vectors and the
-    orthogonalization, truncation, splitting, and shifts are defined
-    by their respective classes.
+    orthogonalization, truncation, scaling, splitting, and shifts are defined by their respective classes.
 
     For truncation, we enable truncation based on a fixed dimension or the
-    decay of singular values; please refer to the documentation for the
-    truncater.
+    decay of singular values; please refer to the documentation for the truncater.
     '''
 
     def __init__(self,
@@ -223,6 +220,7 @@ class VectorSpaceFromPOD(VectorSpace):
                  shifter:        Shifter        = NoOpShifter(),
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
+                 scaler:         Scaler         = NoOpScaler(),
                  svdFnc:         Callable       = None) -> None:
         '''
         Constructor.
@@ -230,11 +228,11 @@ class VectorSpaceFromPOD(VectorSpace):
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
                 $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
-            truncater (Truncater): Class that truncates the basis.
-            shifter (Shifter): Class that shifts the basis.
-            splitter (Splitter): Class that splits the basis.
-            orthogonalizer (Orthogonalizer): Class that orthogonalizes
-                the basis.
+            truncater (Truncater): Concrete implementation for truncating the basis.
+            shifter (Shifter): Concrete implementation responsible for shifting the basis.
+            splitter (Splitter): Concrete implementation that splits the basis.
+            orthogonalizer (Orthogonalizer): Concrete implementation that orthogonalizes the basis.
+            scaler: Concrete implementation that scales the basis.
             svdFnc: a callable to use for computing the SVD on the snapshots data.
                 IMPORTANT: must conform to the API of
                 [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).
@@ -243,94 +241,21 @@ class VectorSpaceFromPOD(VectorSpace):
                     example when your snapshots are distributed with MPI, or
                     maybe you have a fancy svd function that you can use.
 
-        This constructor initializes a POD vector space by performing SVD on
-        the provided snapshot data and applying various basis manipulation
-        operations, including truncation, shifting, splitting, and
-        orthogonalization.
+        This constructor initializes a POD vector space by performing SVD on the provided snapshot
+        data and applying various basis manipulation operations, including truncation, shifting, scaling,
+        splitting, and orthogonalization.
         '''
 
         n_var = snapshots.shape[0]
         shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = _tensor_to_matrix(shifted_snapshots)
+        scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
+        snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
         lsv, svals, _ = svd_picked(shifted_split_snapshots, full_matrices=False,
                                    compute_uv=True, hermitian=False)
 
-        self.__basis = truncater(lsv, svals)
-        self.__basis = orthogonalizer(self.__basis)
-        self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__dimension = self.__basis.shape[2]
-
-    def get_dimension(self) -> int:
-        '''
-        Concrete implementation of `VectorSpace.get_dimension()`
-        '''
-        return self.__dimension
-
-    def get_shift_vector(self) -> np.ndarray:
-        '''
-        Concrete implementation of `VectorSpace.get_shift_vector()`
-        '''
-        return self.__shift_vector
-
-    def get_basis(self) -> np.ndarray:
-        '''
-        Concrete implementation of `VectorSpace.get_basis()`
-        '''
-        return self.__basis
-
-
-class VectorSpaceFromScaledPOD(VectorSpace):
-    '''
-    POD vector space (constructed via scaled SVD).
-
-    Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
-
-    $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{split}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})))$$
-    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))$$
-
-    where $\\boldsymbol U$ are the left singular vectors and the
-    orthogonalization, truncation, splitting, and shifts are defined by their
-    respective classes.
-
-    For truncation, we enable truncation based on a fixed dimension or the
-    decay of singular values; please refer to the documentation for the
-    truncater.
-    '''
-
-    def __init__(self, snapshots,
-                 truncater: Truncater = NoOpTruncater(),
-                 shifter: Shifter = NoOpShifter(),
-                 scaler: Scaler = NoOpScaler(),
-                 splitter: Splitter = NoOpSplitter(),
-                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer()) -> None:
-        '''
-        Constructor.
-
-        Args:
-            snapshots (np.ndarray): Snapshot data in tensor form $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
-            truncater: Class that truncates the basis.
-            shifter: Class that shifts the basis.
-            scaler: Class that scales the basis.
-            splitter: Class that splits the basis.
-            orthogonalizer: Class that orthogonalizes the basis.
-
-        This constructor initializes a POD vector space by performing SVD on
-        the provided snapshot data and applying various basis manipulation
-        operations, including scaling, shifting, truncation, splitting, and
-        orthogonalization.
-        '''
-
-        # compute basis
-        n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
-        snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
-        snapshot_matrix = splitter(snapshot_matrix)
-
-        lsv, svals, _ = np.linalg.svd(snapshot_matrix, full_matrices=False)
         self.__basis = truncater(lsv, svals)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
