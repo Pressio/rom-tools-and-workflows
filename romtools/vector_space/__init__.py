@@ -171,12 +171,13 @@ class DictionaryVectorSpace(VectorSpace):
 
         # compute basis
         n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = _tensor_to_matrix(shifted_snapshots)
+        shifter.apply_shift()
+        snapshot_matrix = tensor_to_matrix(snapshots)
         self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
+        self.__shift_vector = shifter.get_shift_vector()
 
     def get_dimension(self) -> int:
         '''
@@ -216,8 +217,8 @@ class VectorSpaceFromPOD(VectorSpace):
 
     def __init__(self,
                  snapshots,
+                 shifter,
                  truncater:      Truncater      = NoOpTruncater(),
-                 shifter:        Shifter        = NoOpShifter(),
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler:         Scaler         = NoOpScaler(),
@@ -247,8 +248,8 @@ class VectorSpaceFromPOD(VectorSpace):
         '''
 
         n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter.apply_shift(snapshots)
-        snapshot_matrix = tensor_to_matrix(shifted_snapshots)
+        shifter.apply_shift()
+        snapshot_matrix = tensor_to_matrix(snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
@@ -259,6 +260,7 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
+        self.__shift_vector = shifter.get_shift_vector()
 
     def get_dimension(self):
         '''
@@ -298,8 +300,8 @@ class TrialSpaceFromScaledPOD(TrialSpace):
     '''
 
     def __init__(self, snapshots,
+                 shifter,
                  truncater: Truncater,
-                 shifter: Shifter,
                  scaler: Scaler,
                  splitter: Splitter,
                  orthogonalizer: Orthogonalizer):
@@ -322,8 +324,8 @@ class TrialSpaceFromScaledPOD(TrialSpace):
 
         # compute basis
         n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter.apply_shift(snapshots)
-        scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
+        shifter.apply_shift()
+        scaled_shifted_snapshots = scaler.pre_scaling(snapshots)
         snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
         snapshot_matrix = splitter(snapshot_matrix)
 
@@ -335,6 +337,7 @@ class TrialSpaceFromScaledPOD(TrialSpace):
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
+        self.__shift_vector = shifter.get_shift_vector()
 
     def get_dimension(self) -> int:
         '''
