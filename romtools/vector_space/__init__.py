@@ -90,7 +90,7 @@ import abc
 from typing import Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
-from romtools.vector_space.utils.shifter import *
+from romtools.vector_space.utils.shifter import _Shifter, create_noop_shifter
 from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.splitter import Splitter, NoOpSplitter
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
@@ -217,8 +217,8 @@ class VectorSpaceFromPOD(VectorSpace):
 
     def __init__(self,
                  snapshots,
-                 shifter,
                  truncater:      Truncater      = NoOpTruncater(),
+                 shifter:        _Shifter       = None,
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler:         Scaler         = NoOpScaler(),
@@ -246,7 +246,8 @@ class VectorSpaceFromPOD(VectorSpace):
         data and applying various basis manipulation operations, including truncation, shifting, scaling,
         splitting, and orthogonalization.
         '''
-
+        if shifter is None:
+            shifter = create_noop_shifter(snapshots)
         n_var = snapshots.shape[0]
         shifter.apply_shift(snapshots)
         scaled_shifted_snapshots = scaler.pre_scaling(snapshots)

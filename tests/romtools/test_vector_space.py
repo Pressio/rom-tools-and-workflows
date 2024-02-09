@@ -82,10 +82,9 @@ def test_dictionary_vector_space():
 def test_vector_space_from_pod():
     snapshots = np.random.normal(size=(3, 8, 6))
     original_snapshots = snapshots.copy()
-    my_shifter = utils.create_noop_shifter(snapshots)
-    my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter)
+    my_vector_space = rt.VectorSpaceFromPOD(snapshots)
     # truth vector space
-    snapshotMatrix = _tensor_to_matrix(snapshots)
+    snapshotMatrix = _tensor_to_matrix(original_snapshots)
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
@@ -97,13 +96,16 @@ def test_vector_space_from_pod():
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter)
     u, s, v = np.linalg.svd(snapshotMatrix - np.mean(snapshotMatrix, axis=1)[:, None], full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
-    assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
+    assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor) # FAILS
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 6)
 
     # test with a shift and splitting
-    my_shifter = utils.create_average_shifter(original_snapshots)
+    snapshots = np.random.normal(size=(3, 8, 6))
+    original_snapshots = snapshots.copy()
+    snapshotMatrix = _tensor_to_matrix(original_snapshots)
+    my_shifter = utils.create_average_shifter(snapshots)
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, splitter=my_splitter)
     u, s, v = np.linalg.svd(my_splitter(snapshotMatrix - np.mean(snapshotMatrix, axis=1)[:, None]), full_matrices=False)
@@ -114,7 +116,10 @@ def test_vector_space_from_pod():
     assert np.allclose(my_vector_space.get_dimension(), 12)
 
     # test with a shift, splitting, and orthogonalization
-    my_shifter = utils.create_average_shifter(original_snapshots)
+    snapshots = np.random.normal(size=(3, 8, 6))
+    original_snapshots = snapshots.copy()
+    snapshotMatrix = _tensor_to_matrix(original_snapshots)
+    my_shifter = utils.create_average_shifter(snapshots)
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     weighting = np.abs(np.random.normal(size=24))
     my_orthogonalizer = utils.EuclideanVectorWeightedL2Orthogonalizer(weighting)
@@ -131,9 +136,8 @@ def test_vector_space_from_pod():
 @pytest.mark.mpi_skip
 def test_trial_space_from_scaled_pod():
     snapshots = np.random.normal(size=(3, 8, 6))
-    my_shifter = utils.create_noop_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
-    my_vector_space = rt.VectorSpaceFromPOD(copy.deepcopy(snapshots), shifter=my_shifter, scaler=my_scaler)
+    my_vector_space = rt.VectorSpaceFromPOD(copy.deepcopy(snapshots), scaler=my_scaler)
     scaled_snapshots = my_scaler.pre_scaling(snapshots)
     snapshotMatrix = _tensor_to_matrix(scaled_snapshots)
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
@@ -146,31 +150,33 @@ def test_trial_space_from_scaled_pod():
 
     # test with a shift
     snapshots = np.random.normal(size=(3, 8, 6))
+    shifted_snapshots = snapshots.copy()
     original_snapshots = snapshots.copy()
     my_shifter = utils.create_average_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, scaler=my_scaler)
-    my_shifter.apply_shift(snapshots)
-    scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
+    my_shifter.apply_shift(shifted_snapshots)
+    scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
     snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     u = u.reshape(basis_tensor.shape)
     u = my_scaler.post_scaling(u)
-    assert np.allclose(basis_tensor, u)
-    assert np.allclose(my_vector_space.get_shift_vector(),+
+    assert np.allclose(basis_tensor, u) # FAILS
+    assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 6)
 
     # test with a shift and splitting
     snapshots = np.random.normal(size=(3, 8, 6))
+    shifted_snapshots = snapshots.copy()
     original_snapshots = snapshots.copy()
     my_scaler = utils.VariableScaler('max_abs')
     my_shifter = utils.create_average_shifter(snapshots)
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, splitter=my_splitter, scaler=my_scaler)
-    my_shifter.apply_shift(snapshots)
-    scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
+    my_shifter.apply_shift(shifted_snapshots)
+    scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
     snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
@@ -184,6 +190,7 @@ def test_trial_space_from_scaled_pod():
 
     # test with a shift, splitting, and orthogonalization
     snapshots = np.random.normal(size=(3, 8, 6))
+    shifted_snapshots = snapshots.copy()
     original_snapshots = snapshots.copy()
     my_scaler = utils.VariableScaler('max_abs')
     my_shifter = utils.create_average_shifter(snapshots)
@@ -191,9 +198,9 @@ def test_trial_space_from_scaled_pod():
     weighting = np.abs(np.random.normal(size=24))
     my_orthogonalizer = utils.EuclideanVectorWeightedL2Orthogonalizer(weighting)
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, splitter=my_splitter, scaler=my_scaler, orthogonalizer=my_orthogonalizer)
-    my_shifter.apply_shift(snapshots)
+    my_shifter.apply_shift(shifted_snapshots)
     my_scaler = utils.VariableScaler('max_abs')
-    scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
+    scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
     snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
