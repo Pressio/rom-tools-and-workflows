@@ -90,7 +90,7 @@ import abc
 from typing import Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
-from romtools.vector_space.utils.shifter import Shifter, NoOpShifter
+from romtools.vector_space.utils.shifter import *
 from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.splitter import Splitter, NoOpSplitter
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
@@ -171,8 +171,8 @@ class DictionaryVectorSpace(VectorSpace):
 
         # compute basis
         n_var = snapshots.shape[0]
-        shifter.apply_shift()
-        snapshot_matrix = tensor_to_matrix(snapshots)
+        shifter.apply_shift(snapshots)
+        snapshot_matrix = _tensor_to_matrix(snapshots)
         self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
@@ -248,8 +248,9 @@ class VectorSpaceFromPOD(VectorSpace):
         '''
 
         n_var = snapshots.shape[0]
-        shifter.apply_shift()
-        snapshot_matrix = tensor_to_matrix(snapshots)
+        shifter.apply_shift(snapshots)
+        scaled_shifted_snapshots = scaler.pre_scaling(snapshots)
+        snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
@@ -257,7 +258,7 @@ class VectorSpaceFromPOD(VectorSpace):
                                    compute_uv=True, hermitian=False)
 
         self.__basis = truncater(lsv, svals)
-        self.__basis = matrix_to_tensor(n_var, self.__basis)
+        self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer(self.__basis)

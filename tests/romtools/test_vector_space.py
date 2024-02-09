@@ -2,8 +2,7 @@ import copy
 import pytest
 import numpy as np
 import romtools as rt
-import romtools.trial_space.utils as utils
-
+import romtools.vector_space.utils as utils
 
 
 #@pytest.mark.mpi_skip
@@ -75,7 +74,7 @@ def test_dictionary_vector_space():
                        np.mean(snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 12)
     basis = my_vector_space.get_basis()
-    basis = tensor_to_matrix(basis)
+    basis = _tensor_to_matrix(basis)
     assert np.allclose(basis.transpose() @ basis, np.eye(12))
 
 
@@ -83,7 +82,8 @@ def test_dictionary_vector_space():
 def test_vector_space_from_pod():
     snapshots = np.random.normal(size=(3, 8, 6))
     original_snapshots = snapshots.copy()
-    my_vector_space = rt.VectorSpaceFromPOD(snapshots)
+    my_shifter = utils.create_noop_shifter(snapshots)
+    my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter)
     # truth vector space
     snapshotMatrix = _tensor_to_matrix(snapshots)
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
@@ -150,8 +150,8 @@ def test_trial_space_from_scaled_pod():
     my_shifter = utils.create_average_shifter(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, scaler=my_scaler)
-    shifted_snapshots, shift_vector = my_shifter(snapshots)
-    scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
+    my_shifter.apply_shift(snapshots)
+    scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
     snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
@@ -169,8 +169,8 @@ def test_trial_space_from_scaled_pod():
     my_shifter = utils.create_average_shifter(snapshots)
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, splitter=my_splitter, scaler=my_scaler)
-    shifted_snapshots, _ = my_shifter(snapshots)
-    scaled_shifted_snapshots = my_scaler.pre_scaling(shifted_snapshots)
+    my_shifter.apply_shift(snapshots)
+    scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
     snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
@@ -191,10 +191,10 @@ def test_trial_space_from_scaled_pod():
     weighting = np.abs(np.random.normal(size=24))
     my_orthogonalizer = utils.EuclideanVectorWeightedL2Orthogonalizer(weighting)
     my_vector_space = rt.VectorSpaceFromPOD(snapshots, shifter=my_shifter, splitter=my_splitter, scaler=my_scaler, orthogonalizer=my_orthogonalizer)
-    shifted_snapshots, shift_vector = my_shifter(snapshots)
+    my_shifter.apply_shift(snapshots)
     my_scaler = utils.VariableScaler('max_abs')
     scaled_shifted_snapshots = my_scaler.pre_scaling(snapshots)
-    snapshot_matrix = tensor_to_matrix(scaled_shifted_snapshots)
+    snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
     snapshot_matrix = my_splitter(snapshot_matrix)
     u, s, v = np.linalg.svd(snapshot_matrix, full_matrices=False)
     ushp = u.shape
