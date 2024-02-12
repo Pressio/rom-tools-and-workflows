@@ -21,7 +21,7 @@ def test_pressiolinalg_serial():
     assert(np_min == pla_min)
 
 # Functionality is tested in pressio-linalg; this is just checking that MPI works
-@pytest.mark.mpi(min_size=3)
+@pytest.mark.mpi
 def test_pressiolinalg_parallel():
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
