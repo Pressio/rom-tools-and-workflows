@@ -64,7 +64,7 @@ class Orthogonalizer(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __call__(self, my_array: np.ndarray) -> np.ndarray:
+    def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
         pass
 
 
@@ -75,7 +75,7 @@ class NoOpOrthogonalizer(Orthogonalizer):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray) -> np.ndarray:
+    def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
         return my_array
 
 
@@ -99,7 +99,7 @@ class EuclideanL2Orthogonalizer(Orthogonalizer):
         '''
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
-    def __call__(self, my_array: np.ndarray) -> np.ndarray:
+    def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
         my_array, _ = self.__qr_picked(my_array, mode='reduced')
         return my_array
 
@@ -130,7 +130,7 @@ class EuclideanVectorWeightedL2Orthogonalizer(Orthogonalizer):
         self.__weighting_vector = weighting_vector
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
-    def __call__(self, my_array: np.ndarray) -> np.ndarray:
+    def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
         '''
         Orthogonalizes the input matrix using the specified weighting vector and returns the orthogonalized matrix.
 

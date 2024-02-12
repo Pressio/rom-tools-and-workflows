@@ -90,7 +90,7 @@ class Splitter(abc.ABC):
     '''Abstract class for a splitter'''
 
     @abc.abstractmethod
-    def __call__(self, my_array: np.ndarray) -> np.ndarray:
+    def split(self, my_array: np.ndarray) -> np.ndarray:
         pass
 
 
@@ -99,7 +99,7 @@ class NoOpSplitter(Splitter):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, my_array: np.ndarray):
+    def split(self, my_array: np.ndarray):
         return my_array
 
 
@@ -144,7 +144,7 @@ class BlockSplitter(Splitter):
         my_vars.sort()
         assert np.allclose(my_vars, np.arange(0, self.__n_var, dtype='int')), "Invalid block input"
 
-    def __call__(self, my_array: np.ndarray):
+    def split(self, my_array: np.ndarray):
         '''
         Splits the input data matrix into smaller blocks as defined by the
         block list.
