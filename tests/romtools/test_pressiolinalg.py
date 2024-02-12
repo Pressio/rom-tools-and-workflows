@@ -25,9 +25,10 @@ def test_pressiolinalg_serial():
 def test_pressiolinalg_parallel():
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
+    rank = comm.Get_rank()
 
-    global_vector = np.random.rand(size*2)
     local_vector = np.zeros(2)
+    global_vector = np.arange(size * 2)
     comm.Scatter(global_vector, local_vector, root=0)
 
     dist_min = pla.min(local_vector, comm)
