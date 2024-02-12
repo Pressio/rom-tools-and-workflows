@@ -5,55 +5,73 @@ from romtools.vector_space.utils.shifter import *
 
 @pytest.mark.mpi_skip
 def test_noop_shifter():
-  shifter = NoOpShifter()
   my_snapshots = np.random.normal(size=(3,10,2))
-  my_snapshots_shifted,shift_vec = shifter(my_snapshots)
-  assert(np.allclose(my_snapshots_shifted,my_snapshots))
-  assert(np.allclose(shift_vec,0))
-  assert(shift_vec.shape == my_snapshots.shape[0:2])
+  original_snapshots = my_snapshots.copy()
+  shifter = create_noop_shifter(my_snapshots)
+  shifter.apply_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
+  shifter.apply_inverse_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
 
 @pytest.mark.mpi_skip
 def test_constant_shifter():
+  # Test with np.ndarray
   shift_value = np.array([4,1,3],dtype='int')
-  shifter = ConstantShifter(shift_value)
   my_snapshots = np.random.normal(size=(3,10,2))
-  my_snapshots_shifted,shift_vec = shifter(my_snapshots)
-  assert(np.allclose(my_snapshots_shifted,my_snapshots - shift_value[:,None,None]))
-  assert(np.allclose(shift_vec,shift_value[:,None]))
-  assert(shift_vec.shape == my_snapshots.shape[0:2])
+  original_snapshots = my_snapshots.copy()
+  shifter = create_constant_shifter(shift_value, my_snapshots)
+  shifter.apply_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots - shift_value[:,None,None]))
+  shifter.apply_inverse_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
+
+  # Test with number
+  shift_value = 2
+  my_snapshots = np.random.normal(size=(3,10,2))
+  test_snapshots = my_snapshots.copy()
+  shifter = create_constant_shifter(shift_value, my_snapshots)
+  shifter.apply_shift(my_snapshots)
+  test_snapshots -= shift_value
+  assert(np.allclose(my_snapshots, test_snapshots))
+  shifter.apply_inverse_shift(my_snapshots)
+  test_snapshots += shift_value
+  assert(np.allclose(my_snapshots, test_snapshots))
 
 @pytest.mark.mpi_skip
 def test_average_shifter():
-  shifter = AverageShifter()
   my_snapshots = np.random.normal(size=(3,10,5))
   mean_vec = np.mean(my_snapshots,axis=2)
-  my_snapshots_shifted,shift_vec = shifter(my_snapshots)
-  assert(np.allclose(my_snapshots_shifted,my_snapshots - mean_vec[:,:,None]))
-  assert(np.allclose(shift_vec,mean_vec))
-  assert(shift_vec.shape == my_snapshots.shape[0:2])
-  assert(np.allclose(np.mean(my_snapshots_shifted,axis=2),0))
+  original_snapshots = my_snapshots.copy()
+  shifter = create_average_shifter(my_snapshots)
+  shifter.apply_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots - mean_vec[:,:,None]))
+  assert(np.allclose(np.mean(my_snapshots, axis=2), 0))
+  shifter.apply_inverse_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
 
 @pytest.mark.mpi_skip
 def test_first_vec_shifter():
-  shifter = FirstVecShifter()
   my_snapshots = np.random.normal(size=(3,10,5))
-  first_vec = my_snapshots[:,:,0]
-  my_snapshots_shifted,shift_vec = shifter(my_snapshots)
-  assert(np.allclose(my_snapshots_shifted,my_snapshots[:,:,1::] - first_vec[:,:,None]))
-  assert(np.allclose(shift_vec,first_vec))
-  assert(shift_vec.shape[0] == my_snapshots.shape[0])
-  assert(my_snapshots_shifted.shape[2] == my_snapshots.shape[2] - 1)
+  original_snapshots = my_snapshots.copy()
+  first_vec = original_snapshots[:,:,0]
+  shifter = create_firstvec_shifter(my_snapshots)
+  shifter.apply_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots - first_vec[:,:,None]))
+  assert(my_snapshots.shape[2] == original_snapshots.shape[2])
+  shifter.apply_inverse_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
 
 @pytest.mark.mpi_skip
 def test_vector_shifter():
   shift_vec = np.random.normal(size=(3,10))
-  shifter = VectorShifter(shift_vec)
   my_snapshots = np.random.normal(size=(3,10,5))
-  my_snapshots_shifted,shift_vec2 = shifter(my_snapshots)
-  assert(np.allclose(my_snapshots_shifted,my_snapshots - shift_vec[:,:,None]))
-  assert(np.allclose(shift_vec,shift_vec2))
-  assert(shift_vec.shape == my_snapshots.shape[0:2])
-  assert(my_snapshots_shifted.shape[2] == my_snapshots.shape[2])
+  original_snapshots = my_snapshots.copy()
+  shifter = create_vector_shifter(shift_vec)
+  shifter.apply_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots - shift_vec[:,:,None]))
+  assert(my_snapshots.shape[2] == original_snapshots.shape[2])
+  shifter.apply_inverse_shift(my_snapshots)
+  assert(np.allclose(my_snapshots, original_snapshots))
 
 
 if __name__=="__main__":

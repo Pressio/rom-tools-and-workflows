@@ -90,7 +90,7 @@ import abc
 from typing import Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
-from romtools.vector_space.utils.shifter import Shifter, NoOpShifter
+from romtools.vector_space.utils.shifter import _Shifter, create_noop_shifter
 from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.splitter import Splitter, NoOpSplitter
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
@@ -171,12 +171,13 @@ class DictionaryVectorSpace(VectorSpace):
 
         # compute basis
         n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        snapshot_matrix = _tensor_to_matrix(shifted_snapshots)
+        shifter.apply_shift(snapshots)
+        snapshot_matrix = _tensor_to_matrix(snapshots)
         self.__basis = splitter(snapshot_matrix)
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
+        self.__shift_vector = shifter.get_shift_vector()
 
     def get_dimension(self) -> int:
         '''
@@ -217,7 +218,7 @@ class VectorSpaceFromPOD(VectorSpace):
     def __init__(self,
                  snapshots,
                  truncater:      Truncater      = NoOpTruncater(),
-                 shifter:        Shifter        = NoOpShifter(),
+                 shifter:        _Shifter       = None,
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler:         Scaler         = NoOpScaler(),
@@ -245,10 +246,11 @@ class VectorSpaceFromPOD(VectorSpace):
         data and applying various basis manipulation operations, including truncation, shifting, scaling,
         splitting, and orthogonalization.
         '''
-
+        if shifter is None:
+            shifter = create_noop_shifter(snapshots)
         n_var = snapshots.shape[0]
-        shifted_snapshots, self.__shift_vector = shifter(snapshots)
-        scaled_shifted_snapshots = scaler.pre_scaling(shifted_snapshots)
+        shifter.apply_shift(snapshots)
+        scaled_shifted_snapshots = scaler.pre_scaling(snapshots)
         snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
         shifted_split_snapshots = splitter(snapshot_matrix)
 
@@ -263,6 +265,7 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = orthogonalizer(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
+        self.__shift_vector = shifter.get_shift_vector()
 
     def get_dimension(self) -> int:
         '''
