@@ -65,7 +65,7 @@ class Truncater(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate left singular vectors
         '''
@@ -79,7 +79,7 @@ class NoOpTruncater(Truncater):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         return basis
 
 
@@ -96,7 +96,7 @@ class BasisSizeTruncater(Truncater):
         '''
         self.__basis_dimension = basis_dimension
 
-    def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate the basis based on the specified dimension.
 
@@ -125,7 +125,7 @@ class EnergyTruncater(Truncater):
         '''
         self.energy_threshold_ = threshold
 
-    def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate the basis based on the energy threshold.
 

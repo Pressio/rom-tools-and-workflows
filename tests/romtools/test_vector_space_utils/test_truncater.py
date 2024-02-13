@@ -8,7 +8,7 @@ def test_noop_truncater():
   truncater = NoOpTruncater()
   my_basis = np.random.normal(size=(10,2))
   singular_vectors = np.ones(2)
-  my_truncated_basis = truncater(my_basis,singular_vectors)
+  my_truncated_basis = truncater.truncate(my_basis,singular_vectors)
   assert(np.allclose(my_truncated_basis,my_basis))
 
 @pytest.mark.mpi_skip
@@ -17,7 +17,7 @@ def test_basis_size_truncater():
   truncater = BasisSizeTruncater(reduced_size)
   my_basis = np.random.normal(size=(10,8))
   singular_values = np.ones(2)
-  my_truncated_basis = truncater(my_basis,singular_values)
+  my_truncated_basis = truncater.truncate(my_basis,singular_values)
   assert(np.allclose(my_truncated_basis,my_basis[:,0:reduced_size]))
   assert(my_truncated_basis.shape[1] == 4)
 
@@ -35,7 +35,7 @@ def test_energy_truncater():
 
   truncater = EnergyTruncater(energy_threshold)
   my_basis = np.random.normal(size=(10,8))
-  my_truncated_basis = truncater(my_basis,singular_values)
+  my_truncated_basis = truncater.truncate(my_basis,singular_values)
   assert(np.allclose(my_truncated_basis,my_basis[:,0:K]))
   assert(my_truncated_basis.shape[1] == K)
 

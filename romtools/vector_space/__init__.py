@@ -173,8 +173,8 @@ class DictionaryVectorSpace(VectorSpace):
         n_var = snapshots.shape[0]
         shifter.apply_shift(snapshots)
         snapshot_matrix = _tensor_to_matrix(snapshots)
-        self.__basis = splitter(snapshot_matrix)
-        self.__basis = orthogonalizer(self.__basis)
+        self.__basis = splitter.split(snapshot_matrix)
+        self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
         self.__shift_vector = shifter.get_shift_vector()
@@ -252,17 +252,17 @@ class VectorSpaceFromPOD(VectorSpace):
         shifter.apply_shift(snapshots)
         scaled_shifted_snapshots = scaler.pre_scaling(snapshots)
         snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
-        shifted_split_snapshots = splitter(snapshot_matrix)
+        shifted_split_snapshots = splitter.split(snapshot_matrix)
 
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
         lsv, svals, _ = svd_picked(shifted_split_snapshots, full_matrices=False,
                                    compute_uv=True, hermitian=False)
 
-        self.__basis = truncater(lsv, svals)
+        self.__basis = truncater.truncate(lsv, svals)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__basis = scaler.post_scaling(self.__basis)
         self.__basis = _tensor_to_matrix(self.__basis)
-        self.__basis = orthogonalizer(self.__basis)
+        self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__dimension = self.__basis.shape[2]
         self.__shift_vector = shifter.get_shift_vector()
