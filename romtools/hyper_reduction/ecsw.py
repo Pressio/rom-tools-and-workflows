@@ -79,6 +79,7 @@ import sys
 import abc
 from typing import Tuple
 import numpy as np
+import pressiolinalg.linalg as pla
 
 
 class ECSWsolver(abc.ABC):
@@ -199,13 +200,13 @@ class ECSWsolverNNLS(ECSWsolver):
                 still_searching = False
                 if mesh_index in sample_mesh_indicies:
                     still_searching = True
-                    weighted_residual[mesh_index] = np.min(weighted_residual)
+                    weighted_residual[mesh_index] = pla.min(weighted_residual)
                     if np.all((weighted_residual-weighted_residual[mesh_index])<1e-15):
                         # All elements are the same, select random element outside of sample mesh
                         unselected_indicies = np.setdiff1d(np.arange(n_dof),sample_mesh_indicies,assume_unique=True)
                         mesh_index = unselected_indicies[0]
                         still_searching = False
-                    
+
 
             # add new mesh entity index
             if (len(sample_mesh_indicies) < n_dof):

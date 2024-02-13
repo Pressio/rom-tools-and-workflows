@@ -44,6 +44,7 @@
 #
 from typing import Any, Tuple
 import numpy as np
+import pressiolinalg.linalg as pla
 
 
 class SvdMethodOfSnapshots:
@@ -81,7 +82,7 @@ class SvdMethodOfSnapshots:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, np.ndarray, Any]:
-        U, s = _svd_method_of_snapshots_impl(snapshots, self._comm)
+        U, s = pla.svd_method_of_snapshots(snapshots, self._comm)
         return U, s, 'not_computed_in_method_of_snapshots'
 
 
@@ -97,49 +98,5 @@ class SvdMethodOfSnapshotsForQr:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, Any]:
-        U, _ = _svd_method_of_snapshots_impl(snapshots, self._comm)
+        U, _ = pla.svd_method_of_snapshots(snapshots, self._comm)
         return U, 'not_computed_in_method_of_snapshots'
-
-
-# Helper functions will be moved to python mpi library at some point
-def _svd_method_of_snapshots_impl(snapshots: np.ndarray, comm) -> Tuple[np.ndarray, np.ndarray]:
-    '''
-    @private
-    outputs:
-        modes, Phi: numpy array where each column is a POD mode
-        energy, sigma: energy associated with each mode (singular values)
-    '''
-    gram_matrix = _A_transpose_dot_bImpl(snapshots, snapshots, comm)
-    eigenvalues, eigenvectors = np.linalg.eig(gram_matrix)
-    sigma = np.sqrt(eigenvalues)
-    modes = np.zeros(np.shape(snapshots))
-    modes[:] = np.dot(snapshots, np.dot(eigenvectors, np.diag(1./sigma)))
-    # sort by singular values
-    ordering = np.argsort(sigma)[::-1]
-    return modes[:, ordering], sigma[ordering]
-
-
-def _A_transpose_dot_bImpl(A: np.ndarray, b: np.ndarray, comm) -> np.ndarray:
-    '''
-    @private
-    Compute A^T A when A's columns are distributed
-    '''
-    mpi_rank = comm.Get_rank()
-    num_processes = comm.Get_size()
-
-    if num_processes == 1:
-        return np.dot(A.transpose(), b)
-
-    tmp = np.dot(A.transpose(), b)
-
-    data = comm.gather(tmp.flatten(), root=0)
-
-    result_global = np.zeros(np.size(tmp))
-    if mpi_rank == 0:
-        for j in range(0, num_processes):
-            result_global[:] += data[j]
-        for j in range(1, num_processes):
-            comm.Send(result_global, dest=j)
-    else:
-        comm.Recv(result_global, source=0)
-    return np.reshape(result_global, np.shape(tmp))
