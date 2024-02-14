@@ -81,6 +81,7 @@ ___
 
 from typing import Protocol
 import numpy as np
+import pressiolinalg.linalg as pla
 
 
 class Scaler(Protocol):
@@ -212,7 +213,7 @@ class VariableScaler:
         for i in range(n_var):
             ith_var = data_tensor[i]
             if self.__scaling_type == 'max_abs':
-                var_scale = np.max(abs(ith_var))
+                var_scale = pla.max(abs(ith_var))
             elif self.__scaling_type == 'mean_abs':
                 var_scale = np.mean(abs(ith_var))
             elif self.__scaling_type == 'variance':
