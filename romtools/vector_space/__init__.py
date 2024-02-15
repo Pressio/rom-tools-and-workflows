@@ -250,7 +250,7 @@ class VectorSpaceFromPOD(VectorSpace):
             shifter = create_noop_shifter(snapshots)
         n_var = snapshots.shape[0]
         shifter.apply_shift(snapshots)
-        scaled_shifted_snapshots = scaler.pre_scaling(snapshots)
+        scaled_shifted_snapshots = scaler.pre_scale(snapshots)
         snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
         shifted_split_snapshots = splitter.split(snapshot_matrix)
 
@@ -260,7 +260,7 @@ class VectorSpaceFromPOD(VectorSpace):
 
         self.__basis = truncater.truncate(lsv, svals)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__basis = scaler.post_scaling(self.__basis)
+        self.__basis = scaler.post_scale(self.__basis)
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)

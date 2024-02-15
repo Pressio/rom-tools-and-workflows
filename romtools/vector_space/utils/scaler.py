@@ -89,14 +89,14 @@ class Scaler(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
         '''
         pass
 
     @abc.abstractmethod
-    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
         '''
@@ -110,10 +110,10 @@ class NoOpScaler(Scaler):
     def __init__(self) -> None:
         pass
 
-    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         return data_tensor
 
-    def post_scaling(self, data_tensor) -> np.ndarray:
+    def post_scale(self, data_tensor) -> np.ndarray:
         return data_tensor
 
 
@@ -143,7 +143,7 @@ class VectorScaler(Scaler):
         self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1./scaling_vector
 
-    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the inverse of the scaling vector
         and returns the scaled matrix.
@@ -156,7 +156,7 @@ class VectorScaler(Scaler):
         '''
         return self.__scaling_vector_matrix_inv[None, :, None] * data_tensor
 
-    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the scaling vector and returns the
         scaled matrix.
@@ -227,7 +227,7 @@ class VariableScaler(Scaler):
         self.have_scales_been_initialized = True
 
     # These are all inplace operations
-    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix before processing, taking into account
         the previously initialized scaling factors.
@@ -248,7 +248,7 @@ class VariableScaler(Scaler):
             data_tensor[i] = data_tensor[i] / self.var_scales_[i]
         return data_tensor
 
-    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix using the scaling vector and returns the
         scaled matrix.
@@ -293,7 +293,7 @@ class VariableAndVectorScaler(Scaler):
         self.__my_variable_scaler = VariableScaler(scaling_type)
         self.__my_vector_scaler = VectorScaler(scaling_vector)
 
-    def pre_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix before processing, first using the
         `VariableScaler` and then the `VectorScaler`.
@@ -304,10 +304,10 @@ class VariableAndVectorScaler(Scaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        data_tensor = self.__my_variable_scaler.pre_scaling(data_tensor)
-        return self.__my_vector_scaler.pre_scaling(data_tensor)
+        data_tensor = self.__my_variable_scaler.pre_scale(data_tensor)
+        return self.__my_vector_scaler.pre_scale(data_tensor)
 
-    def post_scaling(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the input data matrix after processing, first using the
         `VectorScaler` and then the `VariableScaler`.
@@ -318,5 +318,5 @@ class VariableAndVectorScaler(Scaler):
         Returns:
             np.ndarray: The scaled data matrix.
         '''
-        data_tensor = self.__my_vector_scaler.post_scaling(data_tensor)
-        return self.__my_variable_scaler.post_scaling(data_tensor)
+        data_tensor = self.__my_vector_scaler.post_scale(data_tensor)
+        return self.__my_variable_scaler.post_scale(data_tensor)
