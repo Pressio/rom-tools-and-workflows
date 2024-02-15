@@ -27,10 +27,7 @@ def test_dictionary_vector_space():
     my_shifter = utils.create_noop_shifter(snapshots)
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
-    my_vector_space = rt.DictionaryVectorSpace(snapshots,
-                                             my_shifter,
-                                             my_splitter,
-                                             my_orthogonalizer)
+    my_vector_space = rt.DictionaryVectorSpace(snapshots)
     assert np.allclose(my_vector_space.get_basis().flatten(),
                        snapshots.flatten())
     assert np.allclose(my_vector_space.get_shift_vector(), 0)
@@ -41,9 +38,7 @@ def test_dictionary_vector_space():
     my_splitter = utils.NoOpSplitter()
     my_orthogonalizer = utils.NoOpOrthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots,
-                                             my_shifter,
-                                             my_splitter,
-                                             my_orthogonalizer)
+                                               my_shifter)
     assert np.allclose(my_vector_space.get_basis().flatten(),
                       (original_snapshots - np.mean(original_snapshots, axis=2)[:, :, None]).flatten())
     assert np.allclose(my_vector_space.get_shift_vector(),
@@ -55,9 +50,8 @@ def test_dictionary_vector_space():
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.NoOpOrthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots,
-                                             my_shifter,
-                                             my_splitter,
-                                             my_orthogonalizer)
+                                               my_shifter,
+                                               my_splitter)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 12)
@@ -67,9 +61,9 @@ def test_dictionary_vector_space():
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
     my_orthogonalizer = utils.EuclideanL2Orthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots,
-                                             my_shifter,
-                                             my_splitter,
-                                             my_orthogonalizer)
+                                               my_shifter,
+                                               my_splitter,
+                                               my_orthogonalizer)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(snapshots, axis=2))
     assert np.allclose(my_vector_space.get_dimension(), 12)

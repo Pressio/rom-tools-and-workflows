@@ -154,7 +154,11 @@ class DictionaryVectorSpace(VectorSpace):
     where the orthogonalization, splitting, and shifts are defined by their
     respective classes
     '''
-    def __init__(self, snapshots, shifter, splitter, orthogonalizer) -> None:
+    def __init__(self,
+                 snapshots,
+                 shifter:        _Shifter       = None,
+                 splitter:       Splitter       = NoOpSplitter(),
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer()) -> None:
         '''
         Constructor.
 
@@ -168,6 +172,9 @@ class DictionaryVectorSpace(VectorSpace):
         This constructor initializes a vector space by performing basis
         manipulation operations on the provided snapshot data.
         '''
+        # Create noop shifter if not provided
+        if shifter is None:
+            shifter = create_noop_shifter(snapshots)
 
         # compute basis
         n_var = snapshots.shape[0]
