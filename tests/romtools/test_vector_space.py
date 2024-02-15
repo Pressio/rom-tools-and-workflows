@@ -34,7 +34,7 @@ def test_dictionary_vector_space():
     assert np.allclose(my_vector_space.get_basis().flatten(),
                        snapshots.flatten())
     assert np.allclose(my_vector_space.get_shift_vector(), 0)
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[-1], 6)
 
     # test with a shift
     my_shifter = utils.create_average_shifter(snapshots)
@@ -48,7 +48,7 @@ def test_dictionary_vector_space():
                       (original_snapshots - np.mean(original_snapshots, axis=2)[:, :, None]).flatten())
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[-1], 6)
 
     # test with a shift and splitting
     my_shifter = utils.create_average_shifter(snapshots)
@@ -60,7 +60,7 @@ def test_dictionary_vector_space():
                                              my_orthogonalizer)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
 
     # test with a shift, splitting, and orthogonalization
     my_shifter = utils.create_average_shifter(snapshots)
@@ -72,7 +72,7 @@ def test_dictionary_vector_space():
                                              my_orthogonalizer)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
     basis = my_vector_space.get_basis()
     basis = _tensor_to_matrix(basis)
     assert np.allclose(basis.transpose() @ basis, np.eye(12))
@@ -88,7 +88,7 @@ def test_vector_space_from_pod():
     u, s, v = np.linalg.svd(snapshotMatrix, full_matrices=False)
     basis_tensor = my_vector_space.get_basis()
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
-    assert np.allclose(6, my_vector_space.get_dimension())
+    assert np.allclose(6, my_vector_space.extents()[-1])
     assert np.allclose(0, my_vector_space.get_shift_vector())
 
     # test with a shift
@@ -99,7 +99,7 @@ def test_vector_space_from_pod():
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor) # FAILS
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[-1], 6)
 
     # test with a shift and splitting
     snapshots = np.random.normal(size=(3, 8, 6))
@@ -113,7 +113,7 @@ def test_vector_space_from_pod():
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
 
     # test with a shift, splitting, and orthogonalization
     snapshots = np.random.normal(size=(3, 8, 6))
@@ -130,7 +130,7 @@ def test_vector_space_from_pod():
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
 
 
 @pytest.mark.mpi_skip
@@ -145,7 +145,7 @@ def test_trial_space_from_scaled_pod():
     u = u.reshape(basis_tensor.shape)
     u = my_scaler.post_scale(u)
     assert np.allclose(u, basis_tensor), print(u, my_vector_space.get_basis())
-    assert np.allclose(6, my_vector_space.get_dimension())
+    assert np.allclose(6, my_vector_space.extents()[-1])
     assert np.allclose(0, my_vector_space.get_shift_vector())
 
     # test with a shift
@@ -165,7 +165,7 @@ def test_trial_space_from_scaled_pod():
     assert np.allclose(basis_tensor, u) # FAILS
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[-1], 6)
 
     # test with a shift and splitting
     snapshots = np.random.normal(size=(3, 8, 6))
@@ -186,7 +186,7 @@ def test_trial_space_from_scaled_pod():
     assert np.allclose(basis_tensor, u)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
 
     # test with a shift, splitting, and orthogonalization
     snapshots = np.random.normal(size=(3, 8, 6))
@@ -213,7 +213,7 @@ def test_trial_space_from_scaled_pod():
     assert np.allclose(basis_tensor, u)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 12)
+    assert np.allclose(my_vector_space.extents()[-1], 12)
 
 
 if __name__ == "__main__":
