@@ -44,12 +44,11 @@
 #
 
 '''
-There are a number of ways to construct a vector space, including affine offsets, scaling, splitting, etc.
+There are a number of ways to construct a vector space, including affine offsets, scaling, etc.
 The vector_space.utils module provides these functionalities
 '''
 from romtools.vector_space.utils.shifter import *
 from romtools.vector_space.utils.scaler import *
 from romtools.vector_space.utils.orthogonalizer import *
-from romtools.vector_space.utils.splitter import *
 from romtools.vector_space.utils.truncater import *
 from romtools.vector_space.utils.svd_method_of_snapshots import *
