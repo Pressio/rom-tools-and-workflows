@@ -89,7 +89,7 @@ which derive from the abstract class `VectorSpace`.
 import abc
 from typing import Callable
 import numpy as np
-from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
+from romtools.vector_space.utils.truncater import SVDBasisTruncater, NoOpTruncater
 from romtools.vector_space.utils.shifter import _Shifter, create_noop_shifter
 from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.splitter import Splitter, NoOpSplitter
@@ -217,7 +217,7 @@ class VectorSpaceFromPOD(VectorSpace):
 
     def __init__(self,
                  snapshots,
-                 truncater:      Truncater      = NoOpTruncater(),
+                 truncater:      SVDBasisTruncater      = NoOpTruncater(),
                  shifter:        _Shifter       = None,
                  splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
