@@ -33,7 +33,7 @@ def test_energy_truncater():
     if energy[i] < energy_threshold:
       K += 1
 
-  truncater = EnergyTruncater(energy_threshold)
+  truncater = EnergyBasedTruncater(energy_threshold)
   my_basis = np.random.normal(size=(10,8))
   my_truncated_basis = truncater.truncate(my_basis,singular_values)
   assert(np.allclose(my_truncated_basis,my_basis[:,0:K]))
