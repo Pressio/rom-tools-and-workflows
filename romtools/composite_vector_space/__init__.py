@@ -45,7 +45,7 @@
 
 from romtools.vector_space import *
 from romtools.vector_space.utils import *
-
+from typing import List
 import numpy as np 
 class CompositeVectorSpace:
     '''
@@ -53,7 +53,7 @@ class CompositeVectorSpace:
     Different vector spaces need to have the same number of spatial DOFs
     '''
 
-    def __init__(self,list_of_vector_spaces : list[VectorSpace], variable_ordering=None, compact_representation=False):
+    def __init__(self,list_of_vector_spaces : List[VectorSpace], variable_ordering=None, compact_representation=False):
         '''
         Inputs: list_of_vector_spaces: list[VectorSpace] containing the list of vector spaces to combine
                 variable_ordering: Either None or np.ndarray of integers. Specifies the desired variable ordering.
@@ -142,11 +142,11 @@ class CompositeVectorSpace:
         assert self.__compact_representation == False, "Error, CompositeVectorSpace was constructed with a compact representation and does not have a direct global basis. Use get_compact_basis"
         return self.__basis
 
-    def get_compact_basis(self) -> list[np.ndarray]:
+    def get_compact_basis(self) -> List[np.ndarray]:
         assert self.__compact_representation == True , 'Error, CompositeVectorSpace was constructed with a full basis representation and does not have a compact basis representation. Use get_basis'
         return self.__compact_basis
 
-    def get_compact_shift_vector(self) -> list[np.ndarray]:
+    def get_compact_shift_vector(self) -> List[np.ndarray]:
         assert self.__compact_representation == True , 'Error, CompositeVectorSpace was constructed with a full basis representation and does not have a compact basis representation. Use get_basis'
         return self.__compact_shift_vector
 
