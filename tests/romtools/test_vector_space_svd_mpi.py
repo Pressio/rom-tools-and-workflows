@@ -42,7 +42,7 @@ def test_vector_space_from_pod_mpi():
         snaps = construct_snapshots(comm)
         myVectorSpace = rt.VectorSpaceFromPOD(snaps, svdFnc=MyFakeSvd(comm))
         U = myVectorSpace.get_basis()
-        k = myVectorSpace.get_dimension()
+        k = myVectorSpace.extents()[-1]
         if rank == 0:
             assert np.allclose(U, np.zeros((3, 3, 2)))
             assert np.allclose(2, k)

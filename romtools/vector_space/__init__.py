@@ -104,12 +104,12 @@ class VectorSpace(abc.ABC):
     '''
 
     @abc.abstractmethod
-    def get_dimension(self) -> int:
+    def extents(self) -> np.ndarray:
         '''
         Retrieves the dimension of the vector space
 
         Returns:
-            `int`: The dimension of the vector space.
+            `np.ndarray`: The dimension of the vector space (n_var,nx,K).
 
         Concrete subclasses should implement this method to return the
         appropriate dimension for their specific vector space implementation.
@@ -183,14 +183,14 @@ class DictionaryVectorSpace(VectorSpace):
         self.__basis = splitter.split(snapshot_matrix)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__dimension = self.__basis.shape[2]
+        self.__extents = self.__basis.shape
         self.__shift_vector = shifter.get_shift_vector()
 
-    def get_dimension(self) -> int:
+    def extents(self) -> np.ndarray:
         '''
-        Concrete implementation of `VectorSpace.get_dimension()`
+        Concrete implementation of `VectorSpace.extents()`
         '''
-        return self.__dimension
+        return self.__extents
 
     def get_shift_vector(self) -> np.ndarray:
         '''
@@ -271,14 +271,14 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__dimension = self.__basis.shape[2]
+        self.__extents = self.__basis.shape
         self.__shift_vector = shifter.get_shift_vector()
 
-    def get_dimension(self) -> int:
+    def extents(self) -> np.ndarray:
         '''
-        Concrete implementation of `VectorSpace.get_dimension()`
+        Concrete implementation of `VectorSpace.extents()`
         '''
-        return self.__dimension
+        return self.__extents
 
     def get_shift_vector(self) -> np.ndarray:
         '''
