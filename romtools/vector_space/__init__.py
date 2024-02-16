@@ -87,6 +87,7 @@ which derive from the abstract class `VectorSpace`.
 '''
 
 import abc
+from typing import Tuple
 from typing import Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import LeftSingularVectorTruncater, NoOpTruncater
@@ -103,8 +104,7 @@ class VectorSpace(abc.ABC):
     Methods:
     '''
 
-    @abc.abstractmethod
-    def extents(self) -> np.ndarray:
+    def extents(self) -> Tuple[int, int, int]:
         '''
         Retrieves the dimension of the vector space
 
@@ -114,7 +114,7 @@ class VectorSpace(abc.ABC):
         Concrete subclasses should implement this method to return the
         appropriate dimension for their specific vector space implementation.
         '''
-        pass
+        return self.get_basis().shape
 
     @abc.abstractmethod
     def get_shift_vector(self) -> np.ndarray:
@@ -183,14 +183,7 @@ class DictionaryVectorSpace(VectorSpace):
         self.__basis = splitter.split(snapshot_matrix)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__extents = self.__basis.shape
         self.__shift_vector = shifter.get_shift_vector()
-
-    def extents(self) -> np.ndarray:
-        '''
-        Concrete implementation of `VectorSpace.extents()`
-        '''
-        return self.__extents
 
     def get_shift_vector(self) -> np.ndarray:
         '''
@@ -271,14 +264,7 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__extents = self.__basis.shape
         self.__shift_vector = shifter.get_shift_vector()
-
-    def extents(self) -> np.ndarray:
-        '''
-        Concrete implementation of `VectorSpace.extents()`
-        '''
-        return self.__extents
 
     def get_shift_vector(self) -> np.ndarray:
         '''
