@@ -118,7 +118,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, vector_space: VectorS
     e = exodus.exodus(output_filename, mode='a')
 
     num_vars = vector_space.get_shift_vector().shape[0]
-    num_modes = vector_space.get_dimension()
+    num_modes = vector_space.get_basis().shape[2]
     num_modes_str_len = int(math.log10(num_modes))+1
 
     if var_names is None:
