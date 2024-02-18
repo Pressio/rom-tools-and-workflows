@@ -24,9 +24,6 @@ def test_dictionary_vector_space():
     snapshots = np.random.normal(size=(3, 8, 6))
     original_snapshots = snapshots.copy()
     # default test
-    my_shifter = utils.create_noop_shifter(snapshots)
-    my_splitter = utils.NoOpSplitter()
-    my_orthogonalizer = utils.NoOpOrthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots)
     assert np.allclose(my_vector_space.get_basis().flatten(),
                        snapshots.flatten())
@@ -35,8 +32,6 @@ def test_dictionary_vector_space():
 
     # test with a shift
     my_shifter = utils.create_average_shifter(snapshots)
-    my_splitter = utils.NoOpSplitter()
-    my_orthogonalizer = utils.NoOpOrthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots,
                                                my_shifter)
     assert np.allclose(my_vector_space.get_basis().flatten(),
@@ -48,7 +43,6 @@ def test_dictionary_vector_space():
     # test with a shift and splitting
     my_shifter = utils.create_average_shifter(snapshots)
     my_splitter = utils.BlockSplitter([[0], [1, 2]], 3)
-    my_orthogonalizer = utils.NoOpOrthogonalizer()
     my_vector_space = rt.DictionaryVectorSpace(snapshots,
                                                my_shifter,
                                                my_splitter)
