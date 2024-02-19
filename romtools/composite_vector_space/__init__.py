@@ -43,10 +43,9 @@
 # ************************************************************************
 #
 
-from romtools.vector_space import *
-from romtools.vector_space.utils import *
+from romtools.vector_space import VectorSpace
 from typing import List
-import numpy as np 
+import numpy as np
 
 
 class CompositeVectorSpace(VectorSpace):
@@ -55,130 +54,102 @@ class CompositeVectorSpace(VectorSpace):
     Different vector spaces need to have the same number of spatial DOFs
     '''
 
-    def __init__(self,list_of_vector_spaces : List[VectorSpace], variable_ordering=None, compact_representation=False):
+    def __init__(self, list_of_vector_spaces: List[VectorSpace], variable_ordering=None):
         '''
         Inputs: list_of_vector_spaces: list[VectorSpace] containing the list of vector spaces to combine
                 variable_ordering: Either None or np.ndarray of integers. Specifies the desired variable ordering.
-                compact_representation: bool. If True, we compute a global basis and shift. If false, we only store a list of bases and shifts
         '''
-        if compact_representation == True and (variable_ordering is None) == False:
+        if variable_ordering is not None:
             print('Warning, compact representations do not reflect variable ordering')
 
-        self.__compact_representation = compact_representation
-
-        ## Computed dimensions and ensure vector spaces are compatable 
+        # Computed dimensions and ensure vector spaces are compatable
         self.__get_extent_and_check_compatability(list_of_vector_spaces)
 
-        ## Check that a valid set of variable orderings have been passed in
-        variable_ordering = self.__check_valid_variable_ordering(variable_ordering)
+        # Check that a valid set of variable orderings have been passed in
+        self.variable_ordering = self.__check_valid_variable_ordering(variable_ordering)
 
-        ## Construct a global shift vector
-        self.__construct_global_shift_vector(list_of_vector_spaces,variable_ordering)
+        # Construct basis as a list of local bases
+        self.__construct_compact_basis(list_of_vector_spaces)
 
-
-        ## Compute basis
-        if compact_representation == False:
-            # Construct basis as a global numpy array
-            self.__construct_full_basis(list_of_vector_spaces,variable_ordering)
-        else:
-            # Construct basis as a list of local bases
-            self.__construct_compact_basis(list_of_vector_spaces)
-
- 
     def get_dimension(self):
-        return self.__extent[2] 
+        return self.__extent[2]
 
     def extents(self) -> np.ndarray:
         return self.__extent
 
     def get_shift_vector(self) -> np.ndarray:
-        return self.__shift_vector
-
+        return self.__construct_global_shift_vector()
 
     def get_basis(self) -> np.ndarray:
-        assert self.__compact_representation == False, "Error, CompositeVectorSpace was constructed with a compact representation and does not have a direct global basis. Use get_compact_basis"
-        return self.__basis
+        return self.__construct_full_basis(self.__compact_basis, self.variable_ordering)
 
     def get_compact_basis(self) -> List[np.ndarray]:
-        assert self.__compact_representation == True , 'Error, CompositeVectorSpace was constructed with a full basis representation and does not have a compact basis representation. Use get_basis'
         return self.__compact_basis
 
     def get_compact_shift_vector(self) -> List[np.ndarray]:
-        assert self.__compact_representation == True , 'Error, CompositeVectorSpace was constructed with a full basis representation and does not have a compact basis representation. Use get_basis'
         return self.__compact_shift_vector
 
-
-    def __get_extent_and_check_compatability(self,list_of_vector_spaces):
+    def __get_extent_and_check_compatability(self, list_of_vector_spaces):
         # Checks that dimensions of the vector spaces match
         # and assigns self.__extent
         dims = np.zeros(len(list_of_vector_spaces))
         n_vector_spaces = len(list_of_vector_spaces)
         n_vars = 0
         total_number_of_bases = 0
-        for i in range(0,n_vector_spaces):
+        for i in range(0, n_vector_spaces):
             local_vector_space = list_of_vector_spaces[i]
-            local_vector_space_dimensions = local_vector_space.get_basis().shape#get_dimension()
+            local_vector_space_dimensions = local_vector_space.get_basis().shape
             n_vars += local_vector_space_dimensions[0]
             dims[i] = local_vector_space_dimensions[1]
             total_number_of_bases += local_vector_space_dimensions[2]
-    
+
         nx = int(dims[0])
         n_vars = int(n_vars)
         total_number_of_bases = int(total_number_of_bases)
-        self.__extent = np.array([n_vars,nx,total_number_of_bases],dtype='int')
-        assert np.allclose( np.diff(dims),np.zeros(dims.size-1)) , " Error constructing composite vector space, not all spaces have the same spatial dimension "
+        self.__extent = np.array([n_vars, nx, total_number_of_bases], dtype='int')
+        assert np.allclose(np.diff(dims), np.zeros(dims.size-1)), " Error constructing composite vector space, not all spaces have the same spatial dimension "
 
-
-
-    def __check_valid_variable_ordering(self,variable_ordering):
+    def __check_valid_variable_ordering(self, variable_ordering):
         # Checks that a valid variable ordering has been passed
         # and updates variable_ordering accordingly
 
         n_vars = self.__extent[0]
         if variable_ordering is None:
-            variable_ordering = np.arange(0,n_vars,dtype='int')
+            variable_ordering = np.arange(0, n_vars, dtype='int')
         else:
-            ## Check that we have a valid variable ordering
-            variables_left = np.arange(0,n_vars,dtype='int')
-            assert(len(variable_ordering) == n_vars)
+            # Check that we have a valid variable ordering
+            variables_left = np.arange(0, n_vars, dtype='int')
+            assert len(variable_ordering) == n_vars
             for variable in variable_ordering:
-                assert np.isin(variable,variables_left)
-                variables_left = np.delete(variables_left,np.where(variable==variables_left))
+                assert np.isin(variable, variables_left)
+                variables_left = np.delete(variables_left, np.where(variable == variables_left))
         return variable_ordering
- 
-    def __construct_global_shift_vector(self,list_of_vector_spaces,variable_ordering):
+
+    def __construct_global_shift_vector(self):
         # Constructs the shift vector for the composite vector space
-        self.__shift_vector = list_of_vector_spaces[0].get_shift_vector()
-        for i in range(1,len(list_of_vector_spaces)):
-          local_shift_vector = list_of_vector_spaces[i].get_shift_vector()
-          self.__shift_vector = np.append(self.__shift_vector,local_shift_vector,axis=0)
+        shift_vector = self.__compact_shift_vector[0]
+        for local_shift_vector in self.__compact_shift_vector[1:]:
+            shift_vector = np.append(shift_vector, local_shift_vector, axis=0)
 
         # Re-order according to variable ordering
-        self.__shift_vector = self.__shift_vector[variable_ordering]
+        shift_vector = shift_vector[self.variable_ordering]
+        return shift_vector
 
-
-    def __construct_full_basis(self,list_of_vector_spaces,variable_ordering):
+    def __construct_full_basis(self, list_of_vector_spaces, variable_ordering):
         # Constructs a dense basis for the composite vector space
-        self.__basis = np.zeros((self.__extent[0],self.__extent[1],self.__extent[2]))
+        basis = np.zeros((self.__extent[0], self.__extent[1], self.__extent[2]))
         start_var_index = 0
         start_basis_index = 0
-        for i in range(0,len(list_of_vector_spaces)):
-            local_vector_space = list_of_vector_spaces[i]
-            local_vector_space_dimensions = local_vector_space.get_dimension()
+        for local_vector_space in list_of_vector_spaces:
             local_basis = local_vector_space.get_basis()
             dim = local_basis.shape
-            self.__basis[start_var_index:start_var_index+dim[0],:,start_basis_index:start_basis_index+dim[2]] = local_basis
+            basis[start_var_index:start_var_index+dim[0], :, start_basis_index:start_basis_index+dim[2]] = local_basis
             start_var_index += dim[0]
             start_basis_index += dim[2]
-        self.__basis = self.__basis[variable_ordering]
+        return basis[variable_ordering]
 
-    def __construct_compact_basis(self,list_of_vector_spaces):
+    def __construct_compact_basis(self, list_of_vector_spaces):
         # Constructs a list of bases.
-        # This is much more efficient in terms of memory 
-        self.__compact_basis = []
-        self.__compact_shift_vector = []
-
-        for i in range(0,len(list_of_vector_spaces)):
-            self.__compact_basis.append(list_of_vector_spaces[i].get_basis())
-            self.__compact_shift_vector.append(list_of_vector_spaces[i].get_shift_vector())
-
+        # This is much more efficient in terms of memory
+        self.__compact_basis = [space.get_basis() for space in list_of_vector_spaces]
+        self.__compact_shift_vector = [space.get_shift_vector() for space in list_of_vector_spaces]
