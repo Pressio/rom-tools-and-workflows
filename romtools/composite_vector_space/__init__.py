@@ -81,7 +81,7 @@ class CompositeVectorSpace(VectorSpace):
         return self.__construct_global_shift_vector()
 
     def get_basis(self) -> np.ndarray:
-        return self.__construct_full_basis(self.__compact_basis, self.variable_ordering)
+        return self.__construct_full_basis()
 
     def get_compact_basis(self) -> List[np.ndarray]:
         return self.__compact_basis
@@ -135,18 +135,17 @@ class CompositeVectorSpace(VectorSpace):
         shift_vector = shift_vector[self.variable_ordering]
         return shift_vector
 
-    def __construct_full_basis(self, list_of_vector_spaces, variable_ordering):
+    def __construct_full_basis(self):
         # Constructs a dense basis for the composite vector space
         basis = np.zeros((self.__extent[0], self.__extent[1], self.__extent[2]))
         start_var_index = 0
         start_basis_index = 0
-        for local_vector_space in list_of_vector_spaces:
-            local_basis = local_vector_space.get_basis()
+        for local_basis in self.__compact_basis:
             dim = local_basis.shape
             basis[start_var_index:start_var_index+dim[0], :, start_basis_index:start_basis_index+dim[2]] = local_basis
             start_var_index += dim[0]
             start_basis_index += dim[2]
-        return basis[variable_ordering]
+        return basis[self.variable_ordering]
 
     def __construct_compact_basis(self, list_of_vector_spaces):
         # Constructs a list of bases.
