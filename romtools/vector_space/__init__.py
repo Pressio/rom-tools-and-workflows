@@ -87,9 +87,10 @@ which derive from the abstract class `VectorSpace`.
 '''
 
 import abc
+from typing import Tuple
 from typing import Callable
 import numpy as np
-from romtools.vector_space.utils.truncater import Truncater, NoOpTruncater
+from romtools.vector_space.utils.truncater import LeftSingularVectorTruncater, NoOpTruncater
 from romtools.vector_space.utils.shifter import _Shifter, create_noop_shifter
 from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
@@ -102,18 +103,17 @@ class VectorSpace(abc.ABC):
     Methods:
     '''
 
-    @abc.abstractmethod
-    def get_dimension(self) -> int:
+    def extents(self) -> Tuple[int, int, int]:
         '''
         Retrieves the dimension of the vector space
 
         Returns:
-            `int`: The dimension of the vector space.
+            `np.ndarray`: The dimension of the vector space (n_var,nx,K).
 
         Concrete subclasses should implement this method to return the
         appropriate dimension for their specific vector space implementation.
         '''
-        pass
+        return self.get_basis().shape
 
     @abc.abstractmethod
     def get_shift_vector(self) -> np.ndarray:
@@ -153,7 +153,11 @@ class DictionaryVectorSpace(VectorSpace):
     where the orthogonalization and shifts are defined by their
     respective classes
     '''
-    def __init__(self, snapshots, shifter, orthogonalizer) -> None:
+
+    def __init__(self,
+                 snapshots,
+                 shifter:        _Shifter       = None,
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer()) -> None:
         '''
         Constructor.
 
@@ -166,6 +170,9 @@ class DictionaryVectorSpace(VectorSpace):
         This constructor initializes a vector space by performing basis
         manipulation operations on the provided snapshot data.
         '''
+        # Create noop shifter if not provided
+        if shifter is None:
+            shifter = create_noop_shifter(snapshots)
 
         # compute basis
         n_var = snapshots.shape[0]
@@ -173,14 +180,7 @@ class DictionaryVectorSpace(VectorSpace):
         snapshot_matrix = _tensor_to_matrix(snapshots)
         self.__basis = orthogonalizer.orthogonalize(snapshot_matrix)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__dimension = self.__basis.shape[2]
         self.__shift_vector = shifter.get_shift_vector()
-
-    def get_dimension(self) -> int:
-        '''
-        Concrete implementation of `VectorSpace.get_dimension()`
-        '''
-        return self.__dimension
 
     def get_shift_vector(self) -> np.ndarray:
         '''
@@ -214,7 +214,7 @@ class VectorSpaceFromPOD(VectorSpace):
 
     def __init__(self,
                  snapshots,
-                 truncater:      Truncater      = NoOpTruncater(),
+                 truncater:      LeftSingularVectorTruncater   = NoOpTruncater(),
                  shifter:        _Shifter       = None,
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler:         Scaler         = NoOpScaler(),
@@ -257,14 +257,7 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__dimension = self.__basis.shape[2]
         self.__shift_vector = shifter.get_shift_vector()
-
-    def get_dimension(self) -> int:
-        '''
-        Concrete implementation of `VectorSpace.get_dimension()`
-        '''
-        return self.__dimension
 
     def get_shift_vector(self) -> np.ndarray:
         '''

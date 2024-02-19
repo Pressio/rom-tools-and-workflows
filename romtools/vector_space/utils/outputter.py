@@ -59,7 +59,7 @@ except ImportError:
     pass
 
 
-def npz_output(filename: str, vector_space: VectorSpace, compress=True) -> None:
+def npz_output(output_filename: str, vector_space: VectorSpace, compress=True) -> None:
     '''
     Save vector space information to a compressed or uncompressed NumPy .npz file.
 
@@ -72,11 +72,11 @@ def npz_output(filename: str, vector_space: VectorSpace, compress=True) -> None:
         npz_output("vector_space.npz", my_vector_space)
     '''
     if compress:
-        np.savez_compressed(filename,
+        np.savez_compressed(output_filename,
                             shift=vector_space.get_shift_vector(),
                             basis=vector_space.get_basis())
     else:
-        np.savez(filename,
+        np.savez(output_filename,
                  shift=vector_space.get_shift_vector(),
                  basis=vector_space.get_basis())
 
@@ -118,7 +118,7 @@ def exodus_ouput(output_filename: str, mesh_filename: str, vector_space: VectorS
     e = exodus.exodus(output_filename, mode='a')
 
     num_vars = vector_space.get_shift_vector().shape[0]
-    num_modes = vector_space.get_dimension()
+    num_modes = vector_space.get_basis().shape[2]
     num_modes_str_len = int(math.log10(num_modes))+1
 
     if var_names is None:
