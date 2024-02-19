@@ -48,7 +48,7 @@ def test_dictionary_vector_space():
                                              my_orthogonalizer)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[2], 6)
     basis = my_vector_space.get_basis()
     basis = _tensor_to_matrix(basis)
     assert np.allclose(basis.transpose() @ basis, np.eye(6))
@@ -91,7 +91,7 @@ def test_vector_space_from_pod():
     assert np.allclose(u.reshape(basis_tensor.shape), basis_tensor)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[2], 6)
 
 
 @pytest.mark.mpi_skip
@@ -152,7 +152,7 @@ def test_trial_space_from_scaled_pod():
     assert np.allclose(basis_tensor, u)
     assert np.allclose(my_vector_space.get_shift_vector(),
                        np.mean(original_snapshots, axis=2))
-    assert np.allclose(my_vector_space.get_dimension(), 6)
+    assert np.allclose(my_vector_space.extents()[2], 6)
 
 
 if __name__ == "__main__":
