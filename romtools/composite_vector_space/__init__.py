@@ -48,7 +48,7 @@ from typing import List
 import numpy as np
 
 
-class CompositeVectorSpace(VectorSpace):
+class CompositeVectorSpace:
     '''
     Constructs a composite vector space out of a list of vector spaces
     Different vector spaces need to have the same number of spatial DOFs
