@@ -64,9 +64,6 @@ class CompositeVectorSpace:
         # Construct basis as a list of local bases
         self.__construct_compact_basis(list_of_vector_spaces)
 
-    def get_dimension(self):
-        return self.__extent[2]
-
     def extents(self) -> np.ndarray:
         return self.__extent
 
