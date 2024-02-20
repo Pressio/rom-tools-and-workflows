@@ -79,31 +79,29 @@ ___
 ##**API**
 '''
 
-import abc
+from typing import Protocol
 import numpy as np
 
 
-class Scaler(abc.ABC):
+class Scaler(Protocol):
     '''
-    Abstract base class
+    Interface for the Scaler class.
     '''
 
-    @abc.abstractmethod
     def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the snapshot matrix before performing SVD
         '''
-        pass
+        ...
 
-    @abc.abstractmethod
     def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
         Scales the left singular vectors after performing SVD
         '''
-        pass
+        ...
 
 
-class NoOpScaler(Scaler):
+class NoOpScaler:
     '''
     No op implementation
     '''
@@ -117,7 +115,7 @@ class NoOpScaler(Scaler):
         return data_tensor
 
 
-class VectorScaler(Scaler):
+class VectorScaler:
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
     For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
@@ -170,7 +168,7 @@ class VectorScaler(Scaler):
         return self.__scaling_vector_matrix[None, :, None] * data_tensor
 
 
-class VariableScaler(Scaler):
+class VariableScaler:
     '''
     Concrete implementation designed for snapshot matrices involving multiple
     state variables.
@@ -267,7 +265,7 @@ class VariableScaler(Scaler):
         return data_tensor
 
 
-class VariableAndVectorScaler(Scaler):
+class VariableAndVectorScaler:
     '''
     Concrete implementation designed to scale snapshot matrices involving
     multiple state variables by both the variable magnitudes and an additional

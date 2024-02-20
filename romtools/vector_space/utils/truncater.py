@@ -55,24 +55,23 @@ We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
 
-import abc
 import numpy as np
+from typing import Protocol
 
 
-class LeftSingularVectorTruncater(abc.ABC):
+class LeftSingularVectorTruncater(Protocol):
     '''
-    Abstract implementation
+    Interface for the Truncater class.
     '''
 
-    @abc.abstractmethod
     def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate left singular vectors
         '''
-        pass
+        ...
 
 
-class NoOpTruncater(LeftSingularVectorTruncater):
+class NoOpTruncater:
     '''
     No op implementation
     '''
@@ -83,7 +82,7 @@ class NoOpTruncater(LeftSingularVectorTruncater):
         return basis
 
 
-class BasisSizeTruncater(LeftSingularVectorTruncater):
+class BasisSizeTruncater:
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
     '''
@@ -110,7 +109,7 @@ class BasisSizeTruncater(LeftSingularVectorTruncater):
         return basis[:, :self.__basis_dimension]
 
 
-class EnergyBasedTruncater(LeftSingularVectorTruncater):
+class EnergyBasedTruncater:
     '''
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
