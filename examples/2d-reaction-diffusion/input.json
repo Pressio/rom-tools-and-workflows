@@ -1,0 +1,10 @@
+{
+    "pressio_file_path": "/Users/ekrath/codes/pressio/pressio-demoapps", 
+    "mesh_path": "/Users/ekrath/codes/pressio/mywork/demo-apps/2d-reaction-diffusion/mesh",
+    "figure_path": "figs",
+    "n_x": 50, 
+    "n_y": 50, 
+    "dt": 1e-3, 
+    "n_steps": 5000,
+    "n_snapshots": 20
+}
