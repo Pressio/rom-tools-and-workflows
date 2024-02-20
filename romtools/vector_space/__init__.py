@@ -86,9 +86,7 @@ which derive from the abstract class `VectorSpace`.
 ##**API**
 '''
 
-import abc
-from typing import Tuple
-from typing import Callable
+from typing import Tuple, Protocol, Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import LeftSingularVectorTruncater, NoOpTruncater
 from romtools.vector_space.utils.shifter import _Shifter, create_noop_shifter
@@ -96,9 +94,9 @@ from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
-class VectorSpace(abc.ABC):
+class VectorSpace(Protocol):
     '''
-    Abstract base class for vector space implementations.
+    Interface for vector space implementations.
 
     Methods:
     '''
@@ -113,9 +111,8 @@ class VectorSpace(abc.ABC):
         Concrete subclasses should implement this method to return the
         appropriate dimension for their specific vector space implementation.
         '''
-        return self.get_basis().shape
+        ...
 
-    @abc.abstractmethod
     def get_shift_vector(self) -> np.ndarray:
         '''
         Retrieves the shift vector of the vector space.
@@ -126,9 +123,8 @@ class VectorSpace(abc.ABC):
         Concrete subclasses should implement this method to return the shift
         vector specific to their vector space implementation.
         '''
-        pass
+        ...
 
-    @abc.abstractmethod
     def get_basis(self) -> np.ndarray:
         '''
         Retrieves the basis vectors of the vector space.
@@ -139,10 +135,10 @@ class VectorSpace(abc.ABC):
         Concrete subclasses should implement this method to return the basis
         vectors specific to their vector space implementation.
         '''
-        pass
+        ...
 
 
-class DictionaryVectorSpace(VectorSpace):
+class DictionaryVectorSpace:
     '''
     Reduced basis vector space (no truncation).
 
@@ -181,6 +177,12 @@ class DictionaryVectorSpace(VectorSpace):
         self.__basis = orthogonalizer.orthogonalize(snapshot_matrix)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__shift_vector = shifter.get_shift_vector()
+
+    def extents(self) -> Tuple[int, int, int]:
+        '''
+        Concrete implementation of `VectorSpace.extents()`
+        '''
+        return self.get_basis().shape
 
     def get_shift_vector(self) -> np.ndarray:
         '''
@@ -258,6 +260,12 @@ class VectorSpaceFromPOD(VectorSpace):
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__shift_vector = shifter.get_shift_vector()
+
+    def extents(self) -> Tuple[int, int, int]:
+        '''
+        Concrete implementation of `VectorSpace.extents()`
+        '''
+        return self.get_basis().shape
 
     def get_shift_vector(self) -> np.ndarray:
         '''
