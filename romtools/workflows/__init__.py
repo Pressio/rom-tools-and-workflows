@@ -50,3 +50,7 @@ The workflows module contains all of our "outerloop" workflows used for ROM cons
 - Coupling classes to Dakota for 
   - Random sampling
 '''
+__all__ = ['dakota', 'greedy', 'sampling']
+from workflows.dakota import *
+from workflows.greedy import *
+from workflows.sampling import *

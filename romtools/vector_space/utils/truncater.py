@@ -55,34 +55,36 @@ We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
 
+import abc
 import numpy as np
-from typing import Protocol
+import warnings
 
 
-class LeftSingularVectorTruncater(Protocol):
+class Truncater(abc.ABC):
     '''
-    Interface for the Truncater class.
+    Abstract implementation
     '''
 
-    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    @abc.abstractmethod
+    def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate left singular vectors
         '''
-        ...
+        pass
 
 
-class NoOpTruncater:
+class NoOpTruncater(Truncater):
     '''
     No op implementation
     '''
     def __init__(self) -> None:
         pass
 
-    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def __call__(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
         return basis
 
 
-class BasisSizeTruncater:
+class BasisSizeTruncater(Truncater):
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
     '''
@@ -93,9 +95,14 @@ class BasisSizeTruncater:
         Args:
             basis_dimension (int): The desired dimension of the truncated basis.
         '''
+
+        # Check if basis dimension is less than or equal to zero
+        if basis_dimension <= 0:
+            raise ValueError('Given basis dimension is <= 0: ', basis_dimension)
+        
         self.__basis_dimension = basis_dimension
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate the basis based on the specified dimension.
 
@@ -106,10 +113,15 @@ class BasisSizeTruncater:
         Returns:
             np.ndarray: The truncated basis matrix with the specified dimension.
         '''
+
+        # Check if basis dimension is larger than array and give error.
+        if self.__basis_dimension > np.shape(basis)[1]:
+            raise ValueError('Given basis dimension is greater than size of basis array: ', self.__basis_dimension, ' > ', np.shape(basis)[1])
+
         return basis[:, :self.__basis_dimension]
 
 
-class EnergyBasedTruncater:
+class EnergyTruncater(Truncater):
     '''
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
@@ -120,11 +132,11 @@ class EnergyBasedTruncater:
         Constructor for the EnergyTruncater class.
 
         Args:
-            threshold (float): The cumulative energy threshold.
+            threshold (float): The cumulative energy threshold. (Recommended: 0.99).
         '''
-        self.energy_threshold_ = threshold
+        self.__energy_threshold = threshold
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def __call__(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate the basis based on the energy threshold.
 
@@ -136,5 +148,5 @@ class EnergyBasedTruncater:
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
         energy = np.cumsum(singular_values**2)/np.sum(singular_values**2)
-        basis_dimension = np.argmax(energy > self.energy_threshold_) + 1
+        basis_dimension = np.argmax(energy > self.__energy_threshold) + 1
         return basis[:, 0:basis_dimension]

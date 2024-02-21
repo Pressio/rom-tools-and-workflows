@@ -90,3 +90,5 @@ __docformat__ = "restructuredtext" # required to generate the license
 
 from romtools.vector_space import *
 from romtools.hyper_reduction import *
+from romtools.workflows import *
+from romtools.composite_vector_space import *
