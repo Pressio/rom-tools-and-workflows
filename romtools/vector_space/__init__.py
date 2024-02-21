@@ -1,5 +1,5 @@
 #
-
+# ************************************************************************
 #
 #                         ROM Tools and Workflows
 # Copyright 2019 National Technology & Engineering Solutions of Sandia,LLC
@@ -86,7 +86,6 @@ which derive from the abstract class `VectorSpace`.
 ##**API**
 '''
 
-import abc
 from typing import Tuple, Protocol, Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import LeftSingularVectorTruncater, NoOpTruncater
@@ -95,7 +94,7 @@ from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
 
 
-class VectorSpace(abc.ABC):
+class VectorSpace(Protocol):
     '''
     Abstract base class for vector space implementations.
 
@@ -107,41 +106,30 @@ class VectorSpace(abc.ABC):
         Retrieves the dimension of the vector space
 
         Returns:
-            `np.ndarray`: The dimension of the vector space (n_var,nx,K).
-
-        Concrete subclasses should implement this method to return the
-        appropriate dimension for their specific vector space implementation.
+            A Tuple with the the dimensions of the vector space (n_var,nx,K).
         '''
-        return self.get_basis().shape
+        ...
 
-    @abc.abstractmethod
     def get_shift_vector(self) -> np.ndarray:
         '''
         Retrieves the shift vector of the vector space.
 
         Returns:
             `np.ndarray`: The shift vector in tensorm form.
-
-        Concrete subclasses should implement this method to return the shift
-        vector specific to their vector space implementation.
         '''
-        pass
+        ...
 
-    @abc.abstractmethod
     def get_basis(self) -> np.ndarray:
         '''
         Retrieves the basis vectors of the vector space.
 
         Returns:
             `np.ndarray`: The basis of the vector space in tensor form.
-
-        Concrete subclasses should implement this method to return the basis
-        vectors specific to their vector space implementation.
         '''
-        pass
+        ...
 
 
-class DictionaryVectorSpace(VectorSpace):
+class DictionaryVectorSpace:
     '''
     Reduced basis vector space (no truncation).
 
@@ -156,7 +144,6 @@ class DictionaryVectorSpace(VectorSpace):
     def __init__(self,
                  snapshots,
                  shifter:        Shifter        = None,
-                 splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer()) -> None:
         '''
         Constructor.
@@ -194,8 +181,11 @@ class DictionaryVectorSpace(VectorSpace):
         '''
         return self.__basis
 
+    def extents(self) -> Tuple[int, int, int]:
+        return self.__basis.shape
 
-class VectorSpaceFromPOD(VectorSpace):
+
+class VectorSpaceFromPOD:
     '''
     POD vector space (constructed via SVD).
 
@@ -216,7 +206,6 @@ class VectorSpaceFromPOD(VectorSpace):
                  snapshots,
                  truncater:      LeftSingularVectorTruncater   = NoOpTruncater(),
                  shifter:        Shifter        = None,
-                 splitter:       Splitter       = NoOpSplitter(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler:         Scaler         = NoOpScaler(),
                  svdFnc:         Callable       = None) -> None:
@@ -271,6 +260,9 @@ class VectorSpaceFromPOD(VectorSpace):
         Concrete implementation of `VectorSpace.get_basis()`
         '''
         return self.__basis
+
+    def extents(self) -> Tuple[int, int, int]:
+        return self.__basis.shape
 
 
 def _tensor_to_matrix(tensor_input: np.ndarray) -> np.ndarray:
