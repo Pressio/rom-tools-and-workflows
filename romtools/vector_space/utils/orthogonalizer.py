@@ -54,21 +54,20 @@ In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
 '''
 
 import abc
+from typing import Protocol
 import numpy as np
 import scipy.sparse
 
 
-class Orthogonalizer(abc.ABC):
+class Orthogonalizer(Protocol):
     '''
-    Abstract base class
+    Interface for the Orthogonalizer class.
     '''
-
-    @abc.abstractmethod
     def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
-        pass
+        ...
 
 
-class NoOpOrthogonalizer(Orthogonalizer):
+class NoOpOrthogonalizer:
     '''
     No op class (doesn't do anything)
     '''
@@ -79,7 +78,7 @@ class NoOpOrthogonalizer(Orthogonalizer):
         return my_array
 
 
-class EuclideanL2Orthogonalizer(Orthogonalizer):
+class EuclideanL2Orthogonalizer:
     '''
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
@@ -104,7 +103,7 @@ class EuclideanL2Orthogonalizer(Orthogonalizer):
         return my_array
 
 
-class EuclideanVectorWeightedL2Orthogonalizer(Orthogonalizer):
+class EuclideanVectorWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
