@@ -6,5 +6,5 @@
     "n_y": 50, 
     "dt": 1e-3, 
     "n_steps": 5000,
-    "n_snapshots": 20
+    "n_snapshots": 5
 }
