@@ -50,3 +50,6 @@ The workflows module contains all of our "outerloop" workflows used for ROM cons
 - Coupling classes to Dakota for 
   - Random sampling
 '''
+from romtools.workflows.dakota import *
+from romtools.workflows.greedy import *
+from romtools.workflows.sampling import *

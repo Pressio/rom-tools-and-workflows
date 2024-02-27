@@ -56,6 +56,7 @@ of basis vectors and the decay of the singular values
 '''
 
 import numpy as np
+import warnings
 from typing import Protocol
 
 
@@ -93,6 +94,10 @@ class BasisSizeTruncater:
         Args:
             basis_dimension (int): The desired dimension of the truncated basis.
         '''
+        # Check if basis dimension is less than or equal to zero
+        if basis_dimension <= 0:
+            raise ValueError('Given basis dimension is <= 0: ', basis_dimension)
+
         self.__basis_dimension = basis_dimension
 
     def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
@@ -106,6 +111,10 @@ class BasisSizeTruncater:
         Returns:
             np.ndarray: The truncated basis matrix with the specified dimension.
         '''
+        # Check if basis dimension is larger than array and give error.
+        if self.__basis_dimension > np.shape(basis)[1]:
+            raise ValueError('Given basis dimension is greater than size of basis array: ', self.__basis_dimension, ' > ', np.shape(basis)[1])
+
         return basis[:, :self.__basis_dimension]
 
 
@@ -122,7 +131,7 @@ class EnergyBasedTruncater:
         Args:
             threshold (float): The cumulative energy threshold.
         '''
-        self.energy_threshold_ = threshold
+        self.__energy_threshold_ = threshold
 
     def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
@@ -136,5 +145,5 @@ class EnergyBasedTruncater:
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
         energy = np.cumsum(singular_values**2)/np.sum(singular_values**2)
-        basis_dimension = np.argmax(energy > self.energy_threshold_) + 1
+        basis_dimension = np.argmax(energy > self.__energy_threshold_) + 1
         return basis[:, 0:basis_dimension]
