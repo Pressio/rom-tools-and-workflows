@@ -82,7 +82,7 @@ class SvdMethodOfSnapshots:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, np.ndarray, Any]:
-        U, s = pla.svd_method_of_snapshots(snapshots, self._comm)
+        U, s = pla.thin_svd(snapshots, self._comm, method='method_of_snapshots')
         return U, s, 'not_computed_in_method_of_snapshots'
 
 
@@ -98,5 +98,5 @@ class SvdMethodOfSnapshotsForQr:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, Any]:
-        U, _ = pla.svd_method_of_snapshots(snapshots, self._comm)
+        U, _ = pla.thin_svd(snapshots, self._comm, method='method_of_snapshots')
         return U, 'not_computed_in_method_of_snapshots'
