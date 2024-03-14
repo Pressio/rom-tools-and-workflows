@@ -290,38 +290,32 @@ class ECSWsolverNNLS(ECSWsolver):
 
 def _construct_linear_system(residual_snapshots: np.ndarray,
                              test_basis: np.ndarray,
-                             n_var: int,
-                             variable_ordering: str):
+                             n_var: int):
     '''
     Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection.
 
     Args:
-        residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
-        test_basis: (n_dof*n_var, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
         n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
-        variable_ordering (str): The variable ordering, either 'C' or 'F'. C: variables are the fastest index F: mesh DoFs are the fastest index
 
     Returns:
         full_mesh_lhs: (n_snap*n_mode, n_dof) numpy ndarray, the left-hand side of the linear system required by the ECSW solver
         full_mesh_rhs: (n_snap*n_rom,) numpy array, the right-hand side of the linear system required by the ECSW solver
     '''
 
-    (n_row, n_snap) = residual_snapshots.shape
-    n_dof = int(n_row / n_var)
-    n_mode = test_basis.shape[1]
+    (n_var, n_dof, n_snap) = residual_snapshots.shape
+    (n_var_tb, n_dof_tb, n_mode) = test_basis.shape
+    assert(n_var == n_var_tb)
+    assert(n_dof == n_dof_tb)
     # construct ECSW system
     full_mesh_lhs = np.zeros((n_snap*n_mode, n_dof))
 
     # left-hand side
     for i in range(n_dof):
         # should be projection of all variables for a given mesh DoF
-        if variable_ordering == 'C':
-            phi_block = test_basis[(i*n_var):((i+1)*n_var),:]  # n_var x n_mode
-            res_snaps_block = residual_snapshots[(i*n_var):((i+1)*n_var), :]  # n_var x n_snap
-        elif variable_ordering == 'F':
-            phi_block = test_basis[i::n_dof, :]  # n_var x n_mode
-            res_snaps_block = residual_snapshots[i::n_dof, :]  # n_var x n_snap
-
+        phi_block = test_basis[:,i,:]  # n_var x n_mode
+        res_snaps_block = residual_snapshots[:,i,:]  # n_var x n_snap
         full_mesh_lhs_block = np.dot(phi_block.T, res_snaps_block)  # n_modes x n_snaps matrix
         full_mesh_lhs[:, i] = np.ravel(full_mesh_lhs_block, order='F')
 
@@ -335,17 +329,15 @@ def ecsw_fixed_test_basis(ecsw_solver: ECSWsolver,
                           residual_snapshots: np.ndarray,
                           test_basis: np.ndarray,
                           n_var: int,
-                          variable_ordering: str,
                           tolerance: np.double):
     '''
     ECSW implementation for a fixed test basis, such as POD-Galerkin projection
 
     Args:
         ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
-        residual_snapshots: (n_dof*n_var, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
-        test_basis: (n_dof*n_var, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
         n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
-        variable_ordering (str): The variable ordering, either 'C' or 'F'. C: variables are the fastest index F: mesh DoFs are the fastest index
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
@@ -357,8 +349,7 @@ def ecsw_fixed_test_basis(ecsw_solver: ECSWsolver,
     # TODO need to incorporate residual scales here too, perhaps using scaler.py
     full_mesh_lhs, full_mesh_rhs = _construct_linear_system(residual_snapshots,
                                                             test_basis,
-                                                            n_var,
-                                                            variable_ordering)
+                                                            n_var)
 
     return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)
 
