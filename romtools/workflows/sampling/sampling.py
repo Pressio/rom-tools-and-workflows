@@ -47,8 +47,6 @@ import os
 import time
 import numpy as np
 
-from romtools.workflows.sampling.\
-    sampling_coupler_base import SamplingCouplerBase
 from romtools.workflows.parameter_spaces import monte_carlo_sample
 from romtools.workflows.workflow_utils import create_empty_dir 
 from romtools.workflows.models import Model
