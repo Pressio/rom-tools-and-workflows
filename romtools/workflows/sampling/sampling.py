@@ -50,52 +50,68 @@ import numpy as np
 from romtools.workflows.sampling.\
     sampling_coupler_base import SamplingCouplerBase
 from romtools.workflows.parameter_spaces import monte_carlo_sample
+from romtools.workflows.workflow_utils import create_empty_dir 
+from romtools.workflows.models import Model
+from romtools.workflows.parameter_spaces import ParameterSpace
+
+def _create_parameter_dict(parameter_names,parameter_values):
+    parameter_dict = {}
+    for i in range(len(parameter_names)):
+        parameter_dict[parameter_names[i]] = parameter_values[i]
+    return parameter_dict
 
 
-def run_sampling(sampling_coupler: SamplingCouplerBase,
-                 testing_sample_size: int = 10,
+def run_sampling(model: Model, 
+                 parameter_space: ParameterSpace,
+                 run_directory_prefix: str = "run_", 
+                 number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
     Core algorithm
     '''
+    base_directory = os.path.realpath(os.getcwd())
+
     np.random.seed(random_seed)
 
-    # create parameter domain
-    parameter_space = sampling_coupler.get_parameter_space()
+    # create parameter samples 
     parameter_samples = monte_carlo_sample(parameter_space,
-                                           testing_sample_size)
+                                           number_of_samples)
 
-    # Make FOM/ROM directories
+    parameter_names = parameter_space.get_names()
+
+    # Setup model directories
     starting_sample_index = 0
-    sampling_coupler.create_cases(starting_sample_index, parameter_samples)
+    end_sample_index = starting_sample_index + parameter_samples.shape[0]
+    for sample_index in range(starting_sample_index, end_sample_index):
+        run_directory = base_directory + f'/{run_directory_prefix}{sample_index}'
+        create_empty_dir(run_directory)
+        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index - starting_sample_index])
+        model.populate_run_directory(run_directory,parameter_dict)
+        os.chdir(base_directory)
 
-    # Run first FOM case
-    run_times = np.zeros(testing_sample_size)
-    for sample_index in range(0, testing_sample_size):
+    # Run cases
+    run_times = np.zeros(number_of_samples)
+    for sample_index in range(0, number_of_samples):
         print("=======  Sample " + str(sample_index) + " ============")
         print("Running")
-        case_directory = sampling_coupler.get_sol_directory(sample_index)
-
-        run_times[sample_index] = run_sample(sampling_coupler,
-                                             case_directory,
-                                             parameter_samples[sample_index])
-
-        np.savez(f'{sampling_coupler.get_base_directory()}/sampling_stats',
+        run_directory = base_directory + f'/{run_directory_prefix}{sample_index}'
+        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
+        run_times[sample_index] = run_sample(run_directory,model,
+                                             parameter_dict)
+        os.chdir(base_directory)
+        sample_stats_save_directory =  base_directory + f'/{run_directory_prefix}{sample_index}/../'
+        np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
 
 
-def run_sample(sampling_coupler: SamplingCouplerBase,
-               case_directory: str,
-               parameter_values):
+def run_sample(run_directory: str, model: Model,
+               parameter_sample: dict):
     '''
     Execute individual sample
     '''
 
-    os.chdir(case_directory)
-
     ts = time.time()
-    flag = sampling_coupler.run_model(sampling_coupler.get_input_filename(),
-                                      parameter_values)
+    flag = model.run_model(run_directory, parameter_sample)
     tf = time.time()
     run_time = tf - ts
 
@@ -104,6 +120,4 @@ def run_sample(sampling_coupler: SamplingCouplerBase,
     else:
         print(f"Sample failed, run time = {run_time}")
     print(" ")
-
-    os.chdir(sampling_coupler.get_base_directory())
     return run_time

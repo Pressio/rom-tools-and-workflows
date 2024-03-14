@@ -8,40 +8,25 @@ from romtools.workflows.sampling.\
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 
 
-class ConcreteSampler(SamplingCouplerBase):
-    def __init__(self,
-                 template_directory,
-                 template_file,
-                 workDir=None,
-                 sol_directory_basename='run'):
+class MockModel:
+    def __init__(self):
+        pass
 
-        super().__init__(template_directory=template_directory,
-                         template_input_file=template_file,
-                         base_directory=workDir,
-                         sol_directory_basename=sol_directory_basename)
-
-        self.myParameterSpace = UniformParameterSpace(['u', 'v', 'w'],
-                                                      np.array([0, 1, 2]),
-                                                      np.array([1, 2, 3]))
-        self.counter_ = 0
-        self.template_file = template_file
-
-    def set_parameters_in_input(self, filename, parameter_sample):
-        file = np.genfromtxt(self.template_file)
-        np.savetxt(self.template_file, [self.counter_])
-        self.counter_ += 1
-
-    def run_model(self, filename, parameter_values):
+    def populate_run_directory(self, run_dir,parameter_sample):
+        os.chdir(run_dir)
+        parameter_values = np.zeros(0)
+        for parameter_name in list(parameter_sample.keys()):
+            parameter_values = np.append(parameter_values,parameter_sample[parameter_name])
+        np.savez('parameter_values.npz',parameter_values=parameter_values)
+ 
+    def run_model(self, run_dir, parameter_sample):
+        os.chdir(run_dir)
+        params_input = np.load('parameter_values.npz')['parameter_values']
+        for i in range(0,len(parameter_sample)):
+          parameter_name = list(parameter_sample.keys())[i]
+          assert(params_input[i] == parameter_sample[parameter_name])
+        np.savetxt('passed.txt',np.array([0]),'%i')
         return 0
-
-    def get_parameter_space(self):
-        return self.myParameterSpace
-
-
-@pytest.mark.mpi_skip
-def test_sampler_builder():
-    my_dir = os.path.realpath(os.path.dirname(__file__))
-    ConcreteSampler(my_dir + '/templates/', 'test_template.dat')
 
 
 @pytest.mark.mpi_skip
@@ -50,17 +35,18 @@ def test_sampler(tmp_path):
     wdir = str(tmp_path)  # SamplingCouplerBase does not like posixpaths
     print('\n', wdir)
     my_dir = os.path.realpath(os.path.dirname(__file__))
-    my_sampler = ConcreteSampler(my_dir + '/templates/',
-                                 'test_template.dat',
-                                 workDir=wdir)
-    run_sampling(my_sampler, 10)
+
+    my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
+                                            np.array([0, 1, 2]),
+                                            np.array([1, 2, 3]))
+    my_model = MockModel()
+    run_sampling(my_model, my_parameter_space,run_directory_prefix=f'{wdir}/run_',number_of_samples=10)
     for i in range(0, 10):
-        assert os.path.isdir(wdir + '/run' + str(i))
-        data = int(np.genfromtxt(f'{wdir}/run{i}/test_template.dat'))
-        assert data == i
+        assert os.path.isdir(wdir + '/run_' + str(i))
+        data = int(np.genfromtxt(f'{wdir}/run_{i}/passed.txt'))
+        assert data == 0
     assert os.path.isfile(f'{wdir}/sampling_stats.npz')
 
 
 if __name__ == "__main__":
-    test_sampler_builder()
     test_sampler('.')
