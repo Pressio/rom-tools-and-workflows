@@ -142,9 +142,8 @@ def create_vector_shifter(shift_vector: np.ndarray) -> Shifter:
 
 def create_average_shifter(my_array: np.ndarray) -> Shifter:
     '''Shifts the data by the average of a data matrix.'''
-    shift_vector = pla.mean(global_array, axis=2)
-    shifter = _Shifter(shift_vector)
-    return shifter
+    shift_vector = pla.mean(local_array, axis=2)
+    return _Shifter(shift_vector)
 
 
 def create_firstvec_shifter(my_array: np.ndarray) -> Shifter:
