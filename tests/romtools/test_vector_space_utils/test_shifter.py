@@ -70,29 +70,24 @@ def test_constant_shifter_mpi():
 
   # Test with np.ndarray
   shift_value = np.array([4,1,3],dtype='int')
-  local_shift_value = test_utils.distribute_array_impl(shift_value, comm)
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
-  shifter = create_constant_shifter(local_shift_value, local_snapshots)
+  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm, axis=1)
+  shifter = create_constant_shifter(shift_value, local_snapshots)
   shifter.apply_shift(local_snapshots)
-  gathered_shifted_snapshots = reconstruct_global_array(local_snapshots, global_shape, comm)
-  assert(np.allclose(gathered_shifted_snapshots, global_snapshots - shift_value[:,None,None]))
+  assert len(np.setdiff1d(local_snapshots, global_snapshots - shift_value[:,None,None])) == 0
   shifter.apply_inverse_shift(local_snapshots)
-  gathered_unshifted_snapshots = reconstruct_global_array(local_snapshots, global_shape, comm)
-  assert(np.allclose(gathered_unshifted_snapshots, global_snapshots))
+  assert len(np.setdiff1d(local_snapshots, global_snapshots)) == 0
 
   # Test with number
   shift_value = 2
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm, axis=1)
+  original_local_snapshots = local_snapshots.copy()
+  shifted_local_snapshots = local_snapshots.copy()
+  shifted_local_snapshots -= shift_value
   shifter = create_constant_shifter(shift_value, local_snapshots)
   shifter.apply_shift(local_snapshots)
-  global_shifted_snapshots = np.zeros_like(global_snapshots)
-  for idx, elt in enumerate(global_snapshots):
-    global_shifted_snapshots[idx] = elt - shift_value
-  gathered_shifted_snapshots = reconstruct_global_array(local_snapshots, global_shape, comm)
-  assert(np.allclose(gathered_shifted_snapshots, global_shifted_snapshots))
+  assert np.allclose(local_snapshots, shifted_local_snapshots)
   shifter.apply_inverse_shift(local_snapshots)
-  gathered_unshifted_snapshots = reconstruct_global_array(local_snapshots, global_shape, comm)
-  assert(np.allclose(gathered_unshifted_snapshots, global_snapshots))
+  assert np.allclose(local_snapshots, original_local_snapshots)
 
 @pytest.mark.mpi_skip
 def test_average_shifter():
@@ -106,19 +101,17 @@ def test_average_shifter():
   shifter.apply_inverse_shift(my_snapshots)
   assert(np.allclose(my_snapshots, original_snapshots))
 
-# @pytest.mark.mpi(min_size=3)
-# def test_average_shifter_mpi():
-#   comm=MPI.COMM_WORLD
-#   local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(ndim=3, comm=comm, dim1=3, dim2=10, dim3=5)
-#   mean_vec = np.mean(global_snapshots, axis=2)
-#   shifter = create_average_shifter(global_snapshots)
-#   shifter.apply_shift(local_snapshots)
-#   gathered_shifted_snapshots = reconstruct_global_array(local_snapshots, (3, 10, 5), comm)
-#   assert(np.allclose(gathered_shifted_snapshots, global_snapshots - mean_vec[:,:,None]))
-#   assert(np.allclose(np.mean(gathered_shifted_snapshots, axis=2), 0))
-#   shifter.apply_inverse_shift(local_snapshots)
-#   gathered_unshifted_snapshots = reconstruct_global_array(local_snapshots, (3, 10, 5), comm)
-#   assert(np.allclose(gathered_unshifted_snapshots, global_snapshots))
+@pytest.mark.mpi(min_size=3)
+def test_average_shifter_mpi():
+  comm=MPI.COMM_WORLD
+  global_shape = (3,10,5)
+  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm, axis=1)
+  mean_vec = np.mean(global_snapshots, axis=2)
+  local_shifter = create_average_shifter(local_snapshots)
+  local_shifter.apply_shift(local_snapshots)
+  assert len(np.setdiff1d(local_snapshots, global_snapshots - mean_vec[:,:,None])) == 0
+  local_shifter.apply_inverse_shift(local_snapshots)
+  assert len(np.setdiff1d(local_snapshots, global_snapshots)) == 0
 
 @pytest.mark.mpi_skip
 def test_first_vec_shifter():
@@ -172,7 +165,7 @@ if __name__=="__main__":
   test_constant_shifter()
   test_constant_shifter_mpi
   test_average_shifter()
-  # test_average_shifter_mpi()
+  test_average_shifter_mpi()
   test_first_vec_shifter()
   # test_first_vec_shifter_mpi()
   test_vector_shifter()

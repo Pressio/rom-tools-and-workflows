@@ -71,6 +71,7 @@ import numpy as np
 from numbers import Number
 from typing import Protocol
 import pressiolinalg.linalg as pla
+from pressiolinalg import test_utils
 
 
 class Shifter(Protocol):
@@ -135,11 +136,10 @@ def create_vector_shifter(shift_vector: np.ndarray):
     shifter = _Shifter(shift_vector)
     return shifter
 
-def create_average_shifter(global_array: np.ndarray, comm=None):
+def create_average_shifter(local_array: np.ndarray):
     '''Shifts the data by the average of a data matrix.'''
-    shift_vector = pla.mean(global_array, axis=2)
-    shifter = _Shifter(shift_vector)
-    return shifter
+    shift_vector = pla.mean(local_array, axis=2)
+    return _Shifter(shift_vector)
 
 def create_firstvec_shifter(my_array: np.ndarray):
     '''Shifts the data by the first vector of a data matrix.'''
