@@ -3,8 +3,6 @@ import os
 import numpy as np
 
 from romtools.workflows.sampling.sampling import run_sampling
-from romtools.workflows.sampling.\
-    sampling_coupler_base import SamplingCouplerBase
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 
 
