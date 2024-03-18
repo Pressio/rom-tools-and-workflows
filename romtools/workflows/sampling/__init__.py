@@ -49,4 +49,3 @@ run our model for each sample.
 '''
 
 from romtools.workflows.sampling.sampling import *
-from romtools.workflows.sampling.sampling_coupler_base import *
