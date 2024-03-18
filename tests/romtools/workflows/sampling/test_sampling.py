@@ -34,7 +34,7 @@ def test_sampler(tmp_path):
     # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
     wdir = str(tmp_path)  # SamplingCouplerBase does not like posixpaths
     print('\n', wdir)
-    my_dir = os.path.realpath(os.path.dirname(__file__))
+    base_dir = os.path.realpath(os.getcwd())
 
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                             np.array([0, 1, 2]),
@@ -42,10 +42,10 @@ def test_sampler(tmp_path):
     my_model = MockModel()
     run_sampling(my_model, my_parameter_space,run_directory_prefix=f'{wdir}/run_',number_of_samples=10)
     for i in range(0, 10):
-        assert os.path.isdir(wdir + '/run_' + str(i))
-        data = int(np.genfromtxt(f'{wdir}/run_{i}/passed.txt'))
+        assert os.path.isdir(base_dir + wdir + '/run_' + str(i))
+        data = int(np.genfromtxt(f'{base_dir}/{wdir}/run_{i}/passed.txt'))
         assert data == 0
-    assert os.path.isfile(f'{wdir}/sampling_stats.npz')
+    assert os.path.isfile(f'{base_dir}/{wdir}/sampling_stats.npz')
 
 
 if __name__ == "__main__":
