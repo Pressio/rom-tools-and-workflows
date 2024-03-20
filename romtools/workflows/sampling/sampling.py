@@ -48,30 +48,30 @@ import time
 import numpy as np
 
 from romtools.workflows.parameter_spaces import monte_carlo_sample
-from romtools.workflows.workflow_utils import create_empty_dir 
+from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
 
-def _create_parameter_dict(parameter_names,parameter_values):
-    parameter_dict = {}
-    for i in range(len(parameter_names)):
-        parameter_dict[parameter_names[i]] = parameter_values[i]
-    return parameter_dict
+
+def _create_parameter_dict(parameter_names, parameter_values):
+    return dict(zip(parameter_names, parameter_values))
 
 
-def run_sampling(model: Model, 
+def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
-                 run_directory_prefix: str = "run_", 
+                 base_directory: str = None,
+                 run_directory_prefix: str = "run_",
                  number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
     Core algorithm
     '''
-    base_directory = os.path.realpath(os.getcwd())
+    if base_directory is None:
+        base_directory = os.path.realpath(os.getcwd())
 
     np.random.seed(random_seed)
 
-    # create parameter samples 
+    # create parameter samples
     parameter_samples = monte_carlo_sample(parameter_space,
                                            number_of_samples)
 
@@ -81,10 +81,10 @@ def run_sampling(model: Model,
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
-        run_directory = base_directory + f'/{run_directory_prefix}{sample_index}'
+        run_directory = f'{base_directory}/{run_directory_prefix}{sample_index}'
         create_empty_dir(run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index - starting_sample_index])
-        model.populate_run_directory(run_directory,parameter_dict)
+        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
+        model.populate_run_directory(run_directory, parameter_dict)
         os.chdir(base_directory)
 
     # Run cases
@@ -92,12 +92,12 @@ def run_sampling(model: Model,
     for sample_index in range(0, number_of_samples):
         print("=======  Sample " + str(sample_index) + " ============")
         print("Running")
-        run_directory = base_directory + f'/{run_directory_prefix}{sample_index}'
-        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
-        run_times[sample_index] = run_sample(run_directory,model,
+        run_directory = f'{base_directory}/{run_directory_prefix}{sample_index}'
+        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+        run_times[sample_index] = run_sample(run_directory, model,
                                              parameter_dict)
         os.chdir(base_directory)
-        sample_stats_save_directory =  base_directory + f'/{run_directory_prefix}{sample_index}/../'
+        sample_stats_save_directory = f'{base_directory}/{run_directory_prefix}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
 
