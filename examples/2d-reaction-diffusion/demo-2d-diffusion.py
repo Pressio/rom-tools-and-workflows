@@ -20,16 +20,20 @@ import time
 import scipy
 import sys
 
+from autograd import jacobian
+
 def my_source(x, y, time):
     return 4.*np.sin(4*math.pi*x*y)*np.sin(math.pi*x*(y - 0.2)) 
     # return np.sin(math.pi*x) + y * x + time
     
-
 class FOMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
-    def __init__(self, parameter_name, num_parameters, base_directory):
+    def __init__(self, template_directory, template_input_file, base_directory, sol_directory_basename, parameter_name, num_parameters):
+        self._template_directory = template_directory
+        self._template_input_file = template_input_file
+        self._base_directory = base_directory
+        self._sol_directory_basename = sol_directory_basename
         self._parameter_name = parameter_name
         self._dimension = num_parameters
-        self._base_directory = base_directory
 
     def set_parameters_in_input(self):
         return 0
@@ -54,12 +58,12 @@ class FOMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
 
         # B. constructor for problem using default values
         prob_ID  = pda.DiffusionReaction2d.ProblemA
-        problem = pda.create_problem(mesh_obj, prob_ID, scheme)
+        self._problem = pda.create_problem(mesh_obj, prob_ID, scheme)
 
         # C. setting custom coefficients and custom source function
         D = parameter_values[0]
         K = parameter_values[1]
-        problem = pda.create_diffusion_reaction_2d_problem_A(mesh_obj, scheme, my_source, D, K)
+        self._problem = pda.create_diffusion_reaction_2d_problem_A(mesh_obj, scheme, my_source, D, K)
 
         # (For Unsteady ROM)
         # Run FOM
@@ -80,16 +84,25 @@ class FOMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
         
         # (For Steady ROM)
         # D. Define residual function
-        F = problem.createRightHandSide()
+        F = self._problem.createRightHandSide()
         def residual(x):
-            problem.rightHandSide(x,0.,F)
+            self._problem.rightHandSide(x,0.,F)
             return F
         
         # Solve FOM
-        yn = scipy.optimize.newton_krylov(residual, problem.initialCondition(), verbose=True)
+        yn = scipy.optimize.newton_krylov(residual, self._problem.initialCondition(), verbose=False)
+
+        # Save inverse of diagonal of Jacobian
+        J = self._problem.createApplyJacobianResult(np.eye(np.shape(yn)[0]))
+        self._problem.applyJacobian(yn, np.eye(np.shape(yn)[0]), 0., J)
+        invJ = np.zeros(np.shape(J))
+        count = 0
+        for x in np.diag(J):
+            invJ[count,count] = 1./x
+            count += 1
 
         # Save solution
-        np.savez('results.npz', y=yn, parameters=[D, K])
+        np.savez('results.npz', y=yn, parameters=[D, K], invJ = invJ)
 
         return 0
     
@@ -98,21 +111,32 @@ class FOMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
         return param_space
 
     def create_cases(self, starting_sample_no, parameter_samples):
-        for i in range(starting_sample_no, np.shape(parameter_samples)[0]):
-            if not os.path.exists('fom_' + str(i)):
-                os.mkdir('fom_' + str(i))
-            os.system('cp input.json fom_' + str(i) + '/.')
+        if np.shape(parameter_samples)[0] == 1:
+            if not os.path.exists(self._sol_directory_basename + str(starting_sample_no)):
+                os.mkdir(self._sol_directory_basename + str(starting_sample_no))
+            os.system('cp ' + self._template_input_file + ' ' + self._sol_directory_basename + str(starting_sample_no) + '/.')
+        else:
+            for i in range(starting_sample_no, np.shape(parameter_samples)[0]):
+                if not os.path.exists(self._sol_directory_basename + str(i)):
+                    os.mkdir(self._sol_directory_basename + str(i))
+                os.system('cp ' + self._template_input_file + ' ' + self._sol_directory_basename + str(i) + '/.')
     
     def get_sol_directory(self, idx):
-        return 'fom_' + str(idx)
+        return self._sol_directory_basename + str(idx)
 
     def get_input_filename(self):
-        return 'input.json'
+        return self._template_input_file
     
     def get_base_directory(self):
         return self._base_directory
 
 class ROMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
+    def __init__(self, template_directory, template_input_file, base_directory, sol_directory_basename, parameter_name, num_parameters):
+        self._template_directory = template_directory
+        self._template_input_file = template_input_file
+        self._base_directory = base_directory
+        self._sol_directory_basename = sol_directory_basename
+
     def set_parameters_in_input(self):
         return 0
 
@@ -131,7 +155,7 @@ class ROMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
         mesh_obj = pda.load_cellcentered_uniform_mesh(mesh_path)
 
         # Load basis
-        basis = np.load('basis.npz')['basis']
+        self._basis = np.load(self.get_base_directory() + '/basis.npz')['basis']
 
         # Define Scheme
         # A. set scheme
@@ -149,10 +173,10 @@ class ROMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
         # Run ROM
         # A. get initial condition
         yn = problem.initialCondition()
-        qn = np.matmul(basis.transpose(), yn)
+        qn = np.matmul(self._basis.transpose(), yn)
 
         # B. solve ROM
-        rom = ROM(basis=basis, problem=problem) # NOTE: Defined ROM class so that I can use pda.advanceRK4
+        rom = ROM(basis=self._basis, problem=problem) # NOTE: Defined ROM class so that I can use pda.advanceRK4
         # pda.advanceRK4(rom, qn, dt, n_steps)
         # qn = myRK4(rom, yn, dt, n_steps)
         # qn = myRK4(rom, qn, dt, n_steps)
@@ -160,31 +184,41 @@ class ROMSamplingCouplerBase(rt.workflows.sampling.SamplingCouplerBase):
         # D. Define residual function
         F = rom.createRightHandSide()
         def residual(x):
-            _, v = rom.rightHandSide(np.matmul(basis, x),0.,np.matmul(basis, F))
+            _, v = rom.rightHandSide(np.matmul(self._basis, x),0.,np.matmul(self._basis, F))
             return v
         
         # Solve FOM
-        qn = scipy.optimize.newton_krylov(residual, np.matmul(basis.transpose(), problem.initialCondition()), verbose=True, f_tol=1e-8)
+        qn = scipy.optimize.newton_krylov(residual, np.matmul(self._basis.transpose(), problem.initialCondition()), verbose=False, f_tol=1e-8)
 
         # Save reconstructed solution
         yn = np.matmul(self._basis, qn)
-        np.savez('results.npz', y=yn, parameters=[D, K])
+        np.savez('results.npz', y=yn, parameters=[D, K], res=np.matmul(self._basis,residual(qn)))
 
         return yn
     
     def create_cases(self, starting_sample_no, parameter_samples):
-        for i in range(starting_sample_no, np.shape(parameter_samples)[0]):
-            if not os.path.exists('rom_' + str(i)):
-                os.mkdir('rom_' + str(i))
-            os.system('cp input.json rom_' + str(i) + '/.')
+        if np.shape(parameter_samples)[0] == 1:
+            if not os.path.exists(self._sol_directory_basename + str(starting_sample_no)):
+                os.mkdir(self._sol_directory_basename + str(starting_sample_no))
+            os.system('cp ' + self._template_input_file + ' ' + self._sol_directory_basename + str(starting_sample_no) + '/.')
+        else:
+            for i in range(starting_sample_no, np.shape(parameter_samples)[0]):
+                if not os.path.exists(self._sol_directory_basename + str(i)):
+                    os.mkdir(self._sol_directory_basename + str(i))
+                os.system('cp ' + self._template_input_file + ' ' + self._sol_directory_basename + str(i) + '/.')
 
     def get_sol_directory(self, idx):
-        return 'rom_' + str(idx)
+        return self._sol_directory_basename + str(idx)
 
     def get_parameter_space(self, parameter_name, num_parameters):
         param_space = ParameterSpace(parameter_name=parameter_name, num_parameters=num_parameters)
-        
         return param_space
+    
+    def get_input_filename(self):
+        return self._template_input_file
+    
+    def get_base_directory(self):
+        return self._base_directory
 
 class ROM():
     def __init__(self, basis, problem):
@@ -227,16 +261,6 @@ class ParameterSpace():
         return np.array(samples)
 
 class GreedyCouplerBase(rt.workflows.greedy.GreedyCouplerBase):
-    # NOTE: How does __init__ work with abc?
-    # I was not able to call GreedyCouplerBase with args unless I defined this __init__ here.
-    def __init__(self, rom_coupler, fom_coupler, base_directory):
-        self.rom_coupler = rom_coupler
-        self.fom_coupler = fom_coupler
-        self.__base_directory = (os.path.realpath(os.getcwd())
-                                 if base_directory is None
-                                 else base_directory
-                                 )
-
     def compute_qoi(self):
         # Read response from file
         output = np.load('results.npz')
@@ -245,15 +269,22 @@ class GreedyCouplerBase(rt.workflows.greedy.GreedyCouplerBase):
         return qoi
     
     def compute_error_indicator(self):
-        print('here')
-        sys.exit()
-        return err
+        rom = np.load('results.npz')
+        ind = os.getcwd()[-1]
+        fom = np.load('../fom_0/results.npz')
+        invJ = fom['invJ']
+        res = rom['res']
+
+        return np.linalg.norm(np.matmul(invJ, res))
 
     def get_parameter_space(self):
         param_space = self.fom_coupler.get_parameter_space()
         return param_space
     
     def create_trial_space(self, training_sample_indices):
+        # Save training sample indices
+        self._training_sample_indices = training_sample_indices
+
         # Read in input file
         f = open(self.fom_coupler.get_input_filename())
         input = json.load(f)
@@ -263,19 +294,18 @@ class GreedyCouplerBase(rt.workflows.greedy.GreedyCouplerBase):
         n_vars = 1 # number of PDE variables
         n = input['n_x'] * input['n_y'] # number of spatial DOFs
         snapshots = np.zeros((n_vars, n, np.shape(training_sample_indices)[0]))
-        for i in training_sample_indices:
-            results = np.load('fom_' + str(i) + '/results.npz')
-            snapshots[:,:,i] = results['y']
+        count = 0
+        for sample in training_sample_indices:
+            results = np.load(sample + '/results.npz')
+            snapshots[:,:,count] = results['y']
+            count += 1
 
         # Define options
-        truncater = rt.vector_space.utils.truncater.BasisSizeTruncater(basis_dimension=-1)
-        # truncater = rt.vector_space.utils.truncater.NoOpTruncater()
-        shifter = rt.vector_space.utils.shifter.NoOpShifter()
-        splitter = rt.vector_space.utils.splitter.NoOpSplitter()
+        truncater = rt.vector_space.utils.truncater.NoOpTruncater()
         orthogonalizer = rt.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer()
 
         # Calculate trial space
-        pod_space = rt.vector_space.VectorSpaceFromPOD(snapshots=snapshots, truncater=truncater, shifter=shifter, splitter=splitter, orthogonalizer=orthogonalizer)
+        pod_space = rt.vector_space.VectorSpaceFromPOD(snapshots=snapshots, truncater=truncater, orthogonalizer=orthogonalizer)
         basis = pod_space.get_basis()[0]
 
         # Save basis
@@ -371,7 +401,7 @@ def plot_single_result(figure_path, mesh_obj, yn, x_label, y_label, suffix):
     plt.savefig(figure_path + '/contour_yn_without_mesh' + suffix + '.jpeg')
     plt.close()
 
-def plot_results(figure_path, mesh_obj, y_fom, y_rom, x_label, y_label):
+def plot_results(figure_path, mesh_obj, y_fom, y_rom, x_label, y_label, suffix):
     x = mesh_obj.viewX()
     y = mesh_obj.viewY()
     unique_x = list(set(x))
@@ -396,7 +426,7 @@ def plot_results(figure_path, mesh_obj, y_fom, y_rom, x_label, y_label):
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.savefig(figure_path + '/contour_fom_vs_rom.jpeg')
+    plt.savefig(figure_path + '/contour_fom_vs_rom' + suffix + '.jpeg')
     plt.close()
 
 # Open and read input file
@@ -412,62 +442,98 @@ n_x = input['n_x']
 n_y = input['n_y']
 n_snapshots = input['n_snapshots']
 figure_path = input['figure_path']
+n_test = input['n_test']
 
 # Generate and plot the mesh
 mesh_obj = generate_mesh(pressio_file_path=pressio_file_path, mesh_path=mesh_path, figure_path=figure_path, n_x=n_x, n_y=n_y)
 
-# Run FOM
-# A. Set up FOM Coupler
-fom_sampler = FOMSamplingCouplerBase(parameter_name=['K','D'], num_parameters=2, base_directory=os.getcwd())
+# Define FOM Sampler
+fom_sampler_random = FOMSamplingCouplerBase(template_directory=os.getcwd(), template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='random/fom_', parameter_name=['K','D'], num_parameters=2)
+fom_sampler_greedy = FOMSamplingCouplerBase(template_directory=os.getcwd(), template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='greedy/fom_', parameter_name=['K','D'], num_parameters=2)
+fom_sampler_test = FOMSamplingCouplerBase(template_directory=os.getcwd(), template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='test/fom_', parameter_name=['K','D'], num_parameters=2)
 
-# # B. Run FOM for N number of samples
-# rt.workflows.sampling.run_sampling(sampling_coupler=fom_sampler, testing_sample_size=n_snapshots, random_seed=1)
+# Define ROM Sampler
+rom_sampler_random = ROMSamplingCouplerBase(template_directory='', template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='random/rom_', parameter_name=['K','D'], num_parameters=2)
+rom_sampler_greedy = ROMSamplingCouplerBase(template_directory='', template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='greedy/rom_', parameter_name=['K','D'], num_parameters=2)
+rom_sampler_test = ROMSamplingCouplerBase(template_directory='', template_input_file='input.json', base_directory=os.getcwd(), sol_directory_basename='test/rom_', parameter_name=['K','D'], num_parameters=2)
 
-# # C. Read in snapshots (NOTE: snapshots should be a tensor)
-# n_vars = 1 # number of PDE variables
-# n = n_x * n_y # number of spatial DOFs
-# n_snapshots = input['n_snapshots'] # number of samples/snapshots
-# snapshots = np.zeros((n_vars, n, n_snapshots))
-# parameters = np.zeros((n_snapshots, 2))
-# for i in range(0,n_snapshots):
-#     results = np.load('i' + str(i) + '/results.npz')
-#     snapshots[:,:,i] = results['y']
-#     parameters[i,:] = results['parameters']
+# Example: Monte Carlo Sampling for ROM
+# FOM
+# A. Run FOM at train/test points using montecarlo sampling
+rt.workflows.sampling.run_sampling(sampling_coupler=fom_sampler_random, testing_sample_size=n_snapshots, random_seed=1)
+rt.workflows.sampling.run_sampling(sampling_coupler=fom_sampler_test, testing_sample_size=n_test, random_seed=2)
 
-# # D. Plot results for one snapshot
-# plot_single_result(figure_path, mesh_obj, snapshots[0,:,0], x_label=f'$K={parameters[0,0]:.3f}$', y_label=f'$D={parameters[0,1]:.3f}$', suffix='')
+# B. Read in train/test snapshots (NOTE: snapshots should be a tensor)
+n_vars = 1 # number of PDE variables
+n = n_x * n_y # number of spatial DOFs
+snapshots_train = np.zeros((n_vars, n, n_snapshots))
+parameters_train = np.zeros((n_snapshots, 2))
+for i in range(0,n_snapshots):
+    results = np.load('random/fom_' + str(i) + '/results.npz')
+    snapshots_train[:,:,i] = results['y']
+    parameters_train[i,:] = results['parameters']
+snapshots_test = np.zeros((n_vars, n, n_test))
+parameters_test = np.zeros((n_test, 2))
+for i in range(0,n_test):
+    results = np.load('test/fom_' + str(i) + '/results.npz')
+    snapshots_test[:,:,i] = results['y']
+    parameters_test[i,:] = results['parameters']
 
-# # E. Run FOM for one sample
-# st = time.time()
-# y = fom_sampler.run_model(file_name=file_name, parameter_values=parameters[0,:])
-# print('Time to run FOM: ', time.time()-st)
+# C. Plot results for one snapshot
+plot_single_result(figure_path, mesh_obj, snapshots_train[0,:,0], x_label=f'$K={parameters_train[0,0]:.3f}$', y_label=f'$D={parameters_train[0,1]:.3f}$', suffix='_random')
 
-# # Run ROM
-# # A. Define truncater, shifter, splitter, and orthogonalizer
-# # truncater = rt.vector_space.utils.truncater.EnergyTruncater(threshold=0.99)
-# truncater = rt.vector_space.utils.truncater.BasisSizeTruncater(basis_dimension=-1)
-# # truncater = rt.vector_space.utils.truncater.NoOpTruncater()
-# shifter = rt.vector_space.utils.shifter.NoOpShifter()
-# splitter = rt.vector_space.utils.splitter.NoOpSplitter()
-# orthogonalizer = rt.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer()
+# D. Run FOM for one sample
+st = time.time()
+y = fom_sampler_test.run_model(file_name=file_name, parameter_values=parameters_train[0,:])
+print('Time to run FOM: ', time.time()-st)
 
-# # B. Calculate trial space
-# pod_space = rt.vector_space.VectorSpaceFromPOD(snapshots=snapshots, truncater=truncater, shifter=shifter, splitter=splitter, orthogonalizer=orthogonalizer)
-# basis = pod_space.get_basis()[0]
-# plot_single_result(figure_path, mesh_obj, basis[:,0], x_label=f'$K={parameters[0,0]:.3f}$', y_label=f'$D={parameters[0,1]:.3f}$', suffix='_basis0')
+# ROM
+# A. Calculate trial space from snapshots
+truncater = rt.vector_space.utils.truncater.NoOpTruncater()
+orthogonalizer = rt.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer()
+pod_space = rt.vector_space.VectorSpaceFromPOD(snapshots=snapshots_train, truncater=truncater, orthogonalizer=orthogonalizer)
+basis = pod_space.get_basis()[0]
+np.savez('basis.npz',basis=basis) # NOTE: This is needed for run_model
 
-# C. Run ROM for a reconstructive case
-rom_sampler = ROMSamplingCouplerBase(template_directory='', template_input_file='input.json', other_required_files='', base_directory=os.getcwd(), sol_directory_basename='rom')
-# st = time.time()
-# y_rom = rom_sampler.run_model(file_name=file_name, parameter_values=parameters[0,:])
-# print('Time to run ROM: ', time.time()-st)
+# B. Plot zeroth mode
+plot_single_result(figure_path, mesh_obj, basis[:,0], x_label=f'$K={parameters_train[0,0]:.3f}$', y_label=f'$D={parameters_train[0,1]:.3f}$', suffix='_basis0_random')
 
-# # D. Plot results
-# plot_single_result(figure_path, mesh_obj, y_rom, x_label=f'$K={parameters[0,0]:.3f}$', y_label=f'$D={parameters[0,1]:.3f}$', suffix='_rom')
+# C. Run ROM at test points
+st = time.time()
+y_rom = np.zeros(np.shape(snapshots_test))
+for i in range(0, n_test):
+    y_rom[:,:,i] = rom_sampler_random.run_model(file_name=file_name, parameter_values=parameters_test[i,:])
+print('Time to run ROM: ', (time.time()-st) / n_test)
 
-# # Plot both results together
-# plot_results(figure_path, mesh_obj, snapshots[0,:,0], y_rom, x_label=f'$K={parameters[0,0]:.3f}$', y_label=f'$D={parameters[0,1]:.3f}$')
+# D. Plot ROM result at test point
+plot_single_result(figure_path, mesh_obj, y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_rom_random')
 
-# Greedy Sampling of ROM
-greedy_sampler = GreedyCouplerBase(rom_coupler=rom_sampler, fom_coupler=fom_sampler, base_directory=os.getcwd())
-rt.workflows.greedy.run_greedy(greedy_coupler=greedy_sampler, tolerance=1e-4, testing_sample_size=2)
+# E. Plot ROM/FOM results at test point
+plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_random')
+
+# F. Calculate error
+err = np.linalg.norm(snapshots_test - y_rom)
+print('L2 Norm of Error between ROM and FOM at test points using MC sampling: ', err)
+
+# Example: Greedy sampling for ROM
+# A. Define greedy sampler
+greedy_sampler = GreedyCouplerBase(rom_coupler=rom_sampler_greedy, fom_coupler=fom_sampler_greedy, base_directory=os.getcwd())
+
+# B. Run greedy
+rt.workflows.greedy.run_greedy(greedy_coupler=greedy_sampler, tolerance=1e-4, testing_sample_size=3)
+
+# C. Run greedy-trained ROM at test points
+st = time.time()
+y_rom = np.zeros(np.shape(snapshots_test))
+for i in range(0, n_test):
+    y_rom[:,:,i] = rom_sampler_greedy.run_model(file_name=file_name, parameter_values=parameters_test[i,:])
+print('Time to run ROM: ', (time.time()-st) / n_test)
+
+# D. Plot results
+plot_single_result(figure_path, mesh_obj, y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_rom')
+plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy')
+plot_single_result(figure_path, mesh_obj, snapshots_test[0,:,0] - y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_romfom_error')
+
+# E. Calculate error
+err = np.linalg.norm(snapshots_test - y_rom)
+print('L2 Norm of Error between ROM and FOM at test points using greedy sampling: ', err)
