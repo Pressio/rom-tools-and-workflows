@@ -59,15 +59,12 @@ def _create_parameter_dict(parameter_names, parameter_values):
 
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
-                 base_directory: str = None,
-                 run_directory_prefix: str = "run_",
+                 run_directory_prefix: str = "./run_",
                  number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
     Core algorithm
     '''
-    if base_directory is None:
-        base_directory = os.path.realpath(os.getcwd())
 
     np.random.seed(random_seed)
 
@@ -81,23 +78,21 @@ def run_sampling(model: Model,
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
-        run_directory = f'{base_directory}/{run_directory_prefix}{sample_index}'
+        run_directory = f'{run_directory_prefix}{sample_index}'
         create_empty_dir(run_directory)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
         model.populate_run_directory(run_directory, parameter_dict)
-        os.chdir(base_directory)
 
     # Run cases
     run_times = np.zeros(number_of_samples)
     for sample_index in range(0, number_of_samples):
         print("=======  Sample " + str(sample_index) + " ============")
         print("Running")
-        run_directory = f'{base_directory}/{run_directory_prefix}{sample_index}'
+        run_directory = f'{run_directory_prefix}{sample_index}'
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
         run_times[sample_index] = run_sample(run_directory, model,
                                              parameter_dict)
-        os.chdir(base_directory)
-        sample_stats_save_directory = f'{base_directory}/{run_directory_prefix}{sample_index}/../'
+        sample_stats_save_directory = f'{run_directory_prefix}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
 
