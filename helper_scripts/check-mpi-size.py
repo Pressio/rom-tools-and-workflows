@@ -50,9 +50,10 @@ def parse_diff_output(changed_files):
                 line_counter = 0
                 for line in lines:
                     if line.startswith("+"):
-                        if (
-                            "@pytest.mark.mpi(min_size" in line
-                            and not ("min_size=1" or "min_size=3" or "min_size=4") in line
+                        if ("@pytest.mark.mpi(min_size" in line
+                            and "min_size=1" not in line
+                            and "min_size=3" not in line
+                            and "min_size=4" not in line
                         ):
                             # Only include lines where we set the number of mpi processes
                             # to be different from 1, 3, or 4.

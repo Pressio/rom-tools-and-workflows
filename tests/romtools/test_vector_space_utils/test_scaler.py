@@ -60,7 +60,7 @@ def test_vector_scaler_mpi():
   n_var = 3
   nx = 5
   local_snapshots, _ = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
-  my_scaling_vector = np.abs(np.random.normal(size=nx))
+  my_scaling_vector = np.abs(np.random.normal(size=local_snapshots.shape[1]))
   initial_local_snapshots = copy.deepcopy(local_snapshots)
   scaler = VectorScaler(my_scaling_vector)
 
@@ -149,7 +149,7 @@ def test_variable_and_vector_scaler_mpi():
   n_var = 3
   nx = 5
   local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
-  my_scaling_vector = np.abs(np.random.normal(size=nx))
+  my_scaling_vector = np.abs(np.random.normal(size=local_snapshots.shape[1]))
 
   scales = np.zeros(local_snapshots.shape[0])
   for i in range(0,local_snapshots.shape[0]):
