@@ -53,7 +53,6 @@ $$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
 In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
 '''
 
-import abc
 from typing import Protocol
 import numpy as np
 import scipy.sparse

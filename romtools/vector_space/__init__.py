@@ -129,7 +129,7 @@ class VectorSpace(Protocol):
         ...
 
 
-class DictionaryVectorSpace:
+class DictionaryVectorSpace(VectorSpace):
     '''
     Reduced basis vector space (no truncation).
 
@@ -185,7 +185,7 @@ class DictionaryVectorSpace:
         return self.__basis.shape
 
 
-class VectorSpaceFromPOD:
+class VectorSpaceFromPOD(VectorSpace):
     '''
     POD vector space (constructed via SVD).
 
