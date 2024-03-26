@@ -102,10 +102,10 @@ class _Shifter:
         self.__shift_vector = shift_vector.copy()
 
     def apply_shift(self, my_array: np.ndarray):
-        my_array -= self.__shift_vector
+        my_array -= self.__shift_vector[...,None]
 
     def apply_inverse_shift(self, my_array: np.ndarray):
-        my_array += self.__shift_vector
+        my_array += self.__shift_vector[...,None]
 
     def get_shift_vector(self):
         return self.__shift_vector
@@ -113,36 +113,36 @@ class _Shifter:
 
 def create_noop_shifter(my_array: np.ndarray):
     '''No op implementation.'''
-    shift_vector = np.zeros((my_array.shape[0],my_array.shape[2]))
-    shifter = _Shifter(shift_vector[:, None, :])
+    shift_vector = np.zeros((my_array.shape[0],my_array.shape[1]))
+    shifter = _Shifter(shift_vector)
     return shifter
 
 def create_constant_shifter(shift_value, my_array: np.ndarray):
     '''Shifts the data by a constant value.'''
     if isinstance(shift_value, np.ndarray):
-        shift_vector = np.empty((my_array.shape[0], my_array.shape[2],))
+        shift_vector = np.empty((my_array.shape[0], my_array.shape[1],))
         assert my_array.shape[0] == shift_value.size
         for i in range(0, my_array.shape[0]):
             shift_vector[i] = shift_value[i]
     elif isinstance(shift_value, Number):
-        shift_vector = np.full((my_array.shape[0], my_array.shape[2],), shift_value)
+        shift_vector = np.full((my_array.shape[0], my_array.shape[1],), shift_value)
     else:
         sys.exit("Error: shift_value must be either a number or np.ndarray.")
-    shifter = _Shifter(shift_vector[:, None, :])
+    shifter = _Shifter(shift_vector)
     return shifter
 
 def create_vector_shifter(shift_vector: np.ndarray):
     '''Shifts the data by a user-input vector.'''
-    shifter = _Shifter(shift_vector[:, None, :])
+    shifter = _Shifter(shift_vector)
     return shifter
 
-def create_average_shifter(local_array: np.ndarray):
+def create_average_shifter(array_in: np.ndarray):
     '''Shifts the data by the average of a data matrix.'''
-    shift_vector = pla.mean(local_array, axis=2)
-    return _Shifter(shift_vector[..., None])
+    shift_vector = pla.mean(array_in, axis=2)
+    return _Shifter(shift_vector)
 
 def create_firstvec_shifter(my_array: np.ndarray):
     '''Shifts the data by the first vector of a data matrix.'''
     shift_vector = my_array[..., 0]
-    shifter = _Shifter(shift_vector[..., None])
+    shifter = _Shifter(shift_vector)
     return shifter

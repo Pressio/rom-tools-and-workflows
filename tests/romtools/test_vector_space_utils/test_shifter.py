@@ -150,14 +150,15 @@ def test_vector_shifter():
 def test_vector_shifter_mpi():
   comm = MPI.COMM_WORLD
   global_shape = (3,10,5)
-  shift_vec = np.random.normal(size=(3,5))
-  original_local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
-  local_snapshots = original_local_snapshots.copy()
-  shifter = create_vector_shifter(shift_vec)
+  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_shift_vec = np.random.normal(size=(3,local_snapshots.shape[1]))
+  original_local_snapshots = local_snapshots.copy()
+  shifter = create_vector_shifter(local_shift_vec)
   shifter.apply_shift(local_snapshots)
-  global_snapshots -= shift_vec[:,None,:]
-  assert len(np.setdiff1d(local_snapshots, global_snapshots)) == 0
+  original_local_snapshots -= local_shift_vec[:,:,None]
+  assert np.allclose(local_snapshots, original_local_snapshots)
   shifter.apply_inverse_shift(local_snapshots)
+  original_local_snapshots += local_shift_vec[:,:,None]
   assert np.allclose(local_snapshots, original_local_snapshots)
 
 
