@@ -102,10 +102,10 @@ class _Shifter:
         self.__shift_vector = shift_vector.copy()
 
     def apply_shift(self, my_array: np.ndarray):
-        my_array -= self.__shift_vector[...,None]
+        my_array -= self.__shift_vector[..., None]
 
     def apply_inverse_shift(self, my_array: np.ndarray):
-        my_array += self.__shift_vector[...,None]
+        my_array += self.__shift_vector[..., None]
 
     def get_shift_vector(self):
         return self.__shift_vector
@@ -136,13 +136,13 @@ def create_vector_shifter(shift_vector: np.ndarray):
     shifter = _Shifter(shift_vector)
     return shifter
 
-def create_average_shifter(array_in: np.ndarray):
+def create_average_shifter(my_array: np.ndarray):
     '''Shifts the data by the average of a data matrix.'''
-    shift_vector = pla.mean(array_in, axis=2)
+    shift_vector = pla.mean(my_array, axis=2)
     return _Shifter(shift_vector)
 
 def create_firstvec_shifter(my_array: np.ndarray):
     '''Shifts the data by the first vector of a data matrix.'''
-    shift_vector = my_array[..., 0]
+    shift_vector = my_array[:, :, 0]
     shifter = _Shifter(shift_vector)
     return shifter
