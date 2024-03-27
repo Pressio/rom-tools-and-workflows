@@ -55,9 +55,8 @@ We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
 
-import numpy as np
-import warnings
 from typing import Protocol
+import numpy as np
 
 
 class LeftSingularVectorTruncater(Protocol):
@@ -72,9 +71,11 @@ class LeftSingularVectorTruncater(Protocol):
         ...
 
 
-class NoOpTruncater:
+class NoOpTruncater():
     '''
     No op implementation
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -83,9 +84,11 @@ class NoOpTruncater:
         return basis
 
 
-class BasisSizeTruncater:
+class BasisSizeTruncater():
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, basis_dimension: int) -> None:
         '''
@@ -113,16 +116,19 @@ class BasisSizeTruncater:
         '''
         # Check if basis dimension is larger than array and give error.
         if self.__basis_dimension > np.shape(basis)[1]:
-            raise ValueError('Given basis dimension is greater than size of basis array: ', self.__basis_dimension, ' > ', np.shape(basis)[1])
+            raise ValueError('Given basis dimension is greater than size of basis array: ',
+                             self.__basis_dimension, ' > ', np.shape(basis)[1])
 
         return basis[:, :self.__basis_dimension]
 
 
-class EnergyBasedTruncater:
+class EnergyBasedTruncater():
     '''
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
     is greater than some threshold.
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, threshold: float) -> None:
         '''

@@ -53,7 +53,6 @@ $$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
 In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
 '''
 
-import abc
 from typing import Protocol
 import numpy as np
 import scipy.sparse
@@ -70,6 +69,8 @@ class Orthogonalizer(Protocol):
 class NoOpOrthogonalizer:
     '''
     No op class (doesn't do anything)
+
+    This class conforms to `Orthogonalizer` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -83,6 +84,8 @@ class EuclideanL2Orthogonalizer:
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
     $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
+
+    This class conforms to `Orthogonalizer` protocol.
     '''
     def __init__(self, qrFnc=None) -> None:
         '''
@@ -110,6 +113,8 @@ class EuclideanVectorWeightedL2Orthogonalizer:
     $$\\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},$$
     where $\\mathbf{w}$ is the weighting vector. Typically, this inner product
     is used for orthogonalizing with respect to cell volumes
+
+    This class conforms to `Orthogonalizer` protocol.
     '''
     def __init__(self, weighting_vector: np.ndarray, qrFnc=None) -> None:
         '''
