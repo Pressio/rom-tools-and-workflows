@@ -84,7 +84,7 @@ class NoOpTruncater():
         return basis
 
 
-class BasisSizeTruncater(LeftSingularVectorTruncater):
+class BasisSizeTruncater():
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
 
@@ -122,7 +122,7 @@ class BasisSizeTruncater(LeftSingularVectorTruncater):
         return basis[:, :self.__basis_dimension]
 
 
-class EnergyBasedTruncater(LeftSingularVectorTruncater):
+class EnergyBasedTruncater():
     '''
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
