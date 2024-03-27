@@ -42,7 +42,6 @@ def test_basis_size_truncater_mpi():
   comm = MPI.COMM_WORLD
   reduced_size = 4
   truncater = BasisSizeTruncater(reduced_size)
-  my_basis = np.random.normal(size=(10,8))
   basis_shape=(10,8)
   local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   singular_values = np.ones(2)

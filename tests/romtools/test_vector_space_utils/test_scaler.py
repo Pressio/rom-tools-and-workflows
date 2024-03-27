@@ -100,14 +100,14 @@ def test_variable_scaler_mpi():
  nx = 5
  def run_test(scaling_type):
   local_snapshots, _ = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
-  scales = np.zeros(local_snapshots.shape[0])
-  for i in range(0,local_snapshots.shape[0]):
+  scales = np.zeros(n_var)
+  for i in range(0,n_var):
     scales[i] = scaling_op(scaling_type, local_snapshots[i])
 
   initial_local_snapshots = copy.deepcopy(local_snapshots)
   scaler = VariableScaler(scaling_type)
   scaled_local_snapshots = scaler.pre_scale(local_snapshots)
-  for i in range(0,local_snapshots.shape[0]):
+  for i in range(0,n_var):
     assert np.allclose(scaled_local_snapshots[i] , 1./scales[i]*initial_local_snapshots[i])
 
   unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
@@ -151,14 +151,14 @@ def test_variable_and_vector_scaler_mpi():
   local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
   my_scaling_vector = np.abs(np.random.normal(size=local_snapshots.shape[1]))
 
-  scales = np.zeros(local_snapshots.shape[0])
-  for i in range(0,local_snapshots.shape[0]):
+  scales = np.zeros(n_var)
+  for i in range(0,n_var):
     scales[i] = scaling_op(scaling_type, local_snapshots[i])
 
   initial_local_snapshots = copy.deepcopy(local_snapshots)
   scaler = VariableAndVectorScaler(my_scaling_vector,scaling_type)
   scaled_local_snapshots = scaler.pre_scale(local_snapshots)
-  for i in range(0,local_snapshots.shape[0]):
+  for i in range(0,n_var):
     assert np.allclose(scaled_local_snapshots[i] , 1./scales[i]*(1./my_scaling_vector[None,:,None]* initial_local_snapshots)[i])
 
   unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
