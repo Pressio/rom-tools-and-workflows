@@ -61,13 +61,11 @@ def test_constant_shifter_mpi():
 
   # Test with np.ndarray
   shift_value = np.array([4,1,3],dtype='int')
-  original_local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
-  local_snapshots = original_local_snapshots.copy()
+  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  original_local_snapshots = local_snapshots.copy()
   shifter = create_constant_shifter(shift_value, local_snapshots)
   shifter.apply_shift(local_snapshots)
-  for i in range(global_snapshots.shape[0]):
-    global_snapshots[i] -= shift_value[i]
-  assert len(np.setdiff1d(local_snapshots, global_snapshots)) == 0
+  assert len(np.setdiff1d(local_snapshots, global_snapshots - shift_value[:,None,None])) == 0
   shifter.apply_inverse_shift(local_snapshots)
   assert np.allclose(local_snapshots, original_local_snapshots)
 
@@ -105,6 +103,7 @@ def test_average_shifter_mpi():
   local_shifter = create_average_shifter(local_snapshots)
   local_shifter.apply_shift(local_snapshots)
   assert len(np.setdiff1d(local_snapshots, global_snapshots - mean_vec[:,:,None])) == 0
+  assert(np.allclose(np.mean(local_snapshots, axis=2), 0))
   local_shifter.apply_inverse_shift(local_snapshots)
   assert np.allclose(local_snapshots, original_local_snapshots)
 
@@ -155,10 +154,8 @@ def test_vector_shifter_mpi():
   original_local_snapshots = local_snapshots.copy()
   shifter = create_vector_shifter(local_shift_vec)
   shifter.apply_shift(local_snapshots)
-  original_local_snapshots -= local_shift_vec[:,:,None]
-  assert np.allclose(local_snapshots, original_local_snapshots)
+  assert np.allclose(local_snapshots, original_local_snapshots - local_shift_vec[:,:,None])
   shifter.apply_inverse_shift(local_snapshots)
-  original_local_snapshots += local_shift_vec[:,:,None]
   assert np.allclose(local_snapshots, original_local_snapshots)
 
 
