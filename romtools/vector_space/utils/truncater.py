@@ -71,9 +71,11 @@ class LeftSingularVectorTruncater(Protocol):
         ...
 
 
-class NoOpTruncater(LeftSingularVectorTruncater):
+class NoOpTruncater():
     '''
     No op implementation
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -85,6 +87,8 @@ class NoOpTruncater(LeftSingularVectorTruncater):
 class BasisSizeTruncater(LeftSingularVectorTruncater):
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, basis_dimension: int) -> None:
         '''
@@ -123,6 +127,8 @@ class EnergyBasedTruncater(LeftSingularVectorTruncater):
     Truncates based on the decay of singular values, i.e., will define $K$ to
     be the number of singular values such that the cumulative energy retained
     is greater than some threshold.
+
+    This class conforms to `LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, threshold: float) -> None:
         '''
