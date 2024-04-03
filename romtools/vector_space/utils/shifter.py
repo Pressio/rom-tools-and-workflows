@@ -70,6 +70,7 @@ import sys
 from numbers import Number
 from typing import Protocol
 import numpy as np
+import pressiolinalg.linalg as pla
 
 
 class Shifter(Protocol):
