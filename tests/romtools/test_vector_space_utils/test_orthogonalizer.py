@@ -9,6 +9,23 @@ try:
 except ModuleNotFoundError:
   print("module 'mpi4py' is not installed")
 
+class ParallelQR:
+    def  __init__(self, comm):
+        self.__comm = comm
+
+    def __call__(self, local_arr: np.ndarray, mode: str):
+        # Gather all of the local arrays
+        local_arrays = self.__comm.allgather(local_arr)
+
+        # Reconstruct the global array
+        global_array = np.vstack(local_arrays)
+
+        # Perform qr decomp on global array
+        global_qr, _ = np.linalg.qr(global_array, mode=mode)
+
+        # Then distribute back to the original processes and return (along with a dummy variable)
+        local_qr = test_utils.distribute_array_impl(global_qr, comm=self.__comm, dist_axis=0)
+        return local_qr, _
 
 @pytest.mark.mpi_skip
 def test_noop_orthogonalizer():
@@ -24,7 +41,9 @@ def test_noop_orthogonalizer_mpi():
   basis_shape = (10,2)
   local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   local_orthogonalized_basis = orthogonalizer.orthogonalize(local_basis)
-  assert(np.allclose(local_orthogonalized_basis, local_basis))
+  global_orthogonalized_basis = orthogonalizer.orthogonalize(global_basis)
+  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+  assert(np.allclose(local_orthogonalized_basis, dist_global_orthogonalized_basis))
 
 @pytest.mark.mpi_skip
 def test_euclidean_l2_orthogonalizer():
@@ -37,12 +56,15 @@ def test_euclidean_l2_orthogonalizer():
 @pytest.mark.mpi(min_size=3)
 def test_euclidean_l2_orthogonalizer_mpi():
   comm = MPI.COMM_WORLD
-  orthogonalizer = EuclideanL2Orthogonalizer()
+  parallel_qr = ParallelQR(comm)
+  parallel_orthogonalizer = EuclideanL2Orthogonalizer(qrFnc=parallel_qr)
+  serial_orthogonalizer = EuclideanL2Orthogonalizer()
   basis_shape = (10,2)
   local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
-  local_orthogonalized_basis = orthogonalizer.orthogonalize(local_basis)
-  should_be_eye = local_orthogonalized_basis.transpose() @ local_orthogonalized_basis
-  assert(np.allclose(should_be_eye,np.eye(2)))
+  local_orthogonalized_basis = parallel_orthogonalizer.orthogonalize(local_basis)
+  global_orthogonalized_basis = serial_orthogonalizer.orthogonalize(global_basis)
+  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+  assert(np.allclose(local_orthogonalized_basis, dist_global_orthogonalized_basis))
 
 @pytest.mark.mpi_skip
 def test_euclidean_vector_weighted_l2_orthogonalizer():
@@ -60,11 +82,18 @@ def test_euclidean_vector_weighted_l2_orthogonalizer_mpi():
   basis_shape = (10,2)
   local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   np.random.seed(1)
-  vec_to_orthogonalize_against = np.abs(np.random.normal(size=local_basis.shape[0]))
-  orthogonalizer = EuclideanVectorWeightedL2Orthogonalizer(vec_to_orthogonalize_against)
-  local_orthogonalized_basis = orthogonalizer.orthogonalize(local_basis)
-  should_be_eye = local_orthogonalized_basis.transpose() @ ( scipy.sparse.diags(vec_to_orthogonalize_against) @ local_orthogonalized_basis )
-  assert np.allclose(should_be_eye,np.eye(2)), should_be_eye
+
+  vec_to_orthogonalize_against = np.abs(np.random.normal(size=10))
+  serial_orthogonalizer = EuclideanVectorWeightedL2Orthogonalizer(vec_to_orthogonalize_against)
+  global_orthogonalized_basis = serial_orthogonalizer.orthogonalize(global_basis)
+  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+
+  parallel_qr = ParallelQR(comm)
+  local_vec_to_orthogonalize_against = test_utils.distribute_array_impl(vec_to_orthogonalize_against, comm=comm)
+  parallel_orthogonalizer = EuclideanVectorWeightedL2Orthogonalizer(local_vec_to_orthogonalize_against, parallel_qr)
+  local_orthogonalized_basis = parallel_orthogonalizer.orthogonalize(local_basis)
+
+  assert np.allclose(local_orthogonalized_basis, dist_global_orthogonalized_basis)
 
 if __name__=="__main__":
   test_noop_orthogonalizer()
