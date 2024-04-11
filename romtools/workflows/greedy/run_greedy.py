@@ -87,10 +87,10 @@ import time
 import numpy as np
 
 from romtools.workflows.parameter_spaces import monte_carlo_sample
-from romtools.workflows.models import *
-from romtools.workflows.parameter_spaces import *
-from romtools.workflows.workflow_utils import create_empty_dir 
-from romtools.workflows.model_builders import *
+from romtools.workflows.models import QoiModel
+from romtools.workflows.parameter_spaces import ParameterSpace
+from romtools.workflows.workflow_utils import create_empty_dir
+from romtools.workflows.model_builders import QoiModelWithErrorEstimateBuilder
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
@@ -104,8 +104,8 @@ def run_greedy(fom_model: QoiModel,
     Main implementation of the greedy algorithm.
     '''
     base_directory = os.path.realpath(os.getcwd())
-    greedy_directory = absolute_greedy_work_directory 
-    create_empty_dir(greedy_directory) 
+    greedy_directory = absolute_greedy_work_directory
+    create_empty_dir(greedy_directory)
     offline_directory_prefix = greedy_directory + '/offline_data'
 
     run_directory_prefix = "run_"
@@ -117,8 +117,8 @@ def run_greedy(fom_model: QoiModel,
 
     np.random.seed(1)
 
-    
-    # create parameter samples 
+
+    # create parameter samples
     parameter_samples = monte_carlo_sample(parameter_space, testing_sample_size)
     parameter_names = parameter_space.get_names()
 
@@ -139,7 +139,7 @@ def run_greedy(fom_model: QoiModel,
     # Run FOM training cases
     t0 = time.time()
     training_dirs = []
-    
+ 
     for i in training_samples:
         greedy_file.write(f"Running FOM sample {i} \n")
         sample_index = i
@@ -151,9 +151,9 @@ def run_greedy(fom_model: QoiModel,
         fom_model.run_model(fom_run_directory,parameter_dict)
         fom_qoi = fom_model.compute_qoi(fom_run_directory,parameter_dict)
         if i == 0:
-          fom_qois = fom_qoi[None]
+            fom_qois = fom_qoi[None]
         else:
-          fom_qois = np.append(fom_qois,fom_qoi[None],axis=0) 
+            fom_qois = np.append(fom_qois,fom_qoi[None],axis=0)
         os.chdir(base_directory)
         training_dirs.append(fom_run_directory)
     fom_time += time.time() - t0
@@ -163,9 +163,9 @@ def run_greedy(fom_model: QoiModel,
     greedy_file.write("Creating ROM bases \n")
 
     updated_offline_data_dir = offline_directory_prefix + '/iteration_0/'
-    create_empty_dir(updated_offline_data_dir) 
+    create_empty_dir(updated_offline_data_dir)
     rom_model = rom_model_builder.build_from_training_dirs(training_dirs,updated_offline_data_dir)
- 
+
     basis_time += time.time() - t0
 
     converged = False
@@ -188,7 +188,7 @@ def run_greedy(fom_model: QoiModel,
             greedy_file.write(f"    Running ROM sample {sample_index}\n")
             greedy_file.flush()
             parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
-            rom_run_directory = greedy_directory + f'/rom_iteration_' + str(outer_loop_counter) + f'/{run_directory_prefix}{sample_index}' 
+            rom_run_directory = greedy_directory + f'/rom_iteration_{outer_loop_counter}/{run_directory_prefix}{sample_index}'
             create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
             rom_model.run_model(rom_run_directory,parameter_dict)
@@ -236,7 +236,7 @@ def run_greedy(fom_model: QoiModel,
         # Get ROM QoI to calibrate our error estimator
         rom_run_directory = greedy_directory + f'/rom/{run_directory_prefix}{sample_with_highest_error_indicator}'
         rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
-        qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi) 
+        qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
                           f"an error of {qoi_error}\n")
         qoi_errors = np.append(qoi_errors, qoi_error)
@@ -255,7 +255,7 @@ def run_greedy(fom_model: QoiModel,
         greedy_file.flush()
         training_dirs = [f'/rom_{run_directory_prefix}{i}' for i in training_samples]
 
-        updated_offline_data_dir = offline_directory_prefix + '/iteration_' + str(outer_loop_counter) + '/' 
+        updated_offline_data_dir = offline_directory_prefix + '/iteration_' + str(outer_loop_counter) + '/'
         rom_model = rom_model_builder.build_from_training_dirs(training_dirs,updated_offline_data_dir)
 
         basis_time += time.time() - t0
