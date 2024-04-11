@@ -168,30 +168,6 @@ def run_greedy(fom_model: QoiModel,
  
     basis_time += time.time() - t0
 
-#    # Evaluate ROM at training samples
-#    #     Do we actually need to do this?
-#    initial_errors = np.zeros(2)
-#    for i in training_samples:
-#        greedy_file.write(f"Running ROM sample {i}\n")
-#        t0 = time.time()
-#        sample_index = i
-#        rom_run_directory = greedy_directory + f'/rom/{run_directory_prefix}{sample_index}'
-#        os.chdir(rom_run_directory)
-#        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
-#        rom_model.run_model(rom_run_directory,parameter_dict)
-#        rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
-#        error_indicator = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
-#        if i == 0:
-#          rom_qois = rom_qoi[None]
-#          error_indicators = error_indicator[None]
-#        else:
-#          rom_qois = np.append(rom_qois,rom_qoi[None],axis=0) 
-#          error_indicators = np.append(error_indicators,error_indicator[None],axis=0)
-#        os.chdir(greedy_directory)
-#        rom_time += time.time() - t0
-#        greedy_file.write(f"Computing ROM/FOM error for sample {i} \n")
-#        initial_errors[i] = np.linalg.norm(rom_qois[i] - fom_qois[i]) / np.linalg.norm(fom_qois[i])
-
     converged = False
     max_error_indicators = np.zeros(0)
     reg = QoIvsErrorIndicatorRegressor()
