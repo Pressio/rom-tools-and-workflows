@@ -9,8 +9,9 @@ def create_empty_dir(dir_name: str):
     Create empty directory
     '''
     if os.path.exists(dir_name):
-        shutil.rmtree(dir_name)
-    os.makedirs(dir_name)
+        pass
+    else:
+        os.makedirs(dir_name)
 
 
 def setup_directory(source_dir: str,

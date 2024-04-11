@@ -85,93 +85,92 @@ closely as possible, which can be helpful for defining exit criterion.
 import os
 import time
 import numpy as np
+from numpy.random import sample
 
-from romtools.workflows.greedy.\
-    greedy_coupler_base import GreedyCouplerBase
 from romtools.workflows.parameter_spaces import monte_carlo_sample
+from romtools.workflows.models import QoiModel
+from romtools.workflows.parameter_spaces import ParameterSpace
+from romtools.workflows.workflow_utils import create_empty_dir
+from romtools.workflows.model_builders import QoiModelWithErrorEstimateBuilder
 
 
-def run_fom_sample(coupler: GreedyCouplerBase,
-                   parameter_samples,
-                   sample_idx: int) -> None:
-    fom_directory = coupler.fom_coupler.get_sol_directory(sample_idx)
-    os.chdir(fom_directory)
-    coupler.run_fom(coupler.get_fom_input_filename(), parameter_samples[0])
-    os.chdir(coupler.get_base_directory())
+def _create_parameter_dict(parameter_names, parameter_values):
+    return dict(zip(parameter_names, parameter_values))
 
-
-def run_rom_sample(coupler: GreedyCouplerBase,
-                   parameter_samples,
-                   sample_idx: int) -> float:
-    rom_directory = coupler.rom_coupler.get_sol_directory(sample_idx)
-    os.chdir(rom_directory)
-    coupler.run_rom(coupler.get_rom_input_filename(),
-                    parameter_samples[sample_idx])
-    error_indicator = coupler.compute_error_indicator()
-    os.chdir(coupler.get_base_directory())
-    return error_indicator
-
-
-def run_greedy(greedy_coupler: GreedyCouplerBase,
+def run_greedy(fom_model: QoiModel,
+               rom_model_builder: QoiModelWithErrorEstimateBuilder,
+               parameter_space: ParameterSpace,
+               absolute_greedy_work_directory: str,
                tolerance: float,
-               testing_sample_size: int = 10):
+               testing_sample_size: int = 10,
+               random_seed: int = 1):
     '''
     Main implementation of the greedy algorithm.
     '''
-    greedy_file = open("greedy_status.log", "w", encoding="utf-8")
+    greedy_directory = absolute_greedy_work_directory
+    create_empty_dir(greedy_directory)
+    offline_directory_prefix = 'offline_data' 
+
+    run_directory_prefix = "run_"
+    greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8")
     greedy_file.write("Greedy reduced basis status \n")
     fom_time = 0.
     rom_time = 0.
     basis_time = 0.
-    starting_sample_index = 0
 
-    np.random.seed(1)
+    np.random.seed(random_seed)
 
-    # create parameter domain
-    parameter_space = greedy_coupler.get_parameter_space()
+    # create parameter samples
     parameter_samples = monte_carlo_sample(parameter_space, testing_sample_size)
+    parameter_names = parameter_space.get_names()
 
     # Make FOM/ROM directories
-    greedy_coupler.create_fom_and_rom_cases(starting_sample_index,
-                                            parameter_samples)
+    for sample_index, sample in enumerate(parameter_samples):
+        fom_run_directory =  f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
+
+        create_empty_dir(fom_run_directory)
+        parameter_dict = _create_parameter_dict(parameter_names, sample)
+        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
 
     training_samples = np.array([0, 1], dtype='int')
     samples_left = np.arange(2, testing_sample_size)
 
     # Run FOM training cases
     t0 = time.time()
+    training_dirs = []
+
     for i in training_samples:
         greedy_file.write(f"Running FOM sample {i} \n")
-        run_fom_sample(greedy_coupler, parameter_samples,
-                       starting_sample_index + i)
+        sample_index = i
+        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
+        fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
+        create_empty_dir(fom_run_directory)
+        fom_model.populate_run_directory(fom_run_directory,parameter_dict)
+        fom_model.run_model(fom_run_directory,parameter_dict)
+        fom_qoi = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+        if i == 0:
+            fom_qois = fom_qoi[None]
+        else:
+            fom_qois = np.append(fom_qois,fom_qoi[None],axis=0)
+        training_dirs.append(fom_run_directory)
     fom_time += time.time() - t0
 
     # Create ROM bases
     t0 = time.time()
     greedy_file.write("Creating ROM bases \n")
-    training_dirs = [greedy_coupler.fom_coupler.get_sol_directory(i)
-                     for i in training_samples]
-    greedy_coupler.create_trial_space(training_dirs)
-    basis_time += time.time() - t0
 
-    # Evaluate ROM at training samples
-    #     Do we actually need to do this?
-    initial_errors = np.zeros(2)
-    initial_error_indicators = np.zeros(2)
-    for i in training_samples:
-        greedy_file.write(f"Running ROM sample {i}\n")
-        t0 = time.time()
-        initial_error_indicators[i] = run_rom_sample(greedy_coupler,
-                                                     parameter_samples, i)
-        rom_time += time.time() - t0
-        greedy_file.write(f"Computing ROM/FOM error for sample {i} \n")
-        initial_errors[i] = greedy_coupler.compute_error(i)
+    outer_loop_counter = 0
+    updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
+
+    create_empty_dir(updated_offline_data_dir)
+    rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
+
+    basis_time += time.time() - t0
 
     converged = False
     max_error_indicators = np.zeros(0)
     reg = QoIvsErrorIndicatorRegressor()
     qoi_errors = np.zeros(0)
-    outer_loop_counter = 0
     predicted_qoi_errors = np.zeros(0)
     greedy_file.flush()
 
@@ -186,9 +185,13 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
         for counter, sample_index in enumerate(samples_left):
             greedy_file.write(f"    Running ROM sample {sample_index}\n")
             greedy_file.flush()
-            error_indicators[counter] = run_rom_sample(greedy_coupler,
-                                                       parameter_samples,
-                                                       sample_index)
+            parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
+            rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{run_directory_prefix}{sample_index}'
+            create_empty_dir(rom_run_directory)
+            rom_model.populate_run_directory(rom_run_directory,parameter_dict)
+            rom_model.run_model(rom_run_directory,parameter_dict)
+            error_indicators[counter] = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
+
         rom_time += time.time() - t0
 
         sample_with_highest_error_indicator = samples_left[np.argmax(error_indicators)]
@@ -216,27 +219,40 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
         greedy_file.write("Running FOM sample"
                           f" {sample_with_highest_error_indicator}\n")
         greedy_file.flush()
-        run_fom_sample(greedy_coupler, parameter_samples,
-                       sample_with_highest_error_indicator)
+
+
+        ## Identify the sample with the highest error and run FOM
+        fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_with_highest_error_indicator}'
+        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_with_highest_error_indicator])
+        fom_model.run_model(fom_run_directory,parameter_dict)
+        fom_qoi = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+
         fom_time += time.time() - t0
-        training_samples = np.append(training_samples,
-                                     sample_with_highest_error_indicator)
 
-        samples_left = np.delete(samples_left, np.argmax(error_indicators))
-
-        qoi_error = greedy_coupler.compute_error(sample_with_highest_error_indicator)
+        # Get ROM QoI to calibrate our error estimator
+        rom_run_directory = f'{greedy_directory}/rom/{run_directory_prefix}{sample_with_highest_error_indicator}'
+        rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
+        qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
                           f"an error of {qoi_error}\n")
         qoi_errors = np.append(qoi_errors, qoi_error)
         reg.fit(max_error_indicators, qoi_errors)
 
+        ## Update our samples
+        training_samples = np.append(training_samples,
+                                     sample_with_highest_error_indicator)
+        samples_left = np.delete(samples_left, np.argmax(error_indicators))
+
         # Update ROM basis
         t0 = time.time()
         greedy_file.write("Computing ROM bases \n")
         greedy_file.flush()
-        training_dirs = [greedy_coupler.fom_coupler.get_sol_directory(i)
-                         for i in training_samples]
-        greedy_coupler.create_trial_space(training_dirs)
+        training_dirs = [f'/rom_{run_directory_prefix}{i}' for i in training_samples]
+
+        updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
+        create_empty_dir(updated_offline_data_dir)
+        rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
+
         basis_time += time.time() - t0
 
         # Add a new sample
@@ -244,11 +260,18 @@ def run_greedy(greedy_coupler: GreedyCouplerBase,
         parameter_samples = np.append(parameter_samples,
                                       new_parameter_sample, axis=0)
         new_sample_number = testing_sample_size + outer_loop_counter - 1
-        greedy_coupler.create_fom_and_rom_cases(new_sample_number,
-                                                new_parameter_sample)
+        rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{run_directory_prefix}{new_sample_number}'
+        fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{new_sample_number}'
+        create_empty_dir(rom_run_directory)
+        create_empty_dir(fom_run_directory)
+        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample)
+
+        rom_model.populate_run_directory(rom_run_directory,parameter_dict)
+        fom_model.populate_run_directory(fom_run_directory,parameter_dict)
+
         samples_left = np.append(samples_left, new_sample_number)
         greedy_file.flush()
-        np.savez('greedy_stats',
+        np.savez(f'{greedy_directory}/greedy_stats',
                  max_error_indicators=max_error_indicators,
                  qoi_errors=qoi_errors,
                  predicted_qoi_errors=predicted_qoi_errors,
