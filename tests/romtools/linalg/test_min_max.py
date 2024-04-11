@@ -38,83 +38,85 @@ def _min_max_setup(operation, ndim, axis=None, comm=None):
 def test_python_max_examples_mpi():
     """Specifically tests the documented examples in _basic_max_via_python."""
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    slices = [(0,2), (2,6), (6,7)]
+    if comm.Get_size() == 3:
+        rank = comm.Get_rank()
+        slices = [(0,2), (2,6), (6,7)]
 
-    # Example 1
-    local_arr_1, global_arr_1 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=1)
+        # Example 1
+        local_arr_1, global_arr_1 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=1)
 
-    res_ex1 = _basic_max_via_python(local_arr_1, comm=comm)
-    assert res_ex1 == np.max(global_arr_1)
+        res_ex1 = _basic_max_via_python(local_arr_1, comm=comm)
+        assert res_ex1 == np.max(global_arr_1)
 
-    # Example 2
-    local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=2)
+        # Example 2
+        local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=2)
 
-    res_ex2_ax0 = _basic_max_via_python(local_arr_2, axis=0, comm=comm)
-    exp_ex2_ax0 = np.max(global_arr_2, axis=0)
-    assert np.allclose(res_ex2_ax0, exp_ex2_ax0)
+        res_ex2_ax0 = _basic_max_via_python(local_arr_2, axis=0, comm=comm)
+        exp_ex2_ax0 = np.max(global_arr_2, axis=0)
+        assert np.allclose(res_ex2_ax0, exp_ex2_ax0)
 
-    res_ex2_ax1 = _basic_max_via_python(local_arr_2, axis=1, comm=comm)
-    full_ex2_ax1_max = np.max(global_arr_2, axis=1)
-    exp_ex2_ax1 = full_ex2_ax1_max[slices[rank][0]:slices[rank][1]]
-    assert np.allclose(res_ex2_ax1, exp_ex2_ax1)
+        res_ex2_ax1 = _basic_max_via_python(local_arr_2, axis=1, comm=comm)
+        full_ex2_ax1_max = np.max(global_arr_2, axis=1)
+        exp_ex2_ax1 = full_ex2_ax1_max[slices[rank][0]:slices[rank][1]]
+        assert np.allclose(res_ex2_ax1, exp_ex2_ax1)
 
-    # Example 3
-    local_arr_3, global_arr_3 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=3)
-    res_ex3_ax0 = _basic_max_via_python(local_arr_3, axis=0, comm=comm)
-    full_ex3_ax0_max = np.max(global_arr_3, axis=0)
-    exp_ex3_ax0 = full_ex3_ax0_max[slices[rank][0]:slices[rank][1],:]
-    assert np.allclose(res_ex3_ax0, exp_ex3_ax0)
+        # Example 3
+        local_arr_3, global_arr_3 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=3)
+        res_ex3_ax0 = _basic_max_via_python(local_arr_3, axis=0, comm=comm)
+        full_ex3_ax0_max = np.max(global_arr_3, axis=0)
+        exp_ex3_ax0 = full_ex3_ax0_max[slices[rank][0]:slices[rank][1],:]
+        assert np.allclose(res_ex3_ax0, exp_ex3_ax0)
 
-    res_ex3_ax1 = _basic_max_via_python(local_arr_3, axis=1, comm=comm)
-    exp_ex3_ax1 = np.max(global_arr_3, axis=1)
-    assert np.allclose(res_ex3_ax1, exp_ex3_ax1)
+        res_ex3_ax1 = _basic_max_via_python(local_arr_3, axis=1, comm=comm)
+        exp_ex3_ax1 = np.max(global_arr_3, axis=1)
+        assert np.allclose(res_ex3_ax1, exp_ex3_ax1)
 
-    res_ex3_ax2 = _basic_max_via_python(local_arr_3, axis=2, comm=comm)
-    full_ex3_ax2_max = np.max(global_arr_3, axis=2)
-    exp_ex3_ax2 = full_ex3_ax2_max[:,slices[rank][0]:slices[rank][1]]
-    assert np.allclose(res_ex3_ax2, exp_ex3_ax2)
+        res_ex3_ax2 = _basic_max_via_python(local_arr_3, axis=2, comm=comm)
+        full_ex3_ax2_max = np.max(global_arr_3, axis=2)
+        exp_ex3_ax2 = full_ex3_ax2_max[:,slices[rank][0]:slices[rank][1]]
+        assert np.allclose(res_ex3_ax2, exp_ex3_ax2)
 
 @pytest.mark.mpi(min_size=3)
 def test_python_min_examples_mpi():
     """Specifically tests the documented examples in _basic_min_via_python."""
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    slices = [(0,2), (2,6), (6,7)]
+    if comm.Get_size() == 3:
+        rank = comm.Get_rank()
+        slices = [(0,2), (2,6), (6,7)]
 
-    # Example 1
-    local_arr_1, global_arr_1 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=1)
+        # Example 1
+        local_arr_1, global_arr_1 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=1)
 
-    res_ex1 = _basic_min_via_python(local_arr_1, comm=comm)
-    assert res_ex1 == np.min(global_arr_1)
+        res_ex1 = _basic_min_via_python(local_arr_1, comm=comm)
+        assert res_ex1 == np.min(global_arr_1)
 
-    # Example 2
-    local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=2)
+        # Example 2
+        local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=2)
 
-    res_ex2_ax0 = _basic_min_via_python(local_arr_2, axis=0, comm=comm)
-    exp_ex2_ax0 = np.min(global_arr_2, axis=0)
-    assert np.allclose(res_ex2_ax0, exp_ex2_ax0)
+        res_ex2_ax0 = _basic_min_via_python(local_arr_2, axis=0, comm=comm)
+        exp_ex2_ax0 = np.min(global_arr_2, axis=0)
+        assert np.allclose(res_ex2_ax0, exp_ex2_ax0)
 
-    res_ex2_ax1 = _basic_min_via_python(local_arr_2, axis=1, comm=comm)
-    full_ex2_ax1_min = np.min(global_arr_2, axis=1)
-    exp_ex2_ax1 = full_ex2_ax1_min[slices[rank][0]:slices[rank][1]]
-    assert np.allclose(res_ex2_ax1, exp_ex2_ax1)
+        res_ex2_ax1 = _basic_min_via_python(local_arr_2, axis=1, comm=comm)
+        full_ex2_ax1_min = np.min(global_arr_2, axis=1)
+        exp_ex2_ax1 = full_ex2_ax1_min[slices[rank][0]:slices[rank][1]]
+        assert np.allclose(res_ex2_ax1, exp_ex2_ax1)
 
-    # Example 3
-    local_arr_3, global_arr_3 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=3)
-    res_ex3_ax0 = _basic_min_via_python(local_arr_3, axis=0, comm=comm)
-    full_ex3_ax0_min = np.min(global_arr_3, axis=0)
-    exp_ex3_ax0 = full_ex3_ax0_min[slices[rank][0]:slices[rank][1],:]
-    assert np.allclose(res_ex3_ax0, exp_ex3_ax0)
+        # Example 3
+        local_arr_3, global_arr_3 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=3)
+        res_ex3_ax0 = _basic_min_via_python(local_arr_3, axis=0, comm=comm)
+        full_ex3_ax0_min = np.min(global_arr_3, axis=0)
+        exp_ex3_ax0 = full_ex3_ax0_min[slices[rank][0]:slices[rank][1],:]
+        assert np.allclose(res_ex3_ax0, exp_ex3_ax0)
 
-    res_ex3_ax1 = _basic_min_via_python(local_arr_3, axis=1, comm=comm)
-    exp_ex3_ax1 = np.min(global_arr_3, axis=1)
-    assert np.allclose(res_ex3_ax1, exp_ex3_ax1)
+        res_ex3_ax1 = _basic_min_via_python(local_arr_3, axis=1, comm=comm)
+        exp_ex3_ax1 = np.min(global_arr_3, axis=1)
+        assert np.allclose(res_ex3_ax1, exp_ex3_ax1)
 
-    res_ex3_ax2 = _basic_min_via_python(local_arr_3, axis=2, comm=comm)
-    full_ex3_ax2_min = np.min(global_arr_3, axis=2)
-    exp_ex3_ax2 = full_ex3_ax2_min[:,slices[rank][0]:slices[rank][1]]
-    assert np.allclose(res_ex3_ax2, exp_ex3_ax2)
+        res_ex3_ax2 = _basic_min_via_python(local_arr_3, axis=2, comm=comm)
+        full_ex3_ax2_min = np.min(global_arr_3, axis=2)
+        exp_ex3_ax2 = full_ex3_ax2_min[:,slices[rank][0]:slices[rank][1]]
+        assert np.allclose(res_ex3_ax2, exp_ex3_ax2)
 
 @pytest.mark.mpi(min_size=3)
 def test_python_max_vector_mpi():
