@@ -45,6 +45,7 @@
 
 import time
 import numpy as np
+import os
 
 from romtools.workflows.parameter_spaces import monte_carlo_sample
 from romtools.workflows.workflow_utils import create_empty_dir
