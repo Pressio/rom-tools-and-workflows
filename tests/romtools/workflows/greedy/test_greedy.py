@@ -4,7 +4,7 @@ import numpy as np
 from romtools.workflows.models import *
 from romtools.workflows.model_builders import *
 from romtools.workflows.greedy.run_greedy import run_greedy
-from romtools.workflows.parameter_spaces import UniformParameterSpace
+from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
 
 
 class MockQoiModel:
@@ -18,7 +18,7 @@ class MockQoiModel:
         for parameter_name in list(parameter_sample.keys()):
             parameter_values = np.append(parameter_values,parameter_sample[parameter_name])
         np.savez('parameter_values.npz',parameter_values=parameter_values)
- 
+
     def run_model(self, run_dir, parameter_sample):
         print(os.getcwd())
         os.chdir(run_dir)
@@ -32,7 +32,7 @@ class MockQoiModel:
     def compute_qoi(self, run_dir, parameter_sample):
         self.counter_ += 1
         return self.my_qois_[self.counter_ - 1]
-   
+
 
 
 
@@ -47,8 +47,8 @@ class MockQoiModelWithErrorEstimateBuilder:
         self.my_error_estimates_[2] = np.array([0.09, 0.1, 0.06])
         self.my_error_estimates_[3] = np.array([1e-7, 1e-6, 1e-5])
 
-        self.my_qois_ = np.array([1.5,1.4,1.3,1.2]) 
-      
+        self.my_qois_ = np.array([1.5,1.4,1.3,1.2])
+
     def build_from_training_dirs(self,offline_data_dir, training_data_dirs):
         rom_model = MockQoiModelWithErrorEstimate(self.my_error_estimates_[self.counter_],self.my_qois_[self.counter_])
         print(offline_data_dir)
@@ -62,14 +62,14 @@ class MockQoiModelWithErrorEstimate:
         self.counter = 0
         self.my_error_estimates_ = my_error_estimates
         self.my_qoi_ = my_qoi
- 
+
     def populate_run_directory(self, run_dir,parameter_sample):
         os.chdir(run_dir)
         parameter_values = np.zeros(0)
         for parameter_name in list(parameter_sample.keys()):
             parameter_values = np.append(parameter_values,parameter_sample[parameter_name])
         np.savez('parameter_values.npz',parameter_values=parameter_values)
- 
+
     def run_model(self, run_dir, parameter_sample):
         os.chdir(run_dir)
         params_input = np.load('parameter_values.npz')['parameter_values']
@@ -105,9 +105,10 @@ def test_greedy(tmp_path):
 
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                             np.array([0, 1, 2]),
-                                            np.array([1, 2, 3]))
+                                            np.array([1, 2, 3]),
+                                            sampler=MonteCarloSampler)
 
-    
+
     run_greedy(QoiModel,RomModelBuilder,my_parameter_space,wdir, 1e-5,5)
 
     # First greedy pass
@@ -133,7 +134,7 @@ def test_greedy(tmp_path):
          assert os.path.isfile(f'{wdir}/rom_iteration_{i}/offline_data/offline_data.dat')
     # Test parameter_samples output in greedy_status.log
     total_sample_size = len(foms_samples_not_run + foms_samples_run)
-    log_dir = wdir 
+    log_dir = wdir
 
     # Initialize variables
     in_parameter_samples_block = False

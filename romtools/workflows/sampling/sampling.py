@@ -46,7 +46,6 @@
 import time
 import numpy as np
 
-from romtools.workflows.parameter_spaces import monte_carlo_sample
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
@@ -68,9 +67,7 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # create parameter samples
-    parameter_samples = monte_carlo_sample(parameter_space,
-                                           number_of_samples)
-
+    parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
 
     # Setup model directories

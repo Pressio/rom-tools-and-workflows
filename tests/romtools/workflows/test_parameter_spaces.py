@@ -6,9 +6,8 @@ from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 
-from romtools.workflows.parameter_spaces import monte_carlo_sample
-from romtools.workflows.parameter_spaces import latin_hypercube_sample
-
+from romtools.workflows.parameter_spaces import MonteCarloSampler
+from romtools.workflows.parameter_spaces import LatinHypercubeSampler
 
 def test_uniform_parameter():
     param = UniformParameter('p1', -1, 1)
@@ -16,7 +15,7 @@ def test_uniform_parameter():
     assert param.get_dimensionality() == 1
 
     germ = np.array([[0.1], [0.5], [0.7]])
-    s = param.generate_samples(germ)
+    s = param.scale_samples(germ)
     assert s.shape == germ.shape
     gold = [[-0.8],
             [ 0.0],
@@ -30,7 +29,7 @@ def test_vector_parameter():
     assert param.get_dimensionality() == 2
 
     germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.5]])
-    s = param.generate_samples(germ)
+    s = param.scale_samples(germ)
     assert s.shape == (3, 2)
     gold = [[-0.8, 0.6],
             [ 0.0, 1.8],
@@ -44,7 +43,7 @@ def test_string_parameter():
     assert param.get_dimensionality() == 1
 
     germ = np.array([[0.1], [0.5], [0.7]])
-    s = param.generate_samples(germ)
+    s = param.scale_samples(germ)
     assert s.shape == germ.shape
     assert (s == [['p1val', 'p1val', 'p1val']]).all()
 
@@ -53,23 +52,21 @@ def test_empty_param_space():
     param_space = EmptyParameterSpace()
     assert param_space.get_names() == []
     assert param_space.get_dimensionality() == 0
-    germ = np.random.uniform(size=(3, 0))
-    s = param_space.generate_samples(germ)
-    print(s.shape)
+    s = param_space.generate_samples(3)
     assert s.shape == (3, 0)
 
 
 def test_uniform_param_space():
-    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
+    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3],
+                                        sampler=MonteCarloSampler)
     assert param_space.get_names() == ['p1', 'p2']
     assert param_space.get_dimensionality() == 2
 
-    germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.5]])
-    s = param_space.generate_samples(germ)
+    s = param_space.generate_samples(3, seed=1)
     assert s.shape == (3, 2)
-    gold = [[-0.8, 0.6],
-            [ 0.0, 1.8],
-            [ 0.4, 1.5]]
+    gold = [[-0.16595599, 2.16097348],
+            [-0.99977125, 0.90699772],
+            [-0.70648822, 0.27701578]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
@@ -81,7 +78,7 @@ def test_const_param_space():
                      [0.4, 0.5, 0.6],
                      [0.7, 0.8, 0.9],
                      [0.0, 1.0, 0.5]])
-    s = param_space.generate_samples(germ)
+    s = param_space.generate_samples(4)
     assert s.shape == (4, 3)
     assert (s == [['1', '3', 'p3val'],
                   ['1', '3', 'p3val'],
@@ -102,18 +99,22 @@ def test_hetero_param_space():
                      [0.4, 0.5, 0.6],
                      [0.7, 0.8, 0.9],
                      [0.0, 1.0, 0.5]])
-    s = param_space.generate_samples(germ)
+    s = param_space.generate_samples(4, seed=1)
     assert s.shape == (4, 3)
-    np.testing.assert_allclose(s[:, 0].astype(float), [-0.8, -0.2, 0.4, -1.0],
+
+    np.testing.assert_allclose(s[:, 0].astype(float),
+                               [-0.16595599, -0.39533485, -0.62747958, 0.07763347],
                                rtol=1e-5, atol=1e-8)
-    np.testing.assert_allclose(s[:, 1].astype(float), [0.2, 0.5, 0.8, 1.0],
+    np.testing.assert_allclose(s[:, 1].astype(float),
+                               [0.72032449, 0.14675589, 0.34556073, 0.41919451],
                                rtol=1e-5, atol=1e-8)
     assert (s[:, 2] == ['p3val', 'p3val', 'p3val', 'p3val']).all()
 
 
 def test_monte_carlo_sample():
-    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
-    s = monte_carlo_sample(param_space, 4, seed=12)
+    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3],
+                                        sampler=MonteCarloSampler)
+    s = param_space.generate_samples(4, seed=12)
     assert s.shape == (4, 2)
 
     gold = [[-0.69167432, 2.22014909],
@@ -125,8 +126,9 @@ def test_monte_carlo_sample():
 
 def test_latin_hypercube_sample():
     np.random.seed(12)
-    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3])
-    s = latin_hypercube_sample(param_space, 4, seed=12)
+    param_space = UniformParameterSpace(['p1', 'p2'], [-1, 0], [1, 3],
+                                        sampler=LatinHypercubeSampler)
+    s = param_space.generate_samples(4, seed=12)
     assert s.shape == (4, 2)
 
     gold = [[-0.12541223, 0.78993529],
