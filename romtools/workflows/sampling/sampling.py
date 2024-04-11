@@ -43,23 +43,20 @@
 # ************************************************************************
 #
 
-import os
 import time
 import numpy as np
 
 from romtools.workflows.parameter_spaces import monte_carlo_sample
-from romtools.workflows.workflow_utils import create_empty_dir 
+from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
 
-def _create_parameter_dict(parameter_names,parameter_values):
-    parameter_dict = {}
-    for i in range(len(parameter_names)):
-        parameter_dict[parameter_names[i]] = parameter_values[i]
-    return parameter_dict
+
+def _create_parameter_dict(parameter_names, parameter_values):
+    return dict(zip(parameter_names, parameter_values))
 
 
-def run_sampling(model: Model, 
+def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
                  absolute_sampling_work_directory: str,
                  number_of_samples: int = 10,
@@ -67,11 +64,12 @@ def run_sampling(model: Model,
     '''
     Core algorithm
     '''
+
     base_directory = os.path.realpath(os.getcwd())
     run_directory_prefix = "run_"
     np.random.seed(random_seed)
 
-    # create parameter samples 
+    # create parameter samples
     parameter_samples = monte_carlo_sample(parameter_space,
                                            number_of_samples)
 

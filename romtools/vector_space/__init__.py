@@ -129,9 +129,11 @@ class VectorSpace(Protocol):
         ...
 
 
-class DictionaryVectorSpace:
+class DictionaryVectorSpace():
     '''
     Reduced basis vector space (no truncation).
+
+    This class conforms to `VectorSpace` protocol.
 
     Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
 
@@ -185,9 +187,11 @@ class DictionaryVectorSpace:
         return self.__basis.shape
 
 
-class VectorSpaceFromPOD:
+class VectorSpaceFromPOD():
     '''
     POD vector space (constructed via SVD).
+
+    This class conforms to `VectorSpace` protocol.
 
     Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
 

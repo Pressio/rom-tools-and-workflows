@@ -2,13 +2,13 @@
 Protocol for interfacing with external applications
 '''
 
-from pathlib import Path
 from typing import Protocol
 import numpy as np
 
+
 class Model(Protocol):
     '''
-    Baseline model protocol 
+    Baseline model protocol
     '''
     def __init__(self) -> None:
         '''
@@ -18,7 +18,7 @@ class Model(Protocol):
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
         '''
-        This function is called from the base directory and is 
+        This function is called from the base directory and is
         responsible for populating the run directory located at run_directory.
 
         Examples would be setuping up input files, linking mesh files.
@@ -43,8 +43,7 @@ class Model(Protocol):
         pass
 
 
-
-class QoiModel(Model,Protocol):
+class QoiModel(Model, Protocol):
     '''
     Protocol for a model that has a return_qoi implementation
     '''
@@ -57,7 +56,7 @@ class QoiModel(Model,Protocol):
         pass
 
 
-class QoiModelWithErrorEstimate(QoiModel,Protocol):
+class QoiModelWithErrorEstimate(QoiModel, Protocol):
     '''
     Protocol for a model that has a return_qoi and compute_error_estimate
     '''

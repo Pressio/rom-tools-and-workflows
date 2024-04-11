@@ -105,6 +105,8 @@ class Scaler(Protocol):
 class NoOpScaler:
     '''
     No op implementation
+
+    This class conforms to `Scaler` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -127,6 +129,8 @@ class VectorScaler:
 
     **Note that scaling can cause bases to not be orthonormal; we do not
     recommend using scalers with the NoOpOrthonormalizer**
+
+    This class conforms to `Scaler` protocol.
     '''
     def __init__(self, scaling_vector) -> None:
         '''
@@ -184,6 +188,8 @@ class VariableScaler:
         $s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
       - variance: for the $i$th state variable $u_i$, we will compute the scaling as
         $s_i = \\mathrm{std}( S_i ) $, where $S_i$ denotes the snapshot matrix of the $i$th variable.
+
+    This class conforms to `Scaler` protocol.
     '''
     def __init__(self, scaling_type) -> None:
         '''
@@ -274,6 +280,8 @@ class VariableAndVectorScaler:
     e.g., a finite volume method where we want to scale by the cell volumes as
     well as the variable magnitudes. This implementation combines the
     VectorScaler and VariableScaler classes.
+
+    This class conforms to `Scaler` protocol.
     '''
 
     def __init__(self, scaling_vector, scaling_type) -> None:
