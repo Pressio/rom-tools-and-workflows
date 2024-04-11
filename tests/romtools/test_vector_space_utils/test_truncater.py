@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from romtools.vector_space.utils.truncater import *
-from romtools.linalg.parallel_testing_utils import *
+from romtools.linalg.parallel_utils import *
 try:
   import mpi4py
   from mpi4py import MPI

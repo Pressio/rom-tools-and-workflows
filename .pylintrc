@@ -89,14 +89,14 @@ disable=raw-checker-failed,
         logging-fstring-interpolation,
         protected-access,
         multiple-imports,
-        unnecessary-pass
+        unnecessary-pass,
+        c-extension-no-member
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member,
-       trailing-whitespace
+enable=trailing-whitespace
 
 
 [REPORTS]

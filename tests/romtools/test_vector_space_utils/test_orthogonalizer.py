@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import scipy.sparse
 from romtools.vector_space.utils.orthogonalizer import *
-from romtools.linalg.parallel_testing_utils import *
+from romtools.linalg.parallel_utils import *
 try:
   import mpi4py
   from mpi4py import MPI

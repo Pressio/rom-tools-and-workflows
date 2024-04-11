@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
 
-from romtools.linalg.parallel_testing_utils import *
+from romtools.linalg.parallel_utils import *
 from romtools.linalg.linalg import _basic_mean_via_python
 
 

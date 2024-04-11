@@ -6,9 +6,12 @@ except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
 
 
-#####################################################
-########             MPI Helpers             ########
-#####################################################
+def assert_axis_is_none_or_within_rank(a, axis):
+    """Simple helper function to assert that the given axis is valid for the given array."""
+    assert isinstance(axis, int) or axis is None, "axis must be an int or None"
+    if axis is not None:
+        assert axis < a.ndim, "axis must be < rank of the array"
+
 
 def distribute_array_impl(global_array, comm, dist_axis=0):
     '''
@@ -64,7 +67,7 @@ def generate_random_local_and_global_arrays_impl(shape, comm):
     elif len(shape) <=3:
         global_arr = np.random.rand(*shape) if rank == 0 else np.empty(shape)
     else:
-        raise ValueError(f"This function only supports arrays up to rank 3 (received rank {ndim})")
+        raise ValueError(f"This function only supports arrays up to rank 3 (received rank {len(shape)})")
 
     # Broadcast global_array and create local_array
     comm.Bcast(global_arr, root=0)
