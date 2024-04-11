@@ -49,7 +49,7 @@ class MockQoiModelWithErrorEstimateBuilder:
 
         self.my_qois_ = np.array([1.5,1.4,1.3,1.2]) 
       
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: list[str]) -> QoiModel:
+    def build_from_training_dirs(self,offline_data_dir, training_data_dirs):
         rom_model = MockQoiModelWithErrorEstimate(self.my_error_estimates_[self.counter_],self.my_qois_[self.counter_])
         self.counter_ += 1
         return rom_model
