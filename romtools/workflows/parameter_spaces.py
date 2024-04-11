@@ -49,51 +49,11 @@ $\\boldsymbol \\mu$ is the parameter set.
 The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
-from collections.abc import Callable
-from typing import Iterable, Protocol
+from typing import Iterable
 import numpy as np
-from numpy.random import sample
-from scipy.stats import qmc
 
-
-class Sampler(Protocol):
-    '''
-    Generate UIID samples
-
-    Returns np.ndarray of shape (number_of_samples, dimensionality)
-    '''
-    def __call__(self, number_of_samples: int, dimensionality: int=1, seed=None) -> np.ndarray:
-        pass
-
-
-class Parameter(abc.ABC):
-    '''Abstract implementation'''
-
-    @abc.abstractmethod
-    def get_name(self) -> str:
-        '''
-        Returns parameter name
-        '''
-
-    @abc.abstractmethod
-    def get_dimensionality(self) -> int:
-        '''
-        Returns dimensionality of parameter for vector quantities.
-        Returns 1 for scalar parameters
-        '''
-
-    @abc.abstractmethod
-    def scale_samples(self, uniform_dist_samples) -> np.array:
-        '''
-        Generates samples from the desired distribution given a set of samples
-        from a uniform distribution on (0,1)
-
-        uniform_dist_samples should be of shape
-        (number_of_samples, self.get_dimensionality())
-
-        Returns np.array of the same shape
-        '''
-
+from romtools.workflows.sampling_methods import Sampler, MonteCarloSampler
+from romtools.workflows.parameters import Parameter, StringParameter, UniformParameter
 
 class ParameterSpace(abc.ABC):
 
@@ -131,81 +91,6 @@ class ParameterSpace(abc.ABC):
         '''
 
 
-##########################################
-# Sampling Methods
-##########################################
-
-def MonteCarloSampler(number_of_samples: int, dimensionality: int=1, seed=None) -> np.ndarray:
-    '''
-    Generate UIID Monte Carlo samples
-    '''
-    if seed is not None:
-        np.random.seed(seed)
-    return np.random.uniform(size=(number_of_samples,
-                                   dimensionality))
-
-
-def LatinHypercubeSampler(number_of_samples: int, dimensionality: int=1, seed=None) -> np.ndarray:
-    '''
-    Generate UIID LHS samples
-    '''
-    sampler = qmc.LatinHypercube(dimensionality, seed=seed)
-    return sampler.random(n=number_of_samples)
-
-
-##########################################
-# Concrete Parameter Classes
-##########################################
-
-
-class UniformParameter(Parameter):
-    '''
-    Uniformly distributed floating point
-    '''
-    def __init__(self, parameter_name: str,
-                 lower_bound: float = 0,
-                 upper_bound: float = 1):
-        self._parameter_name = parameter_name
-
-        try:
-            assert len(lower_bound) == len(upper_bound)
-            self._dimension = len(lower_bound)
-        except TypeError:
-            self._dimension = 1
-        self._lower_bound = lower_bound
-        self._upper_bound = upper_bound
-
-    def get_name(self) -> str:
-        return self._parameter_name
-
-    def get_dimensionality(self) -> int:
-        return self._dimension
-
-    def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
-        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        return qmc.scale(uniform_dist_samples,
-                         self._lower_bound,
-                         self._upper_bound)
-
-
-class StringParameter(Parameter):
-    '''
-    Constant string-valued parameter
-    '''
-    def __init__(self, parameter_name: str, value):
-        self._parameter_name = parameter_name
-        self._parameter_value = value
-
-    def get_name(self) -> str:
-        return self._parameter_name
-
-    def get_dimensionality(self) -> int:
-        return 1
-
-    def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
-        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        number_of_samples = uniform_dist_samples.shape[0]
-        return np.array([[self._parameter_value]] * number_of_samples)
 
 
 ##########################################

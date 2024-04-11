@@ -1,13 +1,13 @@
 import numpy as np
-from romtools.workflows.parameter_spaces import UniformParameter
-from romtools.workflows.parameter_spaces import StringParameter
+from romtools.workflows.parameters import UniformParameter
+from romtools.workflows.parameters import StringParameter
 from romtools.workflows.parameter_spaces import EmptyParameterSpace
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 
-from romtools.workflows.parameter_spaces import MonteCarloSampler
-from romtools.workflows.parameter_spaces import LatinHypercubeSampler
+from romtools.workflows.sampling_methods import MonteCarloSampler
+from romtools.workflows.sampling_methods import LatinHypercubeSampler
 
 def test_uniform_parameter():
     param = UniformParameter('p1', -1, 1)
