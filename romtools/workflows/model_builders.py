@@ -5,14 +5,14 @@ iterative workflows like greedy
 '''
 
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, List
 from romtools.workflows.models import *
 
 class ModelBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: list[str]) -> Model:
+    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> Model:
         pass
 
 
@@ -20,7 +20,7 @@ class QoiModelBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: list[str]) -> QoiModel:
+    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModel:
         pass
 
 
@@ -28,7 +28,7 @@ class QoiModelWithErrorEstimateBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: list[str]) -> QoiModelWithErrorEstimate:
+    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModelWithErrorEstimate:
         return QoiModelWithErrorEstimate
 
 
