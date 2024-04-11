@@ -69,3 +69,17 @@ class QoiModelWithErrorEstimate(QoiModel,Protocol):
         '''
         pass
 
+
+
+class QoiModelWithErrorEstimate(QoiModel,Protocol):
+    '''
+    Protocol for a model that has a return_qoi and compute_error_estimate
+    '''
+
+    def compute_error_estimate(self, run_directory: str, parameter_sample: dict) -> float:
+        '''
+        This function is called from a run directory
+        AFTER run_model has been run
+        '''
+        pass
+

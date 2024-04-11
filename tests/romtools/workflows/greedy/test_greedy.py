@@ -1,150 +1,135 @@
 import pytest
 import os
 import numpy as np
-from romtools.workflows.greedy.greedy_coupler_base import GreedyCouplerBase
+from romtools.workflows.models import *
+from romtools.workflows.model_builders import *
 from romtools.workflows.greedy.run_greedy import run_greedy
 from romtools.workflows.parameter_spaces import UniformParameterSpace
-from romtools.workflows.sampling.\
-    sampling_coupler_base import SamplingCouplerBase
 
 
-class ConcreteSampler(SamplingCouplerBase):
-    def __init__(self,
-                 template_directory,
-                 template_file,
-                 workDir=None,
-                 sol_directory_basename='run'):
-
-        super().__init__(template_directory=template_directory,
-                         template_input_file=template_file,
-                         base_directory=workDir,
-                         sol_directory_basename=sol_directory_basename)
-
-        self.myParameterSpace = UniformParameterSpace(['u', 'v', 'w'],
-                                                      np.array([0, 1, 2]),
-                                                      np.array([1, 2, 3]))
+class MockQoiModel:
+    def __init__(self):
+        self.my_qois_ = np.array([1.,1.,1.,1.,1.,1.,1.])
         self.counter_ = 0
-        self.template_file = template_file
 
-    def set_parameters_in_input(self, filename, parameter_sample):
-        file = np.genfromtxt(self.template_file)
-        np.savetxt(self.template_file, [self.counter_])
+    def populate_run_directory(self, run_dir,parameter_sample):
+        os.chdir(run_dir)
+        parameter_values = np.zeros(0)
+        for parameter_name in list(parameter_sample.keys()):
+            parameter_values = np.append(parameter_values,parameter_sample[parameter_name])
+        np.savez('parameter_values.npz',parameter_values=parameter_values)
+ 
+    def run_model(self, run_dir, parameter_sample):
+        print(os.getcwd())
+        os.chdir(run_dir)
+        params_input = np.load('parameter_values.npz')['parameter_values']
+        for i in range(0,len(parameter_sample)):
+          parameter_name = list(parameter_sample.keys())[i]
+          assert(params_input[i] == parameter_sample[parameter_name])
+        np.savetxt('fom_succesful.dat',np.array([0]),'%i')
+        return 0
+
+    def compute_qoi(self, run_dir, parameter_sample):
         self.counter_ += 1
-
-    def run_model(self, filename, parameter_values):
-        return 0
-
-    def get_parameter_space(self):
-        return self.myParameterSpace
+        return self.my_qois_[self.counter_ - 1]
+   
 
 
-class ConcreteGreedyCoupler(GreedyCouplerBase):
-    def __init__(self, template_directory,
-                 template_fom_file,
-                 template_rom_file,
-                 workDir=None):
 
-        self.my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
-                                                        np.array([0, 1, 2]),
-                                                        np.array([1, 2, 3]))
-
-        rom_coupler = ConcreteSampler(template_directory=template_directory,
-                                      template_file=template_rom_file,
-                                      workDir=f'{workDir}/rom')
-        fom_coupler = ConcreteSampler(template_directory=template_directory,
-                                      template_file=template_fom_file,
-                                      workDir=f'{workDir}/fom')
-        super().__init__(rom_coupler=rom_coupler,
-                         fom_coupler=fom_coupler,
-                         base_directory=workDir)
-
+class MockQoiModelWithErrorEstimateBuilder:
+    def __init__(self):
         self.counter_ = 0
-        self.template_fom_file = template_fom_file
+        n_iterations = 4
 
-        my_error_estimates = np.array([1., 2., 3., 1.5, 4.])  # First iteration, should identify 5th entry as the sample to run
-        my_error_estimates_iteration_2 = np.array([0.9, 0.4, 0.6])
-        my_error_estimates_iteration_3 = np.array([0.09, 0.1, 0.06])
-        my_error_estimates_iteration_4 = np.array([1e-7, 1e-6, 1e-5])
-        my_error_estimates = np.append(my_error_estimates,
-                                       my_error_estimates_iteration_2)
-        my_error_estimates = np.append(my_error_estimates,
-                                       my_error_estimates_iteration_3)
-        self.my_error_estimates_ = np.append(my_error_estimates,
-                                             my_error_estimates_iteration_4)
-        self.error_estimate_counter_ = 0
+        self.my_error_estimates_ = [None]*n_iterations
+        self.my_error_estimates_[0] = np.array([1., 2., 4.]) # First iteration, should identify 5th entry as the sample to run
+        self.my_error_estimates_[1] = np.array([0.9, 0.4, 0.6])
+        self.my_error_estimates_[2] = np.array([0.09, 0.1, 0.06])
+        self.my_error_estimates_[3] = np.array([1e-7, 1e-6, 1e-5])
 
-        self.my_errors_ = np.array([1., 1., 0.4, 0.09, 0.01, 1e-6])
-        self.my_errors_counter_ = 0
+        self.my_qois_ = np.array([1.5,1.4,1.3,1.2]) 
+      
+    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: list[str]) -> QoiModel:
+        rom_model = MockQoiModelWithErrorEstimate(self.my_error_estimates_[self.counter_],self.my_qois_[self.counter_])
+        self.counter_ += 1
+        return rom_model
 
-    def compute_error(self, case_num):
-        error = self.my_errors_[self.my_errors_counter_]
-        self.my_errors_counter_ += 1
-        return error
 
-    def compute_error_indicator(self):
-        error_estimate = self.my_error_estimates_[self.error_estimate_counter_]
-        self.error_estimate_counter_ += 1
-        return error_estimate
-
-    def compute_qoi(self):
+class MockQoiModelWithErrorEstimate:
+    def __init__(self,my_error_estimates,my_qoi):
+        self.counter = 0
+        self.my_error_estimates_ = my_error_estimates
+        self.my_qoi_ = my_qoi
+ 
+    def populate_run_directory(self, run_dir,parameter_sample):
+        os.chdir(run_dir)
+        parameter_values = np.zeros(0)
+        for parameter_name in list(parameter_sample.keys()):
+            parameter_values = np.append(parameter_values,parameter_sample[parameter_name])
+        np.savez('parameter_values.npz',parameter_values=parameter_values)
+ 
+    def run_model(self, run_dir, parameter_sample):
+        os.chdir(run_dir)
+        params_input = np.load('parameter_values.npz')['parameter_values']
+        for i in range(0,len(parameter_sample)):
+          parameter_name = list(parameter_sample.keys())[i]
+          assert(params_input[i] == parameter_sample[parameter_name])
+        np.savetxt('passed.txt',np.array([0]),'%i')
         return 0
 
-    def run_rom(self, filename, parameter_values):
-        pass
+    def compute_qoi(self, run_directory: str, parameter_sample: dict) -> float:
+        return self.my_qoi_
 
-    def run_fom(self, filename, parameter_values):
-        np.savetxt('fom_succesful.dat', parameter_values)
+    def compute_error_estimate(self, run_directory: str, parameter_sample: dict) -> float:
+        self.counter += 1
+        return self.my_error_estimates_[self.counter-1]
 
-    def create_trial_space(self, training_sample_indices):
-        pass
 
-    def get_parameter_space(self):
-        return self.my_parameter_space
 
 
 @pytest.mark.mpi_skip
-def test_greedy_coupler_builder():
-    my_dir = os.path.realpath(os.path.dirname(__file__))
-    ConcreteGreedyCoupler(my_dir + '/templates/',
-                          'test_template.dat',
-                          'test_template.dat')
-
-
-@pytest.mark.mpi_skip
-def test_greedy(tmp_path):
+def test_greedy():
     # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
     #   about tmp_path
+    tmp_path = os.getcwd() + '/greedy/' 
     wdir = str(tmp_path)  # does not like posixpaths
     print('\n', wdir)
 
     my_dir = os.path.realpath(os.path.dirname(__file__))
-    my_greedy_coupler = ConcreteGreedyCoupler(my_dir + '/templates/',
-                                              'test_template.dat',
-                                              'test_template.dat',
-                                              workDir=wdir)
+
     init_sample_size = 5
-    run_greedy(my_greedy_coupler, 1e-5, init_sample_size)
+
+    QoiModel = MockQoiModel()
+    RomModelBuilder = MockQoiModelWithErrorEstimateBuilder()
+
+    my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
+                                            np.array([0, 1, 2]),
+                                            np.array([1, 2, 3]))
+
+    
+    run_greedy(QoiModel,RomModelBuilder,my_parameter_space,tmp_path, 1e-5,5)
+
     # First greedy pass
     foms_samples_run = [0, 1, 4, 2, 5]
     foms_samples_not_run = [3, 6, 7]
 
     for sample in foms_samples_run:
-        assert os.path.isfile(f'{wdir}/fom/run{sample}/fom_succesful.dat'), sample
+        assert os.path.isfile(f'{wdir}/fom/run_{sample}/fom_succesful.dat'), sample
 
     for sample in foms_samples_not_run:
-        assert not os.path.isfile(f'{wdir}/fom/run{sample}/fom_succesful.dat'), sample
+        assert not os.path.isfile(f'{wdir}/fom/run_{sample}/fom_succesful.dat'), sample
 
-    greedy_output = np.load(f'{wdir}/rom/greedy_stats.npz')
+    greedy_output = np.load(f'{wdir}/greedy_stats.npz')
     assert np.allclose(greedy_output['max_error_indicators'],
                        np.array([4., 0.9, 0.1]))
     assert np.allclose(greedy_output['training_samples'],
                        np.array([0, 1, 4, 2, 5]))
     assert np.allclose(greedy_output['qoi_errors'],
-                       np.array([0.4, 0.09, 0.01]))
+                       np.array([0.5, 0.4, 0.3]))
 
     # Test parameter_samples output in greedy_status.log
     total_sample_size = len(foms_samples_not_run + foms_samples_run)
-    log_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
+    log_dir = tmp_path# os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
 
     # Initialize variables
     in_parameter_samples_block = False
@@ -175,9 +160,7 @@ def test_greedy(tmp_path):
     assert len(parameter_samples_row_dimensions) == total_sample_size - init_sample_size + 1
     for i, _ in enumerate(parameter_samples_row_dimensions):
         assert parameter_samples_row_dimensions[i] == init_sample_size + i
-        assert parameter_samples_col_dimensions[i] == len(my_greedy_coupler.get_parameter_space().get_names())
-
+        assert parameter_samples_col_dimensions[i] == len(my_parameter_space.get_names())
 
 if __name__ == "__main__":
-    test_greedy_coupler_builder()
-    test_greedy('.')
+    test_greedy()
