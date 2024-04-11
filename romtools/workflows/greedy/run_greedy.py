@@ -109,7 +109,7 @@ def run_greedy(fom_model: QoiModel,
     '''
     greedy_directory = absolute_greedy_work_directory
     create_empty_dir(greedy_directory)
-    offline_directory_prefix = f'{greedy_directory}/offline_data'
+    offline_directory_prefix = 'offline_data' 
 
     run_directory_prefix = "run_"
     greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8")
@@ -144,7 +144,6 @@ def run_greedy(fom_model: QoiModel,
         sample_index = i
         parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
-        print(fom_run_directory)
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
         fom_model.run_model(fom_run_directory,parameter_dict)
@@ -160,9 +159,11 @@ def run_greedy(fom_model: QoiModel,
     t0 = time.time()
     greedy_file.write("Creating ROM bases \n")
 
-    updated_offline_data_dir = f'{offline_directory_prefix}/iteration_0/'
+    outer_loop_counter = 0
+    updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
+
     create_empty_dir(updated_offline_data_dir)
-    rom_model = rom_model_builder.build_from_training_dirs(training_dirs, updated_offline_data_dir)
+    rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
 
     basis_time += time.time() - t0
 
@@ -170,7 +171,6 @@ def run_greedy(fom_model: QoiModel,
     max_error_indicators = np.zeros(0)
     reg = QoIvsErrorIndicatorRegressor()
     qoi_errors = np.zeros(0)
-    outer_loop_counter = 0
     predicted_qoi_errors = np.zeros(0)
     greedy_file.flush()
 
@@ -249,8 +249,9 @@ def run_greedy(fom_model: QoiModel,
         greedy_file.flush()
         training_dirs = [f'/rom_{run_directory_prefix}{i}' for i in training_samples]
 
-        updated_offline_data_dir = offline_directory_prefix + '/iteration_' + str(outer_loop_counter) + '/'
-        rom_model = rom_model_builder.build_from_training_dirs(training_dirs,updated_offline_data_dir)
+        updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
+        create_empty_dir(updated_offline_data_dir)
+        rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
 
         basis_time += time.time() - t0
 

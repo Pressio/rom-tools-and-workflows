@@ -51,6 +51,8 @@ class MockQoiModelWithErrorEstimateBuilder:
       
     def build_from_training_dirs(self,offline_data_dir, training_data_dirs):
         rom_model = MockQoiModelWithErrorEstimate(self.my_error_estimates_[self.counter_],self.my_qois_[self.counter_])
+        print(offline_data_dir)
+        np.savetxt(f'{offline_data_dir}/offline_data.dat',np.array([0]),'%i')
         self.counter_ += 1
         return rom_model
 
@@ -112,6 +114,7 @@ def test_greedy(tmp_path):
     foms_samples_run = [0, 1, 4, 2, 5]
     foms_samples_not_run = [3, 6, 7]
 
+
     for sample in foms_samples_run:
         assert os.path.isfile(f'{wdir}/fom/run_{sample}/fom_succesful.dat'), sample
 
@@ -126,6 +129,8 @@ def test_greedy(tmp_path):
     assert np.allclose(greedy_output['qoi_errors'],
                        np.array([0.5, 0.4, 0.3]))
 
+    for i in range(0,4):
+         assert os.path.isfile(f'{wdir}/rom_iteration_{i}/offline_data/offline_data.dat')
     # Test parameter_samples output in greedy_status.log
     total_sample_size = len(foms_samples_not_run + foms_samples_run)
     log_dir = wdir 
