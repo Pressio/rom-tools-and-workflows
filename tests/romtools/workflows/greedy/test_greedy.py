@@ -88,10 +88,9 @@ class MockQoiModelWithErrorEstimate:
 
 
 @pytest.mark.mpi_skip
-def test_greedy():
+def test_greedy(tmp_path):
     # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
     #   about tmp_path
-    tmp_path = os.getcwd() + '/greedy/' 
     wdir = str(tmp_path)  # does not like posixpaths
     print('\n', wdir)
 
@@ -107,7 +106,7 @@ def test_greedy():
                                             np.array([1, 2, 3]))
 
     
-    run_greedy(QoiModel,RomModelBuilder,my_parameter_space,tmp_path, 1e-5,5)
+    run_greedy(QoiModel,RomModelBuilder,my_parameter_space,wdir, 1e-5,5)
 
     # First greedy pass
     foms_samples_run = [0, 1, 4, 2, 5]
@@ -129,7 +128,7 @@ def test_greedy():
 
     # Test parameter_samples output in greedy_status.log
     total_sample_size = len(foms_samples_not_run + foms_samples_run)
-    log_dir = tmp_path# os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(my_dir))))
+    log_dir = wdir 
 
     # Initialize variables
     in_parameter_samples_block = False
@@ -163,4 +162,4 @@ def test_greedy():
         assert parameter_samples_col_dimensions[i] == len(my_parameter_space.get_names())
 
 if __name__ == "__main__":
-    test_greedy()
+    test_greedy(os.getcwd() + '/greedy_test_tmp/')
