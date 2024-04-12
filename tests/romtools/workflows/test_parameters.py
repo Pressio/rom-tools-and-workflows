@@ -55,7 +55,7 @@ def test_gaussian_parameter():
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
-def test_multdimensional_gaussian_parameter():
+def test_multidimensional_gaussian_parameter():
     param = GaussianParameter('p1', [0, 1, 0], [1, 1, 2])
     assert param.get_name() == 'p1'
     assert param.get_dimensionality() == 3
@@ -78,4 +78,18 @@ def test_triangular_parameter():
     s = param.scale_samples(germ)
     assert s.shape == germ.shape
     gold = [[0.447214], [1.0], [1.225403]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
+def test_multidimensional_triangular_parameter():
+    param = TriangularParameter('p1', [0, 1, 0], [1, 2, 2], [2, 3, 4])
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 3
+
+    germ = np.array([[0.1, 0.1, 0.1], [0.5, 0.5, 0.5], [0.7, 0.7, 0.7]])
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    gold = [[0.447214, 1.447214, 0.894427],
+            [1.0, 2.0, 2.0],
+            [1.225403, 2.225403, 2.450807]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)

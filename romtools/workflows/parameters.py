@@ -124,15 +124,21 @@ class TriangularParameter(Parameter):
                  peak: float = 0,
                  upper_bound: float = 1):
         self._parameter_name = parameter_name
+        try:
+            assert len(lower_bound) == len(peak)
+            assert len(lower_bound) == len(upper_bound)
+            self._dimension = len(lower_bound)
+        except TypeError:
+            self._dimension = 1
         self._loc = lower_bound
-        self._scale = upper_bound - lower_bound
-        self._c = (peak - lower_bound)/(self._scale)
+        self._scale = np.array(upper_bound) - np.array(lower_bound)
+        self._c = (np.array(peak) - np.array(lower_bound))/(self._scale)
 
     def get_name(self) -> str:
         return self._parameter_name
 
     def get_dimensionality(self) -> int:
-        return 1
+        return self._dimension
 
     def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
