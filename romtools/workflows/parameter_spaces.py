@@ -53,7 +53,8 @@ from typing import Iterable
 import numpy as np
 
 from romtools.workflows.sampling_methods import Sampler, MonteCarloSampler
-from romtools.workflows.parameters import Parameter, StringParameter, UniformParameter
+from romtools.workflows.parameters import Parameter, StringParameter, UniformParameter, GaussianParameter
+
 
 class ParameterSpace(abc.ABC):
 
@@ -89,8 +90,6 @@ class ParameterSpace(abc.ABC):
 
         Returns np.array of the same shape
         '''
-
-
 
 
 ##########################################
@@ -181,6 +180,19 @@ class UniformParameterSpace(HomogeneousParameterSpace):
                          param_constructor=UniformParameter,
                          lower_bound=lower_bounds,
                          upper_bound=upper_bounds)
+
+
+class GaussianParameterSpace(HomogeneousParameterSpace):
+    '''
+    Homogeneous parameter space in which every parameter is a GaussianParameter
+    '''
+    def __init__(self, parameter_names: Iterable[str],
+                 means, stds, sampler: Sampler):
+        super().__init__(parameter_names,
+                         sampler=sampler,
+                         param_constructor=GaussianParameter,
+                         mean=means,
+                         std=stds)
 
 
 class ConstParameterSpace(HomogeneousParameterSpace):

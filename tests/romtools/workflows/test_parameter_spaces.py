@@ -1,13 +1,18 @@
 import numpy as np
+
 from romtools.workflows.parameters import UniformParameter
 from romtools.workflows.parameters import StringParameter
+from romtools.workflows.parameters import GaussianParameter
+
 from romtools.workflows.parameter_spaces import EmptyParameterSpace
 from romtools.workflows.parameter_spaces import UniformParameterSpace
+from romtools.workflows.parameter_spaces import GaussianParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 
 from romtools.workflows.sampling_methods import MonteCarloSampler
 from romtools.workflows.sampling_methods import LatinHypercubeSampler
+
 
 def test_uniform_parameter():
     param = UniformParameter('p1', -1, 1)
@@ -48,6 +53,34 @@ def test_string_parameter():
     assert (s == [['p1val', 'p1val', 'p1val']]).all()
 
 
+def test_gaussian_parameter():
+    param = GaussianParameter('p1', 0, 1)
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 1
+
+    germ = np.array([[0.1], [0.5], [0.7]])
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    gold = [[-1.281552],
+            [0.0],
+            [0.524401]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
+def test_multdimensional_gaussian_parameter():
+    param = GaussianParameter('p1', [0, 1, 0], [1, 1, 2])
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 3
+
+    germ = np.array([[0.1, 0.1, 0.1], [0.5, 0.5, 0.5], [0.7, 0.7, 0.7]])
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    gold = [[-1.281552, -0.281552, -2.563104],
+            [0.0, 1.0, 0.0],
+            [0.524401, 1.524401, 1.048802]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
 def test_empty_param_space():
     param_space = EmptyParameterSpace()
     assert param_space.get_names() == []
@@ -70,14 +103,25 @@ def test_uniform_param_space():
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
+def test_gaussian_param_space():
+    param_space = GaussianParameterSpace(['p1', 'p2'], [-1, 0], [1, 2],
+                                         sampler=MonteCarloSampler)
+    assert param_space.get_names() == ['p1', 'p2']
+    assert param_space.get_dimensionality() == 2
+
+    s = param_space.generate_samples(3, seed=1)
+    assert s.shape == (3, 2)
+    gold = [[-1.209518,  1.167611],
+            [-4.684948, -1.035407],
+            [-2.050449, -2.652982]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
 def test_const_param_space():
     param_space = ConstParameterSpace(['p1', 'p2', 'p3'], [1, 3, 'p3val'])
     assert param_space.get_names() == ['p1', 'p2', 'p3']
     assert param_space.get_dimensionality() == 3
-    germ = np.array([[0.1, 0.2, 0.3],
-                     [0.4, 0.5, 0.6],
-                     [0.7, 0.8, 0.9],
-                     [0.0, 1.0, 0.5]])
+
     s = param_space.generate_samples(4)
     assert s.shape == (4, 3)
     assert (s == [['1', '3', 'p3val'],
@@ -95,10 +139,6 @@ def test_hetero_param_space():
     assert param_space.get_names() == ['p1', 'p2', 'p3']
     assert param_space.get_dimensionality() == 3
 
-    germ = np.array([[0.1, 0.2, 0.3],
-                     [0.4, 0.5, 0.6],
-                     [0.7, 0.8, 0.9],
-                     [0.0, 1.0, 0.5]])
     s = param_space.generate_samples(4, seed=1)
     assert s.shape == (4, 3)
 

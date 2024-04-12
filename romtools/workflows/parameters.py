@@ -1,6 +1,7 @@
 import abc
 import numpy as np
 from scipy.stats import qmc
+from scipy.stats import norm
 
 class Parameter(abc.ABC):
     '''Abstract implementation'''
@@ -83,3 +84,30 @@ class StringParameter(Parameter):
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
         number_of_samples = uniform_dist_samples.shape[0]
         return np.array([[self._parameter_value]] * number_of_samples)
+
+
+class GaussianParameter(Parameter):
+    '''
+    Normally distributed parameter
+    '''
+    def __init__(self, parameter_name: str,
+                 mean: float = 0,
+                 std: float = 1):
+        self._parameter_name = parameter_name
+        try:
+            assert len(mean) == len(std)
+            self._dimension = len(mean)
+        except TypeError:
+            self._dimension = 1
+        self._mean = mean
+        self._std = std
+
+    def get_name(self) -> str:
+        return self._parameter_name
+
+    def get_dimensionality(self) -> int:
+        return self._dimension
+
+    def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
+        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
+        return norm.ppf(uniform_dist_samples, loc=self._mean, scale=self._std)
