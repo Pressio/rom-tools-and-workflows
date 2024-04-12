@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from romtools.vector_space.utils.truncater import *
-from romtools.linalg.parallel_utils import *
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl
 try:
   import mpi4py
   from mpi4py import MPI

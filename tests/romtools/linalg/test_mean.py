@@ -9,7 +9,8 @@ try:
 except ModuleNotFoundError:
     print("module 'mpi4py' is not installed")
 
-from romtools.linalg.parallel_utils import *
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl,\
+                                           generate_local_and_global_arrays_from_example_impl
 from romtools.linalg.linalg import _basic_mean_via_python
 
 

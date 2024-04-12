@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 import scipy.sparse
 from romtools.vector_space.utils.orthogonalizer import *
-from romtools.linalg.parallel_utils import *
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl,\
+                                           distribute_array_impl
 try:
   import mpi4py
   from mpi4py import MPI
