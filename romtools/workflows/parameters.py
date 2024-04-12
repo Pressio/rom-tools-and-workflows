@@ -2,6 +2,7 @@ import abc
 import numpy as np
 from scipy.stats import qmc
 from scipy.stats import norm
+from scipy.stats import triang
 
 
 class Parameter(abc.ABC):
@@ -116,16 +117,16 @@ class GaussianParameter(Parameter):
 
 class TriangularParameter(Parameter):
     '''
-    Random *scalar* parameter with a triangular distribution
+    Random parameter with a triangular distribution
     '''
     def __init__(self, parameter_name: str,
                  lower_bound: float = -1,
                  peak: float = 0,
                  upper_bound: float = 1):
         self._parameter_name = parameter_name
-        self._lower_bound = lower_bound
-        self._peak = peak
-        self._upper_bound = upper_bound
+        self._loc = lower_bound
+        self._scale = upper_bound - lower_bound
+        self._c = (peak - lower_bound)/(self._scale)
 
     def get_name(self) -> str:
         return self._parameter_name
@@ -135,11 +136,4 @@ class TriangularParameter(Parameter):
 
     def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        return np.array([self._inverse_distribution_function(xi) for xi in uniform_dist_samples])
-
-    def _inverse_distribution_function(self, x):
-        span = self._upper_bound - self._lower_bound
-        if x < (self._peak - self._lower_bound)/span:
-            return self._lower_bound + np.sqrt(span*(self._peak - self._lower_bound)*x)
-        else:
-            return self._upper_bound - np.sqrt(span*(self._upper_bound - self._peak)*(1-x))
+        return triang.ppf(uniform_dist_samples, loc=self._loc, scale=self._scale, c=self._c)
