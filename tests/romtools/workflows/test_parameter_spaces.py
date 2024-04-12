@@ -3,6 +3,7 @@ import numpy as np
 from romtools.workflows.parameters import UniformParameter
 from romtools.workflows.parameters import StringParameter
 from romtools.workflows.parameters import GaussianParameter
+from romtools.workflows.parameters import TriangularParameter
 
 from romtools.workflows.parameter_spaces import EmptyParameterSpace
 from romtools.workflows.parameter_spaces import UniformParameterSpace
@@ -36,9 +37,7 @@ def test_vector_parameter():
     germ = np.array([[0.1, 0.2], [0.5, 0.6], [0.7, 0.5]])
     s = param.scale_samples(germ)
     assert s.shape == (3, 2)
-    gold = [[-0.8, 0.6],
-            [ 0.0, 1.8],
-            [ 0.4, 1.5]]
+    gold = [[-0.8, 0.6], [0.0, 1.8], [0.4, 1.5]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
@@ -61,9 +60,7 @@ def test_gaussian_parameter():
     germ = np.array([[0.1], [0.5], [0.7]])
     s = param.scale_samples(germ)
     assert s.shape == germ.shape
-    gold = [[-1.281552],
-            [0.0],
-            [0.524401]]
+    gold = [[-1.281552], [0.0], [0.524401]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
@@ -78,6 +75,18 @@ def test_multdimensional_gaussian_parameter():
     gold = [[-1.281552, -0.281552, -2.563104],
             [0.0, 1.0, 0.0],
             [0.524401, 1.524401, 1.048802]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
+def test_triangular_parameter():
+    param = TriangularParameter('p1', 0, 1, 2)
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 1
+
+    germ = np.array([[0.1], [0.5], [0.7]])
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    gold = [[0.447214], [1.0], [1.225403]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
