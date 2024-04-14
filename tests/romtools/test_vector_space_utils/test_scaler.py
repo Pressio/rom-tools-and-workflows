@@ -3,8 +3,8 @@ import pytest
 import numpy as np
 import scipy.sparse
 from romtools.vector_space.utils.scaler import *
-import pressiolinalg.linalg as pla
-from pressiolinalg import test_utils
+import romtools.linalg.linalg as la
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl
 try:
   import mpi4py
   from mpi4py import MPI
@@ -25,7 +25,7 @@ def test_noop_scaler():
 def test_noop_scaler_mpi():
   comm = MPI.COMM_WORLD
   scaler = NoOpScaler()
-  local_snapshots, _ = test_utils.generate_random_local_and_global_arrays_impl((3,10,2), comm=comm)
+  local_snapshots, _ = generate_random_local_and_global_arrays_impl((3,10,2), comm=comm)
   scaled_local_snapshots = scaler.pre_scale(local_snapshots)
   unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
   assert(np.allclose(local_snapshots, scaled_local_snapshots))
@@ -33,11 +33,11 @@ def test_noop_scaler_mpi():
 
 def scaling_op(scaling_type,arg):
   if scaling_type == 'max_abs':
-    return pla.max(np.abs(arg))
+    return la.max(np.abs(arg))
   elif scaling_type == 'mean_abs':
-    return pla.mean(np.abs(arg))
+    return la.mean(np.abs(arg))
   elif scaling_type == 'variance':
-    return pla.std(arg)
+    return la.std(arg)
 
 @pytest.mark.mpi_skip
 def test_vector_scaler():
@@ -59,7 +59,7 @@ def test_vector_scaler_mpi():
   comm = MPI.COMM_WORLD
   n_var = 3
   nx = 5
-  local_snapshots, _ = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
+  local_snapshots, _ = generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
   my_scaling_vector = np.abs(np.random.normal(size=local_snapshots.shape[1]))
   initial_local_snapshots = copy.deepcopy(local_snapshots)
   scaler = VectorScaler(my_scaling_vector)
@@ -99,7 +99,7 @@ def test_variable_scaler_mpi():
  n_var = 3
  nx = 5
  def run_test(scaling_type):
-  local_snapshots, _ = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
+  local_snapshots, _ = generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
   scales = np.zeros(n_var)
   for i in range(0,n_var):
     scales[i] = scaling_op(scaling_type, local_snapshots[i])
@@ -148,7 +148,7 @@ def test_variable_and_vector_scaler_mpi():
   comm = MPI.COMM_WORLD
   n_var = 3
   nx = 5
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl((n_var,nx,5), comm=comm)
   my_scaling_vector = np.abs(np.random.normal(size=local_snapshots.shape[1]))
 
   scales = np.zeros(n_var)

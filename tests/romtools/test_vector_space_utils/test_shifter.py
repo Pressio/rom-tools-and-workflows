@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 from romtools.vector_space.utils.shifter import *
-from pressiolinalg import test_utils
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl,\
+                                           distribute_array_impl
 try:
   import mpi4py
   from mpi4py import MPI
@@ -23,8 +24,8 @@ def test_noop_shifter():
 def test_noop_shifter_mpi():
   comm = MPI.COMM_WORLD
   global_shape = (3,10,2)
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
-  dist_orig_global_snapshots = test_utils.distribute_array_impl(global_snapshots, comm, dist_axis=1)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  dist_orig_global_snapshots = distribute_array_impl(global_snapshots, comm, dist_axis=1)
   local_shifter = create_noop_shifter(local_snapshots)
   local_shifter.apply_shift(local_snapshots)
   assert np.allclose(local_snapshots, dist_orig_global_snapshots)
@@ -62,7 +63,7 @@ def test_constant_shifter_mpi():
 
   # Test with np.ndarray
   shift_value = np.array([4,1,3],dtype='int')
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
 
   original_local_snapshots = local_snapshots.copy()
   local_shifter = create_constant_shifter(shift_value, local_snapshots)
@@ -70,7 +71,7 @@ def test_constant_shifter_mpi():
 
   global_shifter = create_constant_shifter(shift_value, global_snapshots)
   global_shifter.apply_shift(global_snapshots)
-  dist_shifted_global_snapshots = test_utils.distribute_array_impl(global_snapshots, comm, dist_axis=1)
+  dist_shifted_global_snapshots = distribute_array_impl(global_snapshots, comm, dist_axis=1)
 
   assert np.allclose(local_snapshots, dist_shifted_global_snapshots)
 
@@ -79,7 +80,7 @@ def test_constant_shifter_mpi():
 
   # Test with number
   shift_value = 2
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
   original_local_snapshots = local_snapshots.copy()
   shifted_local_snapshots = local_snapshots.copy()
   shifted_local_snapshots -= shift_value
@@ -105,7 +106,7 @@ def test_average_shifter():
 def test_average_shifter_mpi():
   comm=MPI.COMM_WORLD
   global_shape = (3,10,5)
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
 
   original_local_snapshots = local_snapshots.copy()
   local_shifter = create_average_shifter(local_snapshots)
@@ -113,7 +114,7 @@ def test_average_shifter_mpi():
 
   global_shifter = create_average_shifter(global_snapshots)
   global_shifter.apply_shift(global_snapshots)
-  dist_shifted_global_snapshots = test_utils.distribute_array_impl(global_snapshots, comm, dist_axis=1)
+  dist_shifted_global_snapshots = distribute_array_impl(global_snapshots, comm, dist_axis=1)
 
   assert np.allclose(local_snapshots, dist_shifted_global_snapshots)
   local_shifter.apply_inverse_shift(local_snapshots)
@@ -135,7 +136,7 @@ def test_first_vec_shifter():
 def test_first_vec_shifter():
   comm = MPI.COMM_WORLD
   global_shape = (3,10,5)
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
   original_local_snapshots = local_snapshots.copy()
 
   local_shifter = create_firstvec_shifter(local_snapshots)
@@ -143,7 +144,7 @@ def test_first_vec_shifter():
 
   global_shifter = create_firstvec_shifter(global_snapshots)
   global_shifter.apply_shift(global_snapshots)
-  dist_shifted_global_snapshots = test_utils.distribute_array_impl(global_snapshots, comm, dist_axis=1)
+  dist_shifted_global_snapshots = distribute_array_impl(global_snapshots, comm, dist_axis=1)
 
   assert np.allclose(local_snapshots, dist_shifted_global_snapshots)
   local_shifter.apply_inverse_shift(local_snapshots)
@@ -167,16 +168,16 @@ def test_vector_shifter_mpi():
   global_shape = (3,10,5)
   shift_vec = np.random.normal(size=(3,10))
 
-  local_snapshots, global_snapshots = test_utils.generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
+  local_snapshots, global_snapshots = generate_random_local_and_global_arrays_impl(global_shape, comm=comm)
   original_local_snapshots = local_snapshots.copy()
 
-  local_shift_vec = test_utils.distribute_array_impl(shift_vec, comm, dist_axis=1) # distribute over same axis as snapshots
+  local_shift_vec = distribute_array_impl(shift_vec, comm, dist_axis=1) # distribute over same axis as snapshots
   local_shifter = create_vector_shifter(local_shift_vec)
   local_shifter.apply_shift(local_snapshots)
 
   global_shifter = create_vector_shifter(shift_vec)
   global_shifter.apply_shift(global_snapshots)
-  dist_shifted_global_snapshots = test_utils.distribute_array_impl(global_snapshots, comm, dist_axis=1)
+  dist_shifted_global_snapshots = distribute_array_impl(global_snapshots, comm, dist_axis=1)
 
   assert np.allclose(local_snapshots, dist_shifted_global_snapshots)
   local_shifter.apply_inverse_shift(local_snapshots)

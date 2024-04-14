@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from romtools.vector_space.utils.truncater import *
-from pressiolinalg import test_utils
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl
 try:
   import mpi4py
   from mpi4py import MPI
@@ -22,7 +22,7 @@ def test_noop_truncater_mpi():
   comm=MPI.COMM_WORLD
   truncater = NoOpTruncater()
   basis_shape=(10,2)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   singular_vectors = np.ones(2)
   local_truncated_basis = truncater.truncate(local_basis, singular_vectors)
   assert(np.allclose(local_truncated_basis, local_basis))
@@ -43,7 +43,7 @@ def test_basis_size_truncater_mpi():
   reduced_size = 4
   truncater = BasisSizeTruncater(reduced_size)
   basis_shape=(10,8)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   singular_values = np.ones(2)
   truncated_local_basis = truncater.truncate(local_basis,singular_values)
   assert(np.allclose(truncated_local_basis, local_basis[:,0:reduced_size]))
@@ -82,7 +82,7 @@ def test_energy_truncater_mpi():
 
   truncater = EnergyBasedTruncater(energy_threshold)
   basis_shape=(10,8)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   local_truncated_basis = truncater.truncate(local_basis,singular_values)
   assert(np.allclose(local_truncated_basis, local_basis[:,0:K]))
   assert(local_truncated_basis.shape[1] == K)

@@ -44,7 +44,7 @@
 #
 from typing import Any, Tuple
 import numpy as np
-import pressiolinalg.linalg as pla
+import romtools.linalg.linalg as la
 
 
 class SvdMethodOfSnapshots:
@@ -82,7 +82,7 @@ class SvdMethodOfSnapshots:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, np.ndarray, Any]:
-        U, s = pla.thin_svd(snapshots, self._comm, method='method_of_snapshots')
+        U, s = la.thin_svd(snapshots, self._comm, method='method_of_snapshots')
         return U, s, 'not_computed_in_method_of_snapshots'
 
 
@@ -98,5 +98,5 @@ class SvdMethodOfSnapshotsForQr:
                  full_matrices: bool = False,
                  compute_uv: bool = False,
                  hermitian: bool = False) -> Tuple[np.ndarray, Any]:
-        U, _ = pla.thin_svd(snapshots, self._comm, method='method_of_snapshots')
+        U, _ = la.thin_svd(snapshots, self._comm, method='method_of_snapshots')
         return U, 'not_computed_in_method_of_snapshots'

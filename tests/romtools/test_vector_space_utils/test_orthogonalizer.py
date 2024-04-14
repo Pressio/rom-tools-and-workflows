@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 import scipy.sparse
 from romtools.vector_space.utils.orthogonalizer import *
-from pressiolinalg import test_utils
+from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl,\
+                                           distribute_array_impl
 try:
   import mpi4py
   from mpi4py import MPI
@@ -24,7 +25,7 @@ class ParallelQR:
         global_qr, _ = np.linalg.qr(global_array, mode=mode)
 
         # Then distribute back to the original processes and return (along with a dummy variable)
-        local_qr = test_utils.distribute_array_impl(global_qr, comm=self.__comm, dist_axis=0)
+        local_qr = distribute_array_impl(global_qr, comm=self.__comm, dist_axis=0)
         return local_qr, _
 
 @pytest.mark.mpi_skip
@@ -39,10 +40,10 @@ def test_noop_orthogonalizer_mpi():
   comm = MPI.COMM_WORLD
   orthogonalizer = NoOpOrthogonalizer()
   basis_shape = (10,2)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   local_orthogonalized_basis = orthogonalizer.orthogonalize(local_basis)
   global_orthogonalized_basis = orthogonalizer.orthogonalize(global_basis)
-  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+  dist_global_orthogonalized_basis = distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
   assert(np.allclose(local_orthogonalized_basis, dist_global_orthogonalized_basis))
 
 @pytest.mark.mpi_skip
@@ -60,10 +61,10 @@ def test_euclidean_l2_orthogonalizer_mpi():
   parallel_orthogonalizer = EuclideanL2Orthogonalizer(qrFnc=parallel_qr)
   serial_orthogonalizer = EuclideanL2Orthogonalizer()
   basis_shape = (10,2)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   local_orthogonalized_basis = parallel_orthogonalizer.orthogonalize(local_basis)
   global_orthogonalized_basis = serial_orthogonalizer.orthogonalize(global_basis)
-  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+  dist_global_orthogonalized_basis = distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
   assert(np.allclose(local_orthogonalized_basis, dist_global_orthogonalized_basis))
 
 @pytest.mark.mpi_skip
@@ -80,16 +81,16 @@ def test_euclidean_vector_weighted_l2_orthogonalizer():
 def test_euclidean_vector_weighted_l2_orthogonalizer_mpi():
   comm = MPI.COMM_WORLD
   basis_shape = (10,2)
-  local_basis, global_basis = test_utils.generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
+  local_basis, global_basis = generate_random_local_and_global_arrays_impl(basis_shape, comm=comm)
   np.random.seed(1)
 
   vec_to_orthogonalize_against = np.abs(np.random.normal(size=10))
   serial_orthogonalizer = EuclideanVectorWeightedL2Orthogonalizer(vec_to_orthogonalize_against)
   global_orthogonalized_basis = serial_orthogonalizer.orthogonalize(global_basis)
-  dist_global_orthogonalized_basis = test_utils.distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
+  dist_global_orthogonalized_basis = distribute_array_impl(global_orthogonalized_basis, comm=comm, dist_axis=0)
 
   parallel_qr = ParallelQR(comm)
-  local_vec_to_orthogonalize_against = test_utils.distribute_array_impl(vec_to_orthogonalize_against, comm=comm)
+  local_vec_to_orthogonalize_against = distribute_array_impl(vec_to_orthogonalize_against, comm=comm)
   parallel_orthogonalizer = EuclideanVectorWeightedL2Orthogonalizer(local_vec_to_orthogonalize_against, parallel_qr)
   local_orthogonalized_basis = parallel_orthogonalizer.orthogonalize(local_basis)
 
