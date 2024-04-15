@@ -1,9 +1,11 @@
 import numpy as np
+from scipy.stats import norm
 
 from romtools.workflows.parameters import UniformParameter
 from romtools.workflows.parameters import StringParameter
 from romtools.workflows.parameters import GaussianParameter
 from romtools.workflows.parameters import TriangularParameter
+from romtools.workflows.parameters import ScipyDistributionParameter
 
 
 def test_uniform_parameter():
@@ -93,3 +95,27 @@ def test_multidimensional_triangular_parameter():
             [1.0, 2.0, 2.0],
             [1.225403, 2.225403, 2.450807]]
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
+def test_scipy_gaussian_parameter():
+    param = ScipyDistributionParameter('p1', norm, loc=0, scale=1)
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 1
+
+    gold_param = GaussianParameter('p1', 0, 1)
+    germ = np.random.random(size=(4, 1))
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    np.testing.assert_allclose(s, gold_param.scale_samples(germ), rtol=1e-5, atol=1e-8)
+
+
+def test_scipy_multidimensional_gaussian_parameter():
+    param = ScipyDistributionParameter('p1', norm, loc=[0, 1, 0], scale=[1, 1, 2])
+    assert param.get_name() == 'p1'
+    assert param.get_dimensionality() == 3
+
+    gold_param = GaussianParameter('p1', [0, 1, 0], [1, 1, 2])
+    germ = np.random.random(size=(4, param.get_dimensionality()))
+    s = param.scale_samples(germ)
+    assert s.shape == germ.shape
+    np.testing.assert_allclose(s, gold_param.scale_samples(germ), rtol=1e-5, atol=1e-8)

@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import qmc
 from scipy.stats import norm
 from scipy.stats import triang
-
+from scipy.stats import rv_continuous
 
 class Parameter(abc.ABC):
     '''Abstract implementation'''
@@ -143,3 +143,29 @@ class TriangularParameter(Parameter):
     def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()
         return triang.ppf(uniform_dist_samples, loc=self._loc, scale=self._scale, c=self._c)
+
+
+class ScipyDistributionParameter(Parameter):
+    '''
+    Random parameter with distribution described by a scipy.stats.rv_continuous object
+    '''
+
+    def __init__(self, parameter_name: str, distribution: rv_continuous, **kwargs):
+        self._parameter_name = parameter_name
+        self._dist_obj = distribution
+        self._kwargs = kwargs
+
+        try:
+            self._dimension = len(kwargs['loc'])
+        except TypeError:
+            self._dimension = 1
+
+    def get_name(self) -> str:
+        return self._parameter_name
+
+    def get_dimensionality(self) -> int:
+        return self._dimension
+
+    def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
+        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
+        return self._dist_obj.ppf(uniform_dist_samples, **self._kwargs)
