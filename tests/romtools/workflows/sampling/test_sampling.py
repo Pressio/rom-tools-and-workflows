@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from romtools.workflows.sampling.sampling import run_sampling
-from romtools.workflows.parameter_spaces import UniformParameterSpace
+from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
 
 
 class MockModel:
@@ -32,7 +32,8 @@ def test_sampler(tmp_path):
 
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                                np.array([0, 1, 2]),
-                                               np.array([1, 2, 3]))
+                                               np.array([1, 2, 3]),
+                                               sampler=MonteCarloSampler)
     my_model = MockModel()
     run_sampling(my_model, my_parameter_space,
                  run_directory_prefix=f'{tmp_path}/run_',

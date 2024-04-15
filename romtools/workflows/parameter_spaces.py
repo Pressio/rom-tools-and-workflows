@@ -51,36 +51,9 @@ The ParameterSpace class encapsulates the notion of the parameter space.
 import abc
 from typing import Iterable
 import numpy as np
-from scipy.stats import qmc
 
-
-class Parameter(abc.ABC):
-    '''Abstract implementation'''
-
-    @abc.abstractmethod
-    def get_name(self) -> str:
-        '''
-        Returns parameter name
-        '''
-
-    @abc.abstractmethod
-    def get_dimensionality(self) -> int:
-        '''
-        Returns dimensionality of parameter for vector quantities.
-        Returns 1 for scalar parameters
-        '''
-
-    @abc.abstractmethod
-    def generate_samples(self, uniform_dist_samples) -> np.array:
-        '''
-        Generates samples from the desired distribution given a set of samples
-        from a uniform distribution on (0,1)
-
-        uniform_dist_samples should be of shape
-        (number_of_samples, self.get_dimensionality())
-
-        Returns np.array of the same shape
-        '''
+from romtools.workflows.sampling_methods import Sampler, MonteCarloSampler
+from romtools.workflows.parameters import Parameter, StringParameter, UniformParameter, GaussianParameter
 
 
 class ParameterSpace(abc.ABC):
@@ -101,7 +74,13 @@ class ParameterSpace(abc.ABC):
         '''
 
     @abc.abstractmethod
-    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
+    def get_sampler(self) -> Sampler:
+        '''
+        Returns a function
+        '''
+
+    @abc.abstractmethod
+    def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
         '''
         Generates samples from the parameter space given a set of samples
         from a uniform distribution on (0,1)
@@ -114,90 +93,6 @@ class ParameterSpace(abc.ABC):
 
 
 ##########################################
-# Sampling Methods
-##########################################
-
-
-def monte_carlo_sample(param_space: ParameterSpace,
-                       number_of_samples: int = 1,
-                       seed=None):
-    '''
-    Generate Monte Carlo samples from a given parameter space
-    '''
-    if seed is not None:
-        np.random.seed(seed)
-    uniform_dist_sample = np.random.uniform(
-        size=(number_of_samples, param_space.get_dimensionality()))
-    return param_space.generate_samples(uniform_dist_sample)
-
-
-def latin_hypercube_sample(param_space: ParameterSpace,
-                           number_of_samples: int = 1,
-                           seed=None):
-    '''
-    Generate LHS samples from a given parameter space
-    '''
-    sampler = qmc.LatinHypercube(param_space.get_dimensionality(), seed=seed)
-    uniform_dist_sample = sampler.random(n=number_of_samples)
-    return param_space.generate_samples(uniform_dist_sample)
-
-
-##########################################
-# Concrete Parameter Classes
-##########################################
-
-
-class UniformParameter(Parameter):
-    '''
-    Uniformly distributed floating point
-    '''
-    def __init__(self, parameter_name: str,
-                 lower_bound: float = 0,
-                 upper_bound: float = 1):
-        self._parameter_name = parameter_name
-
-        try:
-            assert len(lower_bound) == len(upper_bound)
-            self._dimension = len(lower_bound)
-        except TypeError:
-            self._dimension = 1
-        self._lower_bound = lower_bound
-        self._upper_bound = upper_bound
-
-    def get_name(self) -> str:
-        return self._parameter_name
-
-    def get_dimensionality(self) -> int:
-        return self._dimension
-
-    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
-        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        return qmc.scale(uniform_dist_samples,
-                         self._lower_bound,
-                         self._upper_bound)
-
-
-class StringParameter(Parameter):
-    '''
-    Constant string-valued parameter
-    '''
-    def __init__(self, parameter_name: str, value):
-        self._parameter_name = parameter_name
-        self._parameter_value = value
-
-    def get_name(self) -> str:
-        return self._parameter_name
-
-    def get_dimensionality(self) -> int:
-        return 1
-
-    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
-        assert uniform_dist_samples.shape[1] == self.get_dimensionality()
-        number_of_samples = uniform_dist_samples.shape[0]
-        return np.array([[self._parameter_value]] * number_of_samples)
-
-
-##########################################
 # Concrete ParameterSpace Classes
 ##########################################
 
@@ -207,8 +102,10 @@ class HeterogeneousParameterSpace(ParameterSpace):
     Heterogeneous parameter space consisting of a list of arbitrary Parameter
     objects
     '''
-    def __init__(self, parameter_objs: Iterable[Parameter]):
+    def __init__(self, parameter_objs: Iterable[Parameter],
+                 sampler: Sampler = MonteCarloSampler):
         self._parameters = parameter_objs
+        self._sampler = sampler
 
     def _get_parameter_list(self) -> Iterable[Parameter]:
         '''
@@ -222,13 +119,18 @@ class HeterogeneousParameterSpace(ParameterSpace):
     def get_dimensionality(self) -> int:
         return sum(p.get_dimensionality() for p in self._get_parameter_list())
 
-    def generate_samples(self, uniform_dist_samples: np.array) -> np.array:
+    def get_sampler(self) -> Sampler:
+        return self._sampler
+
+    def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
+        sampler = self.get_sampler()
+        iid_samples = sampler(number_of_samples, self.get_dimensionality(), seed)
         samples = []
         param_idx = 0
         for param in self._get_parameter_list():
-            next_param_idx = param_idx+param.get_dimensionality()
-            param_samples = param.generate_samples(
-                uniform_dist_samples[:, param_idx:next_param_idx])
+            next_param_idx = param_idx + param.get_dimensionality()
+            param_samples = param.scale_samples(
+                iid_samples[:, param_idx:next_param_idx])
             samples.append(param_samples)
             param_idx = next_param_idx
         return np.concatenate(samples, axis=1)
@@ -239,13 +141,14 @@ class HomogeneousParameterSpace(HeterogeneousParameterSpace):
     Homogenous parameter space in which every parameter is of the same type
     '''
     def __init__(self, parameter_names: Iterable[str],
+                 sampler: Sampler,
                  param_constructor, **kwargs):
         parameters = []
         for param_num, param_name in enumerate(parameter_names):
             args = {key: val[param_num] for key, val in kwargs.items()}
             parameters.append(param_constructor(parameter_name=param_name,
                                                 **args))
-        super().__init__(parameters)
+        super().__init__(parameters, sampler)
 
 
 class EmptyParameterSpace(ParameterSpace):
@@ -258,8 +161,10 @@ class EmptyParameterSpace(ParameterSpace):
     def get_dimensionality(self) -> int:
         return 0
 
-    def generate_samples(self, uniform_dist_samples: np.array):
-        number_of_samples = uniform_dist_samples.shape[0]
+    def get_sampler(self) -> Sampler:
+        return MonteCarloSampler
+
+    def generate_samples(self, number_of_samples: int, seed=None) -> np.ndarray:
         return np.empty(shape=(number_of_samples, 0))
 
 
@@ -269,10 +174,25 @@ class UniformParameterSpace(HomogeneousParameterSpace):
     '''
 
     def __init__(self, parameter_names: Iterable[str],
-                 lower_bounds, upper_bounds):
-        super().__init__(parameter_names, UniformParameter,
+                 lower_bounds, upper_bounds, sampler: Sampler):
+        super().__init__(parameter_names,
+                         sampler=sampler,
+                         param_constructor=UniformParameter,
                          lower_bound=lower_bounds,
                          upper_bound=upper_bounds)
+
+
+class GaussianParameterSpace(HomogeneousParameterSpace):
+    '''
+    Homogeneous parameter space in which every parameter is a GaussianParameter
+    '''
+    def __init__(self, parameter_names: Iterable[str],
+                 means, stds, sampler: Sampler):
+        super().__init__(parameter_names,
+                         sampler=sampler,
+                         param_constructor=GaussianParameter,
+                         mean=means,
+                         std=stds)
 
 
 class ConstParameterSpace(HomogeneousParameterSpace):
@@ -283,5 +203,5 @@ class ConstParameterSpace(HomogeneousParameterSpace):
     Useful if you need to execute workflows in a non-stochastic setting
     '''
     def __init__(self, parameter_names: Iterable[str], parameter_values):
-        super().__init__(parameter_names, StringParameter,
-                         value=parameter_values)
+        super().__init__(parameter_names, MonteCarloSampler,
+                         StringParameter, value=parameter_values)

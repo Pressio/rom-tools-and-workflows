@@ -87,7 +87,6 @@ import time
 import numpy as np
 from numpy.random import sample
 
-from romtools.workflows.parameter_spaces import monte_carlo_sample
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -109,7 +108,7 @@ def run_greedy(fom_model: QoiModel,
     '''
     greedy_directory = absolute_greedy_work_directory
     create_empty_dir(greedy_directory)
-    offline_directory_prefix = 'offline_data' 
+    offline_directory_prefix = 'offline_data'
 
     run_directory_prefix = "run_"
     greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8")
@@ -121,7 +120,7 @@ def run_greedy(fom_model: QoiModel,
     np.random.seed(random_seed)
 
     # create parameter samples
-    parameter_samples = monte_carlo_sample(parameter_space, testing_sample_size)
+    parameter_samples = parameter_space.generate_samples(testing_sample_size)
     parameter_names = parameter_space.get_names()
 
     # Make FOM/ROM directories
@@ -256,7 +255,7 @@ def run_greedy(fom_model: QoiModel,
         basis_time += time.time() - t0
 
         # Add a new sample
-        new_parameter_sample = monte_carlo_sample(parameter_space, 1)
+        new_parameter_sample = parameter_space.generate_samples(1)
         parameter_samples = np.append(parameter_samples,
                                       new_parameter_sample, axis=0)
         new_sample_number = testing_sample_size + outer_loop_counter - 1
