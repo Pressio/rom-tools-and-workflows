@@ -53,3 +53,4 @@ The hyper_reduction module provides these functionalities. Note that certain asp
 Implementations of these aspects, including the generation of residual snapshots and the construction of a sample mesh, are left to the user. 
 '''
 from romtools.hyper_reduction.ecsw import *
+from romtools.hyper_reduction.deim import *
