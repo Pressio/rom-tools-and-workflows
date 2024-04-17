@@ -1,0 +1,1 @@
+pdoc ./romtools -t ./custom-template --math --docformat google &
