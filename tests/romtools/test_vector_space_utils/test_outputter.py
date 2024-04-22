@@ -1,0 +1,22 @@
+from pathlib import Path
+import pytest
+import numpy as np
+
+from romtools.vector_space import VectorSpace, VectorSpaceFromPOD
+from romtools.vector_space.utils.outputter import npz_output
+from romtools.vector_space.utils.outputter import hdf5_output
+
+
+@pytest.fixture(scope='module')
+def vector_space() -> VectorSpaceFromPOD:
+    return VectorSpaceFromPOD(snapshots=np.random.rand(10, 3, 1))
+
+
+def test_npz_output(tmp_path: Path, vector_space: VectorSpace) -> None:
+    npz_output(output_filename=f'{tmp_path}/test.npz',
+               vector_space=vector_space, compress=True)
+
+
+def test_hdf5_output(tmp_path: Path, vector_space: VectorSpace) -> None:
+    hdf5_output(output_filename=f'{tmp_path}/test.hdf5',
+                vector_space=vector_space)
