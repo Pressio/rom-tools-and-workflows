@@ -50,13 +50,15 @@ from romtools.vector_space import VectorSpace
 
 try:
     import exodus
+    exodus_available = True
 except ImportError:
-    pass
+    exodus_available = False
 
 try:
     import h5py
+    hdf5_available = True
 except ImportError:
-    pass
+    hdf5_available = False
 
 
 def npz_output(output_filename: str, vector_space: VectorSpace, compress=True) -> None:
