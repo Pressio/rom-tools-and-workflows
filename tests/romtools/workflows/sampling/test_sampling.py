@@ -37,7 +37,6 @@ def test_sampler(tmp_path):
     my_model = MockModel()
     run_sampling(my_model, my_parameter_space,
                  absolute_sampling_directory=tmp_path,
-                 run_directory_prefix='run_',
                  number_of_samples=10)
 
     for i in range(0, 10):

@@ -58,7 +58,6 @@ def _create_parameter_dict(parameter_names, parameter_values):
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
                  absolute_sampling_directory: str,
-                 run_directory_prefix: str = "run_",
                  number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
@@ -72,7 +71,7 @@ def run_sampling(model: Model,
     parameter_names = parameter_space.get_names()
 
     # Setup model directories
-    run_directory_base = f'{absolute_sampling_directory}/{run_directory_prefix}'
+    run_directory_base = f'{absolute_sampling_directory}/run_'
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
