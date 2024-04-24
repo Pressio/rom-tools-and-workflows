@@ -57,7 +57,8 @@ def _create_parameter_dict(parameter_names, parameter_values):
 
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
-                 run_directory_prefix: str = "./run_",
+                 absolute_sampling_directory: str,
+                 run_directory_prefix: str = "run_",
                  number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
@@ -71,10 +72,11 @@ def run_sampling(model: Model,
     parameter_names = parameter_space.get_names()
 
     # Setup model directories
+    run_directory_base = f'{absolute_sampling_directory}/{run_directory_prefix}'
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
-        run_directory = f'{run_directory_prefix}{sample_index}'
+        run_directory = f'{run_directory_base}{sample_index}'
         create_empty_dir(run_directory)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
         model.populate_run_directory(run_directory, parameter_dict)
@@ -84,11 +86,11 @@ def run_sampling(model: Model,
     for sample_index in range(0, number_of_samples):
         print("=======  Sample " + str(sample_index) + " ============")
         print("Running")
-        run_directory = f'{run_directory_prefix}{sample_index}'
+        run_directory = f'{run_directory_base}{sample_index}'
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
         run_times[sample_index] = run_sample(run_directory, model,
                                              parameter_dict)
-        sample_stats_save_directory = f'{run_directory_prefix}{sample_index}/../'
+        sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
 
