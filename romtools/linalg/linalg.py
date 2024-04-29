@@ -207,7 +207,7 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
         if comm != None, returns a tuple containing (value, index, rank):
             value: the global maximum
             index: the local index of the global maximum
-            rank:  the rank on which the global maximum resides ()
+            rank:  the rank on which the global maximum resides
 
     Preconditions:
       - a is at most a rank-3 tensor
@@ -232,7 +232,9 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
       =======================
        rank 2  -4.
 
-    res = la.argmax(a, comm)
+    Suppose that we do:
+
+        res = la.argmax(a, comm)
 
     then ALL ranks will contain res = (51., 1, 1).
     (The global maximum is 51., and it occurs at index 1 of the local array on Rank 1.)
