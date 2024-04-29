@@ -10,6 +10,9 @@ from romtools.linalg.parallel_utils import generate_random_local_and_global_arra
                                            generate_local_and_global_arrays_from_example_impl
 from romtools.linalg.linalg import _basic_argmax_via_python
 
+
+# ------------------------------------------------------------------------------
+
 def _parallel_argmax_test(ndim, comm):
     shape = (7,5,6)[:ndim]
 
@@ -41,6 +44,8 @@ def _serial_argmax_test(ndim):
 
     assert linalg_result == numpy_result
 
+# ------------------------------------------------------------------------------
+
 
 @pytest.mark.mpi(min_size=3)
 def test_argmax_mpi():
@@ -48,10 +53,35 @@ def test_argmax_mpi():
     for i in range(1, 4):
         _parallel_argmax_test(ndim=i, comm=comm)
 
-@pytest.mark.mpi(min_size=3)
+@pytest.mark.mpi_skip
 def test_argmax_serial():
     for i in range(1, 4):
         _serial_argmax_test(ndim=i)
 
+@pytest.mark.mpi(min_size=3)
+def test_parallel_argmax_examples():
+    comm = MPI.COMM_WORLD
+    if comm.Get_size() == 3:
+        rank = comm.Get_rank()
+        slices = [(0,2), (2,6), (6,7)]
+
+        # Example 1
+        local_arr_1, global_arr_1 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=1)
+        res_ex_1 = _basic_argmax_via_python(local_arr_1, comm=comm)
+        assert res_ex_1 == (51., 1, 1)
+
+        # Example 2
+        local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=2)
+        res_ex_2 = _basic_argmax_via_python(local_arr_2, comm=comm)
+        assert res_ex_2 == (51., 3, 1)
+
+        # Example 3
+        local_arr_2, global_arr_2 = generate_local_and_global_arrays_from_example_impl(rank, slices, example=3)
+        res_ex_2 = _basic_argmax_via_python(local_arr_2, comm=comm)
+        assert res_ex_2 == (9.0, 20, 1)
+
+
 if __name__ == "__main__":
     test_argmax_mpi()
+    test_argmax_serial()
+    test_parallel_argmax_examples()
