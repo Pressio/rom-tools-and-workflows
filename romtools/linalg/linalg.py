@@ -193,6 +193,55 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
 
 
 # # ----------------------------------------------------
+def _basic_argmax_via_python(a: np.ndarray, comm=None):
+    '''
+    Return an array's maximum value, its index, and the lowest rank it exists on.
+    '''
+    # Return "local" result if not running distributed
+    if comm is None or comm.Get_size() == 1:
+        return np.argmax(a)
+
+    # Get local array argmax result
+    a = a.flatten()
+    local_max_index = np.argmax(a)
+    local_max_val = a[local_max_index]
+
+    # Set up local solution
+    tmp = np.zeros(3)
+    tmp[0] = local_max_val
+    tmp[1] = local_max_index
+    tmp[2] = comm.Get_rank() if comm is not None else 0
+
+    # Otherwise, find distributed max index
+    import mpi4py
+    from mpi4py import MPI
+
+    # Define custom MPI op
+    def mycomp(A_mem,B_mem,dt):
+        # Get matrices from memory buffers
+        A = np.frombuffer(A_mem)
+        B = np.frombuffer(B_mem)
+
+        # Return the index of the max (or the max on the lowest rank, if multiple occurrences)
+        if A[0] < B[0] or (A[0] == B[0] and A[2] > B[2]):
+            result = B
+        else:
+            result = A
+
+        # Copy result to B for next comparison
+        B[:] = result
+
+    # Perform operation
+    result = np.zeros(3)
+    myop = MPI.Op.Create(mycomp, commute=False)
+    comm.Allreduce(tmp, result, op=myop)
+    myop.Free()
+
+    # Return val (float), index (int64), and rank (int)
+    return result[0], np.int64(result[1]), int(result[2])
+
+
+# # ----------------------------------------------------
 def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
     '''
     Return the minimum of a possibly distributed array or minimum along an axis.
@@ -901,6 +950,7 @@ def _thin_svd(M, comm=None, method='auto'):
 # pylint: disable=redefined-builtin
 # Define public facing API
 max = _basic_max_via_python
+argmax = _basic_argmax_via_python
 min = _basic_min_via_python
 mean = _basic_mean_via_python
 std = _basic_std_via_python

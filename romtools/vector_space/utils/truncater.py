@@ -57,6 +57,7 @@ of basis vectors and the decay of the singular values
 
 from typing import Protocol
 import numpy as np
+import romtools.linalg.linalg as la
 
 
 class LeftSingularVectorTruncater(Protocol):
@@ -151,5 +152,5 @@ class EnergyBasedTruncater():
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
         energy = np.cumsum(singular_values**2)/np.sum(singular_values**2)
-        basis_dimension = np.argmax(energy > self.__energy_threshold_) + 1
+        basis_dimension = la.argmax(energy > self.__energy_threshold_) + 1
         return basis[:, 0:basis_dimension]
