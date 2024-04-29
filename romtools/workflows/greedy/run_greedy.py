@@ -87,6 +87,7 @@ import time
 import numpy as np
 from numpy.random import sample
 
+import romtools.linalg.linalg as la
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
