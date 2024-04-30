@@ -7,6 +7,11 @@ https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-pytho
 import warnings
 import numpy as np
 from romtools.linalg.parallel_utils import assert_axis_is_none_or_within_rank
+try:
+    import mpi4py
+    from mpi4py import MPI
+except ModuleNotFoundError:
+    print("module 'mpi4py' is not installed")
 
 # ----------------------------------------------------
 
@@ -894,6 +899,85 @@ def _thin_svd(M, comm=None, method='auto'):
         return _thin_svd_auto_select_algo(M, comm)
 
     return np.linalg.svd(M, full_matrices=False, compute_uv=True)
+
+
+def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
+    rootRank  = 0
+    myRank = comm.Get_rank()
+
+    # need to copy into C order because this is needed below when we 
+    # serialize to send/recv with mpi wihout additional copies and also 
+    # working correctly to store the data when received
+    A = np.copy(A_in, order='C')
+    b = np.copy(b_in, order='C')
+    myNumRows = 0 if A.size == 0 else A.shape[0]
+    myNumCols = 0 if A.size == 0 else A.shape[1]
+
+    # for ranks where we have data, check that num of rows of A = rows of b
+    # and that the dimensionality makes sense
+    if A.size > 0:
+      assert A.shape[0] == b.ravel().size
+      assert A.ndim == 2      
+      assert b.ndim <= 2
+      if b.ndim == 2:
+        assert b.shape[1] == 1
+
+    # count total num of rows across the whole communicator
+    rowsPerRank = np.zeros(comm.Get_size(), dtype=int)
+    comm.Gather(np.array([myNumRows]), rowsPerRank)
+    globalNumRows = np.sum(rowsPerRank)
+    # at least one rank must have data
+    if myRank==rootRank:
+      assert globalNumRows > 0
+
+    # we need to figure out the num of columns using a collective
+    # we assume row-distributed
+    globalNumCols = np.array([0], dtype=int)
+    comm.Reduce(np.array([myNumCols], dtype=int), globalNumCols, op=mpi4py.MPI.MAX)
+    # globalNumCols is only valid on rank rootRank
+    globalNumCols = globalNumCols[0]
+
+    # create the storage for the final assembled system
+    # note that this only has meaningful shape on rank rootRank
+    # all other ranks have a dummy A_g, b_g
+    A_g = np.zeros((globalNumRows, globalNumCols), order='C')
+    b_g = np.zeros(globalNumRows)
+
+    # each rank != rootRank starts the send of its part of A and b
+    my_reqs = []
+    if myRank > rootRank:
+      if A.size > 0:
+          tag_A = myRank*2
+          # we can ravel here because A is row-major  so this guarantees a view
+          req = comm.Isend(np.ravel(A), 0, tag=tag_A)
+          my_reqs.append(req)
+          req = comm.Isend(np.ravel(b), 0, tag=tag_A+1)
+          my_reqs.append(req)
+
+    else:
+      # rank0 first stores, if needed, its part
+      if myNumRows > 0:
+        A_g[0:myNumRows, :] = A
+        b_g[0:myNumRows] = b.ravel()
+
+      # then posts recvs for all other messages from other ranks
+      rowShift = myNumRows
+      for iRank in range(1, comm.Get_size()):
+          currRankNumRows = rowsPerRank[iRank]
+          if currRankNumRows > 0:
+            tag_A = iRank*2
+            rowBegin = rowShift
+            rowEndExclusive = rowShift + currRankNumRows
+            req = comm.Irecv(np.ravel(A_g[rowBegin:rowEndExclusive,:]), iRank, tag=tag_A)
+            my_reqs.append(req)
+            req = comm.Irecv(b_g[rowShift:], iRank, tag=tag_A+1)
+            my_reqs.append(req)
+            rowShift += currRankNumRows
+
+    for req in my_reqs:
+        req.Wait()
+
+    return A_g, b_g
 
 # ----------------------------------------------------
 # ----------------------------------------------------
