@@ -7,11 +7,6 @@ https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-pytho
 import warnings
 import numpy as np
 from romtools.linalg.parallel_utils import assert_axis_is_none_or_within_rank
-try:
-    import mpi4py
-    from mpi4py import MPI
-except ModuleNotFoundError:
-    print("module 'mpi4py' is not installed")
 
 # ----------------------------------------------------
 
@@ -902,6 +897,9 @@ def _thin_svd(M, comm=None, method='auto'):
 
 
 def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
+    import mpi4py
+    from mpi4py import MPI
+
     rootRank  = 0
     myRank = comm.Get_rank()
 
