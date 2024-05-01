@@ -236,8 +236,8 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
         res = la.argmax(a, comm)
 
-    then ALL ranks will contain res = (51., 1, 1).
-    (The global maximum is 51., and it occurs at index 1 of the local array on Rank 1.)
+    then ALL ranks will contain res = (1, 1).
+    (The global maximum (51.) occurs at index 1 of the local array on Rank 1.)
 
     Example 2:
     **********
@@ -256,8 +256,8 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
        res = la.argmax(a, comm)
 
-    then ALL ranks will contain res = (51,. 3, 1)
-    (The maximum value is 51., and it occurs at index 3 of the flattened local array on Rank 1.)
+    then ALL ranks will contain res = (3, 1)
+    (The global maximum (51.) occurs at index 3 of the flattened local array on Rank 1.)
 
     Example 3:
     **********
@@ -276,8 +276,8 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
         res = la.argmax(a, comm)
 
-    then ALL ranks will contain res = (9.0, 20, 1)
-    (The maximum value is 9.0. It occurs on both Rank 1 and Rank 2, but we automatically return the
+    then ALL ranks will contain res = (20, 1)
+    (The global maximum (9.) occurs on both Rank 1 and Rank 2, but we automatically return the
     index on the lowest rank. In this case, that is index 20 of the flattened local array on Rank 1.)
 
     '''
@@ -289,9 +289,8 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
         return np.argmax(a)
 
     # Get local array argmax result
-    a = a.flatten()
     local_max_index = np.argmax(a)
-    local_max_val = a[local_max_index]
+    local_max_val = a.ravel()[local_max_index]
 
     # Set up local solution
     tmp = np.zeros(3)
@@ -299,7 +298,7 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
     tmp[1] = local_max_index
     tmp[2] = comm.Get_rank() if comm is not None else 0
 
-    # Otherwise, find distributed max index
+    # Find distributed max index
     import mpi4py
     from mpi4py import MPI
 
@@ -324,8 +323,8 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
     comm.Allreduce(tmp, result, op=myop)
     myop.Free()
 
-    # Return val (float), index (int64), and rank (int)
-    return result[0], np.int64(result[1]), int(result[2])
+    # Return index (int64), and rank (int)
+    return np.int64(result[1]), int(result[2])
 
 
 # # ----------------------------------------------------
