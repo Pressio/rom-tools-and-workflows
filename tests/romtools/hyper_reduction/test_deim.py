@@ -2,7 +2,6 @@
 import numpy as np
 import pytest
 from romtools.hyper_reduction import deim
-import romtools.linalg.linalg as la
 
 
 @pytest.mark.mpi_skip
@@ -56,7 +55,7 @@ def test_full_deim():
     # Confirm that we get all indices
     assert indices.size == 5
     # Confirm test index
-    assert indices[0] == la.argmax(np.abs(U[:, 0]))
+    assert indices[0] == np.argmax(np.abs(U[:, 0]))
     assert np.allclose(np.sort(indices), np.arange(0, 5))
 
 @pytest.mark.mpi_skip
