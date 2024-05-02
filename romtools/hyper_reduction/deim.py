@@ -46,6 +46,7 @@
 '''Implementation of DEIM technique for hyper-reduction'''
 
 import numpy as np
+import romtools.linalg.linalg as la
 
 def deim_get_approximation_matrix(function_basis, sample_indices):
     '''
@@ -147,7 +148,7 @@ def deim_get_indices(U):
     '''
 
     m = np.shape(U)[1]
-    first_index = np.argmax(np.abs(U[:, 0]))
+    first_index = la.argmax(np.abs(U[:, 0]))
     indices = first_index
     for ell in range(1, m):
         LHS = U[indices, 0:ell]
@@ -158,6 +159,6 @@ def deim_get_indices(U):
         C = np.linalg.solve(LHS, RHS)
 
         residual = U[:, ell] - U[:, 0:ell] @ C
-        index_to_add = np.argmax(np.abs(residual))
+        index_to_add = la.argmax(np.abs(residual))
         indices = np.append(indices, index_to_add)
     return indices

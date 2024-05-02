@@ -192,6 +192,141 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
     return local_max
 
 
+# ----------------------------------------------------
+def _basic_argmax_via_python(a: np.ndarray, comm=None):
+    '''
+    Return the index of an array's maximum value. If the array is distributed, also returns the
+    value itself and the MPI rank on which it occurs.
+
+    Parameters:
+        a (np.ndarray): input data
+        comm (MPI_Comm): MPI communicator (default: None)
+
+    Returns:
+        if comm == None, returns the index of the maximum value (identical to np.argmax)
+        if comm != None, returns a tuple containing (value, index, rank):
+            value: the global maximum
+            index: the local index of the global maximum
+            rank:  the rank on which the global maximum resides
+
+    Preconditions:
+      - a is at most a rank-3 tensor
+      - if a is a distributed 2-D array, it must be distributed along axis=0,
+        and every rank must have the same a.shape[1]
+      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+        and every rank must have the same a.shape[0] and a.shape[2]
+
+    Postconditions:
+      - a and comm are not modified
+
+    Example 1:
+    **********
+
+       rank 0  2.2
+               3.3
+      =======================
+       rank 1  40.
+               51.
+               -24.
+               45.
+      =======================
+       rank 2  -4.
+
+    Suppose that we do:
+
+        res = la.argmax(a, comm)
+
+    then ALL ranks will contain res = (1, 1).
+    (The global maximum (51.) occurs at index 1 of the local array on Rank 1.)
+
+    Example 2:
+    **********
+
+       rank 0  2.2  1.3  4.
+               3.3  5.0  33.
+      =======================
+       rank 1  40.  -2.  -4.
+               51.   4.   6.
+               -24.  8.   9.
+               45.  -3.  -4.
+      =======================
+       rank 2  -4.  8.   9.
+
+    Suppose that we do:
+
+       res = la.argmax(a, comm)
+
+    then ALL ranks will contain res = (3, 1)
+    (The global maximum (51.) occurs at index 3 of the flattened local array on Rank 1.)
+
+    Example 3:
+    **********
+
+       / 3.   4.   /  2.   8.   2.   1.   / 2.
+      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+     /  -7.   5. /    5.   0.   3.   1. /   3.
+    |-----------|----------------------|--------
+    | 2.   3.   |  4.   5.  -2.   4.   | -4.
+    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+        r0                r1              r2
+
+    Suppose that we do:
+
+        res = la.argmax(a, comm)
+
+    then ALL ranks will contain res = (20, 1)
+    (The global maximum (9.) occurs on both Rank 1 and Rank 2, but we automatically return the
+    index on the lowest rank. In this case, that is index 20 of the flattened local array on Rank 1.)
+
+    '''
+    # Enforce preconditions
+    assert a.ndim <= 3, "a must be at most a rank-3 tensor"
+
+    # Return "local" result if not running distributed
+    if comm is None or comm.Get_size() == 1:
+        return np.argmax(a)
+
+    # Get local array argmax result
+    local_max_index = np.argmax(a)
+    local_max_val = a.ravel()[local_max_index]
+
+    # Set up local solution
+    tmp = np.zeros(3)
+    tmp[0] = local_max_val
+    tmp[1] = local_max_index
+    tmp[2] = comm.Get_rank() if comm is not None else 0
+
+    # Find distributed max index
+    import mpi4py
+    from mpi4py import MPI
+
+    # Define custom MPI op
+    def mycomp(A_mem,B_mem,dt):
+        # Get matrices from memory buffers
+        A = np.frombuffer(A_mem)
+        B = np.frombuffer(B_mem)
+
+        # Return the index of the max (or the max on the lowest rank, if multiple occurrences)
+        if A[0] < B[0] or (A[0] == B[0] and A[2] > B[2]):
+            result = B
+        else:
+            result = A
+
+        # Copy result to B for next comparison
+        B[:] = result
+
+    # Perform operation
+    result = np.zeros(3)
+    myop = MPI.Op.Create(mycomp, commute=False)
+    comm.Allreduce(tmp, result, op=myop)
+    myop.Free()
+
+    # Return index (int64), and rank (int)
+    return np.int64(result[1]), int(result[2])
+
+
 # # ----------------------------------------------------
 def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
     '''
@@ -901,6 +1036,7 @@ def _thin_svd(M, comm=None, method='auto'):
 # pylint: disable=redefined-builtin
 # Define public facing API
 max = _basic_max_via_python
+argmax = _basic_argmax_via_python
 min = _basic_min_via_python
 mean = _basic_mean_via_python
 std = _basic_std_via_python
