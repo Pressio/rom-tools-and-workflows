@@ -39,8 +39,10 @@ class SteadyResidualEvaluator(Protocol):
         Returns:
             `np.ndarray`: The full-order residual in tensor form.
         '''
+        # TODO should this just return a list of directories instead?
         pass
 
+# TODO populate_run_directory method as well?
 class UnsteadyResidualEvaluator(Protocol):
     '''
     Baseline unsteady residual evaluator protocol
@@ -74,12 +76,10 @@ class UnsteadyResidualEvaluator(Protocol):
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
         '''
+        # TODO should this just return a list of directories instead?
         pass
 
 # TODO populate_run_directory method as well?
-
-# how to handle additional meta info needed to read FOM solution snapshot?
-
 
 def evaluate_and_load_steady_residual_snapshots(residual_evaluator: SteadyResidualEvaluator,
                                                 full_state_directories: list[str],
@@ -180,12 +180,6 @@ def evaluate_and_load_unsteady_residual_snapshots(residual_evaluator: UnsteadyRe
     # convert list to array
     # does it kill memory usage to do this?
     return np.concatenate(all_residual_snapshots,axis=2)
-    
-
-
-    
-
-
 
 
 
