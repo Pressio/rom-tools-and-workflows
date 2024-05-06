@@ -3,7 +3,7 @@ Protocol for interfacing with external application to compute residual snapshots
 corresponding to existing state snapshots.
 """
 
-from typing import Protocol
+from typing import Protocol, Iterable
 import numpy as np
 
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -86,7 +86,7 @@ class UnsteadyResidualEvaluator(Protocol):
 
 
 def evaluate_and_load_steady_residual_snapshots(
-    residual_evaluator: SteadyResidualEvaluator, full_state_directories: list[str], state_filename: str, absolute_run_directory: str
+    residual_evaluator: SteadyResidualEvaluator, full_state_directories: Iterable[str], state_filename: str, absolute_run_directory: str
 ) -> np.ndarray:
     """
     Core algorithm that takes a residual_evaluator, a list of steady full-order model
@@ -136,7 +136,7 @@ def evaluate_and_load_steady_residual_snapshots(
 
 
 def evaluate_and_load_unsteady_residual_snapshots(
-    residual_evaluator: UnsteadyResidualEvaluator, full_state_directories: list[str], state_filename: str, absolute_run_directory: str
+    residual_evaluator: UnsteadyResidualEvaluator, full_state_directories: Iterable[str], state_filename: str, absolute_run_directory: str
 ) -> np.ndarray:
     """
     Core algorithm that takes a residual_evaluator, a list of unsteady full-order model
