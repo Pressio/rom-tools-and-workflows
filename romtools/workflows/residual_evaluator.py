@@ -3,7 +3,7 @@ Protocol for interfacing with external application to compute residual snapshots
 corresponding to existing state snapshots.
 """
 
-from typing import Protocol, Iterable
+from typing import Protocol, Iterable, Tuple
 import numpy as np
 
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -28,7 +28,7 @@ class ResidualEvaluator(Protocol):
         """
         pass
 
-    def compute_reduced_states(self, filename: str) -> tuple[np.ndarray, np.ndarray]:
+    def compute_reduced_states(self, filename: str) -> Tuple[np.ndarray, np.ndarray]:
         """
         Reads the full-order model solution and time stamps from the specified filename
         and computes the corresponding reduced states
