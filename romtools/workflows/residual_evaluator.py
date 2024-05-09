@@ -52,7 +52,7 @@ class ResidualEvaluator(Protocol):
     ) -> np.ndarray:
         """
         Evaluate the full-order model residuals corresponding to full states reconstructed from
-        an array of reduced states, reduced_states
+        an array of reduced states
 
         Args:
             run_directory (str): Absolute path to directory in which residual is being computed.
