@@ -3,7 +3,7 @@ Protocol for interfacing with external application to compute residual snapshots
 corresponding to existing state snapshots.
 """
 
-from typing import Protocol, Iterable
+from typing import Protocol
 import numpy as np
 
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -63,7 +63,6 @@ class ResidualEvaluator(Protocol):
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
         """
-        # TODO should this just return a list of directories instead?
         pass
 
 
@@ -151,9 +150,6 @@ def evaluate_and_load_unsteady_residual_snapshots(
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshots
         reduced_states, times = residual_evaluator.compute_reduced_states(
-            full_model_dir + "/" + state_filename
-        )
-        reduced_states, times = residual_evaluator.load_projected_full_solutions(
             full_model_dir + "/" + state_filename
         )
 
