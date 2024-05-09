@@ -9,17 +9,17 @@ class MockSteadyResidualEvaluator:
     def __init__(self):
         pass
 
-    def load_projected_full_solution(self, filename: str) -> np.ndarray:
+    def compute_reduced_state(self, filename: str) -> np.ndarray:
         return np.zeros((3,4))
 
-    def evaluate_full_residual(self, run_directory: str, full_model_directory: str, reduced_state: np.ndarray) -> np.ndarray:
-        return np.zeros((3,10))
+    def evaluate_full_residuals(self, run_directory: str, full_model_directory: str, reduced_state: np.ndarray) -> np.ndarray:
+        return np.zeros((3,10,1))
                       
 class MockUnsteadyResidualEvaluator:
     def __init__(self):
         pass
 
-    def load_projected_full_solutions(self, filename: str) -> (np.ndarray,np.ndarray):
+    def compute_reduced_states(self, filename: str) -> (np.ndarray,np.ndarray):
         return np.zeros((3,4,5)),np.ones(5)
     
     def evaluate_full_residuals(self, run_directory: str, full_model_directory: str, reduced_states: np.ndarray, times: np.ndarray) -> (np.ndarray):

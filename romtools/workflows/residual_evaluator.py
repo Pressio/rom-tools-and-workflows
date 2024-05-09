@@ -8,14 +8,15 @@ import numpy as np
 
 from romtools.workflows.workflow_utils import create_empty_dir
 
-class SteadyResidualEvaluator(Protocol):
+class ResidualEvaluator(Protocol):
     '''
-    Baseline steady residual evaluator protocol
+    Baseline residual evaluator protocol
     '''
 
-    def load_projected_full_solution(self, filename: str) -> np.ndarray:
+    def compute_reduced_state(self, filename: str) -> np.ndarray:
         '''
-        Reads the full-order model solution from the specified filename
+        Reads the full-order model solution from the specified filename 
+        and computes the corresponding reduced state
 
         Args:
             filename (str): filename of the file containing the full-order model solution data
@@ -26,31 +27,10 @@ class SteadyResidualEvaluator(Protocol):
         '''
         pass
 
-    def evaluate_full_residual(self, run_directory: str, full_model_directory: str, reduced_state: np.ndarray) -> np.ndarray:
+    def compute_reduced_states(self, filename: str) -> (np.ndarray,np.ndarray):
         '''
-        Evaluate the full-order model residual corresponding to a full state reconstructed from
-        a reduced state reduced_state
-
-        Args:
-            run_directory (str): Absolute path to directory in which residual is being computed. 
-            full_model_directory (str): Absolute path to directory in which the full model data was computed. 
-            reduced_state (np.ndarray): 1-dimensional reduced state vector. 
-
-        Returns:
-            `np.ndarray`: The full-order residual in tensor form.
-        '''
-        # TODO should this just return a list of directories instead?
-        pass
-
-# TODO populate_run_directory method as well?
-class UnsteadyResidualEvaluator(Protocol):
-    '''
-    Baseline unsteady residual evaluator protocol
-    '''
-
-    def load_projected_full_solutions(self, filename: str) -> (np.ndarray,np.ndarray):
-        '''
-        Reads the full-order model solutions and time steps from the specified filename
+        Reads the full-order model solution and time stamps from the specified filename 
+        and computes the corresponding reduced states
 
         Args:
             filename (str): filename of the file containing the full-order model solution data
@@ -62,7 +42,7 @@ class UnsteadyResidualEvaluator(Protocol):
         '''
         pass
 
-    def evaluate_full_residuals(self, run_directory: str, full_model_directory: str, reduced_states: np.ndarray, times: np.ndarray) -> (np.ndarray):
+    def evaluate_full_residuals(self, run_directory: str, full_model_directory: str, reduced_states: np.ndarray, times: np.ndarray=None) -> np.ndarray:
         '''
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states, reduced_states
@@ -71,7 +51,7 @@ class UnsteadyResidualEvaluator(Protocol):
             run_directory (str): Absolute path to directory in which residual is being computed. 
             full_model_directory (str): Absolute path to directory in which the full model data was computed. 
             reduced_state (np.ndarray): 2-dimensional reduced state vector. 
-            times (np.ndarray): 1-dimensional vector of time stamps. 
+            times (np.ndarray, optional): 1-dimensional vector of time stamps. 
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
@@ -79,9 +59,7 @@ class UnsteadyResidualEvaluator(Protocol):
         # TODO should this just return a list of directories instead?
         pass
 
-# TODO populate_run_directory method as well?
-
-def evaluate_and_load_steady_residual_snapshots(residual_evaluator: SteadyResidualEvaluator,
+def evaluate_and_load_steady_residual_snapshots(residual_evaluator: ResidualEvaluator,
                                                 full_state_directories: list[str],
                                                 state_filename: str,
                                                 absolute_run_directory: str) -> np.ndarray:
@@ -107,18 +85,16 @@ def evaluate_and_load_steady_residual_snapshots(residual_evaluator: SteadyResidu
     n_x = -1
     for index,full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshot
-        reduced_state = residual_evaluator.load_projected_full_solution(full_model_dir+'/'+state_filename)
+        reduced_state = residual_evaluator.compute_reduced_state(full_model_dir+'/'+state_filename)
         
         # Set up corresponding directory
         run_directory = f'{run_directory_base}{index}'
         create_empty_dir(run_directory)
         
         # Evaluate residual
-        residual_snapshot = residual_evaluator.evaluate_full_residual(run_directory,full_model_dir,reduced_state)
+        residual_snapshot = residual_evaluator.evaluate_full_residuals(run_directory,full_model_dir,reduced_state)
 
         # check residual snapshot size and shape
-        assert(residual_snapshot.ndim == 2)
-        residual_snapshot = np.expand_dims(residual_snapshot, axis=2)
         if n_vars == -1 and n_x == -1:
             n_vars = residual_snapshot.shape[0]
             n_x = residual_snapshot.shape[1]
@@ -132,7 +108,7 @@ def evaluate_and_load_steady_residual_snapshots(residual_evaluator: SteadyResidu
     return np.concatenate(all_residual_snapshots,axis=2)
 
 
-def evaluate_and_load_unsteady_residual_snapshots(residual_evaluator: UnsteadyResidualEvaluator,
+def evaluate_and_load_unsteady_residual_snapshots(residual_evaluator: ResidualEvaluator,
                                                   full_state_directories: list[str],
                                                   state_filename: str,
                                                   absolute_run_directory: str) -> np.ndarray:
@@ -158,7 +134,7 @@ def evaluate_and_load_unsteady_residual_snapshots(residual_evaluator: UnsteadyRe
     n_x = -1
     for index,full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshots
-        reduced_states, times = residual_evaluator.load_projected_full_solutions(full_model_dir+'/'+state_filename)
+        reduced_states, times = residual_evaluator.compute_reduced_states(full_model_dir+'/'+state_filename)
 
         # Set up corresponding directory
         run_directory = f'{run_directory_base}{index}'
