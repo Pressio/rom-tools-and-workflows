@@ -35,9 +35,10 @@ def test_sampler(tmp_path):
                                                np.array([1, 2, 3]),
                                                sampler=MonteCarloSampler)
     my_model = MockModel()
-    run_sampling(my_model, my_parameter_space,
-                 absolute_sampling_directory=tmp_path,
-                 number_of_samples=10)
+    run_directories = run_sampling(my_model, my_parameter_space,
+                                   absolute_sampling_directory=tmp_path,
+                                   number_of_samples=10)
+    assert(len(run_directories)==10)
 
     for i in range(0, 10):
         assert os.path.isdir(f'{tmp_path}/run_' + str(i))
