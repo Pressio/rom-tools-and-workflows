@@ -8,14 +8,15 @@ import numpy as np
 
 from romtools.workflows.workflow_utils import create_empty_dir
 
+
 class ResidualEvaluator(Protocol):
-    '''
+    """
     Baseline residual evaluator protocol
-    '''
+    """
 
     def compute_reduced_state(self, filename: str) -> np.ndarray:
         """
-        Reads the full-order model solution from the specified filename 
+        Reads the full-order model solution from the specified filename
         and computes the corresponding reduced state
 
         Args:
@@ -27,9 +28,9 @@ class ResidualEvaluator(Protocol):
         """
         pass
 
-    def compute_reduced_states(self, filename: str) -> (np.ndarray,np.ndarray):
+    def compute_reduced_states(self, filename: str) -> (np.ndarray, np.ndarray):
         """
-        Reads the full-order model solution and time stamps from the specified filename 
+        Reads the full-order model solution and time stamps from the specified filename
         and computes the corresponding reduced states
 
         Args:
@@ -42,16 +43,22 @@ class ResidualEvaluator(Protocol):
         """
         pass
 
-    def evaluate_full_residuals(self, run_directory: str, full_model_directory: str, reduced_states: np.ndarray, times: np.ndarray=None) -> np.ndarray:
+    def evaluate_full_residuals(
+        self,
+        run_directory: str,
+        full_model_directory: str,
+        reduced_states: np.ndarray,
+        times: np.ndarray = None,
+    ) -> np.ndarray:
         """
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states, reduced_states
 
         Args:
-            run_directory (str): Absolute path to directory in which residual is being computed. 
-            full_model_directory (str): Absolute path to directory in which the full model data was computed. 
-            reduced_state (np.ndarray): 2-dimensional reduced state vector. 
-            times (np.ndarray, optional): 1-dimensional vector of time stamps. 
+            run_directory (str): Absolute path to directory in which residual is being computed.
+            full_model_directory (str): Absolute path to directory in which the full model data was computed.
+            reduced_state (np.ndarray): 2-dimensional reduced state vector.
+            times (np.ndarray, optional): 1-dimensional vector of time stamps.
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
@@ -59,8 +66,13 @@ class ResidualEvaluator(Protocol):
         # TODO should this just return a list of directories instead?
         pass
 
+
 def evaluate_and_load_steady_residual_snapshots(
-    residual_evaluator: ResidualEvaluator, full_state_directories: list[str], state_filename: str, absolute_run_directory: str) -> np.ndarray:
+    residual_evaluator: ResidualEvaluator,
+    full_state_directories: list[str],
+    state_filename: str,
+    absolute_run_directory: str,
+) -> np.ndarray:
     """
     Core algorithm that takes a residual_evaluator, a list of steady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
@@ -83,14 +95,18 @@ def evaluate_and_load_steady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshot
-        reduced_state = residual_evaluator.compute_reduced_state(full_model_dir+'/'+state_filename)
-        
+        reduced_state = residual_evaluator.compute_reduced_state(
+            full_model_dir + "/" + state_filename
+        )
+
         # Set up corresponding directory
         run_directory = f"{run_directory_base}{index}"
         create_empty_dir(run_directory)
 
         # Evaluate residual
-        residual_snapshot = residual_evaluator.evaluate_full_residuals(run_directory,full_model_dir,reduced_state)
+        residual_snapshot = residual_evaluator.evaluate_full_residuals(
+            run_directory, full_model_dir, reduced_state
+        )
 
         # check residual snapshot size and shape
         if n_vars == -1 and n_x == -1:
@@ -107,7 +123,11 @@ def evaluate_and_load_steady_residual_snapshots(
 
 
 def evaluate_and_load_unsteady_residual_snapshots(
-    residual_evaluator: ResidualEvaluator, full_state_directories: list[str], state_filename: str, absolute_run_directory: str) -> np.ndarray:
+    residual_evaluator: ResidualEvaluator,
+    full_state_directories: list[str],
+    state_filename: str,
+    absolute_run_directory: str,
+) -> np.ndarray:
     """
     Core algorithm that takes a residual_evaluator, a list of unsteady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
@@ -130,15 +150,21 @@ def evaluate_and_load_unsteady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshots
-        reduced_states, times = residual_evaluator.compute_reduced_states(full_model_dir+'/'+state_filename)
-        reduced_states, times = residual_evaluator.load_projected_full_solutions(full_model_dir + "/" + state_filename)
+        reduced_states, times = residual_evaluator.compute_reduced_states(
+            full_model_dir + "/" + state_filename
+        )
+        reduced_states, times = residual_evaluator.load_projected_full_solutions(
+            full_model_dir + "/" + state_filename
+        )
 
         # Set up corresponding directory
         run_directory = f"{run_directory_base}{index}"
         create_empty_dir(run_directory)
 
         # Evaluate residuals
-        residual_snapshots = residual_evaluator.evaluate_full_residuals(run_directory, full_model_dir, reduced_states, times)
+        residual_snapshots = residual_evaluator.evaluate_full_residuals(
+            run_directory, full_model_dir, reduced_states, times
+        )
 
         # check residual snapshot size and shape
         assert residual_snapshots.ndim == 3
