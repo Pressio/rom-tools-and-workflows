@@ -16,7 +16,8 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
 
     Parameters:
         a (np.ndarray): input data
-        axis (None or int): the axis along which to compute the maximum. If None, computes the max of the flattened array. (default: None)
+        axis (None or int): the axis along which to compute the maximum. 
+            If None, computes the max of the flattened array. (default: None)
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
@@ -1029,6 +1030,88 @@ def _thin_svd(M, comm=None, method='auto'):
         return _thin_svd_auto_select_algo(M, comm)
 
     return np.linalg.svd(M, full_matrices=False, compute_uv=True)
+
+
+def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
+    import mpi4py
+    from mpi4py import MPI
+
+    root_rank  = 0
+    my_rank = comm.Get_rank()
+
+    # need to copy into C order because this is needed below when we 
+    # serialize to send/recv with mpi wihout additional copies and also
+    # working correctly to store the data when received
+    A = np.copy(A_in, order='C') if np.isfortran(A_in) else A_in
+    b = np.copy(b_in, order='C') if np.isfortran(b_in) else b_in
+    my_num_rows = 0 if A.size == 0 else A.shape[0]
+    my_num_cols = 0 if A.size == 0 else A.shape[1]
+
+    # for ranks where we have data, check that num of rows of A = rows of b
+    # and that the dimensionality makes sense
+    if A.size > 0:
+        assert A.shape[0] == b.ravel().size
+        assert A.ndim == 2      
+        assert b.ndim <= 2
+        if b.ndim == 2:
+            assert b.shape[1] == 1
+
+    # count total num of rows across the whole communicator
+    rows_per_rank = np.zeros(comm.Get_size(), dtype=int)
+    comm.Gather(np.array([my_num_rows]), rows_per_rank)
+    global_num_rows = np.sum(rows_per_rank)
+    # at least one rank must have data
+    if my_rank==root_rank:
+        assert global_num_rows > 0
+
+    # we need to figure out the num of columns using a collective
+    # we assume row-distributed
+    global_num_cols = np.array([0], dtype=int)
+    comm.Reduce(np.array([my_num_cols], dtype=int), global_num_cols, op=MPI.MAX)
+    # global_num_cols is only valid on rank root_rank
+    global_num_cols = global_num_cols[0]
+
+    # create the storage for the final assembled system
+    # note that this only has meaningful shape on rank root_rank
+    # all other ranks have a dummy A_g, b_g
+    A_g = np.zeros((global_num_rows, global_num_cols), order='C')
+    b_g = np.zeros(global_num_rows)
+
+    # each rank != root_rank starts the send of its part of A and b
+    my_reqs = []
+    if my_rank > root_rank:
+        if A.size > 0:
+            tag_A = my_rank*2
+            # we can ravel here because A is row-major  so this guarantees a view
+            req = comm.Isend(np.ravel(A), 0, tag=tag_A)
+            my_reqs.append(req)
+            req = comm.Isend(np.ravel(b), 0, tag=tag_A+1)
+            my_reqs.append(req)
+
+    else:
+        # rank0 first stores, if needed, its part
+        if my_num_rows > 0:
+            A_g[0:my_num_rows, :] = A
+            b_g[0:my_num_rows] = b.ravel()
+
+        # then posts recvs for all other messages from other ranks
+        row_shift = my_num_rows
+        for iRank in range(1, comm.Get_size()):
+            curr_rank_num_rows = rows_per_rank[iRank]
+            if curr_rank_num_rows > 0:
+                tag_A = iRank*2
+                row_begin = row_shift
+                row_end_exclusive = row_shift + curr_rank_num_rows
+                req = comm.Irecv(np.ravel(A_g[row_begin:row_end_exclusive,:]), iRank, tag=tag_A)
+                my_reqs.append(req)
+                req = comm.Irecv(b_g[row_shift:], iRank, tag=tag_A+1)
+                my_reqs.append(req)
+                row_shift += curr_rank_num_rows
+
+    for req in my_reqs:
+        req.Wait()
+
+    return A_g, b_g
 
 # ----------------------------------------------------
 # ----------------------------------------------------
