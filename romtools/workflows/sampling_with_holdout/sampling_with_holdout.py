@@ -74,6 +74,9 @@ def run_sampling_with_holdout(fom_model: QoiModel,
     run_directory_prefix = "run_"
     sampling_file = open(f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8")
     sampling_file.write("Holdout sampling status \n")
+    fom_time = 0.
+    rom_time = 0.
+    basis_time = 0.
 
     np.random.seed(random_seed)
 
@@ -102,6 +105,7 @@ def run_sampling_with_holdout(fom_model: QoiModel,
 
 
     # Run FOM samples to build holdout set.     
+    t0 = time.time()
     fom_qois_holdout_set = np.zeros(holdout_set_size)
     sampling_file.write(f"Building holdout set \n")
     for i in holdout_sample_indices:
@@ -117,6 +121,7 @@ def run_sampling_with_holdout(fom_model: QoiModel,
             fom_qois_holdout_set = fom_qoi[None]
         else:
             fom_qois_holdout_set = np.append(fom_qois_holdout_set,fom_qoi[None],axis=0)
+    fom_time += time.time() - t0
 
     # Create ROM bases
     sampling_file.write(f"Beginning sampling procedure \n")
@@ -136,8 +141,10 @@ def run_sampling_with_holdout(fom_model: QoiModel,
         fom_run_directory = f'{sampling_directory}/fom/training_set/{run_directory_prefix}{sample_index}'
         
         # Run FOM at training parameter 
+        t0 = time.time()
         sampling_file.write(f"Running training FOM sample {sample_index} \n")
         fom_model.run_model(fom_run_directory,parameter_dict)
+        fom_time += time.time() - t0
         
         sampling_file.write(f"Adding training FOM sample {sample_index} to basis \n")
         training_params.append(parameter_samples[sample_index])
@@ -146,12 +153,15 @@ def run_sampling_with_holdout(fom_model: QoiModel,
         sampling_file.write(f"Parameter samples: \n {np.asarray(training_params)}\n")
 
         # Add FOM sample to ROM basis
+        t0 = time.time()
         sampling_file.write(f"Constructing ROM iteration {sample_index} \n")
         updated_offline_data_dir = f'{sampling_directory}/rom_iteration_{sample_index}/{offline_directory_prefix}/'
         create_empty_dir(updated_offline_data_dir)
         rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
+        basis_time += time.time() - t0
 
         # Evaluate ROM at holdout set and compute QOI errors
+        t0 = time.time()
         for holdout_sample_index in holdout_sample_indices:
             sampling_file.write(f"  Running ROM at holdout sample {holdout_sample_index}\n")
             rom_run_directory = f'{sampling_directory}/rom/{run_directory_prefix}{holdout_sample_index}'
@@ -161,7 +171,8 @@ def run_sampling_with_holdout(fom_model: QoiModel,
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
             rom_model.run_model(rom_run_directory,parameter_dict)
             rom_qois_holdout_set[holdout_sample_index] = rom_model.compute_qoi(rom_run_directory,parameter_dict)
-        
+        rom_time += time.time() - t0
+
         # If Max QOI error is less than tolerance, converged = True
         holdout_set_err = np.linalg.norm(rom_qois_holdout_set - fom_qois_holdout_set,np.inf)
         holdout_set_errs = np.append(holdout_set_errs, holdout_set_err)
@@ -175,6 +186,9 @@ def run_sampling_with_holdout(fom_model: QoiModel,
 
     np.savez(f'{sampling_directory}/holdout_stats',
                  holdout_set_errs=holdout_set_errs,
-                 trained_samples=trained_samples)
+                 trained_samples=trained_samples,
+                 fom_time=fom_time,
+                 rom_time=rom_time,
+                 basis_time=basis_time)
 
     sampling_file.close()
