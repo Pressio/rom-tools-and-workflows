@@ -1,9 +1,10 @@
 import copy
 import pytest
 import numpy as np
-from romtools.vector_space.utils.scaler import NoOpScaler, VectorScaler, VariableScaler, VariableAndVectorScaler
+from romtools.vector_space.utils.scaler import NoOpScaler, ScalarScaler, VectorScaler, VariableScaler, VariableAndVectorScaler
 import romtools.linalg.linalg as la
 from romtools.linalg.parallel_utils import generate_random_local_and_global_arrays_impl
+
 try:
     from mpi4py import MPI
 except ModuleNotFoundError:
@@ -32,12 +33,28 @@ def test_noop_scaler_mpi():
 
 
 def scaling_op(scaling_type, arg):
-    if scaling_type == 'max_abs':
+    if scaling_type == "max_abs":
         return la.max(np.abs(arg))
-    elif scaling_type == 'mean_abs':
+    elif scaling_type == "mean_abs":
         return la.mean(np.abs(arg))
-    elif scaling_type == 'variance':
+    elif scaling_type == "variance":
         return la.std(arg)
+
+
+@pytest.mark.mpi_skip
+def test_scalar_scaler():
+    n_var = 3
+    nx = 5
+    my_snapshots = np.random.normal(size=(n_var, nx, 8))
+    my_scaling_factor = np.random.rand()
+    my_initial_snapshots = copy.deepcopy(my_snapshots)
+    scaler = ScalarScaler(my_scaling_factor)
+
+    my_scaled_snapshots = scaler.pre_scale(my_snapshots)
+
+    assert np.allclose(my_scaled_snapshots, 1.0 / my_scaling_factor * my_initial_snapshots)
+    my_unscaled_snapshots = scaler.post_scale(my_scaled_snapshots)
+    assert np.allclose(my_initial_snapshots, my_unscaled_snapshots)
 
 
 @pytest.mark.mpi_skip
@@ -51,7 +68,7 @@ def test_vector_scaler():
 
     my_scaled_snapshots = scaler.pre_scale(my_snapshots)
 
-    assert np.allclose(my_scaled_snapshots, 1./my_scaling_vector[None, :, None] * my_initial_snapshots)
+    assert np.allclose(my_scaled_snapshots, 1.0 / my_scaling_vector[None, :, None] * my_initial_snapshots)
     my_unscaled_snapshots = scaler.post_scale(my_scaled_snapshots)
     assert np.allclose(my_initial_snapshots, my_unscaled_snapshots)
 
@@ -68,7 +85,7 @@ def test_vector_scaler_mpi():
 
     scaled_local_snapshots = scaler.pre_scale(local_snapshots)
 
-    assert np.allclose(scaled_local_snapshots, 1./my_scaling_vector[None, :, None] * initial_local_snapshots)
+    assert np.allclose(scaled_local_snapshots, 1.0 / my_scaling_vector[None, :, None] * initial_local_snapshots)
     unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
     assert np.allclose(initial_local_snapshots, unscaled_local_snapshots)
 
@@ -88,15 +105,15 @@ def test_variable_scaler():
         scaler = VariableScaler(scaling_type)
         my_scaled_snapshots = scaler.pre_scale(my_snapshots)
         for i in range(0, n_var):
-            assert np.allclose(my_scaled_snapshots[i], 1./scales[i]*my_initial_snapshots[i])
+            assert np.allclose(my_scaled_snapshots[i], 1.0 / scales[i] * my_initial_snapshots[i])
 
         my_unscaled_snapshots = scaler.post_scale(my_scaled_snapshots)
         assert np.allclose(scales, scaler.var_scales_)
         assert np.allclose(my_initial_snapshots, my_unscaled_snapshots)
 
-    run_test('max_abs')
-    run_test('mean_abs')
-    run_test('variance')
+    run_test("max_abs")
+    run_test("mean_abs")
+    run_test("variance")
 
 
 @pytest.mark.mpi(min_size=3)
@@ -115,15 +132,15 @@ def test_variable_scaler_mpi():
         scaler = VariableScaler(scaling_type)
         scaled_local_snapshots = scaler.pre_scale(local_snapshots)
         for i in range(0, n_var):
-            assert np.allclose(scaled_local_snapshots[i], 1./scales[i]*initial_local_snapshots[i])
+            assert np.allclose(scaled_local_snapshots[i], 1.0 / scales[i] * initial_local_snapshots[i])
 
         unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
         assert np.allclose(scales, scaler.var_scales_)
         assert np.allclose(initial_local_snapshots, unscaled_local_snapshots)
 
-    run_test('max_abs')
-    run_test('mean_abs')
-    run_test('variance')
+    run_test("max_abs")
+    run_test("mean_abs")
+    run_test("variance")
 
 
 @pytest.mark.mpi_skip
@@ -142,14 +159,14 @@ def test_variable_and_vector_scaler():
         scaler = VariableAndVectorScaler(my_scaling_vector, scaling_type)
         my_scaled_snapshots = scaler.pre_scale(my_snapshots)
         for i in range(0, n_var):
-            assert np.allclose(my_scaled_snapshots[i], 1./scales[i]*(1./my_scaling_vector[None, :, None] * my_initial_snapshots)[i])
+            assert np.allclose(my_scaled_snapshots[i], 1.0 / scales[i] * (1.0 / my_scaling_vector[None, :, None] * my_initial_snapshots)[i])
 
         my_unscaled_snapshots = scaler.post_scale(my_scaled_snapshots)
         assert np.allclose(my_initial_snapshots, my_unscaled_snapshots)
 
-    run_test('max_abs')
-    run_test('mean_abs')
-    run_test('variance')
+    run_test("max_abs")
+    run_test("mean_abs")
+    run_test("variance")
 
 
 @pytest.mark.mpi(min_size=3)
@@ -169,14 +186,14 @@ def test_variable_and_vector_scaler_mpi():
         scaler = VariableAndVectorScaler(my_scaling_vector, scaling_type)
         scaled_local_snapshots = scaler.pre_scale(local_snapshots)
         for i in range(0, n_var):
-            assert np.allclose(scaled_local_snapshots[i], 1./scales[i]*(1./my_scaling_vector[None, :, None] * initial_local_snapshots)[i])
+            assert np.allclose(scaled_local_snapshots[i], 1.0 / scales[i] * (1.0 / my_scaling_vector[None, :, None] * initial_local_snapshots)[i])
 
         unscaled_local_snapshots = scaler.post_scale(scaled_local_snapshots)
         assert np.allclose(initial_local_snapshots, unscaled_local_snapshots)
 
-    run_test('max_abs')
-    run_test('mean_abs')
-    run_test('variance')
+    run_test("max_abs")
+    run_test("mean_abs")
+    run_test("variance")
 
 
 if __name__ == "__main__":
