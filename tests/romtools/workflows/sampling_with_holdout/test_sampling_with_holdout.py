@@ -109,6 +109,8 @@ def test_sampling_with_holdout(tmp_path):
     holdout_output = np.load(f'{wdir}/holdout_stats.npz')
     assert np.allclose(holdout_output['holdout_set_errs'],
                        np.array([0.4, 0.5, 0.3]))
+    assert np.allclose(holdout_output['trained_samples'],
+                       np.array([0, 1, 2]))
     
     ## Then, test that the method will terminate after reaching the error tolerance on the 7th iter
     RomModelBuilder.reset_counter() # Reset mock ROM model QoI's
@@ -128,6 +130,8 @@ def test_sampling_with_holdout(tmp_path):
     holdout_output = np.load(f'{wdir}/holdout_stats.npz')
     assert np.allclose(holdout_output['holdout_set_errs'],
                        np.array([0.4, 0.5, 0.3, 0.3, 0.1, 0.01, 1e-7]))
+    assert np.allclose(holdout_output['trained_samples'],
+                       np.array([0, 1, 2, 3, 4, 5, 6]))
 
 
 
