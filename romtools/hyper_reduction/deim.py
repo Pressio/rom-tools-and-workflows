@@ -230,29 +230,3 @@ def multi_state_deim_get_indices(U):
         indices = deim_get_indices(data_matrix)
         all_indices = np.unique(np.append(all_indices, indices))
     return all_indices
-
-
-def deim_get_indices(U):
-    """
-    Implementation of the discrete empirical method as described in Algorithm 1 of
-    S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
-    nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
-
-    Args:
-        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format
-
-    Returns:
-        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
-    """
-
-    m = np.shape(U)[1]
-    first_index = np.argmax(np.abs(U[:, 0]))
-    indices = first_index
-    for ell in range(1, m):
-        LHS = U[indices, 0:ell]
-        RHS = U[indices, ell]
-        if ell == 1:
-            LHS = np.ones((1, 1)) * LHS
-            RHS = np.ones(1) * RHS
-        C = np.linalg.solve(LHS, RHS)
-
