@@ -46,6 +46,98 @@
 """Implementation of DEIM technique for hyper-reduction"""
 
 import numpy as np
+import romtools.linalg.linalg as la
+
+
+
+def _deim_get_indices_sharedmem(U):
+    '''
+    Implementation of the discrete empirical method as described in Algorithm 1 of
+    S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
+    nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
+
+    Args:
+        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format
+
+    Returns:
+        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+    '''
+
+    m = np.shape(U)[1]
+    first_index = la.argmax(np.abs(U[:, 0]))
+    indices = first_index
+    for ell in range(1, m):
+        LHS = U[indices, 0:ell]
+        RHS = U[indices, ell]
+        if ell == 1:
+            LHS = np.ones((1, 1))*LHS
+            RHS = np.ones(1)*RHS
+        C = np.linalg.solve(LHS, RHS)
+
+        residual = U[:, ell] - U[:, 0:ell] @ C
+        index_to_add = la.argmax(np.abs(residual))
+        indices = np.append(indices, index_to_add)
+    return indices
+
+
+class _dist_deim_data:
+    def __init__(self, i, r):
+        self.local_indices = np.array([int(i)])
+        self.owning_ranks = np.array([int(r)])
+
+    def append(self, i, r):
+        self.local_indices = np.append(self.local_indices , int(i))
+        self.owning_ranks = np.append(self.owning_ranks, int(r))
+
+
+def _deim_get_indices_distributed(U, comm):
+    m = np.shape(U)[1]
+    local_index, foundRank = la.argmax(np.abs(U[:, 0]), comm)
+    result = _dist_deim_data(local_index, foundRank)
+    if m == 1:
+        return result.local_indices, result.owning_ranks
+
+    myRank = comm.Get_rank()
+    LHS, RHS, C = np.array([]), np.array([]), np.array([])
+    for ell in range(1, m):
+        indices = result.local_indices[result.owning_ranks==myRank]
+        LHS = np.array([]) if indices.size == 0 else U[indices, 0:ell]
+        RHS = np.array([]) if indices.size == 0 else U[indices, ell]
+        
+        A, b = la.move_distributed_linear_system_to_rank_zero(LHS, RHS, comm)
+        if myRank == 0:
+            C = np.linalg.solve(A, b)
+        C = comm.bcast(C, root=0)
+
+        residual = U[:, ell] - U[:, 0:ell] @ C
+        local_index, foundRank = la.argmax(np.abs(residual), comm)
+        result.append(local_index, foundRank)
+
+    return result.local_indices, result.owning_ranks
+
+
+def deim_get_indices(U, comm=None):
+    '''
+    Implementation of the discrete empirical method as described in Algorithm 1 of
+    S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
+    nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
+
+    Args:
+        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format.
+        comm: Optional communicator object. If none, algorithm assumes shared-memory data.
+
+    Returns:
+        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+    '''
+
+    assert np.shape(U)[1] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
+
+    if comm:
+        return _deim_get_indices_distributed(U, comm)
+    else:
+        return _deim_get_indices_sharedmem(U)
+
+
 
 
 def deim_get_approximation_matrix(function_basis, sample_indices):
@@ -164,7 +256,3 @@ def deim_get_indices(U):
             RHS = np.ones(1) * RHS
         C = np.linalg.solve(LHS, RHS)
 
-        residual = U[:, ell] - U[:, 0:ell] @ C
-        index_to_add = np.argmax(np.abs(residual))
-        indices = np.append(indices, index_to_add)
-    return indices

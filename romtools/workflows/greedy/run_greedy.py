@@ -87,6 +87,7 @@ import time
 import numpy as np
 from numpy.random import sample
 
+import romtools.linalg.linalg as la
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -193,7 +194,7 @@ def run_greedy(fom_model: QoiModel,
 
         rom_time += time.time() - t0
 
-        sample_with_highest_error_indicator = samples_left[np.argmax(error_indicators)]
+        sample_with_highest_error_indicator = samples_left[la.argmax(error_indicators)]
         max_error_indicators = np.append(max_error_indicators,
                                          np.amax(error_indicators))
         greedy_file.write(f"Sample {sample_with_highest_error_indicator}"
@@ -202,7 +203,7 @@ def run_greedy(fom_model: QoiModel,
 
         outer_loop_counter += 1
         if outer_loop_counter > 1:
-            predicted_max_qoi_error = reg.predict(error_indicators[np.argmax(error_indicators)])
+            predicted_max_qoi_error = reg.predict(error_indicators[la.argmax(error_indicators)])
             greedy_file.write("Our MLEM error estimate is "
                               f"{predicted_max_qoi_error}\n")
             greedy_file.flush()
@@ -240,7 +241,7 @@ def run_greedy(fom_model: QoiModel,
         ## Update our samples
         training_samples = np.append(training_samples,
                                      sample_with_highest_error_indicator)
-        samples_left = np.delete(samples_left, np.argmax(error_indicators))
+        samples_left = np.delete(samples_left, la.argmax(error_indicators))
 
         # Update ROM basis
         t0 = time.time()

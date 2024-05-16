@@ -210,7 +210,7 @@ class ECSWsolverNNLS(ECSWsolver):
             if len(sample_mesh_indicies) == n_dof:
                 still_searching = False
             while still_searching:
-                mesh_index = np.argmax(weighted_residual)
+                mesh_index = la.argmax(weighted_residual)
                 still_searching = False
                 if mesh_index in sample_mesh_indicies:
                     still_searching = True

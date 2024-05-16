@@ -36,7 +36,7 @@ def test_sampler(tmp_path):
                                                sampler=MonteCarloSampler)
     my_model = MockModel()
     run_sampling(my_model, my_parameter_space,
-                 run_directory_prefix=f'{tmp_path}/run_',
+                 absolute_sampling_directory=tmp_path,
                  number_of_samples=10)
 
     for i in range(0, 10):
@@ -47,4 +47,4 @@ def test_sampler(tmp_path):
 
 
 if __name__ == "__main__":
-    test_sampler('.')
+    test_sampler()

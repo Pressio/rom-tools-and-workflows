@@ -51,7 +51,7 @@ def distribute_array_impl(global_array, comm, dist_axis=0):
 
     return local_array
 
-def generate_random_local_and_global_arrays_impl(shape, comm):
+def generate_random_local_and_global_arrays_impl(shape, comm, use_int=False):
     '''
     Randomly generates a global array of the specified shape and distributes to all available
     MPI processes.

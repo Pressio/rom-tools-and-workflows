@@ -38,6 +38,8 @@ def test_basic_product_via_python_mat_mat():
 
     assert np.allclose(C, expected)
 
+
+@pytest.mark.mpi(min_size=3)
 def test_basic_product_via_python_constraints():
     comm = MPI.COMM_WORLD
     num_processes = comm.Get_size()
