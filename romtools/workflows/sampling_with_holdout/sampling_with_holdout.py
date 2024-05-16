@@ -98,16 +98,7 @@ def run_sampling_with_holdout(
     holdout_samples = parameter_samples[holdout_sample_indices]
     training_samples = parameter_samples[training_sample_indices]
 
-    # Setup FOM directories for holdout set and potential training runs
-    for sample_index, sample in enumerate(holdout_samples):
-        fom_run_directory = (
-            f"{sampling_directory}/fom/holdout_set/{run_directory_prefix}{sample_index}"
-        )
-        create_empty_dir(fom_run_directory)
-
-        parameter_dict = _create_parameter_dict(parameter_names, sample)
-        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-
+    # Setup FOM directories for potential training runs
     for sample_index, sample in enumerate(training_samples):
         fom_run_directory = f"{sampling_directory}/fom/training_set/{run_directory_prefix}{sample_index}"
         create_empty_dir(fom_run_directory)
@@ -115,13 +106,12 @@ def run_sampling_with_holdout(
         parameter_dict = _create_parameter_dict(parameter_names, sample)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
 
-    # Run FOM samples to build holdout set.
+    # Setup FOM directories and run samples to build holdout set.
     t0 = time.time()
     fom_qois_holdout_set = np.zeros(holdout_set_size)
     sampling_file.write(f"Building holdout set \n")
-    for i in holdout_sample_indices:
-        sampling_file.write(f"Running holdout FOM sample {i} \n")
-        sample_index = i
+    for sample_index in holdout_sample_indices:
+        sampling_file.write(f"Running holdout FOM sample {sample_index} \n")
         parameter_dict = _create_parameter_dict(
             parameter_names, parameter_samples[sample_index]
         )
@@ -132,7 +122,7 @@ def run_sampling_with_holdout(
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
         fom_model.run_model(fom_run_directory, parameter_dict)
         fom_qoi = fom_model.compute_qoi(fom_run_directory, parameter_dict)
-        if i == 0:
+        if sample_index == 0:
             fom_qois_holdout_set = fom_qoi[None]
         else:
             fom_qois_holdout_set = np.append(
