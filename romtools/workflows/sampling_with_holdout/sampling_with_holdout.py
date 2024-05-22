@@ -108,7 +108,6 @@ def run_sampling_with_holdout(
 
     # Setup FOM directories and run samples to build holdout set.
     t0 = time.time()
-    fom_qois_holdout_set = np.zeros(holdout_set_size)
     sampling_file.write(f"Building holdout set \n")
     for sample_index in holdout_sample_indices:
         sampling_file.write(f"Running holdout FOM sample {sample_index} \n")
@@ -130,7 +129,6 @@ def run_sampling_with_holdout(
             )
     fom_time += time.time() - t0
 
-    # Create ROM bases
     sampling_file.write(f"Beginning sampling procedure \n")
 
     converged = False
