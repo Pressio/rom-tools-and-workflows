@@ -37,8 +37,14 @@ class ResidualEvaluator(Protocol):
             filename (str): filename of the file containing the full-order model solution data
 
         Returns:
-            `np.ndarray`: The projected full-order solution in a 2-dimensional array
-            `np.ndarray`: The corresponding solution time stamps in a 1-dimensional array
+            `np.ndarray`: The projected full-order solution in a 2- or 3-dimensional array. 1st
+            dimension: reduced state, 2nd dimension: time, 3rd dimension: other states in time
+            stencil. If the array is 2-dimensional, it is assumed that the states are sequential
+            in time.
+            `np.ndarray`: The corresponding solution time stamps in a 1- or 2-dimensional array.
+            The optional 2nd dimension is only needed if the reduced projected full-order solution
+            array is 3-dimensional; the 2nd dimension contains the time stamps of the other states
+            in the time-stencil for a given time stamp.
 
         """
         pass
@@ -48,6 +54,7 @@ class ResidualEvaluator(Protocol):
         run_directory: str,
         full_model_directory: str,
         reduced_states: np.ndarray,
+        parameter_sample: dict,
         times: np.ndarray = None,
     ) -> np.ndarray:
         """
@@ -57,8 +64,13 @@ class ResidualEvaluator(Protocol):
         Args:
             run_directory (str): Absolute path to directory in which residual is being computed.
             full_model_directory (str): Absolute path to directory in which the full model data was computed.
-            reduced_state (np.ndarray): 2-dimensional reduced state vector.
-            times (np.ndarray, optional): 1-dimensional vector of time stamps.
+            reduced_state (np.ndarray): 2- or 3-dimensional reduced state vector. 1st dimension: reduced state,
+            2nd dimension: time, 3rd dimension: other states in time stencil. If the array is 2-dimensional, it
+            is assumed that the states are sequential in time.
+            parameter_sample: Dictionary contatining parameter names and sample values
+            times (np.ndarray, optional): 1-dimensional or 2-dimesional vector of time stamps. The optional
+            2nd dimension is only needed if the reduced state array is 3-dimensional; the 2nd dimension
+            contains the time stamps of the other states in the time-stencil for a given time stamp.
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
@@ -94,14 +106,18 @@ def evaluate_and_load_steady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshot
-        reduced_state = residual_evaluator.compute_reduced_state(full_model_dir + "/" + state_filename)
+        reduced_state = residual_evaluator.compute_reduced_state(
+            full_model_dir + "/" + state_filename
+        )
 
         # Set up corresponding directory
         run_directory = f"{run_directory_base}{index}"
         create_empty_dir(run_directory)
 
         # Evaluate residual
-        residual_snapshot = residual_evaluator.evaluate_full_residuals(run_directory, full_model_dir, reduced_state)
+        residual_snapshot = residual_evaluator.evaluate_full_residuals(
+            run_directory, full_model_dir, reduced_state, None
+        )
 
         # check residual snapshot size and shape
         if n_vars == -1 and n_x == -1:
@@ -145,14 +161,18 @@ def evaluate_and_load_unsteady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshots
-        reduced_states, times = residual_evaluator.compute_reduced_states(full_model_dir + "/" + state_filename)
+        reduced_states, times = residual_evaluator.compute_reduced_states(
+            full_model_dir + "/" + state_filename
+        )
 
         # Set up corresponding directory
         run_directory = f"{run_directory_base}{index}"
         create_empty_dir(run_directory)
 
         # Evaluate residuals
-        residual_snapshots = residual_evaluator.evaluate_full_residuals(run_directory, full_model_dir, reduced_states, times)
+        residual_snapshots = residual_evaluator.evaluate_full_residuals(
+            run_directory, full_model_dir, reduced_states, None, times
+        )
 
         # check residual snapshot size and shape
         assert residual_snapshots.ndim == 3
