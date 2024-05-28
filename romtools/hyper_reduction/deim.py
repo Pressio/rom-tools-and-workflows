@@ -103,7 +103,7 @@ def _deim_get_indices_distributed(U, comm):
         indices = result.local_indices[result.owning_ranks==myRank]
         LHS = np.array([]) if indices.size == 0 else U[indices, 0:ell]
         RHS = np.array([]) if indices.size == 0 else U[indices, ell]
-        
+
         A, b = la.move_distributed_linear_system_to_rank_zero(LHS, RHS, comm)
         if myRank == 0:
             C = np.linalg.solve(A, b)
@@ -127,7 +127,11 @@ def deim_get_indices(U, comm=None):
         comm: Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
-        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+         if comm==None:
+            $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+
+         else:
+            sample mesh local indices and the corresponding owing ranks
     '''
 
     assert np.shape(U)[1] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
@@ -137,6 +141,83 @@ def deim_get_indices(U, comm=None):
     else:
         return _deim_get_indices_sharedmem(U)
 
+
+def _deim_multi_state_get_indices_sharedmem(U):
+    all_indices = np.zeros(0, dtype=int)
+    n_var = U.shape[0]
+    for i in range(0, n_var):
+        data_matrix = U[i]
+        indices = deim_get_indices(data_matrix)
+        all_indices = np.unique(np.append(all_indices, indices))
+    return all_indices
+
+
+def _deim_multi_state_get_indices_distributed(U, comm):
+    all_local_indices = np.zeros(0, dtype=int)
+    all_ranks = np.zeros(0, dtype=int)
+    n_var = U.shape[0]
+    for i in range(0, n_var):
+        data_matrix = U[i]
+        indices, ranks = deim_get_indices(data_matrix, comm)
+        # print(myRank, ":::", indices, ranks)
+        all_local_indices = np.append(all_local_indices, indices)
+        all_ranks = np.append(all_ranks, ranks)
+
+    # from here we need to operate on ranks and indices together
+    # so stack them for convenience
+    M = np.vstack((all_local_indices, all_ranks))
+
+    # first, sort based on rankID
+    M = np.unique(M, axis=1)
+    inds = M[1,:].argsort()
+    M = M[:, inds]
+
+    '''
+    once we are here, M is sorted based on the ranks, but could look like this:
+
+    0 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
+    1 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
+    2 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
+
+    we do an additional step where we sort based on the local index within each rank
+    '''
+    rank_ids = np.unique(M[1,:])
+    for rank in rank_ids:
+        locs = np.where(M[1,:] == rank)
+        # only need to sort the 0-th row since we are sorting locally for each rank with same rank id
+        M[0, locs] = np.sort(M[0, locs])
+
+    # return local indices and ranks separately
+    return M[0,:], M[1,:]
+
+
+def multi_state_deim_get_indices(U, comm=None):
+    '''
+    Version of DEIM for multi-state systems.
+
+    We perform DEIM on each state variable, and
+    then return the union of all indices.
+    Repeated indices are removed.
+
+
+    Args:
+         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
+
+    Returns:
+         if comm==None:
+            $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+
+         else:
+            sample mesh local indices and the corresponding owing ranks
+    '''
+    shape = np.shape(U)
+    assert len(shape) == 3
+    assert shape[2] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
+
+    if comm:
+        return _deim_multi_state_get_indices_distributed(U, comm)
+    else:
+        return _deim_multi_state_get_indices_sharedmem(U)
 
 
 
@@ -205,28 +286,3 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
     PU_pinv = np.linalg.pinv(sampled_function_basis)
     deim_test_basis = (test_basis.transpose() @ function_basis) @ PU_pinv
     return deim_test_basis.transpose()
-
-
-def multi_state_deim_get_indices(U):
-    """
-    Version of DEIM for multi-state systems.
-
-    We perform DEIM on each state variable, and
-    then return the union of all indices.
-    Repeated indices are removed.
-
-
-    Args:
-         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
-
-    Returns:
-         $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
-
-    """
-    all_indices = np.zeros(0, dtype=int)
-    n_var = U.shape[0]
-    for i in range(0, n_var):
-        data_matrix = U[i]
-        indices = deim_get_indices(data_matrix)
-        all_indices = np.unique(np.append(all_indices, indices))
-    return all_indices

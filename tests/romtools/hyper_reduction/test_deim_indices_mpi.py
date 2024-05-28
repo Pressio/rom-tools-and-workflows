@@ -43,5 +43,23 @@ def test_deim_indices_mpi():
             print("global_indices = ", global_indices)
         assert(np.allclose(global_indices,indices_shmem))
 
+@pytest.mark.mpi(min_size=3)
+def test_multi_state_deim_indices_mpi():
+    np.random.seed(9243)
+    comm = MPI.COMM_WORLD
+    myRank = comm.Get_rank()
+
+    for globalExtent in [10, 13, 17, 49]:
+        for numBasis in [2, 4, 7, 8]:
+            # by default, the distribution is done along axis=1
+            U_l, U_g = generate_random_local_and_global_arrays_impl((3, globalExtent, numBasis), comm)
+            indices_shmem = deim.multi_state_deim_get_indices(U_g)
+            indices, ranks = deim.multi_state_deim_get_indices(U_l, comm)
+
+            global_indices = _map_local_and_rank_to_global_assuming_indices_increase_over_increasing_ranks(comm, U_l.shape[1], indices, ranks)
+            assert(np.allclose(global_indices, indices_shmem))
+
+
 if __name__ == "__main__":
     test_deim_indices_mpi()
+    test_multi_state_deim_indices_mpi()
