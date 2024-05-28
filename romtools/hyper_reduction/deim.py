@@ -175,9 +175,8 @@ def _deim_multi_state_get_indices_distributed(U, comm):
     '''
     once we are here, M is sorted based on the ranks, but could look like this:
 
-    0 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
-    1 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
-    2 ::: [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] [0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2]
+    M = [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] 
+        [ 0  0  0  0  0  0  0  1  1  1  1  2  2  2  2  2  2]
 
     we do an additional step where we sort based on the local index within each rank
     '''
