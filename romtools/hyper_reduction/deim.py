@@ -138,8 +138,8 @@ def deim_get_indices(U, comm=None):
 
     if comm:
         return _deim_get_indices_distributed(U, comm)
-    else:
-        return _deim_get_indices_sharedmem(U)
+
+    return _deim_get_indices_sharedmem(U)
 
 
 def _deim_multi_state_get_indices_sharedmem(U):
@@ -215,8 +215,8 @@ def multi_state_deim_get_indices(U, comm=None):
 
     if comm:
         return _deim_multi_state_get_indices_distributed(U, comm)
-    else:
-        return _deim_multi_state_get_indices_sharedmem(U)
+
+    return _deim_multi_state_get_indices_sharedmem(U)
 
 
 
