@@ -43,98 +43,14 @@
 # ************************************************************************
 #
 
-'''Implementation of DEIM technique for hyper-reduction'''
+"""Implementation of DEIM technique for hyper-reduction"""
 
 import numpy as np
 import romtools.linalg.linalg as la
 
-def deim_get_approximation_matrix(function_basis, sample_indices):
-    '''
-    Given a function basis $\\mathbf{U}$ and sample indices defining $\\mathbf{P}$, we compute
-    $$ \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U})$$
-    which comprises the matrix needed for the DEIM approximation to $\\mathbf{f}$
-
-    Args:
-        function_basis: (m,n) array, where m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
-        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
-
-    Returns:
-        deim_matrix: (n,$n_s$) array. DEIM approximation basis
-    '''
-    sampled_function_basis = function_basis[sample_indices]
-    PU_pinv = np.linalg.pinv(sampled_function_basis)
-    deim_matrix = function_basis @ PU_pinv
-    return deim_matrix
-
-def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
-    '''
-    For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices
-    Args:
-        test_basis: (n_var,m,k) array, n_var is the number of state variables,  m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
-        function_basis: (n_var,m,n) array, where n_var is the number of state variables, m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
-        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
-
-    Returns:
-        deim_test_basis: (n_var,n_s,k) array, where n_var is the number of state variables, $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
-
-    '''
-    n_var = function_basis.shape[0]
-    deim_test_basis = deim_get_test_basis(test_basis[0], function_basis[0], sample_indices)
-    deim_test_basis = deim_test_basis[None]
-    for i in range(1, n_var):
-        deim_test_basis_i = deim_get_test_basis(test_basis[i], function_basis[i], sample_indices)
-        deim_test_basis = np.append(deim_test_basis, deim_test_basis_i[None], axis=0)
-    return deim_test_basis
 
 
-def deim_get_test_basis(test_basis, function_basis, sample_indices):
-    '''
-    Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
-    sample indices defining $\\mathbf{P}$, we compute
-    $$[ \\mathbf{\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
-    which comprises the "test basis" for the DEIM approximation for
-    $\\mathbf{\Phi}^T \\mathbf{f}$
-
-    Args:
-        test_basis: (m,k) array, where m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
-        function_basis: (m,n) array, where m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
-        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
-
-    Returns:
-        deim_test_basis: (n_s,k) array, where $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
-
-    '''
-    sampled_function_basis = function_basis[sample_indices]
-    PU_pinv = np.linalg.pinv(sampled_function_basis)
-    deim_test_basis = (test_basis.transpose() @ function_basis) @ PU_pinv
-    return deim_test_basis.transpose()
-
-def multi_state_deim_get_indices(U):
-    '''
-    Version of DEIM for multi-state systems.
-
-    We perform DEIM on each state variable, and
-    then return the union of all indices.
-    Repeated indices are removed.
-
-
-    Args:
-         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
-
-    Returns:
-         $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
-
-    '''
-    all_indices = np.zeros(0, dtype=int)
-    n_var = U.shape[0]
-    for i in range(0, n_var):
-        data_matrix = U[i]
-        indices = deim_get_indices(data_matrix)
-        all_indices = np.unique(np.append(all_indices, indices))
-    return all_indices
-
-
-def deim_get_indices(U):
+def _deim_get_indices_sharedmem(U):
     '''
     Implementation of the discrete empirical method as described in Algorithm 1 of
     S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
@@ -162,3 +78,155 @@ def deim_get_indices(U):
         index_to_add = la.argmax(np.abs(residual))
         indices = np.append(indices, index_to_add)
     return indices
+
+
+class _dist_deim_data:
+    def __init__(self, i, r):
+        self.local_indices = np.array([int(i)])
+        self.owning_ranks = np.array([int(r)])
+
+    def append(self, i, r):
+        self.local_indices = np.append(self.local_indices , int(i))
+        self.owning_ranks = np.append(self.owning_ranks, int(r))
+
+
+def _deim_get_indices_distributed(U, comm):
+    m = np.shape(U)[1]
+    local_index, foundRank = la.argmax(np.abs(U[:, 0]), comm)
+    result = _dist_deim_data(local_index, foundRank)
+    if m == 1:
+        return result.local_indices, result.owning_ranks
+
+    myRank = comm.Get_rank()
+    LHS, RHS, C = np.array([]), np.array([]), np.array([])
+    for ell in range(1, m):
+        indices = result.local_indices[result.owning_ranks==myRank]
+        LHS = np.array([]) if indices.size == 0 else U[indices, 0:ell]
+        RHS = np.array([]) if indices.size == 0 else U[indices, ell]
+        
+        A, b = la.move_distributed_linear_system_to_rank_zero(LHS, RHS, comm)
+        if myRank == 0:
+            C = np.linalg.solve(A, b)
+        C = comm.bcast(C, root=0)
+
+        residual = U[:, ell] - U[:, 0:ell] @ C
+        local_index, foundRank = la.argmax(np.abs(residual), comm)
+        result.append(local_index, foundRank)
+
+    return result.local_indices, result.owning_ranks
+
+
+def deim_get_indices(U, comm=None):
+    '''
+    Implementation of the discrete empirical method as described in Algorithm 1 of
+    S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
+    nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
+
+    Args:
+        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where m is the number of DOFs and n the number of samples. Function basis in matrix format.
+        comm: Optional communicator object. If none, algorithm assumes shared-memory data.
+
+    Returns:
+        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+    '''
+
+    assert np.shape(U)[1] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
+
+    if comm:
+        return _deim_get_indices_distributed(U, comm)
+    else:
+        return _deim_get_indices_sharedmem(U)
+
+
+
+
+def deim_get_approximation_matrix(function_basis, sample_indices):
+    """
+    Given a function basis $\\mathbf{U}$ and sample indices defining $\\mathbf{P}$, we compute
+    $$ \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U})$$
+    which comprises the matrix needed for the DEIM approximation to $\\mathbf{f}$
+
+    Args:
+        function_basis: (m,n) array, where m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
+        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
+
+    Returns:
+        deim_matrix: (n,$n_s$) array. DEIM approximation basis
+    """
+    sampled_function_basis = function_basis[sample_indices]
+    PU_pinv = np.linalg.pinv(sampled_function_basis)
+    deim_matrix = function_basis @ PU_pinv
+    return deim_matrix
+
+
+def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
+    """
+    For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices
+    Args:
+        test_basis: (n_var,m,k) array, n_var is the number of state variables,  m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
+        function_basis: (n_var,m,n) array, where n_var is the number of state variables, m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
+        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
+
+    Returns:
+        deim_test_basis: (n_var,n_s,k) array, where n_var is the number of state variables, $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
+
+    """
+    n_var = function_basis.shape[0]
+    deim_test_basis = deim_get_test_basis(
+        test_basis[0], function_basis[0], sample_indices
+    )
+    deim_test_basis = deim_test_basis[None]
+    for i in range(1, n_var):
+        deim_test_basis_i = deim_get_test_basis(
+            test_basis[i], function_basis[i], sample_indices
+        )
+        deim_test_basis = np.append(deim_test_basis, deim_test_basis_i[None], axis=0)
+    return deim_test_basis
+
+
+def deim_get_test_basis(test_basis, function_basis, sample_indices):
+    """
+    Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
+    sample indices defining $\\mathbf{P}$, we compute
+    $$[ \\mathbf{\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
+    which comprises the "test basis" for the DEIM approximation for
+    $\\mathbf{\Phi}^T \\mathbf{f}$
+
+    Args:
+        test_basis: (m,k) array, where m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
+        function_basis: (m,n) array, where m is the number of DOFs and n the number of basis functions. Basis for function to be approximated.
+        sample_indices: ($n_s$,) array, where $n_s$ is the number of sample points. Sampling points.
+
+    Returns:
+        deim_test_basis: (n_s,k) array, where $n_s$ is the number of sample points and k the number of basis functions. DEIM test basis matrix.
+
+    """
+    sampled_function_basis = function_basis[sample_indices]
+    PU_pinv = np.linalg.pinv(sampled_function_basis)
+    deim_test_basis = (test_basis.transpose() @ function_basis) @ PU_pinv
+    return deim_test_basis.transpose()
+
+
+def multi_state_deim_get_indices(U):
+    """
+    Version of DEIM for multi-state systems.
+
+    We perform DEIM on each state variable, and
+    then return the union of all indices.
+    Repeated indices are removed.
+
+
+    Args:
+         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where l is the number of variables, m is the number of DOFs and n the number of samples. Multi-dimensional function basis in tensor format.
+
+    Returns:
+         $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+
+    """
+    all_indices = np.zeros(0, dtype=int)
+    n_var = U.shape[0]
+    for i in range(0, n_var):
+        data_matrix = U[i]
+        indices = deim_get_indices(data_matrix)
+        all_indices = np.unique(np.append(all_indices, indices))
+    return all_indices
