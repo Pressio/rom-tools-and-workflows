@@ -43,11 +43,11 @@
 # ************************************************************************
 #
 
-'''
+"""
 Model reduction is often focused on parameterized PDEs, where
 $\\boldsymbol \\mu$ is the parameter set.
 The ParameterSpace class encapsulates the notion of the parameter space.
-'''
+"""
 import abc
 from typing import Iterable
 import numpy as np
@@ -57,31 +57,25 @@ from romtools.workflows.parameters import Parameter, StringParameter, UniformPar
 
 
 class ParameterSpace(abc.ABC):
+    """Abstract implementation"""
 
-    ''' Abstract implementation'''
     @abc.abstractmethod
     def get_names(self) -> Iterable[str]:
-        '''
+        """
         Returns a list of parameter names
         # e.g., ['sigma','beta',...]
-        '''
+        """
 
     @abc.abstractmethod
     def get_dimensionality(self) -> int:
-        '''
+        """
         Returns an integer for the size
         of the parameter domain
-        '''
-
-    @abc.abstractmethod
-    def get_sampler(self) -> Sampler:
-        '''
-        Returns a function
-        '''
+        """
 
     @abc.abstractmethod
     def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
-        '''
+        """
         Generates samples from the parameter space given a set of samples
         from a uniform distribution on (0,1)
 
@@ -89,7 +83,7 @@ class ParameterSpace(abc.ABC):
         (number_of_samples, self.get_dimensionality())
 
         Returns np.array of the same shape
-        '''
+        """
 
 
 ##########################################
@@ -98,19 +92,19 @@ class ParameterSpace(abc.ABC):
 
 
 class HeterogeneousParameterSpace(ParameterSpace):
-    '''
+    """
     Heterogeneous parameter space consisting of a list of arbitrary Parameter
     objects
-    '''
-    def __init__(self, parameter_objs: Iterable[Parameter],
-                 sampler: Sampler = MonteCarloSampler):
+    """
+
+    def __init__(self, parameter_objs: Iterable[Parameter], sampler: Sampler = MonteCarloSampler):
         self._parameters = parameter_objs
         self._sampler = sampler
 
     def _get_parameter_list(self) -> Iterable[Parameter]:
-        '''
+        """
         Returns a list of Parameter objects
-        '''
+        """
         return self._parameters
 
     def get_names(self) -> Iterable[str]:
@@ -119,89 +113,71 @@ class HeterogeneousParameterSpace(ParameterSpace):
     def get_dimensionality(self) -> int:
         return sum(p.get_dimensionality() for p in self._get_parameter_list())
 
-    def get_sampler(self) -> Sampler:
-        return self._sampler
-
     def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
-        sampler = self.get_sampler()
-        iid_samples = sampler(number_of_samples, self.get_dimensionality(), seed)
+        iid_samples = self._sampler(number_of_samples, self.get_dimensionality(), seed)
         samples = []
         param_idx = 0
         for param in self._get_parameter_list():
             next_param_idx = param_idx + param.get_dimensionality()
-            param_samples = param.scale_samples(
-                iid_samples[:, param_idx:next_param_idx])
+            param_samples = param.scale_samples(iid_samples[:, param_idx:next_param_idx])
             samples.append(param_samples)
             param_idx = next_param_idx
         return np.concatenate(samples, axis=1)
 
 
 class HomogeneousParameterSpace(HeterogeneousParameterSpace):
-    '''
+    """
     Homogenous parameter space in which every parameter is of the same type
-    '''
-    def __init__(self, parameter_names: Iterable[str],
-                 sampler: Sampler,
-                 param_constructor, **kwargs):
+    """
+
+    def __init__(self, parameter_names: Iterable[str], sampler: Sampler, param_constructor, **kwargs):
         parameters = []
         for param_num, param_name in enumerate(parameter_names):
             args = {key: val[param_num] for key, val in kwargs.items()}
-            parameters.append(param_constructor(parameter_name=param_name,
-                                                **args))
+            parameters.append(param_constructor(parameter_name=param_name, **args))
         super().__init__(parameters, sampler)
 
 
 class EmptyParameterSpace(ParameterSpace):
-    '''
+    """
     Empty parameter space that is useful for initializations
-    '''
+    """
+
     def get_names(self) -> list:
         return []
 
     def get_dimensionality(self) -> int:
         return 0
 
-    def get_sampler(self) -> Sampler:
-        return MonteCarloSampler
-
     def generate_samples(self, number_of_samples: int, seed=None) -> np.ndarray:
         return np.empty(shape=(number_of_samples, 0))
 
 
 class UniformParameterSpace(HomogeneousParameterSpace):
-    '''
+    """
     Homogeneous parameter space in which every parameter is a UniformParameter
-    '''
+    """
 
-    def __init__(self, parameter_names: Iterable[str],
-                 lower_bounds, upper_bounds, sampler: Sampler):
-        super().__init__(parameter_names,
-                         sampler=sampler,
-                         param_constructor=UniformParameter,
-                         lower_bound=lower_bounds,
-                         upper_bound=upper_bounds)
+    def __init__(self, parameter_names: Iterable[str], lower_bounds, upper_bounds, sampler: Sampler):
+        super().__init__(parameter_names, sampler=sampler, param_constructor=UniformParameter, lower_bound=lower_bounds, upper_bound=upper_bounds)
 
 
 class GaussianParameterSpace(HomogeneousParameterSpace):
-    '''
+    """
     Homogeneous parameter space in which every parameter is a GaussianParameter
-    '''
-    def __init__(self, parameter_names: Iterable[str],
-                 means, stds, sampler: Sampler):
-        super().__init__(parameter_names,
-                         sampler=sampler,
-                         param_constructor=GaussianParameter,
-                         mean=means,
-                         std=stds)
+    """
+
+    def __init__(self, parameter_names: Iterable[str], means, stds, sampler: Sampler):
+        super().__init__(parameter_names, sampler=sampler, param_constructor=GaussianParameter, mean=means, std=stds)
 
 
 class ConstParameterSpace(HomogeneousParameterSpace):
-    '''
+    """
     Homogeneous parameter space in which every parameter is a constant
     StringParameter. All numeric values are converted to str-type.
 
     Useful if you need to execute workflows in a non-stochastic setting
-    '''
+    """
+
     def __init__(self, parameter_names: Iterable[str], parameter_values):
-        super().__init__(parameter_names, MonteCarloSampler,
-                         StringParameter, value=parameter_values)
+        super().__init__(parameter_names, MonteCarloSampler, StringParameter, value=parameter_values)
