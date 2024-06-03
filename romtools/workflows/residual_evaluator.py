@@ -14,21 +14,52 @@ class ResidualEvaluator(Protocol):
     Baseline residual evaluator protocol
     """
 
-    def compute_reduced_state(self, filename: str) -> np.ndarray:
+    def compute_reduced_states(self, filename: str) -> np.ndarray:
         """
-        Reads the full-order model solution from the specified filename
-        and computes the corresponding reduced state
+        Reads the full-order model solution(s) from the specified filename
+        and computes the corresponding reduced state(s)
 
         Args:
             filename (str): filename of the file containing the full-order model solution data
 
         Returns:
-            `np.ndarray`: The projected full-order solution in a 1-dimensional array
+            `np.ndarray`: The projected full-order solution in a 1- or 2-dimensional array.
+            1st dimension: reduced state, 2nd dimension: sample index corresponding full-model
+            solution data file.
 
         """
         pass
 
-    def compute_reduced_states(self, filename: str) -> Tuple[np.ndarray, np.ndarray]:
+    def evaluate_full_residuals(
+        self,
+        run_directory: str,
+        full_model_directory: str,
+        reduced_states: np.ndarray,
+        parameter_sample: dict,
+    ) -> np.ndarray:
+        """
+        Evaluate the full-order model residuals corresponding to full states reconstructed from
+        an array of reduced states
+
+        Args:
+            run_directory (str): Absolute path to directory in which residual is being computed.
+            full_model_directory (str): Absolute path to directory in which the full model data was computed.
+            reduced_state (np.ndarray): 2-dimensional reduced state vector. 1st dimension: reduced state,
+            2nd dimension: sample index
+            parameter_sample: Dictionary contatining parameter names and sample values
+
+        Returns:
+            `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single sample
+        """
+        pass
+
+
+class TransientResidualEvaluator(Protocol):
+    """
+    Baseline residual evaluator protocol
+    """
+
+    def compute_reduced_states(self, filename: str) -> np.ndarray:
         """
         Reads the full-order model solution and time stamps from the specified filename
         and computes the corresponding reduced states
@@ -41,6 +72,18 @@ class ResidualEvaluator(Protocol):
             dimension: reduced state, 2nd dimension: time, 3rd dimension: other states in time
             stencil. If the array is 2-dimensional, it is assumed that the states are sequential
             in time.
+
+        """
+        pass
+
+    def get_times(self, filename: str) -> np.ndarray:
+        """
+        Reads and outputs time stamps from the specified filename
+
+        Args:
+            filename (str): filename of the file containing the full-order model solution data
+
+        Returns:
             `np.ndarray`: The corresponding solution time stamps in a 1- or 2-dimensional array.
             The optional 2nd dimension is only needed if the reduced projected full-order solution
             array is 3-dimensional; the 2nd dimension contains the time stamps of the other states
@@ -55,7 +98,7 @@ class ResidualEvaluator(Protocol):
         full_model_directory: str,
         reduced_states: np.ndarray,
         parameter_sample: dict,
-        times: np.ndarray = None,
+        times: np.ndarray,
     ) -> np.ndarray:
         """
         Evaluate the full-order model residuals corresponding to full states reconstructed from
@@ -68,7 +111,7 @@ class ResidualEvaluator(Protocol):
             2nd dimension: time, 3rd dimension: other states in time stencil. If the array is 2-dimensional, it
             is assumed that the states are sequential in time.
             parameter_sample: Dictionary contatining parameter names and sample values
-            times (np.ndarray, optional): 1-dimensional or 2-dimesional vector of time stamps. The optional
+            times (np.ndarray): 1-dimensional or 2-dimesional vector of time stamps. The optional
             2nd dimension is only needed if the reduced state array is 3-dimensional; the 2nd dimension
             contains the time stamps of the other states in the time-stencil for a given time stamp.
 
@@ -90,7 +133,7 @@ def evaluate_and_load_steady_residual_snapshots(
     residual snapshots.
 
     Args:
-        residual_evaluator (UnsteadyResidualEvaluator): steady residual evaluator we wish to use
+        residual_evaluator (ResidualEvaluator): steady residual evaluator we wish to use
         full_state_directories (list[str]): list of directories containing full state data
         state_filename (str): filename or base filename of file containing state data
         absolute_run_directory (str): absolute path to base directory in which residuals are evaluated
@@ -106,7 +149,7 @@ def evaluate_and_load_steady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshot
-        reduced_state = residual_evaluator.compute_reduced_state(
+        reduced_state = residual_evaluator.compute_reduced_states(
             full_model_dir + "/" + state_filename
         )
 
@@ -134,7 +177,7 @@ def evaluate_and_load_steady_residual_snapshots(
 
 
 def evaluate_and_load_unsteady_residual_snapshots(
-    residual_evaluator: ResidualEvaluator,
+    residual_evaluator: TransientResidualEvaluator,
     full_state_directories: Iterable[str],
     state_filename: str,
     absolute_run_directory: str,
@@ -145,7 +188,7 @@ def evaluate_and_load_unsteady_residual_snapshots(
     residual snapshots.
 
     Args:
-        residual_evaluator (UnsteadyResidualEvaluator): steady residual evaluator we wish to use
+        residual_evaluator (TransientResidualEvaluator): transient residual evaluator we wish to use
         full_state_directories (list[str]): list of directories containing full state data
         state_filename (str): filename or base filename of file containing state data
         absolute_run_directory (str): absolute path to base directory in which residuals are evaluated
@@ -161,7 +204,10 @@ def evaluate_and_load_unsteady_residual_snapshots(
     n_x = -1
     for index, full_model_dir in enumerate(full_state_directories):
         # Read and project FOM snapshots
-        reduced_states, times = residual_evaluator.compute_reduced_states(
+        reduced_states = residual_evaluator.compute_reduced_states(
+            full_model_dir + "/" + state_filename
+        )
+        times = residual_evaluator.get_times(
             full_model_dir + "/" + state_filename
         )
 

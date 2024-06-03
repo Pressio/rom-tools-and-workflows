@@ -9,7 +9,7 @@ class MockSteadyResidualEvaluator:
     def __init__(self):
         pass
 
-    def compute_reduced_state(self, filename: str) -> np.ndarray:
+    def compute_reduced_states(self, filename: str) -> np.ndarray:
         return np.zeros((3, 4))
 
     def evaluate_full_residuals(
@@ -26,8 +26,11 @@ class MockUnsteadyResidualEvaluator:
     def __init__(self):
         pass
 
-    def compute_reduced_states(self, filename: str) -> (np.ndarray, np.ndarray):
-        return np.zeros((4, 5)), np.ones(5)
+    def compute_reduced_states(self, filename: str) -> np.ndarray:
+        return np.zeros((4, 5))
+    
+    def get_times(self,filename: str) -> np.ndarray:
+        return np.ones(5)
 
     def evaluate_full_residuals(
         self,
@@ -44,8 +47,11 @@ class MockUnsteadyResidualEvaluatorNonSequentialTemporalData:
     def __init__(self):
         pass
 
-    def compute_reduced_states(self, filename: str) -> (np.ndarray, np.ndarray):
-        return np.zeros((4, 5, 2)), np.ones((5, 2))
+    def compute_reduced_states(self, filename: str) -> np.ndarray:
+        return np.zeros((4, 5, 2))
+    
+    def get_times(self,filename: str) -> np.ndarray:
+        return np.ones((5, 2))
 
     def evaluate_full_residuals(
         self,
