@@ -46,7 +46,9 @@
 """
 ---
 ##**Notes**
-The scaler class is used to performed scaled POD. Scaling is applied to tensors of shape $\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}$. These tensors are then reshaped into matrices when performing SVD.
+The scaler class is used to performed scaled POD.
+Scaling is applied to tensors of shape $\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}$.
+These tensors are then reshaped into matrices when performing SVD.
 
 ___
 ##**Theory**
@@ -54,11 +56,11 @@ ___
 *What is scaled POD, and why would I do it?*
 
 Standard POD computes a basis that minimizes the projection error in a standard Euclidean $\\ell^2$ inner product,
-i.e., for a snapshot matrix $\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}$, POD computes the basis by solving the minimization problem
-(assuming no affine offset)
-$$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times K} | \\boldsymbol
-\\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T
-\\mathbf{S} - \\mathbf{S} \\|_2.$$
+i.e., for a snapshot matrix $\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}$,
+POD computes the basis by solving the minimization problem (assuming no affine offset)
+$$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}
+\\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*}
+\\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2.$$
 In this minimization problem, errors are measured in a standard $\\ell^2$ norm.
 For most practical applications, where our snapshot matrix involves variables of different scales,
 this norm does not make sense (both intuitively, and on dimensional grounds).
@@ -69,9 +71,9 @@ In scaled POD, we solve a minimization problem on a scaled snapshot matrix.
 Defining $\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}$, where $\\mathbf{W}$ is a weighting matrix
 (e.g., a diagonal matrix containing the max absolute value of each state variable),
 we compute the basis as the solution to the minimization problem
-$$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times K} |\\boldsymbol
-\\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T
-\\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.$$
+$$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}
+\\times K} |\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*}
+\\Phi_{\\*}^T \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.$$
 
 The Scaler encapsulates this information.
 
@@ -89,15 +91,15 @@ class Scaler(Protocol):
     Interface for the Scaler class.
     """
 
-    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the snapshot matrix before performing SVD
+        Scales the snapshot matrix in place before performing SVD
         """
         ...
 
-    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the left singular vectors after performing SVD
+        Scales the left singular vectors in place after performing SVD
         """
         ...
 
@@ -112,11 +114,11 @@ class NoOpScaler:
     def __init__(self) -> None:
         pass
 
-    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
-        return data_tensor
+    def pre_scale(self, data_tensor: np.ndarray):
+        pass
 
-    def post_scale(self, data_tensor) -> np.ndarray:
-        return data_tensor
+    def post_scale(self, data_tensor):
+        pass
 
 
 class VectorScaler:
@@ -148,31 +150,23 @@ class VectorScaler:
         self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1.0 / scaling_vector
 
-    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix using the inverse of the scaling vector
-        and returns the scaled matrix.
+        Scales the input data matrix in place using the inverse of the scaling vector.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
-        return self.__scaling_vector_matrix_inv[None, :, None] * data_tensor
+        data_tensor *= self.__scaling_vector_matrix_inv[None, :, None]
 
-    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix using the scaling vector and returns the
-        scaled matrix.
+        Scales the input data matrix in place using the scaling vector.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
-        return self.__scaling_vector_matrix[None, :, None] * data_tensor
+        data_tensor *= self.__scaling_vector_matrix[None, :, None]
 
 
 class ScalarScaler:
@@ -186,10 +180,10 @@ class ScalarScaler:
         self._factor = factor
 
     def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
-        return data_tensor / self._factor
+        data_tensor /= self._factor
 
     def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
-        return data_tensor * self._factor
+        data_tensor *= self._factor
 
 
 class VariableScaler:
@@ -252,16 +246,13 @@ class VariableScaler:
         self.have_scales_been_initialized = True
 
     # These are all inplace operations
-    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix before processing, taking into account
+        Scales the input data matrix in place before processing, taking into account
         the previously initialized scaling factors.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
         n_var = data_tensor.shape[0]
         if self.have_scales_been_initialized:
@@ -270,27 +261,20 @@ class VariableScaler:
             self.initialize_scalings(data_tensor)
         # scale each field (variable scaling)
         for i in range(n_var):
-            data_tensor[i] = data_tensor[i] / self.var_scales_[i]
-        return data_tensor
+            data_tensor[i] /= self.var_scales_[i]
 
-    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix using the scaling vector and returns the
-        scaled matrix.
+        Scales the input data matrix in place using the scaling vector.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
         assert self.have_scales_been_initialized, "Scales in VariableScaler have not been initialized"
         # scale each field
         n_var = data_tensor.shape[0]
         for i in range(n_var):
-            data_tensor[i] = data_tensor[i] * self.var_scales_[i]
-        return data_tensor
-
+            data_tensor[i] *= self.var_scales_[i]
 
 class VariableAndVectorScaler:
     """
@@ -320,30 +304,24 @@ class VariableAndVectorScaler:
         self.__my_variable_scaler = VariableScaler(scaling_type)
         self.__my_vector_scaler = VectorScaler(scaling_vector)
 
-    def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def pre_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix before processing, first using the
+        Scales the input data matrix in place before processing, first using the
         `VariableScaler` and then the `VectorScaler`.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
-        data_tensor = self.__my_variable_scaler.pre_scale(data_tensor)
-        return self.__my_vector_scaler.pre_scale(data_tensor)
+        self.__my_variable_scaler.pre_scale(data_tensor)
+        self.__my_vector_scaler.pre_scale(data_tensor)
 
-    def post_scale(self, data_tensor: np.ndarray) -> np.ndarray:
+    def post_scale(self, data_tensor: np.ndarray) -> None:
         """
-        Scales the input data matrix after processing, first using the
+        Scales the input data matrix in place after processing, first using the
         `VectorScaler` and then the `VariableScaler`.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
-
-        Returns:
-            np.ndarray: The scaled data matrix.
         """
-        data_tensor = self.__my_vector_scaler.post_scale(data_tensor)
-        return self.__my_variable_scaler.post_scale(data_tensor)
+        self.__my_vector_scaler.post_scale(data_tensor)
+        self.__my_variable_scaler.post_scale(data_tensor)

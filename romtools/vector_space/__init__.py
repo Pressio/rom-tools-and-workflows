@@ -239,15 +239,15 @@ class VectorSpaceFromPOD():
             shifter = create_noop_shifter(snapshots)
         n_var = snapshots.shape[0]
         shifter.apply_shift(snapshots)
-        scaled_shifted_snapshots = scaler.pre_scale(snapshots)
-        snapshot_matrix = _tensor_to_matrix(scaled_shifted_snapshots)
+        scaler.pre_scale(snapshots)
+        snapshot_matrix = _tensor_to_matrix(snapshots)
         svd_picked = np.linalg.svd if svdFnc is None else svdFnc
         lsv, svals, _ = svd_picked(snapshot_matrix, full_matrices=False,
                                    compute_uv=True, hermitian=False)
 
         self.__basis = truncater.truncate(lsv, svals)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
-        self.__basis = scaler.post_scale(self.__basis)
+        scaler.post_scale(self.__basis)
         self.__basis = _tensor_to_matrix(self.__basis)
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
