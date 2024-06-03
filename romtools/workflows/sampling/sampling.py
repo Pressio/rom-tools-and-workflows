@@ -72,6 +72,7 @@ def run_sampling(model: Model,
 
     # Setup model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
+    run_directories = []
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
@@ -79,6 +80,7 @@ def run_sampling(model: Model,
         create_empty_dir(run_directory)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
         model.populate_run_directory(run_directory, parameter_dict)
+        run_directories.append(run_directory)
 
     # Run cases
     run_times = np.zeros(number_of_samples)
@@ -92,6 +94,8 @@ def run_sampling(model: Model,
         sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
+        
+    return run_directories
 
 
 def run_sample(run_directory: str, model: Model,
