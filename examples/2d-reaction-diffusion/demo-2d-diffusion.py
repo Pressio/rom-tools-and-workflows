@@ -26,7 +26,8 @@ def my_source(x, y, time):
     return 4.*np.sin(4*math.pi*x*y)*np.sin(math.pi*x*(y - 0.2)) 
     # return np.sin(math.pi*x) + y * x + time
 
-class FOM_Model(rt.workflows.models.Model):
+# NOTE: the FOM model must be defined as a QoIModel to use greedy sampling
+class FOM_Model(rt.workflows.models.QoiModel):
     def __init__(self):
         return None
 
@@ -98,8 +99,11 @@ class FOM_Model(rt.workflows.models.Model):
 
         return 0 # NOTE: This function must return 0
 
+    def compute_qoi(self, run_directory, parameter_sample):
+        return np.load(run_directory + '/results.npz')['y']
+
 class ROM_Model(rt.workflows.models.QoiModelWithErrorEstimate):
-    def __init__(self, hyperreduction=False):
+    def __init__(self, hyperreduction=False, offline_data_dir=''):
         # Open and Read Input File
         f = open(file_name)
         input = json.load(f)
@@ -112,7 +116,7 @@ class ROM_Model(rt.workflows.models.QoiModelWithErrorEstimate):
         self._mesh_obj = pda.load_cellcentered_uniform_mesh(mesh_path)
 
         # Load basis
-        self._basis = np.load('basis.npz')['basis']
+        self._basis = np.load(offline_data_dir + '/basis.npz')['basis']
 
         # Hyperreduction
         self._hyperreduction = hyperreduction
@@ -129,7 +133,7 @@ class ROM_Model(rt.workflows.models.QoiModelWithErrorEstimate):
 
     def populate_run_directory(self, run_directory, parameter_sample):
         # NOTE: This is needed when using myRK4
-        # os.system('cp input.json ' + run_directory + '/.')
+        os.system('cp input.json ' + run_directory + '/.')
         return 0
 
     def run_model(self, run_directory, parameter_sample):
@@ -176,14 +180,14 @@ class ROM_Model(rt.workflows.models.QoiModelWithErrorEstimate):
             _, v = rom.rightHandSide(np.matmul(self._test_basis, x),0.,np.matmul(self._test_basis, F))
             return v
     
-        # Test residual
-        test = residual(np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))
-        print(test)
-        print(np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))
-        print(problem.initialCondition())
-        print(np.max(np.matmul(self._test_basis, np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))), np.min(np.matmul(self._test_basis, np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))))
-        print(np.max(np.matmul(self._test_basis, F)), np.min(np.matmul(self._test_basis, F)))
-        sys.exit()
+        # # Test residual
+        # test = residual(np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))
+        # print(test)
+        # print(np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))
+        # print(problem.initialCondition())
+        # print(np.max(np.matmul(self._test_basis, np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))), np.min(np.matmul(self._test_basis, np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]))))
+        # print(np.max(np.matmul(self._test_basis, F)), np.min(np.matmul(self._test_basis, F)))
+        # sys.exit()
 
         # Solve FOM
         qn = scipy.optimize.newton_krylov(residual, np.matmul(self._test_basis.transpose(), problem.initialCondition()[self._sample_indices]), verbose=False, f_tol=1e-8)
@@ -201,7 +205,8 @@ class ROM_Model(rt.workflows.models.QoiModelWithErrorEstimate):
             count += 1
 
         # Save results
-        np.savez('results.npz', y=yn, parameters=[parameter_sample['D'], parameter_sample['K']], res=np.matmul(basis,residual(qn)), invJ=invJ)
+        print(run_directory)
+        np.savez('results.npz', y=yn, parameters=[parameter_sample['D'], parameter_sample['K']], res=np.matmul(self._test_basis,residual(qn)), invJ=invJ)
 
         # Swap back to base directory
         os.chdir(cdir)
@@ -258,6 +263,35 @@ class ROM():
 
         return state, v
 
+class ROM_Model_Builder(rt.workflows.model_builders.QoiModelWithErrorEstimateBuilder):
+    def __init__(self,n_vars,n,hyperreduction):
+        self._n_vars = n_vars
+        self._n = n
+        self._hyperreduction = hyperreduction
+        pass
+
+    def build_from_training_dirs(self, offline_data_dir, training_data_dirs):
+        # Read in train snapshots (NOTE: snapshots should be a tensor)
+        n_snapshots = len(training_data_dirs)
+        snapshots_train = np.zeros((self._n_vars, self._n, n_snapshots))
+        count = 0
+        for dir in training_data_dirs:
+            results = np.load(dir + '/results.npz')
+            snapshots_train[:,:,count] = results['y']
+            count += 1
+
+        # Calculate trial space from snapshots
+        truncater = rt.vector_space.utils.truncater.NoOpTruncater()
+        orthogonalizer = rt.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer()
+        pod_space = rt.vector_space.VectorSpaceFromPOD(snapshots=snapshots_train, truncater=truncater, orthogonalizer=orthogonalizer)
+        basis = pod_space.get_basis()[0]
+        np.savez(offline_data_dir + '/basis.npz',basis=basis) # NOTE: This is read in by run_model
+
+        # Initialize ROM model
+        rom_model = ROM_Model(hyperreduction=self._hyperreduction, offline_data_dir=offline_data_dir)
+
+        return rom_model
+
 class ParameterSpace():
     def __init__(self, parameter_name, num_parameters, bounds):
         self._parameter_name = parameter_name
@@ -270,12 +304,21 @@ class ParameterSpace():
     def get_dimensionality(self):
         return self._dimension
     
-    def generate_samples(self, samples):
-        # samples is inputted as a uniform distribution. Need to scale to bounds.
+    def get_sampler(self):
+        return rt.workflows.sampling_methods.MonteCarloSampler
+
+    def generate_samples(self, n_samples):
+        # Grab sampler
+        sampler = self.get_sampler()
+
+        # Generate samples
+        samples = sampler(number_of_samples=n_samples, dimensionality=self._dimension, seed=1)
+
+        # Scale to bounds
         # NOTE: Look at Box-Muller for future.
         scale =  self._bounds[:,1::] - self._bounds[:,0:1]
         samples = samples*scale.transpose() + self._bounds[:,0:1].transpose()
-
+        
         return np.array(samples)
     
 def generate_mesh(pressio_file_path, mesh_path, figure_path, n_x, n_y):
@@ -356,6 +399,8 @@ def plot_results(figure_path, mesh_obj, y_fom, y_rom, x_label, y_label, suffix):
     plt.savefig(figure_path + '/contour_fom_vs_rom' + suffix + '.jpeg')
     plt.close()
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# MAIN
 # Open and read input file
 file_name = 'input.json'
 f = open(file_name)
@@ -376,11 +421,12 @@ mesh_obj = generate_mesh(pressio_file_path=pressio_file_path, mesh_path=mesh_pat
 
 # Define FOM and ROM Model
 fom_model = FOM_Model()
-rom_model = ROM_Model(hyperreduction=False)
+rom_model = ROM_Model(hyperreduction=False, offline_data_dir=os.getcwd())
 
 # Define parameter space
 param_space = ParameterSpace(parameter_name=['K', 'D'], num_parameters=2, bounds=[[0.005, 0.015], [0.005, 0.015]])
 
+# ------------------------------------------------------------------------
 # Example: Monte Carlo Sampling of FOM
 # A. Run FOM at train/test points using montecarlo sampling
 rt.workflows.sampling.run_sampling(model=fom_model, parameter_space=param_space, run_directory_prefix='random/fom_', number_of_samples=n_snapshots, random_seed=1)
@@ -405,7 +451,8 @@ for i in range(0,n_test):
 # C. Plot results for one snapshot
 plot_single_result(figure_path, mesh_obj, snapshots_train[0,:,0], x_label=f'$K={parameters_train[0,0]:.3f}$', y_label=f'$D={parameters_train[0,1]:.3f}$', suffix='_random')
 
-# ROM
+# ------------------------------------------------------------------------
+# Example: ROM trained on FOM snapshots using MC sampling
 # A. Calculate trial space from snapshots
 truncater = rt.vector_space.utils.truncater.NoOpTruncater()
 orthogonalizer = rt.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer()
@@ -437,70 +484,77 @@ plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], rom_snapshots_test[0,
 # G. Calculate error
 print('L2 Norm of Error between ROM and FOM at test points using MC sampling: ', np.linalg.norm(snapshots_test - rom_snapshots_test), '\n')
 
-# Example: DEIM Hyperreduction with Monte Carlo Sampling
-# A. Define ROM model with hyperreduction
-hyper_rom_model = ROM_Model(hyperreduction=True)
+#------------------------------------------------------------------------
+# # Example: ROM with DEIM Hyperreduction trained on FOM snapshots using MC sampling
+# # A. Define ROM model with hyperreduction
+# hyper_rom_model = ROM_Model(hyperreduction=True)
 
-# B. Run ROM at test points
-rt.workflows.sampling.run_sampling(model=hyper_rom_model, parameter_space=param_space, run_directory_prefix='test/hyper_rom_', number_of_samples=n_test, random_seed=1)
+# # B. Run ROM at test points
+# rt.workflows.sampling.run_sampling(model=hyper_rom_model, parameter_space=param_space, run_directory_prefix='test/hyper_rom_', number_of_samples=n_test, random_seed=1)
 
-# C. Read in ROM results
-approx_mat = np.load('hyperreduction.npz')['approx_mat']
-hyper_rom_snapshots_test = np.zeros((n_vars, n, n_test))
-hyper_rom_parameters_test = np.zeros((n_test, 2))
-for i in range(0,n_test):
-    results = np.load('test/hyper_rom_' + str(i) + '/results.npz')
-    hyper_rom_snapshots_test[:,:,i] = np.matmul(approx_mat, results['y'])
-    hyper_rom_parameters_test[i,:] = results['parameters']
+# # C. Read in ROM results
+# approx_mat = np.load('hyperreduction.npz')['approx_mat']
+# hyper_rom_snapshots_test = np.zeros((n_vars, n, n_test))
+# hyper_rom_parameters_test = np.zeros((n_test, 2))
+# for i in range(0,n_test):
+#     results = np.load('test/hyper_rom_' + str(i) + '/results.npz')
+#     hyper_rom_snapshots_test[:,:,i] = np.matmul(approx_mat, results['y'])
+#     hyper_rom_parameters_test[i,:] = results['parameters']
 
-# D. Plot ROM result at test point
-plot_single_result(figure_path, mesh_obj, hyper_rom_snapshots_test[0,:,0], x_label=f'$K={hyper_rom_parameters_test[0,0]:.3f}$', y_label=f'$D={hyper_rom_parameters_test[0,1]:.3f}$', suffix='_rom_random_hyperreduction')
+# # D. Plot ROM result at test point
+# plot_single_result(figure_path, mesh_obj, hyper_rom_snapshots_test[0,:,0], x_label=f'$K={hyper_rom_parameters_test[0,0]:.3f}$', y_label=f'$D={hyper_rom_parameters_test[0,1]:.3f}$', suffix='_rom_random_hyperreduction')
 
-# E. Plot ROM/FOM results at test point
-plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], hyper_rom_snapshots_test[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_random_hyperreduction')
+# # E. Plot ROM/FOM results at test point
+# plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], hyper_rom_snapshots_test[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_random_hyperreduction')
 
-# F. Calculate error
-print('L2 Norm of Error between ROM and FOM at test points using MC sampling with DEIM hyperreduction: ', np.linalg.norm(snapshots_test - hyper_rom_snapshots_test))
-print('L2 Norm of Error between hyperreduced ROM and full ROM at test points using MC sampling: ', np.linalg.norm(rom_snapshots_test - hyper_rom_snapshots_test), '\n')
+# # F. Calculate error
+# print('L2 Norm of Error between ROM and FOM at test points using MC sampling with DEIM hyperreduction: ', np.linalg.norm(snapshots_test - hyper_rom_snapshots_test))
+# print('L2 Norm of Error between hyperreduced ROM and full ROM at test points using MC sampling: ', np.linalg.norm(rom_snapshots_test - hyper_rom_snapshots_test), '\n')
 
-# G. Compare runtime
-fom_time = []
-rom_time = []
-hyper_rom_time = []
-for i in range(0, n_test):
-    st = time.time(); fom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
-    fom_time.append(time.time()-st)
-    st = time.time(); rom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
-    rom_time.append(time.time()-st)
-    st = time.time(); hyper_rom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
-    hyper_rom_time.append(time.time()-st)
-print('Runtime of FOM: ', np.mean(fom_time))
-print('Runtime of full ROM: ', np.mean(rom_time))
-print('Runtime of DEIM hyperreduced ROM: ', np.mean(hyper_rom_time))
-sys.exit()
+# # G. Compare runtime
+# fom_time = []
+# rom_time = []
+# hyper_rom_time = []
+# for i in range(0, n_test):
+#     st = time.time(); fom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
+#     fom_time.append(time.time()-st)
+#     st = time.time(); rom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
+#     rom_time.append(time.time()-st)
+#     st = time.time(); hyper_rom_model.run_model(run_directory=os.getcwd(), parameter_sample={'D': parameters_test[i,0], 'K': parameters_test[i,1]})
+#     hyper_rom_time.append(time.time()-st)
+# print('Runtime of FOM: ', np.mean(fom_time))
+# print('Runtime of full ROM: ', np.mean(rom_time))
+# print('Runtime of DEIM hyperreduced ROM: ', np.mean(hyper_rom_time))
 
-# Example: Greedy sampling for ROM
-# A. Define greedy sampler
-greedy_sampler = GreedyCouplerBase(rom_coupler=rom_sampler_greedy, fom_coupler=fom_sampler_greedy, base_directory=os.getcwd())
+# ------------------------------------------------------------------------
+# Example: ROM training using greedy sampling
+# A. Define ROM model builder
+rom_model_builder = ROM_Model_Builder(n_vars=n_vars, n=n_x*n_y, hyperreduction=False)
 
 # B. Run greedy
-rt.workflows.greedy.run_greedy(greedy_coupler=greedy_sampler, tolerance=1e-4, testing_sample_size=3)
+rt.workflows.greedy.run_greedy(fom_model=fom_model, 
+                                rom_model_builder=rom_model_builder, 
+                                parameter_space=param_space, 
+                                absolute_greedy_work_directory='/Users/ekrath/codes/pressio/rom-tools-and-workflows/examples/2d-reaction-diffusion/greedy',
+                                tolerance=1e-4,
+                                testing_sample_size=10,
+                                random_seed=1)
 
-# C. Run greedy-trained ROM at test points
-st = time.time()
-y_rom = np.zeros(np.shape(snapshots_test))
-for i in range(0, n_test):
-    y_rom[:,:,i] = rom_sampler_greedy.run_model(file_name=file_name, parameter_values=parameters_test[i,:])
-print('Time to run ROM: ', (time.time()-st) / n_test)
+# # C. Run greedy-trained ROM at test points
+# st = time.time()
+# y_rom = np.zeros(np.shape(snapshots_test))
+# for i in range(0, n_test):
+#     y_rom[:,:,i] = rom_sampler_greedy.run_model(file_name=file_name, parameter_values=parameters_test[i,:])
+# print('Time to run ROM: ', (time.time()-st) / n_test)
 
-# D. Plot results
-plot_single_result(figure_path, mesh_obj, y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_rom')
-plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy')
-plot_single_result(figure_path, mesh_obj, snapshots_test[0,:,0] - y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_romfom_error')
+# # D. Plot results
+# plot_single_result(figure_path, mesh_obj, y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_rom')
+# plot_results(figure_path, mesh_obj, snapshots_test[0,:,0], y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy')
+# plot_single_result(figure_path, mesh_obj, snapshots_test[0,:,0] - y_rom[0,:,0], x_label=f'$K={parameters_test[0,0]:.3f}$', y_label=f'$D={parameters_test[0,1]:.3f}$', suffix='_greedy_romfom_error')
 
-# E. Calculate error
-err = np.linalg.norm(snapshots_test - y_rom)
-print('L2 Norm of Error between ROM and FOM at test points using greedy sampling: ', err)
+# # E. Calculate error
+# err = np.linalg.norm(snapshots_test - y_rom)
+# print('L2 Norm of Error between ROM and FOM at test points using greedy sampling: ', err)
 
 
 
