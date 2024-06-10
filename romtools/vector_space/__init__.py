@@ -68,8 +68,8 @@ while decoupling this representation from *how* it is computed.
 ####We rely on a tensor representation!
 
 Our representation of the basis and the affine offset for a vector space is based on tensors
-$$\\mathcal{\Phi} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
-$$\\mathcal{u}_{\\mathrm{shift}} \\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
+$$\\mathcal{\\Phi} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
+$$\\mathcal{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
 Internally, we remark that all tensors are reshaped into 2D matrices, e.g., when performing SVD.
 
 ###**Content**
@@ -152,7 +152,7 @@ class DictionaryVectorSpace():
 
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
-                $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+                $\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
             shifter: Class that shifts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
@@ -218,7 +218,7 @@ class VectorSpaceFromPOD():
 
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
-                $\in \mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+                $\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
             truncater (Truncater): Concrete implementation for truncating the basis.
             shifter (Shifter): Concrete implementation responsible for shifting the basis.
             orthogonalizer (Orthogonalizer): Concrete implementation that orthogonalizes the basis.

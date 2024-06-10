@@ -188,9 +188,9 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
     """
     Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
     sample indices defining $\\mathbf{P}$, we compute
-    $$[ \\mathbf{\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
+    $$[ \\mathbf{\\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
     which comprises the "test basis" for the DEIM approximation for
-    $\\mathbf{\Phi}^T \\mathbf{f}$
+    $\\mathbf{\\Phi}^T \\mathbf{f}$
 
     Args:
         test_basis: (m,k) array, where m is the number of DOFs and k the number of basis functions. Test basis in projection scheme
