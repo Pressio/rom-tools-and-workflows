@@ -991,12 +991,11 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
         - comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        - The transpose of A^+, which is given by:
-          (A^+)^T = A (A^+ A)^(-1)^T
+        - The transpose of A^+ computed as: (A^+)^T = A (A^T A)^(-1)^T
 
     Preconditions:
         - A must be a real, rank-2 matrix
-        - A must have linearly independent columns (i.e. A is injective, and therefore A^+ A is invertible)
+        - A must have linearly independent columns
         - If A is distributed, it must be so along its rows
 
     Post-conditions:
@@ -1008,18 +1007,19 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
     assert A.ndim == 2, "a must be a rank-2 matrix"
     assert np.issubdtype(A.dtype, np.floating)
 
-    # (A+ A)
+    # (A^T A)
     C = np.zeros((A.shape[1], A.shape[1]))
     _basic_product_via_python("T", "N", 1, A, A, 0, C, comm)
 
-    # (A+ A)^(-1)
+    # (A^T A)^(-1)
     C_inv = np.linalg.inv(C)
 
-    # A ((A+ A)^(-1))T
+    # A ((A^T A)^(-1))^T
     pinv_transpose = np.zeros((A.shape[0], C_inv.shape[0]))
     _basic_product_via_python("N", "T", 1, A, C_inv, 0, pinv_transpose)
 
     return pinv_transpose
+
 
 # ----------------------------------------------------
 def _thin_svd_via_method_of_snapshots(snapshots, comm=None):
