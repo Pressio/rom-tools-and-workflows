@@ -979,7 +979,12 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
 # ----------------------------------------------------
 def _transposed_pseudoinverse_via_python(A, comm=None):
     '''
-    Computes the transpose of the pseudoinverse of A.
+    Computes the pseudoinverse of A and returns its *transpose*.
+    Note that returning the transpose(A^+) is because of convenience. 
+    In fact, when A is row-distributed and comm is not None, 
+    then the result has the same distribution of A.
+    If the matrix A is too large, this is the only feasble way 
+    to store the pseudoinverse since no single rank can fully store it.
 
     Parameters:
         - A (np.ndarray): input matrix
@@ -987,30 +992,30 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
 
     Returns:
         - The transpose of A^+, which is given by:
-          (A^+)^T = A (A^*A)^(-1)^T
+          (A^+)^T = A (A^+ A)^(-1)^T
 
     Preconditions:
         - A must be a real, rank-2 matrix
-        - A must have linearly independent columns (i.e. A is injective, and therefore A^*A is invertible)
+        - A must have linearly independent columns (i.e. A is injective, and therefore A^+ A is invertible)
         - If A is distributed, it must be so along its rows
 
     Post-conditions:
         - A and comm are not modified
         - A^+ A = I
     '''
+
     # Check preconditions
     assert A.ndim == 2, "a must be a rank-2 matrix"
     assert np.issubdtype(A.dtype, np.floating)
 
-    # (A* A)
+    # (A+ A)
     C = np.zeros((A.shape[1], A.shape[1]))
     _basic_product_via_python("T", "N", 1, A, A, 0, C, comm)
 
-    # (A* A)^(-1)
+    # (A+ A)^(-1)
     C_inv = np.linalg.inv(C)
-    desc = "dist" if comm is not None else "global"
 
-    # A ((A* A)^(-1))T
+    # A ((A+ A)^(-1))T
     pinv_transpose = np.zeros((A.shape[0], C_inv.shape[0]))
     _basic_product_via_python("N", "T", 1, A, C_inv, 0, pinv_transpose)
 

@@ -23,19 +23,19 @@ def test_transposed_pseudoinverse_dist():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
-    local_matrix, global_matrix = generate_random_local_and_global_arrays_impl((18, 4), comm)
+    local_A, A = generate_random_local_and_global_arrays_impl((18, 4), comm)
 
-    pinv = _transposed_pseudoinverse_via_python(local_matrix, comm)
-    global_pinv = _transposed_pseudoinverse_via_python(global_matrix)
+    pinv_T = _transposed_pseudoinverse_via_python(local_A, comm)
+    # let A be the matrix that we are distributing of which local_A is the local part 
+    # if pinv_T = A^* then we should have A^* A = I
+    local_result = np.zeros((pinv_T.shape[1], local_A.shape[1]), dtype=local_A.dtype)
+    _basic_product_via_python("T", "N", 1, pinv_T, local_A, 0, local_result, comm)
+    assert np.allclose(local_result, np.eye(pinv_T.shape[1]))
 
-    local_result = np.zeros((pinv.shape[1], local_matrix.shape[1]), dtype=local_matrix.dtype)
-    _basic_product_via_python("T", "N", 1, pinv, local_matrix, 0, local_result, comm)
-
-    assert np.allclose(local_result, np.eye(pinv.shape[1]))
-
-    local_pinvs = comm.allgather(pinv)
+    # now verify the result matches the pinv computed on the full A
+    global_pinv = _transposed_pseudoinverse_via_python(A)    
+    local_pinvs = comm.allgather(pinv_T)
     assembled_pinv = np.vstack(local_pinvs)
-
     assert np.allclose(global_pinv, assembled_pinv)
 
 if __name__ == "__main__":
