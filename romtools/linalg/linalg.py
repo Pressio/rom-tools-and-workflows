@@ -16,7 +16,7 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
 
     Parameters:
         a (np.ndarray): input data
-        axis (None or int): the axis along which to compute the maximum. 
+        axis (None or int): the axis along which to compute the maximum.
             If None, computes the max of the flattened array. (default: None)
         comm (MPI_Comm): MPI communicator (default: None)
 
@@ -977,7 +977,52 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
             np.copyto(C, new_C)
 
 # ----------------------------------------------------
-def _thin_svd_via_method_of_snaphosts(snapshots, comm=None):
+def _transposed_pseudoinverse_via_python(A, comm=None):
+    '''
+    Computes the pseudoinverse of A and returns its *transpose*.
+    Note that returning the transpose(A^+) is because of convenience. 
+    In fact, when A is row-distributed and comm is not None, 
+    then the result has the same distribution of A.
+    If the matrix A is too large, this is the only feasble way 
+    to store the pseudoinverse since no single rank can fully store it.
+
+    Parameters:
+        - A (np.ndarray): input matrix
+        - comm (MPI_Comm): MPI communicator (default: None)
+
+    Returns:
+        - The transpose of A^+ computed as: (A^+)^T = A (A^T A)^(-1)^T
+
+    Preconditions:
+        - A must be a real, rank-2 matrix
+        - A must have linearly independent columns
+        - If A is distributed, it must be so along its rows
+
+    Post-conditions:
+        - A and comm are not modified
+        - A^+ A = I
+    '''
+
+    # Check preconditions
+    assert A.ndim == 2, "a must be a rank-2 matrix"
+    assert np.issubdtype(A.dtype, np.floating)
+
+    # (A^T A)
+    C = np.zeros((A.shape[1], A.shape[1]))
+    _basic_product_via_python("T", "N", 1, A, A, 0, C, comm)
+
+    # (A^T A)^(-1)
+    C_inv = np.linalg.inv(C)
+
+    # A ((A^T A)^(-1))^T
+    pinv_transpose = np.zeros((A.shape[0], C_inv.shape[0]))
+    _basic_product_via_python("N", "T", 1, A, C_inv, 0, pinv_transpose)
+
+    return pinv_transpose
+
+
+# ----------------------------------------------------
+def _thin_svd_via_method_of_snapshots(snapshots, comm=None):
     '''
     Performs SVD via method of snapshots.
 
@@ -1002,7 +1047,7 @@ def _thin_svd_via_method_of_snaphosts(snapshots, comm=None):
 
 def _thin_svd_auto_select_algo(M, comm):
     # for now this is it, improve later
-    return _thin_svd_via_method_of_snaphosts(M, comm)
+    return _thin_svd_via_method_of_snapshots(M, comm)
 
 def _thin_svd(M, comm=None, method='auto'):
     '''
@@ -1023,7 +1068,7 @@ def _thin_svd(M, comm=None, method='auto'):
 
     # if user wants a specific algorithm, then call it
     if method == 'method_of_snapshots':
-        return _thin_svd_via_method_of_snaphosts(M, comm)
+        return _thin_svd_via_method_of_snapshots(M, comm)
 
     # otherwise we have some freedom to decide
     if comm is not None and comm.Get_size() > 1:
@@ -1039,7 +1084,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     root_rank  = 0
     my_rank = comm.Get_rank()
 
-    # need to copy into C order because this is needed below when we 
+    # need to copy into C order because this is needed below when we
     # serialize to send/recv with mpi wihout additional copies and also
     # working correctly to store the data when received
     A = np.copy(A_in, order='C') if np.isfortran(A_in) else A_in
@@ -1051,7 +1096,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     # and that the dimensionality makes sense
     if A.size > 0:
         assert A.shape[0] == b.ravel().size
-        assert A.ndim == 2      
+        assert A.ndim == 2
         assert b.ndim <= 2
         if b.ndim == 2:
             assert b.shape[1] == 1
@@ -1124,4 +1169,5 @@ min = _basic_min_via_python
 mean = _basic_mean_via_python
 std = _basic_std_via_python
 product = _basic_product_via_python
+pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
