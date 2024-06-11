@@ -67,7 +67,7 @@ trial basis.
 The goal of ECSW is to find a sparse set of weights to approximate the reduced
 residual with a subset of local test-basis/residual products
 
-$$\\sum_{e \\in \mathcal{E}} \\xi_e \\boldsymbol \\Psi_e^T \\boldsymbol r_e \\approx \\Psi^T \\boldsymbol r$$
+$$\\sum_{e \\in \\mathcal{E}} \\xi_e \\boldsymbol \\Psi_e^T \\boldsymbol r_e \\approx \\Psi^T \\boldsymbol r$$
 
 For more details, consult Chapman et al. 2016 DOI: 10.1002/nme.5332.
 
