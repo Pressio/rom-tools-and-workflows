@@ -63,7 +63,7 @@ def _create_parameter_dict(parameter_names, parameter_values):
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
                  absolute_sampling_directory: str,
-                 evaluation_concurrency = 2,
+                 evaluation_concurrency = 1,
                  number_of_samples: int = 10,
                  random_seed: int = 1):
     '''
@@ -89,19 +89,32 @@ def run_sampling(model: Model,
         run_directories.append(run_directory)
 
     # Run cases
-    with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency) as executor:
-        these_futures = [executor.submit(run_sample,
-                         f'{run_directory_base}{sample_id}', model,
-                         _create_parameter_dict(parameter_names, parameter_samples[sample_id]))
-                         for sample_id in range(number_of_samples)]
+    if evaluation_concurrency == 1:
+        run_times = np.zeros(number_of_samples)
+        for sample_index in range(0, number_of_samples):
+            print("=======  Sample " + str(sample_index) + " ============")
+            print("Running")
+            run_directory = f'{run_directory_base}{sample_index}'
+            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+            run_times[sample_index] = run_sample(run_directory, model, parameter_dict)
+            sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
+            np.savez(f'{sample_stats_save_directory}/sampling_stats',
+                     run_times=run_times)
 
-        # Wait for all processes to finish
-        concurrent.futures.wait(these_futures)
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency) as executor:
+            these_futures = [executor.submit(run_sample, 
+                             f'{run_directory_base}{sample_id}', model, 
+                             _create_parameter_dict(parameter_names, parameter_samples[sample_id])) 
+                             for sample_id in range(number_of_samples)]
 
-    run_times = [future.result() for future in these_futures]
-    sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-    np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
+            # Wait for all processes to finish
+            concurrent.futures.wait(these_futures)
 
+        run_times = [future.result() for future in these_futures]
+        sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
+        np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
+    
     return run_directories
 
 
