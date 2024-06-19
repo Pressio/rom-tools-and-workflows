@@ -86,7 +86,7 @@ jobs:
 
       - name: Run tests (Serial)
         run: |
-          pytest --timeout=500
+          pytest -s --timeout=500
 
       - name: Run tests (MPI, n=1)
         run: |
