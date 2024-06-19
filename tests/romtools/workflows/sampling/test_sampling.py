@@ -28,9 +28,9 @@ class MockModel:
         np.savetxt(f'{run_dir}/passed.txt', np.array([0]), '%i')
 
         # add artificial lag centered around run_id=5
-        # such that all runs with id close to 5 wait less
+        # such that the closer the ID is to 5, the less the task waits.
         # totally arbitrary choice.
-        seconds_to_wait = abs(_get_run_id(run_dir) - 5) * 5
+        seconds_to_wait = abs(_get_run_id(run_dir) - 5) * 2
         time.sleep( seconds_to_wait )
 
         return 0
