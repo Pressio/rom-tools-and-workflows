@@ -30,7 +30,7 @@ class MockModel:
         # add artificial lag centered around run_id=5
         # such that the closer the ID is to 5, the less the task waits.
         # totally arbitrary choice.
-        seconds_to_wait = abs(_get_run_id(run_dir) - 5) * 2
+        seconds_to_wait = abs(_get_run_id(run_dir) - 5) * 4
         time.sleep( seconds_to_wait )
 
         return 0

@@ -46,7 +46,7 @@
 import time
 import numpy as np
 import concurrent.futures
-import multiprocessing as mp
+import multiprocessing
 
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
@@ -70,7 +70,7 @@ def run_sampling(model: Model,
     '''
     Core algorithm
     '''
-    #mp_cntxt=multiprocessing.get_context("spawn")
+    mp_cntxt=multiprocessing.get_context("spawn")
 
     np.random.seed(random_seed)
 
@@ -104,7 +104,7 @@ def run_sampling(model: Model,
                      run_times=run_times)
 
     else:
-        with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
             these_futures = [executor.submit(run_sample, 
                              f'{run_directory_base}{sample_id}', model, 
                              _create_parameter_dict(parameter_names, parameter_samples[sample_id])) 
