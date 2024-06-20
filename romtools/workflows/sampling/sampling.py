@@ -46,6 +46,7 @@
 import time
 import numpy as np
 import concurrent.futures
+import multiprocessing as mp
 
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
@@ -69,6 +70,7 @@ def run_sampling(model: Model,
     '''
     Core algorithm
     '''
+    #mp_cntxt=multiprocessing.get_context("spawn")
 
     np.random.seed(random_seed)
 
