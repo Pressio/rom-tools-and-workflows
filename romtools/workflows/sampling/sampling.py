@@ -70,6 +70,16 @@ def run_sampling(model: Model,
     '''
     Core algorithm
     '''
+
+    # we use here spawn because the default fork causes issues with mpich, 
+    # see here: https://github.com/Pressio/rom-tools-and-workflows/pull/206
+    #
+    # to read more about fork/spawn: 
+    #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing-start-methods
+    #
+    # and    
+    #   https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
+    #
     mp_cntxt=multiprocessing.get_context("spawn")
 
     np.random.seed(random_seed)
