@@ -85,7 +85,6 @@ closely as possible, which can be helpful for defining exit criterion.
 import os
 import time
 import numpy as np
-from numpy.random import sample
 
 import romtools.linalg.linalg as la
 from romtools.workflows.models import QoiModel
