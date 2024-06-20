@@ -7,9 +7,15 @@ name = "romtools"
 dynamic = ["version"]
 requires-python = ">=3.8"
 dependencies = [
-    'docutils', 'importlib-metadata', 'numpy==1.24',
-    'scipy', 'matplotlib', 'pdoc',
-    'pytest==7.4.4', 'pytest-mpi>=0.6', 'pytest-timeout'
+    'docutils', 
+    'importlib-metadata', 
+    'numpy',
+    'scipy', 
+    'matplotlib', 
+    'pdoc',
+    'pytest==7.4.4',   # released Dec 31st, 2023
+    'pytest-mpi>=0.6', # released Jan 8th, 2022
+    'pytest-timeout'
 ]
 # using pytest>=8.0.0 causes CI failures (likely compatibility issues with pytest-mpi)
 
