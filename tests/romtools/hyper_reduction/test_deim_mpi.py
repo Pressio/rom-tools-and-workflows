@@ -44,6 +44,28 @@ def test_deim_indices_mpi():
         assert(np.allclose(global_indices,indices_shmem))
 
 @pytest.mark.mpi(min_size=3)
+def test_deim_basis_mpi():
+    comm = MPI.COMM_WORLD
+
+    if comm.Get_size() != 3:
+        return
+
+    rank = comm.Get_rank()
+
+    U_l, U_g = generate_random_local_and_global_arrays_impl((10, 5), comm)
+    Phi_l, Phi_g = generate_random_local_and_global_arrays_impl((10, 3), comm)
+
+    distributions = [(0,3), (4,6), (7,9)]
+
+    global_indices = np.array([0,1,5,6,8,9])
+    local_indices = np.array([idx - distributions[rank][0] for idx in global_indices if distributions[rank][0] <= idx <= distributions[rank][1]])
+
+    deimPhi_g = deim.deim_get_test_basis(Phi_g, U_g, global_indices) # the serial version is already tested
+    deimPhi = deim.deim_get_test_basis(Phi_l, U_l, local_indices, comm)
+
+    assert np.allclose(deimPhi, deimPhi_g)
+
+@pytest.mark.mpi(min_size=3)
 def test_multi_state_deim_indices_mpi():
     np.random.seed(9243)
     comm = MPI.COMM_WORLD
@@ -59,29 +81,7 @@ def test_multi_state_deim_indices_mpi():
             global_indices = _map_local_and_rank_to_global_assuming_indices_increase_over_increasing_ranks(comm, U_l.shape[1], indices, ranks)
             assert(np.allclose(global_indices, indices_shmem))
 
-
-@pytest.mark.mpi(min_size=3)
-def test_multi_state_deim_samples_mpi():
-    comm = MPI.COMM_WORLD
-
-    if comm.Get_size() != 3:
-        return
-
-    U_l, U_g = generate_random_local_and_global_arrays_impl((3,5,5), comm)
-
-    # Get indices distributed and serially
-    ms_indices_l = deim.multi_state_deim_get_indices(U_l, comm=comm)
-    ms_indices_g = deim.multi_state_deim_get_indices(U_g)
-
-    # Recreate global indices from local
-    rank = comm.Get_rank()
-    dist = [(0,1), (2, 3), (4, 0)]
-    rank_global_indices = ms_indices_l + dist[comm.Get_rank()][0]
-    all_rank_indices = comm.allgather(rank_global_indices)
-    assembled_indices = np.hstack(all_rank_indices)
-
-    assert np.allclose(assembled_indices, ms_indices_g)
-
 if __name__ == "__main__":
     test_deim_indices_mpi()
+    test_deim_basis_mpi()
     test_multi_state_deim_indices_mpi()
