@@ -60,6 +60,28 @@ def test_multi_state_deim_indices_mpi():
             assert(np.allclose(global_indices, indices_shmem))
 
 
+@pytest.mark.mpi(min_size=3)
+def test_multi_state_deim_samples_mpi():
+    comm = MPI.COMM_WORLD
+
+    if comm.Get_size() != 3:
+        return
+
+    U_l, U_g = generate_random_local_and_global_arrays_impl((3,5,5), comm)
+
+    # Get indices distributed and serially
+    ms_indices_l = deim.multi_state_deim_get_indices(U_l, comm=comm)
+    ms_indices_g = deim.multi_state_deim_get_indices(U_g)
+
+    # Recreate global indices from local
+    rank = comm.Get_rank()
+    dist = [(0,1), (2, 3), (4, 0)]
+    rank_global_indices = ms_indices_l + dist[comm.Get_rank()][0]
+    all_rank_indices = comm.allgather(rank_global_indices)
+    assembled_indices = np.hstack(all_rank_indices)
+
+    assert np.allclose(assembled_indices, ms_indices_g)
+
 if __name__ == "__main__":
     test_deim_indices_mpi()
     test_multi_state_deim_indices_mpi()
