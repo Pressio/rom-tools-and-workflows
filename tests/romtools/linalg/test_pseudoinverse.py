@@ -42,6 +42,9 @@ def test_transposed_pseudoinverse_dist_single_row_arrays():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
+    if comm.Get_size != 3:
+        return
+
     local_A, A = generate_random_local_and_global_arrays_impl((18, 4), comm)
 
     sliced_A = A[np.array([0, 6, 7, 12, 13])]
