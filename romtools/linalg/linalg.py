@@ -955,13 +955,15 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
     if (mat1.ndim != 2) | (mat2.ndim != 2):
         raise ValueError("This operation currently supports rank-2 tensors.")
 
+    local_product = np.dot(mat1, mat2)
+
     if comm is not None and comm.Get_size() > 1:
         import mpi4py
         from mpi4py import MPI
 
-        local_product = np.dot(mat1, mat2)
         global_product = np.zeros_like(C, dtype=local_product.dtype)
         comm.Allreduce(local_product, global_product, op=MPI.SUM)
+
         if beta == 0:
             np.copyto(C, global_product)
         else:
@@ -969,21 +971,20 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
             np.copyto(C, new_C)
 
     else:
-        product = np.dot(mat1, mat2)
         if beta == 0:
-            np.copyto(C, product)
+            np.copyto(C, local_product)
         else:
-            new_C = beta * C + product
+            new_C = beta * C + local_product
             np.copyto(C, new_C)
 
 # ----------------------------------------------------
 def _transposed_pseudoinverse_via_python(A, comm=None):
     '''
     Computes the pseudoinverse of A and returns its *transpose*.
-    Note that returning the transpose(A^+) is because of convenience. 
-    In fact, when A is row-distributed and comm is not None, 
+    Note that returning the transpose(A^+) is because of convenience.
+    In fact, when A is row-distributed and comm is not None,
     then the result has the same distribution of A.
-    If the matrix A is too large, this is the only feasble way 
+    If the matrix A is too large, this is the only feasble way
     to store the pseudoinverse since no single rank can fully store it.
 
     Parameters:
@@ -995,6 +996,7 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
 
     Preconditions:
         - A must be a real, rank-2 matrix
+        - A must have more rows than columns
         - A must have linearly independent columns
         - If A is distributed, it must be so along its rows
 
@@ -1002,9 +1004,8 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
         - A and comm are not modified
         - A^+ A = I
     '''
-
     # Check preconditions
-    assert A.ndim == 2, "a must be a rank-2 matrix"
+    assert A.ndim == 2, "A must be a rank-2 matrix"
     assert np.issubdtype(A.dtype, np.floating)
 
     # (A^T A)

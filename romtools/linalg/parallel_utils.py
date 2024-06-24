@@ -65,7 +65,10 @@ def generate_random_local_and_global_arrays_impl(shape, comm, use_int=False):
     if shape == tuple():
         global_arr = np.empty(0)
     elif len(shape) <=3:
-        global_arr = np.random.rand(*shape) if rank == 0 else np.empty(shape)
+        if use_int:
+            global_arr = np.random.randint(0, size=shape) if rank == 0 else np.empty(shape)
+        else:
+            global_arr = np.random.rand(*shape) if rank == 0 else np.empty(shape)
     else:
         raise ValueError(f"This function only supports arrays up to rank 3 (received rank {len(shape)})")
 
