@@ -248,7 +248,7 @@ def run_greedy(fom_model: QoiModel,
         t0 = time.time()
         greedy_file.write("Computing ROM bases \n")
         greedy_file.flush()
-        training_dirs = [f'/rom_{run_directory_prefix}{i}' for i in training_samples]
+        training_dirs = [f'{greedy_directory}/fom/run_{i}' for i in training_samples]
 
         updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
         create_empty_dir(updated_offline_data_dir)
@@ -265,7 +265,7 @@ def run_greedy(fom_model: QoiModel,
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{new_sample_number}'
         create_empty_dir(rom_run_directory)
         create_empty_dir(fom_run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample)
+        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample[0])
 
         rom_model.populate_run_directory(rom_run_directory,parameter_dict)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
