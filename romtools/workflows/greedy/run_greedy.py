@@ -230,7 +230,6 @@ def run_greedy(fom_model: QoiModel,
 
         # Get ROM QoI to calibrate our error estimator
         outer_loop_counter_m_1 = outer_loop_counter - 1
-        rom_run_directory = f'{greedy_directory}/rom/{run_directory_prefix}{sample_with_highest_error_indicator}'
         rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/{run_directory_prefix}{sample_with_highest_error_indicator}'
         rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
         qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
