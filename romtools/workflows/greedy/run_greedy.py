@@ -198,7 +198,7 @@ def run_greedy(fom_model: QoiModel,
                                          np.amax(error_indicators))
         greedy_file.write(f"Sample {sample_with_highest_error_indicator}"
                           " had the highest error indicator of"
-                          f" {max_error_indicators[-1]}")
+                          f" {max_error_indicators[-1]} \n")
 
         outer_loop_counter += 1
         if outer_loop_counter > 1:
@@ -229,7 +229,8 @@ def run_greedy(fom_model: QoiModel,
         fom_time += time.time() - t0
 
         # Get ROM QoI to calibrate our error estimator
-        rom_run_directory = f'{greedy_directory}/rom/{run_directory_prefix}{sample_with_highest_error_indicator}'
+        outer_loop_counter_m_1 = outer_loop_counter - 1
+        rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/{run_directory_prefix}{sample_with_highest_error_indicator}'
         rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
         qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
@@ -246,7 +247,7 @@ def run_greedy(fom_model: QoiModel,
         t0 = time.time()
         greedy_file.write("Computing ROM bases \n")
         greedy_file.flush()
-        training_dirs = [f'/rom_{run_directory_prefix}{i}' for i in training_samples]
+        training_dirs = [f'{greedy_directory}/fom/run_{i}' for i in training_samples]
 
         updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
         create_empty_dir(updated_offline_data_dir)
@@ -263,7 +264,7 @@ def run_greedy(fom_model: QoiModel,
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{new_sample_number}'
         create_empty_dir(rom_run_directory)
         create_empty_dir(fom_run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample)
+        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample[0])
 
         rom_model.populate_run_directory(rom_run_directory,parameter_dict)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
