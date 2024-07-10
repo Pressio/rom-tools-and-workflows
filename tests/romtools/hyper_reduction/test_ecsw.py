@@ -45,7 +45,7 @@ def test_ecsw_matrix():
 
 
 @pytest.mark.mpi_skip
-def test_full_ecsw():
+def test_full_ecsw_fixed_test_basis():
     # test ECSW
     n_var = 2
     nnls = ecsw.ECSWsolverNNLS()
@@ -78,10 +78,52 @@ def test_full_ecsw():
     assert np.allclose(sample_mesh_approx, approx)
 
 
+@pytest.mark.mpi_skip
+def test_full_ecsw_varying_test_basis():
+    # test ECSW
+    n_var = 2
+    n_dof = 10
+    n_snap = 5
+    n_mode = 3
+    nnls = ecsw.ECSWsolverNNLS()
+    residual_snapshots = np.random.normal(size=(n_dof*n_var, n_snap))
+    test_basis = np.zeros((n_snap,n_dof*n_var, n_mode))
+    for i in range(n_snap):
+        test_basis[i],_ = np.linalg.qr(np.random.normal(size=(n_dof*n_var, n_mode)))
+
+    # create corresponding tensors
+    residual_snapshots_tensor = _matrix_to_tensor(n_var,residual_snapshots)
+    test_basis_tensor = np.zeros((n_snap, n_var, n_dof, n_mode))
+    for i in range(n_snap):
+        test_basis_tensor[i] = _matrix_to_tensor(n_var,test_basis[i])
+
+    sample_mesh_indices, sample_mesh_weights = ecsw.ecsw_varying_test_basis(nnls, residual_snapshots_tensor, test_basis_tensor, n_var, 1e-4)
+    full_mesh_weights = np.zeros(residual_snapshots_tensor.shape[1])
+    full_mesh_weights[sample_mesh_indices] = sample_mesh_weights
+
+
+    sample_mesh_test_basis_tensor = test_basis_tensor[:,:,sample_mesh_indices, :]
+    sample_mesh_residual_snapshots_tensor = residual_snapshots_tensor[:,sample_mesh_indices, :]
+    sample_mesh_residual_snapshots = _tensor_to_matrix(sample_mesh_residual_snapshots_tensor)
+    
+    for i in range(n_snap):
+        # Check that the full approximation of the residual snapshots is correct
+        exact = (test_basis[i].T)@residual_snapshots[:,i]
+        approx = (test_basis[i].T)@(np.diag(full_mesh_weights.repeat(n_var))@residual_snapshots[:,i])
+
+        assert np.allclose(exact, approx)
+
+        # Check that the sample mesh indices are correct
+        sample_mesh_test_basis =  _tensor_to_matrix(sample_mesh_test_basis_tensor[i])
+        sample_mesh_residual_snapshot = sample_mesh_residual_snapshots[:,i]
+
+        sample_mesh_approx = (sample_mesh_test_basis.T)@(np.diag(sample_mesh_weights.repeat(n_var))@sample_mesh_residual_snapshot)
+
+        assert np.allclose(sample_mesh_approx, approx)
+
+
 if __name__ == "__main__":
-    test_full_ecsw()
+    test_full_ecsw_fixed_test_basis()
+    test_full_ecsw_varying_test_basis()
     test_ecsw_nnls()
     test_ecsw_matrix()
-
-    
-
