@@ -43,82 +43,84 @@
 # ************************************************************************
 #
 
-'''
-This module implements the abstract class and function required to
-couple a model to Dakota for use in random sampling. To couple to Dakota,
-a user should
-1. Complete the DakotaSamplingCouplerBase for their application of interest
-2. Use the "run_dakota_sampling" function as their Dakota analysis driver
-'''
+"""
+This module implements the class required to couple a model to Dakota.
+To couple to Dakota, a user should
+1. Complete a Model class for their application of interest
+2. Complete a driver script that instantiates the model and calls this coupler for use as the Dakota analysis driver
+"""
 
-import abc
 import sys
-import shutil
 import numpy as np
+import os
+
+from romtools.workflows.models import QoiModel
 
 
-class DakotaSamplingCouplerBase(abc.ABC):
-    '''
-     Abstract class implementation
-    '''
-    def __init__(self, template_directory, template_file):
-        '''
+def _create_parameter_dict(parameter_names, parameter_values):
+    return dict(zip(parameter_names, parameter_values))
+
+
+class DakotaSamplingCoupler:
+
+    def __init__(self, model: QoiModel):
+        """
         Initializes a DakotaSamplingCouplerBase object.
 
         Args:
-            template_directory (str): The directory containing the template
-                file.
-            template_file (str): The name of the template file.
-        '''
-        self.__template_directory = template_directory
-        self.__template_file = template_file
+            model (QoiModel): A FOM or ROM that returns a QoI
+        """
+        self.model = model
 
-    def copy_template_file(self):
-        '''
-        Copies the template file from the specified directory to the current
-        working directory.
-        '''
-        shutil.copy(f'{self.__template_directory}/{self.__template_file}', '.')
+    def run_model(self, run_directory: str, parameter_sample: dict):
+        """
+        Executes the model.
 
-    @abc.abstractmethod
-    def set_parameters_in_input(self, parameter_sample):
-        '''
-        This function is called from a run directory. It needs to update a
-        template file with parameter values defined in parameter_sample.
-        For example, this could be done with dprepro
-        '''
+        Args:
+            run_directory (str): Where the model is run
+            parameter_sample (dict): A dictionary defining a single parameter sample
+        """
+        self.model.run_model(run_directory, parameter_sample)
         pass
 
-    @abc.abstractmethod
-    def run_model(self):
-        '''
-        This function is called from a run directory. It needs to execute our
-        model.
-        '''
-        pass
-
-    @abc.abstractmethod
-    def compute_qoi_and_save_to_file(self):
-        '''
-        This function should compute a QoI and save to file. The output file
+    def compute_qoi_and_save_to_file(
+        self, run_directory, parameter_sample, results_file
+    ):
+        """
+        Computes the QoI and saves it to a file. The output file
         should match what is specified in the Dakota input script
-        '''
+        """
+        qoi = self.model.compute_qoi(run_directory, parameter_sample)
+        np.savetxt(results_file, qoi)
         pass
 
+    def __call__(self):
+        """
+        This class should be used in a driver script that will be called with
+            `python <driver.py> params.in results.out`
 
-def run_dakota_sampling(coupler: DakotaSamplingCouplerBase):
-    '''
-    Basic Dakota analysis driver leveraging the DakotaSamplingCoupler API
+        by Dakota. The parameter space is built by parsing params.in, 
+        while the output QoI will be saved to results.out
+        """
+        # Read parameters from param.in file (1st command line argument)
+        dtype = [("floats", float), ("strings", "U100")]
+        data = np.genfromtxt(sys.argv[1], dtype=dtype, encoding=None, delimiter=" ")
 
-    Args:
-        DakotaSamplingCoupler (DakotaSamplingCouplerBase): An instance of a
-            DakotaSamplingCouplerBase-derived class.
+        data_floats = data["floats"]
+        data_strings = data["strings"]
 
-    '''
-    data = np.genfromtxt(sys.argv[1])[:, 0]
-    num_vars = int(data[0])
-    param_values = np.array(data[1:1+num_vars])
-    coupler.copy_template_file()
-    coupler.set_parameters_in_input(param_values)
-    coupler.run_model()
-    coupler.compute_qoi_and_save_to_file()
+        num_vars = int(data_floats[0])
+        parameter_values = np.array(data_floats[1 : 1 + num_vars])
+        parameter_names = data_strings[1 : 1 + num_vars]
+
+        # Run directory is current dir, results dir is from Dakota
+        run_directory = os.getcwd()
+        results_file = sys.argv[2]
+
+        # Initialize and run ROM
+        parameter_sample = _create_parameter_dict(parameter_names, parameter_values)
+        self.model.populate_run_directory(run_directory, parameter_sample)
+        self.run_model(run_directory, parameter_sample)
+
+        # Save ROM QoI
+        self.compute_qoi_and_save_to_file(run_directory, parameter_sample, results_file)
