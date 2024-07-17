@@ -72,28 +72,6 @@ class DakotaSamplingCoupler:
         """
         self.model = model
 
-    def run_model(self, run_directory: str, parameter_sample: dict):
-        """
-        Executes the model.
-
-        Args:
-            run_directory (str): Where the model is run
-            parameter_sample (dict): A dictionary defining a single parameter sample
-        """
-        self.model.run_model(run_directory, parameter_sample)
-        pass
-
-    def compute_qoi_and_save_to_file(
-        self, run_directory, parameter_sample, results_file
-    ):
-        """
-        Computes the QoI and saves it to a file. The output file
-        should match what is specified in the Dakota input script
-        """
-        qoi = self.model.compute_qoi(run_directory, parameter_sample)
-        np.savetxt(results_file, qoi)
-        pass
-
     def __call__(self):
         """
         This class should be used in a driver script that will be called with
@@ -120,7 +98,8 @@ class DakotaSamplingCoupler:
         # Initialize and run ROM
         parameter_sample = _create_parameter_dict(parameter_names, parameter_values)
         self.model.populate_run_directory(run_directory, parameter_sample)
-        self.run_model(run_directory, parameter_sample)
+        self.model.run_model(run_directory, parameter_sample)
 
-        # Save ROM QoI
-        self.compute_qoi_and_save_to_file(run_directory, parameter_sample, results_file)
+        # Compute model QoI and save it to file
+        qoi = self.model.compute_qoi(run_directory, parameter_sample)
+        np.savetxt(results_file, qoi)
