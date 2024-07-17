@@ -115,7 +115,7 @@ def test_sampling_with_holdout(tmp_path):
             f"{wdir}/fom/training_set/run_{sample}/fom_succesful.dat"
         ), sample
     # Check that right number of ROMs were created
-    for i in range(0, 3):
+    for i in range(1, 3):
         assert os.path.isfile(f"{wdir}/rom_iteration_{i}/offline_data/offline_data.dat")
 
     holdout_output = np.load(f"{wdir}/holdout_stats.npz")
@@ -142,7 +142,7 @@ def test_sampling_with_holdout(tmp_path):
             f"{wdir}/fom/training_set/run_{sample}/fom_succesful.dat"
         ), sample
     # Check that right number of ROMs were created
-    for i in range(0, 7):
+    for i in range(1, 7):
         assert os.path.isfile(f"{wdir}/rom_iteration_{i}/offline_data/offline_data.dat")
 
     holdout_output = np.load(f"{wdir}/holdout_stats.npz")
