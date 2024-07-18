@@ -415,8 +415,9 @@ def ecsw_fixed_test_basis(
 
 def ecsw_varying_test_basis(
     ecsw_solver: ECSWsolver,
-    full_mesh_lhs: np.ndarray,
-    full_mesh_rhs: np.ndarray,
+    residual_snapshots: np.ndarray,
+    test_basis: np.ndarray,
+    n_var: int,
     tolerance: np.double,
 ):
     """
@@ -424,8 +425,9 @@ def ecsw_varying_test_basis(
 
     Args:
         ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
-        full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
-        full_mesh_rhs: (n_snap*n_rom,) numpy array
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where n_snap is the number of test basis snapshots and n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
@@ -433,5 +435,70 @@ def ecsw_varying_test_basis(
         First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
         Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
     """
+
+    (n_var, n_dof, n_snap) = residual_snapshots.shape
+    (n_snap_tb, n_var_tb, n_dof_tb, _) = test_basis.shape
+    assert n_var == n_var_tb
+    assert n_dof == n_dof_tb
+    assert n_snap == n_snap_tb
+
+    # Construct sequence of fixed test basis matrices, then stack them
+    lhs_list = []
+    rhs_list = []
+    for i in range(n_snap):
+        # TODO need to incorporate residual scales here too, perhaps using scaler.py
+        test_basis_i = test_basis[i]
+        residual_snapshot_i = residual_snapshots[:,:,i]
+        residual_snapshot_i = residual_snapshot_i[:, :, np.newaxis]
+        full_mesh_lhs, full_mesh_rhs = _construct_linear_system(
+            residual_snapshot_i, test_basis_i, n_var
+        )
+        lhs_list.append(full_mesh_lhs)
+        rhs_list.append(full_mesh_rhs)
+
+    full_mesh_lhs = np.concatenate(lhs_list,axis=0)
+    full_mesh_rhs = np.concatenate(rhs_list,axis=0)
+
+    return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)
+
+
+def ecsw_lspg_zero_residual(
+    ecsw_solver: ECSWsolver,
+    test_basis: np.ndarray,
+    n_var: int,
+    tolerance: np.double,
+):
+    """
+    ECSW implementation for Least-Squares Petrov-Galerkin projection of a discrete system with near-zero residual snapshots
+    Uses the test basis as a snapshot instead, as proposed in section 3.2 of https://www.sciencedirect.com/science/article/pii/S0045782522004558.
+
+    Args:
+        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
+        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where n_snap is the number of test basis snapshots and n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
+
+    Returns:
+        Tuple of numpy ndarrays.
+        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.
+        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.
+    """
+
+    (n_snap, n_var, _, _) = test_basis.shape
+
+    # Construct sequence of fixed test basis matrices, then stack them
+    lhs_list = []
+    rhs_list = []
+    for i in range(n_snap):
+        # TODO need to incorporate residual scales here too, perhaps using scaler.py
+        test_basis_i = test_basis[i]
+        full_mesh_lhs, full_mesh_rhs = _construct_linear_system(
+            test_basis_i, test_basis_i, n_var
+        )
+        lhs_list.append(full_mesh_lhs)
+        rhs_list.append(full_mesh_rhs)
+
+    full_mesh_lhs = np.concatenate(lhs_list,axis=0)
+    full_mesh_rhs = np.concatenate(rhs_list,axis=0)
 
     return ecsw_solver(full_mesh_lhs, full_mesh_rhs, tolerance)
