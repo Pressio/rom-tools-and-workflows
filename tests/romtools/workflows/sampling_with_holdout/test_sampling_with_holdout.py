@@ -115,11 +115,11 @@ def test_sampling_with_holdout(tmp_path):
             f"{wdir}/fom/training_set/run_{sample}/fom_succesful.dat"
         ), sample
     # Check that right number of ROMs were created
-    for i in range(0, 3):
+    for i in range(1, 3):
         assert os.path.isfile(f"{wdir}/rom_iteration_{i}/offline_data/offline_data.dat")
 
     holdout_output = np.load(f"{wdir}/holdout_stats.npz")
-    assert np.allclose(holdout_output["holdout_set_errs"], np.array([0.4, 0.5, 0.3]))
+    assert np.allclose(holdout_output["holdout_set_errs"], np.array([0.4, 0.5]))
     assert np.allclose(holdout_output["trained_samples"], np.array([0, 1, 2]))
 
     ## Then, test that the method will terminate after reaching the error tolerance on the 7th iter
@@ -133,16 +133,16 @@ def test_sampling_with_holdout(tmp_path):
         assert os.path.isfile(
             f"{wdir}/fom/holdout_set/run_{sample}/fom_succesful.dat"
         ), sample
-    for sample in range(0, 7):
+    for sample in range(0, 8):
         assert os.path.isfile(
             f"{wdir}/fom/training_set/run_{sample}/fom_succesful.dat"
         ), sample
-    for sample in range(7, 8):
+    for sample in range(8, 9):
         assert not os.path.isfile(
             f"{wdir}/fom/training_set/run_{sample}/fom_succesful.dat"
         ), sample
     # Check that right number of ROMs were created
-    for i in range(0, 7):
+    for i in range(1, 8):
         assert os.path.isfile(f"{wdir}/rom_iteration_{i}/offline_data/offline_data.dat")
 
     holdout_output = np.load(f"{wdir}/holdout_stats.npz")
@@ -151,7 +151,7 @@ def test_sampling_with_holdout(tmp_path):
         np.array([0.4, 0.5, 0.3, 0.3, 0.1, 0.01, 1e-7]),
     )
     assert np.allclose(
-        holdout_output["trained_samples"], np.array([0, 1, 2, 3, 4, 5, 6])
+        holdout_output["trained_samples"], np.array([0, 1, 2, 3, 4, 5, 6, 7])
     )
 
 

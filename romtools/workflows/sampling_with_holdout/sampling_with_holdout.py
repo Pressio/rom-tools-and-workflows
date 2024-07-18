@@ -71,6 +71,8 @@ def run_sampling_with_holdout(
     """
     Core algorithm
     """
+    assert max_number_of_rom_samples >= 2
+
     sampling_directory = absolute_work_directory
     create_empty_dir(sampling_directory)
     offline_directory_prefix = "offline_data"
@@ -80,6 +82,7 @@ def run_sampling_with_holdout(
         f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8"
     )
     sampling_file.write("Holdout sampling status \n")
+    sampling_file.flush()
     fom_time = 0.0
     rom_time = 0.0
     basis_time = 0.0
@@ -109,8 +112,10 @@ def run_sampling_with_holdout(
     # Setup FOM directories and run samples to build holdout set.
     t0 = time.time()
     sampling_file.write(f"Building holdout set \n")
+    sampling_file.flush()
     for sample_index in holdout_sample_indices:
         sampling_file.write(f"Running holdout FOM sample {sample_index} \n")
+        sampling_file.flush()
         parameter_dict = _create_parameter_dict(
             parameter_names, parameter_samples[sample_index]
         )
@@ -130,6 +135,7 @@ def run_sampling_with_holdout(
     fom_time += time.time() - t0
 
     sampling_file.write(f"Beginning sampling procedure \n")
+    sampling_file.flush()
 
     converged = False
     training_dirs = []
@@ -138,10 +144,40 @@ def run_sampling_with_holdout(
     rom_qois_holdout_set = np.zeros(holdout_set_size)
     holdout_set_errs = np.array([])
     sample_index = 0
-    while converged is False and sample_index < max_number_of_rom_samples:
-        # Initialize FOM to be run at training set sample
-        sampling_file.write(f"Holdout set iteration # {sample_index}\n")
 
+
+    # Initialize FOM to be run at first two training set samples
+    sampling_file.write(f"Holdout set iteration # {sample_index}\n")
+    sampling_file.flush()
+
+    parameter_dict = _create_parameter_dict(
+        parameter_names, training_samples[sample_index]
+    )
+    fom_run_directory = f"{sampling_directory}/fom/training_set/{run_directory_prefix}{sample_index}"
+
+    # Run FOM at training parameter
+    t0 = time.time()
+    sampling_file.write(f"Running training FOM sample {sample_index} \n")
+    sampling_file.flush()
+    fom_model.run_model(fom_run_directory, parameter_dict)
+    fom_time += time.time() - t0
+
+    sampling_file.write(f"Adding training FOM sample {sample_index} to basis \n")
+    sampling_file.flush()
+    training_params.append(parameter_samples[sample_index])
+    training_dirs.append(fom_run_directory)
+    trained_samples.append(sample_index)
+    sampling_file.write(f"Parameter samples: \n {np.asarray(training_params)}\n")
+    sampling_file.flush()
+
+    # Run FOM at next training parameter
+    sample_index += 1
+
+
+    while converged is False and sample_index < max_number_of_rom_samples:
+
+        sampling_file.write(f"Holdout set iteration # {sample_index}\n")
+        sampling_file.flush()
         parameter_dict = _create_parameter_dict(
             parameter_names, training_samples[sample_index]
         )
@@ -150,18 +186,22 @@ def run_sampling_with_holdout(
         # Run FOM at training parameter
         t0 = time.time()
         sampling_file.write(f"Running training FOM sample {sample_index} \n")
+        sampling_file.flush()
         fom_model.run_model(fom_run_directory, parameter_dict)
         fom_time += time.time() - t0
 
         sampling_file.write(f"Adding training FOM sample {sample_index} to basis \n")
+        sampling_file.flush()
         training_params.append(parameter_samples[sample_index])
         training_dirs.append(fom_run_directory)
         trained_samples.append(sample_index)
         sampling_file.write(f"Parameter samples: \n {np.asarray(training_params)}\n")
+        sampling_file.flush()
 
         # Add FOM sample to ROM basis
         t0 = time.time()
         sampling_file.write(f"Constructing ROM iteration {sample_index} \n")
+        sampling_file.flush()
         updated_offline_data_dir = f"{sampling_directory}/rom_iteration_{sample_index}/{offline_directory_prefix}/"
         create_empty_dir(updated_offline_data_dir)
         rom_model = rom_model_builder.build_from_training_dirs(
@@ -175,8 +215,9 @@ def run_sampling_with_holdout(
             sampling_file.write(
                 f"  Running ROM at holdout sample {holdout_sample_index}\n"
             )
+            sampling_file.flush()
             rom_run_directory = (
-                f"{sampling_directory}/rom/{run_directory_prefix}{holdout_sample_index}"
+                f"{sampling_directory}/rom_iteration_{sample_index}/{run_directory_prefix}{holdout_sample_index}"
             )
 
             parameter_dict = _create_parameter_dict(
@@ -191,10 +232,20 @@ def run_sampling_with_holdout(
         rom_time += time.time() - t0
 
         # If Max QOI error is less than tolerance, converged = True
+        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) 
+        holdout_set_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) / ( np.abs(fom_qois_holdout_set) + 1.e-30)
         holdout_set_err = np.linalg.norm(
-            rom_qois_holdout_set - fom_qois_holdout_set, np.inf
+            holdout_set_errs_at_it, np.inf
         )
+
         holdout_set_errs = np.append(holdout_set_errs, holdout_set_err)
+        sampling_file.write(
+            f"  Max holdout set error = {holdout_set_err}\n"
+        )
+        sampling_file.write(f" Holdout set relative errors: \n {np.asarray(holdout_set_errs_at_it)}\n")
+        sampling_file.write(f" Holdout set absolute errors: \n {np.asarray(holdout_set_abs_errs_at_it)}\n")
+        sampling_file.flush()
+
         if holdout_set_err < tolerance:
             converged = True
             print(f"Holdout sampling run converged with QoI error {holdout_set_err}\n")
