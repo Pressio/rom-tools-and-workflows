@@ -71,6 +71,8 @@ def run_sampling_with_holdout(
     """
     Core algorithm
     """
+    assert max_number_of_rom_samples >= 2
+
     sampling_directory = absolute_work_directory
     create_empty_dir(sampling_directory)
     offline_directory_prefix = "offline_data"
@@ -230,7 +232,8 @@ def run_sampling_with_holdout(
         rom_time += time.time() - t0
 
         # If Max QOI error is less than tolerance, converged = True
-        holdout_set_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) / np.abs(fom_qois_holdout_set)
+        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) 
+        holdout_set_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) / ( np.abs(fom_qois_holdout_set) + 1.e-30)
         holdout_set_err = np.linalg.norm(
             holdout_set_errs_at_it, np.inf
         )
@@ -239,9 +242,8 @@ def run_sampling_with_holdout(
         sampling_file.write(
             f"  Max holdout set error = {holdout_set_err}\n"
         )
-        sampling_file.write(f" Holdout set errors: \n {np.asarray(holdout_set_errs_at_it)}\n")
-        sampling_file.flush()
-
+        sampling_file.write(f" Holdout set relative errors: \n {np.asarray(holdout_set_errs_at_it)}\n")
+        sampling_file.write(f" Holdout set absolute errors: \n {np.asarray(holdout_set_abs_errs_at_it)}\n")
         sampling_file.flush()
 
         if holdout_set_err < tolerance:
