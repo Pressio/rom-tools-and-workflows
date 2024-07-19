@@ -84,7 +84,7 @@ TBD
 ```
 '''
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction']
+__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
 
 __docformat__ = "restructuredtext" # required to generate the license
 
