@@ -76,13 +76,10 @@ class ParameterSpace(abc.ABC):
     @abc.abstractmethod
     def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
         """
-        Generates samples from the parameter space given a set of samples
-        from a uniform distribution on (0,1)
+        Generates samples from the parameter space
 
-        uniform_dist_samples should be of shape
+        Returns np.array of shape
         (number_of_samples, self.get_dimensionality())
-
-        Returns np.array of the same shape
         """
 
 
