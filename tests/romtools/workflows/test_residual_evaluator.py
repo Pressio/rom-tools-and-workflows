@@ -21,6 +21,15 @@ class MockSteadyResidualEvaluator:
     ) -> np.ndarray:
         return np.zeros((3, 10, 1))
 
+    def evaluate_full_residuals_and_jacobian_basis_products(
+        self,
+        run_directory: str,
+        full_model_directory: str,
+        reduced_states: np.ndarray,
+        parameter_sample: dict,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        return np.zeros((3, 10, 1)), np.zeros((1, 3, 10, 2))
+
 
 class MockUnsteadyResidualEvaluator:
     def __init__(self):
@@ -28,8 +37,8 @@ class MockUnsteadyResidualEvaluator:
 
     def compute_reduced_states(self, filename: str) -> np.ndarray:
         return np.zeros((4, 5))
-    
-    def get_times(self,filename: str) -> np.ndarray:
+
+    def get_times(self, filename: str) -> np.ndarray:
         return np.ones(5)
 
     def evaluate_full_residuals(
@@ -42,6 +51,16 @@ class MockUnsteadyResidualEvaluator:
     ) -> np.ndarray:
         return np.zeros((3, 10, 5))
 
+    def evaluate_full_residuals_and_jacobian_basis_products(
+        self,
+        run_directory: str,
+        full_model_directory: str,
+        reduced_states: np.ndarray,
+        parameter_sample: dict,
+        times: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        return np.zeros((3, 10, 5)), np.zeros((5, 3, 10, 2))
+
 
 class MockUnsteadyResidualEvaluatorNonSequentialTemporalData:
     def __init__(self):
@@ -49,8 +68,8 @@ class MockUnsteadyResidualEvaluatorNonSequentialTemporalData:
 
     def compute_reduced_states(self, filename: str) -> np.ndarray:
         return np.zeros((4, 5, 2))
-    
-    def get_times(self,filename: str) -> np.ndarray:
+
+    def get_times(self, filename: str) -> np.ndarray:
         return np.ones((5, 2))
 
     def evaluate_full_residuals(
@@ -62,6 +81,16 @@ class MockUnsteadyResidualEvaluatorNonSequentialTemporalData:
         times: np.ndarray,
     ) -> np.ndarray:
         return np.zeros((3, 10, 5))
+
+    def evaluate_full_residuals_and_jacobian_basis_products(
+        self,
+        run_directory: str,
+        full_model_directory: str,
+        reduced_states: np.ndarray,
+        parameter_sample: dict,
+        times: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        return np.zeros((3, 10, 5)), np.zeros((5, 3, 10, 2))
 
 
 @pytest.mark.mpi_skip
@@ -79,6 +108,13 @@ def test_steady_residual_evaluator(tmp_path):
     )
 
     assert res_snaps.shape == (3, 10, num_dirs)
+
+    res_snaps, jac_snaps = evaluate_and_load_steady_residual_and_jacobian_snapshots(
+        residual_evaluator, fom_dirs, fom_filename, tmp_path
+    )
+
+    assert res_snaps.shape == (3, 10, num_dirs)
+    assert jac_snaps.shape == (num_dirs, 3, 10, 2)
 
     for i in range(num_dirs):
         assert os.path.isdir(f"{tmp_path}/res_" + str(i))
@@ -100,6 +136,13 @@ def test_unsteady_residual_evaluator(tmp_path):
 
     assert res_snaps.shape == (3, 10, num_dirs * 5)
 
+    res_snaps, jac_snaps = evaluate_and_load_unsteady_residual_and_jacobian_snapshots(
+        residual_evaluator, fom_dirs, fom_filename, tmp_path
+    )
+
+    assert res_snaps.shape == (3, 10, num_dirs * 5)
+    assert jac_snaps.shape == (num_dirs * 5, 3, 10, 2)
+
     for i in range(num_dirs):
         assert os.path.isdir(f"{tmp_path}/res_" + str(i))
 
@@ -119,6 +162,13 @@ def test_unsteady_residual_evaluator_nonsequential_temporal_data(tmp_path):
     )
 
     assert res_snaps.shape == (3, 10, num_dirs * 5)
+
+    res_snaps, jac_snaps = evaluate_and_load_unsteady_residual_and_jacobian_snapshots(
+        residual_evaluator, fom_dirs, fom_filename, tmp_path
+    )
+
+    assert res_snaps.shape == (3, 10, num_dirs * 5)
+    assert jac_snaps.shape == (num_dirs * 5, 3, 10, 2)
 
     for i in range(num_dirs):
         assert os.path.isdir(f"{tmp_path}/res_" + str(i))
