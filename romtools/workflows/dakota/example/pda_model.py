@@ -5,7 +5,7 @@ import numpy as np
 import yaml
 import romtools as rt
 from romtools.workflows.models import QoiModel
-from romtools.workflows.dakota.sampling import DakotaSamplingCoupler
+from romtools.workflows.dakota.dakota_coupler import run_model_for_dakota
 import pickle
 import pathlib
 
@@ -46,7 +46,5 @@ class PDA_Model(rt.workflows.models.QoiModel):
 # Define FOM
 fom_model = PDA_Model()
 
-# Define coupler
-dakota_model = DakotaSamplingCoupler(fom_model)
 # Run coupler
-dakota_model()
+run_model_for_dakota(fom_model)
