@@ -72,11 +72,9 @@ The Python library, called `romtools`, contains abstract interfaces and function
   - ROM/FOM exploitation via sampling
   - ROM/FOM exploitation via Dakota-driven sampling
 
-# Demos/HOWTOs
+# Demos/tutorials
 
-In this section, we present some demos/examples showing how to use `romtools` in practice.
-
-TBD
+Please see https://pressio.github.io/rom-tools-and-workflows-demos for demos and tutorials
 
 # License
 ```plaintext
@@ -84,7 +82,7 @@ TBD
 ```
 '''
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction']
+__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
 
 __docformat__ = "restructuredtext" # required to generate the license
 

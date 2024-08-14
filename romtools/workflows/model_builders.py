@@ -9,6 +9,11 @@ from typing import Protocol, List
 from romtools.workflows.models import *
 
 class ModelBuilder(Protocol):
+    '''
+    Main protocol for a ModelBuilder.
+
+    Methods:
+    '''
     def __init__(self):
         pass
 
@@ -17,6 +22,12 @@ class ModelBuilder(Protocol):
 
 
 class QoiModelBuilder(Protocol):
+    '''
+    Main protocol for a QoiModelBuilder.
+
+    Methods:
+    '''
+
     def __init__(self):
         pass
 
@@ -25,6 +36,12 @@ class QoiModelBuilder(Protocol):
 
 
 class QoiModelWithErrorEstimateBuilder(Protocol):
+    '''
+    Main protocol for a QoiModelWithErrorEstimateBuilder.
+
+    Methods:
+    '''
+
     def __init__(self):
         pass
 
