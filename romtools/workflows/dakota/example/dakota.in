@@ -1,0 +1,40 @@
+environment
+    tabular_data
+        tabular_data_file='uqsampling.dat'
+    error_file "dakota.err"
+        write_restart "dakota.rst"
+        top_method_pointer "UQ"
+
+method
+    id_method "UQ"
+    sampling
+        sample_type lhs
+        seed 12345
+        samples 5
+    
+variables
+    uniform_uncertain 2
+    descriptors 'D' 'k'
+    lower_bounds = 0.001 0.001
+    upper_bounds = 0.0012 0.0012
+
+interface
+    id_interface = "interface_uq"
+    analysis_drivers "python3 ../../pda_model.py"
+        fork
+            parameters_file "params.in"
+            results_file "results.out"
+            file_save
+            work_directory
+                named "workdir/fom_run"
+                directory_tag
+                directory_save
+            failure_capture
+                recover -1
+
+responses
+    id_responses "responses1"
+    response_functions 1
+    descriptors 'unorm'
+    no_gradients
+    no_hessians
