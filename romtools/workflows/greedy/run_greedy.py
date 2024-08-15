@@ -84,7 +84,6 @@ closely as possible, which can be helpful for defining exit criterion.
 Alternatively, if `calibrated_error` is set to `False`, then the scaling factor $C$ will always be $1$.
 '''
 
-import os
 import time
 import numpy as np
 
@@ -114,8 +113,8 @@ def run_greedy(fom_model: QoiModel,
     offline_directory_prefix = 'offline_data'
 
     run_directory_prefix = "run_"
-    greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8")
-    greedy_file.write("Greedy reduced basis status \n")
+    with open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8") as greedy_file:
+        greedy_file.write("Greedy reduced basis status \n")
     fom_time = 0.
     rom_time = 0.
     basis_time = 0.

@@ -1,10 +1,4 @@
 import numpy as np
-try:
-    import mpi4py
-    from mpi4py import MPI
-except ModuleNotFoundError:
-    print("module 'mpi4py' is not installed")
-
 
 def assert_axis_is_none_or_within_rank(a, axis):
     """Simple helper function to assert that the given axis is valid for the given array."""

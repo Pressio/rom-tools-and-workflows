@@ -94,7 +94,7 @@ def run_sampling(model: Model,
         sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats',
                  run_times=run_times)
-        
+
     return run_directories
 
 

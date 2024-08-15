@@ -67,4 +67,3 @@ class QoiModelWithErrorEstimate(QoiModel, Protocol):
         AFTER run_model has been run
         '''
         pass
-

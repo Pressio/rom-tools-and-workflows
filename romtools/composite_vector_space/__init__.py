@@ -43,9 +43,9 @@
 # ************************************************************************
 #
 
-from romtools.vector_space import VectorSpace
 from typing import List
 import numpy as np
+from romtools.vector_space import VectorSpace
 
 
 class CompositeVectorSpace:

@@ -50,10 +50,10 @@ To couple to Dakota, a user should
 2. Complete a driver script that instantiates the model and calls this coupler for use as the Dakota analysis driver
 """
 
-import sys
-import numpy as np
 import os
+import sys
 import time
+import numpy as np
 
 from romtools.workflows.models import QoiModel
 

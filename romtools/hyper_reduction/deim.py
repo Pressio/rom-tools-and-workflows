@@ -92,26 +92,26 @@ class _dist_deim_data:
 
 def _deim_get_indices_distributed(U, comm):
     m = np.shape(U)[1]
-    local_index, foundRank = la.argmax(np.abs(U[:, 0]), comm)
-    result = _dist_deim_data(local_index, foundRank)
+    local_index, found_rank = la.argmax(np.abs(U[:, 0]), comm)
+    result = _dist_deim_data(local_index, found_rank)
     if m == 1:
         return result.local_indices, result.owning_ranks
 
-    myRank = comm.Get_rank()
+    my_rank = comm.Get_rank()
     LHS, RHS, C = np.array([]), np.array([]), np.array([])
     for ell in range(1, m):
-        indices = result.local_indices[result.owning_ranks==myRank]
+        indices = result.local_indices[result.owning_ranks==my_rank]
         LHS = np.array([]) if indices.size == 0 else U[indices, 0:ell]
         RHS = np.array([]) if indices.size == 0 else U[indices, ell]
 
         A, b = la.move_distributed_linear_system_to_rank_zero(LHS, RHS, comm)
-        if myRank == 0:
+        if my_rank == 0:
             C = np.linalg.solve(A, b)
         C = comm.bcast(C, root=0)
 
         residual = U[:, ell] - U[:, 0:ell] @ C
-        local_index, foundRank = la.argmax(np.abs(residual), comm)
-        result.append(local_index, foundRank)
+        local_index, found_rank = la.argmax(np.abs(residual), comm)
+        result.append(local_index, found_rank)
 
     return result.local_indices, result.owning_ranks
 
@@ -159,7 +159,7 @@ def _deim_multi_state_get_indices_distributed(U, comm):
     for i in range(0, n_var):
         data_matrix = U[i]
         indices, ranks = deim_get_indices(data_matrix, comm)
-        # print(myRank, ":::", indices, ranks)
+        # print(my_rank, ":::", indices, ranks)
         all_local_indices = np.append(all_local_indices, indices)
         all_ranks = np.append(all_ranks, ranks)
 
@@ -172,14 +172,13 @@ def _deim_multi_state_get_indices_distributed(U, comm):
     inds = M[1,:].argsort()
     M = M[:, inds]
 
-    '''
-    once we are here, M is sorted based on the ranks, but could look like this:
+    # once we are here, M is sorted based on the ranks, but could look like this:
 
-    M = [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6] 
-        [ 0  0  0  0  0  0  0  1  1  1  1  2  2  2  2  2  2]
+    # M = [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6]
+    #     [ 0  0  0  0  0  0  0  1  1  1  1  2  2  2  2  2  2]
 
-    we do an additional step where we sort based on the local index within each rank
-    '''
+    # we do an additional step where we sort based on the local index within each rank
+
     rank_ids = np.unique(M[1,:])
     for rank in rank_ids:
         locs = np.where(M[1,:] == rank)

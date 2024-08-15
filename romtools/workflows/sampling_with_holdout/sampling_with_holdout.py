@@ -43,7 +43,6 @@
 # ************************************************************************
 #
 
-import os
 import time
 import numpy as np
 
@@ -78,11 +77,9 @@ def run_sampling_with_holdout(
     offline_directory_prefix = "offline_data"
 
     run_directory_prefix = "run_"
-    sampling_file = open(
-        f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8"
-    )
-    sampling_file.write("Holdout sampling status \n")
-    sampling_file.flush()
+    with open(f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8") as sampling_file:
+        sampling_file.write("Holdout sampling status \n")
+        sampling_file.flush()
     fom_time = 0.0
     rom_time = 0.0
     basis_time = 0.0
@@ -111,7 +108,7 @@ def run_sampling_with_holdout(
 
     # Setup FOM directories and run samples to build holdout set.
     t0 = time.time()
-    sampling_file.write(f"Building holdout set \n")
+    sampling_file.write("Building holdout set \n")
     sampling_file.flush()
     for sample_index in holdout_sample_indices:
         sampling_file.write(f"Running holdout FOM sample {sample_index} \n")
@@ -134,7 +131,7 @@ def run_sampling_with_holdout(
             )
     fom_time += time.time() - t0
 
-    sampling_file.write(f"Beginning sampling procedure \n")
+    sampling_file.write("Beginning sampling procedure \n")
     sampling_file.flush()
 
     converged = False
@@ -232,7 +229,7 @@ def run_sampling_with_holdout(
         rom_time += time.time() - t0
 
         # If Max QOI error is less than tolerance, converged = True
-        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) 
+        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set)
         holdout_set_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) / ( np.abs(fom_qois_holdout_set) + 1.e-30)
         holdout_set_err = np.linalg.norm(
             holdout_set_errs_at_it, np.inf

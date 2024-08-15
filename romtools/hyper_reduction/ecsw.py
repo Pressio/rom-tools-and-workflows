@@ -230,13 +230,10 @@ class ECSWsolverNNLS(ECSWsolver):
                 sample_mesh_indicies.append(mesh_index)
 
             print(
-                "iteration={}  sample mesh size={}  residual norm={:.8e}  ratio to target={:.8e} ".format(
-                    iters,
-                    len(sample_mesh_indicies),
-                    residual_norm,
-                    residual_norm / target_norm,
-                )
+                f"iteration={iters}  sample mesh size={len(sample_mesh_indicies)}  "
+                f"residual norm={residual_norm:.8e}  ratio to target={residual_norm / target_norm:.8e}"
             )
+
             iters += 1
 
             # compute corresponding weights
@@ -274,12 +271,8 @@ class ECSWsolverNNLS(ECSWsolver):
 
                 # increment iteration count
                 print(
-                    "iteration={}  sample mesh size={}  residual norm={:.8e}  ratio to target={:.8e} ".format(
-                        iters,
-                        len(sample_mesh_indicies),
-                        residual_norm,
-                        residual_norm / target_norm,
-                    )
+                    f"iteration={iters}  sample mesh size={len(sample_mesh_indicies)}  "
+                    f"residual norm={residual_norm:.8e}  ratio to target={residual_norm / target_norm:.8e}"
                 )
                 iters += 1
                 full_mesh_weights = 1 * full_mesh_weights_new
@@ -300,19 +293,14 @@ class ECSWsolverNNLS(ECSWsolver):
 
             if residual_norm_unchanged >= self.max_iters_res_unchanged:
                 print(
-                    "WARNING: Norm has not changed more than {} in {} steps, exiting NNLS".format(
-                        self.zero_tol, self.max_iters_res_unchanged
-                    )
+                    f"WARNING: Norm has not changed more than {self.zero_tol} "
+                    f"in {self.max_iters_res_unchanged} steps, exiting NNLS."
                 )
 
         print("NNLS complete! Final stats:")
         print(
-            "iteration={}  sample mesh size={}  residual norm={:.8e}  ratio to target={:.8e} ".format(
-                iters,
-                len(sample_mesh_indicies),
-                residual_norm,
-                residual_norm / target_norm,
-            )
+            f"iteration={iters}  sample mesh size={len(sample_mesh_indicies)}  "
+            f"residual norm={residual_norm:.8e}  ratio to target={residual_norm / target_norm:.8e}"
         )
 
         return np.array(sample_mesh_indicies, dtype=int), sample_mesh_weights
