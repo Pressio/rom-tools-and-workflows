@@ -113,8 +113,8 @@ def run_greedy(fom_model: QoiModel,
     offline_directory_prefix = 'offline_data'
 
     run_directory_prefix = "run_"
-    with open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8") as greedy_file:
-        greedy_file.write("Greedy reduced basis status \n")
+    greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8") # pylint: disable=consider-using-with
+    greedy_file.write("Greedy reduced basis status \n")
     fom_time = 0.
     rom_time = 0.
     basis_time = 0.

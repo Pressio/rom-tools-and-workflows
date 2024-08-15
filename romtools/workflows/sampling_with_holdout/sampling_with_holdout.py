@@ -77,9 +77,9 @@ def run_sampling_with_holdout(
     offline_directory_prefix = "offline_data"
 
     run_directory_prefix = "run_"
-    with open(f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8") as sampling_file:
-        sampling_file.write("Holdout sampling status \n")
-        sampling_file.flush()
+    sampling_file = open(f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8") # pylint: disable=consider-using-with
+    sampling_file.write("Holdout sampling status \n")
+    sampling_file.flush()
     fom_time = 0.0
     rom_time = 0.0
     basis_time = 0.0
