@@ -17,7 +17,7 @@ def test_npz_output(tmp_path: Path, vector_space: VectorSpace) -> None:
 
 
 def test_hdf5_output(tmp_path: Path, vector_space: VectorSpace) -> None:
-    if not outputter.HDF5_AVAILABLE:
+    if not outputter.hdf5_available:
         pytest.skip("h5py not installed")
     else:
         outputter.hdf5_output(output_filename=f'{tmp_path}/test.hdf5',
