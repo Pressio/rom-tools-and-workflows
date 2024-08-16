@@ -60,7 +60,7 @@ def test_python_std_examples_mpi():
         exp_ex3_ax0 = full_ex3_ax0_std[slices[rank][0]:slices[rank][1],:]
         assert np.allclose(res_ex3_ax0, exp_ex3_ax0)
 
-        res_ex3_ax1 = _basic_std_via_python(local_arr_3, axis=1, testing=True, comm=comm)
+        res_ex3_ax1 = _basic_std_via_python(local_arr_3, axis=1, comm=comm)
         exp_ex3_ax1 = np.std(global_arr_3, axis=1)
         assert np.allclose(res_ex3_ax1, exp_ex3_ax1)
 

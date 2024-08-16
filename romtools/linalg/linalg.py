@@ -298,12 +298,9 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
     tmp[1] = local_max_index
     tmp[2] = comm.Get_rank() if comm is not None else 0
 
-    # Find distributed max index
+    # Define custom MPI op to find distributed max index
     from mpi4py import MPI
-
-    # Define custom MPI op
-    def mycomp(A_mem,B_mem):
-        # Get matrices from memory buffers
+    def mycomp(A_mem,B_mem,dt): # pylint: disable=unused-argument
         A = np.frombuffer(A_mem)
         B = np.frombuffer(B_mem)
 
