@@ -1,3 +1,7 @@
+"""
+Helper functions for testing and writing parallel code with the romtools.linalg module.
+"""
+
 import numpy as np
 
 def assert_axis_is_none_or_within_rank(a, axis):

@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name
+
 from typing import Protocol
 import numpy as np
 from scipy.stats import qmc

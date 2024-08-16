@@ -115,7 +115,8 @@ class ECSWsolver(abc.ABC):
         Compute the sample mesh DoF indices and corresponding weights
 
         Args:
-            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension,
+            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots,
+                                                                n_rom is the ROM dimension,
             and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
             full_mesh_rhs: (n_snap*n_rom,) numpy array
             tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
@@ -136,8 +137,9 @@ class ECSWsolver(abc.ABC):
 
 class ECSWsolverNNLS(ECSWsolver):
     """
-    Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs compute sample mesh indices and weights for ECSW using the non-negative least squares algorithm from Chapman et al. 2016
-    DOI: 10.1002/nme.5332.
+    Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs,
+    compute sample mesh indices and weights for ECSW using the non-negative least squares algorithm
+    from Chapman et al. 2016 DOI: 10.1002/nme.5332.
     """
 
     def __init__(self, solver_param_dict: dict = None):
@@ -165,13 +167,17 @@ class ECSWsolverNNLS(ECSWsolver):
         self, full_mesh_lhs: np.ndarray, full_mesh_rhs: np.array, tolerance: np.double
     ):
         """
-        Compute the sample mesh DoF indices and corresponding weights using the non-negative least squares algorithm from Chapman et al. 2016
-        DOI: 10.1002/nme.5332.
+        Compute the sample mesh DoF indices and corresponding weights using the non-negative least squares algorithm
+        from Chapman et al. 2016 DOI: 10.1002/nme.5332.
 
-        min || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2^2 s.t. full_mesh_weights >=0, || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2 < tolerance ||full_mesh_rhs||_2
+        min || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2^2 s.t. full_mesh_weights >=0, ||
+        full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2 < tolerance ||full_mesh_rhs||_2
 
         Args:
-            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots, n_rom is the ROM dimension, and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
+            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where
+                                n_snap is the number of residual snapshots,
+                                n_rom is the ROM dimension, and
+                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)
             full_mesh_rhs: (n_snap*n_rom,) numpy array
             tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
@@ -338,9 +344,13 @@ def _construct_linear_system(
     Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection.
 
     Args:
-        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where
+                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),
+                                n_var is the number of residual variables, and
+                                n_snap is the number of snapshots
         test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
-        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,
+                                                           x-momentum, y-momentum, z-momentum, and energy)
 
     Returns:
         full_mesh_lhs: (n_snap*n_mode, n_dof) numpy ndarray, the left-hand side of the linear system required by the ECSW solver
@@ -382,9 +392,13 @@ def ecsw_fixed_test_basis(
 
     Args:
         ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
-        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where
+                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),
+                                n_var is the number of residual variables, and
+                                n_snap is the number of snapshots
         test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.
-        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,
+                                                      x-momentum, y-momentum, z-momentum, and energy)
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
@@ -413,9 +427,15 @@ def ecsw_varying_test_basis(
 
     Args:
         ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
-        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements), n_var is the number of residual variables, and n_snap is the number of snapshots
-        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where n_snap is the number of test basis snapshots and n_mode is the number of modes in the basis.
-        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where
+                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),
+                                n_var is the number of residual variables,
+                                and n_snap is the number of snapshots
+        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where
+                                n_snap is the number of test basis snapshots and
+                                n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,
+                                                      x-momentum, y-momentum, z-momentum, and energy)
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:
@@ -458,12 +478,16 @@ def ecsw_lspg_zero_residual(
 ):
     """
     ECSW implementation for Least-Squares Petrov-Galerkin projection of a discrete system with near-zero residual snapshots
-    Uses the test basis as a snapshot instead, as proposed in section 3.2 of https://www.sciencedirect.com/science/article/pii/S0045782522004558.
+    Uses the test basis as a snapshot instead, as proposed in section 3.2 of
+    https://www.sciencedirect.com/science/article/pii/S0045782522004558.
 
     Args:
         ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.
-        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where n_snap is the number of test basis snapshots and n_mode is the number of modes in the basis.
-        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass, x-momentum, y-momentum, z-momentum, and energy)
+        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where
+                        n_snap is the number of test basis snapshots and
+                        n_mode is the number of modes in the basis.
+        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,
+                                                      x-momentum, y-momentum, z-momentum, and energy)
         tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples
 
     Returns:

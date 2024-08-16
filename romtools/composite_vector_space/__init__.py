@@ -97,7 +97,9 @@ class CompositeVectorSpace:
         n_vars = int(n_vars)
         total_number_of_bases = int(total_number_of_bases)
         self.__extent = np.array([n_vars, nx, total_number_of_bases], dtype='int')
-        assert np.allclose(np.diff(dims), np.zeros(dims.size-1)), " Error constructing composite vector space, not all spaces have the same spatial dimension "
+        assert np.allclose(np.diff(dims),
+                           np.zeros(dims.size-1)
+               ), "Error constructing composite vector space, not all spaces have the same spatial dimension"
 
     def __construct_global_shift_vector(self):
         # Constructs the shift vector for the composite vector space

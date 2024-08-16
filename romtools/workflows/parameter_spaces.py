@@ -156,7 +156,8 @@ class UniformParameterSpace(HomogeneousParameterSpace):
     """
 
     def __init__(self, parameter_names: Iterable[str], lower_bounds, upper_bounds, sampler: Sampler):
-        super().__init__(parameter_names, sampler=sampler, param_constructor=UniformParameter, lower_bound=lower_bounds, upper_bound=upper_bounds)
+        super().__init__(parameter_names, sampler=sampler, param_constructor=UniformParameter,
+                         lower_bound=lower_bounds, upper_bound=upper_bounds)
 
 
 class GaussianParameterSpace(HomogeneousParameterSpace):

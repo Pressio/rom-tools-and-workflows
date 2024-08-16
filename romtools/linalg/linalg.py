@@ -1073,6 +1073,27 @@ def _thin_svd(M, comm=None, method='auto'):
 
 
 def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
+    """
+    Gathers a distributed linear system (A, b) from multiple MPI ranks to rank 0.
+
+    Preconditions:
+      - A_in is a rank-2 tensor (2D array) representing a portion of the global matrix A.
+      - b_in is a rank-1 or rank-2 tensor (1D or 2D array) representing a portion of the global vector b.
+      - A_in and b_in are distributed row-wise across MPI ranks.
+
+    Returns:
+      - A_g (numpy.ndarray): The global matrix A assembled on rank 0.
+      - b_g (numpy.ndarray): The global vector b assembled on rank 0.
+
+    Postconditions:
+      - On rank 0, A_g and b_g contain the fully assembled matrix and vector, respectively.
+      - On other ranks, A_g and b_g are dummy arrays with no meaningful content.
+      - The input arrays A_in and b_in are not modified.
+
+    Notes:
+      - The function ensures that all data is gathered without additional copies or unnecessary data movement.
+      - Only rank 0 ends up with the complete system; other ranks have placeholder arrays.
+    """
     from mpi4py import MPI
 
     root_rank  = 0

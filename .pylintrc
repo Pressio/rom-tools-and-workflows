@@ -216,8 +216,17 @@ good-names=i, # loop variable
            RHS,
            LHS,
            F,
+           _,
+           U, # matrices (next several)
+           A,
+           A_g,
+           tag_A,
+           B,
            C,
-           _
+           new_C,
+           C_inv,
+           M,
+           PU_pinv
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
@@ -536,7 +545,7 @@ min-public-methods=1
 
 # List of modules that can be imported at any level, not just the top level
 # one.
-allow-any-import-level=
+allow-any-import-level=mpi4py, mpi4py.MPI
 
 # Allow wildcard imports from modules that define __all__.
 allow-wildcard-with-all=no
