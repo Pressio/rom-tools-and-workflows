@@ -21,7 +21,7 @@ class Model(Protocol):
         This function is called from the base directory and is
         responsible for populating the run directory located at run_directory.
 
-        Examples would be setuping up input files, linking mesh files.
+        Examples would be setting up input files, linking mesh files.
 
         Args:
           run_directory (str): Absolute path to run_directory.
@@ -33,7 +33,7 @@ class Model(Protocol):
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
         '''
         This function is called from the base directory. It needs to execute our
-        model.  If the model runs succesfully, return 0.  If fails, return 1.
+        model. If the model runs successfully, return 0. If fails, return 1.
 
         Args:
           run_directory (str): Absolute path to run_directory.
