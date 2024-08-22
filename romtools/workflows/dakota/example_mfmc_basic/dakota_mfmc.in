@@ -1,0 +1,112 @@
+environment
+    output_precision = 16
+
+method,
+        solution_mode
+          offline_pilot
+    multifidelity_sampling
+        max_function_evaluations = 50
+        pilot_samples = 10
+        seed = 8674132
+    output debug
+    
+model, 
+    variables_pointer = 'HF_VARS'
+    surrogate ensemble
+        truth_model = 'HF'
+        unordered_model_fidelities = 'LF1' 'LF2'
+
+model,
+    id_model = 'LF1'
+    variables_pointer = 'LF1_VARS'
+    interface_pointer = 'LF1_INT'
+        simulation
+            cost_recovery_metadata = 'core_time'
+
+model,
+    id_model = 'LF2'
+    variables_pointer = 'LF2_VARS'
+    interface_pointer = 'LF2_INT'
+        simulation
+            cost_recovery_metadata = 'core_time'
+
+model,
+    id_model = 'HF'
+    variables_pointer = 'HF_VARS'
+    interface_pointer = 'HF_INT'
+        simulation
+            cost_recovery_metadata = 'core_time'       
+
+variables
+    id_variables = 'LF1_VARS'
+        uniform_uncertain 2
+        descriptors 'D' 'k'
+        lower_bounds = 0.001 0.001
+        upper_bounds = 0.0012 0.0012
+
+variables
+    id_variables = 'LF2_VARS'
+        uniform_uncertain 2
+        descriptors 'D' 'k'
+        lower_bounds = 0.001 0.001
+        upper_bounds = 0.0012 0.0012
+
+variables
+    id_variables = 'HF_VARS'
+        uniform_uncertain 2
+        descriptors 'D' 'k'
+        lower_bounds = 0.001 0.001
+        upper_bounds = 0.0012 0.0012
+        discrete_state_set integer = 1
+            initial_state = 2
+            set_values = 2
+              descriptors = 'ModelForm'
+interface
+    id_interface = "LF1_INT"
+    analysis_drivers "python3 ../../pda_model_LF1.py"
+        fork
+            parameters_file "params.in"
+            results_file "results.out"
+            file_save
+            work_directory
+                named "workdir/LF1_run"
+                directory_tag
+                directory_save
+            failure_capture
+                recover -1
+
+interface
+    id_interface = "LF2_INT"
+    analysis_drivers "python3 ../../pda_model_LF2.py"
+        fork
+            parameters_file "params.in"
+            results_file "results.out"
+            file_save
+            work_directory
+                named "workdir/LF2_run"
+                directory_tag
+                directory_save
+            failure_capture
+                recover -1
+
+interface
+    id_interface = "HF_INT"
+    analysis_drivers "python3 ../../pda_model.py"
+        fork
+            parameters_file "params.in"
+            results_file "results.out"
+            file_save
+            work_directory
+                named "workdir/fom_run"
+                directory_tag
+                directory_save
+            failure_capture
+                recover -1
+
+responses
+    id_responses "responses1"
+    response_functions 1
+    descriptors 'unorm'
+    no_gradients
+    no_hessians
+        metadata 'core_time'
