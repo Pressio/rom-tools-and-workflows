@@ -53,6 +53,7 @@ To couple to Dakota, a user should
 import sys
 import numpy as np
 import os
+import time
 
 from romtools.workflows.models import QoiModel
 
@@ -61,13 +62,24 @@ def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
 
-def run_model_for_dakota(model: QoiModel):
+def run_model_for_dakota(
+    model: QoiModel,
+    multifidelity_flag: bool = False,
+    add_core_time_metadata: bool = False,
+):
     """
     This function should be used in a driver script that will be called with
         `python <driver.py> params.in results.out`
 
     by Dakota. The parameter space is built by parsing params.in,
     while the output QoI will be saved to results.out
+
+    Args:
+        model: rom-tools model instance (FOM or ROM)
+        multifidelity_flag: True if being used with Dakota's multifidelity (MF) tools
+        add_core_time_metadata: True if computational cost should be included in QoI file
+                                Useful for MF UQ when model does not have a cost model.
+
     """
     # Read parameters from param.in file (1st command line argument)
     dtype = [("floats", float), ("strings", "U100")]
@@ -87,8 +99,17 @@ def run_model_for_dakota(model: QoiModel):
     # Initialize and run ROM
     parameter_sample = _create_parameter_dict(parameter_names, parameter_values)
     model.populate_run_directory(run_directory, parameter_sample)
+    t0 = time.time()
     model.run_model(run_directory, parameter_sample)
+    t = time.time() - t0
 
     # Compute model QoI and save it to file
     qoi = model.compute_qoi(run_directory, parameter_sample)
+
+    if multifidelity_flag:
+        assert qoi.size == 1, "For MF UQ, a scalar QoI is required"
+
+    if add_core_time_metadata:
+        qoi = np.append(qoi, t)  # Cost metadata for Q
+
     np.savetxt(results_file, qoi)
