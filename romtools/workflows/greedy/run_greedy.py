@@ -59,7 +59,7 @@ The algorithm is as follows:
     \\; \\mathbf{u}_{\\mathrm{shift}} = \\mathbf{u}(\\mu_1)$$
  6. We then solve the resulting ROM for the remaining parameter samples $\\mathcal{D}_{\\mathrm{train}}$ to
     generate approximate solutions $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$
- 7. For each ROM solution $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$ we compuate an error
+ 7. For each ROM solution $\\mathbf{u}(\\mu), \\mu \\in \\mathcal{D}_{\\mathrm{train}}$ we compute an error
     estimate, $ e \\left(\\mu \\right) $
  8. If the maximum error estimate is less than some tolerance, we exit the algorithm. If not, we:
    - Set $ \\mu^* = \\underset{ \\mu \\in \\mathcal{D}_{\\mathrm{train}} }{ \\mathrm{arg\\; max} } \\; e
@@ -80,6 +80,8 @@ scaling based on $$C = \\frac{\\sum_{i=1}^j | e^q_j| }{ \\sum_{i=1}^j | e_j | }.
 The error at the $j+1$ iteration can be approximated by $C e(\\mu)$.
 This will adaptively scale the error estimate to match the QoI error as
 closely as possible, which can be helpful for defining exit criterion.
+
+Alternatively, if `calibrated_error` is set to `False`, then the scaling factor $C$ will always be $1$.
 '''
 
 import os
@@ -102,7 +104,8 @@ def run_greedy(fom_model: QoiModel,
                absolute_greedy_work_directory: str,
                tolerance: float,
                testing_sample_size: int = 10,
-               random_seed: int = 1):
+               random_seed: int = 1,
+               calibrated_error: bool=True):
     '''
     Main implementation of the greedy algorithm.
     '''
@@ -168,7 +171,7 @@ def run_greedy(fom_model: QoiModel,
 
     converged = False
     max_error_indicators = np.zeros(0)
-    reg = QoIvsErrorIndicatorRegressor()
+    reg = QoIvsErrorIndicatorRegressor(calibrated_error)
     qoi_errors = np.zeros(0)
     predicted_qoi_errors = np.zeros(0)
     greedy_file.flush()
@@ -291,22 +294,24 @@ class QoIvsErrorIndicatorRegressor:
     This class provides a simple linear regression model for estimating the
     scaling factor (c) between QoI error and the error indicator.
     '''
-    def __init__(self):
+    def __init__(self, calibrated_error: bool=True):
         '''
         Initializes the regressor with a default scaling factor of 1.0.
         '''
         self.__c = 1.
+        self.__calibrated_error = calibrated_error
 
     def fit(self, x, y):
         '''
-        Fits the regression model to the provided data points (x, y) to
-        estimate the scaling factor.
+        If calibrated_error was specified, this function fits the regression
+        model to the provided data points (x, y) to estimate the scaling factor.
 
         Args:
             x: Error indicator values.
             y: Corresponding QoI error values.
         '''
-        self.__c = np.mean(y) / np.mean(x)
+        if self.__calibrated_error:
+            self.__c = np.mean(y) / np.mean(x)
 
     def predict(self, x):
         '''

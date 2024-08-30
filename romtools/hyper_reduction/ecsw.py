@@ -44,7 +44,7 @@
 #
 
 """
-Implementation of Energy-conserving sampling and weighting (ECSW)hyper-reduction
+Implementation of Energy-conserving sampling and weighting (ECSW) hyper-reduction
 
 Energy-conserving sampling and weighting (ECSW) is a hyper-reduction approach
 originally developed specifically for solid mechanics problems, but it has

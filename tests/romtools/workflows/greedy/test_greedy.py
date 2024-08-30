@@ -3,7 +3,7 @@ import os
 import numpy as np
 from romtools.workflows.models import *
 from romtools.workflows.model_builders import *
-from romtools.workflows.greedy.run_greedy import run_greedy
+from romtools.workflows.greedy.run_greedy import run_greedy, QoIvsErrorIndicatorRegressor
 from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
 
 
@@ -88,6 +88,23 @@ class MockQoiModelWithErrorEstimate:
 
 
 
+@pytest.mark.mpi_skip
+def test_greedy_error_regressor():
+    calibrated_reg = QoIvsErrorIndicatorRegressor(calibrated_error=True)
+    standard_reg = QoIvsErrorIndicatorRegressor(calibrated_error=False)
+
+    x = np.random.rand(5)
+    y = np.random.rand(5)
+
+    calibrated_reg.fit(x, y)
+    calibrated_prediction = calibrated_reg.predict(x)
+    exp_prediction = np.mean(y) / np.mean(x) * x
+
+    standard_reg.fit(x, y)
+    standard_prediction = standard_reg.predict(x)
+
+    assert np.allclose(calibrated_prediction, exp_prediction)
+    assert np.allclose(standard_prediction, x)
 
 @pytest.mark.mpi_skip
 def test_greedy(tmp_path):
@@ -108,8 +125,7 @@ def test_greedy(tmp_path):
                                             np.array([1, 2, 3]),
                                             sampler=MonteCarloSampler)
 
-
-    run_greedy(QoiModel,RomModelBuilder,my_parameter_space,wdir, 1e-5,5)
+    run_greedy(QoiModel,RomModelBuilder,my_parameter_space,wdir, 1e-5, 5)
 
     # First greedy pass
     foms_samples_run = [0, 1, 4, 2, 5]
@@ -169,3 +185,4 @@ def test_greedy(tmp_path):
 
 if __name__ == "__main__":
     test_greedy(os.getcwd() + '/greedy_test_tmp/')
+    test_greedy_error_regressor()
