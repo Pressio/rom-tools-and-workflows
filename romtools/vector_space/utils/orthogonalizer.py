@@ -76,6 +76,7 @@ class NoOpOrthogonalizer:
         pass
 
     def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
+        '''Returns the input array.'''
         return my_array
 
 
@@ -103,6 +104,15 @@ class EuclideanL2Orthogonalizer:
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
     def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
+        '''
+        Orthogonalizes the input matrix and returns the orthogonalized matrix.
+
+        Args:
+            my_array (np.ndarray): The input matrix to be orthogonalized.
+
+        Returns:
+            np.ndarray: The orthogonalized matrix.
+        '''
         my_array, _ = self.__qr_picked(my_array, mode='reduced')
         return my_array
 

@@ -43,12 +43,12 @@
 # ************************************************************************
 #
 
-"""
+'''
 This module implements the class required to couple a model to Dakota.
 To couple to Dakota, a user should
 1. Complete a Model class for their application of interest
 2. Complete a driver script that instantiates the model and calls this coupler for use as the Dakota analysis driver
-"""
+'''
 
 import os
 import sys
@@ -67,7 +67,7 @@ def run_model_for_dakota(
     multifidelity_flag: bool = False,
     add_core_time_metadata: bool = False,
 ):
-    """
+    '''
     This function should be used in a driver script that will be called with
         `python <driver.py> params.in results.out`
 
@@ -80,7 +80,7 @@ def run_model_for_dakota(
         add_core_time_metadata: True if computational cost should be included in QoI file
                                 Useful for MF UQ when model does not have a cost model.
 
-    """
+    '''
     # Read parameters from param.in file (1st command line argument)
     dtype = [("floats", float), ("strings", "U100")]
     data = np.genfromtxt(sys.argv[1], dtype=dtype, encoding=None, delimiter=" ")

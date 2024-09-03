@@ -1,7 +1,7 @@
-"""
+'''
 Protocol for interfacing with external application to compute residual snapshots
 corresponding to existing state snapshots.
-"""
+'''
 
 from typing import Protocol, Iterable, Tuple
 import numpy as np
@@ -10,12 +10,12 @@ from romtools.workflows.workflow_utils import create_empty_dir
 
 
 class ResidualEvaluator(Protocol):
-    """
+    '''
     Baseline residual evaluator protocol
-    """
+    '''
 
     def compute_reduced_states(self, filename: str) -> np.ndarray:
-        """
+        '''
         Reads the full-order model solution(s) from the specified filename
         and computes the corresponding reduced state(s)
 
@@ -27,7 +27,7 @@ class ResidualEvaluator(Protocol):
             1st dimension: reduced state, 2nd dimension: sample index corresponding full-model
             solution data file.
 
-        """
+        '''
         pass
 
     def evaluate_full_residuals(
@@ -37,7 +37,7 @@ class ResidualEvaluator(Protocol):
         reduced_states: np.ndarray,
         parameter_sample: dict,
     ) -> np.ndarray:
-        """
+        '''
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states
 
@@ -50,7 +50,7 @@ class ResidualEvaluator(Protocol):
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single sample
-        """
+        '''
         pass
 
     def evaluate_full_residuals_and_jacobian_basis_products(
@@ -60,7 +60,7 @@ class ResidualEvaluator(Protocol):
         reduced_states: np.ndarray,
         parameter_sample: dict,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
+        '''
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states
 
@@ -75,17 +75,17 @@ class ResidualEvaluator(Protocol):
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single sample
             `np.ndarray`: The full-order jacobian-basis product in tensor form, should be 4-dimensional, even for a single sample
             1st dimension: sample index, 2nd dimension: variable index, 3rd dimension: spatial index, 4th dimension: modal index
-        """
+        '''
         pass
 
 
 class TransientResidualEvaluator(Protocol):
-    """
+    '''
     Baseline residual evaluator protocol
-    """
+    '''
 
     def compute_reduced_states(self, filename: str) -> np.ndarray:
-        """
+        '''
         Reads the full-order model solution and time stamps from the specified filename
         and computes the corresponding reduced states
 
@@ -98,11 +98,11 @@ class TransientResidualEvaluator(Protocol):
             stencil. If the array is 2-dimensional, it is assumed that the states are sequential
             in time.
 
-        """
+        '''
         pass
 
     def get_times(self, filename: str) -> np.ndarray:
-        """
+        '''
         Reads and outputs time stamps from the specified filename
 
         Args:
@@ -114,7 +114,7 @@ class TransientResidualEvaluator(Protocol):
             array is 3-dimensional; the 2nd dimension contains the time stamps of the other states
             in the time-stencil for a given time stamp.
 
-        """
+        '''
         pass
 
     def evaluate_full_residuals(
@@ -125,7 +125,7 @@ class TransientResidualEvaluator(Protocol):
         parameter_sample: dict,
         times: np.ndarray,
     ) -> np.ndarray:
-        """
+        '''
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states
 
@@ -142,7 +142,7 @@ class TransientResidualEvaluator(Protocol):
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step
-        """
+        '''
         pass
 
     def evaluate_full_residuals_and_jacobian_basis_products(
@@ -153,7 +153,7 @@ class TransientResidualEvaluator(Protocol):
         parameter_sample: dict,
         times: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
+        '''
         Evaluate the full-order model residuals corresponding to full states reconstructed from
         an array of reduced states
 
@@ -172,7 +172,7 @@ class TransientResidualEvaluator(Protocol):
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single time step.
             `np.ndarray`: The full-order jacobian-basis product in tensor form, should be 4-dimensional, even for a single sample
             1st dimension: sample index, 2nd dimension: variable index, 3rd dimension: spatial index, 4th dimension: modal index
-        """
+        '''
         pass
 
 
@@ -182,7 +182,7 @@ def evaluate_and_load_steady_residual_snapshots(
     state_filename: str,
     absolute_run_directory: str,
 ) -> np.ndarray:
-    """
+    '''
     Core algorithm that takes a residual_evaluator, a list of steady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
     residual snapshots.
@@ -195,7 +195,7 @@ def evaluate_and_load_steady_residual_snapshots(
 
     Returns:
         `np.ndarray`: The full-order residual snapshots in tensor form.
-    """
+    '''
 
     run_directory_base = f"{absolute_run_directory}/res_"
 
@@ -237,7 +237,7 @@ def evaluate_and_load_steady_residual_and_jacobian_snapshots(
     state_filename: str,
     absolute_run_directory: str,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
+    '''
     Core algorithm that takes a residual_evaluator, a list of steady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
     residual and Jacobian-basis product snapshots.
@@ -251,7 +251,7 @@ def evaluate_and_load_steady_residual_and_jacobian_snapshots(
     Returns:
         `np.ndarray`: The full-order residual snapshots in tensor form.
         `np.ndarray`: The full-order Jacobian-basis product snapshots in tensor form.
-    """
+    '''
 
     run_directory_base = f"{absolute_run_directory}/res_"
 
@@ -306,7 +306,7 @@ def evaluate_and_load_unsteady_residual_snapshots(
     state_filename: str,
     absolute_run_directory: str,
 ) -> np.ndarray:
-    """
+    '''
     Core algorithm that takes a residual_evaluator, a list of unsteady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
     residual snapshots.
@@ -320,7 +320,7 @@ def evaluate_and_load_unsteady_residual_snapshots(
     Returns:
         `np.ndarray`: The full-order residual snapshots in tensor form.
 
-    """
+    '''
 
     run_directory_base = f"{absolute_run_directory}/res_"
 
@@ -364,7 +364,7 @@ def evaluate_and_load_unsteady_residual_and_jacobian_snapshots(
     state_filename: str,
     absolute_run_directory: str,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
+    '''
     Core algorithm that takes a residual_evaluator, a list of unsteady full-order model
     snapshot directories, and a snapshot_filename, and computes the corresponding
     residual snapshots.
@@ -378,7 +378,7 @@ def evaluate_and_load_unsteady_residual_and_jacobian_snapshots(
     Returns:
         `np.ndarray`: The full-order residual snapshots in tensor form.
         `np.ndarray`: The full-order Jacobian-basis product snapshots in tensor form.
-    """
+    '''
 
     run_directory_base = f"{absolute_run_directory}/res_"
 

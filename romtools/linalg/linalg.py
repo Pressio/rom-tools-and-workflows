@@ -1073,7 +1073,7 @@ def _thin_svd(M, comm=None, method='auto'):
 
 
 def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
-    """
+    '''
     Gathers a distributed linear system (A, b) from multiple MPI ranks to rank 0.
 
     Preconditions:
@@ -1093,7 +1093,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     Notes:
       - The function ensures that all data is gathered without additional copies or unnecessary data movement.
       - Only rank 0 ends up with the complete system; other ranks have placeholder arrays.
-    """
+    '''
     from mpi4py import MPI
 
     root_rank  = 0

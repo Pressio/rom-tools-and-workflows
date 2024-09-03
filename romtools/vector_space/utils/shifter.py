@@ -104,12 +104,15 @@ class _Shifter():
         self.__shift_vector = shift_vector.copy()
 
     def apply_shift(self, my_array: np.ndarray) -> None:
+        '''Shifts the input array in place by subtracting the provided shift vector.'''
         my_array -= self.__shift_vector[..., None]
 
     def apply_inverse_shift(self, my_array: np.ndarray) -> None:
+        '''Shifts the input array in place by adding the provided shift vector.'''
         my_array += self.__shift_vector[..., None]
 
     def get_shift_vector(self) -> np.ndarray:
+        '''Returns the shift vector.'''
         return self.__shift_vector
 
 

@@ -43,11 +43,11 @@
 # ************************************************************************
 #
 
-"""
+'''
 Implementation of basic sampling workflow with a holdout set.
 Given a parameter space $\\mathcal{D}$, and a holdout set size N, 
 we run N FOM samples and then iteratively build up the ROM until
 the error in a QoI over the holdout set is below a specified tolerance. 
-"""
+'''
 
 from romtools.workflows.sampling_with_holdout.sampling_with_holdout import *

@@ -42,5 +42,6 @@
 #
 # ************************************************************************
 #
+'''Implementation of the greedy workflow.'''
 
 from romtools.workflows.greedy.run_greedy import *

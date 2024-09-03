@@ -73,7 +73,7 @@ def get_common_ancestor(target_branch, feature_branch):
 
 
 def get_changed_files(target_branch, feature_branch):
-    """Get a dictionary of files and their changed lines between the common ancestor and feature_branch."""
+    '''Get a dictionary of files and their changed lines between the common ancestor and feature_branch.'''
     start_commit = get_common_ancestor(target_branch, feature_branch)
     cmd = [
         "git",

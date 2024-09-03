@@ -43,7 +43,7 @@
 # ************************************************************************
 #
 
-"""Implementation of DEIM technique for hyper-reduction"""
+'''Implementation of DEIM technique for hyper-reduction'''
 
 import numpy as np
 import romtools.linalg.linalg as la
@@ -89,6 +89,7 @@ class _DistDeimData:
         self.owning_ranks = np.array([int(r)])
 
     def append(self, i, r):
+        '''Adds the local index and rank to self.local_indices and self.owning_ranks.'''
         self.local_indices = np.append(self.local_indices , int(i))
         self.owning_ranks = np.append(self.owning_ranks, int(r))
 
@@ -230,7 +231,7 @@ def multi_state_deim_get_indices(U, comm=None):
 
 
 def deim_get_approximation_matrix(function_basis, sample_indices):
-    """
+    '''
     Given a function basis $\\mathbf{U}$ and sample indices defining $\\mathbf{P}$, we compute
     $$ \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U})$$
     which comprises the matrix needed for the DEIM approximation to $\\mathbf{f}$
@@ -242,7 +243,7 @@ def deim_get_approximation_matrix(function_basis, sample_indices):
 
     Returns:
         deim_matrix: ($n$,$n_s$) array. DEIM approximation basis
-    """
+    '''
     sampled_function_basis = function_basis[sample_indices]
     PU_pinv = np.linalg.pinv(sampled_function_basis)
     deim_matrix = function_basis @ PU_pinv
@@ -250,7 +251,7 @@ def deim_get_approximation_matrix(function_basis, sample_indices):
 
 
 def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
-    """
+    '''
     For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices
     Args:
         test_basis: ($n_{var}$, $m$, $k$) array, where
@@ -271,7 +272,7 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
             $k$ the number of basis functions.
             DEIM test basis matrix.
 
-    """
+    '''
     n_var = function_basis.shape[0]
     deim_test_basis = deim_get_test_basis(
         test_basis[0], function_basis[0], sample_indices
@@ -286,7 +287,7 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
 
 
 def deim_get_test_basis(test_basis, function_basis, sample_indices):
-    """
+    '''
     Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
     sample indices defining $\\mathbf{P}$, we compute
     $$[ \\mathbf{\\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
@@ -307,7 +308,7 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
             $n_s$ is the number of sample points and
             $k$ the number of basis functions. DEIM test basis matrix.
 
-    """
+    '''
     sampled_function_basis = function_basis[sample_indices]
     PU_pinv = np.linalg.pinv(sampled_function_basis)
     deim_test_basis = (test_basis.transpose() @ function_basis) @ PU_pinv

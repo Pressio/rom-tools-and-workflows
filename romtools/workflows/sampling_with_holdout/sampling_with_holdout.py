@@ -67,9 +67,9 @@ def run_sampling_with_holdout(
     tolerance=1e-5,
     random_seed: int = 1,
 ):
-    """
+    '''
     Core algorithm
-    """
+    '''
     assert max_number_of_rom_samples >= 2
 
     sampling_directory = absolute_work_directory
