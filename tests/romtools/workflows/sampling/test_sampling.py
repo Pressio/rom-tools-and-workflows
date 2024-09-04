@@ -25,11 +25,7 @@ class MockModel:
         return 0
 
 
-@pytest.mark.mpi_skip
-def test_sampler(tmp_path):
-    # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
-    print('\n', tmp_path)
-
+def run_sampler(tmp_path, dry_run):
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                                np.array([0, 1, 2]),
                                                np.array([1, 2, 3]),
@@ -37,15 +33,33 @@ def test_sampler(tmp_path):
     my_model = MockModel()
     run_directories = run_sampling(my_model, my_parameter_space,
                                    absolute_sampling_directory=tmp_path,
-                                   number_of_samples=10)
+                                   number_of_samples=10, dry_run=dry_run)
+
     assert(len(run_directories)==10)
 
     for i in range(0, 10):
-        assert os.path.isdir(f'{tmp_path}/run_' + str(i))
-        data = int(np.genfromtxt(f'{tmp_path}/run_{i}/passed.txt'))
-        assert data == 0
-    assert os.path.isfile(f'{tmp_path}/sampling_stats.npz')
+        run_dir = os.path.join(tmp_path, f'run_{i}')
+        assert os.path.isdir(run_dir)
+        if dry_run:
+            assert len(os.listdir(run_dir)) == 0
+        else:
+            data = int(np.genfromtxt(os.path.join(run_dir, 'passed.txt')))
+            assert data == 0
+
+    found_sampling_stats = os.path.isfile(f'{tmp_path}/sampling_stats.npz')
+    assert found_sampling_stats != dry_run
+
+@pytest.mark.mpi_skip
+def test_sampler(tmp_path):
+    # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
+    # remove_existing_files(tmp_path)
+    run_sampler(tmp_path, dry_run=False)
+
+@pytest.mark.mpi_skip
+def test_sampler_dry_run(tmp_path):
+    run_sampler(tmp_path, dry_run=True)
 
 
 if __name__ == "__main__":
     test_sampler()
+    test_sampler_dry_run()

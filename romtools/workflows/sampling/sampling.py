@@ -59,7 +59,8 @@ def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
                  absolute_sampling_directory: str,
                  number_of_samples: int = 10,
-                 random_seed: int = 1):
+                 random_seed: int = 1,
+                 dry_run: bool = False):
     '''
     Core algorithm
     '''
@@ -70,7 +71,7 @@ def run_sampling(model: Model,
     parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
 
-    # Setup model directories
+    # Set up model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
     run_directories = []
     starting_sample_index = 0
@@ -78,22 +79,24 @@ def run_sampling(model: Model,
     for sample_index in range(starting_sample_index, end_sample_index):
         run_directory = f'{run_directory_base}{sample_index}'
         create_empty_dir(run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
-        model.populate_run_directory(run_directory, parameter_dict)
         run_directories.append(run_directory)
+        if not dry_run:
+            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
+            model.populate_run_directory(run_directory, parameter_dict)
 
-    # Run cases
-    run_times = np.zeros(number_of_samples)
-    for sample_index in range(0, number_of_samples):
-        print("=======  Sample " + str(sample_index) + " ============")
-        print("Running")
-        run_directory = f'{run_directory_base}{sample_index}'
-        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-        run_times[sample_index] = run_sample(run_directory, model,
-                                             parameter_dict)
-        sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-        np.savez(f'{sample_stats_save_directory}/sampling_stats',
-                 run_times=run_times)
+    # Run cases if dry_run is not set
+    if not dry_run:
+        run_times = np.zeros(number_of_samples)
+        for sample_index in range(0, number_of_samples):
+            print("=======  Sample " + str(sample_index) + " ============")
+            print("Running")
+            run_directory = f'{run_directory_base}{sample_index}'
+            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+            run_times[sample_index] = run_sample(run_directory, model,
+                                                    parameter_dict)
+            sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
+            np.savez(f'{sample_stats_save_directory}/sampling_stats',
+                        run_times=run_times)
 
     return run_directories
 
