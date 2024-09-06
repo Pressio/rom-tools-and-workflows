@@ -43,6 +43,7 @@
 # ************************************************************************
 #
 
+import os
 import time
 import numpy as np
 
@@ -60,7 +61,8 @@ def run_sampling(model: Model,
                  absolute_sampling_directory: str,
                  number_of_samples: int = 10,
                  random_seed: int = 1,
-                 dry_run: bool = False):
+                 dry_run: bool = False,
+                 overwrite: bool = False):
     '''
     Core algorithm
     '''
@@ -80,9 +82,12 @@ def run_sampling(model: Model,
         run_directory = f'{run_directory_base}{sample_index}'
         create_empty_dir(run_directory)
         run_directories.append(run_directory)
-        if not dry_run:
-            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
-            model.populate_run_directory(run_directory, parameter_dict)
+        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
+        model.populate_run_directory(run_directory, parameter_dict)
+
+    # Check if the model has already been run succesfully
+    if "passed.txt" in os.listdir(absolute_sampling_directory) and not overwrite:
+        return run_directories
 
     # Run cases if dry_run is not set
     if not dry_run:
@@ -97,6 +102,7 @@ def run_sampling(model: Model,
             sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
             np.savez(f'{sample_stats_save_directory}/sampling_stats',
                         run_times=run_times)
+        np.savetxt(f'{absolute_sampling_directory}/passed.txt', np.array([0]), '%i')
 
     return run_directories
 

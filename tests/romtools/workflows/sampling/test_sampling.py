@@ -25,7 +25,8 @@ class MockModel:
         return 0
 
 
-def run_sampler(tmp_path, dry_run):
+def run_sampler(tmp_path, dry_run=False, overwrite=True):
+    print("running sampler with dry_run: ", dry_run)
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                                np.array([0, 1, 2]),
                                                np.array([1, 2, 3]),
@@ -33,21 +34,24 @@ def run_sampler(tmp_path, dry_run):
     my_model = MockModel()
     run_directories = run_sampling(my_model, my_parameter_space,
                                    absolute_sampling_directory=tmp_path,
-                                   number_of_samples=10, dry_run=dry_run)
+                                   number_of_samples=10, dry_run=dry_run,
+                                   overwrite=overwrite)
 
     assert(len(run_directories)==10)
 
     for i in range(0, 10):
         run_dir = os.path.join(tmp_path, f'run_{i}')
         assert os.path.isdir(run_dir)
-        if dry_run:
-            assert len(os.listdir(run_dir)) == 0
-        else:
+        if not dry_run:
             data = int(np.genfromtxt(os.path.join(run_dir, 'passed.txt')))
             assert data == 0
 
-    found_sampling_stats = os.path.isfile(f'{tmp_path}/sampling_stats.npz')
-    assert found_sampling_stats != dry_run
+    print(os.listdir(tmp_path))
+    print(found_passed_file)
+    print(dry_run)
+    print("passed.txt" in os.listdir(tmp_path) != dry_run)
+    assert "passed.txt" in os.listdir(tmp_path) != dry_run
+    assert "sampling_stats.npz" in os.listdir(tmp_path) != dry_run
 
 @pytest.mark.mpi_skip
 def test_sampler(tmp_path):
@@ -58,6 +62,11 @@ def test_sampler(tmp_path):
 @pytest.mark.mpi_skip
 def test_sampler_dry_run(tmp_path):
     run_sampler(tmp_path, dry_run=True)
+
+@pytest.mark.mpi_skip
+def test_sampler_ovewrite(tmp_path):
+    run_sampler(tmp_path, overwrite=True)
+    run_sampler(tmp_path, overwrite=False)
 
 
 if __name__ == "__main__":
