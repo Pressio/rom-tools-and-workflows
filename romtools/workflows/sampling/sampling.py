@@ -81,9 +81,9 @@ def run_sampling(model: Model,
     for sample_index in range(starting_sample_index, end_sample_index):
         run_directory = f'{run_directory_base}{sample_index}'
         create_empty_dir(run_directory)
-        run_directories.append(run_directory)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
         model.populate_run_directory(run_directory, parameter_dict)
+        run_directories.append(run_directory)
 
     # Check if the model has already been run succesfully
     if "passed.txt" in os.listdir(absolute_sampling_directory) and not overwrite:

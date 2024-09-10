@@ -26,7 +26,6 @@ class MockModel:
 
 
 def run_sampler(tmp_path, dry_run=False, overwrite=True):
-    print("running sampler with dry_run: ", dry_run)
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                                np.array([0, 1, 2]),
                                                np.array([1, 2, 3]),
@@ -46,12 +45,12 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
             data = int(np.genfromtxt(os.path.join(run_dir, 'passed.txt')))
             assert data == 0
 
-    print(os.listdir(tmp_path))
-    print(found_passed_file)
-    print(dry_run)
-    print("passed.txt" in os.listdir(tmp_path) != dry_run)
-    assert "passed.txt" in os.listdir(tmp_path) != dry_run
-    assert "sampling_stats.npz" in os.listdir(tmp_path) != dry_run
+    assert ("passed.txt" in os.listdir(tmp_path)) != dry_run
+    assert ("sampling_stats.npz" in os.listdir(tmp_path)) != dry_run
+
+    # Return the time that passed.txt was last modified to test overwrite
+    if not dry_run:
+        return os.stat(os.path.join(tmp_path, "passed.txt")).st_mtime
 
 @pytest.mark.mpi_skip
 def test_sampler(tmp_path):
@@ -65,9 +64,12 @@ def test_sampler_dry_run(tmp_path):
 
 @pytest.mark.mpi_skip
 def test_sampler_ovewrite(tmp_path):
-    run_sampler(tmp_path, overwrite=True)
-    run_sampler(tmp_path, overwrite=False)
+    initial_timestamp = run_sampler(tmp_path)
+    exp_initial_timestamp = run_sampler(tmp_path, overwrite=False)
+    exp_new_timestamp = run_sampler(tmp_path, overwrite=True)
 
+    assert initial_timestamp == exp_initial_timestamp
+    assert exp_initial_timestamp != exp_new_timestamp
 
 if __name__ == "__main__":
     test_sampler()
