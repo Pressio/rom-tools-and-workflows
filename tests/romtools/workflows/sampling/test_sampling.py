@@ -55,7 +55,7 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
 @pytest.mark.mpi_skip
 def test_sampler(tmp_path):
     # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
-    # remove_existing_files(tmp_path)
+    print('\n', tmp_path)
     run_sampler(tmp_path, dry_run=False)
 
 @pytest.mark.mpi_skip
@@ -63,7 +63,7 @@ def test_sampler_dry_run(tmp_path):
     run_sampler(tmp_path, dry_run=True)
 
 @pytest.mark.mpi_skip
-def test_sampler_ovewrite(tmp_path):
+def test_sampler_overwrite(tmp_path):
     initial_timestamp = run_sampler(tmp_path)
     exp_initial_timestamp = run_sampler(tmp_path, overwrite=False)
     exp_new_timestamp = run_sampler(tmp_path, overwrite=True)
@@ -74,3 +74,4 @@ def test_sampler_ovewrite(tmp_path):
 if __name__ == "__main__":
     test_sampler()
     test_sampler_dry_run()
+    test_sampler_overwrite()
