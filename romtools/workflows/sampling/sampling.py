@@ -91,18 +91,22 @@ def run_sampling(model: Model,
 
     # Run cases if dry_run is not set
     if not dry_run:
+        all_samples_passed = True
         run_times = np.zeros(number_of_samples)
         for sample_index in range(0, number_of_samples):
             print("=======  Sample " + str(sample_index) + " ============")
             print("Running")
             run_directory = f'{run_directory_base}{sample_index}'
             parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-            run_times[sample_index] = run_sample(run_directory, model,
-                                                    parameter_dict)
+            run_times[sample_index], sample_flag = run_sample(run_directory, model, parameter_dict)
+            if sample_flag != 0:
+                all_samples_passed = False
             sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
             np.savez(f'{sample_stats_save_directory}/sampling_stats',
                         run_times=run_times)
-        np.savetxt(f'{absolute_sampling_directory}/passed.txt', np.array([0]), '%i')
+
+        if all_samples_passed:
+            np.savetxt(f'{absolute_sampling_directory}/passed.txt', np.array([0]), '%i')
 
     return run_directories
 
@@ -123,4 +127,4 @@ def run_sample(run_directory: str, model: Model,
     else:
         print(f"Sample failed, run time = {run_time}")
     print(" ")
-    return run_time
+    return run_time, flag
