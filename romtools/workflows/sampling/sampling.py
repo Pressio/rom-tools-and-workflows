@@ -85,28 +85,21 @@ def run_sampling(model: Model,
         model.populate_run_directory(run_directory, parameter_dict)
         run_directories.append(run_directory)
 
-    # Check if the model has already been run succesfully
-    if "passed.txt" in os.listdir(absolute_sampling_directory) and not overwrite:
-        return run_directories
-
     # Run cases if dry_run is not set
     if not dry_run:
-        all_samples_passed = True
         run_times = np.zeros(number_of_samples)
         for sample_index in range(0, number_of_samples):
             print("=======  Sample " + str(sample_index) + " ============")
-            print("Running")
             run_directory = f'{run_directory_base}{sample_index}'
-            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-            run_times[sample_index], sample_flag = run_sample(run_directory, model, parameter_dict)
-            if sample_flag != 0:
-                all_samples_passed = False
-            sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-            np.savez(f'{sample_stats_save_directory}/sampling_stats',
-                        run_times=run_times)
-
-        if all_samples_passed:
-            np.savetxt(f'{absolute_sampling_directory}/passed.txt', np.array([0]), '%i')
+            if "passed.txt" in os.listdir(run_directory) and not overwrite:
+                print("Skipping (Sample has already run succesfully)")
+            else:
+                print("Running")
+                parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+                run_times[sample_index] = run_sample(run_directory, model, parameter_dict)
+                sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
+                np.savez(f'{sample_stats_save_directory}/sampling_stats',
+                            run_times=run_times)
 
     return run_directories
 
@@ -123,8 +116,9 @@ def run_sample(run_directory: str, model: Model,
     run_time = tf - ts
 
     if flag == 0:
+        np.savetxt(os.path.join(run_directory, 'passed.txt'), np.array([0]), '%i')
         print(f"Sample complete, run time = {run_time}")
     else:
         print(f"Sample failed, run time = {run_time}")
     print(" ")
-    return run_time, flag
+    return run_time

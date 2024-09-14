@@ -21,7 +21,6 @@ class MockModel:
         for i in range(0, len(parameter_sample)):
             parameter_name = list(parameter_sample.keys())[i]
             assert params_input[i] == parameter_sample[parameter_name]
-        np.savetxt(f'{run_dir}/passed.txt', np.array([0]), '%i')
         return 0
 
 
@@ -38,19 +37,18 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
 
     assert(len(run_directories)==10)
 
+    timestamps = []
     for i in range(0, 10):
         run_dir = os.path.join(tmp_path, f'run_{i}')
         assert os.path.isdir(run_dir)
+        assert ("passed.txt" in os.listdir(run_dir)) != dry_run
         if not dry_run:
-            data = int(np.genfromtxt(os.path.join(run_dir, 'passed.txt')))
-            assert data == 0
+            timestamps.append(os.stat(os.path.join(run_dir, "passed.txt")).st_mtime)
 
-    assert ("passed.txt" in os.listdir(tmp_path)) != dry_run
     assert ("sampling_stats.npz" in os.listdir(tmp_path)) != dry_run
 
-    # Return the time that passed.txt was last modified to test overwrite
-    if not dry_run:
-        return os.stat(os.path.join(tmp_path, "passed.txt")).st_mtime
+    # Return the time that each passed.txt was last modified
+    return timestamps
 
 @pytest.mark.mpi_skip
 def test_sampler(tmp_path):
@@ -64,12 +62,13 @@ def test_sampler_dry_run(tmp_path):
 
 @pytest.mark.mpi_skip
 def test_sampler_overwrite(tmp_path):
-    initial_timestamp = run_sampler(tmp_path)
-    exp_initial_timestamp = run_sampler(tmp_path, overwrite=False)
-    exp_new_timestamp = run_sampler(tmp_path, overwrite=True)
+    initial_timestamps = run_sampler(tmp_path)
+    exp_initial_timestamps = run_sampler(tmp_path, overwrite=False)
+    exp_new_timestamps = run_sampler(tmp_path, overwrite=True)
 
-    assert initial_timestamp == exp_initial_timestamp
-    assert exp_initial_timestamp != exp_new_timestamp
+    for i in range(10):
+        assert initial_timestamps[i] == exp_initial_timestamps[i]
+        assert exp_initial_timestamps[i] != exp_new_timestamps[i]
 
 if __name__ == "__main__":
     test_sampler()
