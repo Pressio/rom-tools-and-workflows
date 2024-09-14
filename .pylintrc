@@ -90,7 +90,10 @@ disable=raw-checker-failed,
         protected-access,
         multiple-imports,
         unnecessary-pass,
-        unnecessary-ellipsis
+        unnecessary-ellipsis,
+        missing-function-docstring,
+        missing-module-docstring,
+        anomalous-backslash-in-string
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
