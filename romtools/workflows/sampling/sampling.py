@@ -92,7 +92,7 @@ def run_sampling(model: Model,
             print("=======  Sample " + str(sample_index) + " ============")
             run_directory = f'{run_directory_base}{sample_index}'
             if "passed.txt" in os.listdir(run_directory) and not overwrite:
-                print("Skipping (Sample has already run succesfully)")
+                print("Skipping (Sample has already run successfully)")
             else:
                 print("Running")
                 parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
