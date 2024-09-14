@@ -5,7 +5,7 @@ iterative workflows like greedy
 '''
 
 from typing import Protocol, List
-from romtools.workflows.models import *
+from romtools.workflows.models import Model, QoiModel, QoiModelWithErrorEstimate
 
 class ModelBuilder(Protocol):
     '''

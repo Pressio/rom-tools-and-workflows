@@ -49,7 +49,6 @@ import numpy as np
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
-from romtools.workflows.sampling import *
 from romtools.workflows.model_builders import QoiModelBuilder
 
 
