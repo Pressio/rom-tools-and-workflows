@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "romtools"
-dynamic = ["version"]
+dynamic = ["version", "long_description"]
+long_description_content_type = "text/markdown"
 requires-python = ">=3.8"
 dependencies = [
     'docutils',
@@ -21,6 +22,7 @@ dependencies = [
 
 [tool.setuptools.dynamic]
 version = {file = "version.txt"}
+long_description = {file = "README.md"}
 
 [tool.setuptools.packages.find]
 where = ["."]
