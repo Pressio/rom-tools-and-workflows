@@ -71,13 +71,13 @@ def run_sampling(model: Model,
     Core algorithm
     '''
 
-    # we use here spawn because the default fork causes issues with mpich, 
+    # we use here spawn because the default fork causes issues with mpich,
     # see here: https://github.com/Pressio/rom-tools-and-workflows/pull/206
     #
-    # to read more about fork/spawn: 
+    # to read more about fork/spawn:
     #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing-start-methods
     #
-    # and    
+    # and
     #   https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
     #
     mp_cntxt=multiprocessing.get_context("spawn")
@@ -100,6 +100,12 @@ def run_sampling(model: Model,
         model.populate_run_directory(run_directory, parameter_dict)
         run_directories.append(run_directory)
 
+    # Print MPI warnings
+    print("""
+    Warning: If you are using your model with MPI via a direct call to `mpirun -n ...`,
+    be aware that this may or may not work for issues that are purely related to MPI.
+    """)
+
     # Run cases
     if evaluation_concurrency == 1:
         run_times = np.zeros(number_of_samples)
@@ -112,12 +118,11 @@ def run_sampling(model: Model,
             sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
             np.savez(f'{sample_stats_save_directory}/sampling_stats',
                      run_times=run_times)
-
     else:
         with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
-            these_futures = [executor.submit(run_sample, 
-                             f'{run_directory_base}{sample_id}', model, 
-                             _create_parameter_dict(parameter_names, parameter_samples[sample_id])) 
+            these_futures = [executor.submit(run_sample,
+                             f'{run_directory_base}{sample_id}', model,
+                             _create_parameter_dict(parameter_names, parameter_samples[sample_id]))
                              for sample_id in range(number_of_samples)]
 
             # Wait for all processes to finish
@@ -126,7 +131,7 @@ def run_sampling(model: Model,
         run_times = [future.result() for future in these_futures]
         sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
         np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
-    
+
     return run_directories
 
 
