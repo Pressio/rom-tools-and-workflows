@@ -38,7 +38,7 @@ def test_transposed_pseudoinverse_dist():
 
 @pytest.mark.mpi(min_size=3)
 def test_transposed_pseudoinverse_dist_single_row_arrays():
-    """This test recreates the sampling of DEIM."""
+    '''This test recreates the sampling of DEIM.'''
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 

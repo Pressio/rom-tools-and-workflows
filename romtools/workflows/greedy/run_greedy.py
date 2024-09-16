@@ -84,7 +84,6 @@ closely as possible, which can be helpful for defining exit criterion.
 Alternatively, if `calibrated_error` is set to `False`, then the scaling factor $C$ will always be $1$.
 '''
 
-import os
 import time
 import numpy as np
 
@@ -114,7 +113,7 @@ def run_greedy(fom_model: QoiModel,
     offline_directory_prefix = 'offline_data'
 
     run_directory_prefix = "run_"
-    greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8")
+    greedy_file = open(f"{greedy_directory}/greedy_status.log", "w", encoding="utf-8") # pylint: disable=consider-using-with
     greedy_file.write("Greedy reduced basis status \n")
     fom_time = 0.
     rom_time = 0.
@@ -233,7 +232,10 @@ def run_greedy(fom_model: QoiModel,
 
         # Get ROM QoI to calibrate our error estimator
         outer_loop_counter_m_1 = outer_loop_counter - 1
-        rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/{run_directory_prefix}{sample_with_highest_error_indicator}'
+        rom_run_directory = (
+            f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/'
+            f'{run_directory_prefix}{sample_with_highest_error_indicator}'
+        )
         rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
         qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "

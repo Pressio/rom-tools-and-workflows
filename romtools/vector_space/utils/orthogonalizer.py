@@ -76,6 +76,7 @@ class NoOpOrthogonalizer:
         pass
 
     def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
+        '''Returns the input array.'''
         return my_array
 
 
@@ -93,7 +94,8 @@ class EuclideanL2Orthogonalizer:
         Args:
 
             qrFnc: a callable to use for computing the QR decomposition.
-                    IMPORTANT: must conform to the API of [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
+                    IMPORTANT: must conform to the API of
+                        [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
                     If `None`, internally we use `np.linalg.qr`.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are
                     distributed with MPI, or maybe you have a fancy qr function that you can use.
@@ -102,6 +104,15 @@ class EuclideanL2Orthogonalizer:
         self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
 
     def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
+        '''
+        Orthogonalizes the input matrix and returns the orthogonalized matrix.
+
+        Args:
+            my_array (np.ndarray): The input matrix to be orthogonalized.
+
+        Returns:
+            np.ndarray: The orthogonalized matrix.
+        '''
         my_array, _ = self.__qr_picked(my_array, mode='reduced')
         return my_array
 
@@ -125,7 +136,8 @@ class EuclideanVectorWeightedL2Orthogonalizer:
             weighting_vector (np.ndarray): a 1-D NumPy array that the matrix will be orthogonalized against. The
                 length of the array must match the number of rows in the matrix that will be orthogonalized.
             qrFnc: a callable to use for computing the QR decomposition.
-                    IMPORTANT: must conform to the API of [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
+                    IMPORTANT: must conform to the API of
+                    [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
                     If `None`, internally we use `np.linalg.qr`.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are
                     distributed with MPI, or maybe you have a fancy qr function that you can use.

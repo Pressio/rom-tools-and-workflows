@@ -65,7 +65,7 @@ class LeftSingularVectorTruncater(Protocol):
     Interface for the Truncater class.
     '''
 
-    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
         Truncate left singular vectors
         '''
@@ -81,7 +81,7 @@ class NoOpTruncater():
     def __init__(self) -> None:
         pass
 
-    def truncate(self, basis: np.ndarray,  singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray: # pylint: disable=unused-argument
         return basis
 
 
@@ -104,7 +104,7 @@ class BasisSizeTruncater():
 
         self.__basis_dimension = basis_dimension
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray: # pylint: disable=unused-argument
         '''
         Truncate the basis based on the specified dimension.
 

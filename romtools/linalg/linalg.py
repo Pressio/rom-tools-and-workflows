@@ -168,7 +168,6 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
         return np.max(a, axis=axis)
 
     # Otherwise, calculate distributed max
-    import mpi4py
     from mpi4py import MPI
 
     # Get the max on the current process
@@ -299,13 +298,9 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
     tmp[1] = local_max_index
     tmp[2] = comm.Get_rank() if comm is not None else 0
 
-    # Find distributed max index
-    import mpi4py
+    # Define custom MPI op to find distributed max index
     from mpi4py import MPI
-
-    # Define custom MPI op
-    def mycomp(A_mem,B_mem,dt):
-        # Get matrices from memory buffers
+    def mycomp(A_mem,B_mem,dt): # pylint: disable=unused-argument
         A = np.frombuffer(A_mem)
         B = np.frombuffer(B_mem)
 
@@ -486,7 +481,6 @@ def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
         return np.min(a, axis=axis)
 
     # Otherwise, calculate distributed min
-    import mpi4py
     from mpi4py import MPI
 
     # Get the min on the current process
@@ -674,7 +668,6 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
         return np.mean(a, dtype=dtype, axis=axis)
 
     # Otherwise calculate distributed mean
-    import mpi4py
     from mpi4py import MPI
 
     # Get the size (mean = sum/size) -- num elements if axis is None, or num rows along given axis
@@ -706,7 +699,7 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
     return np.mean(a, dtype=dtype, axis=axis)
 
 # ----------------------------------------------------
-def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, testing=False, comm=None):
+def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
     '''
     Return the standard deviation of a possibly distributed array over a given axis.
 
@@ -865,7 +858,6 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, testing=False, c
         return np.std(a, dtype=dtype, axis=axis)
 
     # Otherwis, calculate distributed standard deviation
-    import mpi4py
     from mpi4py import MPI
 
     # Determine the axis along which the data is distributed
@@ -947,7 +939,9 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
 
     if (mat1.ndim == 2) and (mat2.ndim == 2):
         if np.shape(C) != (mat1_shape[0], mat2_shape[1]):
-            raise ValueError(f"Size of output array C ({np.shape(C)}) is invalid. For A (m x n) and B (n x l), C has dimensions (m x l)).")
+            raise ValueError(
+                f"Size of output array C ({np.shape(C)}) is invalid. For A (m x n) and B (n x l), C has dimensions (m x l))."
+            )
 
         if mat1_shape[1] != mat2_shape[0]:
             raise ValueError("Invalid input array size. For A (m x n), B must be (n x l).")
@@ -958,7 +952,7 @@ def _basic_product_via_python(flagA, flagB, alpha, A, B, beta, C, comm=None):
     local_product = np.dot(mat1, mat2)
 
     if comm is not None and comm.Get_size() > 1:
-        import mpi4py
+
         from mpi4py import MPI
 
         global_product = np.zeros_like(C, dtype=local_product.dtype)
@@ -1079,7 +1073,27 @@ def _thin_svd(M, comm=None, method='auto'):
 
 
 def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarray, comm):
-    import mpi4py
+    '''
+    Gathers a distributed linear system (A, b) from multiple MPI ranks to rank 0.
+
+    Preconditions:
+      - A_in is a rank-2 tensor (2D array) representing a portion of the global matrix A.
+      - b_in is a rank-1 or rank-2 tensor (1D or 2D array) representing a portion of the global vector b.
+      - A_in and b_in are distributed row-wise across MPI ranks.
+
+    Returns:
+      - A_g (numpy.ndarray): The global matrix A assembled on rank 0.
+      - b_g (numpy.ndarray): The global vector b assembled on rank 0.
+
+    Postconditions:
+      - On rank 0, A_g and b_g contain the fully assembled matrix and vector, respectively.
+      - On other ranks, A_g and b_g are dummy arrays with no meaningful content.
+      - The input arrays A_in and b_in are not modified.
+
+    Notes:
+      - The function ensures that all data is gathered without additional copies or unnecessary data movement.
+      - Only rank 0 ends up with the complete system; other ranks have placeholder arrays.
+    '''
     from mpi4py import MPI
 
     root_rank  = 0
@@ -1142,15 +1156,15 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
 
         # then posts recvs for all other messages from other ranks
         row_shift = my_num_rows
-        for iRank in range(1, comm.Get_size()):
-            curr_rank_num_rows = rows_per_rank[iRank]
+        for i_rank in range(1, comm.Get_size()):
+            curr_rank_num_rows = rows_per_rank[i_rank]
             if curr_rank_num_rows > 0:
-                tag_A = iRank*2
+                tag_A = i_rank*2
                 row_begin = row_shift
                 row_end_exclusive = row_shift + curr_rank_num_rows
-                req = comm.Irecv(np.ravel(A_g[row_begin:row_end_exclusive,:]), iRank, tag=tag_A)
+                req = comm.Irecv(np.ravel(A_g[row_begin:row_end_exclusive,:]), i_rank, tag=tag_A)
                 my_reqs.append(req)
-                req = comm.Irecv(b_g[row_shift:], iRank, tag=tag_A+1)
+                req = comm.Irecv(b_g[row_shift:], i_rank, tag=tag_A+1)
                 my_reqs.append(req)
                 row_shift += curr_rank_num_rows
 

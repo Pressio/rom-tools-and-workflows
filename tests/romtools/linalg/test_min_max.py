@@ -37,7 +37,7 @@ def _min_max_setup(operation, ndim, axis=None, comm=None):
 
 @pytest.mark.mpi(min_size=3)
 def test_python_max_examples_mpi():
-    """Specifically tests the documented examples in _basic_max_via_python."""
+    '''Specifically tests the documented examples in _basic_max_via_python.'''
     comm = MPI.COMM_WORLD
     if comm.Get_size() == 3:
         rank = comm.Get_rank()
@@ -79,7 +79,7 @@ def test_python_max_examples_mpi():
 
 @pytest.mark.mpi(min_size=3)
 def test_python_min_examples_mpi():
-    """Specifically tests the documented examples in _basic_min_via_python."""
+    '''Specifically tests the documented examples in _basic_min_via_python.'''
     comm = MPI.COMM_WORLD
     if comm.Get_size() == 3:
         rank = comm.Get_rank()

@@ -1,12 +1,11 @@
 '''
 Protocol for building a model
-This is mainly used for constructing data-driven models in 
-iterative workflows like greedy 
+This is mainly used for constructing data-driven models in
+iterative workflows like greedy
 '''
 
-from pathlib import Path
 from typing import Protocol, List
-from romtools.workflows.models import *
+from romtools.workflows.models import Model, QoiModel, QoiModelWithErrorEstimate
 
 class ModelBuilder(Protocol):
     '''
@@ -47,5 +46,3 @@ class QoiModelWithErrorEstimateBuilder(Protocol):
 
     def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModelWithErrorEstimate:
         return QoiModelWithErrorEstimate
-
-

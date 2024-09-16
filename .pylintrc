@@ -3,7 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-allow-list=
+extension-pkg-allow-list=mpi4py
 
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
@@ -89,7 +89,11 @@ disable=raw-checker-failed,
         logging-fstring-interpolation,
         protected-access,
         multiple-imports,
-        unnecessary-pass
+        unnecessary-pass,
+        unnecessary-ellipsis,
+        missing-function-docstring,
+        missing-module-docstring,
+        anomalous-backslash-in-string
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -186,7 +190,7 @@ class-naming-style=PascalCase
 #class-rgx=
 
 # Naming style matching correct constant names.
-const-naming-style=UPPER_CASE
+const-naming-style=any
 
 # Regular expression matching correct constant names. Overrides const-naming-
 # style.
@@ -215,8 +219,17 @@ good-names=i, # loop variable
            RHS,
            LHS,
            F,
+           _,
+           U, # matrices (next several)
+           A,
+           A_g,
+           tag_A,
+           B,
            C,
-           _
+           new_C,
+           C_inv,
+           M,
+           PU_pinv
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
@@ -286,7 +299,7 @@ indent-string='    '
 max-line-length=130
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=1500
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -501,7 +514,7 @@ exclude-too-few-public-methods=
 ignored-parents=
 
 # Maximum number of arguments for function / method.
-max-args=7
+max-args=8
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
@@ -510,10 +523,10 @@ max-attributes=7
 max-bool-expr=5
 
 # Maximum number of branch for function / method body.
-max-branches=12
+max-branches=15
 
 # Maximum number of locals for function / method body.
-max-locals=20
+max-locals=25
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7
@@ -535,7 +548,7 @@ min-public-methods=1
 
 # List of modules that can be imported at any level, not just the top level
 # one.
-allow-any-import-level=
+allow-any-import-level=mpi4py, mpi4py.MPI
 
 # Allow wildcard imports from modules that define __all__.
 allow-wildcard-with-all=no
@@ -576,5 +589,5 @@ preferred-modules=
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception

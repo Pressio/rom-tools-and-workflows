@@ -43,14 +43,12 @@
 # ************************************************************************
 #
 
-import os
 import time
 import numpy as np
 
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
-from romtools.workflows.sampling import *
 from romtools.workflows.model_builders import QoiModelBuilder
 
 
@@ -68,9 +66,9 @@ def run_sampling_with_holdout(
     tolerance=1e-5,
     random_seed: int = 1,
 ):
-    """
+    '''
     Core algorithm
-    """
+    '''
     assert max_number_of_rom_samples >= 2
 
     sampling_directory = absolute_work_directory
@@ -78,9 +76,7 @@ def run_sampling_with_holdout(
     offline_directory_prefix = "offline_data"
 
     run_directory_prefix = "run_"
-    sampling_file = open(
-        f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8"
-    )
+    sampling_file = open(f"{sampling_directory}/sampling_with_holdout_status.log", "w", encoding="utf-8") # pylint: disable=consider-using-with
     sampling_file.write("Holdout sampling status \n")
     sampling_file.flush()
     fom_time = 0.0
@@ -111,7 +107,7 @@ def run_sampling_with_holdout(
 
     # Setup FOM directories and run samples to build holdout set.
     t0 = time.time()
-    sampling_file.write(f"Building holdout set \n")
+    sampling_file.write("Building holdout set \n")
     sampling_file.flush()
     for sample_index in holdout_sample_indices:
         sampling_file.write(f"Running holdout FOM sample {sample_index} \n")
@@ -134,7 +130,7 @@ def run_sampling_with_holdout(
             )
     fom_time += time.time() - t0
 
-    sampling_file.write(f"Beginning sampling procedure \n")
+    sampling_file.write("Beginning sampling procedure \n")
     sampling_file.flush()
 
     converged = False
@@ -232,7 +228,7 @@ def run_sampling_with_holdout(
         rom_time += time.time() - t0
 
         # If Max QOI error is less than tolerance, converged = True
-        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) 
+        holdout_set_abs_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set)
         holdout_set_errs_at_it = np.abs(rom_qois_holdout_set - fom_qois_holdout_set) / ( np.abs(fom_qois_holdout_set) + 1.e-30)
         holdout_set_err = np.linalg.norm(
             holdout_set_errs_at_it, np.inf
