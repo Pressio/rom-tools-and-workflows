@@ -7,11 +7,11 @@ name = "romtools"
 dynamic = ["version"]
 requires-python = ">=3.8"
 dependencies = [
-    'docutils', 
-    'importlib-metadata', 
+    'docutils',
+    'importlib-metadata',
     'numpy',
-    'scipy', 
-    'matplotlib', 
+    'scipy',
+    'matplotlib',
     'pdoc',
     'pytest==7.4.4',   # released Dec 31st, 2023
     'pytest-mpi>=0.6', # released Jan 8th, 2022
