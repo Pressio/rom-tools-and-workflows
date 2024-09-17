@@ -301,7 +301,7 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices, comm=None):
         function_basis: ($m$, $n$) array, where
             $m$ is the number of DOFs and
             $n$ is the number of basis functions. Basis for function to be approximated.
-        sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points.
+        sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points. Sampling points.
         comm: Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
@@ -310,7 +310,10 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices, comm=None):
             $k$ the number of basis functions. DEIM test basis matrix.
 
     '''
-    sampled_function_basis = function_basis[sample_indices]
+    # Determine sampled_function_basis, allowing for empty ranks
+    sampled_function_basis = np.empty((0, function_basis.shape[1]))
+    if len(sample_indices) > 0:
+        sampled_function_basis = function_basis[sample_indices]
 
     # pinv(P^T U) ^T
     PU_pinv_transpose = la.pinv(sampled_function_basis, comm=comm)

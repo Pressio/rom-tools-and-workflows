@@ -57,12 +57,22 @@ def test_deim_basis_mpi():
 
     distributions = [(0,3), (4,6), (7,9)]
 
-    global_indices = np.array([0,1,5,6,8,9])
-    local_indices = np.array([idx - distributions[rank][0] for idx in global_indices if distributions[rank][0] <= idx <= distributions[rank][1]])
-
-    deimPhi_g = deim.deim_get_test_basis(Phi_g, U_g, global_indices) # the serial version is already tested
+    # Test with an empty rank
+    global_indices = np.array([0,1,2,3,8,9])
+    local_indices = np.array(
+        [idx - distributions[rank][0] for idx in global_indices if distributions[rank][0] <= idx <= distributions[rank][1]]
+    )
+    deimPhi_g = deim.deim_get_test_basis(Phi_g, U_g, global_indices)
     deimPhi = deim.deim_get_test_basis(Phi_l, U_l, local_indices, comm)
+    assert np.allclose(deimPhi, deimPhi_g)
 
+    # Test with all ranks populated
+    global_indices = np.array([0,1,5,6,8,9])
+    local_indices = np.array(
+        [idx - distributions[rank][0] for idx in global_indices if distributions[rank][0] <= idx <= distributions[rank][1]]
+    )
+    deimPhi_g = deim.deim_get_test_basis(Phi_g, U_g, global_indices)
+    deimPhi = deim.deim_get_test_basis(Phi_l, U_l, local_indices, comm)
     assert np.allclose(deimPhi, deimPhi_g)
 
 @pytest.mark.mpi(min_size=3)
