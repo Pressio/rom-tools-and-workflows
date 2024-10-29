@@ -286,7 +286,7 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
     return deim_test_basis
 
 
-def deim_get_test_basis(test_basis, function_basis, sample_indices):
+def deim_get_test_basis(test_basis, function_basis, sample_indices, comm=None):
     '''
     Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
     sample indices defining $\\mathbf{P}$, we compute
@@ -302,6 +302,7 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
             $m$ is the number of DOFs and
             $n$ is the number of basis functions. Basis for function to be approximated.
         sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points. Sampling points.
+        comm: Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
         deim_test_basis: ($n_s$, $k$) array, where
@@ -309,7 +310,25 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices):
             $k$ the number of basis functions. DEIM test basis matrix.
 
     '''
-    sampled_function_basis = function_basis[sample_indices]
-    PU_pinv = np.linalg.pinv(sampled_function_basis)
-    deim_test_basis = (test_basis.transpose() @ function_basis) @ PU_pinv
+    # Determine sampled_function_basis, allowing for empty ranks
+    sampled_function_basis = np.empty((0, function_basis.shape[1]))
+    if len(sample_indices) > 0:
+        sampled_function_basis = function_basis[sample_indices]
+
+    # pinv(P^T U) ^T
+    PU_pinv_transpose = la.pinv(sampled_function_basis, comm=comm)
+
+    # Phi^T U (distributed operation)
+    phi_U = np.empty((test_basis.shape[1], function_basis.shape[1]))
+    la.product("T", "N", 1, test_basis, function_basis, 0, phi_U, comm=comm)
+
+    # Gather pinvs if distributed
+    if comm is not None:
+        local_pinvs = comm.allgather(PU_pinv_transpose)
+        PU_pinv_transpose = np.vstack(local_pinvs)
+
+    # phi_U pinv (local operation)
+    deim_test_basis = np.empty((phi_U.shape[0], PU_pinv_transpose.shape[0]))
+    la.product("N", "T", 1, phi_U, PU_pinv_transpose, 0, deim_test_basis)
+
     return deim_test_basis.transpose()

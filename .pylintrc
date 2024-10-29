@@ -229,7 +229,9 @@ good-names=i, # loop variable
            new_C,
            C_inv,
            M,
-           PU_pinv
+           PU_pinv,
+           PU_pinv_transpose,
+           phi_U
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted

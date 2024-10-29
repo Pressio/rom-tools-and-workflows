@@ -23,7 +23,6 @@ def test_transposed_pseudoinverse_dist():
 
     local_A, A = generate_random_local_and_global_arrays_impl((18, 4), comm)
     pinv_T = _transposed_pseudoinverse_via_python(local_A, comm)
-
     # let A be the matrix that we are distributing of which local_A is the local part
     # if pinv_T = A^* then we should have A^* A = I
     local_result = np.zeros((pinv_T.shape[1], local_A.shape[1]), dtype=local_A.dtype)

@@ -43,6 +43,7 @@
 # ************************************************************************
 #
 
+import os
 import time
 import numpy as np
 import concurrent.futures
@@ -66,7 +67,9 @@ def run_sampling(model: Model,
                  absolute_sampling_directory: str,
                  evaluation_concurrency = 1,
                  number_of_samples: int = 10,
-                 random_seed: int = 1):
+                 random_seed: int = 1,
+                 dry_run: bool = False,
+                 overwrite: bool = False):
     '''
     Core algorithm
     '''
@@ -88,7 +91,7 @@ def run_sampling(model: Model,
     parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
 
-    # Setup model directories
+    # Set up model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
     run_directories = []
     starting_sample_index = 0
@@ -105,39 +108,51 @@ def run_sampling(model: Model,
     Warning: If you are using your model with MPI via a direct call to `mpirun -n ...`,
     be aware that this may or may not work for issues that are purely related to MPI.
     """)
+    if not dry_run:
+        # Run cases
+        if evaluation_concurrency == 1:
+            run_times = np.zeros(number_of_samples)
+            for sample_index in range(0, number_of_samples):
+                print("=======  Sample " + str(sample_index) + " ============")
+                print("Running")
+                run_directory = f'{run_directory_base}{sample_index}'
+                if "passed.txt" in os.listdir(run_directory) and not overwrite:
+                    print("Skipping (Sample has already run successfully)")
+                else:
+                    print("Running")
+                    parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+                    run_times[sample_index] = run_sample(run_directory, model, parameter_dict)
+                    sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
+                    np.savez(f'{sample_stats_save_directory}/sampling_stats',
+                             run_times=run_times)
+        else:
+            #Identify samples to run
+            samples_to_run = []
+            for sample_index in range(0, number_of_samples):
+                run_directory = f'{run_directory_base}{sample_index}'
+                if "passed.txt" in os.listdir(run_directory) and not overwrite:
+                    print(f"Skipping sample {sample_index} (Sample has already run successfully)")
+                    pass
+                else:
+                    samples_to_run.append(sample_index)
+            with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
+                these_futures = [executor.submit(run_sample,
+                                 f'{run_directory_base}{sample_id}', model,
+                                 _create_parameter_dict(parameter_names, parameter_samples[sample_id]))
+                                 for sample_id in samples_to_run]
 
-    # Run cases
-    if evaluation_concurrency == 1:
-        run_times = np.zeros(number_of_samples)
-        for sample_index in range(0, number_of_samples):
-            print("=======  Sample " + str(sample_index) + " ============")
-            print("Running")
-            run_directory = f'{run_directory_base}{sample_index}'
-            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-            run_times[sample_index] = run_sample(run_directory, model, parameter_dict)
+                # Wait for all processes to finish
+                concurrent.futures.wait(these_futures)
+
+            run_times = [future.result() for future in these_futures]
             sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-            np.savez(f'{sample_stats_save_directory}/sampling_stats',
-                     run_times=run_times)
-    else:
-        with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
-            these_futures = [executor.submit(run_sample,
-                             f'{run_directory_base}{sample_id}', model,
-                             _create_parameter_dict(parameter_names, parameter_samples[sample_id]))
-                             for sample_id in range(number_of_samples)]
-
-            # Wait for all processes to finish
-            concurrent.futures.wait(these_futures)
-
-        run_times = [future.result() for future in these_futures]
-        sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-        np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
+            np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
 
     return run_directories
 
 
 def run_sample(run_directory: str, model: Model, parameter_sample: dict):
     run_id = _get_run_id_from_run_dir(run_directory)
-
     ts = time.time()
     flag = model.run_model(run_directory, parameter_sample)
     tf = time.time()
@@ -145,6 +160,7 @@ def run_sample(run_directory: str, model: Model, parameter_sample: dict):
 
     if flag == 0:
         print(f"Sample {run_id} is complete, run time = {run_time}")
+        np.savetxt(os.path.join(run_directory, 'passed.txt'), np.array([0]), '%i')
     else:
         print(f"Sample {run_id} failed, run time = {run_time}")
     print(" ")
