@@ -83,7 +83,7 @@ def _deim_get_indices_sharedmem(U):
     return indices
 
 
-class _DistDeimData:
+class _dist_deim_data:
     def __init__(self, i, r):
         self.local_indices = np.array([int(i)])
         self.owning_ranks = np.array([int(r)])
@@ -96,26 +96,26 @@ class _DistDeimData:
 
 def _deim_get_indices_distributed(U, comm):
     m = np.shape(U)[1]
-    local_index, found_rank = la.argmax(np.abs(U[:, 0]), comm)
-    result = _DistDeimData(local_index, found_rank)
+    local_index, foundRank = la.argmax(np.abs(U[:, 0]), comm)
+    result = _dist_deim_data(local_index, foundRank)
     if m == 1:
         return result.local_indices, result.owning_ranks
 
-    my_rank = comm.Get_rank()
+    myRank = comm.Get_rank()
     LHS, RHS, C = np.array([]), np.array([]), np.array([])
     for ell in range(1, m):
-        indices = result.local_indices[result.owning_ranks==my_rank]
+        indices = result.local_indices[result.owning_ranks==myRank]
         LHS = np.array([]) if indices.size == 0 else U[indices, 0:ell]
         RHS = np.array([]) if indices.size == 0 else U[indices, ell]
 
         A, b = la.move_distributed_linear_system_to_rank_zero(LHS, RHS, comm)
-        if my_rank == 0:
+        if myRank == 0:
             C = np.linalg.solve(A, b)
         C = comm.bcast(C, root=0)
 
         residual = U[:, ell] - U[:, 0:ell] @ C
-        local_index, found_rank = la.argmax(np.abs(residual), comm)
-        result.append(local_index, found_rank)
+        local_index, foundRank = la.argmax(np.abs(residual), comm)
+        result.append(local_index, foundRank)
 
     return result.local_indices, result.owning_ranks
 

@@ -1,10 +1,13 @@
 import pytest
 import os
 import numpy as np
+import time
 
 from romtools.workflows.sampling.sampling import run_sampling
 from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
 
+def _get_run_id(run_dir):
+    return int(run_dir.split('_')[-1])
 
 class MockModel:
     def __init__(self):
@@ -17,10 +20,18 @@ class MockModel:
         np.savez(f'{run_dir}/parameter_values.npz', parameter_values=parameter_values)
 
     def run_model(self, run_dir, parameter_sample):
+        print("running model in ", run_dir)
         params_input = np.load(f'{run_dir}/parameter_values.npz')['parameter_values']
         for i in range(0, len(parameter_sample)):
             parameter_name = list(parameter_sample.keys())[i]
             assert params_input[i] == parameter_sample[parameter_name]
+        np.savetxt(f'{run_dir}/passed.txt', np.array([0]), '%i')
+
+        # add artificial lag centered around run_id=5
+        # such that the closer the ID is to 5, the less the task waits.
+        # totally arbitrary choice.
+        seconds_to_wait = abs(_get_run_id(run_dir) - 5) * 4
+        time.sleep( seconds_to_wait )
         return 0
 
 
@@ -32,9 +43,9 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
     my_model = MockModel()
     run_directories = run_sampling(my_model, my_parameter_space,
                                    absolute_sampling_directory=tmp_path,
-                                   number_of_samples=10, dry_run=dry_run,
+                                   evaluation_concurrency=2,
+                                   number_of_samples=10,dry_run=dry_run,
                                    overwrite=overwrite)
-
     assert(len(run_directories)==10)
 
     timestamps = []
