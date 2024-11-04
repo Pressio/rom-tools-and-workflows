@@ -114,7 +114,6 @@ def run_sampling(model: Model,
             run_times = np.zeros(number_of_samples)
             for sample_index in range(0, number_of_samples):
                 print("=======  Sample " + str(sample_index) + " ============")
-                print("Running")
                 run_directory = f'{run_directory_base}{sample_index}'
                 if "passed.txt" in os.listdir(run_directory) and not overwrite:
                     print("Skipping (Sample has already run successfully)")
