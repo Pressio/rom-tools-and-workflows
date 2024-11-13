@@ -5,6 +5,9 @@ The ROM tools and workflows Python library comprises a set of algorithms for con
 
 https://pressio.github.io/rom-tools-and-workflows/romtools.html
 
+## Demos
+
+https://pressio.github.io/rom-tools-and-workflows-demos/
 
 ## Installation
 
