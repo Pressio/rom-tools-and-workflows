@@ -1,5 +1,5 @@
 # rom-tools-and-workflows
-The ROM tools and workflows Python library comprises a set of algorithms for constructing and exploiting ROMs that rely on *abstract base classes* that encapsulate all the information needed to run a given algorithm. The philosophy is that, for any given application, the user simply needs to "fill out" a class that meets the required API of the abstract base class. Once this class is complete, the user gains access to all of our existing algorithms.
+The ROM tools and workflows Python library comprises a set of algorithms for constructing and exploiting ROMs that rely on *protocol classes* that encapsulate all the information needed to run a given algorithm. The philosophy is that, for any given application, the user simply needs to "fill out" a class that meets the required API of the protocol. Once this class is complete, the user gains access to all of our existing algorithms.
 
 ## Documentation 
 
