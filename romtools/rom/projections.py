@@ -42,52 +42,56 @@
 #
 # ************************************************************************
 #
+import romtools
+import numpy as np
+from romtools.vector_space import VectorSpace
+def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.VectorSpace , weighting_matrix : np.ndarray = None, return_full_state=False):
 
-'''
-# Scope, Design and Philosophy
+    '''
+    Compute L2 projection in the weighted inner product
+    arg min \| ( Phi \hat{x} + x_{ref}) - x \|_M^2 
 
-The ROM tools and workflows Python library comprises a set of algorithms for
-constructing and exploiting ROMs.
-The library is designed internally in terms of *abstract base classes* that encapsulate
-all the information needed to run a given algorithm.
-The philosophy is that, for any given application, the user "simply" needs to create
-a class that meets the required API of the abstract base class.
-Once this class is complete, the user gains access to all of our existing algorithms.
+    Solution satisfies the linear system
+         Phi^T M Phi \hat{x} = \Phi^T M ( x - x_{ref} )
+    Args:
+        input_tensor (np.ndarray): 2d or 3d data array of size (n_vars, nx) or (n_vars, nx, n_snaps)
+        vector_space (romtools.VectorSpace): vector space class containing basis and affine offset
+        weighting_matrix (np.ndarray): 2d weighting matrix of size (nvars nx \times nvars nx) 
+    '''
 
-# Content
+    basis = vector_space.get_basis()
+    shift_vector = vector_space.get_shift_vector()
 
-The Python library, called `romtools`, contains abstract interfaces and functions required for, e.g.,
+    nvars,nx,k = basis.shape
+    basis = np.reshape(basis,(nvars*nx,k))
 
-- Constructing parameter spaces
+    # If input_tensor is just a single snapshot
+    if len(input_tensor.shape) == 2:
+        right_hand_side = (input_tensor - shift_vector).flatten()
 
-- Constructing vector subspaces
-  - Reduced-basis methods
-  - Proper orthogonal decomposition
-    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
-      in different inner products
+    # If input_tensor is many snapshots
+    elif len(input_tensor.shape) == 3:
+        right_hand_side = input_tensor - shift_vector[...,None]
+        right_hand_side = np.reshape(right_hand_side,(nvars*nx,input_tensor.shape[-1]))
 
-- Constructing and exploiting ROMs via outer loop workflows
 
-  - ROM construction via reduced-basis greedy (RB-Greedy)
-  - ROM/FOM exploitation via sampling
-  - ROM/FOM exploitation via Dakota-driven sampling
+    if weighting_matrix is None:
+        left_hand_side = basis.transpose() @  basis 
+        right_hand_side = basis.transpose() @ right_hand_side
 
-# Demos/tutorials
+    else:
+        left_hand_side = basis.transpose() @ ( weighting_matrix @ basis )
+        right_hand_side = basis.transpose() @ ( weighting_matrix  @ right_hand_side )
 
-Please see https://pressio.github.io/rom-tools-and-workflows-demos for demos and tutorials
+    reduced_state = np.linalg.solve(left_hand_side,right_hand_side)
+    basis = np.reshape(basis,(nvars,nx,k))
+  
+    if return_full_state == False:
+        return reduced_state 
 
-# License
-```plaintext
-.. include:: ../LICENSE
-```
-'''
+    else:
+        full_state = np.einsum('nik,k...->ni...',basis,reduced_state)
+        return reduced_state,full_state
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
 
-__docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.vector_space import *
-from romtools.hyper_reduction import *
-from romtools.workflows import *
-from romtools.composite_vector_space import *
-from romtools.rom import *
