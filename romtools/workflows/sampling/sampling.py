@@ -88,8 +88,7 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # Create folder if it doesn't exist
-    if not os.path.exists(absolute_sampling_directory):
-        os.mkdir(absolute_sampling_directory)
+    create_empty_dir(absolute_sampling_directory)
 
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
