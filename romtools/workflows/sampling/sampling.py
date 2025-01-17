@@ -87,9 +87,15 @@ def run_sampling(model: Model,
 
     np.random.seed(random_seed)
 
+    # Create folder if it doesn't exist
+    create_empty_dir(absolute_sampling_directory)
+
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
+
+    # Save parameter samples
+    np.savetxt(f'{absolute_sampling_directory}/sample_parameters.txt', parameter_samples)
 
     # Set up model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
