@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 from romtools.workflows.sampling.sampling import run_sampling
-from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
+from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace, ConstParameterSpace
 
 def _get_run_id(run_dir):
     return int(run_dir.split('_')[-1])
@@ -61,11 +61,28 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
     # Return the time that each passed.txt was last modified
     return timestamps
 
+
+def run_sampler_hetero(tmp_path):
+    my_parameter_space = ConstParameterSpace(["int", "float", "string"],
+                                             [1, 2.1, "test_string"])
+    my_model = MockModel()
+    run_directories = run_sampling(my_model, my_parameter_space,
+                                   absolute_sampling_directory=tmp_path,
+                                   evaluation_concurrency=2,
+                                   number_of_samples=4, dry_run=True,
+                                   overwrite=True)
+    assert(len(run_directories)==4)
+
+
 @pytest.mark.mpi_skip
 def test_sampler(tmp_path):
     # see https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html for more info
     print('\n', tmp_path)
     run_sampler(tmp_path, dry_run=False)
+
+@pytest.mark.mpi_skip
+def test_sampler_hetero(tmp_path):
+    run_sampler_hetero(tmp_path)
 
 @pytest.mark.mpi_skip
 def test_sampler_dry_run(tmp_path):

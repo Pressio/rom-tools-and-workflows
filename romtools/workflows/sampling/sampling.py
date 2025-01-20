@@ -95,7 +95,7 @@ def run_sampling(model: Model,
     parameter_names = parameter_space.get_names()
 
     # Save parameter samples
-    np.savetxt(f'{absolute_sampling_directory}/sample_parameters.txt', parameter_samples)
+    np.savetxt(f'{absolute_sampling_directory}/sample_parameters.txt', parameter_samples, fmt="%s "*parameter_space.get_dimensionality())
 
     # Set up model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
