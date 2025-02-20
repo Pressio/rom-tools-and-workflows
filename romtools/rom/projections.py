@@ -63,7 +63,7 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
     shift_vector = vector_space.get_shift_vector()
 
     nvars,nx,k = basis.shape
-    basis = np.reshape(basis,(nvars*nx,k))
+    basis = np.reshape(basis,(nvars*nx,k),'C')
 
     # If input_tensor is just a single snapshot
     if len(input_tensor.shape) == 2:
@@ -84,14 +84,16 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
         right_hand_side = basis.transpose() @ ( weighting_matrix  @ right_hand_side )
 
     reduced_state = np.linalg.solve(left_hand_side,right_hand_side)
-    basis = np.reshape(basis,(nvars,nx,k))
+    basis = np.reshape(basis,(nvars,nx,k),'C')
   
     if return_full_state == False:
         return reduced_state 
 
+    if len(input_tensor.shape) == 2:
+        full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector
     else:
-        full_state = np.einsum('nik,k...->ni...',basis,reduced_state)
-        return reduced_state,full_state
+        full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector[...,None]
+    return reduced_state,full_state
 
 
 

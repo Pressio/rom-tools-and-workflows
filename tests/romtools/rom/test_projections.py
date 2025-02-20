@@ -179,17 +179,16 @@ def test_optimal_l2_projection_multiple_vectors():
 def test_optimal_l2_projection_full_return():
     np.random.seed(1)
     data = np.random.normal(size=(3,10,5))
-    data_to_project = data[...,0]
+    data_to_project = data[...,0:2] 
 
     rom_dim = 5
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
-    trial_space = romtools.VectorSpaceFromPOD(snapshots=data,
-                                          truncater=my_truncater,
-                                          shifter = None,
-                                          orthogonalizer=romtools.vector_space.utils.EuclideanL2Orthogonalizer(),
-                                          scaler = romtools.vector_space.utils.NoOpScaler())
+    my_shifter = romtools.utils.create_constant_shifter(0.,data)
+    trial_space = romtools.DictionaryVectorSpace(snapshots=data,
+                                          shifter = my_shifter)
 
     reduced_state,projected_data = romtools.rom.optimal_l2_projection(data_to_project, trial_space,return_full_state=True)
+
    
     assert np.allclose(projected_data,data_to_project)
 
