@@ -89,12 +89,11 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
     if return_full_state == False:
         return reduced_state 
 
+    if len(input_tensor.shape) == 2:
+        full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector
     else:
-        if len(input_tensor.shape) == 2:
-            full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector
-        elif len(input_tensor.shape) == 3:
-            full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector[...,None]
-        return reduced_state,full_state
+        full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector[...,None]
+    return reduced_state,full_state
 
 
 
