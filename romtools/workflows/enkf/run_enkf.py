@@ -74,7 +74,7 @@ def run_enkf(  fom_model: QoiModel,
                n_enkf_iter: int = 5,
                random_seed: int = 1):
     '''
-    Main implementation of the enkf algorithm. Note that 
+    Main implementation of the enkf algorithm.  
     '''
     enkf_directory = absolute_enkf_work_directory
     create_empty_dir(enkf_directory)
@@ -82,11 +82,12 @@ def run_enkf(  fom_model: QoiModel,
     run_directory_prefix = "run_"
     enkf_file = open(f"{enkf_directory}/enkf_status.log", "w", encoding="utf-8")
 
-    param_min = 1e-5
-    param_max = 5
-
     # Generate "prior" guess of parameters
     parameter_ensemble_phys = prior(n_ensemble, random_seed)
+
+    #TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
+    param_min = parameter_ensemble_phys.min()
+    param_max = parameter_ensemble_phys.max()
 
     # TODO: Note: In provided code, this is nondimensionalized with set constants (input_min, input_max)
     parameter_ensemble = transform(parameter_ensemble_phys, param_min, param_max)
@@ -165,9 +166,6 @@ def run_enkf(  fom_model: QoiModel,
 
         output_differences = -ensemble_outputs + observation_data[:, np.newaxis]
 
-        # output_error_norm = np.linalg.norm(output_from_mean_input - observation_data) / np.linalg.norm(observation_data)
-        # parameter_input_variance = np.linalg.norm(np.var(parameter_ensemble_nondim, axis=1))
-
         K1 = Sout @ Sout.T + output_cov
         K2 = Sin @ Sout.T
         update = K2 @ np.linalg.solve(K1, output_differences)
@@ -188,5 +186,6 @@ def run_enkf(  fom_model: QoiModel,
             input_variance=input_variance,
             output_diff_L2=output_diff_L2,
             output_from_mean_input_diff_L2=output_from_mean_input_diff_L2)
+    # TODO: add timings
     
     return mean_input #TODO: what should we return? 
