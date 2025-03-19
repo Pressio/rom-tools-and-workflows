@@ -74,7 +74,7 @@ def run_enkf(  fom_model: QoiModel,
                n_enkf_iter: int = 5,
                random_seed: int = 1):
     '''
-    Main implementation of the enkf algorithm.  
+    Main implementation of the enkf algorithm.
     '''
     enkf_directory = absolute_enkf_work_directory
     create_empty_dir(enkf_directory)
@@ -95,12 +95,6 @@ def run_enkf(  fom_model: QoiModel,
     mean_input = np.mean(parameter_ensemble, axis=0)
     iiter = 0
 
-    # Make first ensemble directories
-    for sample_index, sample in enumerate(parameter_ensemble):
-        fom_run_directory =  f'{enkf_directory}/enkf_iter_/{run_directory_prefix}{sample_index}'
-        create_empty_dir(fom_run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names, sample)
-        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
 
     # Read measurements
     observation_data = observation_data.flatten()
@@ -129,7 +123,7 @@ def run_enkf(  fom_model: QoiModel,
         mean_input_phys = inverse_transform(mean_input, param_min, param_max)
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_phys)
         fom_model.populate_run_directory(fom_run_directory_mean, parameter_dict)
-        enkf_file.write(f"Ensemble {iiter}: Running FOM at mean \n")
+        enkf_file.write(f"Iter {iiter}: Running FOM at mean \n")
         fom_model.run_model(fom_run_directory_mean,parameter_dict)
 
         # get (physical) output from mean
@@ -141,7 +135,7 @@ def run_enkf(  fom_model: QoiModel,
         # run FOM at current ensemble
         for i in range(n_ensemble):
             sample_index = i
-            enkf_file.write(f"Ensemble {iiter}: Running FOM sample {sample_index} \n")
+            enkf_file.write(f"Iter {iiter}: Running FOM sample {sample_index} \n")
             parameter_input_phys = inverse_transform(parameter_ensemble[sample_index,:], param_min, param_max)
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
             fom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{sample_index}'
@@ -172,7 +166,7 @@ def run_enkf(  fom_model: QoiModel,
 
         parameter_ensemble += update.T
         enkf_file.write(f'{parameter_ensemble}')
-        parameter_ensemble = np.clip(parameter_ensemble, a_min=0, a_max = 1)
+        # parameter_ensemble = np.clip(parameter_ensemble, a_min=0, a_max = 1)
         mean_input = np.mean(parameter_ensemble, axis=0)
         output_from_mean_input_diff = observation_data - output_from_mean_input
 
