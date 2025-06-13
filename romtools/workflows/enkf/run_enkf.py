@@ -60,14 +60,14 @@ def transform(array, amin, amax):
     # Move from data in \mathbb{R} to [0,1]
     return (array-amin)/(amax-amin)
 
-def inverse_transform(array, amin, amax):    
+def inverse_transform(array, amin, amax):
     # Move from data in [0,1] to \mathbb{R}
     return (amax-amin)*array+amin
 
 def run_enkf(  fom_model: QoiModel,
                observation_data: np.array, # could be defined as function for an "online" sensor
-               prior: callable, 
-               parameter_names: list, 
+               prior: callable,
+               parameter_names: list,
                absolute_enkf_work_directory: str,
                noise: float,     # TODO: Assuming Gaussian IID noise, could be general noise matrix
                n_ensemble: int = 10,
@@ -124,10 +124,12 @@ def run_enkf(  fom_model: QoiModel,
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_phys)
         fom_model.populate_run_directory(fom_run_directory_mean, parameter_dict)
         enkf_file.write(f"Iter {iiter}: Running FOM at mean \n")
-        fom_model.run_model(fom_run_directory_mean,parameter_dict)
+        fom_model.run_model(fom_run_directory_mean, parameter_dict)
 
         # get (physical) output from mean
-        output_from_mean_input_phys = fom_model.compute_qoi(fom_run_directory_mean,parameter_dict)
+        output_from_mean_input_phys = fom_model.compute_qoi(fom_run_directory_mean, parameter_dict)
+        # CRW: flatten?
+        output_from_mean_input_phys = output_from_mean_input_phys.flatten()
 
         # normalize output
         output_from_mean_input = transform(output_from_mean_input_phys, obs_min, obs_max)
@@ -140,16 +142,18 @@ def run_enkf(  fom_model: QoiModel,
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
             fom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{sample_index}'
             create_empty_dir(fom_run_directory)
-            fom_model.populate_run_directory(fom_run_directory,parameter_dict)
-            fom_model.run_model(fom_run_directory,parameter_dict)
+            fom_model.populate_run_directory(fom_run_directory, parameter_dict)
+            fom_model.run_model(fom_run_directory, parameter_dict)
 
             # get output of FOM
             fom_output_phys = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+            # CRW: flatten?
+            fom_output_phys = fom_output_phys.flatten()
             fom_output = transform(fom_output_phys, obs_min, obs_max)
             if i == 0:
                 outputs = fom_output[None]
             else:
-                outputs = np.append(outputs,fom_output[None],axis=0)
+                outputs = np.append(outputs, fom_output[None], axis=0)
 
         # compute correlation matrices
         ensemble_outputs = np.array(outputs).T
@@ -165,21 +169,25 @@ def run_enkf(  fom_model: QoiModel,
         update = K2 @ np.linalg.solve(K1, output_differences)
 
         parameter_ensemble += update.T
-        enkf_file.write(f'{parameter_ensemble}')
+        parameter_ensemble_phys = inverse_transform(parameter_ensemble, param_min, param_max)
+        enkf_file.write(f'{parameter_ensemble}\n')
         # parameter_ensemble = np.clip(parameter_ensemble, a_min=0, a_max = 1)
         mean_input = np.mean(parameter_ensemble, axis=0)
+        mean_input_phys = inverse_transform(mean_input, param_min, param_max)
         output_from_mean_input_diff = observation_data - output_from_mean_input
 
         input_mean_norm.append(np.linalg.norm(mean_input_phys))
         input_variance.append(np.linalg.norm(np.var(parameter_ensemble_phys,axis=0)))
         output_diff_L2.append(np.linalg.norm(output_differences,axis=0) / np.linalg.norm(observation_data))
         output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff)/np.linalg.norm(observation_data))
-    
+
     np.savez(f'{enkf_directory}/enkf_stats',
             input_mean_norm=input_mean_norm,
             input_variance=input_variance,
             output_diff_L2=output_diff_L2,
             output_from_mean_input_diff_L2=output_from_mean_input_diff_L2)
     # TODO: add timings
-    
-    return mean_input #TODO: what should we return? 
+
+    mean_input_phys = inverse_transform(mean_input, param_min, param_max)
+
+    return mean_input_phys #TODO: what should we return?
