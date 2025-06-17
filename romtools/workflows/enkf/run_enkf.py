@@ -43,71 +43,84 @@
 # ************************************************************************
 #
 
+# TODO: could define observation as function for an "online" sensor
+# TODO: Assuming Gaussian IID noise, could be general noise matrix
+# TODO: prior really should be an Iterable[callable] to permit different sampling spaces
+# TODO: discussion of what should be returned
+# TODO: add timings
 
 import os
 import time
+from typing import Iterable
+
 import numpy as np
 
-import romtools.linalg.linalg as la
 from romtools.workflows.models import QoiModel
-from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
+from romtools.workflows.enkf.enkf_utils import Transformer
+from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois
 
-def _create_parameter_dict(parameter_names, parameter_values):
-    return dict(zip(parameter_names, parameter_values))
 
-def transform(array, amin, amax):
-    # Move from data in \mathbb{R} to [0,1]
-    return (array - amin) / (amax - amin)
-
-def inverse_transform(array, amin, amax):
-    # Move from data in [0,1] to \mathbb{R}
-    return (amax - amin) * array + amin
-
-def run_enkf(  fom_model: QoiModel,
-               observation_data: np.array, # could be defined as function for an "online" sensor
-               prior: callable,
-               parameter_names: list,
-               absolute_enkf_work_directory: str,
-               noise: float,     # TODO: Assuming Gaussian IID noise, could be general noise matrix
-               n_ensemble: int = 10,
-               n_enkf_iter: int = 5,
-               random_seed: int = 1):
+def run_enkf(
+    fom_model: QoiModel,
+    observation_data: np.ndarray,
+    prior: callable,
+    parameter_names: Iterable[str],
+    parameter_mins: Iterable[float],
+    parameter_maxs: Iterable[float],
+    obs_transformers: Iterable[Transformer],
+    obs_noise: Iterable[float],
+    enkf_directory: str,
+    n_ensemble: int = 10,
+    n_enkf_iter: int = 5,
+    random_seed: int = 1
+):
     '''
     Main implementation of the enkf algorithm.
     '''
-    enkf_directory = absolute_enkf_work_directory
-    create_empty_dir(enkf_directory)
 
+    # some input checking
+    assert os.path.isabs(enkf_directory), f"enkf_directory is not an absolute path ({enkf_directory})"
+    n_params = len(parameter_names)
+    assert len(parameter_mins) == n_params, f"Length of parameter_mins is not same as parameter_names ({n_params})"
+    assert len(parameter_maxs) == n_params, f"Length of parameter_maxs is not same as parameter_names ({n_params})"
+    assert observation_data.ndim == 2, "Currently assumes that observation_data is 2D"
+    n_observations, n_observers = observation_data.shape
+    assert len(obs_transformers) == n_observers, "Unequal observers and observation transformers"
+    assert len(obs_noise) == n_observers, "Unequal number of observers and noise parameters"
+    assert n_ensemble > 0
+    assert n_enkf_iter > 0
+
+    # prep outputs
+    create_empty_dir(enkf_directory)
     run_directory_prefix = "run_"
     enkf_file = open(f"{enkf_directory}/enkf_status.log", "w", encoding="utf-8")
 
-    # Generate "prior" guess of parameters
+    # Generate prior guesses of parameters
+    # NOTE: currently assumes that prior generates [n_ensemble, n_params] array
     parameter_ensemble_phys = prior(n_ensemble, random_seed)
+    assert parameter_ensemble_phys.shape == (n_ensemble, n_params)
 
-    # TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
-    param_min = parameter_ensemble_phys.min()
-    param_max = parameter_ensemble_phys.max()
-
-    # generate initial nondimensionalized parameter(s) from prior samples
-    # TODO: Note: In provided code, this is nondimensionalized with set constants (input_min, input_max)
-    parameter_ensemble = transform(parameter_ensemble_phys, param_min, param_max)
+    # generate parameter non-dimensionalization transformers
+    param_transformers = []
+    for param_min, param_max in zip(parameter_mins, parameter_maxs):
+        param_transformers.append(create_minmax_transformer(param_min, param_max))
+    parameter_ensemble = multi_transform(parameter_ensemble_phys, param_transformers)
 
     # compute mean parameter(s) from prior samples
     mean_input = np.mean(parameter_ensemble, axis=0)
 
-    # Read measurements
-    observation_data = observation_data.flatten()
-    obs_min = observation_data.min()
-    obs_max = observation_data.max()
-    observation_data = transform(observation_data, obs_min, obs_max)
-    n_outputs = len(observation_data)
+    # Normalize observations
+    observation_data = multi_transform(observation_data, obs_transformers)
+    observation_data = observation_data.flatten(order="C")
 
     # Set output covariance
-    output_cov = np.eye(n_outputs) * noise
+    output_cov = np.concatenate([noise * np.ones(n_observations, dtype=np.float64) for noise in obs_noise])
+    output_cov = np.diag(output_cov)
 
-    # Initialze data to collect
-    input_mean_norm = [np.linalg.norm(parameter_ensemble_phys)]
+    # Initialize data to collect
+    input_mean = [np.mean(parameter_ensemble_phys, axis=0)]
+    input_norm = [np.linalg.norm(parameter_ensemble_phys, axis=0)]
     input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys, axis=0))]
     output_diff_L2 = []
     output_from_mean_input_diff_L2 = []
@@ -115,47 +128,42 @@ def run_enkf(  fom_model: QoiModel,
     for iiter in range(n_enkf_iter):
         enkf_file.write(f"ENKF iteration {iiter}\n")
 
-        fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean"
-
         # run FOM at mean input
-        create_empty_dir(fom_run_directory_mean)
-        mean_input_phys = inverse_transform(mean_input, param_min, param_max)
-        parameter_dict = _create_parameter_dict(parameter_names, mean_input_phys)
-        fom_model.populate_run_directory(fom_run_directory_mean, parameter_dict)
-        enkf_file.write(f"Iter {iiter}: Running FOM at mean \n")
-        fom_model.run_model(fom_run_directory_mean, parameter_dict)
+        mean_input_phys = multi_transform(mean_input, param_transformers, inverse=True)
+        fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean"
+        output_from_mean_input_phys = process_model_qois(
+            mean_input_phys,
+            parameter_names,
+            fom_model,
+            fom_run_directory_mean
+        )
 
-        # get (physical) output from mean
-        output_from_mean_input_phys = fom_model.compute_qoi(fom_run_directory_mean, parameter_dict)
-        # CRW: flatten?
-        output_from_mean_input_phys = output_from_mean_input_phys.flatten()
-
-        # normalize output
-        output_from_mean_input = transform(output_from_mean_input_phys, obs_min, obs_max)
+        # normalize output from mean
+        output_from_mean_input = multi_transform(output_from_mean_input_phys, obs_transformers)
+        output_from_mean_input = output_from_mean_input.flatten(order="C")
 
         # run FOM at current ensemble
-        for i in range(n_ensemble):
-            sample_index = i
-            enkf_file.write(f"Iter {iiter}: Running FOM sample {sample_index} \n")
-            parameter_input_phys = inverse_transform(parameter_ensemble[sample_index, :], param_min, param_max)
-            parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
-            fom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{sample_index}"
-            create_empty_dir(fom_run_directory)
-            fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-            fom_model.run_model(fom_run_directory, parameter_dict)
+        for ens_idx in range(n_ensemble):
+            enkf_file.write(f"Iter {iiter}: Running FOM sample {ens_idx} \n")
 
-            # get output of FOM
-            fom_output_phys = fom_model.compute_qoi(fom_run_directory, parameter_dict)
-            # CRW: flatten?
-            fom_output_phys = fom_output_phys.flatten()
-            fom_output = transform(fom_output_phys, obs_min, obs_max)
-            if i == 0:
-                outputs = fom_output[None]
+            # run FOM ensemble member
+            fom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{ens_idx}"
+            fom_output_phys = process_model_qois(
+                parameter_ensemble_phys[ens_idx, :],
+                parameter_names,
+                fom_model,
+                fom_run_directory
+            )
+
+            # collect normalized output values
+            fom_output = multi_transform(fom_output_phys, obs_transformers)
+            fom_output = fom_output.flatten(order="C")[:, np.newaxis]
+            if ens_idx == 0:
+                ensemble_outputs = fom_output.copy()
             else:
-                outputs = np.append(outputs, fom_output[None], axis=0)
+                ensemble_outputs = np.append(ensemble_outputs, fom_output, axis=1)
 
         # compute square root matrices
-        ensemble_outputs = np.array(outputs).T
         Sin = (parameter_ensemble.T - mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)
         Sout = (ensemble_outputs - output_from_mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)
 
@@ -164,31 +172,30 @@ def run_enkf(  fom_model: QoiModel,
         K2 = Sin @ Sout.T
 
         # calculate parameter update
-        output_differences = -ensemble_outputs + observation_data[:, np.newaxis]
+        output_differences = observation_data[:, np.newaxis] - ensemble_outputs
         update = K2 @ np.linalg.solve(K1, output_differences)
         parameter_ensemble += update.T
 
-        parameter_ensemble_phys = inverse_transform(parameter_ensemble, param_min, param_max)
-        enkf_file.write(f"{parameter_ensemble}\n")
+        parameter_ensemble_phys = multi_transform(parameter_ensemble, param_transformers, inverse=True)
+        enkf_file.write(f"{parameter_ensemble_phys}\n")
 
         # compute mean parameter set for next iteration
         mean_input = np.mean(parameter_ensemble, axis=0)
-        mean_input_phys = inverse_transform(mean_input, param_min, param_max)
+        mean_input_phys = multi_transform(mean_input, param_transformers, inverse=True)
 
         # compute output for logging
         output_from_mean_input_diff = observation_data - output_from_mean_input
-        input_mean_norm.append(np.linalg.norm(mean_input_phys))
+        input_mean.append(mean_input.copy())
+        input_norm.append(np.linalg.norm(parameter_ensemble_phys, axis=0))
         input_variance.append(np.linalg.norm(np.var(parameter_ensemble_phys, axis=0)))
-        output_diff_L2.append(np.linalg.norm(output_differences, axis=0) / np.linalg.norm(observation_data))
-        output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff) / np.linalg.norm(observation_data))
+        output_diff_L2.append(np.linalg.norm(output_differences, axis=0) / np.linalg.norm(observation_data, axis=0))
+        output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff, axis=0) / np.linalg.norm(observation_data, axis=0))
 
     np.savez(f"{enkf_directory}/enkf_stats",
-            input_mean_norm=input_mean_norm,
+            input_mean=input_mean,
+            input_norm=input_norm,
             input_variance=input_variance,
             output_diff_L2=output_diff_L2,
             output_from_mean_input_diff_L2=output_from_mean_input_diff_L2)
-    # TODO: add timings
 
-    mean_input_phys = inverse_transform(mean_input, param_min, param_max)
-
-    return mean_input_phys # TODO: what should we return?
+    return mean_input_phys

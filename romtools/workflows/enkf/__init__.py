@@ -45,3 +45,4 @@
 
 from romtools.workflows.enkf.run_enkf import *
 from romtools.workflows.enkf.run_enkf_mf import *
+from romtools.workflows.enkf.enkf_utils import *
