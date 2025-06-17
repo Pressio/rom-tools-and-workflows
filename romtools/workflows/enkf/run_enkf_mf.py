@@ -59,18 +59,20 @@ def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
 
-def run_enkf_mf( fom_model: QoiModel,
-               rom_model_builder: QoiModelBuilder,
-               observation_data: np.array, # could be defined as function for an "online" sensor
-               prior: callable, 
-               parameter_names: list, 
-               absolute_enkf_work_directory: str,
-               noise: float,     # TODO: Assuming Gaussian IID noise, could be general noise matrix
-               rom_tol: float,
-               n_ensemble_fom: int = 5,
-               n_ensemble_rom: int = 15,
-               n_enkf_iter: int = 5,
-               random_seed: int = 1):
+def run_enkf_mf(
+    fom_model: QoiModel,
+    rom_model_builder: QoiModelBuilder,
+    observation_data: np.array, # could be defined as function for an "online" sensor
+    prior: callable,
+    parameter_names: list,
+    absolute_enkf_work_directory: str,
+    noise: float,     # TODO: Assuming Gaussian IID noise, could be general noise matrix
+    rom_tol: float,
+    n_ensemble_fom: int = 5,
+    n_ensemble_rom: int = 15,
+    n_enkf_iter: int = 5,
+    random_seed: int = 1
+):
     '''
     Main implementation of the MF enkf algorithm.
     '''
@@ -78,13 +80,13 @@ def run_enkf_mf( fom_model: QoiModel,
     create_empty_dir(enkf_directory)
 
     run_directory_prefix = "run_"
-    offline_directory_prefix = 'data_for_rom'
+    offline_directory_prefix = "data_for_rom"
     enkf_file = open(f"{enkf_directory}/enkf_status.log", "w", encoding="utf-8")
 
     # Generate "prior" guess of parameters
     parameter_ensemble_fom_phys = prior(n_ensemble_fom, random_seed)
     parameter_ensemble_rom_phys = prior(n_ensemble_rom, random_seed)
-        #TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
+    # TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
     param_min = min(parameter_ensemble_fom_phys.min(), parameter_ensemble_rom_phys.min())
     param_max = max(parameter_ensemble_fom_phys.max(), parameter_ensemble_rom_phys.max())
 
@@ -97,8 +99,6 @@ def run_enkf_mf( fom_model: QoiModel,
 
     mean_input_fom_phys = inverse_transform(mean_input_fom, param_min, param_max)
     mean_input_rom_phys = inverse_transform(mean_input_rom, param_min, param_max)
-
-    iiter = 0
 
     # Read measurements
     observation_data = observation_data.flatten()
@@ -127,22 +127,24 @@ def run_enkf_mf( fom_model: QoiModel,
 
     training_dirs = []
     train_rom = True
-
     for iiter in range(n_enkf_iter):
         enkf_file.write(f"ENKF iteration {iiter}\n")
 
-        fom_run_directory_mean =  f'{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}mean'
+        fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}mean"
 
         # run FOM at mean input
         create_empty_dir(fom_run_directory_mean)
-
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_fom_phys)
         fom_model.populate_run_directory(fom_run_directory_mean, parameter_dict)
         enkf_file.write(f"Iter {iiter}: Running FOM at mean \n")
-        fom_model.run_model(fom_run_directory_mean,parameter_dict)
+        fom_model.run_model(fom_run_directory_mean, parameter_dict)
 
         # get (physical) output from mean
-        output_from_mean_input_phys = fom_model.compute_qoi(fom_run_directory_mean,parameter_dict)
+        output_from_mean_input_phys = fom_model.compute_qoi(fom_run_directory_mean, parameter_dict)
+        # CRW: flatten?
+        output_from_mean_input_phys = output_from_mean_input_phys.flatten()
+
+        # normalize output
         output_from_mean_input_fom = transform(output_from_mean_input_phys, obs_min, obs_max)
 
         # run FOM at current ensemble
@@ -151,37 +153,41 @@ def run_enkf_mf( fom_model: QoiModel,
             enkf_file.write(f"Iter {iiter}: Running FOM on FOM sample {sample_index} \n")
             parameter_input_phys = inverse_transform(parameter_ensemble_fom[sample_index,:], param_min, param_max)
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
-            fom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}{sample_index}'
+            fom_run_directory = f"{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}{sample_index}"
             create_empty_dir(fom_run_directory)
-            fom_model.populate_run_directory(fom_run_directory,parameter_dict)
-            fom_model.run_model(fom_run_directory,parameter_dict)
+            fom_model.populate_run_directory(fom_run_directory, parameter_dict)
+            fom_model.run_model(fom_run_directory, parameter_dict)
 
             # get output of FOM
-            fom_output_phys = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+            fom_output_phys = fom_model.compute_qoi(fom_run_directory, parameter_dict)
+            # CRW: flatten?
+            fom_output_phys = fom_output_phys.flatten()
             fom_output = transform(fom_output_phys, obs_min, obs_max)
             if i == 0:
                 outputs_fom = fom_output[None]
             else:
-                outputs_fom = np.append(outputs_fom,fom_output[None],axis=0)
+                outputs_fom = np.append(outputs_fom, fom_output[None], axis=0)
             training_dirs.append(fom_run_directory)
 
         # Train ROM
         if train_rom:
-            updated_offline_data_dir = f'{enkf_directory}/enkf_iter_{iiter}/rom/{offline_directory_prefix}/'
+            updated_offline_data_dir = f"{enkf_directory}/enkf_iter_{iiter}/rom/{offline_directory_prefix}/"
             create_empty_dir(updated_offline_data_dir)
-            rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
-        
-        # run ROM at mean input
-        rom_run_directory_mean_fom =  f'{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}mean'
+            rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir, training_dirs)
+
+        # run ROM at FOM mean input
+        rom_run_directory_mean_fom =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}mean"
 
         create_empty_dir(rom_run_directory_mean_fom)
-    
+
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_fom)
         rom_model.populate_run_directory(rom_run_directory_mean_fom, parameter_dict)
-        rom_model.run_model(rom_run_directory_mean_fom,parameter_dict)
+        rom_model.run_model(rom_run_directory_mean_fom, parameter_dict)
 
         # get output from mean
-        output_from_mean_input_phys = rom_model.compute_qoi(rom_run_directory_mean_fom,parameter_dict)
+        output_from_mean_input_phys = rom_model.compute_qoi(rom_run_directory_mean_fom, parameter_dict)
+        # CRW: flatten?
+        output_from_mean_input_phys = output_from_mean_input_phys.flatten()
         output_from_mean_input_rom_fom = transform(output_from_mean_input_phys, obs_min, obs_max)
 
         # run ROM at current FOM ensemble
@@ -190,51 +196,56 @@ def run_enkf_mf( fom_model: QoiModel,
             enkf_file.write(f"Iter {iiter}: Running ROM on FOM sample {sample_index} \n")
             parameter_input_phys = inverse_transform(parameter_ensemble_fom[sample_index,:], param_min, param_max)
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
-            rom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}{sample_index}'
+            rom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}{sample_index}"
             create_empty_dir(rom_run_directory)
-            rom_model.populate_run_directory(rom_run_directory,parameter_dict)
-            rom_model.run_model(rom_run_directory,parameter_dict)
+            rom_model.populate_run_directory(rom_run_directory, parameter_dict)
+            rom_model.run_model(rom_run_directory, parameter_dict)
 
             # get output of FOM
-            rom_output_phys = rom_model.compute_qoi(rom_run_directory,parameter_dict)
+            rom_output_phys = rom_model.compute_qoi(rom_run_directory, parameter_dict)
+            # CRW: flatten?
+            rom_output_phys = rom_output_phys.flatten()
             rom_output = transform(rom_output_phys, obs_min, obs_max)
             if i == 0:
                 outputs_rom_fom = rom_output[None]
             else:
-                outputs_rom_fom = np.append(outputs_rom_fom,rom_output[None],axis=0)
-        
+                outputs_rom_fom = np.append(outputs_rom_fom, rom_output[None],axis=0)
+
         # run ROM at mean rom input
-        rom_run_directory_mean_rom =  f'{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}mean'
+        rom_run_directory_mean_rom =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}mean"
 
         create_empty_dir(rom_run_directory_mean_rom)
-    
+
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_rom_phys)
         rom_model.populate_run_directory(rom_run_directory_mean_rom, parameter_dict)
-        rom_model.run_model(rom_run_directory_mean_rom,parameter_dict)
+        rom_model.run_model(rom_run_directory_mean_rom, parameter_dict)
 
         # get output from mean
-        output_from_mean_input_phys = rom_model.compute_qoi(rom_run_directory_mean_rom,parameter_dict)
+        output_from_mean_input_phys = rom_model.compute_qoi(rom_run_directory_mean_rom, parameter_dict)
+        # CRW: flatten?
+        output_from_mean_input_phys = output_from_mean_input_phys.flatten()
         output_from_mean_input_rom_rom = transform(output_from_mean_input_phys, obs_min, obs_max)
 
         # run ROM at current ROM ensemble
         for i in range(n_ensemble_rom):
-            print(i)
             sample_index = i
             enkf_file.write(f"Iter {iiter}: Running ROM on ROM sample {sample_index} \n")
             parameter_input_dim = inverse_transform(parameter_ensemble_rom[sample_index,:], param_min, param_max)
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_dim)
-            rom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}{sample_index}'
+            rom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}{sample_index}"
             create_empty_dir(rom_run_directory)
-            rom_model.populate_run_directory(rom_run_directory,parameter_dict)
-            rom_model.run_model(rom_run_directory,parameter_dict)
+            rom_model.populate_run_directory(rom_run_directory, parameter_dict)
+            rom_model.run_model(rom_run_directory, parameter_dict)
 
             # get output of FOM
-            rom_output_phys = rom_model.compute_qoi(rom_run_directory,parameter_dict)
+            rom_output_phys = rom_model.compute_qoi(rom_run_directory, parameter_dict)
+            # CRW: flatten?
+            rom_output_phys = rom_output_phys.flatten()
             rom_output = transform(rom_output_phys, obs_min, obs_max)
             if i == 0:
                 outputs_rom_rom = rom_output[None]
             else:
-                outputs_rom_rom = np.append(outputs_rom_rom,rom_output[None],axis=0)
+                outputs_rom_rom = np.append(outputs_rom_rom, rom_output[None],axis=0)
 
         ensemble_outputs_fom = np.array(outputs_fom).T
         ensemble_outputs_rom_fom = np.array(outputs_rom_fom).T
@@ -251,11 +262,21 @@ def run_enkf_mf( fom_model: QoiModel,
         output_differences_rom_fom = -ensemble_outputs_rom_fom + observation_data[:, np.newaxis]
         output_differences_rom_rom = -ensemble_outputs_rom_rom + observation_data[:, np.newaxis]
 
-        K1 = Sout_fom @ Sout_fom.T + 0.25 * Sout_rom_fom @ Sout_rom_fom.T - 0.5 * Sout_fom @ Sout_rom_fom.T - 0.5 * Sout_rom_fom @ Sout_fom.T + 0.25 * Sout_rom_rom @ Sout_rom_rom.T + output_cov
-        K2 = Sin_fom @ Sout_fom.T + 0.25 * Sin_fom @ Sout_rom_fom.T - 0.5 * Sin_fom @ Sout_rom_fom.T - 0.5 * Sin_fom @ Sout_fom.T + 0.25 * Sin_rom @ Sout_rom_rom.T
+        # compute Kalman gains
+        K1 = Sout_fom @ Sout_fom.T \
+            + 0.25 * Sout_rom_fom @ Sout_rom_fom.T \
+            - 0.5 * Sout_fom @ Sout_rom_fom.T \
+            - 0.5 * Sout_rom_fom @ Sout_fom.T \
+            + 0.25 * Sout_rom_rom @ Sout_rom_rom.T \
+            + output_cov
+        K2 = Sin_fom @ Sout_fom.T \
+            + 0.25 * Sin_fom @ Sout_rom_fom.T \
+            - 0.5 * Sin_fom @ Sout_rom_fom.T \
+            - 0.5 * Sin_fom @ Sout_fom.T \
+            + 0.25 * Sin_rom @ Sout_rom_rom.T
 
         update_fom = K2 @ np.linalg.solve(K1, output_differences_fom)
-        update_rom = K2 @ np.linalg.solve(K1, output_differences_rom_rom)        
+        update_rom = K2 @ np.linalg.solve(K1, output_differences_rom_rom)
 
         parameter_ensemble_fom += update_fom.T
         parameter_ensemble_rom += update_rom.T
@@ -269,9 +290,9 @@ def run_enkf_mf( fom_model: QoiModel,
             train_rom = True
         else:
             enkf_file.write("Keep ROM\n")
-        
+
         mean_input_fom = np.mean(parameter_ensemble_fom, axis=0)
-        mean_input_rom = np.mean(parameter_ensemble_fom, axis=0)
+        mean_input_rom = np.mean(parameter_ensemble_rom, axis=0)
 
         mean_input_fom_phys = inverse_transform(mean_input_fom, param_min, param_max)
         mean_input_rom_phys = inverse_transform(mean_input_rom, param_min, param_max)
@@ -281,20 +302,20 @@ def run_enkf_mf( fom_model: QoiModel,
         output_from_mean_input_diff_rom_rom = observation_data - output_from_mean_input_rom_rom
 
         input_mean_norm_fom.append(np.linalg.norm(mean_input_fom_phys))
-        input_variance_fom.append(np.linalg.norm(np.var(parameter_ensemble_fom_phys,axis=0)))
-        output_diff_L2_fom.append(np.linalg.norm(output_differences_fom,axis=0) / np.linalg.norm(observation_data))
-        output_from_mean_input_diff_L2_fom.append(np.linalg.norm(output_from_mean_input_diff_fom,axis=0) / np.linalg.norm(observation_data))
+        input_variance_fom.append(np.linalg.norm(np.var(parameter_ensemble_fom_phys, axis=0)))
+        output_diff_L2_fom.append(np.linalg.norm(output_differences_fom, axis=0) / np.linalg.norm(observation_data))
+        output_from_mean_input_diff_L2_fom.append(np.linalg.norm(output_from_mean_input_diff_fom, axis=0) / np.linalg.norm(observation_data))
 
         rom_data_indicator.append(rom_err_indicator)
-        output_diff_L2_rom_fom.append(np.linalg.norm(output_differences_rom_fom,axis=0) / np.linalg.norm(observation_data))
-        output_from_mean_input_diff_L2_rom_fom.append(np.linalg.norm(output_from_mean_input_diff_rom_fom,axis=0) / np.linalg.norm(observation_data))
+        output_diff_L2_rom_fom.append(np.linalg.norm(output_differences_rom_fom, axis=0) / np.linalg.norm(observation_data))
+        output_from_mean_input_diff_L2_rom_fom.append(np.linalg.norm(output_from_mean_input_diff_rom_fom, axis=0) / np.linalg.norm(observation_data))
 
         input_mean_norm_rom.append(np.linalg.norm(mean_input_rom_phys))
-        input_variance_rom.append(np.linalg.norm(np.var(parameter_ensemble_rom_phys,axis=0)))
-        output_diff_L2_rom.append(np.linalg.norm(output_differences_rom_rom,axis=0) / np.linalg.norm(observation_data))
-        output_from_mean_input_diff_L2_rom.append(np.linalg.norm(output_from_mean_input_diff_rom_rom,axis=0) / np.linalg.norm(observation_data))
+        input_variance_rom.append(np.linalg.norm(np.var(parameter_ensemble_rom_phys, axis=0)))
+        output_diff_L2_rom.append(np.linalg.norm(output_differences_rom_rom, axis=0) / np.linalg.norm(observation_data))
+        output_from_mean_input_diff_L2_rom.append(np.linalg.norm(output_from_mean_input_diff_rom_rom, axis=0) / np.linalg.norm(observation_data))
 
-    np.savez(f'{enkf_directory}/enkf_stats',
+    np.savez(f"{enkf_directory}/enkf_stats",
         rom_data_indicator=rom_data_indicator,
         input_mean_norm_fom=input_mean_norm_fom,
         input_variance_fom=input_variance_fom,
@@ -305,4 +326,6 @@ def run_enkf_mf( fom_model: QoiModel,
         input_mean_norm_rom=input_mean_norm_rom,
         input_variance_rom=input_variance_rom,
         output_diff_L2_rom=output_diff_L2_rom,
-        output_from_mean_input_diff_L2_rom=output_from_mean_input_diff_L2_rom)    
+        output_from_mean_input_diff_L2_rom=output_from_mean_input_diff_L2_rom)
+
+    return mean_input_fom_phys, mean_input_rom_phys

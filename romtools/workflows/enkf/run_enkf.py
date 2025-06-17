@@ -58,11 +58,11 @@ def _create_parameter_dict(parameter_names, parameter_values):
 
 def transform(array, amin, amax):
     # Move from data in \mathbb{R} to [0,1]
-    return (array-amin)/(amax-amin)
+    return (array - amin) / (amax - amin)
 
 def inverse_transform(array, amin, amax):
     # Move from data in [0,1] to \mathbb{R}
-    return (amax-amin)*array+amin
+    return (amax - amin) * array + amin
 
 def run_enkf(  fom_model: QoiModel,
                observation_data: np.array, # could be defined as function for an "online" sensor
@@ -85,16 +85,16 @@ def run_enkf(  fom_model: QoiModel,
     # Generate "prior" guess of parameters
     parameter_ensemble_phys = prior(n_ensemble, random_seed)
 
-    #TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
+    # TODO: Algorithm is set up to work on nondim'd inputs. Need a more general way to get these scales
     param_min = parameter_ensemble_phys.min()
     param_max = parameter_ensemble_phys.max()
 
+    # generate initial nondimensionalized parameter(s) from prior samples
     # TODO: Note: In provided code, this is nondimensionalized with set constants (input_min, input_max)
     parameter_ensemble = transform(parameter_ensemble_phys, param_min, param_max)
 
+    # compute mean parameter(s) from prior samples
     mean_input = np.mean(parameter_ensemble, axis=0)
-    iiter = 0
-
 
     # Read measurements
     observation_data = observation_data.flatten()
@@ -108,18 +108,17 @@ def run_enkf(  fom_model: QoiModel,
 
     # Initialze data to collect
     input_mean_norm = [np.linalg.norm(parameter_ensemble_phys)]
-    input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys,axis=0))]
+    input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys, axis=0))]
     output_diff_L2 = []
     output_from_mean_input_diff_L2 = []
 
     for iiter in range(n_enkf_iter):
         enkf_file.write(f"ENKF iteration {iiter}\n")
 
-        fom_run_directory_mean =  f'{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean'
+        fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean"
 
         # run FOM at mean input
         create_empty_dir(fom_run_directory_mean)
-
         mean_input_phys = inverse_transform(mean_input, param_min, param_max)
         parameter_dict = _create_parameter_dict(parameter_names, mean_input_phys)
         fom_model.populate_run_directory(fom_run_directory_mean, parameter_dict)
@@ -138,15 +137,15 @@ def run_enkf(  fom_model: QoiModel,
         for i in range(n_ensemble):
             sample_index = i
             enkf_file.write(f"Iter {iiter}: Running FOM sample {sample_index} \n")
-            parameter_input_phys = inverse_transform(parameter_ensemble[sample_index,:], param_min, param_max)
+            parameter_input_phys = inverse_transform(parameter_ensemble[sample_index, :], param_min, param_max)
             parameter_dict = _create_parameter_dict(parameter_names, parameter_input_phys)
-            fom_run_directory =  f'{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{sample_index}'
+            fom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{sample_index}"
             create_empty_dir(fom_run_directory)
             fom_model.populate_run_directory(fom_run_directory, parameter_dict)
             fom_model.run_model(fom_run_directory, parameter_dict)
 
             # get output of FOM
-            fom_output_phys = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+            fom_output_phys = fom_model.compute_qoi(fom_run_directory, parameter_dict)
             # CRW: flatten?
             fom_output_phys = fom_output_phys.flatten()
             fom_output = transform(fom_output_phys, obs_min, obs_max)
@@ -155,33 +154,35 @@ def run_enkf(  fom_model: QoiModel,
             else:
                 outputs = np.append(outputs, fom_output[None], axis=0)
 
-        # compute correlation matrices
+        # compute square root matrices
         ensemble_outputs = np.array(outputs).T
+        Sin = (parameter_ensemble.T - mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)
+        Sout = (ensemble_outputs - output_from_mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)
 
-        # compute gain_matrix
-        Sin = (parameter_ensemble.T - mean_input[:,np.newaxis]) / np.sqrt(n_ensemble - 1)
-        Sout = (ensemble_outputs - output_from_mean_input[:,np.newaxis]) / np.sqrt(n_ensemble - 1)
-
-        output_differences = -ensemble_outputs + observation_data[:, np.newaxis]
-
+        # first and second terms of Kalman gain calculation
         K1 = Sout @ Sout.T + output_cov
         K2 = Sin @ Sout.T
-        update = K2 @ np.linalg.solve(K1, output_differences)
 
+        # calculate parameter update
+        output_differences = -ensemble_outputs + observation_data[:, np.newaxis]
+        update = K2 @ np.linalg.solve(K1, output_differences)
         parameter_ensemble += update.T
+
         parameter_ensemble_phys = inverse_transform(parameter_ensemble, param_min, param_max)
-        enkf_file.write(f'{parameter_ensemble}\n')
-        # parameter_ensemble = np.clip(parameter_ensemble, a_min=0, a_max = 1)
+        enkf_file.write(f"{parameter_ensemble}\n")
+
+        # compute mean parameter set for next iteration
         mean_input = np.mean(parameter_ensemble, axis=0)
         mean_input_phys = inverse_transform(mean_input, param_min, param_max)
+
+        # compute output for logging
         output_from_mean_input_diff = observation_data - output_from_mean_input
-
         input_mean_norm.append(np.linalg.norm(mean_input_phys))
-        input_variance.append(np.linalg.norm(np.var(parameter_ensemble_phys,axis=0)))
-        output_diff_L2.append(np.linalg.norm(output_differences,axis=0) / np.linalg.norm(observation_data))
-        output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff)/np.linalg.norm(observation_data))
+        input_variance.append(np.linalg.norm(np.var(parameter_ensemble_phys, axis=0)))
+        output_diff_L2.append(np.linalg.norm(output_differences, axis=0) / np.linalg.norm(observation_data))
+        output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff) / np.linalg.norm(observation_data))
 
-    np.savez(f'{enkf_directory}/enkf_stats',
+    np.savez(f"{enkf_directory}/enkf_stats",
             input_mean_norm=input_mean_norm,
             input_variance=input_variance,
             output_diff_L2=output_diff_L2,
@@ -190,4 +191,4 @@ def run_enkf(  fom_model: QoiModel,
 
     mean_input_phys = inverse_transform(mean_input, param_min, param_max)
 
-    return mean_input_phys #TODO: what should we return?
+    return mean_input_phys # TODO: what should we return?
