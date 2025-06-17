@@ -109,16 +109,17 @@ def run_enkf(
 
     # compute mean parameter(s) from prior samples
     mean_input = np.mean(parameter_ensemble, axis=0)
+    mean_input_phys = multi_transform(mean_input, param_transformers, inverse=True)
 
-    # Normalize observations
+    # normalize observations
     observation_data = multi_transform(observation_data, obs_transformers)
     observation_data = observation_data.flatten(order="C")
 
-    # Set output covariance
+    # set output covariance
     output_cov = np.concatenate([noise * np.ones(n_observations, dtype=np.float64) for noise in obs_noise])
     output_cov = np.diag(output_cov)
 
-    # Initialize data to collect
+    # initialize data to collect
     input_mean = [np.mean(parameter_ensemble_phys, axis=0)]
     input_norm = [np.linalg.norm(parameter_ensemble_phys, axis=0)]
     input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys, axis=0))]
@@ -129,7 +130,6 @@ def run_enkf(
         enkf_file.write(f"ENKF iteration {iiter}\n")
 
         # run FOM at mean input
-        mean_input_phys = multi_transform(mean_input, param_transformers, inverse=True)
         fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean"
         output_from_mean_input_phys = process_model_qois(
             mean_input_phys,
