@@ -245,6 +245,7 @@ class VectorSpaceFromPOD():
         lsv, svals, _ = svd_picked(snapshot_matrix, full_matrices=False,
                                    compute_uv=True, hermitian=False)
 
+        self.__svals = svals
         self.__basis = truncater.truncate(lsv, svals)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         scaler.post_scale(self.__basis)
@@ -252,6 +253,14 @@ class VectorSpaceFromPOD():
         self.__basis = orthogonalizer.orthogonalize(self.__basis)
         self.__basis = _matrix_to_tensor(n_var, self.__basis)
         self.__shift_vector = shifter.get_shift_vector()
+
+
+    def get_singular_values(self) -> np.ndarray:
+        '''
+        Returns array of singular values
+        '''
+        return self.__svals
+
 
     def get_shift_vector(self) -> np.ndarray:
         '''
