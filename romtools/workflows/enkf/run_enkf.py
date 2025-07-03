@@ -54,12 +54,13 @@ import time
 from typing import Iterable
 
 import numpy as np
+import multiprocessing
 
 from romtools.workflows.models import QoiModel
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.enkf.enkf_utils import Transformer
 from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois
-
+from romtools.workflows.enkf.enkf_utils import run_model_at_ensemble
 
 def run_enkf(
     fom_model: QoiModel,
@@ -73,7 +74,8 @@ def run_enkf(
     enkf_directory: str,
     n_ensemble: int = 10,
     n_enkf_iter: int = 5,
-    random_seed: int = 1
+    random_seed: int = 1,
+    evaluation_concurrency = 1
 ):
     '''
     Main implementation of the enkf algorithm.
@@ -95,6 +97,9 @@ def run_enkf(
     create_empty_dir(enkf_directory)
     run_directory_prefix = "run_"
     enkf_file = open(f"{enkf_directory}/enkf_status.log", "w", encoding="utf-8")
+
+    # Init multiprocessing env
+    mp_cntxt=multiprocessing.get_context("spawn")
 
     # Generate prior guesses of parameters
     # NOTE: currently assumes that prior generates [n_ensemble, n_params] array
@@ -125,7 +130,6 @@ def run_enkf(
     input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys, axis=0))]
     output_diff_L2 = []
     output_from_mean_input_diff_L2 = []
-
     for iiter in range(n_enkf_iter):
         enkf_file.write(f"ENKF iteration {iiter}\n")
 
@@ -142,26 +146,21 @@ def run_enkf(
         output_from_mean_input = multi_transform(output_from_mean_input_phys, obs_transformers)
         output_from_mean_input = output_from_mean_input.flatten(order="C")
 
-        # run FOM at current ensemble
-        for ens_idx in range(n_ensemble):
-            enkf_file.write(f"Iter {iiter}: Running FOM sample {ens_idx} \n")
+        log_str = "Iter {iiter}: Running FOM sample "
+        fom_run_dir = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}"
 
-            # run FOM ensemble member
-            fom_run_directory =  f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}{ens_idx}"
-            fom_output_phys = process_model_qois(
-                parameter_ensemble_phys[ens_idx, :],
-                parameter_names,
-                fom_model,
-                fom_run_directory
-            )
-
-            # collect normalized output values
-            fom_output = multi_transform(fom_output_phys, obs_transformers)
-            fom_output = fom_output.flatten(order="C")[:, np.newaxis]
-            if ens_idx == 0:
-                ensemble_outputs = fom_output.copy()
-            else:
-                ensemble_outputs = np.append(ensemble_outputs, fom_output, axis=1)
+        ensemble_outputs, _ = run_model_at_ensemble(
+            n_ensemble,
+            fom_model,
+            parameter_ensemble_phys, 
+            parameter_names, 
+            observation_data,
+            obs_transformers,
+            fom_run_dir,
+            enkf_file,
+            log_str,
+            evaluation_concurrency,
+            mp_cntxt)
 
         # compute square root matrices
         Sin = (parameter_ensemble.T - mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)

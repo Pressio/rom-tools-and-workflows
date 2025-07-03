@@ -114,3 +114,67 @@ def process_model_qois(
     model.run_model(outdir, parameter_dict)
 
     return model.compute_qoi(outdir, parameter_dict)
+
+def process_and_transform_model_qois(
+    param_inputs: np.ndarray,
+    param_names: Iterable[str],
+    model: QoiModel,
+    outdir: str,
+    obs_transformers: Iterable[Transformer]
+) -> np.ndarray:
+    '''
+    Single function to process QoIs and transform and reshape outputs.
+    Abstraction helpful for mutliprocessing 
+    '''
+
+    fom_output_phys = process_model_qois(
+            param_inputs,
+            param_names,
+            model,
+            outdir
+        )
+
+    # collect normalized output values
+    fom_output = multi_transform(fom_output_phys, obs_transformers)
+    fom_output = fom_output.flatten(order="C") # Will only work for sensors
+    
+    return fom_output
+
+def run_model_at_ensemble(
+    n_ensemble: int,
+    model: QoiModel,
+    parameter_ensemble_phys: np.array,
+    parameter_names: Iterable[str],
+    observation_data: np.ndarray,
+    obs_transformers: Iterable[Transformer],
+    run_dir: str,
+    log_file,
+    log_file_str: str,
+    evaluation_concurrency,
+    mp_cntxt
+):
+
+    run_dirs = []
+    ensemble_outputs = []
+
+    # run FOM at current ensemble
+    for ens_idx in range(n_ensemble):
+        log_file.write(log_file_str + str(ens_idx) + "\n")
+
+        # run FOM ensemble member
+        fom_run_directory = run_dir + str(ens_idx)
+
+        fom_output = process_and_transform_model_qois(
+            parameter_ensemble_phys[ens_idx, :],
+            parameter_names,
+            model,
+            run_dir,
+            obs_transformers
+        )
+
+        ensemble_outputs.append(fom_output)
+        run_dirs.append(fom_run_directory)
+
+    ensemble_outputs = np.asarray(ensemble_outputs).T
+
+    return ensemble_outputs, run_dirs
