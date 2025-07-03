@@ -1,6 +1,7 @@
 from typing import Protocol, Iterable
 
 import numpy as np
+import concurrent.futures
 
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import QoiModel
@@ -156,24 +157,39 @@ def run_model_at_ensemble(
 
     run_dirs = []
     ensemble_outputs = []
+    if evaluation_concurrency == 1:
+        # run FOM at current ensemble
+        for ens_idx in range(n_ensemble):
+            log_file.write(log_file_str + str(ens_idx) + "\n")
 
-    # run FOM at current ensemble
-    for ens_idx in range(n_ensemble):
-        log_file.write(log_file_str + str(ens_idx) + "\n")
+            # run FOM ensemble member
+            fom_run_directory = run_dir + str(ens_idx)
 
-        # run FOM ensemble member
-        fom_run_directory = run_dir + str(ens_idx)
+            fom_output = process_and_transform_model_qois(
+                parameter_ensemble_phys[ens_idx, :],
+                parameter_names,
+                model,
+                run_dir,
+                obs_transformers
+            )
 
-        fom_output = process_and_transform_model_qois(
-            parameter_ensemble_phys[ens_idx, :],
-            parameter_names,
-            model,
-            run_dir,
-            obs_transformers
-        )
-
-        ensemble_outputs.append(fom_output)
-        run_dirs.append(fom_run_directory)
+            ensemble_outputs.append(fom_output)
+            run_dirs.append(fom_run_directory)
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
+            these_futures = [executor.submit(process_and_transform_model_qois,
+                                parameter_ensemble_phys[ens_idx, :],
+                                parameter_names,
+                                model,
+                                run_dir+str(ens_idx),
+                                obs_transformers)
+                                for ens_idx in range(n_ensemble)]
+            
+            # Wait for all processes to finish
+            concurrent.futures.wait(these_futures)
+            
+        ensemble_outputs = [future.result()[0] for future in these_futures]
+        run_dirs = [run_dir+str(i) for i in range(n_ensemble)]
 
     ensemble_outputs = np.asarray(ensemble_outputs).T
 
