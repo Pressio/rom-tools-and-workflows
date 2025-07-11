@@ -16,7 +16,6 @@ dependencies = [
     'pytest==7.4.4',   # released Dec 31st, 2023
     'pytest-mpi>=0.6', # released Jan 8th, 2022
     'pytest-timeout',
-    'mpi4py>3.1.4'
 ]
 # using pytest>=8.0.0 causes CI failures (likely compatibility issues with pytest-mpi)
 
@@ -28,4 +27,5 @@ where = ["."]
 
 #https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies
 [project.optional-dependencies]
+WithMPI = ['mpi4py>3.1.4']
 WithH5py = ['h5py']
