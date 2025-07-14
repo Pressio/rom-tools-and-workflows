@@ -88,15 +88,17 @@ class SvdMethodOfSnapshots:
 
 class SvdMethodOfSnapshotsForQr:
     '''
-    Same as SvdMethodOfSnapshots, but call only returns two arguments to be
+    Similar to SvdMethodOfSnapshots, but call only returns two arguments to be
     compatible with QR routine.
     '''
     def __init__(self, comm) -> None:
         self._comm = comm
 
-    def __call__(self, snapshots: np.ndarray,
-                 full_matrices: bool = False,
-                 compute_uv: bool = False,
-                 hermitian: bool = False) -> Tuple[np.ndarray, Any]:
+    def __call__(self, snapshots: np.ndarray, 
+                 mode: str = 'reduced') -> Tuple[np.ndarray, Any]:
+
+        if mode != 'reduced':
+            raise ValueError('mode must be = reduced')
+
         U, _ = la.thin_svd(snapshots, self._comm, method='method_of_snapshots')
         return U, 'not_computed_in_method_of_snapshots'
