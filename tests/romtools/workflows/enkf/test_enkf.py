@@ -102,7 +102,14 @@ def test_enkf(tmp_path):
     sensor = np.array([2.0,2.1,2.2])
     ## First, test that the routine will terminate if it hits the max iters
     tmp = run_enkf(
-        QoiModel, sensor, prior, ["u"], my_dir, 1e-3, 2, 11
+        QoiModel,   # fom_model
+        sensor,     # observation_data
+        prior,      # prior
+        ["u"],      # parameter_names
+        my_dir,     # absolute_enkf_work_directory
+        1e-3,       # noise
+        2,          # n_ensemble
+        11,         # n_enkf_iter
     )
 
     # # Ensure correct number of holdout set and training set FOMs are run
@@ -160,4 +167,4 @@ def test_enkf(tmp_path):
 
 
 if __name__ == "__main__":
-    test_sampling_with_holdout(os.getcwd() + "/sampling_with_holdout_test_tmp/")
+    test_enkf(os.getcwd() + "/test_enkf/")
