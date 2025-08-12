@@ -160,26 +160,21 @@ def run_enkf_mf(
         output_from_mean_input_fom = multi_transform(output_from_mean_input_phys, obs_transformers)
         output_from_mean_input_fom = output_from_mean_input_fom.flatten(order="C")
 
-        # run FOM at current ensemble
-        for ens_idx in range(n_ensemble_fom):
-            enkf_file.write(f"Iter {iiter}: Running FOM on FOM sample {ens_idx} \n")
+        log_str_fom = "Iter {iiter}: Running FOM on FOM sample "
+        fom_run_dir = f"{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}"
 
-            fom_run_directory = f"{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}{ens_idx}"
-            fom_output_phys = process_model_qois(
-                parameter_ensemble_fom_phys[ens_idx, :],
-                parameter_names,
-                fom_model,
-                fom_run_directory
-            )
-
-            # collect normalized output values
-            fom_output = multi_transform(fom_output_phys, obs_transformers)
-            fom_output = fom_output.flatten(order="C")[:, np.newaxis]
-            if ens_idx == 0:
-                ensemble_outputs_fom = fom_output.copy()
-            else:
-                ensemble_outputs_fom = np.append(ensemble_outputs_fom, fom_output, axis=1)
-            training_dirs.append(fom_run_directory)
+        ensemble_outputs_fom, training_dirs = run_model_at_ensemble(
+            n_ensemble_fom,
+            fom_model,
+            parameter_ensemble_fom_phys, 
+            parameter_names, 
+            observation_data,
+            obs_transformers,
+            fom_run_dir,
+            enkf_file,
+            log_str_fom,
+            evaluation_concurrency,
+            mp_cntxt)
 
         # Train ROM
         if train_rom:
@@ -202,27 +197,21 @@ def run_enkf_mf(
         output_from_mean_input_rom_fom = multi_transform(output_from_mean_input_phys, obs_transformers)
         output_from_mean_input_rom_fom = output_from_mean_input_rom_fom.flatten(order="C")
 
-        # run ROM at current FOM ensemble
-        for ens_idx in range(n_ensemble_fom):
+        log_str_rom_fom = "Iter {iiter}: Running ROM on FOM sample "
+        rom_fom_run_dir = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}"
 
-            enkf_file.write(f"Iter {iiter}: Running ROM on FOM sample {ens_idx} \n")
-
-            # run ROM from FOM ensemble member
-            rom_run_directory = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}{ens_idx}"
-            rom_output_phys = process_model_qois(
-                parameter_ensemble_fom_phys[ens_idx, :],
-                parameter_names,
-                rom_model,
-                rom_run_directory
-            )
-
-            # collect normalized output values
-            rom_output = multi_transform(rom_output_phys, obs_transformers)
-            rom_output = rom_output.flatten(order="C")[:, np.newaxis]
-            if ens_idx == 0:
-                ensemble_outputs_rom_fom = rom_output.copy()
-            else:
-                ensemble_outputs_rom_fom = np.append(ensemble_outputs_rom_fom, rom_output, axis=1)
+        ensemble_outputs_rom_fom, _ = run_model_at_ensemble(
+            n_ensemble_fom,
+            rom_model,
+            parameter_ensemble_fom_phys, 
+            parameter_names, 
+            observation_data,
+            obs_transformers,
+            rom_fom_run_dir,
+            enkf_file,
+            log_str_rom_fom,
+            evaluation_concurrency,
+            mp_cntxt)
 
         ######## RUN FOM AT ROM PARAMETER INSTANCES ########
 
@@ -239,25 +228,21 @@ def run_enkf_mf(
         output_from_mean_input_rom_rom = multi_transform(output_from_mean_input_phys, obs_transformers)
         output_from_mean_input_rom_rom = output_from_mean_input_rom_rom.flatten(order="C")
 
-        # run ROM at current ROM ensemble
-        for ens_idx in range(n_ensemble_rom):
-            enkf_file.write(f"Iter {iiter}: Running ROM on ROM sample {ens_idx} \n")
+        log_str_rom_rom = "Iter {iiter}: Running ROM on ROM sample "
+        rom_rom_run_dir = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}"
 
-            rom_run_directory = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}{ens_idx}"
-            rom_output_phys = process_model_qois(
-                parameter_ensemble_rom_phys[ens_idx, :],
-                parameter_names,
-                rom_model,
-                rom_run_directory
-            )
-
-            # collect normalized output values
-            rom_output = multi_transform(rom_output_phys, obs_transformers)
-            rom_output = rom_output.flatten(order="C")[:, np.newaxis]
-            if ens_idx == 0:
-                ensemble_outputs_rom_rom = rom_output.copy()
-            else:
-                ensemble_outputs_rom_rom = np.append(ensemble_outputs_rom_rom, rom_output, axis=1)
+        ensemble_outputs_rom_rom, _ = run_model_at_ensemble(
+            n_ensemble_rom,
+            rom_model,
+            parameter_ensemble_rom_phys, 
+            parameter_names, 
+            observation_data,
+            obs_transformers,
+            rom_rom_run_dir,
+            enkf_file,
+            log_str_rom_rom,
+            evaluation_concurrency,
+            mp_cntxt)
 
         # compute square root matrices
         Sin_fom = (parameter_ensemble_fom.T - mean_input_fom[:, np.newaxis]) / np.sqrt(n_ensemble_fom - 1)

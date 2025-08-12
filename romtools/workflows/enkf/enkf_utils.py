@@ -128,7 +128,7 @@ def process_and_transform_model_qois(
     Abstraction helpful for mutliprocessing 
     '''
 
-    fom_output_phys = process_model_qois(
+    model_output_phys = process_model_qois(
             param_inputs,
             param_names,
             model,
@@ -136,10 +136,10 @@ def process_and_transform_model_qois(
         )
 
     # collect normalized output values
-    fom_output = multi_transform(fom_output_phys, obs_transformers)
-    fom_output = fom_output.flatten(order="C") # Will only work for sensors
+    model_output = multi_transform(model_output_phys, obs_transformers)
+    model_output = model_output.flatten(order="C") # Will only work for sensors
     
-    return fom_output
+    return model_output
 
 def run_model_at_ensemble(
     n_ensemble: int,
@@ -150,17 +150,22 @@ def run_model_at_ensemble(
     obs_transformers: Iterable[Transformer],
     run_dir: str,
     log_file,
-    log_file_str: str,
+    log_file_str_prefix: str,
     evaluation_concurrency,
     mp_cntxt
 ):
+    '''
+    Run model (FOM or ROM) at parameters, return outputs and run directories 
+    evaluation_concurrency = 1 for serial
+    evaluation_concurrency > 1 for batched 
+    '''
 
     run_dirs = []
     ensemble_outputs = []
     if evaluation_concurrency == 1:
         # run FOM at current ensemble
         for ens_idx in range(n_ensemble):
-            log_file.write(log_file_str + str(ens_idx) + "\n")
+            log_file.write(log_file_str_prefix + str(ens_idx) + "\n")
 
             # run FOM ensemble member
             fom_run_directory = run_dir + str(ens_idx)
@@ -177,18 +182,23 @@ def run_model_at_ensemble(
             run_dirs.append(fom_run_directory)
     else:
         with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
-            these_futures = [executor.submit(process_and_transform_model_qois,
-                                parameter_ensemble_phys[ens_idx, :],
-                                parameter_names,
-                                model,
-                                run_dir+str(ens_idx),
-                                obs_transformers)
-                                for ens_idx in range(n_ensemble)]
-            
+            these_futures = []
+            for ens_idx in range(n_ensemble):
+                log_file.write(log_file_str_prefix + str(ens_idx) + "\n")
+                job = executor.submit(
+                    process_and_transform_model_qois,
+                    parameter_ensemble_phys[ens_idx,:],
+                    parameter_names,
+                    model,
+                    run_dir+str(ens_idx),
+                    obs_transformers
+                )
+                these_futures.append(job)
+
             # Wait for all processes to finish
             concurrent.futures.wait(these_futures)
             
-        ensemble_outputs = [future.result()[0] for future in these_futures]
+        ensemble_outputs = [future.result() for future in these_futures]
         run_dirs = [run_dir+str(i) for i in range(n_ensemble)]
 
     ensemble_outputs = np.asarray(ensemble_outputs).T
