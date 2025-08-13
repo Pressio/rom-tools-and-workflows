@@ -52,15 +52,14 @@
 import os
 import time
 from typing import Iterable
+import multiprocessing
 
 import numpy as np
-import multiprocessing
 
 from romtools.workflows.models import QoiModel
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.enkf.enkf_utils import Transformer
-from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois
-from romtools.workflows.enkf.enkf_utils import run_model_at_ensemble
+from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois, run_model_at_ensemble
 
 def run_enkf(
     fom_model: QoiModel,
@@ -72,10 +71,11 @@ def run_enkf(
     obs_transformers: Iterable[Transformer],
     obs_noise: Iterable[float],
     enkf_directory: str,
+    fixed_parameters: dict = {},
     n_ensemble: int = 10,
     n_enkf_iter: int = 5,
     random_seed: int = 1,
-    evaluation_concurrency = 1
+    evaluation_concurrency = 1,
 ):
     '''
     Main implementation of the enkf algorithm.
@@ -90,7 +90,7 @@ def run_enkf(
     n_observations, n_observers = observation_data.shape
     assert len(obs_transformers) == n_observers, "Unequal observers and observation transformers"
     assert len(obs_noise) == n_observers, "Unequal number of observers and noise parameters"
-    assert n_ensemble > 0
+    assert n_ensemble > 1
     assert n_enkf_iter > 0
 
     # prep outputs
@@ -99,7 +99,7 @@ def run_enkf(
     enkf_file = open(f"{enkf_directory}/enkf_status.log", "w", encoding="utf-8")
 
     # Init multiprocessing env
-    mp_cntxt=multiprocessing.get_context("spawn")
+    mp_cntxt = multiprocessing.get_context("spawn")
 
     # Generate prior guesses of parameters
     # NOTE: currently assumes that prior generates [n_ensemble, n_params] array
@@ -125,13 +125,18 @@ def run_enkf(
     output_cov = np.diag(output_cov)
 
     # initialize data to collect
-    input_mean = [np.mean(parameter_ensemble_phys, axis=0)]
-    input_norm = [np.linalg.norm(parameter_ensemble_phys, axis=0)]
-    input_variance = [np.linalg.norm(np.var(parameter_ensemble_phys, axis=0))]
+    input_mean_phys = [np.mean(parameter_ensemble_phys, axis=0)]
+    input_norm_phys = [np.linalg.norm(parameter_ensemble_phys, axis=0)]
+    input_variance_phys = [np.var(parameter_ensemble_phys, axis=0)]
     output_diff_L2 = []
     output_from_mean_input_diff_L2 = []
+    timer_runtime = []
+    timer_enkf    = []
+
     for iiter in range(n_enkf_iter):
         enkf_file.write(f"ENKF iteration {iiter}\n")
+
+        t1 = time.time()
 
         # run FOM at mean input
         fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}mean"
@@ -139,28 +144,34 @@ def run_enkf(
             mean_input_phys,
             parameter_names,
             fom_model,
-            fom_run_directory_mean
+            fom_run_directory_mean,
+            fixed_parameters=fixed_parameters,
         )
 
         # normalize output from mean
         output_from_mean_input = multi_transform(output_from_mean_input_phys, obs_transformers)
         output_from_mean_input = output_from_mean_input.flatten(order="C")
 
+        # run FOM ensemble member
         log_str = "Iter {iiter}: Running FOM sample "
         fom_run_dir = f"{enkf_directory}/enkf_iter_{iiter}/{run_directory_prefix}"
-
         ensemble_outputs, _ = run_model_at_ensemble(
             n_ensemble,
             fom_model,
-            parameter_ensemble_phys, 
-            parameter_names, 
-            observation_data,
+            parameter_ensemble_phys,
+            parameter_names,
             obs_transformers,
             fom_run_dir,
             enkf_file,
             log_str,
             evaluation_concurrency,
-            mp_cntxt)
+            mp_cntxt,
+            fixed_parameters=fixed_parameters,
+        )
+
+        timer_runtime.append(time.time() - t1)
+
+        t1 = time.time()
 
         # compute square root matrices
         Sin = (parameter_ensemble.T - mean_input[:, np.newaxis]) / np.sqrt(n_ensemble - 1)
@@ -175,26 +186,34 @@ def run_enkf(
         update = K2 @ np.linalg.solve(K1, output_differences)
         parameter_ensemble += update.T
 
+        timer_enkf.append(time.time() - t1)
+
         parameter_ensemble_phys = multi_transform(parameter_ensemble, param_transformers, inverse=True)
         enkf_file.write(f"{parameter_ensemble_phys}\n")
 
         # compute mean parameter set for next iteration
         mean_input = np.mean(parameter_ensemble, axis=0)
-        mean_input_phys = multi_transform(mean_input, param_transformers, inverse=True)
+        mean_input_phys = np.mean(parameter_ensemble_phys, axis=0)
+        var_input_phys = np.var(parameter_ensemble_phys, axis=0)
 
         # compute output for logging
         output_from_mean_input_diff = observation_data - output_from_mean_input
-        input_mean.append(mean_input.copy())
-        input_norm.append(np.linalg.norm(parameter_ensemble_phys, axis=0))
-        input_variance.append(np.linalg.norm(np.var(parameter_ensemble_phys, axis=0)))
+        input_mean_phys.append(mean_input_phys.copy())
+        input_norm_phys.append(np.linalg.norm(parameter_ensemble_phys, axis=0))
+        input_variance_phys.append(var_input_phys)
         output_diff_L2.append(np.linalg.norm(output_differences, axis=0) / np.linalg.norm(observation_data, axis=0))
         output_from_mean_input_diff_L2.append(np.linalg.norm(output_from_mean_input_diff, axis=0) / np.linalg.norm(observation_data, axis=0))
 
-    np.savez(f"{enkf_directory}/enkf_stats",
-            input_mean=input_mean,
-            input_norm=input_norm,
-            input_variance=input_variance,
+        # save stats online
+        np.savez(
+            f"{enkf_directory}/enkf_stats",
+            input_mean_phys=input_mean_phys,
+            input_norm_phys=input_norm_phys,
+            input_variance_phys=input_variance_phys,
             output_diff_L2=output_diff_L2,
-            output_from_mean_input_diff_L2=output_from_mean_input_diff_L2)
+            output_from_mean_input_diff_L2=output_from_mean_input_diff_L2,
+            timer_runtime=timer_runtime,
+            timer_enkf=timer_enkf,
+        )
 
-    return mean_input_phys
+    return mean_input_phys, var_input_phys

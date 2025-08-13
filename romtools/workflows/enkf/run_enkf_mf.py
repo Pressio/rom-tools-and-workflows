@@ -46,6 +46,7 @@
 import os
 import time
 from typing import Iterable
+import multiprocessing
 
 import numpy as np
 
@@ -53,7 +54,7 @@ from romtools.workflows.models import QoiModel
 from romtools.workflows.model_builders import QoiModelBuilder
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.enkf.enkf_utils import Transformer
-from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois
+from romtools.workflows.enkf.enkf_utils import create_minmax_transformer, multi_transform, process_model_qois, run_model_at_ensemble
 
 
 def run_enkf_mf(
@@ -68,10 +69,13 @@ def run_enkf_mf(
     obs_noise: Iterable[float],
     enkf_directory: str,
     rom_tol: float,
+    fixed_parameters_fom: dict = {},
+    fixed_parameters_rom: dict = {},
     n_ensemble_fom: int = 5,
     n_ensemble_rom: int = 15,
     n_enkf_iter: int = 5,
-    random_seed: int = 1
+    random_seed: int = 1,
+    evaluation_concurrency = 1,
 ):
     '''
     Main implementation of the MF enkf algorithm.
@@ -87,9 +91,12 @@ def run_enkf_mf(
     assert len(obs_transformers) == n_observers, "Unequal observers and observation transformers"
     assert len(obs_noise) == n_observers, "Unequal number of observers and noise parameters"
     assert rom_tol > 0.0
-    assert n_ensemble_fom > 0
-    assert n_ensemble_rom > 0
+    assert n_ensemble_fom > 1
+    assert n_ensemble_rom > 1
     assert n_enkf_iter > 0
+
+    # Init multiprocessing env
+    mp_cntxt = multiprocessing.get_context("spawn")
 
     # prep outputs
     create_empty_dir(enkf_directory)
@@ -127,18 +134,22 @@ def run_enkf_mf(
 
     # initialize data to collect
     rom_data_indicator = []
-    input_mean_fom = [mean_input_fom_phys.copy()]
-    input_mean_rom = [mean_input_rom_phys.copy()]
-    input_norm_fom = [np.linalg.norm(parameter_ensemble_fom_phys, axis=0)]
-    input_norm_rom = [np.linalg.norm(parameter_ensemble_rom_phys, axis=0)]
-    input_variance_fom = [np.linalg.norm(np.var(parameter_ensemble_fom_phys, axis=0))]
-    input_variance_rom = [np.linalg.norm(np.var(parameter_ensemble_rom_phys, axis=0))]
+    input_mean_phys_fom = [mean_input_fom_phys.copy()]
+    input_mean_phys_rom = [mean_input_rom_phys.copy()]
+    input_norm_phys_fom = [np.linalg.norm(parameter_ensemble_fom_phys, axis=0)]
+    input_norm_phys_rom = [np.linalg.norm(parameter_ensemble_rom_phys, axis=0)]
+    input_variance_phys_fom = [np.linalg.norm(np.var(parameter_ensemble_fom_phys, axis=0))]
+    input_variance_phys_rom = [np.linalg.norm(np.var(parameter_ensemble_rom_phys, axis=0))]
     output_diff_L2_fom = []
     output_diff_L2_rom = []
     output_diff_L2_rom_fom = []
     output_from_mean_input_diff_L2_fom = []
     output_from_mean_input_diff_L2_rom_fom = []
     output_from_mean_input_diff_L2_rom = []
+    timer_runtime_fom = []
+    timer_runtime_rom = []
+    timer_enkf        = []
+    timer_training    = []
 
     training_dirs = []
     train_rom = True
@@ -147,13 +158,16 @@ def run_enkf_mf(
 
         ######## RUN FOM AT FOM PARAMETER INSTANCES ########
 
+        t1 = time.time()
+
         # run FOM at mean input
         fom_run_directory_mean = f"{enkf_directory}/enkf_iter_{iiter}/fom/{run_directory_prefix}mean"
         output_from_mean_input_phys = process_model_qois(
             mean_input_fom_phys,
             parameter_names,
             fom_model,
-            fom_run_directory_mean
+            fom_run_directory_mean,
+            fixed_parameters=fixed_parameters_fom,
         )
 
         # normalize output from mean
@@ -166,23 +180,35 @@ def run_enkf_mf(
         ensemble_outputs_fom, training_dirs = run_model_at_ensemble(
             n_ensemble_fom,
             fom_model,
-            parameter_ensemble_fom_phys, 
-            parameter_names, 
-            observation_data,
+            parameter_ensemble_fom_phys,
+            parameter_names,
             obs_transformers,
             fom_run_dir,
             enkf_file,
             log_str_fom,
             evaluation_concurrency,
-            mp_cntxt)
+            mp_cntxt,
+            fixed_parameters=fixed_parameters_fom,
+        )
+
+        timer_runtime_fom.append(time.time() - t1)
 
         # Train ROM
         if train_rom:
+            t1 = time.time()
             updated_offline_data_dir = f"{enkf_directory}/enkf_iter_{iiter}/rom/{offline_directory_prefix}/"
             create_empty_dir(updated_offline_data_dir)
             rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir, training_dirs)
+            timer_training.append(time.time() - t1)
 
-        ######## RUN FOM AT ROM PARAMETER INSTANCES ########
+            # TODO: there has got to be a more general way to do this
+            if hasattr(rom_model, "sample_meshfile"):
+                if rom_model.sample_meshfile is not None:
+                    fixed_parameters_rom["meshfile"] = rom_model.sample_meshfile
+
+        ######## RUN ROM AT FOM PARAMETER INSTANCES ########
+
+        t1 = time.time()
 
         # run ROM at FOM mean input
         rom_run_directory_mean_fom =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}mean"
@@ -190,7 +216,8 @@ def run_enkf_mf(
             mean_input_fom,
             parameter_names,
             rom_model,
-            rom_run_directory_mean_fom
+            rom_run_directory_mean_fom,
+            fixed_parameters=fixed_parameters_rom,
         )
 
         # normalize ROM output from FOM mean
@@ -203,17 +230,18 @@ def run_enkf_mf(
         ensemble_outputs_rom_fom, _ = run_model_at_ensemble(
             n_ensemble_fom,
             rom_model,
-            parameter_ensemble_fom_phys, 
-            parameter_names, 
-            observation_data,
+            parameter_ensemble_fom_phys,
+            parameter_names,
             obs_transformers,
             rom_fom_run_dir,
             enkf_file,
             log_str_rom_fom,
             evaluation_concurrency,
-            mp_cntxt)
+            mp_cntxt,
+            fixed_parameters=fixed_parameters_rom,
+        )
 
-        ######## RUN FOM AT ROM PARAMETER INSTANCES ########
+        ######## RUN ROM AT ROM PARAMETER INSTANCES ########
 
         # run ROM at mean ROM input
         rom_run_directory_mean_rom = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}mean"
@@ -221,7 +249,8 @@ def run_enkf_mf(
             mean_input_rom,
             parameter_names,
             rom_model,
-            rom_run_directory_mean_rom
+            rom_run_directory_mean_rom,
+            fixed_parameters=fixed_parameters_rom,
         )
 
         # normalize ROM output from ROM mean
@@ -234,15 +263,20 @@ def run_enkf_mf(
         ensemble_outputs_rom_rom, _ = run_model_at_ensemble(
             n_ensemble_rom,
             rom_model,
-            parameter_ensemble_rom_phys, 
-            parameter_names, 
-            observation_data,
+            parameter_ensemble_rom_phys,
+            parameter_names,
             obs_transformers,
             rom_rom_run_dir,
             enkf_file,
             log_str_rom_rom,
             evaluation_concurrency,
-            mp_cntxt)
+            mp_cntxt,
+            fixed_parameters=fixed_parameters_rom,
+        )
+
+        timer_runtime_rom.append(time.time() - t1)
+
+        t1 = time.time()
 
         # compute square root matrices
         Sin_fom = (parameter_ensemble_fom.T - mean_input_fom[:, np.newaxis]) / np.sqrt(n_ensemble_fom - 1)
@@ -277,6 +311,8 @@ def run_enkf_mf(
         parameter_ensemble_fom_phys = multi_transform(parameter_ensemble_fom, param_transformers, inverse=True)
         parameter_ensemble_rom_phys = multi_transform(parameter_ensemble_rom, param_transformers, inverse=True)
 
+        timer_enkf.append(time.time() - t1)
+
         # Check ROM accuracy
         # TODO: hard coded as max error over overlap set. Could be abstracted
         rom_obs_errors = np.linalg.norm(ensemble_outputs_fom - ensemble_outputs_rom_fom, axis=0) / np.linalg.norm(ensemble_outputs_fom, axis=0)
@@ -298,12 +334,12 @@ def run_enkf_mf(
 
         # compute output for logging
         rom_data_indicator.append(rom_err_indicator)
-        input_mean_fom.append(mean_input_fom_phys.copy())
-        input_mean_rom.append(mean_input_rom_phys.copy())
-        input_norm_fom.append(np.linalg.norm(parameter_ensemble_fom_phys, axis=0))
-        input_norm_rom.append(np.linalg.norm(parameter_ensemble_rom_phys, axis=0))
-        input_variance_fom.append(np.linalg.norm(np.var(parameter_ensemble_fom_phys, axis=0)))
-        input_variance_rom.append(np.linalg.norm(np.var(parameter_ensemble_rom_phys, axis=0)))
+        input_mean_phys_fom.append(mean_input_fom_phys.copy())
+        input_mean_phys_rom.append(mean_input_rom_phys.copy())
+        input_norm_phys_fom.append(np.linalg.norm(parameter_ensemble_fom_phys, axis=0))
+        input_norm_phys_rom.append(np.linalg.norm(parameter_ensemble_rom_phys, axis=0))
+        input_variance_phys_fom.append(np.linalg.norm(np.var(parameter_ensemble_fom_phys, axis=0)))
+        input_variance_phys_rom.append(np.linalg.norm(np.var(parameter_ensemble_rom_phys, axis=0)))
         output_diff_L2_fom.append(np.linalg.norm(output_differences_fom, axis=0) / np.linalg.norm(observation_data, axis=0))
         output_diff_L2_rom.append(np.linalg.norm(output_differences_rom_rom, axis=0) / np.linalg.norm(observation_data, axis=0))
         output_diff_L2_rom_fom.append(np.linalg.norm(output_differences_rom_fom, axis=0) / np.linalg.norm(observation_data, axis=0))
@@ -311,19 +347,26 @@ def run_enkf_mf(
         output_from_mean_input_diff_L2_rom_fom.append(np.linalg.norm(output_from_mean_input_diff_rom_fom, axis=0) / np.linalg.norm(observation_data, axis=0))
         output_from_mean_input_diff_L2_rom.append(np.linalg.norm(output_from_mean_input_diff_rom_rom, axis=0) / np.linalg.norm(observation_data, axis=0))
 
-    np.savez(f"{enkf_directory}/enkf_stats",
-        rom_data_indicator=rom_data_indicator,
-        input_mean_fom=input_mean_fom,
-        input_mean_rom=input_mean_rom,
-        input_norm_fom=input_norm_fom,
-        input_norm_rom=input_norm_rom,
-        input_variance_fom=input_variance_fom,
-        input_variance_rom=input_variance_rom,
-        output_diff_L2_fom=output_diff_L2_fom,
-        output_diff_L2_rom=output_diff_L2_rom,
-        output_diff_L2_rom_fom=output_diff_L2_rom_fom,
-        output_from_mean_input_diff_L2_fom=output_from_mean_input_diff_L2_fom,
-        output_from_mean_input_diff_L2_rom_fom=output_from_mean_input_diff_L2_rom_fom,
-        output_from_mean_input_diff_L2_rom=output_from_mean_input_diff_L2_rom)
+        # save stats online
+        np.savez(
+            f"{enkf_directory}/enkf_stats",
+            rom_data_indicator=rom_data_indicator,
+            input_mean_phys_fom=input_mean_phys_fom,
+            input_mean_phys_rom=input_mean_phys_rom,
+            input_norm_phys_fom=input_norm_phys_fom,
+            input_norm_phys_rom=input_norm_phys_rom,
+            input_variance_phys_fom=input_variance_phys_fom,
+            input_variance_phys_rom=input_variance_phys_rom,
+            output_diff_L2_fom=output_diff_L2_fom,
+            output_diff_L2_rom=output_diff_L2_rom,
+            output_diff_L2_rom_fom=output_diff_L2_rom_fom,
+            output_from_mean_input_diff_L2_fom=output_from_mean_input_diff_L2_fom,
+            output_from_mean_input_diff_L2_rom_fom=output_from_mean_input_diff_L2_rom_fom,
+            output_from_mean_input_diff_L2_rom=output_from_mean_input_diff_L2_rom,
+            timer_runtime_fom=timer_runtime_fom,
+            timer_runtime_rom=timer_runtime_rom,
+            timer_enkf=timer_enkf,
+            timer_training=timer_training,
+        )
 
     return mean_input_fom_phys, mean_input_rom_phys
