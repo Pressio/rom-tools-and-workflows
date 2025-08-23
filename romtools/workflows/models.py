@@ -42,6 +42,22 @@ class Model(Protocol):
         '''
         pass
 
+    def get_number_of_processors(self) -> int:
+        '''
+        This function is called to check how many cores were used by the model.
+        '''
+        pass
+
+    def check_for_model_failure(self, run_directory: str) -> int:
+        '''
+        checks if the model failed to run. 
+        If the model runs successfully, return 0. If fails, return 1.
+
+        Args:
+          run_directory (str): Absolute path to run_directory.
+        '''
+        pass
+
 
 class QoiModel(Model, Protocol):
     '''
