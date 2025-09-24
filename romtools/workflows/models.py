@@ -58,6 +58,15 @@ class Model(Protocol):
         '''
         pass
 
+    def get_model_wall_time(self, run_directory) -> float:
+        '''
+        return the wall time for a given run.
+
+        Args:
+          run_directory (str): Absolute path to run_directory.
+        '''
+        return -1
+
 
 class QoiModel(Model, Protocol):
     '''
