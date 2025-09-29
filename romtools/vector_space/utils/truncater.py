@@ -154,6 +154,7 @@ class EnergyBasedTruncater():
             threshold (float): The cumulative energy threshold.
         '''
         self.__energy_threshold_ = threshold
+        self.__energy = None
 
     def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
         '''
@@ -168,6 +169,15 @@ class EnergyBasedTruncater():
         '''
         energy = np.cumsum(singular_values**2)/(np.sum(singular_values**2) + 1.e-30)
         basis_dimension = la.argmax(energy > self.__energy_threshold_) + 1
+        self.__energy = energy[basis_dimension]
         return basis[:, 0:basis_dimension]
 
-    
+    def get_energy(self):
+        '''
+        Returns:
+            float: The energy criteria corresponding to the truncated basis 
+        '''
+
+        if self.__energy is None:
+            raise ValueError('Error, energy not yet computed. Must call truncate before calling get_energy')
+        return self.__energy
