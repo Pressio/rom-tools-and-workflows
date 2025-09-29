@@ -135,7 +135,7 @@ class BasisSizeTruncater():
             raise ValueError('Error, singular values not yet initialized. Must call truncate before calling get_energy')
 
         energy = np.cumsum(self.__singular_values**2)/(np.sum(self.__singular_values**2) + 1.e-30)
-        energy = energy[self.__basis_dimension]
+        energy = energy[self.__basis_dimension-1]
         return energy
 
 class EnergyBasedTruncater():
