@@ -103,6 +103,7 @@ class BasisSizeTruncater():
             raise ValueError('Given basis dimension is <= 0: ', basis_dimension)
 
         self.__basis_dimension = basis_dimension
+        self.__singular_values = None
 
     def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray: # pylint: disable=unused-argument
         '''
@@ -116,12 +117,26 @@ class BasisSizeTruncater():
             np.ndarray: The truncated basis matrix with the specified dimension.
         '''
         # Check if basis dimension is larger than array and give error.
+        self.__singular_values = singular_values
         if self.__basis_dimension > np.shape(basis)[1]:
             raise ValueError('Given basis dimension is greater than size of basis array: ',
                              self.__basis_dimension, ' > ', np.shape(basis)[1])
 
         return basis[:, :self.__basis_dimension]
 
+
+    def get_energy(self):
+        '''
+        Returns:
+            float: The energy criteria corresponding to the truncated basis 
+        '''
+
+        if self.__singular_values is None:
+            raise ValueError('Error, singular values not yet initialized. Must call truncate before calling get_energy')
+
+        energy = np.cumsum(self.__singular_values**2)/(np.sum(self.__singular_values**2) + 1.e-30)
+        energy = energy[self.__basis_dimension]
+        return energy
 
 class EnergyBasedTruncater():
     '''
@@ -154,3 +169,5 @@ class EnergyBasedTruncater():
         energy = np.cumsum(singular_values**2)/(np.sum(singular_values**2) + 1.e-30)
         basis_dimension = la.argmax(energy > self.__energy_threshold_) + 1
         return basis[:, 0:basis_dimension]
+
+    

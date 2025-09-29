@@ -35,6 +35,9 @@ def test_basis_size_truncater():
     my_basis = np.random.normal(size=(10, 8))
     singular_values = np.ones(2)
     my_truncated_basis = truncater.truncate(my_basis, singular_values)
+    energy = truncater.get_energy()
+    energy_gold = np.cumsum(singular_values**2)/np.sum(singular_values**2 + 1.e-30)
+    assert np.allclose(energy_gold[reduced_size],energy)
     assert np.allclose(my_truncated_basis, my_basis[:, 0:reduced_size])
     assert my_truncated_basis.shape[1] == 4
 
