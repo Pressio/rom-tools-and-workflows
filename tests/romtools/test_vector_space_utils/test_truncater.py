@@ -33,8 +33,11 @@ def test_basis_size_truncater():
     reduced_size = 4
     truncater = BasisSizeTruncater(reduced_size)
     my_basis = np.random.normal(size=(10, 8))
-    singular_values = np.ones(2)
+    u,singular_values,v = np.linalg.svd(my_basis)
     my_truncated_basis = truncater.truncate(my_basis, singular_values)
+    energy = truncater.get_energy()
+    energy_gold = np.cumsum(singular_values**2)/np.sum(singular_values**2 + 1.e-30)
+    assert np.allclose(energy_gold[reduced_size],energy)
     assert np.allclose(my_truncated_basis, my_basis[:, 0:reduced_size])
     assert my_truncated_basis.shape[1] == 4
 
@@ -67,6 +70,10 @@ def test_energy_truncater():
     truncater = EnergyBasedTruncater(energy_threshold)
     my_basis = np.random.normal(size=(10, 8))
     my_truncated_basis = truncater.truncate(my_basis, singular_values)
+
+    energy = truncater.get_energy()
+    energy_gold = np.cumsum(singular_values**2)/np.sum(singular_values**2 + 1.e-30)
+    assert(np.allclose(energy,energy_gold[K]))
     assert np.allclose(my_truncated_basis, my_basis[:, 0:K])
     assert my_truncated_basis.shape[1] == K
 
