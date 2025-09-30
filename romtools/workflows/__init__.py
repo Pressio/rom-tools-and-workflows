@@ -55,4 +55,3 @@ from romtools.workflows.dakota import *
 from romtools.workflows.greedy import *
 from romtools.workflows.sampling import *
 from romtools.workflows.inverse import *
-from romtools.workflows.enkf import *
