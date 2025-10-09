@@ -494,8 +494,6 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     hybrid_file.close()
 
 
-
-
     # ### Validate MFMC solution
     # out = "Validating the MFMC sampling strategy \n"
     # hybrid_file.write(out), print(out)
@@ -564,38 +562,5 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     #         sampled_rom_qois = rom_qoi[None]
     #     else:
     #         sampled_rom_qois = np.append(sampled_rom_qois, rom_qoi[None], axis=0)            
-            
-
-
-# if __name__=='__main__':
-#     # Construct the fom model
-#     nx,ny = 128,128
-#     fom_model = cdr_model_for_romtools.CdrQoiModel(nx,ny)
-   
-#     # Define parameter space 
-#     b_min = 0.2
-#     b_max = 1.0
-#     theta_min = 0.7853981633974483
-#     theta_max = 1.5707963267948966
-#     nu_min = 1.e-3
-#     nu_max = 1.e-2
-#     sigma_min = 0.8
-#     sigma_max = 1.2
-#     my_parameter_space = cdr_parameter_space.CdrParameterSpace(b_min,b_max,theta_min,theta_max,\
-#                                                                nu_min,nu_max,sigma_min,sigma_max) 
-
-#     # Run sampling algorithm
-#     n_samples = 50
-  
-    
-#     output_directory = os.getcwd() + '/fom_samples/' 
-#     romtools.workflows.run_greedy(model = fom_model,
-#                  parameter_space = my_parameter_space,
-#                  absolute_sampling_directory = output_directory,
-#                  evaluation_concurrency = 5,
-#                  number_of_samples = n_samples,
-#                  random_seed = 1,
-#                  dry_run = False,
-#                  overwrite = True)
 
 
