@@ -1,7 +1,3 @@
-# import romtools
-# sys.path.append('../../')
-# import romtools.workflows
-
 #
 # ************************************************************************
 #
@@ -52,12 +48,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# import romtools.linalg.linalg as la
+import romtools.workflows.hybrid_mfuq.mfuq_methods as mfmc
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.model_builders import QoiModelBuilder
-import romtools.workflows.hybrid_mfuq.mfuq_methods as mfmc
 
 
 def _create_parameter_dict(parameter_names, parameter_values):
@@ -108,10 +103,15 @@ def run_hybrid_mfuq(fom_model: QoiModel,
                pilot_sample_size: int = 20, 
                pilot_list: list = [1,3,5,7,9],
                max_combinations: int = 25,
-               random_seed: int = 2025,
-               overwrite: bool = True):
+               tunable_range: list = [1,20],
+               budget: int = 40,
+               allocate_based_on: str = 'min',
+               overwrite: bool = True,
+               show_plots: bool = False,
+               random_seed: int = 2025
+               ):
     '''
-    Main implementation of the hybrid MFMC algorithm.
+    Main implementation of the hybrid MFUQ algorithm.
     Right now, it is assumed that we have a fom_model, another
         fixed aux_model (e.g., a trained ROM), and a variable ROM. 
 
@@ -127,6 +127,8 @@ def run_hybrid_mfuq(fom_model: QoiModel,
         get an accurate projection of the optimal ACV estimator variance.    
     '''
     np.random.seed(random_seed)
+    if allocate_based_on not in ['min', 'max']:
+        raise ValueError("Allocation type not implemented!")
 
     hybrid_MFMC_directory = absolute_hybrid_MFMC_work_directory
     create_empty_dir(hybrid_MFMC_directory)
@@ -315,12 +317,12 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     cost_list = [cost2, cost3]
 
     # Budget and bounds on optimization variables N, r, s
-    budget = 40
-    budget_list = [budget * 2 * (i+1) for i in range(6)]
-    bounds = [(1, None), (0.00001, None), (0.00001, None), 
-              (0, 0), (2, 20)]
+    # Elements of budget_list are HARD CODED based on given budget
+    budget_list = [budget * (i+1) for i in range(6)]
+    bounds = [(1, None), (1.001, None), (1.001, None), 
+              (0, 0), tuple(tunable_range)]
 
-    # Helper function to run ACV algo a bunch of times and get best result
+    # Helper function: run ACV many times and get best result
     def solve_best_mfmc(obj, n_trials=50):
         """Solve MFMC object multiple times and return best result."""
         best_fval = float('inf')
@@ -328,10 +330,12 @@ def run_hybrid_mfuq(fom_model: QoiModel,
         for _ in range(n_trials):
             obj.solve()
             if obj.result.success:
-                fval = obj.result.fun
+                fval = np.exp(obj.result.fun)
+                # fval = obj.result.fun
                 if 0 <= fval <= best_fval:
                     best_fval = fval
                     best_x = obj.result.x
+        # print(f'aaaa {best_fval}')
         return best_fval, best_x
 
     # Initialize output and results
@@ -345,7 +349,7 @@ def run_hybrid_mfuq(fom_model: QoiModel,
             obj.set_corrs_and_costs(hifi_corr_list, lofi_corr_list, cost_list)
             obj.set_objective_and_constraint(bounds)
 
-            fval, x = solve_best_mfmc(obj, n_trials=50)
+            fval, x = solve_best_mfmc(obj, n_trials=50) #HARD CODED
             out = f'Predicted variance ratio for {model_type} at budget {budget} is {fval} and occurs at {x} \n'
             hybrid_file.write(out)
             print(out)
@@ -353,33 +357,55 @@ def run_hybrid_mfuq(fom_model: QoiModel,
             func_list.append(fval)
             x_list.append(x)
 
-    # Take only from MF at lowest budget for now...
-    s_star = xMFs[0][3:]
+    # Allocate based on IS at lowest or highest budget (IS THIS OK?)
+    if allocate_based_on == 'min':
+        s_star = xISs[0][3:]
+    elif allocate_based_on == 'max':
+        s_star = xISs[-1][3:]
     # r_star = xMFs[0][1:3]
     # N_star = xMFs[0][0]
 
     # Plot correlations and costs
-    s_plot = np.tile(np.arange(1,25), (2,1))
+    s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
 
-    plt.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
-    plt.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
-    plt.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
-    plt.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
-    plt.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
-    plt.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
-    plt.xlabel('Basis size')
-    plt.ylabel('Correlation')
-    plt.legend()
-    plt.show()
+    # plt.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
+    # plt.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
+    # plt.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
+    # plt.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
+    # plt.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
+    # plt.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
+    # plt.xlabel('Basis size')
+    # plt.ylabel('Correlation')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig('correlation_plot.pdf', transparent=True)
+    # if show_plots: plt.show()
 
-    plt.plot(s_plot[0], [cost2(i) for i in s_plot[0]], color='blue', label='cost2')
-    plt.plot(s_plot[0], cost3(s_plot), color='orange', label='cost3')
-    plt.scatter(pilot_sizes[0], normalized_rom_times, color='orange', label='Normalized ROM Time')
-    plt.scatter(s_star[1], cost3(s_star), marker='*', s=200, color='grey')
-    plt.xlabel('Basis size')
-    plt.ylabel('Model Costs')
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots()
+    ax.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
+    ax.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
+    ax.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
+    ax.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
+    ax.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
+    ax.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
+    ax.set_xlabel('Basis size')
+    ax.set_ylabel('Correlation')
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('correlation_plot.pdf', transparent=True)
+    if show_plots: plt.show()
+
+    fig, ax = plt.subplots()
+    ax.plot(s_plot[0], [cost2(i) for i in s_plot[0]], color='blue', label='cost2')
+    ax.plot(s_plot[0], cost3(s_plot), color='orange', label='cost3')
+    ax.scatter(pilot_sizes[0], normalized_rom_times, color='orange', label='Normalized ROM Time')
+    ax.scatter(s_star[1], cost3_half(s_star[1]), marker='*', s=200, color='grey')
+    ax.set_xlabel('Basis size')
+    ax.set_ylabel('Model Costs')
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('cost_plot.pdf', transparent=True)
+    if show_plots: plt.show()
 
     # Train the optimized ROM
     rom_basis_num = int(round(s_star[1]))
@@ -447,7 +473,7 @@ def run_hybrid_mfuq(fom_model: QoiModel,
 
 
     # Budget and bounds on optimization variables N, r (for fixed s)
-    bounds = [(1, None), (0.00001, None), (0.00001, None), 
+    bounds = [(1, None), (1.001, None), (1.001, None), 
               (0, 0), (rom_basis_num, rom_basis_num)]
 
     # MFMC solve
@@ -468,7 +494,7 @@ def run_hybrid_mfuq(fom_model: QoiModel,
             obj.set_corrs_and_costs(hifi_corr_list_exact, lofi_corr_list_exact, cost_list_exact)
             obj.set_objective_and_constraint(bounds)
 
-            fval, x = solve_best_mfmc(obj, n_trials=50)
+            fval, x = solve_best_mfmc(obj, n_trials=50) #HARD CODED
 
             out = f'Variance ratio for {model_type} at budget {budget} is {fval} and occurs at {x} \n'
             hybrid_file.write(out)
@@ -479,17 +505,35 @@ def run_hybrid_mfuq(fom_model: QoiModel,
 
     ### Do some plotting
     xx = np.array(budget_list)  # Convert budget_list to a NumPy array
-    plt.loglog(xx, 1/xx, color='black', label='MC')
-    plt.loglog(xx, 1/xx * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    plt.loglog(xx, 1/xx * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    plt.loglog(xx, 1/xx * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    plt.loglog(xx, 1/xx * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-
-    # Add labels, legend, and show the plot
-    plt.xlabel('Budget')
-    plt.ylabel('Estimator Variance')
-    plt.legend()
-    plt.show()
+    xMFs = np.array(xMFs)
+    xMFs_exact = np.array(xMFs_exact)
+    xISs = np.array(xISs)
+    xISs_exact = np.array(xISs_exact)
+    
+    fig, ax = plt.subplots()
+    ax.loglog(xx, 1/xx, color='black', label='MC')
+    # plt.loglog(xx, 1/xx * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # plt.loglog(xx, 1/xx * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    # plt.loglog(xx, 1/xx * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # plt.loglog(xx, 1/xx * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # plt.loglog(xx, np.exp(np.array(funcMFs)), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # plt.loglog(xx, np.exp(np.array(funcMFs_exact)), color='blue', label='ACV-MF Actual')
+    # plt.loglog(xx, np.exp(np.array(funcISs)), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # plt.loglog(xx, np.exp(np.array(funcISs_exact)), color='orange', label='ACV-IS Actual')
+    ax.loglog(xx, np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    ax.loglog(xx, np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    ax.loglog(xx, np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    ax.loglog(xx, np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # plt.loglog(xx, 1/xMFs[:,0] * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # plt.loglog(xx, 1/xMFs_exact[:,0] * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    # plt.loglog(xx, 1/xISs[:,0] * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # plt.loglog(xx, 1/xISs_exact[:,0] * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # plt.xlabel('Budget')
+    # plt.ylabel('Estimator Variance')
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig('variance_plot.pdf', transparent=True)
+    if show_plots: plt.show()
 
     hybrid_file.close()
 

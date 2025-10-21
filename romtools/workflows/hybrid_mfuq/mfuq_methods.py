@@ -443,8 +443,11 @@ class MFMC():
             c = np.array([corr(s) for corr in self.hf_corr_list])
 
             vec = np.diag(F)*c
-            R2  = np.dot(np.linalg.inv(F*C),vec).dot(vec)
-            return (1 - R2) / N
+            R2 = np.linalg.solve(F*C, vec).dot(vec)
+            # R2  = np.dot(np.linalg.inv(F*C),vec).dot(vec)
+            return np.log((1 - R2) / N)
+            # return (1 - R2) / N
+
 
         def constraint(x):
             '''
@@ -472,13 +475,15 @@ class MFMC():
         except AttributeError:
             print("Objective and constraint not set!")
             return None
-        
+
         state_dim = 2 * len(self.cost_list) + 1  # length of x
-        x0 = np.random.randn(state_dim)  # random initialization
+        # x0 = np.random.randn(state_dim)  # (THIS IS GARBAGE!!!)
+        x0 = np.random.uniform(1, self.bounds[-1][1], state_dim)  # random initialization
         # Set budget constraint and solve with SciPy
         nlc = NonlinearConstraint(self.constraint, -np.inf, self.budget)
+        options = {'maxiter': 500, 'ftol': 1e-8, 'eps': 1e-5}
         result = minimize(self.objective, x0, method='SLSQP', 
-                          constraints=nlc, bounds=self.bounds)
+                          constraints=nlc, bounds=self.bounds, options=options)
         self.result = result
 
     def solve_with_fixed_s(self, s_list):
