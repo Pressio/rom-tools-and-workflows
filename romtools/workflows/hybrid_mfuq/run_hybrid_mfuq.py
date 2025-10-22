@@ -46,7 +46,6 @@
 import time
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 
 import romtools.workflows.hybrid_mfuq.mfuq_methods as mfmc
 from romtools.workflows.models import QoiModel
@@ -365,47 +364,46 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     # r_star = xMFs[0][1:3]
     # N_star = xMFs[0][0]
 
-    # Plot correlations and costs
-    s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
+    # # save corrs and costs for plotting
+    # s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
+    # rho12s = np.array([rho12(i) for i in s_plot[0]])
+    # rho13s = rho13(s_plot)
+    # rho23s = rho23(s_plot)
+    # cost2s = np.array([cost2(i) for i in s_plot[0]])
+    # cost3s = cost3(s_plot)
+    # data_dict = {'rho12s':rho12s, 'rho13s':rho13s, 'rho23s':rho23s,
+    #              'cost2s':cost2s, 'cost3s':cost3s,
+    #              'fom_rom_corrs':fom_rom_corrs, 'aux_rom_corrs':aux_rom_corrs,
+    #              'normalized_rom_times':normalized_rom_times, 
+    #              'ss':s_plot, 'pp':pilot_sizes, 's_star':s_star}
+    # np.savez('corrcost.npz', **data_dict)
 
-    # plt.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
-    # plt.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
-    # plt.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
-    # plt.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
-    # plt.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
-    # plt.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
-    # plt.xlabel('Basis size')
-    # plt.ylabel('Correlation')
-    # plt.legend()
+    # # Plot correlations and costs
+    # fig, ax = plt.subplots()
+    # ax.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
+    # ax.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
+    # ax.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
+    # ax.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
+    # ax.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
+    # ax.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
+    # ax.set_xlabel('Basis size')
+    # ax.set_ylabel('Correlation')
+    # ax.legend()
     # plt.tight_layout()
     # plt.savefig('correlation_plot.pdf', transparent=True)
     # if show_plots: plt.show()
 
-    fig, ax = plt.subplots()
-    ax.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
-    ax.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
-    ax.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
-    ax.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
-    ax.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
-    ax.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
-    ax.set_xlabel('Basis size')
-    ax.set_ylabel('Correlation')
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig('correlation_plot.pdf', transparent=True)
-    if show_plots: plt.show()
-
-    fig, ax = plt.subplots()
-    ax.plot(s_plot[0], [cost2(i) for i in s_plot[0]], color='blue', label='cost2')
-    ax.plot(s_plot[0], cost3(s_plot), color='orange', label='cost3')
-    ax.scatter(pilot_sizes[0], normalized_rom_times, color='orange', label='Normalized ROM Time')
-    ax.scatter(s_star[1], cost3_half(s_star[1]), marker='*', s=200, color='grey')
-    ax.set_xlabel('Basis size')
-    ax.set_ylabel('Model Costs')
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig('cost_plot.pdf', transparent=True)
-    if show_plots: plt.show()
+    # fig, ax = plt.subplots()
+    # ax.plot(s_plot[0], [cost2(i) for i in s_plot[0]], color='blue', label='cost2')
+    # ax.plot(s_plot[0], cost3(s_plot), color='orange', label='cost3')
+    # ax.scatter(pilot_sizes[0], normalized_rom_times, color='orange', label='Normalized ROM Time')
+    # ax.scatter(s_star[1], cost3_half(s_star[1]), marker='*', s=200, color='grey')
+    # ax.set_xlabel('Basis size')
+    # ax.set_ylabel('Model Costs')
+    # ax.legend()
+    # plt.tight_layout()
+    # plt.savefig('cost_plot.pdf', transparent=True)
+    # if show_plots: plt.show()
 
     # Train the optimized ROM
     rom_basis_num = int(round(s_star[1]))
@@ -503,37 +501,51 @@ def run_hybrid_mfuq(fom_model: QoiModel,
             func_list.append(fval)
             x_list.append(x)
 
-    ### Do some plotting
+    ### Save data for plotting
     xx = np.array(budget_list)  # Convert budget_list to a NumPy array
-    xMFs = np.array(xMFs)
-    xMFs_exact = np.array(xMFs_exact)
-    xISs = np.array(xISs)
-    xISs_exact = np.array(xISs_exact)
-    
-    fig, ax = plt.subplots()
-    ax.loglog(xx, 1/xx, color='black', label='MC')
-    # plt.loglog(xx, 1/xx * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # plt.loglog(xx, 1/xx * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    # plt.loglog(xx, 1/xx * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # plt.loglog(xx, 1/xx * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # plt.loglog(xx, np.exp(np.array(funcMFs)), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # plt.loglog(xx, np.exp(np.array(funcMFs_exact)), color='blue', label='ACV-MF Actual')
-    # plt.loglog(xx, np.exp(np.array(funcISs)), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # plt.loglog(xx, np.exp(np.array(funcISs_exact)), color='orange', label='ACV-IS Actual')
-    ax.loglog(xx, np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    ax.loglog(xx, np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    ax.loglog(xx, np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    ax.loglog(xx, np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # plt.loglog(xx, 1/xMFs[:,0] * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # plt.loglog(xx, 1/xMFs_exact[:,0] * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    # plt.loglog(xx, 1/xISs[:,0] * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # plt.loglog(xx, 1/xISs_exact[:,0] * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # plt.xlabel('Budget')
-    # plt.ylabel('Estimator Variance')
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig('variance_plot.pdf', transparent=True)
-    if show_plots: plt.show()
+    # xMFs = np.array(xMFs)
+    # xMFs_exact = np.array(xMFs_exact)
+    # xISs = np.array(xISs)
+    # xISs_exact = np.array(xISs_exact)
+    s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
+    rho12s = np.array([rho12(i) for i in s_plot[0]])
+    rho13s = rho13(s_plot)
+    rho23s = rho23(s_plot)
+    cost2s = np.array([cost2(i) for i in s_plot[0]])
+    cost3s = cost3(s_plot)
+    data_dict = {'rho12s':rho12s, 'rho13s':rho13s, 'rho23s':rho23s,
+                 'cost2s':cost2s, 'cost3s':cost3s,
+                 'fom_rom_corrs':fom_rom_corrs, 'aux_rom_corrs':aux_rom_corrs,
+                 'normalized_rom_times':normalized_rom_times, 
+                 'ss':s_plot, 'pp':pilot_sizes, 's_star':s_star,
+                 'xx':xx, 'fMFs':np.array(funcMFs), 'fMFs_ex':np.array(funcMFs_exact),
+                 'fISs':np.array(funcISs), 'fISs_ex':np.array(funcISs_exact)}
+    np.savez('corrcostvar.npz', **data_dict)
+
+    # fig, ax = plt.subplots()
+    # ax.loglog(xx, 1/xx, color='black', label='MC')
+    # # plt.loglog(xx, 1/xx * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # # plt.loglog(xx, 1/xx * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    # # plt.loglog(xx, 1/xx * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # # plt.loglog(xx, 1/xx * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # # plt.loglog(xx, np.exp(np.array(funcMFs)), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # # plt.loglog(xx, np.exp(np.array(funcMFs_exact)), color='blue', label='ACV-MF Actual')
+    # # plt.loglog(xx, np.exp(np.array(funcISs)), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # # plt.loglog(xx, np.exp(np.array(funcISs_exact)), color='orange', label='ACV-IS Actual')
+    # ax.loglog(xx, np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # ax.loglog(xx, np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    # ax.loglog(xx, np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # ax.loglog(xx, np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # # plt.loglog(xx, 1/xMFs[:,0] * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
+    # # plt.loglog(xx, 1/xMFs_exact[:,0] * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
+    # # plt.loglog(xx, 1/xISs[:,0] * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
+    # # plt.loglog(xx, 1/xISs_exact[:,0] * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
+    # # plt.xlabel('Budget')
+    # # plt.ylabel('Estimator Variance')
+    # ax.legend()
+    # plt.tight_layout()
+    # plt.savefig('variance_plot.pdf', transparent=True)
+    # if show_plots: plt.show()
 
     hybrid_file.close()
 
