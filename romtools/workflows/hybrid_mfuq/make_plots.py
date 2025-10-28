@@ -4,7 +4,7 @@ import numpy as np
 if __name__ == "__main__":
 
     show_plots = False
-    dat = np.load('corrcostvar.npz')
+    dat = np.load('visualization_data.npz')
 
     # Plot correlations and costs
     fig, ax = plt.subplots()

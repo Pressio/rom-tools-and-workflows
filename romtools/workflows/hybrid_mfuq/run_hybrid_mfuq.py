@@ -57,6 +57,7 @@ from romtools.workflows.model_builders import QoiModelBuilder
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
+
 def _prepare_directory_and_run(model, run_directory, parameter_dict, overwrite=False):
     create_empty_dir(run_directory)
     model.populate_run_directory(run_directory, parameter_dict)
@@ -70,6 +71,7 @@ def _prepare_directory_and_run(model, run_directory, parameter_dict, overwrite=F
     print("Running...\n")
     model.run_model(run_directory, parameter_dict)
     np.savetxt(passed_file, [0], fmt="%i")
+
 
 # WARNING: the computed time will be wrong if sample is run ahead of time somewhere else
 #          (so passed.txt exists) and QoI/time files are never saved
@@ -94,51 +96,57 @@ def _compute_QoI_and_time(model, run_directory, parameter_dict, overwrite=False)
 
     return np.array(model_qoi), np.array(model_time)
 
-def run_hybrid_mfuq(fom_model: QoiModel,
+
+# Helper function: reshape data consistent with rom runs
+def _fancy_reshape(data_master, labels_list):
+    return [
+        np.array([
+            [data_master[sample_index] for sample_index in test_group]
+            for test_group in test_labels
+        ])
+        for test_labels in labels_list
+    ]
+
+
+# Helper function: run ACV many times and get best result
+def _solve_best_mfuq(obj, n_trials=50, log=True):
+    """Solve MFMC object multiple times and return best result."""
+    best_fval = float('inf')
+    best_x = None
+    for _ in range(n_trials):
+        obj.solve()
+        if obj.result.success:
+            if log: 
+                fval = np.exp(obj.result.fun)
+            else:
+                fval = obj.result.fun
+            # fval = obj.result.fun
+            if 0 <= fval <= best_fval:
+                best_fval = fval
+                best_x = obj.result.x
+    # print(f'aaaa {best_fval}')
+    return best_fval, best_x
+
+
+# Function which handles the pilot sampling and saves data
+def do_pilot_sampling(fom_model: QoiModel,
                aux_model: QoiModel,
                rom_model_builder: QoiModelBuilder,
                parameter_space: ParameterSpace,
-               absolute_hybrid_MFMC_work_directory: str,
-               pilot_sample_size: int = 20, 
-               pilot_list: list = [1,3,5,7,9],
+               hybrid_MFMC_directory: str,
+               pilot_manager,
                max_combinations: int = 25,
-               tunable_range: list = [1,20],
-               budget: int = 40,
-               allocate_based_on: str = 'min',
-               overwrite: bool = True,
-               show_plots: bool = False,
-               random_seed: int = 2025
+               random_seed: int = 2025,
+               overwrite: bool = False
                ):
-    '''
-    Main implementation of the hybrid MFUQ algorithm.
-    Right now, it is assumed that we have a fom_model, another
-        fixed aux_model (e.g., a trained ROM), and a variable ROM. 
 
-    The first step is a pilot sampling which uses pilot_sample_size number
-        of pilot samples to compute correlation data at the basis sizes in
-        pilot_list.  This is done through a combinatorial average with number
-        of groups controlled by max_combinations.  
-    The second step computes surrogates from these data and uses them to
-        solve the ACV optimization problem, returning the optimal basis
-        size and sampling strategy.
-    The third step computes the optimal rom, and recomputes the FOM/ROM
-        correlation information using the pilot sampling.  This is used to
-        get an accurate projection of the optimal ACV estimator variance.    
-    '''
-    np.random.seed(random_seed)
-    if allocate_based_on not in ['min', 'max']:
-        raise ValueError("Allocation type not implemented!")
+    hybrid_file = open(f"{hybrid_MFMC_directory}/pilot_status.log", "w", encoding="utf-8") 
 
-    hybrid_MFMC_directory = absolute_hybrid_MFMC_work_directory
-    create_empty_dir(hybrid_MFMC_directory)
+    # Extract from manager class (def'd in mfuq_methods.py)
+    pilot_list = pilot_manager.s_list
+    pilot_sample_size = pilot_manager.num_pilot
 
-    hybrid_file = open(f"{hybrid_MFMC_directory}/hybrid_status.log", "w", encoding="utf-8") 
-    # pylint: disable=consider-using-with
-    hybrid_file.write("Hybrid MFMC status \n")
-
-    # Set up manager for pilot sampling and label splitting
-    pilot_manager = mfmc.Pilot(pilot_list, pilot_sample_size, random_seed=random_seed)
-
+    # Split train and test
     out = "Creating train and test labels \n"
     hybrid_file.write(out), print(out)
 
@@ -248,18 +256,9 @@ def run_hybrid_mfuq(fom_model: QoiModel,
         rom_qois.append(np.array(rom_qois_i)), rom_times.append(np.array(rom_times_i))
 
     # Reshape master lists to be compared with list of ROMs
-    def fancy_reshape(data_master, labels_list):
-        return [
-            np.array([
-                [data_master[sample_index] for sample_index in test_group]
-                for test_group in test_labels
-            ])
-            for test_labels in labels_list
-        ]
-    
-    fom_qois = fancy_reshape(fom_qois_master, test_labels_list)
-    aux_qois = fancy_reshape(aux_qois_master, test_labels_list)
-    fom_times = fancy_reshape(fom_times_master, test_labels_list)
+    fom_qois = _fancy_reshape(fom_qois_master, test_labels_list)
+    aux_qois = _fancy_reshape(aux_qois_master, test_labels_list)
+    fom_times = _fancy_reshape(fom_times_master, test_labels_list)
     # aux_times = fancy_reshape(aux_times_master, test_labels_list)
 
     # Compute pilot data for surrogate training
@@ -279,14 +278,35 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     normalized_rom_times = [np.mean(rom_group / fom_group) for (rom_group, fom_group) 
                             in zip(rom_times, fom_times)]
 
+    data_dict = {'fom_qois_master': fom_qois_master, 'aux_qois_master': aux_qois_master,
+                 'fom_aux_corr': fom_aux_corr, 'fom_rom_corrs': fom_rom_corrs,
+                 'aux_rom_corrs': aux_rom_corrs, 
+                 'fom_times_master': fom_times_master,
+                 'normalized_aux_time': normalized_aux_time, 
+                 'normalized_rom_times': normalized_rom_times,
+                 'parameter_samples': parameter_samples,
+                 'training_dirs': np.array(training_dirs)}
+
     # print(normalized_rom_times)
     # rom_shapes = [rom_time.shape for rom_time in rom_times]
     # fom_shapes = [fom_time.shape for fom_time in fom_times]
     # print(f'aaaaaa {rom_shapes, fom_shapes}')
 
-    # Train surrogates for cost and correlation
-    out = "Training surrogates for cost and correlation \n"
-    hybrid_file.write(out), print(out)
+    np.savez(f"{hybrid_MFMC_directory}/pilot_results.npz", **data_dict)
+
+    hybrid_file.close()
+
+
+# Function which trains surrogates based on data collected during pilot
+def build_surrogates(data_npz, pilot_list):
+
+    with np.load(data_npz) as data:
+        fom_aux_corr = data['fom_aux_corr']
+        fom_rom_corrs = data['fom_rom_corrs']
+        aux_rom_corrs = data['aux_rom_corrs']
+        normalized_aux_time = data['normalized_aux_time']
+        normalized_rom_times = data['normalized_rom_times']
+
     pilot_sizes = np.tile(np.array(pilot_list), (2,1))
 
     # Correlations fit with sigmoids
@@ -315,101 +335,19 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     lofi_corr_list = [rho23]
     cost_list = [cost2, cost3]
 
-    # Budget and bounds on optimization variables N, r, s
-    # Elements of budget_list are HARD CODED based on given budget
-    budget_list = [budget * (i+1) for i in range(6)]
-    bounds = [(1, None), (1.001, None), (1.001, None), 
-              (0, 0), tuple(tunable_range)]
+    return (hifi_corr_list, lofi_corr_list, cost_list)
 
-    # Helper function: run ACV many times and get best result
-    def solve_best_mfmc(obj, n_trials=50):
-        """Solve MFMC object multiple times and return best result."""
-        best_fval = float('inf')
-        best_x = None
-        for _ in range(n_trials):
-            obj.solve()
-            if obj.result.success:
-                fval = np.exp(obj.result.fun)
-                # fval = obj.result.fun
-                if 0 <= fval <= best_fval:
-                    best_fval = fval
-                    best_x = obj.result.x
-        # print(f'aaaa {best_fval}')
-        return best_fval, best_x
 
-    # Initialize output and results
-    print("Solving the hybrid MFMC optimization problem \n")
-    funcMFs, xMFs = [], []
-    funcISs, xISs = [], []
+# Function which trains the optimal ROM and computes its pilot statistics
+def train_opimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
+                                         rom_basis_num, parameter_space, parameter_samples,
+                                         training_dirs, fom_model, rom_model_builder, data_npz,
+                                         overwrite=False):
 
-    for budget in budget_list:
-        for model_type, func_list, x_list in [('MF', funcMFs, xMFs), ('IS', funcISs, xISs)]:
-            obj = mfmc.MFMC(budget, model_type, hybrid=False)
-            obj.set_corrs_and_costs(hifi_corr_list, lofi_corr_list, cost_list)
-            obj.set_objective_and_constraint(bounds)
-
-            fval, x = solve_best_mfmc(obj, n_trials=50) #HARD CODED
-            out = f'Predicted variance ratio for {model_type} at budget {budget} is {fval} and occurs at {x} \n'
-            hybrid_file.write(out)
-            print(out)
-
-            func_list.append(fval)
-            x_list.append(x)
-
-    # Allocate based on IS at lowest or highest budget (IS THIS OK?)
-    if allocate_based_on == 'min':
-        s_star = xISs[0][3:]
-    elif allocate_based_on == 'max':
-        s_star = xISs[-1][3:]
-    # r_star = xMFs[0][1:3]
-    # N_star = xMFs[0][0]
-
-    # # save corrs and costs for plotting
-    # s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
-    # rho12s = np.array([rho12(i) for i in s_plot[0]])
-    # rho13s = rho13(s_plot)
-    # rho23s = rho23(s_plot)
-    # cost2s = np.array([cost2(i) for i in s_plot[0]])
-    # cost3s = cost3(s_plot)
-    # data_dict = {'rho12s':rho12s, 'rho13s':rho13s, 'rho23s':rho23s,
-    #              'cost2s':cost2s, 'cost3s':cost3s,
-    #              'fom_rom_corrs':fom_rom_corrs, 'aux_rom_corrs':aux_rom_corrs,
-    #              'normalized_rom_times':normalized_rom_times, 
-    #              'ss':s_plot, 'pp':pilot_sizes, 's_star':s_star}
-    # np.savez('corrcost.npz', **data_dict)
-
-    # # Plot correlations and costs
-    # fig, ax = plt.subplots()
-    # ax.plot(s_plot[0], [rho12(i) for i in s_plot[0]], color='blue', label='rho12')
-    # ax.plot(s_plot[0], rho13(s_plot), color='orange', label='rho13')
-    # ax.scatter(pilot_sizes[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
-    # ax.plot(s_plot[0], rho23(s_plot), color='green', label='rho23')
-    # ax.scatter(pilot_sizes[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
-    # ax.scatter(s_star[1], rho13(s_star), marker='*', s=200, color='grey')
-    # ax.set_xlabel('Basis size')
-    # ax.set_ylabel('Correlation')
-    # ax.legend()
-    # plt.tight_layout()
-    # plt.savefig('correlation_plot.pdf', transparent=True)
-    # if show_plots: plt.show()
-
-    # fig, ax = plt.subplots()
-    # ax.plot(s_plot[0], [cost2(i) for i in s_plot[0]], color='blue', label='cost2')
-    # ax.plot(s_plot[0], cost3(s_plot), color='orange', label='cost3')
-    # ax.scatter(pilot_sizes[0], normalized_rom_times, color='orange', label='Normalized ROM Time')
-    # ax.scatter(s_star[1], cost3_half(s_star[1]), marker='*', s=200, color='grey')
-    # ax.set_xlabel('Basis size')
-    # ax.set_ylabel('Model Costs')
-    # ax.legend()
-    # plt.tight_layout()
-    # plt.savefig('cost_plot.pdf', transparent=True)
-    # if show_plots: plt.show()
-
-    # Train the optimized ROM
-    rom_basis_num = int(round(s_star[1]))
-    out = f"Training ROM from {rom_basis_num} samples \n"
+    out = f"Training ROM from first {rom_basis_num} samples \n"
     hybrid_file.write(out), print(out)
-    
+    parameter_names = parameter_space.get_names()
+
     rom_offline_directory = f'{hybrid_MFMC_directory}/pilot/rom_optimized/basis_size_{rom_basis_num}'
     create_empty_dir(rom_offline_directory)
     num_existing = len(training_dirs)
@@ -452,8 +390,12 @@ def run_hybrid_mfuq(fom_model: QoiModel,
         trained_rom_qois.append(rom_qoi), trained_rom_times.append(rom_time)
     trained_rom_qois_master, trained_rom_times_master = np.array(trained_rom_qois), np.array(trained_rom_times)
 
-
     # Compute correlation and cost data
+    with np.load(data_npz) as data:
+        fom_qois_master = data['fom_qois_master']
+        aux_qois_master = data['aux_qois_master']
+        fom_times_master = data['fom_times_master']
+
     fom_rom_corr = pilot_manager.estimate_FOM_correlations(
         [fom_qois_master[None,:]], [trained_rom_qois_master[None,:]])[0]
     aux_rom_corr = pilot_manager.estimate_FOM_correlations(
@@ -461,28 +403,146 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     normalized_rom_time = np.mean([rom_time / fom_time for (rom_time, fom_time) 
                                    in zip(trained_rom_times_master, fom_times_master)])
 
-    def exact_rho13(s): return fom_rom_corr
-    def exact_rho23(s): return aux_rom_corr
-    def exact_cost3(s): return normalized_rom_time
+    # Save data to file
+    data_dict = {'fom_rom_corr': fom_rom_corr, 
+                 'aux_rom_corr': aux_rom_corr,
+                 'normalized_rom_time': normalized_rom_time}
+    np.savez(f"{hybrid_MFMC_directory}/trained_{rom_basis_num}_sample_rom_results.npz",
+              **data_dict)
 
-    hifi_corr_list_exact = [rho12, exact_rho13]
+
+def run_hybrid_mfuq(fom_model: QoiModel,
+               aux_model: QoiModel,
+               rom_model_builder: QoiModelBuilder,
+               parameter_space: ParameterSpace,
+               absolute_hybrid_MFMC_work_directory: str,
+               pilot_sample_size: int = 20, 
+               pilot_list: list = [1,3,5,7,9],
+               max_combinations: int = 25,
+               tunable_range: list = [1,20],
+               budget: int = 40,
+               allocate_based_on: str = 'min',
+               log_of_objective: bool = True,
+               overwrite: bool = True,
+               random_seed: int = 2025
+               ):
+    '''
+    Main implementation of the hybrid MFUQ algorithm.
+    Right now, it is assumed that we have a fom_model, another
+        fixed aux_model (e.g., a trained ROM), and a variable ROM. 
+
+    The first step is a pilot sampling which uses pilot_sample_size number
+        of pilot samples to compute correlation data at the basis sizes in
+        pilot_list.  This is done through a combinatorial average with number
+        of groups controlled by max_combinations.  
+    The second step computes surrogates from these data and uses them to
+        solve the ACV optimization problem, returning the optimal basis
+        size and sampling strategy.
+    The third step computes the optimal rom, and recomputes the FOM/ROM
+        correlation information using the pilot sampling.  This is used to
+        get an accurate projection of the optimal ACV estimator variance.    
+    '''
+    # Initialize stuff
+    np.random.seed(random_seed)
+    if allocate_based_on not in ['min', 'max']:
+        raise ValueError("Allocation type not implemented!")
+    hybrid_MFMC_directory = absolute_hybrid_MFMC_work_directory
+    create_empty_dir(hybrid_MFMC_directory)
+    hybrid_file = open(f"{hybrid_MFMC_directory}/hybrid_status.log", "w", encoding="utf-8") 
+    hybrid_file.write("Hybrid MFUQ status \n")
+
+    # Do pilot sampling (or load previous results)
+    pilot_manager = mfmc.Pilot(pilot_list, pilot_sample_size, random_seed=random_seed)
+    if not os.path.exists(f"{hybrid_MFMC_directory}/pilot_results.npz"):
+        msg = "Doing pilot sampling \n"
+        hybrid_file.write(msg), print(msg)
+        do_pilot_sampling(fom_model, aux_model, rom_model_builder,
+               parameter_space, hybrid_MFMC_directory,
+               pilot_manager, max_combinations,
+               random_seed, overwrite)
+    else:
+        msg = "Pilot sampling done previously \n"
+        hybrid_file.write(msg), print(msg)
+    data_npz = f"{hybrid_MFMC_directory}/pilot_results.npz"
+
+    # Loading stats from pilot
+    with np.load(data_npz) as data:
+        fom_rom_corrs = data['fom_rom_corrs']
+        aux_rom_corrs = data['aux_rom_corrs']
+        normalized_rom_times = data['normalized_rom_times']
+        parameter_samples = data['parameter_samples']
+        training_dirs = data['training_dirs'].tolist()
+
+    # Train surrogates for cost and correlation
+    out = "Training surrogates for cost and correlation \n"
+    hybrid_file.write(out), print(out)
+    hifi_corr_list, lofi_corr_list, cost_list = build_surrogates(
+        data_npz, pilot_list)
+
+    # Solve MFUQ problem based on surrogates to get predictions
+    # Budget and bounds on optimization variables N, r, s
+    # Elements of budget_list are HARD CODED based on given budget
+    print("Solving the hybrid MFUQ optimization problem \n")
+    budget_list = [budget * (i+1) for i in range(6)]
+    bounds = [(1, None), (1.001, None), (1.001, None), 
+              (0, 0), tuple(tunable_range)]
+    
+    funcMFs, xMFs = [], []
+    funcISs, xISs = [], []
+    for budget in budget_list:
+        for model_type, func_list, x_list in [('MF', funcMFs, xMFs), ('IS', funcISs, xISs)]:
+            obj = mfmc.MFMC(budget, model_type, hybrid=False)
+            obj.set_corrs_and_costs(hifi_corr_list, lofi_corr_list, cost_list)
+            obj.set_objective_and_constraint(log=log_of_objective,bounds=bounds)
+
+            fval, x = _solve_best_mfuq(obj, n_trials=50, log=log_of_objective)
+            out = f'Predicted variance ratio for {model_type} at budget {budget} is {fval} and occurs at {x} \n'
+            hybrid_file.write(out), print(out)
+
+            func_list.append(fval)
+            x_list.append(x)
+
+    # Allocate training samples based on IS at lowest or highest budget
+    if allocate_based_on == 'min':
+        s_star = xISs[0][3:]
+    elif allocate_based_on == 'max':
+        s_star = xISs[-1][3:]
+
+    # Train the optimized ROM or load from previous
+    rom_basis_num = int(round(s_star[1]))
+    if not os.path.exists(f"{hybrid_MFMC_directory}/trained_{rom_basis_num}_sample_rom_results.npz"):
+        out = "Doing ROM training and computing pilot stats \n"
+        hybrid_file.write(out), print(out)
+        train_opimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
+                                         rom_basis_num, parameter_space, parameter_samples,
+                                         training_dirs, fom_model, rom_model_builder, data_npz,
+                                         overwrite=overwrite)
+    else:
+        out = "ROM training done previously \n"
+        hybrid_file.write(out), print(out)
+
+    # Load statistics of trained ROM and build surrogates
+    with np.load(f"{hybrid_MFMC_directory}/trained_{rom_basis_num}_sample_rom_results.npz") as data:
+        fom_trained_rom_corr = data['fom_rom_corr']
+        aux_trained_rom_corr = data['aux_rom_corr']
+        normalized_trained_rom_time = data['normalized_rom_time'] 
+
+    def exact_rho13(s): return fom_trained_rom_corr
+    def exact_rho23(s): return aux_trained_rom_corr
+    def exact_cost3(s): return normalized_trained_rom_time
+
+    hifi_corr_list_exact = [hifi_corr_list[0], exact_rho13]
     lofi_corr_list_exact = [exact_rho23]
-    cost_list_exact = [cost2, exact_cost3]
+    cost_list_exact = [cost_list[0], exact_cost3]
 
-
-    # Budget and bounds on optimization variables N, r (for fixed s)
+    # Solve fixed MFUQ problem with optimized data to validate prediction
+    out = "Solving the MFUQ optimization problem with fixed models \n"
+    hybrid_file.write(out), print(out)
     bounds = [(1, None), (1.001, None), (1.001, None), 
               (0, 0), (rom_basis_num, rom_basis_num)]
 
-    # MFMC solve
-    out = "Solving the MFMC optimization problem with fixed models \n"
-    hybrid_file.write(out), print(out)
-
-    # Output lists
     funcMFs_exact, xMFs_exact = [], []
     funcISs_exact, xISs_exact = [], []
-
-    # Loop over budgets and model types
     for budget in budget_list:
         for model_type, func_list, x_list in [
             ('MF', funcMFs_exact, xMFs_exact),
@@ -490,23 +550,21 @@ def run_hybrid_mfuq(fom_model: QoiModel,
 
             obj = mfmc.MFMC(budget, model_type, hybrid=True)
             obj.set_corrs_and_costs(hifi_corr_list_exact, lofi_corr_list_exact, cost_list_exact)
-            obj.set_objective_and_constraint(bounds)
+            obj.set_objective_and_constraint(log=log_of_objective,bounds=bounds)
 
-            fval, x = solve_best_mfmc(obj, n_trials=50) #HARD CODED
-
+            fval, x = _solve_best_mfuq(obj, n_trials=50, log=log_of_objective)
             out = f'Variance ratio for {model_type} at budget {budget} is {fval} and occurs at {x} \n'
-            hybrid_file.write(out)
-            print(out)
+            hybrid_file.write(out), print(out)
 
             func_list.append(fval)
             x_list.append(x)
 
-    ### Save data for plotting
-    xx = np.array(budget_list)  # Convert budget_list to a NumPy array
-    # xMFs = np.array(xMFs)
-    # xMFs_exact = np.array(xMFs_exact)
-    # xISs = np.array(xISs)
-    # xISs_exact = np.array(xISs_exact)
+    # Save data for visualization
+    xx = np.array(budget_list)
+    pilot_sizes = np.tile(pilot_manager.s_list, (2,1))
+    rho12, rho13 = hifi_corr_list
+    cost2, cost3 = cost_list
+    rho23 = lofi_corr_list[0]
     s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
     rho12s = np.array([rho12(i) for i in s_plot[0]])
     rho13s = rho13(s_plot)
@@ -520,103 +578,6 @@ def run_hybrid_mfuq(fom_model: QoiModel,
                  'ss':s_plot, 'pp':pilot_sizes, 's_star':s_star,
                  'xx':xx, 'fMFs':np.array(funcMFs), 'fMFs_ex':np.array(funcMFs_exact),
                  'fISs':np.array(funcISs), 'fISs_ex':np.array(funcISs_exact)}
-    np.savez('corrcostvar.npz', **data_dict)
-
-    # fig, ax = plt.subplots()
-    # ax.loglog(xx, 1/xx, color='black', label='MC')
-    # # plt.loglog(xx, 1/xx * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # # plt.loglog(xx, 1/xx * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    # # plt.loglog(xx, 1/xx * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # # plt.loglog(xx, 1/xx * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # # plt.loglog(xx, np.exp(np.array(funcMFs)), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # # plt.loglog(xx, np.exp(np.array(funcMFs_exact)), color='blue', label='ACV-MF Actual')
-    # # plt.loglog(xx, np.exp(np.array(funcISs)), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # # plt.loglog(xx, np.exp(np.array(funcISs_exact)), color='orange', label='ACV-IS Actual')
-    # ax.loglog(xx, np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # ax.loglog(xx, np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    # ax.loglog(xx, np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # ax.loglog(xx, np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # # plt.loglog(xx, 1/xMFs[:,0] * np.array(funcMFs), linestyle=':', color='blue', label='ACV-MF Prediction')
-    # # plt.loglog(xx, 1/xMFs_exact[:,0] * np.array(funcMFs_exact), color='blue', label='ACV-MF Actual')
-    # # plt.loglog(xx, 1/xISs[:,0] * np.array(funcISs), linestyle=':', color='orange', label='ACV-IS Predicted')
-    # # plt.loglog(xx, 1/xISs_exact[:,0] * np.array(funcISs_exact), color='orange', label='ACV-IS Actual')
-    # # plt.xlabel('Budget')
-    # # plt.ylabel('Estimator Variance')
-    # ax.legend()
-    # plt.tight_layout()
-    # plt.savefig('variance_plot.pdf', transparent=True)
-    # if show_plots: plt.show()
+    np.savez('visualization_data.npz', **data_dict)
 
     hybrid_file.close()
-
-
-    # ### Validate MFMC solution
-    # out = "Validating the MFMC sampling strategy \n"
-    # hybrid_file.write(out), print(out)
-
-    # # Define quantities needed for validation sampling
-    # lofi_sample_nums = np.ceil(r_star*N_star).astype(int)
-    # num_fom_samples = np.ceil(N_star).astype(int)
-    # num_model_samples_list = [num_fom_samples]
-    # for sample_num in lofi_sample_nums:
-    #     num_model_samples_list.append(sample_num)
-    # if obj.type == "ACV-MF":
-    #     total_lofi_samples = max(num_model_samples_list) - num_fom_samples
-    # elif obj.type == "ACV-IS":
-    #     total_lofi_samples = sum(num_model_samples_list) - \
-    #         len(num_model_samples_list) * num_fom_samples
-    # parameter_samples = parameter_space.generate_samples(num_fom_samples + total_lofi_samples)
-
-    # # Make FOM directories and get its QoIs
-    # out = "Sampling FOM model and computing N* QoIs \n"
-    # hybrid_file.write(out), print(out)
-    # parameter_samples_fom = parameter_samples[:num_model_samples_list[0]]
-    # for sample_index, sample in enumerate(parameter_samples_fom):
-    #     print("===========  Sample " + str(sample_index) + " ============")
-    #     fom_run_directory = f'{hybrid_MFMC_directory}/sampling/fom/run_{sample_index}'
-    #     parameter_dict = _create_parameter_dict(parameter_names, sample)
-    #     _prepare_directory_and_run(fom_model, fom_run_directory, parameter_dict)
-    #     fom_qoi = fom_model.compute_qoi(fom_run_directory, parameter_dict)
-    #     if sample_index == 0:
-    #         sampled_fom_qois = fom_qoi[None]
-    #     else:
-    #         sampled_fom_qois = np.append(sampled_fom_qois, fom_qoi[None], axis=0)
-
-    # # Define parameter samples for aux and rom
-    # # Aux strategy is identical for MF and IS
-    # parameter_samples_aux = parameter_samples[:num_model_samples_list[1]]
-    # if obj.type == "ACV-MF":
-    #     parameter_samples_rom = parameter_samples[:num_model_samples_list[2]]
-    # elif obj.type == "ACV-IS":
-    #     independent_lofi_samples = parameter_samples[num_model_samples_list[1]:]
-    #     parameter_samples_rom = parameter_samples_fom.append(independent_lofi_samples)
-
-    # # Make Aux directories and get its QoIs
-    # out = "Sampling auxilliary model and computing its QoIs \n"
-    # hybrid_file.write(out), print(out)
-    # for sample_index, sample in enumerate(parameter_samples_aux):
-    #     print("===========  Sample " + str(sample_index) + " ============")
-    #     aux_run_directory = f'{hybrid_MFMC_directory}/sampling/aux/run_{sample_index}'
-    #     parameter_dict = _create_parameter_dict(parameter_names, sample)
-    #     _prepare_directory_and_run(aux_model, aux_run_directory, parameter_dict)        
-    #     aux_qoi = aux_model.compute_qoi(aux_run_directory, parameter_dict)
-    #     if sample_index == 0:
-    #         sampled_aux_qois = aux_qoi[None]
-    #     else:
-    #         sampled_aux_qois = np.append(sampled_aux_qois, aux_qoi[None], axis=0)
-
-    # # Make ROM directories and get its QoIs
-    # out = "Sampling ROM model and computing its QoIs \n"
-    # hybrid_file.write(out), print(out)
-    # for sample_index, sample in enumerate(parameter_samples_rom):
-    #     print("===========  Sample " + str(sample_index) + " ============")
-    #     rom_run_directory = rom_offline_directory + f'/run_{sample_index}'
-    #     parameter_dict = _create_parameter_dict(parameter_names, sample)
-    #     _prepare_directory_and_run(rom_model, rom_run_directory, parameter_dict)        
-    #     rom_qoi = rom_model.compute_qoi(rom_run_directory, parameter_dict)
-    #     if sample_index == 0:
-    #         sampled_rom_qois = rom_qoi[None]
-    #     else:
-    #         sampled_rom_qois = np.append(sampled_rom_qois, rom_qoi[None], axis=0)            
-
-

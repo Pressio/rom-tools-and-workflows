@@ -409,7 +409,7 @@ class MFMC():
         C     += np.tril(C,k=-1).T
         return C
 
-    def set_objective_and_constraint(self, bounds=[]):
+    def set_objective_and_constraint(self, log=True, bounds=[]):
         '''
         Set objective and constraint functions defining MFMC optimization.
         '''
@@ -428,6 +428,9 @@ class MFMC():
         else:
             self.bounds = bounds
 
+        # toggle on/off log of objective
+        self.log = log
+
         def objective(x):
             '''
             Optimization objective given sampling x = (N, r, s).
@@ -445,9 +448,10 @@ class MFMC():
             vec = np.diag(F)*c
             R2 = np.linalg.solve(F*C, vec).dot(vec)
             # R2  = np.dot(np.linalg.inv(F*C),vec).dot(vec)
-            return np.log((1 - R2) / N)
-            # return (1 - R2) / N
-
+            if self.log:
+                return np.log((1 - R2) / N)
+            else:
+                return (1 - R2) / N
 
         def constraint(x):
             '''
@@ -482,7 +486,7 @@ class MFMC():
         # Set budget constraint and solve with SciPy
         nlc = NonlinearConstraint(self.constraint, -np.inf, self.budget)
         options = {'maxiter': 500, 'ftol': 1e-8, 'eps': 1e-5}
-        result = minimize(self.objective, x0, method='SLSQP', 
+        result = minimize(self.objective, x0, method='SLSQP', jac='3-point',
                           constraints=nlc, bounds=self.bounds, options=options)
         self.result = result
 
