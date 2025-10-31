@@ -52,135 +52,135 @@ def pearsonr_with_axis(x, y, axis=0):
     return statistic, pvalue
 
 
-def fit_polynomial(ins, outs, order=5):
-    '''
-    Fit a tensor product of 1-D polynomials to data.
-    ins: [dim, n_data] or [dim] — input variables
-    outs: [n_data] or scalar — target values
-    '''
-    ins = np.atleast_2d(ins)
-    if ins.shape[0] > ins.shape[1]:
-        ins = ins.T  # Ensure shape is (dim, n_data)
-    dim, n_data = ins.shape
+# def fit_polynomial(ins, outs, order=5):
+#     '''
+#     Fit a tensor product of 1-D polynomials to data.
+#     ins: [dim, n_data] or [dim] — input variables
+#     outs: [n_data] or scalar — target values
+#     '''
+#     ins = np.atleast_2d(ins)
+#     if ins.shape[0] > ins.shape[1]:
+#         ins = ins.T  # Ensure shape is (dim, n_data)
+#     dim, n_data = ins.shape
 
-    def evaluate_tensor_product(coeffs, x):
-        '''
-        Evaluate tensor product polynomial on input x.
-        coeffs: flat array [dim * (order+1)]
-        x: [dim, n_data] or [dim]
-        Returns: [n_data] or scalar
-        '''
-        coeffs = coeffs.reshape(dim, order + 1)
-        x = np.atleast_2d(x)
-        if x.shape[0] != dim:
-            x = x.T  # ensure (dim, n_data)
-        single_input = False
-        if x.shape[1] == 1:
-            single_input = x.ndim == 2 and x.shape[1] == 1 and x.shape[0] == dim
+#     def evaluate_tensor_product(coeffs, x):
+#         '''
+#         Evaluate tensor product polynomial on input x.
+#         coeffs: flat array [dim * (order+1)]
+#         x: [dim, n_data] or [dim]
+#         Returns: [n_data] or scalar
+#         '''
+#         coeffs = coeffs.reshape(dim, order + 1)
+#         x = np.atleast_2d(x)
+#         if x.shape[0] != dim:
+#             x = x.T  # ensure (dim, n_data)
+#         single_input = False
+#         if x.shape[1] == 1:
+#             single_input = x.ndim == 2 and x.shape[1] == 1 and x.shape[0] == dim
 
-        result = np.ones(x.shape[1])
-        for d in range(dim):
-            powers = np.vander(x[d], N=order+1, increasing=True)  # [n_data, order+1]
-            poly_vals = powers @ coeffs[d]  # [n_data]
-            result *= poly_vals
+#         result = np.ones(x.shape[1])
+#         for d in range(dim):
+#             powers = np.vander(x[d], N=order+1, increasing=True)  # [n_data, order+1]
+#             poly_vals = powers @ coeffs[d]  # [n_data]
+#             result *= poly_vals
 
-        if single_input:
-            return result[0]
-        return result
+#         if single_input:
+#             return result[0]
+#         return result
 
-    def residuals(coeffs):
-        return evaluate_tensor_product(coeffs, ins) - outs
+#     def residuals(coeffs):
+#         return evaluate_tensor_product(coeffs, ins) - outs
 
-    x0 = np.full((dim * (order + 1),), 0.5)  # initial guess
-    result = least_squares(residuals, x0, loss='linear')
+#     x0 = np.full((dim * (order + 1),), 0.5)  # initial guess
+#     result = least_squares(residuals, x0, loss='linear')
 
-    def fitted(x):
-        '''
-        Evaluate fitted polynomial.
-        x: [dim] or [dim, n_data]
-        Returns: scalar or [n_data]
-        '''
-        return evaluate_tensor_product(result.x, x)
+#     def fitted(x):
+#         '''
+#         Evaluate fitted polynomial.
+#         x: [dim] or [dim, n_data]
+#         Returns: scalar or [n_data]
+#         '''
+#         return evaluate_tensor_product(result.x, x)
 
-    return fitted
+#     return fitted
 
 
-# r is always a vector of one number per model
-# s is currently assumed a vector of one number per model
-# could use tensor product of sigmoids for multiple s per model?
-def fit_sigmoid(ins, outs, character=[]):
-    '''
-    Fit a tensor product of 3- or 5-parameter sigmoids to data.
+# # r is always a vector of one number per model
+# # s is currently assumed a vector of one number per model
+# # could use tensor product of sigmoids for multiple s per model?
+# def fit_sigmoid(ins, outs, character=[]):
+#     '''
+#     Fit a tensor product of 3- or 5-parameter sigmoids to data.
     
-    ins: shape [dim, n_data] or [dim]
-    outs: shape [n_data] or scalar
-    character: 'increasing', 'decreasing', or [] (for general sigmoid)
+#     ins: shape [dim, n_data] or [dim]
+#     outs: shape [n_data] or scalar
+#     character: 'increasing', 'decreasing', or [] (for general sigmoid)
     
-    Returns:
-        fitted(x): callable that accepts x of shape (dim,) or (dim, n_data)
-    '''
-    ins = np.atleast_2d(ins)
-    if ins.shape[0] > ins.shape[1]:
-        ins = ins.T  # ensure shape (dim, n_data)
-    dim, n_data = ins.shape
+#     Returns:
+#         fitted(x): callable that accepts x of shape (dim,) or (dim, n_data)
+#     '''
+#     ins = np.atleast_2d(ins)
+#     if ins.shape[0] > ins.shape[1]:
+#         ins = ins.T  # ensure shape (dim, n_data)
+#     dim, n_data = ins.shape
 
-    # Define sigmoid type
-    if character == 'increasing':
-        opt = True
-        num_vars = 4
-    elif character == 'decreasing':
-        opt = False
-        num_vars = 4
-    elif character == []:
-        opt = None  # general
-        num_vars = 5
-    else:
-        raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
+#     # Define sigmoid type
+#     if character == 'increasing':
+#         opt = True
+#         num_vars = 4
+#     elif character == 'decreasing':
+#         opt = False
+#         num_vars = 4
+#     elif character == []:
+#         opt = None  # general
+#         num_vars = 5
+#     else:
+#         raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
 
-    def sigmoid(params, x):
-        '''
-        Vectorized evaluation of sigmoid function over x.
-        x: shape [n_data]
-        '''
-        if num_vars == 4:
-            A, B, log_nu, log_Q = params
-            nu = np.exp(log_nu)
-            Q = np.exp(log_Q)
-            # A = int(opt)
-            K = int(not opt)
-            return A + (K - A) / (1 + Q * np.exp((x-B)))**(1 / nu)
-        else:
-            A, K, B, nu, Q = params
-            return A + (K - A) / (1 + Q * np.exp(-B * x))**(1 / nu)
+#     def sigmoid(params, x):
+#         '''
+#         Vectorized evaluation of sigmoid function over x.
+#         x: shape [n_data]
+#         '''
+#         if num_vars == 4:
+#             A, B, log_nu, log_Q = params
+#             nu = np.exp(log_nu)
+#             Q = np.exp(log_Q)
+#             # A = int(opt)
+#             K = int(not opt)
+#             return A + (K - A) / (1 + Q * np.exp((x-B)))**(1 / nu)
+#         else:
+#             A, K, B, nu, Q = params
+#             return A + (K - A) / (1 + Q * np.exp(-B * x))**(1 / nu)
 
-    def evaluate_tensor_product(params, x):
-        '''
-        Evaluate tensor product of sigmoids over input x.
-        x: shape [dim] or [dim, n_data]
-        params: flat array of sigmoid parameters
-        '''
-        x = np.atleast_2d(x)
-        if x.shape[0] != dim:
-            x = x.T
-        single_input = x.shape[1] == 1 and x.ndim == 2
+#     def evaluate_tensor_product(params, x):
+#         '''
+#         Evaluate tensor product of sigmoids over input x.
+#         x: shape [dim] or [dim, n_data]
+#         params: flat array of sigmoid parameters
+#         '''
+#         x = np.atleast_2d(x)
+#         if x.shape[0] != dim:
+#             x = x.T
+#         single_input = x.shape[1] == 1 and x.ndim == 2
 
-        param_array = params.reshape(dim, num_vars)
-        result = np.ones(x.shape[1])
-        for d in range(dim):
-            result *= sigmoid(param_array[d], x[d])
-        return result[0] if single_input else result
+#         param_array = params.reshape(dim, num_vars)
+#         result = np.ones(x.shape[1])
+#         for d in range(dim):
+#             result *= sigmoid(param_array[d], x[d])
+#         return result[0] if single_input else result
 
-    def residuals(params):
-        return evaluate_tensor_product(params, ins) - outs
+#     def residuals(params):
+#         return evaluate_tensor_product(params, ins) - outs
 
-    x0 = np.full((dim * num_vars,), 0.5)
-    result = least_squares(residuals, x0, loss='linear')
-    fitted_params = result.x
+#     x0 = np.full((dim * num_vars,), 0.5)
+#     result = least_squares(residuals, x0, loss='linear')
+#     fitted_params = result.x
 
-    def fitted(x):
-        return evaluate_tensor_product(fitted_params, x)
+#     def fitted(x):
+#         return evaluate_tensor_product(fitted_params, x)
 
-    return fitted
+#     return fitted
 
 
 def compute_correlations(X ,y, type, num_folds=None, seed=2025):

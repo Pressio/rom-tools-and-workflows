@@ -1,10 +1,150 @@
+import numpy as np
+from scipy.optimize import least_squares
+
+
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
 # ─────────────────────────────────────────────────────────────────────────────
-# original 4 routines, no longer used
+# original routines used for surrogate fit
+# ─────────────────────────────────────────────────────────────────────────────
+
+def fit_polynomial(ins, outs, order=5):
+    '''
+    Fit a tensor product of 1-D polynomials to data.
+    ins: [dim, n_data] or [dim] — input variables
+    outs: [n_data] or scalar — target values
+    '''
+    ins = np.atleast_2d(ins)
+    if ins.shape[0] > ins.shape[1]:
+        ins = ins.T  # Ensure shape is (dim, n_data)
+    dim, n_data = ins.shape
+
+    def evaluate_tensor_product(coeffs, x):
+        '''
+        Evaluate tensor product polynomial on input x.
+        coeffs: flat array [dim * (order+1)]
+        x: [dim, n_data] or [dim]
+        Returns: [n_data] or scalar
+        '''
+        coeffs = coeffs.reshape(dim, order + 1)
+        x = np.atleast_2d(x)
+        if x.shape[0] != dim:
+            x = x.T  # ensure (dim, n_data)
+        single_input = False
+        if x.shape[1] == 1:
+            single_input = x.ndim == 2 and x.shape[1] == 1 and x.shape[0] == dim
+
+        result = np.ones(x.shape[1])
+        for d in range(dim):
+            powers = np.vander(x[d], N=order+1, increasing=True)  # [n_data, order+1]
+            poly_vals = powers @ coeffs[d]  # [n_data]
+            result *= poly_vals
+
+        if single_input:
+            return result[0]
+        return result
+
+    def residuals(coeffs):
+        return evaluate_tensor_product(coeffs, ins) - outs
+
+    x0 = np.full((dim * (order + 1),), 0.5)  # initial guess
+    result = least_squares(residuals, x0, loss='linear')
+
+    def fitted(x):
+        '''
+        Evaluate fitted polynomial.
+        x: [dim] or [dim, n_data]
+        Returns: scalar or [n_data]
+        '''
+        return evaluate_tensor_product(result.x, x)
+
+    return fitted
+
+
+# r is always a vector of one number per model
+# s is currently assumed a vector of one number per model
+# could use tensor product of sigmoids for multiple s per model?
+def fit_sigmoid(ins, outs, character=[]):
+    '''
+    Fit a tensor product of 3- or 5-parameter sigmoids to data.
+    
+    ins: shape [dim, n_data] or [dim]
+    outs: shape [n_data] or scalar
+    character: 'increasing', 'decreasing', or [] (for general sigmoid)
+    
+    Returns:
+        fitted(x): callable that accepts x of shape (dim,) or (dim, n_data)
+    '''
+    ins = np.atleast_2d(ins)
+    if ins.shape[0] > ins.shape[1]:
+        ins = ins.T  # ensure shape (dim, n_data)
+    dim, n_data = ins.shape
+
+    # Define sigmoid type
+    if character == 'increasing':
+        opt = True
+        num_vars = 4
+    elif character == 'decreasing':
+        opt = False
+        num_vars = 4
+    elif character == []:
+        opt = None  # general
+        num_vars = 5
+    else:
+        raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
+
+    def sigmoid(params, x):
+        '''
+        Vectorized evaluation of sigmoid function over x.
+        x: shape [n_data]
+        '''
+        if num_vars == 4:
+            A, B, log_nu, log_Q = params
+            nu = np.exp(log_nu)
+            Q = np.exp(log_Q)
+            # A = int(opt)
+            K = int(not opt)
+            return A + (K - A) / (1 + Q * np.exp((x-B)))**(1 / nu)
+        else:
+            A, K, B, nu, Q = params
+            return A + (K - A) / (1 + Q * np.exp(-B * x))**(1 / nu)
+
+    def evaluate_tensor_product(params, x):
+        '''
+        Evaluate tensor product of sigmoids over input x.
+        x: shape [dim] or [dim, n_data]
+        params: flat array of sigmoid parameters
+        '''
+        x = np.atleast_2d(x)
+        if x.shape[0] != dim:
+            x = x.T
+        single_input = x.shape[1] == 1 and x.ndim == 2
+
+        param_array = params.reshape(dim, num_vars)
+        result = np.ones(x.shape[1])
+        for d in range(dim):
+            result *= sigmoid(param_array[d], x[d])
+        return result[0] if single_input else result
+
+    def residuals(params):
+        return evaluate_tensor_product(params, ins) - outs
+
+    x0 = np.full((dim * num_vars,), 0.5)
+    result = least_squares(residuals, x0, loss='linear')
+    fitted_params = result.x
+
+    def fitted(x):
+        return evaluate_tensor_product(fitted_params, x)
+
+    return fitted
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# un-batched 4 routines, no longer used
 # ─────────────────────────────────────────────────────────────────────────────
 
 def to_symmetric_tracefree(lower_vec, n):
@@ -39,15 +179,42 @@ def to_unique_corr_matrix(vecl, n):
 # new routines batched over inputs
 # ─────────────────────────────────────────────────────────────────────────────
 
-def to_symmetric_tracefree_batch(lower_vecs, n):
+# def to_symmetric_tracefree_batch(lower_vecs, n):
+#     B, m = lower_vecs.shape
+#     assert m == n*(n-1)//2
+
+#     # make sure everything is on the same device/dtype
+#     device, dtype = lower_vecs.device, lower_vecs.dtype
+
+#     # flattened index into an (n*n)-long vector
+#     rows, cols = torch.tril_indices(n, n, offset=-1, device=device)
+#     idx = rows * n + cols        # shape (m,)
+
+#     # create empty flat matrix (B, n*n)
+#     flat = torch.zeros(B, n*n, device=device, dtype=dtype)
+
+#     # scatter the lower-triangle entries into flat
+#     # scatter_ is out-of-place in terms of grad, but in-place
+#     # on the flat storage—no device mismatch.
+#     flat.scatter_(1,
+#                   idx.unsqueeze(0).expand(B, -1),
+#                   lower_vecs)
+
+#     # reshape to (B,n,n) and symmetrize
+#     L = flat.view(B, n, n)
+#     return L + L.transpose(1, 2)
+
+
+def to_symmetric_tracefree_batch(lower_vecs, n):  # in-place, might not propagate gradients
     """
     lower_vecs: (B, m)
     returns:    (B, n, n) symmetric, zero‐trace
     """
+    device = lower_vecs.device  # make sure everything is on same device
     B_, m_ = lower_vecs.shape
     assert m_ == n*(n-1)//2
     L = lower_vecs.new_zeros((B_, n, n))
-    tril_idx = torch.tril_indices(n, n, offset=-1)
+    tril_idx = torch.tril_indices(n, n, offset=-1, device=device)
     L[:, tril_idx[0], tril_idx[1]] = lower_vecs
     return L + L.transpose(1, 2)     # (B,n,n)
 
@@ -164,6 +331,8 @@ def train_model(
     prev_loss = None
     loss_history = []
 
+    targets.to(inputs.device)
+
     for step in range(1, max_steps+1):
         optimizer.zero_grad()
 
@@ -203,7 +372,6 @@ if __name__ == "__main__":
     dim           = 2            # latent dimension for z
     hidden        = 16
     model         = VeclNet(dim, hidden, m)
-
 
     # latent inputs
     Z = torch.randn(B, dim)

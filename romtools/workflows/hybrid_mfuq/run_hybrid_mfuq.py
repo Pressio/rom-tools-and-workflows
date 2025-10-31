@@ -53,8 +53,12 @@ from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.model_builders import QoiModelBuilder
 
-# import torch
-# import romtools.workflows.hybrid_mfuq.surrogate_methods as surg
+import torch
+import romtools.workflows.hybrid_mfuq.surrogate_methods as surg
+
+# WHY DO I NEED THIS???
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
 
 
 def _create_parameter_dict(parameter_names, parameter_values):
@@ -128,7 +132,6 @@ def _solve_best_mfuq(obj, n_trials=50, log=True):
             if 0 <= fval <= best_fval:
                 best_fval = fval
                 best_x = obj.result.x
-    # print(f'aaaa {best_fval}')
     return best_fval, best_x
 
 
@@ -316,21 +319,15 @@ def build_surrogates(data_npz, pilot_list):
     # Correlations fit with sigmoids
     # HACKED to prevent tensor product when one s doesn't vary...
     def rho12(s): return fom_aux_corr
-    rho13_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
-    rho23_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
+    rho13_half = surg.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
+    rho23_half = surg.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
     def rho13(s): return rho13_half(s[1])
     def rho23(s): return rho23_half(s[1])
-
-    # UN-HACKED VERSION (kind of weird)
-    # rho13 = mfmc.fit_polynomial(pilot_sizes, fom_rom_corrs, order=1)
-    # rho23 = mfmc.fit_polynomial(pilot_sizes, aux_rom_corrs, order=1)
-    # rho13 = mfmc.fit_sigmoid(pilot_sizes, fom_rom_corrs)
-    # rho23 = mfmc.fit_sigmoid(pilot_sizes, aux_rom_corrs)
 
     # Costs fit with polynomials
     def cost2(s): return normalized_aux_time
     # def cost2(s): return normalized_rom_times[0]
-    cost3_half = mfmc.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
+    cost3_half = surg.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
     cost3 = lambda s: cost3_half(s[1])
     # cost3 = mfmc.fit_polynomial(pilot_sizes, normalized_rom_times, order=1)
 
@@ -342,59 +339,109 @@ def build_surrogates(data_npz, pilot_list):
     return (hifi_corr_list, lofi_corr_list, cost_list)
 
 
-# # Function which trains surrogates based on data collected during pilot
-# def build_surrogates_new(data_npz, pilot_list):
+# Function which trains surrogates based on data collected during pilot
+def build_surrogates_new(data_npz, pilot_list):
 
-#     with np.load(data_npz) as data:
-#         fom_aux_corr = data['fom_aux_corr']
-#         fom_rom_corrs = data['fom_rom_corrs']
-#         aux_rom_corrs = data['aux_rom_corrs']
-#         normalized_aux_time = data['normalized_aux_time']
-#         normalized_rom_times = data['normalized_rom_times']
+    with np.load(data_npz) as data:
+        fom_aux_corr = data['fom_aux_corr']
+        fom_rom_corrs = data['fom_rom_corrs']
+        aux_rom_corrs = data['aux_rom_corrs']
+        normalized_aux_time = data['normalized_aux_time']
+        normalized_rom_times = data['normalized_rom_times']
 
-#     pilot_sizes = np.tile(np.array(pilot_list), (2,1))
-
-
-#     ins = torch.tensor(pilot_list).reshape(-1,1)
-#     half = torch.stack([torch.tensor(fom_aux_corr)*torch.ones(ins.shape[0]), torch.tensor(fom_rom_corrs),
-#                         torch.tensor(aux_rom_corrs)], dim=1)
-#     print(half.shape)
-#     matrices = surg.to_symmetric_tracefree_batch(half, 3) + torch.diag_embed(torch.ones(ins.shape[0],3))
-#     print(matrices.shape)
-
-#     model = surg.VeclNet(1,10,3)
-#     trained_model, history = surg.train_model(
-#     model,
-#     inputs=ins,
-#     targets=matrices,
-#     n=3,
-#     lr=1e-1,
-#     max_steps=500,
-#     tol=1e-8,
-#     print_every=50)
-
-#     # HACKED to prevent tensor product when one s doesn't vary...
-#     def rho12(s): return trained_model.corr_matrix(s,3)
-#     rho13_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
-#     rho23_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
-#     def rho13(s): return rho13_half(s[0])
-#     def rho23(s): return rho23_half(s[0])
+    pilot_sizes = np.tile(np.array(pilot_list), (2,1))
 
 
+    ins = torch.tensor(pilot_list, dtype=torch.float32).reshape(-1,1)
+    half = torch.stack([torch.tensor(fom_aux_corr,dtype=torch.float32)*torch.ones(ins.shape[0],dtype=torch.float32), torch.tensor(fom_rom_corrs,dtype=torch.float32),
+                        torch.tensor(aux_rom_corrs,dtype=torch.float32)], dim=1)
+    # print(half.shape)
+    matrices = surg.to_symmetric_tracefree_batch(half, 3) + torch.diag_embed(torch.ones(ins.shape[0],3))
+    # print(matrices.shape)
 
-#     # Costs fit with polynomials
-#     def cost2(s): return normalized_aux_time
-#     # def cost2(s): return normalized_rom_times[0]
-#     cost3_half = mfmc.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
-#     cost3 = lambda s: cost3_half(s[0])
-#     # cost3 = mfmc.fit_polynomial(pilot_sizes, normalized_rom_times, order=1)
+    device = ins.device
 
-#     # Lists of correlations and costs for ACV procedure
-#     hifi_corr_list = [rho12, rho13]
-#     lofi_corr_list = [rho23]
-#     cost_list = [cost2, cost3]
+    trained_model, history = surg.train_model(
+    model=surg.VeclNet(1,1,3).to(device),
+    inputs=ins,
+    targets=matrices.to(device),
+    n=3,
+    lr=1e-1,
+    max_steps=2000,
+    tol=1e-8,
+    print_every=50)
 
-#     return (hifi_corr_list, lofi_corr_list, cost_list)
+    ridx,cidx = torch.tril_indices(3,3,offset=-1).to(device)
+    print(ridx, cidx)
+
+    def rho12(s): 
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[:,ridx[0],cidx[0]].detach().numpy()
+    def rho13(s): 
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[:,ridx[1],cidx[1]].detach().numpy()
+    def rho23(s):
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[:,ridx[2],cidx[2]].detach().numpy()
+    
+    # pp = np.tile(np.array([1,3,6,7]), (2,1))
+    # s_plot = np.tile(np.arange(1,11), (2,1))
+    # ss = s_plot
+    # rho12s = rho12(s_plot)
+    # rho13s = rho13(s_plot)
+    # rho23s = rho23(s_plot)
+    # # Plot correlations and costs
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots()
+    # ax.plot(ss[0], rho12s, color='blue', label='rho12')
+    # ax.plot(ss[0], rho13s, color='orange', label='rho13')
+    # ax.scatter(pp[0], fom_rom_corrs, color='orange', label='FOM-ROM Corrs')
+    # ax.plot(ss[0], rho23s, color='green', label='rho23')
+    # ax.scatter(pp[0], aux_rom_corrs, color='green', label='AUX-ROM Corrs')
+    # # ax.scatter(dat['s_star'][1], rho13(s_star), marker='*', s=200, color='grey')
+    # # plt.axvline(round(dat['s_star'][1]), color='gray')
+    # ax.set_xlabel('Basis size')
+    # ax.set_ylabel('Correlation')
+    # ax.legend()
+    # plt.tight_layout()
+    # plt.show()
+
+    def rho12(s): 
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[ridx[0],cidx[0]].detach().numpy()
+    def rho13(s): 
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[ridx[1],cidx[1]].detach().numpy()
+    def rho23(s):
+        s_torch = torch.tensor(s[1], dtype=torch.float32).reshape(-1,1)
+        mtx = trained_model.corr_matrix(s_torch, 3).squeeze()
+        return mtx[ridx[2],cidx[2]].detach().numpy()
+
+    # # HACKED to prevent tensor product when one s doesn't vary...
+    # def rho12(s): return trained_model.corr_matrix(s,3)
+    # rho13_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
+    # rho23_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
+    # def rho13(s): return rho13_half(s[1])
+    # def rho23(s): return rho23_half(s[1])
+
+    # Costs fit with polynomials
+    def cost2(s): return normalized_aux_time
+    # def cost2(s): return normalized_rom_times[0]
+    cost3_half = surg.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
+    cost3 = lambda s: cost3_half(s[1])
+    # cost3 = mfmc.fit_polynomial(pilot_sizes, normalized_rom_times, order=1)
+
+    # Lists of correlations and costs for ACV procedure
+    hifi_corr_list = [rho12, rho13]
+    lofi_corr_list = [rho23]
+    cost_list = [cost2, cost3]
+
+    return (hifi_corr_list, lofi_corr_list, cost_list)
 
 
 # Function which trains the optimal ROM and computes its pilot statistics
