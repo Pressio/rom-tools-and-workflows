@@ -53,6 +53,9 @@ from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.model_builders import QoiModelBuilder
 
+# import torch
+# import romtools.workflows.hybrid_mfuq.surrogate_methods as surg
+
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
@@ -69,8 +72,9 @@ def _prepare_directory_and_run(model, run_directory, parameter_dict, overwrite=F
         return
 
     print("Running...\n")
-    model.run_model(run_directory, parameter_dict)
-    np.savetxt(passed_file, [0], fmt="%i")
+    code = model.run_model(run_directory, parameter_dict)
+    if code == 0:
+        np.savetxt(passed_file, [0], fmt="%i")
 
 
 # WARNING: the computed time will be wrong if sample is run ahead of time somewhere else
@@ -110,7 +114,7 @@ def _fancy_reshape(data_master, labels_list):
 
 # Helper function: run ACV many times and get best result
 def _solve_best_mfuq(obj, n_trials=50, log=True):
-    """Solve MFMC object multiple times and return best result."""
+    """Solve MFUQ object multiple times and return best result."""
     best_fval = float('inf')
     best_x = None
     for _ in range(n_trials):
@@ -314,8 +318,8 @@ def build_surrogates(data_npz, pilot_list):
     def rho12(s): return fom_aux_corr
     rho13_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
     rho23_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
-    def rho13(s): return rho13_half(s[0])
-    def rho23(s): return rho23_half(s[0])
+    def rho13(s): return rho13_half(s[1])
+    def rho23(s): return rho23_half(s[1])
 
     # UN-HACKED VERSION (kind of weird)
     # rho13 = mfmc.fit_polynomial(pilot_sizes, fom_rom_corrs, order=1)
@@ -327,7 +331,7 @@ def build_surrogates(data_npz, pilot_list):
     def cost2(s): return normalized_aux_time
     # def cost2(s): return normalized_rom_times[0]
     cost3_half = mfmc.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
-    cost3 = lambda s: cost3_half(s[0])
+    cost3 = lambda s: cost3_half(s[1])
     # cost3 = mfmc.fit_polynomial(pilot_sizes, normalized_rom_times, order=1)
 
     # Lists of correlations and costs for ACV procedure
@@ -338,8 +342,63 @@ def build_surrogates(data_npz, pilot_list):
     return (hifi_corr_list, lofi_corr_list, cost_list)
 
 
+# # Function which trains surrogates based on data collected during pilot
+# def build_surrogates_new(data_npz, pilot_list):
+
+#     with np.load(data_npz) as data:
+#         fom_aux_corr = data['fom_aux_corr']
+#         fom_rom_corrs = data['fom_rom_corrs']
+#         aux_rom_corrs = data['aux_rom_corrs']
+#         normalized_aux_time = data['normalized_aux_time']
+#         normalized_rom_times = data['normalized_rom_times']
+
+#     pilot_sizes = np.tile(np.array(pilot_list), (2,1))
+
+
+#     ins = torch.tensor(pilot_list).reshape(-1,1)
+#     half = torch.stack([torch.tensor(fom_aux_corr)*torch.ones(ins.shape[0]), torch.tensor(fom_rom_corrs),
+#                         torch.tensor(aux_rom_corrs)], dim=1)
+#     print(half.shape)
+#     matrices = surg.to_symmetric_tracefree_batch(half, 3) + torch.diag_embed(torch.ones(ins.shape[0],3))
+#     print(matrices.shape)
+
+#     model = surg.VeclNet(1,10,3)
+#     trained_model, history = surg.train_model(
+#     model,
+#     inputs=ins,
+#     targets=matrices,
+#     n=3,
+#     lr=1e-1,
+#     max_steps=500,
+#     tol=1e-8,
+#     print_every=50)
+
+#     # HACKED to prevent tensor product when one s doesn't vary...
+#     def rho12(s): return trained_model.corr_matrix(s,3)
+#     rho13_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], fom_rom_corrs)
+#     rho23_half = mfmc.fit_sigmoid(pilot_sizes[0][None,:], aux_rom_corrs)  
+#     def rho13(s): return rho13_half(s[0])
+#     def rho23(s): return rho23_half(s[0])
+
+
+
+#     # Costs fit with polynomials
+#     def cost2(s): return normalized_aux_time
+#     # def cost2(s): return normalized_rom_times[0]
+#     cost3_half = mfmc.fit_polynomial(pilot_sizes[0][None,:], normalized_rom_times, order=1)
+#     cost3 = lambda s: cost3_half(s[0])
+#     # cost3 = mfmc.fit_polynomial(pilot_sizes, normalized_rom_times, order=1)
+
+#     # Lists of correlations and costs for ACV procedure
+#     hifi_corr_list = [rho12, rho13]
+#     lofi_corr_list = [rho23]
+#     cost_list = [cost2, cost3]
+
+#     return (hifi_corr_list, lofi_corr_list, cost_list)
+
+
 # Function which trains the optimal ROM and computes its pilot statistics
-def train_opimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
+def train_optimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
                                          rom_basis_num, parameter_space, parameter_samples,
                                          training_dirs, fom_model, rom_model_builder, data_npz,
                                          overwrite=False):
@@ -513,7 +572,7 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     if not os.path.exists(f"{hybrid_MFMC_directory}/trained_{rom_basis_num}_sample_rom_results.npz"):
         out = "Doing ROM training and computing pilot stats \n"
         hybrid_file.write(out), print(out)
-        train_opimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
+        train_optimized_rom_and_compute_stats(hybrid_file, hybrid_MFMC_directory, pilot_manager,
                                          rom_basis_num, parameter_space, parameter_samples,
                                          training_dirs, fom_model, rom_model_builder, data_npz,
                                          overwrite=overwrite)
@@ -565,7 +624,7 @@ def run_hybrid_mfuq(fom_model: QoiModel,
     rho12, rho13 = hifi_corr_list
     cost2, cost3 = cost_list
     rho23 = lofi_corr_list[0]
-    s_plot = np.tile(np.arange(1,int(tunable_range[-1])), (2,1))
+    s_plot = np.tile(np.arange(1,int(tunable_range[-1]+1)), (2,1))
     rho12s = np.array([rho12(i) for i in s_plot[0]])
     rho13s = rho13(s_plot)
     rho23s = rho23(s_plot)

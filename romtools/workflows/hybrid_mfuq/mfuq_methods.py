@@ -6,7 +6,8 @@ from scipy.optimize import minimize,least_squares,NonlinearConstraint
 from sklearn.model_selection import KFold
 from scipy.stats import pearsonr
 
-import numpy as np
+# import autograd.numpy as np
+# from autograd import grad
 import scipy.stats
 
 def pearsonr_with_axis(x, y, axis=0):
@@ -488,6 +489,11 @@ class MFMC():
         options = {'maxiter': 500, 'ftol': 1e-8, 'eps': 1e-5}
         result = minimize(self.objective, x0, method='SLSQP', jac='3-point',
                           constraints=nlc, bounds=self.bounds, options=options)
+        # autojac = grad(self.objective)
+        # result = minimize(self.objective, x0, method='SLSQP', jac=autojac,
+        #                   constraints=nlc, bounds=self.bounds, options=options)
+        # self.result = result
+
         self.result = result
 
     def solve_with_fixed_s(self, s_list):
