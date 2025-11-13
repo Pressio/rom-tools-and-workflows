@@ -213,7 +213,7 @@ def run_enkf_mf(
         # run ROM at FOM mean input
         rom_run_directory_mean_fom =  f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_fom/{run_directory_prefix}mean"
         output_from_mean_input_phys = process_model_qois(
-            mean_input_fom,
+            mean_input_fom_phys,
             parameter_names,
             rom_model,
             rom_run_directory_mean_fom,
@@ -246,7 +246,7 @@ def run_enkf_mf(
         # run ROM at mean ROM input
         rom_run_directory_mean_rom = f"{enkf_directory}/enkf_iter_{iiter}/rom/rom_rom/{run_directory_prefix}mean"
         output_from_mean_input_phys = process_model_qois(
-            mean_input_rom,
+            mean_input_rom_phys,
             parameter_names,
             rom_model,
             rom_run_directory_mean_rom,
@@ -321,6 +321,7 @@ def run_enkf_mf(
             enkf_file.write("Retrain ROM\n")
             train_rom = True
         else:
+            train_rom = False
             enkf_file.write("Keep ROM\n")
 
         mean_input_fom = np.mean(parameter_ensemble_fom, axis=0)
