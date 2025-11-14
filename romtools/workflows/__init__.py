@@ -54,3 +54,4 @@ We currently support:
 from romtools.workflows.dakota import *
 from romtools.workflows.greedy import *
 from romtools.workflows.sampling import *
+from romtools.workflows.inverse import *
