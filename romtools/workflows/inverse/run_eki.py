@@ -46,28 +46,30 @@ def run_eki(model: QoiModel,
         run_directory_base = f'{absolute_enkf_directory}/iteration_{0}/run_'
         results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
         qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
-        np.savez(f'{absolute_enkf_directory}/iteration_{0}/restart.npz',parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
+        np.savez(f'{absolute_enkf_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
         step_size = initial_step_size 
-        iteration = 1
 
     else:
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
         iteration = restart_file['iteration']
         step_size = restart_file['step_size']
-        parameter_means = np.mean(parameter_samples,axis=0) 
         parameter_names = parameter_space.get_names()
         run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_'
-        results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
-        qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
+        #results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
+        #qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
+        qois =restart_file['qois']
+        mean_qoi = restart_file['mean_qoi']
+        errors = restart_file['errors']
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
         
     #Compute ENKF update 
     dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)
     dp_norm = np.linalg.norm(dp)
-    
-    print(f'Initial error: {error_norm}')
+    wall_time = time.time() - start_time
+    print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
+    iteration += 1
     while iteration < max_iterations and error_norm > error_norm_tolerance and dp_norm > delta_params_tolerance:
         # Test the parameter update for the step size
         test_parameter_samples = parameter_samples + step_size*dp 
@@ -85,16 +87,12 @@ def run_eki(model: QoiModel,
           error_norm = test_error_norm*1.0
           step_size = step_size*step_size_growth_factor
           wall_time = time.time() - start_time
-          print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
-          iteration += 1
-          if os.path.isdir(f'{absolute_enkf_directory}/iteration_{iteration}'):
-              pass
-          else:
-              os.makedirs(f'{absolute_enkf_directory}/iteration_{iteration}')
-          np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz',parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
           # Compute Kalman update
           dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)
           dp_norm = np.linalg.norm(dp)
+          print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
+          np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
+          iteration += 1
         else:
           # Else, drop the step size 
           step_size /= step_size_decay_factor 
