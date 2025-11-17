@@ -77,10 +77,12 @@ def run_mf_eki(model: QoiModel,
         print(f'Initial error: {error_norm}')
         step_size = initial_step_size 
 
-        np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_sample_sets=parameter_sample_sets, iteration=iteration, step_size=step_size,rom_training_directories=test_training_dirs)
+        np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_samples_one=parameter_samples_one,parameter_samples_two=parameter_samples_two, iteration=iteration, step_size=step_size,rom_training_directories=training_dirs)
     else:
         restart_file = np.load(restart_file)
-        parameter_sample_sets = restart_file['parameter_sample_sets']
+        parameter_samples_one = restart_file['parameter_samples_one']
+        parameter_samples_two = restart_file['parameter_samples_two']
+        parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
         iteration = restart_file['iteration']
         step_size = restart_file['step_size']
         training_dirs = restart_file['rom_training_directories']
@@ -163,8 +165,8 @@ def run_mf_eki(model: QoiModel,
             training_dirs = copy.deepcopy(test_training_dirs)
             print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
             # Save the current state to the restart file
-            np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_sample_sets=parameter_sample_sets, iteration=iteration, step_size=step_size,rom_training_directories=test_training_dirs)
-             iteration += 1
+            np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_samples_one=parameter_samples_one,parameter_samples_two=parameter_samples_two, iteration=iteration, step_size=step_size,rom_training_directories=training_dirs)
+            iteration += 1
           
         else:
             # Else, drop the step size 
