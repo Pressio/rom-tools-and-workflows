@@ -13,8 +13,11 @@ def prepare_and_run(model, observations, run_directory, parameter_names, paramet
     parameter_dict = _create_parameter_dict(parameter_names, parameter_sample)
     model.populate_run_directory(run_directory, parameter_dict)
     ts = time.time()
+    print("Starting model run")
     flag = model.run_model(run_directory, parameter_dict)
+    print("Finishing run, gettin qoi")
     qoi = model.compute_qoi(run_directory, parameter_dict)
+    print("Computed QoI")
     error = observations - qoi
     run_time = time.time() - ts
     
