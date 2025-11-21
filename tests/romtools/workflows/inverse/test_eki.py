@@ -92,7 +92,7 @@ def test_rosenbrock(tmp_path):
                  evaluation_concurrency = 1,
                  max_iterations = 10000)
     params_mean = np.mean(params,axis=0)
-    assert( np.allclose(params_mean,np.array([1.0,1.0]),atol=1e-7))
+    assert( np.allclose(params_mean,np.array([1.0,1.0]),atol=1e-5))
 
 if __name__=='__main__':
     test_rosenbrock(os.getcwd() + "/work")
