@@ -11,7 +11,7 @@ def _create_parameter_dict(parameter_names, parameter_values):
 
 def run_eki(model: QoiModel,
                  parameter_space: BoundedParameterSpace,
-                 absolute_enkf_directory: str,
+                 absolute_eki_directory: str,
                  observations: np.ndarray,
                  observations_covariance: np.ndarray,
                  ensemble_size: int = 30,
@@ -19,6 +19,7 @@ def run_eki(model: QoiModel,
                  regularization_parameter: float = 1e-4,
                  step_size_growth_factor: float = 1.25,
                  step_size_decay_factor: float = 2.0,
+                 max_step_size_decrease_trys: int = 5,
                  relaxation_parameter: float = 1.05,
                  error_norm_tolerance: float = 1e-5,
                  delta_params_tolerance:  float = 1e-6,
@@ -29,7 +30,7 @@ def run_eki(model: QoiModel,
 
 
     start_time = time.time()
-    assert os.path.isabs(absolute_enkf_directory), f"enkf_directory is not an absolute path ({absolute_enkf_directory})"
+    assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
 
@@ -43,10 +44,10 @@ def run_eki(model: QoiModel,
         parameter_samples = parameter_space.bound_samples(parameter_samples)
         parameter_names = parameter_space.get_names()
         #Run initial step and compute update
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{0}/run_'
+        run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_'
         results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
         qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
-        np.savez(f'{absolute_enkf_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
+        np.savez(f'{absolute_eki_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
         step_size = initial_step_size 
 
@@ -56,9 +57,7 @@ def run_eki(model: QoiModel,
         iteration = restart_file['iteration']
         step_size = restart_file['step_size']
         parameter_names = parameter_space.get_names()
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_'
-        #results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
-        #qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
         qois =restart_file['qois']
         mean_qoi = restart_file['mean_qoi']
         errors = restart_file['errors']
@@ -70,15 +69,17 @@ def run_eki(model: QoiModel,
     wall_time = time.time() - start_time
     print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
     iteration += 1
+    step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance and dp_norm > delta_params_tolerance:
         # Test the parameter update for the step size
         test_parameter_samples = parameter_samples + step_size*dp 
         test_parameter_samples = parameter_space.bound_samples(test_parameter_samples)
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
         test_results = run_eki_iteration(model,observations,run_directory_base,parameter_names,test_parameter_samples,evaluation_concurrency)
         test_qois,test_mean_qoi,test_errors = test_results['qois'],test_results['mean-qoi'],test_results['errors']
         test_error_norm = np.mean(np.linalg.norm(test_errors,axis=0))
         if test_error_norm < relaxation_parameter*error_norm:
+          step_failed_counter = 0
           # If error norm drops, continue the iteration and grow the step size
           parameter_samples = test_parameter_samples*1.0
           qois = test_qois*1.0
@@ -91,12 +92,16 @@ def run_eki(model: QoiModel,
           dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)
           dp_norm = np.linalg.norm(dp)
           print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
-          np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
+          np.savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
           iteration += 1
         else:
           # Else, drop the step size 
+          step_failed_counter += 1
           step_size /= step_size_decay_factor 
           print(f'  Warning, lowering step size, Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}')
+          if step_failed_counter > max_step_size_decrease_trys:
+            print(f'  Failed to advance after {max_step_size_decrease_trys}, exiting')
+            break 
 
     if iteration >= max_iterations:
         print(f'Max iterations reached, terminating')
@@ -104,7 +109,7 @@ def run_eki(model: QoiModel,
         print(f'Error norm dropped below tolerance!')
     elif dp_norm <= delta_params_tolerance:
         print(f'Changed to parameter update dropped below tolerance!')
-
+    return parameter_samples,qois
 
 def compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter):
     #Compute update matrices
