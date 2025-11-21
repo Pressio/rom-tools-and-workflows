@@ -2,20 +2,21 @@ import numpy as np
 import os
 import time
 from romtools.workflows.inverse.eki_utils import *
-
 from romtools.workflows.models import QoiModel
 from romtools.workflows.model_builders import QoiModelBuilder
 import copy
-from romtools.workflows.parameter_spaces import BoundedParameterSpace
+from romtools.workflows.parameter_spaces import ParameterSpace
 import concurrent.futures
 import multiprocessing
 
 def run_mf_eki(model: QoiModel,
             rom_model_builder: QoiModelBuilder,
-            parameter_space: BoundedParameterSpace,
-            absolute_eki_directory: str,
+            parameter_space: ParameterSpace,
             observations: np.ndarray,
             observations_covariance: np.ndarray,
+            parameter_mins: np.ndarray = None,
+            parameter_maxes: np.ndarray = None,
+            absolute_eki_directory: str = os.getcwd() + "/work/",
             fom_ensemble_size: int = 10,
             rom_extra_ensemble_size = 30,
             rom_tolerance: float = 0.005,
@@ -38,10 +39,15 @@ def run_mf_eki(model: QoiModel,
     max_rom_training_dirs = int(max_rom_training_history*(fom_ensemble_size+1))
     start_time = time.time()
     
-    # Validate input directory
+    ## Error checking======
     assert os.path.isabs(absolute_eki_directory), f"eki_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
+    if parameter_mins is not None:
+      assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+    if parameter_maxes is not None:
+      assert np.size(parameter_maxes) == parameter_space.get_dimensionality(), f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+    ##====================
 
     np.random.seed(random_seed)
 
@@ -51,7 +57,7 @@ def run_mf_eki(model: QoiModel,
     if restart_file is None:
         iteration = 0
         parameter_samples = parameter_space.generate_samples(ensemble_size)
-        parameter_samples = parameter_space.bound_samples(parameter_samples)
+        parameter_samples = bound_samples(parameter_samples,parameter_mins,parameter_maxes)
         parameter_samples_one = parameter_samples[0:fom_ensemble_size]
         parameter_samples_two = parameter_samples[fom_ensemble_size::]
         parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
@@ -124,7 +130,7 @@ def run_mf_eki(model: QoiModel,
         test_parameter_sample_sets = copy.deepcopy(parameter_sample_sets)
         for i in range(len(dps)):
           test_parameter_sample_sets[i] = parameter_sample_sets[i] + step_size * dps[i] 
-          test_parameter_sample_sets[i] = parameter_space.bound_samples(test_parameter_sample_sets[i])
+          test_parameter_sample_sets[i] = bound_samples(test_parameter_sample_sets[i],parameter_mins,parameter_maxes)
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_fom_sample_set_0_'
         test_training_dirs = copy.deepcopy(training_dirs)

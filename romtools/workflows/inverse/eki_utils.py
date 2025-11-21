@@ -15,10 +15,18 @@ def prepare_and_run(model, observations, run_directory, parameter_names, paramet
     ts = time.time()
     flag = model.run_model(run_directory, parameter_dict)
     qoi = model.compute_qoi(run_directory, parameter_dict)
+    assert isinstance(qoi,np.ndarray), "Error, compute_qoi must return an np.ndarray"
     error = observations - qoi
     run_time = time.time() - ts
     
     return qoi, error, run_time 
+
+def bound_samples(samples,samples_min,samples_max):
+    if samples_max is not None: 
+      samples[:,:] = np.fmin(samples[:,:],samples_max)
+    if samples_min is not None: 
+      samples[:,:] = np.fmax(samples[:,:],samples_min)
+    return samples 
 
 
 def run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency):
