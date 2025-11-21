@@ -13,72 +13,110 @@ import multiprocessing
 def run_mf_eki(model: QoiModel,
             rom_model_builder: QoiModelBuilder,
             parameter_space: BoundedParameterSpace,
-            absolute_enkf_directory: str,
+            absolute_eki_directory: str,
             observations: np.ndarray,
             observations_covariance: np.ndarray,
             fom_ensemble_size: int = 10,
             rom_extra_ensemble_size = 30,
+            rom_tolerance: float = 0.02,
             initial_step_size: float = 1e-1,
             regularization_parameter: float = 1e-4,
             step_size_growth_factor: float = 1.25,
             step_size_decay_factor: float = 2.0,
+            max_step_size_decrease_trys: int = 5,
             relaxation_parameter: float = 1.05,
             error_norm_tolerance: float = 1e-5,
             delta_params_tolerance: float = 1e-4,
+            max_rom_training_history: int = 1,
             max_iterations: int = 50,
             random_seed: int = 1,
-            evaluation_concurrency: int = 1,
+            fom_evaluation_concurrency: int = 1,
+            rom_evaluation_concurrency: int = 1,
             restart_file: str = None):  # Optional parameter for restart file
 
+
+    max_rom_training_dirs = int(max_rom_training_history*(fom_ensemble_size+1))
     start_time = time.time()
     
     # Validate input directory
-    assert os.path.isabs(absolute_enkf_directory), f"enkf_directory is not an absolute path ({absolute_enkf_directory})"
+    assert os.path.isabs(absolute_eki_directory), f"eki_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
 
     np.random.seed(random_seed)
 
-    iteration = 0
+    # create initial samples
     ensemble_size = fom_ensemble_size + rom_extra_ensemble_size
-    parameter_samples = parameter_space.generate_samples(ensemble_size)
-    parameter_samples = parameter_space.bound_samples(parameter_samples)
-    parameter_samples_one = parameter_samples[0:fom_ensemble_size]
-    parameter_samples_two = parameter_samples[fom_ensemble_size::]
 
-    parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
-    parameter_names = parameter_space.get_names()
+    if restart_file is None:
+        iteration = 0
+        parameter_samples = parameter_space.generate_samples(ensemble_size)
+        parameter_samples = parameter_space.bound_samples(parameter_samples)
+        parameter_samples_one = parameter_samples[0:fom_ensemble_size]
+        parameter_samples_two = parameter_samples[fom_ensemble_size::]
+        parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
+        parameter_names = parameter_space.get_names()
+        #Run initial step and compute update
+        run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_fom_sample_set_0_'
+        sample_one_fom_results = {}
+        sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], fom_evaluation_concurrency)
+
+        # Build ROM
+        training_dirs = []
+        for i in range(0,fom_ensemble_size):
+          training_dirs.append(run_directory_base + str(i))
+        training_dirs.append(run_directory_base + "mean")
+
+        offline_dir = f'{absolute_eki_directory}/iteration_{0}/'
+        rom_model = rom_model_builder.build_from_training_dirs(offline_dir,training_dirs)
  
-    # Run initial step and compute update
-    run_directory_base = f'{absolute_enkf_directory}/iteration_{0}/run_fom_sample_set_0_'
-    sample_one_fom_results = {}
-    sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], evaluation_concurrency)
+        run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_rom_sample_set_0_'
+        sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], rom_evaluation_concurrency)
 
-    # Build ROM
-    training_dirs = []
-    for i in range(0,fom_ensemble_size):
-      training_dirs.append(run_directory_base + str(i))
+        rom_errors = np.linalg.norm(sample_one_rom_results['qois'] - sample_one_fom_results['qois'])/ np.linalg.norm(sample_one_fom_results['qois'])
+        print(f'  ROM error = {rom_errors}')
 
-    offline_dir = f'{absolute_enkf_directory}/iteration_{0}/'
-    rom_model = rom_model_builder.build_from_training_dirs(offline_dir,training_dirs)
- 
-    run_directory_base = f'{absolute_enkf_directory}/iteration_{0}/run_rom_sample_set_0_'
-    sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], evaluation_concurrency)
+        run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_rom_sample_set_1_'
+        sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[1], rom_evaluation_concurrency)
 
-    run_directory = f'{absolute_enkf_directory}/iteration_{0}/run_rom_sample_set_1_'
-    sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[1], evaluation_concurrency)
+        error_norm = np.mean(np.linalg.norm(sample_one_fom_results['errors'], axis=0))
+        print(f'Initial error: {error_norm}')
+        step_size = initial_step_size 
 
-    error_norm = np.mean(np.linalg.norm(sample_one_fom_results['errors'], axis=0))
-    print(f'Initial error: {error_norm}')
-    step_size = initial_step_size 
-    iteration = 1
- 
+        np.savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_samples_one=parameter_sample_sets[0],parameter_samples_two=parameter_sample_sets[1], iteration=iteration, step_size=step_size,rom_training_directories=training_dirs)
+    else:
+        restart_file = np.load(restart_file,allow_pickle=True)
+        parameter_samples_one = restart_file['parameter_samples_one']
+        parameter_samples_two = restart_file['parameter_samples_two']
+        parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
+        iteration = restart_file['iteration']
+        step_size = restart_file['step_size']
+        training_dirs = restart_file['rom_training_directories'].tolist()
+        parameter_names = parameter_space.get_names()
+
+        # Run initial step and compute update
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_fom_sample_set_0_'
+        sample_one_fom_results = restart_file['sample_one_fom_results'].item()
+
+        offline_dir = f'{absolute_eki_directory}/iteration_{iteration}/'
+        print("==================Building ROM=============")
+        rom_model = rom_model_builder.build_from_training_dirs(offline_dir,training_dirs[-max_rom_training_dirs::])
+        print("==================ROM built================")
+        sample_one_rom_results = restart_file['sample_one_rom_results'].item() 
+
+        sample_two_rom_results = restart_file['sample_two_rom_results'].item()
+        error_norm = np.mean(np.linalg.norm(sample_one_fom_results['errors'], axis=0))
+
     # Compute ENKF update 
     fom_sample_results = [sample_one_fom_results]
     rom_sample_results = [sample_one_rom_results,sample_two_rom_results]
     dps = compute_mf_eki_update(parameter_sample_sets,fom_sample_results,rom_sample_results,observations_covariance, regularization_parameter)
     dp_norm = np.linalg.norm(dps[0])
+    wall_time = time.time() - start_time
+    print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
     # Iterative optimization loop
+    iteration += 1
+    step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance and dp_norm > delta_params_tolerance:
         # Test the parameter update for the step size
         test_parameter_sample_sets = copy.deepcopy(parameter_sample_sets)
@@ -86,32 +124,36 @@ def run_mf_eki(model: QoiModel,
           test_parameter_sample_sets[i] = parameter_sample_sets[i] + step_size * dps[i] 
           test_parameter_sample_sets[i] = parameter_space.bound_samples(test_parameter_sample_sets[i])
 
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_fom_sample_set_0_'
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_fom_sample_set_0_'
         test_training_dirs = copy.deepcopy(training_dirs)
         for i in range(0,fom_ensemble_size):
           test_training_dirs.append(run_directory_base + str(i))
+        test_training_dirs.append(run_directory_base + "mean")
 
         # Run the EKI iteration with test parameters
-        test_sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], evaluation_concurrency)
+        test_sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], fom_evaluation_concurrency)
         test_error_norm = np.mean(np.linalg.norm(test_sample_one_fom_results['errors'], axis=0))
 
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_rom_sample_set_0_'
-        test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], evaluation_concurrency)
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_0_'
+        test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency)
         rom_errors = np.linalg.norm(test_sample_one_rom_results['qois'] - test_sample_one_fom_results['qois'])/ np.linalg.norm(test_sample_one_fom_results['qois'])
 
-        if rom_errors >= 0.05:
+        if rom_errors >= rom_tolerance:
           # Build ROM
           print(f'  ROM error = {rom_errors} above tolerance, re-building ROM')
-          offline_dir = f'{absolute_enkf_directory}/iteration_{iteration}/'
-          rom_model = rom_model_builder.build_from_training_dirs(offline_dir,test_training_dirs)
-          test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], evaluation_concurrency)
+          offline_dir = f'{absolute_eki_directory}/iteration_{iteration}/'
+          rom_model = rom_model_builder.build_from_training_dirs(offline_dir,test_training_dirs[-max_rom_training_dirs::])
+          test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency)
           rom_errors = np.linalg.norm(test_sample_one_rom_results['qois'] - test_sample_one_fom_results['qois'])/ np.linalg.norm(test_sample_one_fom_results['qois'])
           print(f'  Updated ROM error = {rom_errors}')
-
-        run_directory_base = f'{absolute_enkf_directory}/iteration_{iteration}/run_rom_sample_set_1_'
-        test_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], evaluation_concurrency)
+        else:
+          print(f'  ROM error = {rom_errors} below tolerance, re-using ROM')
+    
+        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_1_'
+        test_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], rom_evaluation_concurrency)
 
         if test_error_norm < relaxation_parameter * error_norm:
+            step_failed_counter = 0
             # If error norm drops, continue the iteration and grow the step size
             parameter_sample_sets = test_parameter_sample_sets.copy()
             sample_one_fom_results = test_sample_one_fom_results.copy()
@@ -120,24 +162,26 @@ def run_mf_eki(model: QoiModel,
             error_norm = test_error_norm
             step_size *= step_size_growth_factor
             wall_time = time.time() - start_time
-            print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
-            iteration += 1
-            
-            # Save the current state to the restart file
-            os.makedirs(f'{absolute_enkf_directory}/iteration_{iteration}', exist_ok=True)
-            #np.savez(f'{absolute_enkf_directory}/iteration_{iteration}/restart.npz', parameter_samples=parameter_samples, iteration=iteration, step_size=step_size)
-            
+
             # Compute Kalman update
             fom_sample_results = [sample_one_fom_results]
             rom_sample_results = [sample_one_rom_results,sample_two_rom_results]
             dps = compute_mf_eki_update(parameter_sample_sets,fom_sample_results,rom_sample_results,observations_covariance, regularization_parameter)
             dp_norm = np.linalg.norm(dps[0])
             training_dirs = copy.deepcopy(test_training_dirs)
+            print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
+            # Save the current state to the restart file
+            np.savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz', sample_one_rom_results=sample_one_rom_results,sample_two_rom_results=sample_two_rom_results,sample_one_fom_results=sample_one_fom_results,parameter_samples_one=parameter_sample_sets[0],parameter_samples_two=parameter_sample_sets[1], iteration=iteration, step_size=step_size,rom_training_directories=training_dirs)
+            iteration += 1
+          
         else:
             # Else, drop the step size 
+            step_failed_counter
             step_size /= step_size_decay_factor 
             print(f'  Warning, lowering step size, Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}')
-
+            if step_failed_counter > max_step_size_decrease_trys:
+              print(f'  Failed to advance after {max_step_size_decrease_trys}, exiting')
+              break 
 
     if iteration >= max_iterations:
         print(f'Max iterations reached, terminating')
@@ -145,7 +189,7 @@ def run_mf_eki(model: QoiModel,
         print(f'Error norm dropped below tolerance!')
     elif dp_norm <= delta_params_tolerance:
         print(f'Changed to parameter update dropped below tolerance!')
-
+    return parameter_sample_sets[0],sample_one_fom_results['qois']
 
 def compute_mf_eki_update(parameter_sample_sets, fom_results_for_sample_sets, rom_results_for_sample_sets,observations_covariance, regularization_parameter):
     """Compute the update matrices for the MF-EKI algorithm."""
