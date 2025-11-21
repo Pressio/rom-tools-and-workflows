@@ -73,7 +73,7 @@ def test_energy_truncater():
 
     energy = truncater.get_energy()
     energy_gold = np.cumsum(singular_values**2)/np.sum(singular_values**2 + 1.e-30)
-    assert(np.allclose(energy,energy_gold[K]))
+    assert(np.allclose(energy,energy_gold[K-1]))
     assert np.allclose(my_truncated_basis, my_basis[:, 0:K])
     assert my_truncated_basis.shape[1] == K
 

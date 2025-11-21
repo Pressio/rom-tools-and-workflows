@@ -2,18 +2,22 @@ import numpy as np
 import os
 import time
 from romtools.workflows.models import QoiModel
-from romtools.workflows.parameter_spaces import BoundedParameterSpace
+from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse.eki_utils import *
 import copy
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
+
+
 def run_eki(model: QoiModel,
-                 parameter_space: BoundedParameterSpace,
-                 absolute_eki_directory: str,
+                 parameter_space: ParameterSpace,
                  observations: np.ndarray,
                  observations_covariance: np.ndarray,
+                 parameter_mins: np.ndarray = None,
+                 parameter_maxes: np.ndarray = None,
+                 absolute_eki_directory: str = os.getcwd() + "/work/",
                  ensemble_size: int = 30,
                  initial_step_size: float = 1e-1,
                  regularization_parameter: float = 1e-4,
@@ -29,11 +33,17 @@ def run_eki(model: QoiModel,
                  restart_file = None):
 
 
+
     start_time = time.time()
+    ## Error checking======
     assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
-
+    if parameter_mins is not None:
+      assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+    if parameter_maxes is not None:
+      assert np.size(parameter_maxes) == parameter_space.get_dimensionality(), f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+    ##====================
     np.random.seed(random_seed)
 
 
@@ -41,7 +51,7 @@ def run_eki(model: QoiModel,
     if restart_file is None:
         iteration = 0
         parameter_samples = parameter_space.generate_samples(ensemble_size)
-        parameter_samples = parameter_space.bound_samples(parameter_samples)
+        parameter_samples = bound_samples(parameter_samples,parameter_mins,parameter_maxes)
         parameter_names = parameter_space.get_names()
         #Run initial step and compute update
         run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_'
@@ -73,7 +83,7 @@ def run_eki(model: QoiModel,
     while iteration < max_iterations and error_norm > error_norm_tolerance and dp_norm > delta_params_tolerance:
         # Test the parameter update for the step size
         test_parameter_samples = parameter_samples + step_size*dp 
-        test_parameter_samples = parameter_space.bound_samples(test_parameter_samples)
+        test_parameter_samples = bound_samples(test_parameter_samples,parameter_mins,parameter_maxes)
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
         test_results = run_eki_iteration(model,observations,run_directory_base,parameter_names,test_parameter_samples,evaluation_concurrency)
         test_qois,test_mean_qoi,test_errors = test_results['qois'],test_results['mean-qoi'],test_results['errors']
@@ -110,6 +120,29 @@ def run_eki(model: QoiModel,
     elif dp_norm <= delta_params_tolerance:
         print(f'Changed to parameter update dropped below tolerance!')
     return parameter_samples,qois
+
+
+def compute_eki_update2(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter):
+    #Compute update matrices
+    ensemble_size = parameter_samples.shape[0]
+    Pyy = 0.0
+    for i in range(0,ensemble_size):
+        Pyy += ( qois[:,i] - mean_qoi)[:,None] @ ((qois[:,i] - mean_qoi)[:,None]).transpose()
+
+    Pyy *= 1./(ensemble_size - 1)
+
+    Pxy = 0.0
+    for i in range(0,ensemble_size):
+        Pxy += ( parameter_samples[i] - np.mean(parameter_samples,axis=0))[:,None] @ ((qois[:,i] - mean_qoi)[:,None]).transpose()
+    Pxy =  1./(ensemble_size - 1)*Pxy 
+
+    I = np.eye(mean_qoi.size)
+    LHS = Pyy + observations_covariance + regularization_parameter*I
+    RHS = errors
+    dp = np.linalg.solve(LHS,RHS)
+    dp = Pxy @ dp 
+    return dp.transpose()
+
 
 def compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter):
     #Compute update matrices
