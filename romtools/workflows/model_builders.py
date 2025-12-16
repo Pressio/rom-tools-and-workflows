@@ -4,7 +4,8 @@ This is mainly used for constructing data-driven models in
 iterative workflows like greedy
 '''
 
-from typing import Protocol, List
+from typing import Protocol, List, Optional
+import numpy as np
 from romtools.workflows.models import Model, QoiModel, QoiModelWithErrorEstimate
 
 class ModelBuilder(Protocol):
@@ -16,7 +17,11 @@ class ModelBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> Model:
+    def build_from_training_dirs(self,
+                                 offline_data_dir: str,
+                                 training_data_dirs: List[str],
+                                 parameters: Optional[np.ndarray] = None,
+                                 qois: Optional[np.ndarray] = None) -> Model:
         pass
 
 
@@ -30,7 +35,11 @@ class QoiModelBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModel:
+    def build_from_training_dirs(self,
+                                 offline_data_dir: str,
+                                 training_data_dirs: List[str],
+                                 parameters: Optional[np.ndarray] = None,
+                                 qois: Optional[np.ndarray] = None) -> QoiModel:
         pass
 
 
@@ -44,5 +53,9 @@ class QoiModelWithErrorEstimateBuilder(Protocol):
     def __init__(self):
         pass
 
-    def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModelWithErrorEstimate:
+    def build_from_training_dirs(self,
+                                 offline_data_dir: str,
+                                 training_data_dirs: List[str],
+                                 parameters: Optional[np.ndarray] = None,
+                                 qois: Optional[np.ndarray] = None) -> QoiModelWithErrorEstimate:
         return QoiModelWithErrorEstimate

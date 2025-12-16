@@ -168,7 +168,6 @@ class EnergyBasedTruncater():
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
         energy = np.cumsum(singular_values**2)/(np.sum(singular_values**2) + 1.e-30)
-        print(energy > self.__energy_threshold_)
         basis_dimension = la.argmax(energy > self.__energy_threshold_) + 1
         self.__energy = energy[basis_dimension - 1]
         return basis[:, 0:basis_dimension]
