@@ -44,7 +44,7 @@
 #
 
 '''
-Implementation of basic sampling workflow. Given a parameter space $\\mathcal{D}$, we draw random samples and
+Implementation of basic sampling workflow. Given a parameter space :math:`\\mathcal{D}`, we draw random samples and
 run our model for each sample.
 '''
 

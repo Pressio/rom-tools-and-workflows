@@ -1,1 +1,1 @@
-pdoc ./romtools -t ./custom-template --math --docformat google &
+sphinx-build -b html docs/source docs/build/html

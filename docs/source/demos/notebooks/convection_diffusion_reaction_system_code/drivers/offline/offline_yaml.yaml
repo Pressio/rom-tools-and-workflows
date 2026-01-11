@@ -1,0 +1,15 @@
+rb_tolerance: 1.e-3
+output_path: offline_results
+basis_file_name: reduced-basis
+rom_file_name: rb-precomputed-rom
+sample_size: 100
+Nx: 127 
+b_min: 0.2
+b_max: 1.0
+theta_min: 0.7853981633974483
+theta_max: 1.5707963267948966
+nu_min: 1.e-3
+nu_max: 1.e-2
+sigma_min: 0.8
+sigma_max: 1.2
+test_greedy_rom: true

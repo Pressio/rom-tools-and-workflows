@@ -44,41 +44,48 @@
 #
 
 '''
----
-##**Notes**
+Notes
+-----
 The scaler class is used to performed scaled POD.
-Scaling is applied to tensors of shape $\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}$.
+Scaling is applied to tensors of shape :math:`\\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}`.
 These tensors are then reshaped into matrices when performing SVD.
 
-___
-##**Theory**
+Theory
+------
 
 *What is scaled POD, and why would I do it?*
 
-Standard POD computes a basis that minimizes the projection error in a standard Euclidean $\\ell^2$ inner product,
-i.e., for a snapshot matrix $\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}$,
+Standard POD computes a basis that minimizes the projection error in a standard Euclidean :math:`\\ell^2` inner product,
+i.e., for a snapshot matrix :math:`\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}`,
 POD computes the basis by solving the minimization problem (assuming no affine offset)
-$$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}
-\\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*}
-\\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2.$$
-In this minimization problem, errors are measured in a standard $\\ell^2$ norm.
+
+.. math::
+
+   \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}
+   \\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
+   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2.
+
+In this minimization problem, errors are measured in a standard :math:`\\ell^2` norm.
 For most practical applications, where our snapshot matrix involves variables of different scales,
 this norm does not make sense (both intuitively, and on dimensional grounds).
 As a practical example, consider fluid dynamics where the total energy is orders of magnitude larger than the density.
 
 One of the most common approaches for mitigating this issue is to perform scaled POD.
 In scaled POD, we solve a minimization problem on a scaled snapshot matrix.
-Defining $\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}$, where $\\mathbf{W}$ is a weighting matrix
+Defining :math:`\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}`, where :math:`\\mathbf{W}` is a weighting matrix
 (e.g., a diagonal matrix containing the max absolute value of each state variable),
 we compute the basis as the solution to the minimization problem
-$$ \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}
-\\times K} |\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*}
-\\Phi_{\\*}^T \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.$$
+
+.. math::
+
+   \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}
+   \\times K} |\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
+   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.
 
 The Scaler encapsulates this information.
 
-___
-##**API**
+API
+---
 '''
 
 from typing import Protocol
@@ -126,11 +133,19 @@ class NoOpScaler:
 class VectorScaler:
     '''
     Concrete implementation designed to scale snapshot matrices by a vector.
-    For a snapshot tensor $\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}$, the VectorScaler
-    accepts in a scaling vector $\\mathbf{v} \\in \\mathbb{R}^{N}$, and scales by
-    $$\\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}$$
-    before performing POD (i.e., POD is performed on $\\mathbf{S}^*$). After POD is performed, the bases
-    are post-scaled by $$\\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}$$
+    For a snapshot tensor :math:`\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}`, the VectorScaler
+    accepts in a scaling vector :math:`\\mathbf{v} \\in \\mathbb{R}^{N}`, and scales by
+
+    .. math::
+
+       \\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}
+
+    before performing POD (i.e., POD is performed on :math:`\\mathbf{S}^*`). After POD is performed, the bases
+    are post-scaled by
+
+    .. math::
+
+       \\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}
 
     **Note that scaling can cause bases to not be orthonormal; we do not
     recommend using scalers with the NoOpOrthonormalizer**
@@ -209,12 +224,14 @@ class VariableScaler:
     (e.g., for the Navier--Stokes, rho, rho u, rhoE)
 
     This scaler will scale each variable based on
-      - max-abs scaling: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
-      - mean abs: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )$, where $S_i$ denotes the snapshot matrix of the $i$th variable.
-      - variance: for the $i$th state variable $u_i$, we will compute the scaling as
-        $s_i = \\mathrm{std}( S_i ) $, where $S_i$ denotes the snapshot matrix of the $i$th variable.
+      - max-abs scaling: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
+        :math:`s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the
+        :math:`i`th variable.
+      - mean abs: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
+        :math:`s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the
+        :math:`i`th variable.
+      - variance: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
+        :math:`s_i = \\mathrm{std}( S_i )`, where :math:`S_i` denotes the snapshot matrix of the :math:`i`th variable.
 
     This class conforms to `Scaler` protocol.
     '''

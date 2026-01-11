@@ -1,0 +1,12 @@
+rom_construction_type: load-from-file  #other option is compute-from-fom
+rom_file_name: ../offline/offline_results/rb-precomputed-rom
+basis_file_name: ../offline/offline_results/reduced-basis 
+rom_dimension: 10 #only relevant if we use rom_construction_type = compute-from-fom
+Nx: 127 #only relevant if we use rom_construction_type = compute-from-fom
+b: 0.5
+angle: 1.047
+nu: 0.001
+sigma: 1
+output_path: rom_results
+output_file: rom_solution
+save_full_state: true

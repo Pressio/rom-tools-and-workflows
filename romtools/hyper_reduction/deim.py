@@ -57,13 +57,13 @@ def _deim_get_indices_sharedmem(U):
     nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
     Args:
-        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where
-            $m$ is the number of DOFs and
-            $n$ is the number of samples.
+        :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where
+            :math:`m` is the number of DOFs and
+            :math:`n` is the number of samples.
             Function basis in matrix format
 
     Returns:
-        $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+        :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices
     '''
 
     m = np.shape(U)[1]
@@ -127,15 +127,15 @@ def deim_get_indices(U, comm=None):
     nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
     Args:
-        $\\mathbf{U} \\in \\mathbb{R}^{m \\times n}$, where
-            $m$ is the number of DOFs and
-            $n$ is the number of samples.
+        :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where
+            :math:`m` is the number of DOFs and
+            :math:`n` is the number of samples.
             Function basis in matrix format.
         comm: Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
          if comm==None:
-            $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices
 
          else:
             sample mesh local indices and the corresponding owing ranks
@@ -206,15 +206,15 @@ def multi_state_deim_get_indices(U, comm=None):
 
 
     Args:
-         $\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}$, where
-            $l$ is the number of variables,
-            $m$ is the number of DOFs and
-            $n$ the number of samples.
+         :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where
+            :math:`l` is the number of variables,
+            :math:`m` is the number of DOFs and
+            :math:`n` the number of samples.
             Multi-dimensional function basis in tensor format.
 
     Returns:
          if comm==None:
-            $\\mathrm{indices} \\in \\mathbb{I}^{n}$: sample mesh indices
+            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices
 
          else:
             sample mesh local indices and the corresponding owing ranks
@@ -232,17 +232,22 @@ def multi_state_deim_get_indices(U, comm=None):
 
 def deim_get_approximation_matrix(function_basis, sample_indices):
     '''
-    Given a function basis $\\mathbf{U}$ and sample indices defining $\\mathbf{P}$, we compute
-    $$ \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U})$$
-    which comprises the matrix needed for the DEIM approximation to $\\mathbf{f}$
+    Given a function basis :math:`\\mathbf{U}` and sample indices defining :math:`\\mathbf{P}`, we compute
+
+    .. math::
+
+       \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U})
+
+    which comprises the matrix needed for the DEIM approximation to :math:`\\mathbf{f}`
 
     Args:
-        function_basis: ($m$, $n$) array, where $m$ is the number of DOFs and $n$ the number of basis functions.
+        function_basis: :math:`(m, n)` array, where :math:`m` is the number of DOFs and :math:`n` the number of basis
+            functions.
             Basis for function to be approximated.
-        sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points. Sampling points.
+        sample_indices: :math:`(n_s, )` array, where :math:`n_s` is the number of sample points. Sampling points.
 
     Returns:
-        deim_matrix: ($n$,$n_s$) array. DEIM approximation basis
+        deim_matrix: :math:`(n, n_s)` array. DEIM approximation basis
     '''
     sampled_function_basis = function_basis[sample_indices]
     PU_pinv = np.linalg.pinv(sampled_function_basis)
@@ -254,22 +259,22 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
     '''
     For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices
     Args:
-        test_basis: ($n_{var}$, $m$, $k$) array, where
-            $n_{var}$ is the number of state variables,
-            $m$ is the number of DOFs and
-            $k$ is the number of basis functions. Test basis in projection scheme
-        function_basis: ($n_{var}$, m, n) array, where
-            $n_{var}$ is the number of state variables,
-            $m$ is the number of DOFs and
-            $n$ is the number of basis functions.
+        test_basis: :math:`(n_{var}, m, k)` array, where
+            :math:`n_{var}` is the number of state variables,
+            :math:`m` is the number of DOFs and
+            :math:`k` is the number of basis functions. Test basis in projection scheme
+        function_basis: :math:`(n_{var}, m, n)` array, where
+            :math:`n_{var}` is the number of state variables,
+            :math:`m` is the number of DOFs and
+            :math:`n` is the number of basis functions.
             Basis for function to be approximated.
-        sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points. Sampling points.
+        sample_indices: :math:`(n_s, )` array, where :math:`n_s` is the number of sample points. Sampling points.
 
     Returns:
-        deim_test_basis: ($n_{var}$, $n_s$, $k$) array, where
-            $n_{var}$ is the number of state variables,
-            $n_s$ is the number of sample points, and
-            $k$ the number of basis functions.
+        deim_test_basis: :math:`(n_{var}, n_s, k)` array, where
+            :math:`n_{var}` is the number of state variables,
+            :math:`n_s` is the number of sample points, and
+            :math:`k` the number of basis functions.
             DEIM test basis matrix.
 
     '''
@@ -288,26 +293,30 @@ def multi_state_deim_get_test_basis(test_basis, function_basis, sample_indices):
 
 def deim_get_test_basis(test_basis, function_basis, sample_indices, comm=None):
     '''
-    Given a test basis $\\mathbf{\\Phi}$, a function basis $\\mathbf{U}$, and
-    sample indices defining $\\mathbf{P}$, we compute
-    $$[ \\mathbf{\\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T$$
+    Given a test basis :math:`\\mathbf{\\Phi}`, a function basis :math:`\\mathbf{U}`, and
+    sample indices defining :math:`\\mathbf{P}`, we compute
+
+    .. math::
+
+       [ \\mathbf{\\Phi}^T \\mathbf{U} \\mathrm{pinv}( \\mathbf{P}^T \\mathbf{U}) ]^T
+
     which comprises the "test basis" for the DEIM approximation for
-    $\\mathbf{\\Phi}^T \\mathbf{f}$
+    :math:`\\mathbf{\\Phi}^T \\mathbf{f}`
 
     Args:
-        test_basis: ($m$, $k$) array, where
-            $m$ is the number of DOFs and
-            $k$ is the number of basis functions. Test basis in projection scheme
-        function_basis: ($m$, $n$) array, where
-            $m$ is the number of DOFs and
-            $n$ is the number of basis functions. Basis for function to be approximated.
-        sample_indices: ($n_s$, ) array, where $n_s$ is the number of sample points. Sampling points.
+        test_basis: :math:`(m, k)` array, where
+            :math:`m` is the number of DOFs and
+            :math:`k` is the number of basis functions. Test basis in projection scheme
+        function_basis: :math:`(m, n)` array, where
+            :math:`m` is the number of DOFs and
+            :math:`n` is the number of basis functions. Basis for function to be approximated.
+        sample_indices: :math:`(n_s, )` array, where :math:`n_s` is the number of sample points. Sampling points.
         comm: Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
-        deim_test_basis: ($n_s$, $k$) array, where
-            $n_s$ is the number of sample points and
-            $k$ the number of basis functions. DEIM test basis matrix.
+        deim_test_basis: :math:`(n_s, k)` array, where
+            :math:`n_s` is the number of sample points and
+            :math:`k` the number of basis functions. DEIM test basis matrix.
 
     '''
     # Determine sampled_function_basis, allowing for empty ranks

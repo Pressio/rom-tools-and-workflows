@@ -45,9 +45,12 @@
 
 '''
 Constructing a basis via POD typically entails computing the SVD of a snapshot matrix,
-$$ \\mathbf{U} ,\\mathbf{\\Sigma} = \\mathrm{svd}(\\mathbf{S})$$
-and then selecting the first $K$ left singular vectors (i.e., the first $K$
-columns of $\\mathbf{U}$). Typically, $K$ is determined through the decay of
+.. math::
+
+   \\mathbf{U} ,\\mathbf{\\Sigma} = \\mathrm{svd}(\\mathbf{S})
+
+and then selecting the first :math:`K` left singular vectors (i.e., the first :math:`K`
+columns of :math:`\\mathbf{U}`). Typically, :math:`K` is determined through the decay of
 the singular values.
 
 The truncater class is desined to truncate a basis.
@@ -140,7 +143,7 @@ class BasisSizeTruncater():
 
 class EnergyBasedTruncater():
     '''
-    Truncates based on the decay of singular values, i.e., will define $K$ to
+    Truncates based on the decay of singular values, i.e., will define :math:`K` to
     be the number of singular values such that the cumulative energy retained
     is greater than some threshold.
 

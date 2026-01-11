@@ -1,0 +1,749 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.vector_space &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=949a1ff5" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=87e54e7c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=c277b2ea" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=ff8fa330"></script>
+    <script src="../../_static/thebelab-helper.js"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/vector_space';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.vector_space</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.vector_space</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+<span class="c1">#                         ROM Tools and Workflows</span>
+<span class="c1"># Copyright 2019 National Technology &amp; Engineering Solutions of Sandia,LLC</span>
+<span class="c1">#                              (NTESS)</span>
+<span class="c1">#</span>
+<span class="c1"># Under the terms of Contract DE-NA0003525 with NTESS, the</span>
+<span class="c1"># U.S. Government retains certain rights in this software.</span>
+<span class="c1">#</span>
+<span class="c1"># ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions</span>
+<span class="c1"># are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer in the</span>
+<span class="c1"># documentation and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Neither the name of the copyright holder nor the names of its</span>
+<span class="c1"># contributors may be used to endorse or promote products derived</span>
+<span class="c1"># from this software without specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</span>
+<span class="c1"># &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT</span>
+<span class="c1"># LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS</span>
+<span class="c1"># FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE</span>
+<span class="c1"># COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c1"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES</span>
+<span class="c1"># (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR</span>
+<span class="c1"># SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)</span>
+<span class="c1"># HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,</span>
+<span class="c1"># STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING</span>
+<span class="c1"># IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="c1"># Questions? Contact Eric Parish (ejparis@sandia.gov)</span>
+<span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module defines the API to work with a vector subspace.</span>
+<span class="sd">A vector subspace is foundational to reduced-order models.</span>
+<span class="sd">In a ROM, a high-dimensional state is restricted to live within a low-dimensional vector space, known as a trial space.</span>
+<span class="sd">Mathematically, given a &quot;FOM&quot; vector :math:`\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}`,</span>
+<span class="sd">we can write</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}</span>
+
+<span class="sd">where</span>
+
+<span class="sd">- :math:`\\mathcal{V}` with :math:`\\text{dim}(\\mathcal{V}) = K \\le N_{\\mathrm{vars}}  N_{\\mathrm{x}}`</span>
+<span class="sd">  is the trial space</span>
+<span class="sd">- :math:`N_{\\mathrm{vars}}` is the number of PDE variables (e.g., 5 for the compressible Navier-Stokes equations in 3D)</span>
+<span class="sd">- :math:`N_{\\mathrm{x}}` is the number of spatial DOFs</span>
+
+<span class="sd">Formally, we can describe this low-dimensional representation with a basis and an affine offset,</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}</span>
+
+<span class="sd">where :math:`\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}} \\times K}` is the basis matrix</span>
+<span class="sd">(:math:`K` is the number of basis), :math:`\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}` are the reduced, or generalized</span>
+<span class="sd">coordinates, :math:`\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}` is the</span>
+<span class="sd">shift vector (or affine offset), and, by definition, :math:`\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)`.</span>
+
+<span class="sd">The `VectorSpace` abstract class defined below encapsulates the information of an affine vector space,</span>
+<span class="sd">:math:`\\mathcal{V}`, by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the</span>
+<span class="sd">vector space, while decoupling this representation from *how* it is computed.</span>
+
+<span class="sd">Tensor representation</span>
+<span class="sd">---------------------</span>
+
+<span class="sd">Our representation of the basis and the affine offset for a vector space is based on tensors</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\mathcal{\\Phi} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K}</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\mathcal{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}</span>
+
+<span class="sd">Internally, we remark that all tensors are reshaped into 2D matrices, e.g., when performing SVD.</span>
+
+<span class="sd">Content</span>
+<span class="sd">-------</span>
+
+<span class="sd">We currently provide the following concrete classes:</span>
+
+<span class="sd">- `DictionaryVectorSpace`: construct a vector space from a matrix without truncation.</span>
+
+<span class="sd">- `VectorSpaceFromPOD`: construct a vector subspace computed via SVD.</span>
+
+<span class="sd">which derive from the abstract class `VectorSpace`.</span>
+
+<span class="sd">API</span>
+<span class="sd">---</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">romtools.vector_space.utils.truncater</span> <span class="kn">import</span> <span class="n">LeftSingularVectorTruncater</span><span class="p">,</span> <span class="n">NoOpTruncater</span>
+<span class="kn">from</span> <span class="nn">romtools.vector_space.utils.shifter</span> <span class="kn">import</span> <span class="n">Shifter</span><span class="p">,</span> <span class="n">create_noop_shifter</span>
+<span class="kn">from</span> <span class="nn">romtools.vector_space.utils.scaler</span> <span class="kn">import</span> <span class="n">Scaler</span><span class="p">,</span> <span class="n">NoOpScaler</span>
+<span class="kn">from</span> <span class="nn">romtools.vector_space.utils.orthogonalizer</span> <span class="kn">import</span> <span class="n">Orthogonalizer</span><span class="p">,</span> <span class="n">NoOpOrthogonalizer</span>
+
+
+<div class="viewcode-block" id="VectorSpace">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace">[docs]</a>
+<span class="k">class</span> <span class="nc">VectorSpace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Abstract base class for vector space implementations.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="VectorSpace.extents">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.extents">[docs]</a>
+    <span class="k">def</span> <span class="nf">extents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Retrieves the dimension of the vector space</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A Tuple with the the dimensions of the vector space (n_var,nx,K).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="VectorSpace.get_shift_vector">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.get_shift_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Retrieves the shift vector of the vector space.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `np.ndarray`: The shift vector in tensorm form.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="VectorSpace.get_basis">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.get_basis">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Retrieves the basis vectors of the vector space.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `np.ndarray`: The basis of the vector space in tensor form.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DictionaryVectorSpace">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace">[docs]</a>
+<span class="k">class</span> <span class="nc">DictionaryVectorSpace</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Reduced basis vector space (no truncation).</span>
+
+<span class="sd">    This class conforms to `VectorSpace` protocol.</span>
+
+<span class="sd">    Given a snapshot matrix :math:`\\mathbf{S}`, we set the basis to be</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       \\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})</span>
+
+<span class="sd">    where the orthogonalization and shifts are defined by their</span>
+<span class="sd">    respective classes</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">snapshots</span><span class="p">,</span>
+                 <span class="n">shifter</span><span class="p">:</span>        <span class="n">Shifter</span>        <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">orthogonalizer</span><span class="p">:</span> <span class="n">Orthogonalizer</span> <span class="o">=</span> <span class="n">NoOpOrthogonalizer</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            snapshots (np.ndarray): Snapshot data in tensor form</span>
+<span class="sd">                :math:`\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}`</span>
+<span class="sd">            shifter: Class that shifts the basis.</span>
+<span class="sd">            orthogonalizer: Class that orthogonalizes the basis.</span>
+
+<span class="sd">        This constructor initializes a vector space by performing basis</span>
+<span class="sd">        manipulation operations on the provided snapshot data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Create noop shifter if not provided</span>
+        <span class="k">if</span> <span class="n">shifter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">shifter</span> <span class="o">=</span> <span class="n">create_noop_shifter</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+
+        <span class="c1"># compute basis</span>
+        <span class="n">n_var</span> <span class="o">=</span> <span class="n">snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">shifter</span><span class="o">.</span><span class="n">apply_shift</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="n">snapshot_matrix</span> <span class="o">=</span> <span class="n">_tensor_to_matrix</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">orthogonalizer</span><span class="o">.</span><span class="n">orthogonalize</span><span class="p">(</span><span class="n">snapshot_matrix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DictionaryVectorSpace.get_shift_vector">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace.get_shift_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Concrete implementation of `VectorSpace.get_shift_vector()`</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span></div>
+
+
+<div class="viewcode-block" id="DictionaryVectorSpace.get_basis">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace.get_basis">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Concrete implementation of `VectorSpace.get_basis()`</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span></div>
+
+
+    <span class="k">def</span> <span class="nf">extents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="o">.</span><span class="n">shape</span></div>
+
+
+
+<div class="viewcode-block" id="VectorSpaceFromPOD">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD">[docs]</a>
+<span class="k">class</span> <span class="nc">VectorSpaceFromPOD</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    POD vector space (constructed via SVD).</span>
+
+<span class="sd">    This class conforms to `VectorSpace` protocol.</span>
+
+<span class="sd">    Given a snapshot matrix :math:`\\mathbf{S}`, we compute the basis :math:`\\boldsymbol \\Phi` as</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       \\boldsymbol U = \\mathrm{SVD}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       \\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))</span>
+
+<span class="sd">    where :math:`\\boldsymbol U` are the left singular vectors and the</span>
+<span class="sd">    orthogonalization, truncation, scaling, and shifts are defined by their respective classes.</span>
+
+<span class="sd">    For truncation, we enable truncation based on a fixed dimension or the</span>
+<span class="sd">    decay of singular values; please refer to the documentation for the truncater.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">snapshots</span><span class="p">,</span>
+                 <span class="n">truncater</span><span class="p">:</span>      <span class="n">LeftSingularVectorTruncater</span>   <span class="o">=</span> <span class="n">NoOpTruncater</span><span class="p">(),</span>
+                 <span class="n">shifter</span><span class="p">:</span>        <span class="n">Shifter</span>        <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">orthogonalizer</span><span class="p">:</span> <span class="n">Orthogonalizer</span> <span class="o">=</span> <span class="n">NoOpOrthogonalizer</span><span class="p">(),</span>
+                 <span class="n">scaler</span><span class="p">:</span>         <span class="n">Scaler</span>         <span class="o">=</span> <span class="n">NoOpScaler</span><span class="p">(),</span>
+                 <span class="n">svdFnc</span><span class="p">:</span>         <span class="n">Callable</span>       <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            snapshots (np.ndarray): Snapshot data in tensor form</span>
+<span class="sd">                :math:`\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}`</span>
+<span class="sd">            truncater (Truncater): Concrete implementation for truncating the basis.</span>
+<span class="sd">            shifter (Shifter): Concrete implementation responsible for shifting the basis.</span>
+<span class="sd">            orthogonalizer (Orthogonalizer): Concrete implementation that orthogonalizes the basis.</span>
+<span class="sd">            scaler: Concrete implementation that scales the basis.</span>
+<span class="sd">            svdFnc: a callable to use for computing the SVD on the snapshots data.</span>
+<span class="sd">                IMPORTANT: must conform to the API of</span>
+<span class="sd">                [np.linalg.svd](https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html#numpy-linalg-svd).</span>
+<span class="sd">                If `None`, internally we use `np.linalg.svd`.</span>
+<span class="sd">                Note: this is useful when you want to use a custom svd, for</span>
+<span class="sd">                    example when your snapshots are distributed with MPI, or</span>
+<span class="sd">                    maybe you have a fancy svd function that you can use.</span>
+
+<span class="sd">        This constructor initializes a POD vector space by performing SVD on the provided snapshot</span>
+<span class="sd">        data and applying various basis manipulation operations, including truncation, shifting, scaling,</span>
+<span class="sd">        and orthogonalization.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">shifter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">shifter</span> <span class="o">=</span> <span class="n">create_noop_shifter</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="n">n_var</span> <span class="o">=</span> <span class="n">snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">shifter</span><span class="o">.</span><span class="n">apply_shift</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="n">scaler</span><span class="o">.</span><span class="n">pre_scale</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="n">snapshot_matrix</span> <span class="o">=</span> <span class="n">_tensor_to_matrix</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
+        <span class="n">svd_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span> <span class="k">if</span> <span class="n">svdFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">svdFnc</span>
+        <span class="n">lsv</span><span class="p">,</span> <span class="n">svals</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">svd_picked</span><span class="p">(</span><span class="n">snapshot_matrix</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                   <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__svals</span> <span class="o">=</span> <span class="n">svals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">truncater</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">lsv</span><span class="p">,</span> <span class="n">svals</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="n">scaler</span><span class="o">.</span><span class="n">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_tensor_to_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">orthogonalizer</span><span class="o">.</span><span class="n">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="VectorSpaceFromPOD.get_singular_values">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_singular_values">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_singular_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns array of singular values</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__svals</span></div>
+
+
+
+<div class="viewcode-block" id="VectorSpaceFromPOD.get_shift_vector">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_shift_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Concrete implementation of `VectorSpace.get_shift_vector()`</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span></div>
+
+
+<div class="viewcode-block" id="VectorSpaceFromPOD.get_basis">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_basis">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Concrete implementation of `VectorSpace.get_basis()`</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span></div>
+
+
+    <span class="k">def</span> <span class="nf">extents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="o">.</span><span class="n">shape</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_tensor_to_matrix</span><span class="p">(</span><span class="n">tensor_input</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Converts a tensor with shape `[N, M, P]` to a matrix representation</span>
+<span class="sd">    in which the first two dimension are collapsed `[N M, P]`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">output_tensor</span> <span class="o">=</span> <span class="n">tensor_input</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tensor_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">tensor_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                         <span class="n">tensor_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">output_tensor</span>
+
+
+<span class="k">def</span> <span class="nf">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">matrix_input</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Inverse operation of `_tensor_to_matrix`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matrix_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">n_var</span><span class="p">)</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="n">matrix_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">output_matrix</span> <span class="o">=</span> <span class="n">matrix_input</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output_matrix</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

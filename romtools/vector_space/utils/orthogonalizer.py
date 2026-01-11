@@ -46,11 +46,17 @@
 '''
 The OrthogonalizerClass is used to orthogonalize a basis at the end of the
 construction of a vector space.  Specifically, given a basis
-$$\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K},$$
-the orthogonalizer will compute a new, orthogonalized basis $\\boldsymbol \\Phi_{\\*}$
+.. math::
+
+   \\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}
+
+the orthogonalizer will compute a new, orthogonalized basis :math:`\\boldsymbol \\Phi_{\\*}`
 where
-$$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
-In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
+.. math::
+
+   \\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
+
+In the above, :math:`\\mathbf{W}` is a weighting matrix (typically the cell volumes).
 '''
 
 from typing import Protocol
@@ -84,7 +90,9 @@ class EuclideanL2Orthogonalizer:
     '''
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
-    $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
 
     This class conforms to `Orthogonalizer` protocol.
     '''
@@ -121,8 +129,11 @@ class EuclideanVectorWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
-    $$\\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},$$
-    where $\\mathbf{w}$ is the weighting vector. Typically, this inner product
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+
+    where :math:`\\mathbf{w}` is the weighting vector. Typically, this inner product
     is used for orthogonalizing with respect to cell volumes
 
     This class conforms to `Orthogonalizer` protocol.
@@ -167,8 +178,11 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in an SPD matrix-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
-    $$\\boldsymbol \\Phi_{\\*}^T \\mathbf{M}\\boldsymbol \\Phi_{\\*} = \\mathbf{I},$$
-    where $\\mathbf{M}$ is the SPD weighting matrix. Typically, this inner product
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\mathbf{M}\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+
+    where :math:`\\mathbf{M}` is the SPD weighting matrix. Typically, this inner product
     is used for orthogonalizing with respect to a mass matrix 
 
     This class conforms to `Orthogonalizer` protocol.

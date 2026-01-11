@@ -54,20 +54,24 @@ approaches. The name comes from the energy conservation properties the method
 has for solid mechanics applications; note that this property is not provable
 for general systems.
 
-Given a set of residual snapshots ECSW computes sampling indices $GID_i$ and
-weights $\\xi_i$. Specifically, the residual snapshots must be computed for
+Given a set of residual snapshots ECSW computes sampling indices :math:`GID_i` and
+weights :math:`\\xi_i`. Specifically, the residual snapshots must be computed for
 reconstructed full-order model snapshots,
 
-$$\\boldsymbol r_i = \\boldsymbol r( \\boldsymbol \\Phi \\boldsymbol \\Phi^T (\\mathbf{u}_i - \\mathbf{u}_0))$$
+.. math::
 
-where $\\boldsymbol r_i$ is the residual $i$th residual snapshot,
-$\\mathbf{u}_i$ is the $i$th state snapshot, and $\\boldsymbol \\Phi$ is the
+   \\boldsymbol r_i = \\boldsymbol r( \\boldsymbol \\Phi \\boldsymbol \\Phi^T (\\mathbf{u}_i - \\mathbf{u}_0))
+
+where :math:`\\boldsymbol r_i` is the residual :math:`i`th residual snapshot,
+:math:`\\mathbf{u}_i` is the :math:`i`th state snapshot, and :math:`\\boldsymbol \\Phi` is the
 trial basis.
 
 The goal of ECSW is to find a sparse set of weights to approximate the reduced
 residual with a subset of local test-basis/residual products
 
-$$\\sum_{e \\in \\mathcal{E}} \\xi_e \\boldsymbol \\Psi_e^T \\boldsymbol r_e \\approx \\Psi^T \\boldsymbol r$$
+.. math::
+
+   \\sum_{e \\in \\mathcal{E}} \\xi_e \\boldsymbol \\Psi_e^T \\boldsymbol r_e \\approx \\Psi^T \\boldsymbol r
 
 For more details, consult Chapman et al. 2016 DOI: 10.1002/nme.5332.
 
@@ -170,8 +174,12 @@ class ECSWsolverNNLS(ECSWsolver):
         Compute the sample mesh DoF indices and corresponding weights using the non-negative least squares algorithm
         from Chapman et al. 2016 DOI: 10.1002/nme.5332.
 
-        min || full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2^2 s.t. full_mesh_weights >=0, ||
-        full_mesh_lhs*full_mesh_weights-full_mesh_rhs ||_2 < tolerance ||full_mesh_rhs||_2
+        .. math::
+
+           \\min \\| \\text{full\\_mesh\\_lhs} \\cdot \\text{full\\_mesh\\_weights} - \\text{full\\_mesh\\_rhs} \\|_2^2
+           \\quad \\text{s.t.} \\quad \\text{full\\_mesh\\_weights} \\ge 0, \\\\
+           \\| \\text{full\\_mesh\\_lhs} \\cdot \\text{full\\_mesh\\_weights} - \\text{full\\_mesh\\_rhs} \\|_2
+           < \\text{tolerance} \\| \\text{full\\_mesh\\_rhs} \\|_2
 
         Args:
             full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where

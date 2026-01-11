@@ -48,15 +48,22 @@ from romtools.vector_space import VectorSpace
 def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.VectorSpace , weighting_matrix : np.ndarray = None, return_full_state=False):
 
     '''
-    Compute L2 projection in the weighted inner product
-    arg min \| ( Phi \hat{x} + x_{ref}) - x \|_M^2 
+    Compute L2 projection in the weighted inner product.
+
+    .. math::
+
+       \\arg\\min \\| ( \\Phi \\hat{x} + x_{ref}) - x \\|_M^2
 
     Solution satisfies the linear system
-         Phi^T M Phi \hat{x} = \Phi^T M ( x - x_{ref} )
+
+    .. math::
+
+       \\Phi^T M \\Phi \\hat{x} = \\Phi^T M ( x - x_{ref} )
+
     Args:
         input_tensor (np.ndarray): 2d or 3d data array of size (n_vars, nx) or (n_vars, nx, n_snaps)
         vector_space (romtools.VectorSpace): vector space class containing basis and affine offset
-        weighting_matrix (np.ndarray): 2d weighting matrix of size (nvars nx \times nvars nx) 
+        weighting_matrix (np.ndarray): 2d weighting matrix of size :math:`nvars nx \\times nvars nx`
     '''
 
     basis = vector_space.get_basis()
@@ -94,6 +101,5 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
     else:
         full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector[...,None]
     return reduced_state,full_state
-
 
 
