@@ -34,6 +34,43 @@ def run_mf_eki(model: QoiModel,
             fom_evaluation_concurrency: int = 1,
             rom_evaluation_concurrency: int = 1,
             restart_file: str = None):  # Optional parameter for restart file
+    '''
+    Run a multi-fidelity ensemble Kalman inversion (MF-EKI) workflow.
+
+    This routine couples a high-fidelity model with ROM evaluations built on
+    the fly from FOM training data. It supports adaptive step sizing, ROM
+    refresh based on QoI error, and concurrent evaluation of FOM/ROM samples.
+
+    Args:
+        model: High-fidelity QoiModel.
+        rom_model_builder: Builder for ROM models from training directories.
+        parameter_space: ParameterSpace used to draw the initial ensemble.
+        observations: Observed QoI vector.
+        observations_covariance: Observation covariance matrix.
+        parameter_mins: Optional lower bounds on parameters.
+        parameter_maxes: Optional upper bounds on parameters.
+        absolute_eki_directory: Absolute path to the working directory for runs.
+        fom_ensemble_size: Number of FOM samples per iteration.
+        rom_extra_ensemble_size: Extra ROM-only samples per iteration.
+        rom_tolerance: Relative QoI error threshold for ROM rebuilds.
+        initial_step_size: Initial step size for the update.
+        regularization_parameter: Tikhonov regularization parameter.
+        step_size_growth_factor: Growth factor when a step is accepted.
+        step_size_decay_factor: Decay factor when a step is rejected.
+        max_step_size_decrease_trys: Max consecutive step reductions before exit.
+        relaxation_parameter: Error reduction factor for step acceptance.
+        error_norm_tolerance: Stop when mean error norm falls below this value.
+        delta_params_tolerance: Stop when parameter update norm falls below this value.
+        max_rom_training_history: Max number of training iterations to keep.
+        max_iterations: Maximum number of EKI iterations.
+        random_seed: RNG seed for initial sampling.
+        fom_evaluation_concurrency: Concurrent FOM evaluations per iteration.
+        rom_evaluation_concurrency: Concurrent ROM evaluations per iteration.
+        restart_file: Optional restart file path.
+
+    Returns:
+        Tuple of (fom_parameter_samples, fom_qois) from the final iteration.
+    '''
 
 
     max_rom_training_dirs = int(max_rom_training_history*(fom_ensemble_size+1))
@@ -242,5 +279,4 @@ def compute_mf_eki_update(parameter_sample_sets, fom_results_for_sample_sets, ro
    
     dps = [dp.transpose(),dpr.transpose()] 
     return dps
-
 

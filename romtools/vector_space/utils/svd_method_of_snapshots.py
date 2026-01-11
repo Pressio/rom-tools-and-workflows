@@ -58,20 +58,28 @@ class SvdMethodOfSnapshots:
     where snapshots is the local portion of a distributed memory array.
 
     The standard reduced-basis problem requires solving the optimization problem
-    $$ \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N \\times K} | \\boldsymbol
-    \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} } \\| \\Phi_{\\*} \\Phi_{\\*}^T
-    \\mathbf{S} - \\mathbf{S} \\|_2,$$
-    where $\\mathbf{S} \\in \\mathbb{R}^{N \\times N_s}$, with $N_s$ being the number of snapshots.
+    .. math::
+
+       \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N \\times K} | \\boldsymbol
+       \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
+       \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2,
+
+    where :math:`\\mathbf{S} \\in \\mathbb{R}^{N \\times N_s}`, with :math:`N_s` being the number of snapshots.
     The standard way to solve this is with the thin SVD. An alternative approach is to use the method of
     snapshts/kernel trick, see, e.g., https://web.stanford.edu/group/frg/course_work/CME345/CA-CME345-Ch4.pdf.
     Here, we instead solve the eigenvalue probelm
-    $$ \\mathbf{S}^T \\mathbf{S} \\boldsymbol \\psi_i = \\lambda_i \\boldsymbol \\psi_i$$
-    for $i = 1,\\ldots,N_s$. It can be shown that the left singular vectors from the SVD of $\\mathbf{S}$ are
+    .. math::
+
+       \\mathbf{S}^T \\mathbf{S} \\boldsymbol \\psi_i = \\lambda_i \\boldsymbol \\psi_i
+
+    for :math:`i = 1,\\ldots,N_s`. It can be shown that the left singular vectors from the SVD of :math:`\\mathbf{S}` are
     related to the eigen-vectors of the above by
-    $$ \\mathbf{u}_i = \\frac{1}{\\sqrt{\\lambda_i}} \\mathbf{S} \\boldsymbol \\psi_i.$$
+    .. math::
+
+       \\mathbf{u}_i = \\frac{1}{\\sqrt{\\lambda_i}} \\mathbf{S} \\boldsymbol \\psi_i.
 
     An advantage of the method of snapshots is that it can be easily parallelized and is efficient if we don't
-    have many snapshots. We compute $\\mathbf{S}^T \\mathbf{S}$ in parallel, and then solve the (typically small)
+    have many snapshots. We compute :math:`\\mathbf{S}^T \\mathbf{S}` in parallel, and then solve the (typically small)
     eigenvalue problem in serial.
     '''
 

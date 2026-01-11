@@ -31,6 +31,38 @@ def run_eki(model: QoiModel,
                  random_seed: int = 1,
                  evaluation_concurrency = 1,
                  restart_file = None):
+    '''
+    Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
+
+    This routine iteratively updates a parameter ensemble to match observations
+    using model evaluations and a Kalman-style update. It supports adaptive
+    step sizing, restart files, and concurrent sample evaluation.
+
+    Args:
+        model: QoiModel to evaluate at ensemble samples.
+        parameter_space: ParameterSpace used to draw the initial ensemble.
+        observations: Observed QoI vector.
+        observations_covariance: Observation covariance matrix.
+        parameter_mins: Optional lower bounds on parameters.
+        parameter_maxes: Optional upper bounds on parameters.
+        absolute_eki_directory: Absolute path to the working directory for runs.
+        ensemble_size: Number of ensemble members.
+        initial_step_size: Initial step size for the update.
+        regularization_parameter: Tikhonov regularization parameter.
+        step_size_growth_factor: Growth factor when a step is accepted.
+        step_size_decay_factor: Decay factor when a step is rejected.
+        max_step_size_decrease_trys: Max consecutive step reductions before exit.
+        relaxation_parameter: Error reduction factor for step acceptance.
+        error_norm_tolerance: Stop when mean error norm falls below this value.
+        delta_params_tolerance: Stop when parameter update norm falls below this value.
+        max_iterations: Maximum number of EKI iterations.
+        random_seed: RNG seed for initial sampling.
+        evaluation_concurrency: Concurrent model evaluations per iteration.
+        restart_file: Optional restart file path.
+
+    Returns:
+        Tuple of (parameter_samples, qois) from the final iteration.
+    '''
 
 
 
@@ -159,5 +191,4 @@ def compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covar
     dp = np.linalg.solve(LHS,RHS)
     dp = Sw @ (Sy.transpose() @ dp)
     return dp.transpose()
-
 

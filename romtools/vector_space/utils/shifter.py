@@ -44,26 +44,33 @@
 #
 
 '''
-___
-##**Notes**
+Notes
+-----
 The vector defining the affine offset for a linear subspace is viewed as a matrix of shape
-$$\\mathbf{u}_{\\mathrm{shift}} \in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\mathrm{x}} }$$
 
-___
-##**Theory**
+.. math::
+
+   \\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} }
+
+Theory
+------
 
 *What is a shift vector, and why would I use it?* In ROMs, we restrict a state to belong to a low-dimensional affine
 vector space,
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
+.. math::
+
+   \\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}
+
 where
-$\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi) $. Here $\\mathbf{u}_{\\mathrm{shift}}$ defines an affine offset.
+:math:`\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)`. Here :math:`\\mathbf{u}_{\\mathrm{shift}}` defines an
+affine offset.
 Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial
 conditions.
 
 The _Shifter class encapsulates the affine offset.
 
-___
-##**API**
+API
+---
 '''
 
 import sys

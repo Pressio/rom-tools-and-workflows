@@ -1,0 +1,810 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.vector_space.utils.scaler &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=949a1ff5" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=87e54e7c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=c277b2ea" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=ff8fa330"></script>
+    <script src="../../../../_static/thebelab-helper.js"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/vector_space/utils/scaler';</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../vector_space.html" class="nav-link">romtools.vector_space</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.vector_space.utils.scaler</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.vector_space.utils.scaler</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+<span class="c1">#                         ROM Tools and Workflows</span>
+<span class="c1"># Copyright 2019 National Technology &amp; Engineering Solutions of Sandia,LLC</span>
+<span class="c1">#                              (NTESS)</span>
+<span class="c1">#</span>
+<span class="c1"># Under the terms of Contract DE-NA0003525 with NTESS, the</span>
+<span class="c1"># U.S. Government retains certain rights in this software.</span>
+<span class="c1">#</span>
+<span class="c1"># ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions</span>
+<span class="c1"># are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer in the</span>
+<span class="c1"># documentation and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Neither the name of the copyright holder nor the names of its</span>
+<span class="c1"># contributors may be used to endorse or promote products derived</span>
+<span class="c1"># from this software without specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</span>
+<span class="c1"># &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT</span>
+<span class="c1"># LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS</span>
+<span class="c1"># FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE</span>
+<span class="c1"># COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c1"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES</span>
+<span class="c1"># (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR</span>
+<span class="c1"># SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)</span>
+<span class="c1"># HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,</span>
+<span class="c1"># STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING</span>
+<span class="c1"># IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="c1"># Questions? Contact Eric Parish (ejparis@sandia.gov)</span>
+<span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Notes</span>
+<span class="sd">-----</span>
+<span class="sd">The scaler class is used to performed scaled POD.</span>
+<span class="sd">Scaling is applied to tensors of shape :math:`\\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_s}`.</span>
+<span class="sd">These tensors are then reshaped into matrices when performing SVD.</span>
+
+<span class="sd">Theory</span>
+<span class="sd">------</span>
+
+<span class="sd">*What is scaled POD, and why would I do it?*</span>
+
+<span class="sd">Standard POD computes a basis that minimizes the projection error in a standard Euclidean :math:`\\ell^2` inner product,</span>
+<span class="sd">i.e., for a snapshot matrix :math:`\\mathbf{S} \\in \\mathbb{R}^{  N_{\\mathrm{vars}} N_{\\mathrm{x}} \\times N_s}`,</span>
+<span class="sd">POD computes the basis by solving the minimization problem (assuming no affine offset)</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}</span>
+<span class="sd">   \\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }</span>
+<span class="sd">   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2.</span>
+
+<span class="sd">In this minimization problem, errors are measured in a standard :math:`\\ell^2` norm.</span>
+<span class="sd">For most practical applications, where our snapshot matrix involves variables of different scales,</span>
+<span class="sd">this norm does not make sense (both intuitively, and on dimensional grounds).</span>
+<span class="sd">As a practical example, consider fluid dynamics where the total energy is orders of magnitude larger than the density.</span>
+
+<span class="sd">One of the most common approaches for mitigating this issue is to perform scaled POD.</span>
+<span class="sd">In scaled POD, we solve a minimization problem on a scaled snapshot matrix.</span>
+<span class="sd">Defining :math:`\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}`, where :math:`\\mathbf{W}` is a weighting matrix</span>
+<span class="sd">(e.g., a diagonal matrix containing the max absolute value of each state variable),</span>
+<span class="sd">we compute the basis as the solution to the minimization problem</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}</span>
+<span class="sd">   \\times K} |\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }</span>
+<span class="sd">   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.</span>
+
+<span class="sd">The Scaler encapsulates this information.</span>
+
+<span class="sd">API</span>
+<span class="sd">---</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Protocol</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">romtools.linalg.linalg</span> <span class="k">as</span> <span class="nn">la</span>
+
+
+<div class="viewcode-block" id="Scaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler">[docs]</a>
+<span class="k">class</span> <span class="nc">Scaler</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Interface for the Scaler class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Scaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the snapshot matrix in place before performing SVD</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Scaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the left singular vectors in place after performing SVD</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NoOpScaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler">[docs]</a>
+<span class="k">class</span> <span class="nc">NoOpScaler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    No op implementation</span>
+
+<span class="sd">    This class conforms to `Scaler` protocol.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="NoOpScaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Does not alter the input data matrix.&#39;&#39;&#39;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NoOpScaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Does not alter the input data matrix.&#39;&#39;&#39;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VectorScaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler">[docs]</a>
+<span class="k">class</span> <span class="nc">VectorScaler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Concrete implementation designed to scale snapshot matrices by a vector.</span>
+<span class="sd">    For a snapshot tensor :math:`\\mathbf{S} \\in \\mathbb{R}^{N_{\\mathrm{u}} \\times N \\times K}`, the VectorScaler</span>
+<span class="sd">    accepts in a scaling vector :math:`\\mathbf{v} \\in \\mathbb{R}^{N}`, and scales by</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       \\mathbf{S}^* = \\mathrm{diag}(\\mathbf{v})^{-1} \\mathbf{S}</span>
+
+<span class="sd">    before performing POD (i.e., POD is performed on :math:`\\mathbf{S}^*`). After POD is performed, the bases</span>
+<span class="sd">    are post-scaled by</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       \\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}</span>
+
+<span class="sd">    **Note that scaling can cause bases to not be orthonormal; we do not</span>
+<span class="sd">    recommend using scalers with the NoOpOrthonormalizer**</span>
+
+<span class="sd">    This class conforms to `Scaler` protocol.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_vector</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor for the VectorScaler.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scaling_vector: Array containing the scaling vector for each row</span>
+<span class="sd">                in the snapshot matrix.</span>
+
+<span class="sd">        This constructor initializes the VectorScaler with the specified</span>
+<span class="sd">        scaling vector.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix</span> <span class="o">=</span> <span class="n">scaling_vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">scaling_vector</span>
+
+<div class="viewcode-block" id="VectorScaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place using the inverse of the scaling vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data_tensor</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix_inv</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="VectorScaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place using the scaling vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data_tensor</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ScalarScaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler">[docs]</a>
+<span class="k">class</span> <span class="nc">ScalarScaler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Applies a scalar scale factor</span>
+
+<span class="sd">    This class conforms to `Scaler` protocol.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="n">factor</span>
+
+<div class="viewcode-block" id="ScalarScaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place using the reciprocal of the input factor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data_tensor</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span></div>
+
+
+<div class="viewcode-block" id="ScalarScaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place using the input factor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data_tensor</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VariableScaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler">[docs]</a>
+<span class="k">class</span> <span class="nc">VariableScaler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Concrete implementation designed for snapshot matrices involving multiple</span>
+<span class="sd">    state variables.</span>
+
+<span class="sd">    This class is designed to scale a data matrix comprising multiple states</span>
+<span class="sd">    (e.g., for the Navier--Stokes, rho, rho u, rhoE)</span>
+
+<span class="sd">    This scaler will scale each variable based on</span>
+<span class="sd">      - max-abs scaling: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as</span>
+<span class="sd">        :math:`s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the</span>
+<span class="sd">        :math:`i`th variable.</span>
+<span class="sd">      - mean abs: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as</span>
+<span class="sd">        :math:`s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the</span>
+<span class="sd">        :math:`i`th variable.</span>
+<span class="sd">      - variance: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as</span>
+<span class="sd">        :math:`s_i = \\mathrm{std}( S_i )`, where :math:`S_i` denotes the snapshot matrix of the :math:`i`th variable.</span>
+
+<span class="sd">    This class conforms to `Scaler` protocol.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor for the VariableScaler.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scaling_type (str): The scaling method to use (&#39;max_abs&#39;,</span>
+<span class="sd">            &#39;mean_abs&#39;, or &#39;variance&#39;).</span>
+
+<span class="sd">        This constructor initializes the VariableScaler with the specified</span>
+<span class="sd">        scaling type, variable ordering, and number of variables.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_type</span> <span class="o">=</span> <span class="n">scaling_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">have_scales_been_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="VariableScaler.initialize_scalings">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings">[docs]</a>
+    <span class="k">def</span> <span class="nf">initialize_scalings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Initializes the scaling factors for each state variable based on the</span>
+<span class="sd">        specified method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">n_var</span> <span class="o">=</span> <span class="n">data_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_var</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_var</span><span class="p">):</span>
+            <span class="n">ith_var</span> <span class="o">=</span> <span class="n">data_tensor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_type</span> <span class="o">==</span> <span class="s2">&quot;max_abs&quot;</span><span class="p">:</span>
+                <span class="n">var_scale</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ith_var</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_type</span> <span class="o">==</span> <span class="s2">&quot;mean_abs&quot;</span><span class="p">:</span>
+                <span class="n">var_scale</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ith_var</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_type</span> <span class="o">==</span> <span class="s2">&quot;variance&quot;</span><span class="p">:</span>
+                <span class="n">var_scale</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ith_var</span><span class="p">)</span>
+
+            <span class="c1"># in case of a zero field (e.g., 2D)</span>
+            <span class="k">if</span> <span class="n">var_scale</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">:</span>
+                <span class="n">var_scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">var_scale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">have_scales_been_initialized</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+    <span class="c1"># These are all inplace operations</span>
+<div class="viewcode-block" id="VariableScaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place before processing, taking into account</span>
+<span class="sd">        the previously initialized scaling factors.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">n_var</span> <span class="o">=</span> <span class="n">data_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">have_scales_been_initialized</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initialize_scalings</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span>
+        <span class="c1"># scale each field (variable scaling)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_var</span><span class="p">):</span>
+            <span class="n">data_tensor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="VariableScaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place using the scaling vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">have_scales_been_initialized</span><span class="p">,</span> <span class="s2">&quot;Scales in VariableScaler have not been initialized&quot;</span>
+        <span class="c1"># scale each field</span>
+        <span class="n">n_var</span> <span class="o">=</span> <span class="n">data_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_var</span><span class="p">):</span>
+            <span class="n">data_tensor</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+</div>
+
+
+<div class="viewcode-block" id="VariableAndVectorScaler">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler">[docs]</a>
+<span class="k">class</span> <span class="nc">VariableAndVectorScaler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Concrete implementation designed to scale snapshot matrices involving</span>
+<span class="sd">    multiple state variables by both the variable magnitudes and an additional</span>
+<span class="sd">    vector.  This is particularly useful when wishing to perform POD for,</span>
+<span class="sd">    e.g., a finite volume method where we want to scale by the cell volumes as</span>
+<span class="sd">    well as the variable magnitudes. This implementation combines the</span>
+<span class="sd">    VectorScaler and VariableScaler classes.</span>
+
+<span class="sd">    This class conforms to `Scaler` protocol.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_vector</span><span class="p">,</span> <span class="n">scaling_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor for the VariableAndVectorScaler.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scaling_vector: Array containing the scaling vector for each row</span>
+<span class="sd">            in the snapshot matrix.</span>
+<span class="sd">            scaling_type: Scaling method (&#39;max_abs&#39;,</span>
+<span class="sd">            &#39;mean_abs&#39;, or &#39;variance&#39;) for variable magnitudes.</span>
+
+<span class="sd">        This constructor initializes the `VariableAndVectorScaler` with the</span>
+<span class="sd">        specified parameters.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_variable_scaler</span> <span class="o">=</span> <span class="n">VariableScaler</span><span class="p">(</span><span class="n">scaling_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_vector_scaler</span> <span class="o">=</span> <span class="n">VectorScaler</span><span class="p">(</span><span class="n">scaling_vector</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VariableAndVectorScaler.pre_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place before processing, first using the</span>
+<span class="sd">        `VariableScaler` and then the `VectorScaler`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_variable_scaler</span><span class="o">.</span><span class="n">pre_scale</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_vector_scaler</span><span class="o">.</span><span class="n">pre_scale</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VariableAndVectorScaler.post_scale">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale">[docs]</a>
+    <span class="k">def</span> <span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scales the input data matrix in place after processing, first using the</span>
+<span class="sd">        `VectorScaler` and then the `VariableScaler`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_tensor (np.ndarray): The input data matrix to be scaled.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_vector_scaler</span><span class="o">.</span><span class="n">post_scale</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_variable_scaler</span><span class="o">.</span><span class="n">post_scale</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

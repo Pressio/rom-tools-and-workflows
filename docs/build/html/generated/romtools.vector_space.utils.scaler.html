@@ -1,0 +1,896 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>romtools.vector_space.utils.scaler &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=949a1ff5" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=87e54e7c" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=c277b2ea" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=ff8fa330"></script>
+    <script src="../_static/thebelab-helper.js"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.vector_space.utils.scaler';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="romtools.vector_space.utils.shifter" href="romtools.vector_space.utils.shifter.html" />
+    <link rel="prev" title="romtools.vector_space.utils.outputter" href="romtools.vector_space.utils.outputter.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a><ul class="current">
+<li class="toctree-l3 current active"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+</ul><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+</ul><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.outputter.html">romtools.vector_space.utils.outputter</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.shifter.html">romtools.vector_space.utils.shifter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.svd_method_of_snapshots.html">romtools.vector_space.utils.svd_method_of_snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.truncater.html">romtools.vector_space.utils.truncater</a></li>
+</ul><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary>
+</details></li>
+</ul><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#theory">Theory</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler"><code class="docutils literal notranslate"><span class="pre">NoOpScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">NoOpScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">NoOpScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler"><code class="docutils literal notranslate"><span class="pre">ScalarScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">ScalarScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">ScalarScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler"><code class="docutils literal notranslate"><span class="pre">Scaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler.post_scale"><code class="docutils literal notranslate"><span class="pre">Scaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">Scaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler"><code class="docutils literal notranslate"><span class="pre">VariableScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings"><code class="docutils literal notranslate"><span class="pre">VariableScaler.initialize_scalings()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VariableScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VariableScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler"><code class="docutils literal notranslate"><span class="pre">VectorScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VectorScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VectorScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="romtools.vector_space.html" class="nav-link">romtools.vector_space</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="romtools.vector_space.utils.html" class="nav-link">romtools.vector_space.utils</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.vector_space.utils.scaler</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-romtools.vector_space.utils.scaler">
+<span id="romtools-vector-space-utils-scaler"></span><h1>romtools.vector_space.utils.scaler<a class="headerlink" href="#module-romtools.vector_space.utils.scaler" title="Link to this heading">#</a></h1>
+<p class="rubric">Notes</p>
+<p>The scaler class is used to performed scaled POD.
+Scaling is applied to tensors of shape <span class="math notranslate nohighlight">\(\mathbb{R}^{ N_{\mathrm{vars}} \times N_{\mathrm{x}} \times N_s}\)</span>.
+These tensors are then reshaped into matrices when performing SVD.</p>
+<section id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Link to this heading">#</a></h2>
+<p><em>What is scaled POD, and why would I do it?</em></p>
+<p>Standard POD computes a basis that minimizes the projection error in a standard Euclidean <span class="math notranslate nohighlight">\(\ell^2\)</span> inner product,
+i.e., for a snapshot matrix <span class="math notranslate nohighlight">\(\mathbf{S} \in \mathbb{R}^{  N_{\mathrm{vars}} N_{\mathrm{x}} \times N_s}\)</span>,
+POD computes the basis by solving the minimization problem (assuming no affine offset)</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol \Phi = \underset{ \boldsymbol \Phi_{\*} \in \mathbb{R}^{ N_{\mathrm{vars}} N_{\mathrm{x}}
+\times K} | \boldsymbol \Phi_{\*}^T \boldsymbol \Phi_{\*} = \mathbf{I}}{ \mathrm{arg \; min} }
+\| \Phi_{\*} \Phi_{\*}^T \mathbf{S} - \mathbf{S} \|_2.\]</div>
+<p>In this minimization problem, errors are measured in a standard <span class="math notranslate nohighlight">\(\ell^2\)</span> norm.
+For most practical applications, where our snapshot matrix involves variables of different scales,
+this norm does not make sense (both intuitively, and on dimensional grounds).
+As a practical example, consider fluid dynamics where the total energy is orders of magnitude larger than the density.</p>
+<p>One of the most common approaches for mitigating this issue is to perform scaled POD.
+In scaled POD, we solve a minimization problem on a scaled snapshot matrix.
+Defining <span class="math notranslate nohighlight">\(\mathbf{S}_{\*} = \mathbf{W}^{-1} \mathbf{S}\)</span>, where <span class="math notranslate nohighlight">\(\mathbf{W}\)</span> is a weighting matrix
+(e.g., a diagonal matrix containing the max absolute value of each state variable),
+we compute the basis as the solution to the minimization problem</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol \Phi = \mathbf{W} \underset{ \boldsymbol \Phi_{\*} \in \mathbb{R}^{N_{\mathrm{vars}} N_{\mathrm{x}}
+\times K} |\boldsymbol \Phi_{\*}^T \boldsymbol \Phi_{\*} = \mathbf{I}}{ \mathrm{arg \; min} }
+\| \Phi_{\*} \Phi_{\*}^T \mathbf{S}_{\*} - \mathbf{S}_{\*} \|_2.\]</div>
+<p>The Scaler encapsulates this information.</p>
+</section>
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Link to this heading">#</a></h2>
+</section>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.NoOpScaler" title="romtools.vector_space.utils.scaler.NoOpScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoOpScaler</span></code></a>()</p></td>
+<td><p>No op implementation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.ScalarScaler" title="romtools.vector_space.utils.scaler.ScalarScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScalarScaler</span></code></a>([factor])</p></td>
+<td><p>Applies a scalar scale factor</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.Scaler" title="romtools.vector_space.utils.scaler.Scaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scaler</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Interface for the Scaler class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler" title="romtools.vector_space.utils.scaler.VariableAndVectorScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VariableAndVectorScaler</span></code></a>(scaling_vector, ...)</p></td>
+<td><p>Concrete implementation designed to scale snapshot matrices involving multiple state variables by both the variable magnitudes and an additional vector.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.VariableScaler" title="romtools.vector_space.utils.scaler.VariableScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VariableScaler</span></code></a>(scaling_type)</p></td>
+<td><p>Concrete implementation designed for snapshot matrices involving multiple state variables.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.vector_space.utils.scaler.VectorScaler" title="romtools.vector_space.utils.scaler.VectorScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VectorScaler</span></code></a>(scaling_vector)</p></td>
+<td><p>Concrete implementation designed to scale snapshot matrices by a vector.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.NoOpScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">NoOpScaler</span></span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#NoOpScaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.NoOpScaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>No op implementation</p>
+<p>This class conforms to <cite>Scaler</cite> protocol.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.NoOpScaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#NoOpScaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.NoOpScaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Does not alter the input data matrix.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.NoOpScaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#NoOpScaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.NoOpScaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Does not alter the input data matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>ndarray</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.ScalarScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">ScalarScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#ScalarScaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.ScalarScaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Applies a scalar scale factor</p>
+<p>This class conforms to <cite>Scaler</cite> protocol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>factor</strong> (<em>float</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.ScalarScaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#ScalarScaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.ScalarScaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place using the input factor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.ScalarScaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#ScalarScaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.ScalarScaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place using the reciprocal of the input factor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.Scaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">Scaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#Scaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.Scaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Interface for the Scaler class.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.Scaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#Scaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.Scaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the left singular vectors in place after performing SVD</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>ndarray</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.Scaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#Scaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.Scaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the snapshot matrix in place before performing SVD</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>ndarray</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableAndVectorScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">VariableAndVectorScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaling_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableAndVectorScaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Concrete implementation designed to scale snapshot matrices involving
+multiple state variables by both the variable magnitudes and an additional
+vector.  This is particularly useful when wishing to perform POD for,
+e.g., a finite volume method where we want to scale by the cell volumes as
+well as the variable magnitudes. This implementation combines the
+VectorScaler and VariableScaler classes.</p>
+<p>This class conforms to <cite>Scaler</cite> protocol.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableAndVectorScaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place after processing, first using the
+<cite>VectorScaler</cite> and then the <cite>VariableScaler</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableAndVectorScaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place before processing, first using the
+<cite>VariableScaler</cite> and then the <cite>VectorScaler</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">VariableScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaling_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableScaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableScaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Concrete implementation designed for snapshot matrices involving multiple
+state variables.</p>
+<p>This class is designed to scale a data matrix comprising multiple states
+(e.g., for the Navier–Stokes, rho, rho u, rhoE)</p>
+<dl class="simple">
+<dt>This scaler will scale each variable based on</dt><dd><ul class="simple">
+<li><p>max-abs scaling: for the <span class="math notranslate nohighlight">\(i`th state variable :math:`u_i\)</span>, we will compute the scaling as
+<span class="math notranslate nohighlight">\(s_i = \mathrm{max}( \mathrm{abs}( S_i ) )\)</span>, where <span class="math notranslate nohighlight">\(S_i\)</span> denotes the snapshot matrix of the
+:math:<a href="#id1"><span class="problematic" id="id2">`</span></a>i`th variable.</p></li>
+<li><p>mean abs: for the <span class="math notranslate nohighlight">\(i`th state variable :math:`u_i\)</span>, we will compute the scaling as
+<span class="math notranslate nohighlight">\(s_i = \mathrm{mean}( \mathrm{abs}( S_i ) )\)</span>, where <span class="math notranslate nohighlight">\(S_i\)</span> denotes the snapshot matrix of the
+:math:<a href="#id3"><span class="problematic" id="id4">`</span></a>i`th variable.</p></li>
+<li><p>variance: for the <span class="math notranslate nohighlight">\(i`th state variable :math:`u_i\)</span>, we will compute the scaling as
+<span class="math notranslate nohighlight">\(s_i = \mathrm{std}( S_i )\)</span>, where <span class="math notranslate nohighlight">\(S_i\)</span> denotes the snapshot matrix of the :math:<a href="#id5"><span class="problematic" id="id6">`</span></a>i`th variable.</p></li>
+</ul>
+</dd>
+</dl>
+<p>This class conforms to <cite>Scaler</cite> protocol.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings">
+<span class="sig-name descname"><span class="pre">initialize_scalings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableScaler.initialize_scalings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings" title="Link to this definition">#</a></dt>
+<dd><p>Initializes the scaling factors for each state variable based on the
+specified method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableScaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableScaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableScaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place using the scaling vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VariableScaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VariableScaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VariableScaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place before processing, taking into account
+the previously initialized scaling factors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VectorScaler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">romtools.vector_space.utils.scaler.</span></span><span class="sig-name descname"><span class="pre">VectorScaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaling_vector</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VectorScaler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VectorScaler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Concrete implementation designed to scale snapshot matrices by a vector.
+For a snapshot tensor <span class="math notranslate nohighlight">\(\mathbf{S} \in \mathbb{R}^{N_{\mathrm{u}} \times N \times K}\)</span>, the VectorScaler
+accepts in a scaling vector <span class="math notranslate nohighlight">\(\mathbf{v} \in \mathbb{R}^{N}\)</span>, and scales by</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{S}^* = \mathrm{diag}(\mathbf{v})^{-1} \mathbf{S}\]</div>
+<p>before performing POD (i.e., POD is performed on <span class="math notranslate nohighlight">\(\mathbf{S}^*\)</span>). After POD is performed, the bases
+are post-scaled by</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol \Phi = \mathrm{diag}(\mathbf{v}) \mathbf{U}\]</div>
+<p><strong>Note that scaling can cause bases to not be orthonormal; we do not
+recommend using scalers with the NoOpOrthonormalizer</strong></p>
+<p>This class conforms to <cite>Scaler</cite> protocol.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VectorScaler.post_scale">
+<span class="sig-name descname"><span class="pre">post_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VectorScaler.post_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VectorScaler.post_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place using the scaling vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.vector_space.utils.scaler.VectorScaler.pre_scale">
+<span class="sig-name descname"><span class="pre">pre_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/vector_space/utils/scaler.html#VectorScaler.pre_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.vector_space.utils.scaler.VectorScaler.pre_scale" title="Link to this definition">#</a></dt>
+<dd><p>Scales the input data matrix in place using the inverse of the scaling vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_tensor</strong> (<em>np.ndarray</em>) – The input data matrix to be scaled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="romtools.vector_space.utils.outputter.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">romtools.vector_space.utils.outputter</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="romtools.vector_space.utils.shifter.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">romtools.vector_space.utils.shifter</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#theory">Theory</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler"><code class="docutils literal notranslate"><span class="pre">NoOpScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">NoOpScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.NoOpScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">NoOpScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler"><code class="docutils literal notranslate"><span class="pre">ScalarScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">ScalarScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.ScalarScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">ScalarScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler"><code class="docutils literal notranslate"><span class="pre">Scaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler.post_scale"><code class="docutils literal notranslate"><span class="pre">Scaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.Scaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">Scaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VariableAndVectorScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler"><code class="docutils literal notranslate"><span class="pre">VariableScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings"><code class="docutils literal notranslate"><span class="pre">VariableScaler.initialize_scalings()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VariableScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VariableScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VariableScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler"><code class="docutils literal notranslate"><span class="pre">VectorScaler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler.post_scale"><code class="docutils literal notranslate"><span class="pre">VectorScaler.post_scale()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.vector_space.utils.scaler.VectorScaler.pre_scale"><code class="docutils literal notranslate"><span class="pre">VectorScaler.pre_scale()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/generated/romtools.vector_space.utils.scaler.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
