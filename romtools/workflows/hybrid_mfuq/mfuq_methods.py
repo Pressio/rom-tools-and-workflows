@@ -52,137 +52,6 @@ def pearsonr_with_axis(x, y, axis=0):
     return statistic, pvalue
 
 
-# def fit_polynomial(ins, outs, order=5):
-#     '''
-#     Fit a tensor product of 1-D polynomials to data.
-#     ins: [dim, n_data] or [dim] — input variables
-#     outs: [n_data] or scalar — target values
-#     '''
-#     ins = np.atleast_2d(ins)
-#     if ins.shape[0] > ins.shape[1]:
-#         ins = ins.T  # Ensure shape is (dim, n_data)
-#     dim, n_data = ins.shape
-
-#     def evaluate_tensor_product(coeffs, x):
-#         '''
-#         Evaluate tensor product polynomial on input x.
-#         coeffs: flat array [dim * (order+1)]
-#         x: [dim, n_data] or [dim]
-#         Returns: [n_data] or scalar
-#         '''
-#         coeffs = coeffs.reshape(dim, order + 1)
-#         x = np.atleast_2d(x)
-#         if x.shape[0] != dim:
-#             x = x.T  # ensure (dim, n_data)
-#         single_input = False
-#         if x.shape[1] == 1:
-#             single_input = x.ndim == 2 and x.shape[1] == 1 and x.shape[0] == dim
-
-#         result = np.ones(x.shape[1])
-#         for d in range(dim):
-#             powers = np.vander(x[d], N=order+1, increasing=True)  # [n_data, order+1]
-#             poly_vals = powers @ coeffs[d]  # [n_data]
-#             result *= poly_vals
-
-#         if single_input:
-#             return result[0]
-#         return result
-
-#     def residuals(coeffs):
-#         return evaluate_tensor_product(coeffs, ins) - outs
-
-#     x0 = np.full((dim * (order + 1),), 0.5)  # initial guess
-#     result = least_squares(residuals, x0, loss='linear')
-
-#     def fitted(x):
-#         '''
-#         Evaluate fitted polynomial.
-#         x: [dim] or [dim, n_data]
-#         Returns: scalar or [n_data]
-#         '''
-#         return evaluate_tensor_product(result.x, x)
-
-#     return fitted
-
-
-# # r is always a vector of one number per model
-# # s is currently assumed a vector of one number per model
-# # could use tensor product of sigmoids for multiple s per model?
-# def fit_sigmoid(ins, outs, character=[]):
-#     '''
-#     Fit a tensor product of 3- or 5-parameter sigmoids to data.
-    
-#     ins: shape [dim, n_data] or [dim]
-#     outs: shape [n_data] or scalar
-#     character: 'increasing', 'decreasing', or [] (for general sigmoid)
-    
-#     Returns:
-#         fitted(x): callable that accepts x of shape (dim,) or (dim, n_data)
-#     '''
-#     ins = np.atleast_2d(ins)
-#     if ins.shape[0] > ins.shape[1]:
-#         ins = ins.T  # ensure shape (dim, n_data)
-#     dim, n_data = ins.shape
-
-#     # Define sigmoid type
-#     if character == 'increasing':
-#         opt = True
-#         num_vars = 4
-#     elif character == 'decreasing':
-#         opt = False
-#         num_vars = 4
-#     elif character == []:
-#         opt = None  # general
-#         num_vars = 5
-#     else:
-#         raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
-
-#     def sigmoid(params, x):
-#         '''
-#         Vectorized evaluation of sigmoid function over x.
-#         x: shape [n_data]
-#         '''
-#         if num_vars == 4:
-#             A, B, log_nu, log_Q = params
-#             nu = np.exp(log_nu)
-#             Q = np.exp(log_Q)
-#             # A = int(opt)
-#             K = int(not opt)
-#             return A + (K - A) / (1 + Q * np.exp((x-B)))**(1 / nu)
-#         else:
-#             A, K, B, nu, Q = params
-#             return A + (K - A) / (1 + Q * np.exp(-B * x))**(1 / nu)
-
-#     def evaluate_tensor_product(params, x):
-#         '''
-#         Evaluate tensor product of sigmoids over input x.
-#         x: shape [dim] or [dim, n_data]
-#         params: flat array of sigmoid parameters
-#         '''
-#         x = np.atleast_2d(x)
-#         if x.shape[0] != dim:
-#             x = x.T
-#         single_input = x.shape[1] == 1 and x.ndim == 2
-
-#         param_array = params.reshape(dim, num_vars)
-#         result = np.ones(x.shape[1])
-#         for d in range(dim):
-#             result *= sigmoid(param_array[d], x[d])
-#         return result[0] if single_input else result
-
-#     def residuals(params):
-#         return evaluate_tensor_product(params, ins) - outs
-
-#     x0 = np.full((dim * num_vars,), 0.5)
-#     result = least_squares(residuals, x0, loss='linear')
-#     fitted_params = result.x
-
-#     def fitted(x):
-#         return evaluate_tensor_product(fitted_params, x)
-
-#     return fitted
-
-
 def compute_correlations(X ,y, type, num_folds=None, seed=2025):
     '''
     Compute the correlations between models from data. 
@@ -342,15 +211,17 @@ class MFMC():
     Abstract class containing instances of the MFMC problem.
     Problem is solved in terms of correlations, not covariances.
     '''
-    def __init__(self, budget, type, hybrid: bool = True):
+    def __init__(self, budget, type, hybrid: bool = True, n_active: int = 1):
         '''
         Initialize the MFMC object with budget and type parameters.
         Budget is a scalar in units of HF evaluations.
         Type options are "ACV-MF" or "ACV-IS".
+        n_active: number of models with nonzero s values (last n_active models)
         '''
         
         self.budget = budget  # computational budget
         self.fac = int(hybrid)  # toggle for hybrid approach
+        self.n_active = n_active  # number of active s entries
 
         # Define MFMC strategy
         if type == 'MF' or type == 'ACV-MF':
@@ -360,6 +231,20 @@ class MFMC():
         else:
             print('Type not implemented!  Defaulting to ACV-MF...')
             self.type = 'ACV-MF'
+
+    def expand_s(self, s_active):
+        '''
+        Expand compressed s vector to full length by padding with zeros.
+        s_active contains only the nonzero entries (last n_active models).
+        '''
+        n_lofi = len(self.hf_corr_list)
+        if self.n_active is None or self.n_active == n_lofi:
+            return s_active
+        
+        # Pad with zeros at the beginning
+        s_full = np.zeros(n_lofi)
+        s_full[-self.n_active:] = s_active
+        return s_full
 
     def build_F(self, r):
         '''
@@ -379,6 +264,7 @@ class MFMC():
 
         return F
 
+
     def set_corrs_and_costs(self, hf_corr_list, lf_corr_list, cost_list):
         '''
         Assimilate lists of correlation and cost functions into MFMC object.
@@ -390,10 +276,15 @@ class MFMC():
         self.hf_corr_list = hf_corr_list  # length n_lofi
         self.lf_corr_list = lf_corr_list  # length n_lofi_choose_2
         self.cost_list = cost_list  # length n_lofi
+        
+        # Set default n_active if not specified
+        if self.n_active is None:
+            self.n_active = len(self.hf_corr_list)
 
-    def build_C(self, s):
+    def build_C(self, s_active):
         '''
-        Build correlation matrix C(s) given sampling vector s.
+        Build correlation matrix C(s) given sampling vector s_active.
+        s_active contains only nonzero entries.
         '''
         try: 
             self.lf_corr_list
@@ -401,7 +292,12 @@ class MFMC():
             print("Correlation functions are not set!")
             return None
 
-        unique_entries = np.array([corr(s) for corr in self.lf_corr_list])
+        # Expand to full s vector
+        s = self.expand_s(s_active)
+        
+        # Corr funcs must accept entire s as input
+        unique_entries = np.array([corr_func(s) for corr_func in self.lf_corr_list])
+        
         tmp    = np.sqrt(8*unique_entries.shape[0]+1) + 1
         n      = floor(tmp/2)  # solve quadratic eqn for n_lofi
         idx    = np.tril_indices(n,k=-1)
@@ -422,9 +318,11 @@ class MFMC():
             print("Cost and correlation functions are not set!")
             return None
         
+        n_lofi = len(self.hf_corr_list)
+        
         # Bounds to accommodate known variable ranges
         if bounds==[]:
-            state_dim = 2*len(self.cost_list)+1
+            state_dim = n_lofi + 1 + self.n_active  # N + r + s_active
             self.bounds = [(None,None) for i in range(state_dim)]
         else:
             self.bounds = bounds
@@ -434,21 +332,22 @@ class MFMC():
 
         def objective(x):
             '''
-            Optimization objective given sampling x = (N, r, s).
+            Optimization objective given sampling x = (N, r, s_active).
             Value is the ratio var(Q_MFMC)/var(Q_0).
             '''
-            n_lofi = len(self.hf_corr_list)
             N = x[0]  # num of hifi evaluations
             r = x[1:n_lofi+1]  # oversampling ratios
-            s = x[n_lofi+1:]  # num of hifi evals used for ROMs
+            s_active = x[n_lofi+1:]  # active entries of s
             
             F = self.build_F(r)
-            C = self.build_C(s)
-            c = np.array([corr(s) for corr in self.hf_corr_list])
+            C = self.build_C(s_active)
+
+            # Expand s to full vector for corr_func
+            s = self.expand_s(s_active)
+            c = np.array([corr_func(s) for corr_func in self.hf_corr_list])
 
             vec = np.diag(F)*c
             R2 = np.linalg.solve(F*C, vec).dot(vec)
-            # R2  = np.dot(np.linalg.inv(F*C),vec).dot(vec)
             if self.log:
                 return np.log((1 - R2) / N)
             else:
@@ -456,16 +355,19 @@ class MFMC():
 
         def constraint(x):
             '''
-            Optimization constraint given sampling x = (N, r, s).
+            Optimization constraint given sampling x = (N, r, s_active).
             Ensures that cost does not exceed self.budget.
             '''
-            n_lofi = len(self.hf_corr_list)
             N = x[0]  # num of hifi evaluations
             r = x[1:n_lofi+1]  # oversampling ratios
-            s = x[n_lofi+1:]  # num of hifi evals used for ROMs
+            s_active = x[n_lofi+1:]  # active entries of s
+            
+            # Expand s to full vector
+            s = self.expand_s(s_active)
 
-            w = np.array([cost(s) for cost in self.cost_list])
-            return N * (1 + np.dot(r,w) + self.fac*np.sum(s))
+            # Cost funcs must accept entire s as input
+            w = np.array([cost_func(s) for cost_func in self.cost_list])
+            return N * (1 + np.dot(r,w) + self.fac*np.sum(s_active))
 
         self.objective = objective
         self.constraint = constraint
@@ -481,51 +383,14 @@ class MFMC():
             print("Objective and constraint not set!")
             return None
 
-        state_dim = 2 * len(self.cost_list) + 1  # length of x
-        # x0 = np.random.randn(state_dim)  # (THIS IS GARBAGE!!!)
+        n_lofi = len(self.cost_list)
+        state_dim = 1 + n_lofi + self.n_active  # N + r + s_active
+        
         x0 = np.random.uniform(1, self.bounds[-1][1], state_dim)  # random initialization
         # Set budget constraint and solve with SciPy
         nlc = NonlinearConstraint(self.constraint, -np.inf, self.budget)
         options = {'maxiter': 500, 'ftol': 1e-8, 'eps': 1e-5}
         result = minimize(self.objective, x0, method='SLSQP', jac='3-point',
                           constraints=nlc, bounds=self.bounds, options=options)
-        # autojac = grad(self.objective)
-        # result = minimize(self.objective, x0, method='SLSQP', jac=autojac,
-        #                   constraints=nlc, bounds=self.bounds, options=options)
-        # self.result = result
 
         self.result = result
-
-    def solve_with_fixed_s(self, s_list):
-        '''
-        Solve the MFMC optimization problem with SLSQP.
-        No optimization over s -- fixed to list of points.
-        '''
-        try:
-            self.constraint
-            self.objective
-        except AttributeError:
-            print("Objective and constraint not set!")
-            return None
-        
-        obj = self.objective
-        con = self.constraint
-        class problem():
-            def __init__(self, s):
-                super().__init__()
-                self.s = s
-            def objective(self, x): return obj(
-                        np.concatenate((x,self.s)))
-            def constraint(self, x): return con(
-                        np.concatenate((x,self.s)))
-
-        state_dim = len(self.cost_list) + 1  # length of x
-        x0 = np.random.randn(state_dim)  # random initialization
-        self.results_list = []
-        for s in s_list:
-            p = problem(s)
-            nlc = NonlinearConstraint(p.constraint, -np.inf, self.budget)
-            bnds = self.bounds[:-len(self.cost_list)]
-            result = minimize(p.objective, x0, method='SLSQP', 
-                          constraints=nlc, bounds=bnds)
-            self.results_list.append(result)

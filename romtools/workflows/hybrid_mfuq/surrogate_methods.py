@@ -205,7 +205,8 @@ def to_unique_corr_matrix(vecl, n):
 #     return L + L.transpose(1, 2)
 
 
-def to_symmetric_tracefree_batch(lower_vecs, n):  # in-place, might not propagate gradients
+def to_symmetric_tracefree_batch(lower_vecs, n):  
+    # in-place, might not propagate gradients
     """
     lower_vecs: (B, m)
     returns:    (B, n, n) symmetric, zero‐trace
@@ -297,7 +298,7 @@ def train_model(
     n,
     lr=1e-2,
     max_steps=500,
-    tol=1e-6,
+    tol=1e-8,
     print_every=50,
     optimizer_cls=optim.Adam,
     optimizer_kwargs=None,
@@ -332,6 +333,7 @@ def train_model(
     loss_history = []
 
     targets.to(inputs.device)
+    denom = F.mse_loss(targets, torch.zeros_like(targets))
 
     for step in range(1, max_steps+1):
         optimizer.zero_grad()
@@ -339,7 +341,7 @@ def train_model(
         vecl_batch = model(inputs)                                # (B, m)
         C_batch    = to_unique_corr_matrix_batch(vecl_batch, n)   # (B, n, n)
 
-        loss = F.mse_loss(C_batch, targets)   # using full matrices (not necessary)
+        loss = F.mse_loss(C_batch, targets) / denom   # using full matrices (not necessary)
         loss.backward()
         optimizer.step()
 
