@@ -16,6 +16,13 @@ cd my-path/rom-tools-and-workflows
 pip install .
 ```
 
+Optional: minimal `setup.py` install (drops docs/testing dependencies)
+
+```bash
+cd my-path/rom-tools-and-workflows
+python setup.py install
+```
+
 ### Verify installation by running the tests
 
 Note: you need `pytest` installed

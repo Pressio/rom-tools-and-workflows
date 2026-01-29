@@ -15,6 +15,12 @@ API Reference
 
 .. toctree::
    :maxdepth: 1
+   :caption: Utilities
+
+   formatting
+
+.. toctree::
+   :maxdepth: 1
    :caption: Inverse Workflows
 
    api_inverse_eki

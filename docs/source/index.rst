@@ -65,5 +65,6 @@ Choose your path
    :hidden:
 
    api
+   formatting
    demos/index
    rom_tools_at_scale
