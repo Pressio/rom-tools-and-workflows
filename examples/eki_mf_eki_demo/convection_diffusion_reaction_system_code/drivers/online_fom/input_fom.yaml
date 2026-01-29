@@ -1,0 +1,7 @@
+Nx: 127
+b: 0.5
+angle: 1.047
+nu: 0.001
+sigma: 1
+output_path: fom_results
+output_file: solution
