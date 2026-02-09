@@ -75,6 +75,7 @@ def optimize_single_allocation(budget: float, allocation_type: str, hf_corrs: Li
     opt = MFMC(budget, allocation_type, hybrid=hybrid)
     opt.set_corrs_and_costs(hf_corrs, lf_corrs, costs)
     opt.set_objective_and_constraint(log=log_objective, bounds=bounds)
+    # opt.check_gradients()
     
     best_var, best_alloc = float('inf'), None
     for _ in range(n_restarts):
@@ -173,52 +174,128 @@ def load_pilot_data(data_npz: str, n_aux: int) -> PilotData:
         )
 
 
-def build_exact_functions(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
-                         fom_rom_corr: float, aux_rom_corrs: List[float], rom_time: float,
-                         n_aux: int) -> Tuple[List[Callable], List[Callable], List[Callable]]:
-    """Build correlation/cost functions with exact ROM statistics."""
-    # HF: FOM-aux (surrogate) + FOM-ROM (exact)
-    exact_hf = hf_corrs[:n_aux] + [lambda s: fom_rom_corr]
+# def build_exact_functions(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
+#                          fom_rom_corr: float, aux_rom_corrs: List[float], rom_time: float,
+#                          n_aux: int) -> Tuple[List[Callable], List[Callable], List[Callable]]:
+#     """Build correlation/cost functions with exact ROM statistics."""
+#     # HF: FOM-aux (surrogate) + FOM-ROM (exact)
+#     exact_hf = hf_corrs[:n_aux] + [lambda s: fom_rom_corr]
     
+#     # LF: aux-aux (surrogate) + aux-ROM (exact)
+#     n_aux_pairs = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
+#     exact_lf = lf_corrs[:n_aux_pairs] + [lambda s, v=v: v for v in aux_rom_corrs]
+    
+#     # Costs: aux (surrogate) + ROM (exact)
+#     exact_costs = costs[:n_aux] + [lambda s: rom_time]
+    
+#     return exact_hf, exact_lf, exact_costs
+
+def build_exact_functions(hf_corrs, lf_corrs, costs,
+                          fom_rom_corr, aux_rom_corrs, rom_time, n_aux):
+
+    # HF: FOM-aux (surrogate) + FOM-ROM (exact)
+    exact_hf = (
+        hf_corrs[:n_aux]
+        + [lambda s, v=fom_rom_corr: torch.as_tensor(v, dtype=torch.double)]
+    )
+
     # LF: aux-aux (surrogate) + aux-ROM (exact)
     n_aux_pairs = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-    exact_lf = lf_corrs[:n_aux_pairs] + [lambda s, v=v: v for v in aux_rom_corrs]
-    
+    exact_lf = (
+        lf_corrs[:n_aux_pairs]
+        + [lambda s, v=v: torch.as_tensor(v, dtype=torch.double)
+           for v in aux_rom_corrs]
+    )
+
     # Costs: aux (surrogate) + ROM (exact)
-    exact_costs = costs[:n_aux] + [lambda s: rom_time]
-    
+    exact_costs = (
+        costs[:n_aux]
+        + [lambda s, v=rom_time: torch.as_tensor(v, dtype=torch.double)]
+    )
+
     return exact_hf, exact_lf, exact_costs
 
 
-def evaluate_surrogates(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
-                        s_vals: np.ndarray, n_aux: int) -> dict:
-    """Evaluate surrogate functions over range of basis sizes."""
+
+# def evaluate_surrogates(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
+#                         s_vals: np.ndarray, n_aux: int) -> dict:
+#     """Evaluate surrogate functions over range of basis sizes."""
+#     result = {}
+    
+#     # FOM-aux and aux costs (constant w.r.t. s)
+#     for i in range(n_aux):
+#         result[f'rho_fom_aux{i}'] = np.full_like(s_vals, hf_corrs[i](0), dtype=float)
+#         result[f'cost_aux{i}'] = np.full_like(s_vals, costs[i](0), dtype=float)
+    
+#     # FOM-ROM and ROM cost (vary with s)
+#     result['rho_fom_rom'] = np.array([hf_corrs[n_aux]([0, s]) for s in s_vals])
+#     result['cost_rom'] = np.array([costs[n_aux]([0, s]) for s in s_vals])
+    
+#     # Aux-aux (constant, only if n_aux > 1)
+#     if n_aux > 1:
+#         n_aux_pairs = n_aux * (n_aux - 1) // 2
+#         idx = 0
+#         for i in range(n_aux):
+#             for j in range(i):
+#                 result[f'rho_aux{j}_aux{i}'] = np.full_like(s_vals, lf_corrs[idx](0), dtype=float)
+#                 idx += 1
+    
+#     # Aux-ROM (vary with s)
+#     lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
+#     for i in range(n_aux):
+#         result[f'rho_aux{i}_rom'] = np.array([lf_corrs[lf_start + i]([0, s]) for s in s_vals])
+    
+#     return result
+
+def evaluate_surrogates(hf_corrs, lf_corrs, costs, s_vals, n_aux):
     result = {}
-    
-    # FOM-aux and aux costs (constant w.r.t. s)
-    for i in range(n_aux):
-        result[f'rho_fom_aux{i}'] = np.full_like(s_vals, hf_corrs[i](0), dtype=float)
-        result[f'cost_aux{i}'] = np.full_like(s_vals, costs[i](0), dtype=float)
-    
-    # FOM-ROM and ROM cost (vary with s)
-    result['rho_fom_rom'] = np.array([hf_corrs[n_aux]([0, s]) for s in s_vals])
-    result['cost_rom'] = np.array([costs[n_aux]([0, s]) for s in s_vals])
-    
-    # Aux-aux (constant, only if n_aux > 1)
-    if n_aux > 1:
-        n_aux_pairs = n_aux * (n_aux - 1) // 2
-        idx = 0
+    s0 = s_vals[0]
+
+    def val(x, s):
+        if callable(x):
+            x = x([0, s])
+        if hasattr(x, "detach"):
+            x = x.detach().cpu().numpy()
+        return float(x)
+
+    with torch.no_grad():
+
+        # FOM–aux and aux costs (constant in s)
         for i in range(n_aux):
-            for j in range(i):
-                result[f'rho_aux{j}_aux{i}'] = np.full_like(s_vals, lf_corrs[idx](0), dtype=float)
-                idx += 1
-    
-    # Aux-ROM (vary with s)
-    lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-    for i in range(n_aux):
-        result[f'rho_aux{i}_rom'] = np.array([lf_corrs[lf_start + i]([0, s]) for s in s_vals])
-    
+            rho = val(hf_corrs[i], s0)
+            cst = val(costs[i], s0)
+
+            result[f"rho_fom_aux{i}"] = np.full_like(s_vals, rho, dtype=float)
+            result[f"cost_aux{i}"]    = np.full_like(s_vals, cst, dtype=float)
+
+        # FOM–ROM and ROM cost (vary with s)
+        result["rho_fom_rom"] = np.array([
+            val(hf_corrs[n_aux], s) for s in s_vals
+        ])
+
+        result["cost_rom"] = np.array([
+            val(costs[n_aux], s) for s in s_vals
+        ])
+
+        # Aux–aux (constant)
+        lf_idx = 0
+        if n_aux > 1:
+            for i in range(n_aux):
+                for j in range(i):
+                    rho = val(lf_corrs[lf_idx], s0)
+                    result[f"rho_aux{j}_aux{i}"] = np.full_like(
+                        s_vals, rho, dtype=float
+                    )
+                    lf_idx += 1
+
+        # Aux–ROM (vary with s)
+        for i in range(n_aux):
+            result[f"rho_aux{i}_rom"] = np.array([
+                val(lf_corrs[lf_idx + i], s) for s in s_vals
+            ])
+
     return result
+
 
 
 def build_visualization_dict(pilot_data: PilotData, surrogate_vals: dict, s_star: np.ndarray,
@@ -276,7 +353,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                    max_combinations: int = 25, tunable_range: List[int] = None,
                    budget: float = 40, allocate_based_on: str = 'min',
                    log_of_objective: bool = True, overwrite: bool = True,
-                   random_seed: int = 2025, surrogate_method: str = 'neural_network'):
+                   random_seed: int = 2025, surrogate_method: str = 'sigmoid'):
     """
     Hybrid MFUQ algorithm with multiple auxiliary models.
     
