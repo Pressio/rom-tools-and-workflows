@@ -21,7 +21,7 @@ pip install .
 Install the testing dependencies with:
 
 ```bash
-pip install ".[test]"
+pip install .[test]
 ```
 
 ```bash
@@ -37,7 +37,7 @@ are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how
 Install the documentation dependencies with:
 
 ```bash
-pip install ".[docs]"
+pip install .[docs]
 ```
 
 ```bash
