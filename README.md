@@ -16,16 +16,13 @@ cd my-path/rom-tools-and-workflows
 pip install .
 ```
 
-Optional: minimal `setup.py` install (drops docs/testing dependencies)
-
-```bash
-cd my-path/rom-tools-and-workflows
-python setup.py install
-```
-
 ### Verify installation by running the tests
 
-Note: you need `pytest` installed
+Install the testing dependencies with:
+
+```bash
+pip install ".[test]"
+```
 
 ```bash
 cd my-path/rom-tools-and-workflows
@@ -37,7 +34,13 @@ are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how
 
 ## Building the documentation
 
+Install the documentation dependencies with:
+
+```bash
+pip install ".[docs]"
 ```
+
+```bash
 cd <repo-dir>
 make -C docs html
 ```

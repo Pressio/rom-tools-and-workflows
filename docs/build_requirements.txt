@@ -1,6 +1,0 @@
-sphinx
-pydata-sphinx-theme
-sphinx-copybutton
-sphinx-design
-myst-nb
-jupyter-sphinx
