@@ -5,11 +5,13 @@ Builds surrogate models for correlation and cost functions using:
 - Neural network approach (VeclNet) for valid correlation matrices
 - Sigmoid fitting for smooth monotonic functions
 - Polynomial fitting for simple trends
+
+All surrogates are PyTorch-differentiable for backpropagation through s.
 """
 
 import os
-# from functools import lru_cache
-# from typing import List, Tuple, Callable, Optional
+from functools import lru_cache
+from typing import List, Tuple, Callable, Optional, Union
 
 import numpy as np
 import torch
@@ -18,10 +20,10 @@ import torch.optim as optim
 import torch.nn.functional as F
 from scipy.optimize import least_squares
 
+import torch
+import torch.nn as nn
+from torch.optim import LBFGS
 
-# ============================================================================
-# BASIC SURROGATE FITTING
-# ============================================================================
 
 def fit_polynomial(ins, outs, order=5):
     '''
@@ -56,6 +58,7 @@ def fit_polynomial(ins, outs, order=5):
     result = least_squares(residuals, x0, loss='linear')
 
     return lambda x: evaluate_tensor_product(result.x, x)
+
 
 def fit_sigmoid(ins, outs, character=[]):
     '''
@@ -112,6 +115,158 @@ def fit_sigmoid(ins, outs, character=[]):
     result = least_squares(residuals, x0, loss='linear')
 
     return lambda x: evaluate_tensor_product(result.x, x)
+
+
+def fit_polynomial_torch(ins, outs, order=5):
+    """
+    Fit a tensor product of 1-D polynomials to data (PyTorch version).
+    Returns a callable that preserves gradients.
+    
+    ins: [dim, n_data] or [dim] — input variables
+    outs: [n_data] or scalar — target values
+    """
+    ins = torch.atleast_2d(torch.as_tensor(ins, dtype=torch.float64))
+    outs = torch.as_tensor(outs, dtype=torch.float64)
+    
+    if ins.shape[0] > ins.shape[1]:
+        ins = ins.T
+    dim, n_data = ins.shape
+    
+    # Initialize coefficients
+    coeffs = nn.Parameter(torch.full((dim, order + 1), 0.5, dtype=torch.float64))
+    
+    def loss_fn():
+        result = torch.ones(n_data, dtype=torch.float64)
+        for d in range(dim):
+            # Manual Vandermonde construction to avoid inplace operations
+            x = ins[d]
+            powers = torch.stack([x**i for i in range(order + 1)], dim=1)
+            poly_vals = powers @ coeffs[d]
+            result = result * poly_vals
+        return torch.mean((result - outs) ** 2)
+    
+    # Optimize
+    optimizer = LBFGS([coeffs], max_iter=100, line_search_fn='strong_wolfe')
+    def closure():
+        optimizer.zero_grad()
+        loss = loss_fn()
+        loss.backward()
+        return loss
+    optimizer.step(closure)
+    
+    # Detach optimized coefficients but keep them as parameters for gradient flow
+    coeffs_opt = coeffs.detach().clone().requires_grad_(True)
+    
+    def evaluate(x):
+        """Evaluates polynomial at x while preserving gradients."""
+        # Convert to tensor while preserving gradients if already a tensor
+        if torch.is_tensor(x):
+            x_t = x.to(dtype=torch.float64) if x.dtype != torch.float64 else x
+        else:
+            x_t = torch.as_tensor(x, dtype=torch.float64)
+        
+        x_t = torch.atleast_2d(x_t)
+        if x_t.shape[0] != dim:
+            x_t = x_t.T
+        
+        single_input = (x_t.shape[1] == 1 and x_t.ndim == 2 and x_t.shape[0] == dim)
+        
+        result = torch.ones(x_t.shape[1], dtype=torch.float64, requires_grad=x_t.requires_grad)
+        for d in range(dim):
+            # Manual Vandermonde construction
+            x_d = x_t[d]
+            powers = torch.stack([x_d**i for i in range(order + 1)], dim=1)
+            poly_vals = powers @ coeffs_opt[d]
+            result = result * poly_vals
+        
+        # Always return 0-d tensor for single input (preserves gradients)
+        return result.squeeze() if single_input else result
+    
+    return evaluate
+
+
+def fit_sigmoid_torch(ins, outs, character=[]):
+    """
+    Fit a tensor product of 3- or 5-parameter sigmoids to data (PyTorch version).
+    Returns a callable that preserves gradients.
+    
+    ins: shape [dim, n_data] or [dim]
+    outs: shape [n_data] or scalar
+    character: 'increasing', 'decreasing', or [] (for general sigmoid)
+    """
+    ins = torch.atleast_2d(torch.as_tensor(ins, dtype=torch.float64))
+    outs = torch.as_tensor(outs, dtype=torch.float64)
+    
+    if ins.shape[0] != 1:
+        ins = ins.T
+    dim, n_data = ins.shape
+    
+    if character == 'increasing':
+        opt = True
+        num_vars = 4
+    elif character == 'decreasing':
+        opt = False
+        num_vars = 4
+    elif character == []:
+        opt = None
+        num_vars = 5
+    else:
+        raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
+    
+    def sigmoid(params, x):
+        if num_vars == 4:
+            A, B, log_nu, log_Q = params
+            nu = torch.exp(log_nu)
+            Q = torch.exp(log_Q)
+            K = int(not opt)
+            return A + (K - A) / (1 + Q * torch.exp((x - B)))**(1 / nu)
+        else:
+            A, K, B, nu, Q = params
+            return A + (K - A) / (1 + Q * torch.exp(-B * x))**(1 / nu)
+    
+    # Initialize parameters
+    params = nn.Parameter(torch.full((dim, num_vars), 0.5, dtype=torch.float64))
+    
+    def loss_fn():
+        result = torch.ones(n_data, dtype=torch.float64)
+        for d in range(dim):
+            result = result * sigmoid(params[d], ins[d])
+        return torch.mean((result - outs) ** 2)
+    
+    # Optimize
+    optimizer = LBFGS([params], max_iter=100, line_search_fn='strong_wolfe')
+    def closure():
+        optimizer.zero_grad()
+        loss = loss_fn()
+        loss.backward()
+        return loss
+    optimizer.step(closure)
+    
+    # Detach optimized parameters but keep them as tensors for gradient flow
+    params_opt = params.detach().clone().requires_grad_(True)
+    
+    def evaluate(x):
+        """Evaluates sigmoid at x while preserving gradients."""
+        # Convert to tensor while preserving gradients if already a tensor
+        if torch.is_tensor(x):
+            x_t = x.to(dtype=torch.float64) if x.dtype != torch.float64 else x
+        else:
+            x_t = torch.as_tensor(x, dtype=torch.float64)
+        
+        x_t = torch.atleast_2d(x_t)
+        if x_t.shape[0] != dim:
+            x_t = x_t.T
+        
+        single_input = (x_t.shape[1] == 1 and x_t.ndim == 2)
+        
+        result = torch.ones(x_t.shape[1], dtype=torch.float64, requires_grad=x_t.requires_grad)
+        for d in range(dim):
+            result = result * sigmoid(params_opt[d], x_t[d])
+        
+        # Always return 0-d tensor for single input (preserves gradients)
+        return result.squeeze() if single_input else result
+    
+    return evaluate
 
 
 # ============================================================================
@@ -268,21 +423,21 @@ def train_model(
     return model, loss_history
 
 
-# ============================================================================
-# SURROGATE BUILDER
-# ============================================================================
-
 class SurrogateBuilder:
-    """Builds surrogate models for correlation and cost functions."""
+    """Builds surrogate models for correlation and cost functions.
+    
+    Surrogates are differentiable and compatible with PyTorch autograd.
+    """
     
     def __init__(self, pilot_list, n_active, n_aux, work_dir=None, method='neural_network',
-                 tunable_range=None):
+                 tunable_range=None, use_torch=True):
         self.pilot_list = pilot_list
         self.n_active = n_active
         self.n_aux = n_aux
         self.n_models = 1 + n_aux + n_active
         self.work_dir = work_dir
         self.method = method
+        self.use_torch = use_torch  # Use PyTorch fitting for autodiff
         self.tunable_range = tunable_range or [min(pilot_list), max(pilot_list)]
         self.model_path = os.path.join(work_dir, "vecl_correlation_model.pt") if work_dir else None
         
@@ -310,35 +465,67 @@ class SurrogateBuilder:
     
     def _rom_input(self, s):
         """Extract ROM coordinate from state vector or pass through scalar."""
+        if torch.is_tensor(s):
+            return s if s.ndim == 0 else s[-1]
         return s if np.isscalar(s) else s[-1]
     
     def _wrap(self, func):
-        """Wrap function to handle both scalar and vector inputs."""
-        return lambda s: func(self._rom_input(s))
+        """Wrap function to handle both scalar and vector inputs while preserving tensor type."""
+        def wrapped(s):
+            s_input = self._rom_input(s)
+            result = func(s_input)
+            # Ensure result is a tensor if input was a tensor
+            if self.use_torch and torch.is_tensor(s):
+                if not torch.is_tensor(result):
+                    result = torch.tensor(result, dtype=torch.float64, device=s.device)
+            return result
+        return wrapped
     
     def _build_sigmoid(self, fom_aux_corrs, aux_aux_corrs, fom_rom_corrs,
                       aux_rom_corrs_list, norm_aux_times, norm_rom_times):
         """Build surrogates by fitting sigmoids directly to pilot data."""
         pilots = np.array(self.pilot_list)
         
+        # Choose fitting function based on use_torch flag
+        if self.use_torch:
+            fit_sig = fit_sigmoid_torch
+            fit_poly = fit_polynomial_torch
+        else:
+            fit_sig = fit_sigmoid
+            fit_poly = fit_polynomial
+        
         # Fit ROM-dependent surrogates
-        fom_rom_surr = fit_sigmoid(pilots[None, :], fom_rom_corrs)
-        aux_rom_surrs = [fit_sigmoid(pilots[None, :], corrs) for corrs in aux_rom_corrs_list]
-        cost_rom_surr = fit_polynomial(pilots[None, :], norm_rom_times, order=1)
+        fom_rom_surr = fit_sig(pilots[None, :], fom_rom_corrs)
+        aux_rom_surrs = [fit_sig(pilots[None, :], corrs) for corrs in aux_rom_corrs_list]
+        cost_rom_surr = fit_poly(pilots[None, :], norm_rom_times, order=1)
         
         # HF correlations: FOM vs. auxiliaries (constant) and ROM (surrogate)
-        hf_corr_list = [lambda s, v=float(c): v for c in fom_aux_corrs]
-        hf_corr_list.append(self._wrap(lambda s: float(fom_rom_surr(s))))
+        hf_corr_list = [self._make_constant(float(c)) for c in fom_aux_corrs]
+        hf_corr_list.append(self._wrap(fom_rom_surr))
         
         # LF correlations: aux-aux (constant) and aux-ROM (surrogate)
-        lf_corr_list = [lambda s, v=float(c): v for c in aux_aux_corrs]
-        lf_corr_list.extend([self._wrap(lambda s, f=surr: float(f(s))) for surr in aux_rom_surrs])
+        lf_corr_list = [self._make_constant(float(c)) for c in aux_aux_corrs]
+        lf_corr_list.extend([self._wrap(surr) for surr in aux_rom_surrs])
         
         # Costs: auxiliaries (constant) and ROM (surrogate)
-        cost_list = [lambda s, v=float(t): v for t in norm_aux_times]
-        cost_list.append(self._wrap(lambda s: float(cost_rom_surr(s))))
+        cost_list = [self._make_constant(float(t)) for t in norm_aux_times]
+        cost_list.append(self._wrap(cost_rom_surr))
         
         return hf_corr_list, lf_corr_list, cost_list
+    
+    def _make_constant(self, value):
+        """Create a constant function that works with both numpy and torch."""
+        if self.use_torch:
+            # Return a scalar tensor that can be stacked
+            def const_fn(s):
+                # Match dtype based on input type
+                if torch.is_tensor(s):
+                    return torch.tensor(value, dtype=torch.float64, device=s.device)
+                else:
+                    return value
+            return const_fn
+        else:
+            return lambda s: value
     
     def _build_neural_net(self, fom_aux_corrs, aux_aux_corrs, fom_rom_corrs,
                         aux_rom_corrs_list, norm_aux_times, norm_rom_times):
@@ -369,10 +556,16 @@ class SurrogateBuilder:
         # Extract correlation surrogates from trained model
         hf_corr_list, lf_corr_list = self._fit_surrogates_to_model(model, n)
         
-        # Build cost list (same as sigmoid method)
-        cost_rom_surr = fit_polynomial(np.array(self.pilot_list)[None, :], norm_rom_times, order=1)
-        cost_list = [lambda s, v=float(t): v for t in norm_aux_times]
-        cost_list.append(self._wrap(lambda s: float(cost_rom_surr(s))))
+        # Build cost list
+        if self.use_torch:
+            cost_rom_surr = fit_polynomial_torch(np.array(self.pilot_list)[None, :], 
+                                                 norm_rom_times, order=1)
+        else:
+            cost_rom_surr = fit_polynomial(np.array(self.pilot_list)[None, :], 
+                                          norm_rom_times, order=1)
+        
+        cost_list = [self._make_constant(float(t)) for t in norm_aux_times]
+        cost_list.append(self._wrap(cost_rom_surr))
         
         return hf_corr_list, lf_corr_list, cost_list
     
@@ -385,14 +578,11 @@ class SurrogateBuilder:
         
         # Build correlation vector (lower triangle)
         half_entries = []
-        # FOM-aux (constant)
         for c in fom_aux_corrs:
             half_entries.append(torch.full((len(self.pilot_list),), float(c)))
-        # Aux-aux (constant, if multiple aux)
         if self.n_aux > 1:
             for c in aux_aux_corrs:
                 half_entries.append(torch.full((len(self.pilot_list),), float(c)))
-        # FOM-ROM and aux-ROM (vary with pilot)
         half_entries.append(torch.tensor(fom_rom_corrs, dtype=torch.float32))
         for corrs in aux_rom_corrs_list:
             half_entries.append(torch.tensor(corrs, dtype=torch.float32))
@@ -418,8 +608,6 @@ class SurrogateBuilder:
     
     def _fit_surrogates_to_model(self, model, n):
         """Query model on dense grid and fit surrogates to each correlation entry."""
-        from scipy.interpolate import interp1d
-        
         # Create dense grid
         s_grid = np.unique(np.concatenate([
             self.pilot_list, np.linspace(self.tunable_range[0], self.tunable_range[1], 200)
@@ -433,14 +621,46 @@ class SurrogateBuilder:
         if self.work_dir:
             self._plot_correlations(corr_matrices, s_grid, n)
         
-        # Fit surrogate for each lower-triangle entry
+        # Choose fitting approach
+        if self.use_torch:
+            surrogates = self._fit_torch_surrogates(corr_matrices, s_grid, n)
+        else:
+            surrogates = self._fit_numpy_surrogates(corr_matrices, s_grid, n)
+        
+        # Extract HF and LF lists
+        hf_corr_list = [surrogates[(i, 0)] for i in range(1, n)]
+        lf_corr_list = [surrogates[(i, j)] for i in range(1, n) for j in range(1, i)]
+        
+        return hf_corr_list, lf_corr_list
+    
+    def _fit_torch_surrogates(self, corr_matrices, s_grid, n):
+        """Fit PyTorch-based surrogates that preserve gradients."""
+        
         surrogates = {}
         for i in range(n):
             for j in range(i):
                 values = corr_matrices[:, i, j]
                 
                 if np.std(values) < 0.01:  # Nearly constant
-                    surrogates[(i, j)] = lambda s, v=float(np.mean(values)): v
+                    surrogates[(i, j)] = self._make_constant(float(np.mean(values)))
+                else:
+                    # Fit sigmoid (PyTorch version for autodiff)
+                    sig = fit_sigmoid_torch(s_grid[None, :], values)
+                    surrogates[(i, j)] = lambda s, f=sig: f(self._rom_input(s))
+        
+        return surrogates
+    
+    def _fit_numpy_surrogates(self, corr_matrices, s_grid, n):
+        """Fit numpy-based surrogates (original approach)."""
+        from scipy.interpolate import interp1d
+        
+        surrogates = {}
+        for i in range(n):
+            for j in range(i):
+                values = corr_matrices[:, i, j]
+                
+                if np.std(values) < 0.01:  # Nearly constant
+                    surrogates[(i, j)] = self._make_constant(float(np.mean(values)))
                 else:
                     try:  # Try sigmoid
                         sig = fit_sigmoid(s_grid[None, :], values)
@@ -454,11 +674,7 @@ class SurrogateBuilder:
                                         bounds_error=False, fill_value='extrapolate')
                         surrogates[(i, j)] = lambda s, f=interp: float(f(self._rom_input(s)))
         
-        # Extract HF (FOM vs. all) and LF (lower triangle excluding FOM row)
-        hf_corr_list = [surrogates[(i, 0)] for i in range(1, n)]
-        lf_corr_list = [surrogates[(i, j)] for i in range(1, n) for j in range(1, i)]
-        
-        return hf_corr_list, lf_corr_list
+        return surrogates
     
     def _plot_correlations(self, corr_matrices, s_grid, n):
         """Generate diagnostic plots."""
@@ -467,14 +683,14 @@ class SurrogateBuilder:
             debug_dir = os.path.join(self.work_dir, "debug_plots")
             os.makedirs(debug_dir, exist_ok=True)
             
-            # Load pilot data for comparison
+            # Load pilot data
             with np.load(os.path.join(self.work_dir, "pilot_results.npz")) as data:
                 fom_aux = data['fom_aux_corrs']
                 aux_aux = data.get('aux_aux_corrs', np.array([]))
                 fom_rom = data['fom_rom_corrs']
                 aux_rom = [data[f'aux{i}_rom_corrs'] for i in range(self.n_aux)]
             
-            # Map pilot data and names to matrix indices
+            # Map data to indices
             pilot_data, names = {}, {}
             for i in range(self.n_aux):
                 pilot_data[(i+1, 0)] = np.full(len(self.pilot_list), fom_aux[i])

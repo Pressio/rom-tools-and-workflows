@@ -6,7 +6,7 @@ Implements hybrid MFUQ combining FOM, multiple auxiliary models, and variable-fi
 
 import os
 import time
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Dict, Optional
 
 import numpy as np
 import torch
@@ -26,7 +26,8 @@ torch.set_num_interop_threads(1)
 
 def run_model_sample(model, run_dir: str, params: dict, overwrite: bool = False) -> Tuple[float, float]:
     """Run model sample, using cache if available. Returns (qoi, runtime)."""
-    qoi_path, time_path = os.path.join(run_dir, "qoi.txt"), os.path.join(run_dir, "time.txt")
+    qoi_path = os.path.join(run_dir, "qoi.txt")
+    time_path = os.path.join(run_dir, "time.txt")
     
     if not overwrite and os.path.exists(qoi_path) and os.path.exists(time_path):
         return np.loadtxt(qoi_path), np.loadtxt(time_path)
@@ -70,9 +71,9 @@ def run_model_on_samples(model, run_dir_prefix: str, param_space, samples: np.nd
 def optimize_single_allocation(budget: float, allocation_type: str, hf_corrs: List[Callable],
                                lf_corrs: List[Callable], costs: List[Callable], 
                                bounds: List[Tuple], log_objective: bool, hybrid: bool,
-                               n_restarts: int = 50) -> Tuple[float, np.ndarray]:
+                               use_torch: bool = True, n_restarts: int = 50) -> Tuple[float, np.ndarray]:
     """Optimize allocation for given budget and type. Returns (variance, allocation)."""
-    opt = MFMC(budget, allocation_type, hybrid=hybrid)
+    opt = MFMC(budget, allocation_type, hybrid=hybrid, use_torch=use_torch)
     opt.set_corrs_and_costs(hf_corrs, lf_corrs, costs)
     opt.set_objective_and_constraint(log=log_objective, bounds=bounds)
     
@@ -84,25 +85,8 @@ def optimize_single_allocation(budget: float, allocation_type: str, hf_corrs: Li
             if 0 <= var < best_var:
                 best_var, best_alloc = var, opt.result.x
     
-    print(f"{allocation_type} at budget {budget}: variance={best_var:.6f}, alloc={best_alloc}")
+    print(f"{allocation_type} at budget {budget}: variance={best_var:.6f}")
     return best_var, best_alloc
-
-
-def optimize_allocation(budget_list: List[float], hf_corrs: List[Callable], lf_corrs: List[Callable],
-                       costs: List[Callable], bounds: List[Tuple], log_objective: bool, 
-                       hybrid: bool = False) -> Tuple[Tuple[List, List], Tuple[List, List]]:
-    """Run optimization for multiple budgets. Returns ((mf_vars, mf_allocs), (is_vars, is_allocs))."""
-    results = {'MF': ([], []), 'IS': ([], [])}
-    
-    for budget in budget_list:
-        for alloc_type in ['MF', 'IS']:
-            var, alloc = optimize_single_allocation(
-                budget, alloc_type, hf_corrs, lf_corrs, costs, bounds, log_objective, hybrid
-            )
-            results[alloc_type][0].append(var)
-            results[alloc_type][1].append(alloc)
-    
-    return results['MF'], results['IS']
 
 
 # ============================================================================
@@ -115,7 +99,7 @@ def train_optimized_rom(fom_model, rom_builder, param_space, work_dir: str, rom_
     """Train ROM and compute statistics. Returns (fom_rom_corr, aux_rom_corrs, normalized_rom_time)."""
     print(f"\nTraining ROM with {rom_basis_num} basis functions")
     
-    # Generate additional FOM samples if needed
+    # Ensure we have enough FOM training samples
     train_dirs = list(pilot_data.training_dirs)
     if len(train_dirs) < rom_basis_num:
         num_extra = rom_basis_num - len(train_dirs)
@@ -128,18 +112,20 @@ def train_optimized_rom(fom_model, rom_builder, param_space, work_dir: str, rom_
             run_model_sample(fom_model, fom_dir, params, overwrite)
             train_dirs.append(fom_dir)
     
-    # Build and evaluate ROM
+    # Build ROM
     rom_dir = f'{work_dir}/pilot/rom_optimized/basis_size_{rom_basis_num}'
     create_empty_dir(rom_dir)
     rom_model = rom_builder.build_from_training_dirs(rom_dir, train_dirs[:rom_basis_num])
     
+    # Evaluate ROM
     rom_qois, rom_times = run_model_on_samples(
         rom_model, rom_dir, param_space, pilot_data.parameter_samples, overwrite
     )
     
-    # Compute correlations and costs
+    # Compute correlations
     with np.load(data_npz) as data:
-        fom_qois, fom_times = data['fom_qois_master'], data['fom_times_master']
+        fom_qois = data['fom_qois_master']
+        fom_times = data['fom_times_master']
     
     fom_rom_corr = pilot_mgr.estimate_FOM_correlations([fom_qois[None, :]], [rom_qois[None, :]])[0]
     aux_rom_corrs = [
@@ -158,11 +144,13 @@ def train_optimized_rom(fom_model, rom_builder, param_space, work_dir: str, rom_
 def load_pilot_data(data_npz: str, n_aux: int) -> PilotData:
     """Load pilot data from NPZ file."""
     with np.load(data_npz) as data:
+        aux_aux_corrs = data.get('aux_aux_corrs', np.array([]))
+        
         return PilotData(
             fom_qois=data['fom_qois_master'],
             aux_qois_list=[data[f'aux{i}_qois_master'] for i in range(n_aux)],
             fom_aux_corrs=data['fom_aux_corrs'],
-            aux_aux_corrs=data.get('aux_aux_corrs', np.array([])),
+            aux_aux_corrs=aux_aux_corrs,
             fom_rom_corrs=data['fom_rom_corrs'],
             aux_rom_corrs_list=[data[f'aux{i}_rom_corrs'] for i in range(n_aux)],
             fom_times=data['fom_times_master'],
@@ -173,58 +161,11 @@ def load_pilot_data(data_npz: str, n_aux: int) -> PilotData:
         )
 
 
-def build_exact_functions(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
-                         fom_rom_corr: float, aux_rom_corrs: List[float], rom_time: float,
-                         n_aux: int) -> Tuple[List[Callable], List[Callable], List[Callable]]:
-    """Build correlation/cost functions with exact ROM statistics."""
-    # HF: FOM-aux (surrogate) + FOM-ROM (exact)
-    exact_hf = hf_corrs[:n_aux] + [lambda s: fom_rom_corr]
-    
-    # LF: aux-aux (surrogate) + aux-ROM (exact)
-    n_aux_pairs = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-    exact_lf = lf_corrs[:n_aux_pairs] + [lambda s, v=v: v for v in aux_rom_corrs]
-    
-    # Costs: aux (surrogate) + ROM (exact)
-    exact_costs = costs[:n_aux] + [lambda s: rom_time]
-    
-    return exact_hf, exact_lf, exact_costs
-
-
-def evaluate_surrogates(hf_corrs: List[Callable], lf_corrs: List[Callable], costs: List[Callable],
-                        s_vals: np.ndarray, n_aux: int) -> dict:
-    """Evaluate surrogate functions over range of basis sizes."""
-    result = {}
-    
-    # FOM-aux and aux costs (constant w.r.t. s)
-    for i in range(n_aux):
-        result[f'rho_fom_aux{i}'] = np.full_like(s_vals, hf_corrs[i](0), dtype=float)
-        result[f'cost_aux{i}'] = np.full_like(s_vals, costs[i](0), dtype=float)
-    
-    # FOM-ROM and ROM cost (vary with s)
-    result['rho_fom_rom'] = np.array([hf_corrs[n_aux]([0, s]) for s in s_vals])
-    result['cost_rom'] = np.array([costs[n_aux]([0, s]) for s in s_vals])
-    
-    # Aux-aux (constant, only if n_aux > 1)
-    if n_aux > 1:
-        n_aux_pairs = n_aux * (n_aux - 1) // 2
-        idx = 0
-        for i in range(n_aux):
-            for j in range(i):
-                result[f'rho_aux{j}_aux{i}'] = np.full_like(s_vals, lf_corrs[idx](0), dtype=float)
-                idx += 1
-    
-    # Aux-ROM (vary with s)
-    lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-    for i in range(n_aux):
-        result[f'rho_aux{i}_rom'] = np.array([lf_corrs[lf_start + i]([0, s]) for s in s_vals])
-    
-    return result
-
-
-def build_visualization_dict(pilot_data: PilotData, surrogate_vals: dict, s_star: np.ndarray,
-                             budget_list: List[float], mf_vars: List, mf_vars_ex: List,
-                             is_vars: List, is_vars_ex: List, is_allocs: List, is_allocs_ex: List,
-                             pilot_list: List[int], s_plot: np.ndarray, n_aux: int) -> dict:
+def build_visualization_dict(pilot_data: PilotData, surrogate_vals: Dict[str, np.ndarray], 
+                             s_star: np.ndarray, budget_list: List[float], 
+                             mf_vars: List, mf_vars_ex: List, is_vars: List, is_vars_ex: List, 
+                             is_allocs: List, is_allocs_ex: List, pilot_list: List[int], 
+                             s_plot: np.ndarray, n_aux: int) -> Dict:
     """Assemble complete visualization data dictionary."""
     vis_data = {
         # Pilot data
@@ -236,9 +177,12 @@ def build_visualization_dict(pilot_data: PilotData, surrogate_vals: dict, s_star
         's_star': s_star,
         'xx': budget_list,
         # Optimization results
-        'fMFs': mf_vars, 'fMFs_ex': mf_vars_ex,
-        'fISs': is_vars, 'fISs_ex': is_vars_ex,
-        'fISs_alloc': is_allocs, 'fISs_alloc_ex': is_allocs_ex,
+        'fMFs': mf_vars,
+        'fMFs_ex': mf_vars_ex,
+        'fISs': is_vars,
+        'fISs_ex': is_vars_ex,
+        'fISs_alloc': is_allocs,
+        'fISs_alloc_ex': is_allocs_ex,
         'n_aux': n_aux,
         # Surrogate evaluations
         'rho_fom_rom_vals': surrogate_vals['rho_fom_rom'],
@@ -267,16 +211,59 @@ def build_visualization_dict(pilot_data: PilotData, surrogate_vals: dict, s_star
 
 
 # ============================================================================
+# WORKFLOW LOGGING
+# ============================================================================
+
+class WorkflowLogger:
+    """Simple logger for workflow progress."""
+    
+    def __init__(self, log_path: str):
+        self.log_path = log_path
+        self.log_file = open(log_path, "w", encoding="utf-8")
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.log_file.close()
+        return False
+    
+    def write(self, message: str):
+        """Write to both console and log file."""
+        print(message)
+        self.log_file.write(message + "\n")
+        self.log_file.flush()
+    
+    def section(self, title: str, step: Optional[int] = None):
+        """Write a section header."""
+        separator = "=" * 70
+        if step is not None:
+            header = f"STEP {step}: {title}"
+        else:
+            header = title
+        
+        self.write("\n" + separator)
+        self.write(header)
+        self.write(separator)
+
+
+# ============================================================================
 # MAIN WORKFLOW
 # ============================================================================
 
 def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                    absolute_hybrid_MFMC_work_directory: str,
-                   pilot_sample_size: int = 20, pilot_list: List[int] = None,
-                   max_combinations: int = 25, tunable_range: List[int] = None,
-                   budget: float = 40, allocate_based_on: str = 'min',
-                   log_of_objective: bool = True, overwrite: bool = True,
-                   random_seed: int = 2025, surrogate_method: str = 'neural_network'):
+                   pilot_sample_size: int = 20,
+                   pilot_list: List[int] = None,
+                   max_combinations: int = 5,
+                   tunable_range: List[int] = None,
+                   budget: float = 40,
+                   allocate_based_on: str = 'min',
+                   log_of_objective: bool = True,
+                   overwrite: bool = True,
+                   random_seed: int = 2025,
+                   surrogate_method: str = 'neural_network',
+                   use_torch: bool = True):
     """
     Hybrid MFUQ algorithm with multiple auxiliary models.
     
@@ -288,21 +275,23 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         rom_model_builder: Variable-fidelity ROM builder
         parameter_space: Parameter space for sampling
         absolute_hybrid_MFMC_work_directory: Work directory path
-        pilot_sample_size: Number of pilot samples (default: 20)
-        pilot_list: ROM basis sizes to test (default: [1,3,5,7,9])
-        max_combinations: Max training combinations (default: 25)
-        tunable_range: Tunable ROM basis range (default: [1,20])
-        budget: Computational budget (default: 40)
-        allocate_based_on: 'min' or 'max' for allocation selection (default: 'min')
-        log_of_objective: Use log transform in optimization (default: True)
-        overwrite: Overwrite existing results (default: True)
-        random_seed: Random seed (default: 2025)
-        surrogate_method: 'neural_network' or 'sigmoid' (default: 'neural_network')
+        pilot_sample_size: Number of pilot samples
+        pilot_list: ROM basis sizes to test
+        max_combinations: Max training combinations
+        tunable_range: Tunable ROM basis range
+        budget: Computational budget
+        allocate_based_on: 'min' or 'max' for allocation selection
+        log_of_objective: Use log transform in optimization
+        overwrite: Overwrite existing results
+        random_seed: Random seed
+        surrogate_method: 'neural_network' or 'sigmoid'
+        use_torch: Use PyTorch for optimization gradients
     """
+    # Validate inputs
     if allocate_based_on not in ['min', 'max']:
         raise ValueError("allocate_based_on must be 'min' or 'max'")
     
-    # Setup
+    # Setup defaults and configuration
     pilot_list = pilot_list or [1, 3, 5, 7, 9]
     tunable_range = tunable_range or [1, 20]
     aux_models = aux_models if isinstance(aux_models, list) else [aux_models]
@@ -312,119 +301,216 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
     work_dir = absolute_hybrid_MFMC_work_directory
     create_empty_dir(work_dir)
     
-    log_path = os.path.join(work_dir, "hybrid_status.log")
-    log = open(log_path, "w", encoding="utf-8")
-    log.write(f"Hybrid MFUQ: n_aux={n_aux}, surrogate={surrogate_method}, seed={random_seed}\n\n")
-    
-    try:
-        # Step 1: Pilot sampling
-        print("\n" + "="*70)
-        print("STEP 1: Pilot Sampling")
-        print("="*70)
-        log.write("STEP 1: Pilot Sampling\n")
+    with WorkflowLogger(os.path.join(work_dir, "hybrid_status.log")) as logger:
+        logger.write(f"Hybrid MFUQ Configuration:")
+        logger.write(f"  n_aux={n_aux}, surrogate={surrogate_method}, seed={random_seed}, use_torch={use_torch}")
+        
+        # ====================================================================
+        # STEP 1: Pilot Sampling
+        # ====================================================================
+        logger.section("Pilot Sampling", step=1)
         
         pilot_mgr = Pilot(pilot_list, pilot_sample_size, random_seed=random_seed)
         data_npz = f"{work_dir}/pilot_results.npz"
         
         if os.path.exists(data_npz):
             pilot_data = load_pilot_data(data_npz, n_aux)
-            print("Loaded existing pilot data")
-            log.write("Loaded existing pilot data\n")
+            logger.write("Loaded existing pilot data")
         else:
             sampler = PilotSampler(fom_model, aux_models, rom_model_builder,
                                   parameter_space, pilot_mgr, work_dir)
             pilot_data = sampler.run(max_combinations, overwrite)
-            print("Completed pilot sampling")
-            log.write("Completed pilot sampling\n")
+            logger.write("Completed pilot sampling")
         
-        # Step 2: Build surrogates and optimize
-        print("\n" + "="*70)
-        print("STEP 2: Surrogate Building and Optimization")
-        print("="*70)
-        log.write("\nSTEP 2: Surrogate Building and Optimization\n")
+        # ====================================================================
+        # STEP 2: Surrogate Building and Optimization (Surrogates Only)
+        # ====================================================================
+        logger.section("Surrogate Building and Optimization", step=2)
         
         builder = SurrogateBuilder(pilot_list, n_active=1, n_aux=n_aux,
-                                 work_dir=work_dir, method=surrogate_method)
+                                 work_dir=work_dir, method=surrogate_method, use_torch=use_torch)
         hf_corrs, lf_corrs, costs = builder.build(data_npz)
         
         budget_list = [budget * (i + 1) for i in range(6)]
         bounds = [(1, None)] + [(1.001, None)] * (n_aux + 1) + [tuple(tunable_range)]
         
-        print(f"\nOptimizing with bounds: {bounds}")
-        log.write(f"Bounds: {bounds}\n")
+        logger.write(f"Optimization bounds: {bounds}")
         
-        (mf_vars, mf_allocs), (is_vars, is_allocs) = optimize_allocation(
-            budget_list, hf_corrs, lf_corrs, costs, bounds, log_of_objective, hybrid=False
-        )
+        # Run optimization with surrogate models only (hybrid=False)
+        mf_vars, mf_allocs = [], []
+        is_vars, is_allocs = [], []
         
-        # Step 3: Train optimized ROM
-        print("\n" + "="*70)
-        print("STEP 3: Training Optimized ROM")
-        print("="*70)
-        log.write("\nSTEP 3: Training Optimized ROM\n")
+        for bgt in budget_list:
+            var, alloc = optimize_single_allocation(
+                bgt, 'MF', hf_corrs, lf_corrs, costs, bounds, log_of_objective, 
+                hybrid=False, use_torch=use_torch
+            )
+            print(f"  allocation={alloc}")
+            mf_vars.append(var)
+            mf_allocs.append(alloc)
+            
+            var, alloc = optimize_single_allocation(
+                bgt, 'IS', hf_corrs, lf_corrs, costs, bounds, log_of_objective,
+                hybrid=False, use_torch=use_torch
+            )
+            print(f"  allocation={alloc}")
+            is_vars.append(var)
+            is_allocs.append(alloc)
+        
+        # ====================================================================
+        # STEP 3: Train Optimized ROM
+        # ====================================================================
+        logger.section("Training Optimized ROM", step=3)
         
         allocation_idx = 0 if allocate_based_on == 'min' else -1
         s_star = is_allocs[allocation_idx]
         rom_basis_num = int(round(s_star[-1]))
         
-        print(f"Optimal allocation: {s_star}")
-        print(f"ROM basis size: {rom_basis_num}")
-        log.write(f"s*={s_star}, basis={rom_basis_num}\n")
+        logger.write(f"Optimal allocation: {s_star}")
+        logger.write(f"ROM basis size: {rom_basis_num}")
         
         rom_npz = f"{work_dir}/trained_{rom_basis_num}_sample_rom_results.npz"
         
         if os.path.exists(rom_npz):
-            print("Using previously trained ROM")
-            log.write("Using existing ROM\n")
+            logger.write("Using previously trained ROM")
         else:
             fom_rom_corr, aux_rom_corrs, norm_rom_time = train_optimized_rom(
                 fom_model, rom_model_builder, parameter_space, work_dir,
                 rom_basis_num, pilot_mgr, pilot_data, data_npz, overwrite
             )
             
-            save_dict = {'fom_rom_corr': fom_rom_corr, 'normalized_rom_time': norm_rom_time}
+            save_dict = {
+                'fom_rom_corr': fom_rom_corr,
+                'normalized_rom_time': norm_rom_time
+            }
             for i, corr in enumerate(aux_rom_corrs):
                 save_dict[f'aux{i}_rom_corr'] = corr
+            
             np.savez(rom_npz, **save_dict)
-            log.write("Trained and saved ROM\n")
+            logger.write("Trained and saved ROM")
         
-        # Step 4: Validate with exact statistics
-        print("\n" + "="*70)
-        print("STEP 4: Validation with Exact Statistics")
-        print("="*70)
-        log.write("\nSTEP 4: Validation\n")
+        # ====================================================================
+        # STEP 4: Validation with Exact Statistics
+        # ====================================================================
+        logger.section("Validation with Exact Statistics", step=4)
         
         with np.load(rom_npz) as data:
             fom_rom_corr_val = float(data['fom_rom_corr'])
             aux_rom_corr_vals = [float(data[f'aux{i}_rom_corr']) for i in range(n_aux)]
             normalized_rom_time_val = float(data['normalized_rom_time'])
         
-        print(f"FOM-ROM correlation: {fom_rom_corr_val:.4f}")
-        print(f"Normalized ROM time: {normalized_rom_time_val:.4f}")
-        log.write(f"FOM-ROM corr={fom_rom_corr_val:.4f}, time={normalized_rom_time_val:.4f}\n")
+        logger.write(f"FOM-ROM correlation: {fom_rom_corr_val:.4f}")
+        logger.write(f"Normalized ROM time: {normalized_rom_time_val:.4f}")
         
-        exact_hf, exact_lf, exact_costs = build_exact_functions(
-            hf_corrs, lf_corrs, costs, fom_rom_corr_val, aux_rom_corr_vals,
-            normalized_rom_time_val, n_aux
-        )
+        # Build exact functions by replacing ROM entries with exact values
+        # HF correlations: FOM-aux (surrogate) + FOM-ROM (exact)
+        exact_hf = hf_corrs[:n_aux] + [
+            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(fom_rom_corr_val)
+        ]
+        
+        # LF correlations: aux-aux (surrogate) + aux-ROM (exact)
+        n_aux_pairs = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
+        exact_lf = lf_corrs[:n_aux_pairs] + [
+            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(corr)
+            for corr in aux_rom_corr_vals
+        ]
+        
+        # Costs: aux (surrogate) + ROM (exact)
+        exact_costs = costs[:n_aux] + [
+            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(normalized_rom_time_val)
+        ]
         
         bounds_exact = [(1, None)] + [(1.001, None)] * (n_aux + 1) + [(rom_basis_num, rom_basis_num)]
-        (mf_vars_ex, mf_allocs_ex), (is_vars_ex, is_allocs_ex) = optimize_allocation(
-            budget_list, exact_hf, exact_lf, exact_costs, bounds_exact, log_of_objective, hybrid=True
-        )
         
-        # Step 5: Save visualization data
-        print("\n" + "="*70)
-        print("STEP 5: Generating Visualization Data")
-        print("="*70)
-        log.write("\nSTEP 5: Visualization Data\n")
+        # Run optimization with exact ROM statistics (hybrid=True)
+        mf_vars_ex, mf_allocs_ex = [], []
+        is_vars_ex, is_allocs_ex = [], []
         
-        # s_plot = np.arange(1, tunable_range[-1] + 1)
+        for bgt in budget_list:
+            var, alloc = optimize_single_allocation(
+                bgt, 'MF', exact_hf, exact_lf, exact_costs, bounds_exact, log_of_objective,
+                hybrid=True, use_torch=use_torch
+            )
+            print(f"  allocation={alloc}")
+            mf_vars_ex.append(var)
+            mf_allocs_ex.append(alloc)
+            
+            var, alloc = optimize_single_allocation(
+                bgt, 'IS', exact_hf, exact_lf, exact_costs, bounds_exact, log_of_objective,
+                hybrid=True, use_torch=use_torch
+            )
+            print(f"  allocation={alloc}")
+            is_vars_ex.append(var)
+            is_allocs_ex.append(alloc)
+        
+        # ====================================================================
+        # STEP 5: Generate Visualization Data
+        # ====================================================================
+        logger.section("Generating Visualization Data", step=5)
+        
         s_min, s_max = 1, tunable_range[-1] + 1
-        n_vis = 200   # or 500 if you want it very smooth
+        n_vis = 200
         s_plot = np.linspace(s_min, s_max, n_vis)
-    
-        surrogate_vals = evaluate_surrogates(hf_corrs, lf_corrs, costs, s_plot, n_aux)
+        
+        # Evaluate surrogates over the range of s values
+        surrogate_vals = {}
+        
+        with torch.no_grad():
+            # FOM-aux correlations and aux costs (constant w.r.t. s)
+            for i in range(n_aux):
+                rho_val = hf_corrs[i]([0, s_plot[0]])
+                cost_val = costs[i]([0, s_plot[0]])
+                
+                # Convert to float if needed
+                if hasattr(rho_val, "detach"):
+                    rho_val = float(rho_val.detach().cpu().numpy())
+                if hasattr(cost_val, "detach"):
+                    cost_val = float(cost_val.detach().cpu().numpy())
+                
+                surrogate_vals[f'rho_fom_aux{i}'] = np.full_like(s_plot, rho_val, dtype=float)
+                surrogate_vals[f'cost_aux{i}'] = np.full_like(s_plot, cost_val, dtype=float)
+            
+            # FOM-ROM correlation and ROM cost (vary with s)
+            rho_fom_rom_vals = []
+            cost_rom_vals = []
+            for s in s_plot:
+                rho_val = hf_corrs[n_aux]([0, s])
+                cost_val = costs[n_aux]([0, s])
+                
+                if hasattr(rho_val, "detach"):
+                    rho_val = float(rho_val.detach().cpu().numpy())
+                if hasattr(cost_val, "detach"):
+                    cost_val = float(cost_val.detach().cpu().numpy())
+                
+                rho_fom_rom_vals.append(rho_val)
+                cost_rom_vals.append(cost_val)
+            
+            surrogate_vals['rho_fom_rom'] = np.array(rho_fom_rom_vals)
+            surrogate_vals['cost_rom'] = np.array(cost_rom_vals)
+            
+            # Aux-aux correlations (constant, only if n_aux > 1)
+            if n_aux > 1:
+                lf_idx = 0
+                for i in range(n_aux):
+                    for j in range(i):
+                        rho_val = lf_corrs[lf_idx]([0, s_plot[0]])
+                        if hasattr(rho_val, "detach"):
+                            rho_val = float(rho_val.detach().cpu().numpy())
+                        
+                        surrogate_vals[f'rho_aux{j}_aux{i}'] = np.full_like(s_plot, rho_val, dtype=float)
+                        lf_idx += 1
+            
+            # Aux-ROM correlations (vary with s)
+            lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
+            for i in range(n_aux):
+                rho_aux_rom_vals = []
+                for s in s_plot:
+                    rho_val = lf_corrs[lf_start + i]([0, s])
+                    if hasattr(rho_val, "detach"):
+                        rho_val = float(rho_val.detach().cpu().numpy())
+                    rho_aux_rom_vals.append(rho_val)
+                
+                surrogate_vals[f'rho_aux{i}_rom'] = np.array(rho_aux_rom_vals)
         
         vis_data = build_visualization_dict(
             pilot_data, surrogate_vals, s_star, budget_list,
@@ -434,13 +520,10 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         
         vis_path = f"{work_dir}/visualization_data.npz"
         np.savez(vis_path, **vis_data)
-        print(f"\nSaved visualization data to {vis_path}")
-        log.write(f"Saved to {vis_path}\n")
+        logger.write(f"Saved visualization data to {vis_path}")
         
-        print("\n" + "="*70)
-        print("HYBRID MFUQ COMPLETE")
-        print("="*70 + "\n")
-        log.write("\nWorkflow completed successfully\n")
-        
-    finally:
-        log.close()
+        # ====================================================================
+        # Complete
+        # ====================================================================
+        logger.section("HYBRID MFUQ COMPLETE")
+        logger.write("Workflow completed successfully")
