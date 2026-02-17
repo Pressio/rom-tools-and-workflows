@@ -35,6 +35,20 @@ class MockModel:
         return 0
 
 
+class MockQoiModel:
+    def populate_run_directory(self, run_dir, parameter_sample):
+        parameter_values = np.asarray(list(parameter_sample.values()), dtype=float)
+        np.savez(f'{run_dir}/parameter_values.npz', parameter_values=parameter_values)
+
+    def run_model(self, run_dir, parameter_sample):
+        np.savetxt(f'{run_dir}/passed.txt', np.array([0]), '%i')
+        return 0
+
+    def compute_qoi(self, run_dir, parameter_sample):
+        parameter_values = np.load(f'{run_dir}/parameter_values.npz')['parameter_values']
+        return np.array([np.sum(parameter_values)])
+
+
 def run_sampler(tmp_path, dry_run=False, overwrite=True):
     my_parameter_space = UniformParameterSpace(['u', 'v', 'w'],
                                                np.array([0, 1, 2]),
@@ -57,6 +71,10 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
             timestamps.append(os.stat(os.path.join(run_dir, "passed.txt")).st_mtime)
 
     assert ("sampling_stats.npz" in os.listdir(tmp_path)) != dry_run
+    if not dry_run:
+        stats = np.load(os.path.join(tmp_path, "sampling_stats.npz"))
+        assert "run_times" in stats
+        assert "qoi_mean" not in stats
 
     # Return the time that each passed.txt was last modified
     return timestamps
@@ -97,6 +115,36 @@ def test_sampler_overwrite(tmp_path):
     for i in range(10):
         assert initial_timestamps[i] == exp_initial_timestamps[i]
         assert exp_initial_timestamps[i] != exp_new_timestamps[i]
+
+
+@pytest.mark.mpi_skip
+def test_sampler_qoi_stats(tmp_path):
+    parameter_space = ConstParameterSpace(['u', 'v'], [1.0, 2.0])
+    model = MockQoiModel()
+    run_sampling(
+        model,
+        parameter_space,
+        absolute_sampling_directory=tmp_path,
+        evaluation_concurrency=1,
+        number_of_samples=4,
+        dry_run=False,
+        overwrite=True,
+    )
+
+    stats = np.load(os.path.join(tmp_path, "sampling_stats.npz"))
+    assert "qoi_values" in stats
+    assert "qoi_mean" in stats
+    assert "qoi_std" in stats
+    assert "qoi_min" in stats
+    assert "qoi_max" in stats
+    assert "qoi_num_samples" in stats
+    assert stats["qoi_values"].shape == (4, 1)
+    np.testing.assert_allclose(stats["qoi_values"], 3.0)
+    np.testing.assert_allclose(stats["qoi_mean"], np.array([3.0]))
+    np.testing.assert_allclose(stats["qoi_std"], np.array([0.0]))
+    np.testing.assert_allclose(stats["qoi_min"], np.array([3.0]))
+    np.testing.assert_allclose(stats["qoi_max"], np.array([3.0]))
+    np.testing.assert_array_equal(stats["qoi_num_samples"], np.array([4]))
 
 if __name__ == "__main__":
     test_sampler()

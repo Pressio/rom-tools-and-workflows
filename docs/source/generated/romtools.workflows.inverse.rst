@@ -13,3 +13,4 @@ romtools.workflows.inverse
    eki_utils
    run_eki
    run_mf_eki
+   run_vi

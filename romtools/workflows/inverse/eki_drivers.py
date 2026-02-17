@@ -4,12 +4,6 @@ import time
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse.eki_utils import *
-import copy
-
-def _create_parameter_dict(parameter_names, parameter_values):
-    return dict(zip(parameter_names, parameter_values))
-
-
 
 def run_eki(model: QoiModel,
                  parameter_space: ParameterSpace,
@@ -191,4 +185,3 @@ def compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covar
     dp = np.linalg.solve(LHS,RHS)
     dp = Sw @ (Sy.transpose() @ dp)
     return dp.transpose()
-
