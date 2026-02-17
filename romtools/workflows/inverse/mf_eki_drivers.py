@@ -18,12 +18,26 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
                  pod_energy_fraction: float = 0.999999,
                  max_pod_modes: Optional[int] = None,
                  kernel: Optional[GaussianProcessKernel] = None,
-                 noise_variance: float = 1e-10) -> None:
+                 noise_variance: Optional[float] = None,
+                 auto_noise_variance: bool = False,
+                 noise_variance_fraction: float = 1e-6,
+                 tune_hyperparameters: bool = False,
+                 length_scale_grid: Optional[list] = None,
+                 signal_variance_grid: Optional[list] = None,
+                 normalize_parameters: bool = False,
+                 normalize_targets: bool = False) -> None:
         self.parameter_names = list(parameter_names) if parameter_names is not None else None
         self.pod_energy_fraction = pod_energy_fraction
         self.max_pod_modes = max_pod_modes
         self.kernel = kernel
         self.noise_variance = noise_variance
+        self.auto_noise_variance = auto_noise_variance
+        self.noise_variance_fraction = noise_variance_fraction
+        self.tune_hyperparameters = tune_hyperparameters
+        self.length_scale_grid = length_scale_grid
+        self.signal_variance_grid = signal_variance_grid
+        self.normalize_parameters = normalize_parameters
+        self.normalize_targets = normalize_targets
 
     def build_from_training_dirs(self,
                                  offline_data_dir: str,
@@ -38,6 +52,13 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
             max_pod_modes=self.max_pod_modes,
             kernel=self.kernel,
             noise_variance=self.noise_variance,
+            auto_noise_variance=self.auto_noise_variance,
+            noise_variance_fraction=self.noise_variance_fraction,
+            tune_hyperparameters=self.tune_hyperparameters,
+            length_scale_grid=self.length_scale_grid,
+            signal_variance_grid=self.signal_variance_grid,
+            normalize_parameters=self.normalize_parameters,
+            normalize_targets=self.normalize_targets,
         )
 
 def run_mf_eki(model: QoiModel,
@@ -374,7 +395,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          fom_ensemble_size: int = 10,
                          rom_extra_ensemble_size = 30,
                          rom_tolerance: float = 0.005,
-                         use_updated_rom_in_update_on_rebuild: bool = True,
+                         use_updated_rom_in_update_on_rebuild: bool = False,
                          initial_step_size: float = 1e-1,
                          regularization_parameter: float = 1e-4,
                          step_size_growth_factor: float = 1.25,
@@ -402,7 +423,14 @@ def mf_eki_with_auto_rom(model: QoiModel,
             pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.999999),
             max_pod_modes=rom_args.get("max_pod_modes"),
             kernel=rom_args.get("kernel"),
-            noise_variance=rom_args.get("noise_variance", 1e-10),
+            noise_variance=rom_args.get("noise_variance"),
+            auto_noise_variance=rom_args.get("auto_noise_variance", False),
+            noise_variance_fraction=rom_args.get("noise_variance_fraction", 1e-6),
+            tune_hyperparameters=rom_args.get("tune_hyperparameters", False),
+            length_scale_grid=rom_args.get("length_scale_grid"),
+            signal_variance_grid=rom_args.get("signal_variance_grid"),
+            normalize_parameters=rom_args.get("normalize_parameters", False),
+            normalize_targets=rom_args.get("normalize_targets", False),
         )
     else:
         raise ValueError(f"Unsupported rom_type '{rom_type}'.")
