@@ -12,20 +12,26 @@ https://pressio.github.io/rom-tools-and-workflows/demos/
 ## Installation
 
 ```bash
-cd my-path/rom-tools-and-workflows
-pip install .
+pip install romtools
 ```
 
-Optional: minimal `setup.py` install (drops docs/testing dependencies)
+## Developers's Guide
+
+### Editable Installation
 
 ```bash
-cd my-path/rom-tools-and-workflows
-python setup.py install
+git clone git@github.com:Pressio/rom-tools-and-workflows.git
+cd rom-tools-and-workflows
+pip install -e .
 ```
 
 ### Verify installation by running the tests
 
-Note: you need `pytest` installed
+Install the testing dependencies with:
+
+```bash
+pip install .[test]
+```
 
 ```bash
 cd my-path/rom-tools-and-workflows
@@ -35,9 +41,15 @@ Note: some tests actually generate some auxiliary/temporary files which
 are handled via the `tmp_path` as suggested https://docs.pytest.org/en/7.1.x/how-to/tmp_path.html.
 
 
-## Building the documentation
+### Building the documentation
 
+Install the documentation dependencies with:
+
+```bash
+pip install .[docs]
 ```
+
+```bash
 cd <repo-dir>
 make -C docs html
 ```
