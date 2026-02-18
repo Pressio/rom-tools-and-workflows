@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import time
+from typing import Tuple
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse.eki_utils import run_vi_iteration
@@ -24,7 +25,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
 
 def _resolve_parameter_bounds(parameter_mins: np.ndarray,
                               parameter_maxes: np.ndarray,
-                              legacy_kwargs: dict) -> tuple[np.ndarray, np.ndarray]:
+                              legacy_kwargs: dict) -> Tuple[np.ndarray, np.ndarray]:
     _ = legacy_kwargs
     return parameter_mins, parameter_maxes
 
