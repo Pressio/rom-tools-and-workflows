@@ -67,3 +67,65 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
     results['mean-qoi'] = mean_qoi
     results['errors'] = errors
     return results 
+
+
+def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency):
+    """Run a VI iteration for sampled parameters only (no explicit mean run)."""
+    mp_cntxt = multiprocessing.get_context("fork")
+    ensemble_size = np.shape(parameter_samples)[0]
+    assert ensemble_size > 0, "parameter_samples must contain at least one sample"
+
+    if evaluation_concurrency == 1:
+        first_run_directory = f'{run_directory_base}0'
+        first_qoi, first_error, run_time = prepare_and_run(
+            model,
+            observations,
+            first_run_directory,
+            parameter_names,
+            parameter_samples[0],
+        )
+        qois = np.zeros((first_qoi.size, ensemble_size))
+        errors = np.zeros((first_qoi.size, ensemble_size))
+        qois[:, 0] = first_qoi
+        errors[:, 0] = first_error
+        for ensemble_member in range(1, ensemble_size):
+            run_directory = f'{run_directory_base}{ensemble_member}'
+            qois[:, ensemble_member], errors[:, ensemble_member], run_time = prepare_and_run(
+                model,
+                observations,
+                run_directory,
+                parameter_names,
+                parameter_samples[ensemble_member],
+            )
+    else:
+        samples_to_run = list(range(ensemble_size))
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=evaluation_concurrency,
+            mp_context=mp_cntxt,
+        ) as executor:
+            these_futures = [
+                executor.submit(
+                    prepare_and_run,
+                    model,
+                    observations,
+                    f'{run_directory_base}{ensemble_member}',
+                    parameter_names,
+                    parameter_samples[ensemble_member],
+                )
+                for ensemble_member in samples_to_run
+            ]
+            concurrent.futures.wait(these_futures)
+
+        first_qoi, first_error, run_time = these_futures[0].result()
+        qois = np.zeros((first_qoi.size, ensemble_size))
+        errors = np.zeros((first_qoi.size, ensemble_size))
+        qois[:, 0] = first_qoi
+        errors[:, 0] = first_error
+        for i, future in enumerate(these_futures[1:], start=1):
+            qois[:, i], errors[:, i], run_time = future.result()
+
+    results = {}
+    results['qois'] = qois
+    results['mean-qoi'] = np.mean(qois, axis=1)
+    results['errors'] = errors
+    return results
