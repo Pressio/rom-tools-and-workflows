@@ -22,6 +22,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
 from romtools.workflows.inverse.vi_drivers import (
     _compute_correlation_cholesky_from_samples,
     _clip_variational_log_std,
+    _enforce_variational_log_std_bounds,
     _compute_gradient_norm,
     _compute_leave_one_out_baseline,
     _compute_log_likelihoods,
@@ -607,6 +608,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           rom_base_sampling_strategy: str,
                           parameter_mins: np.ndarray,
                           parameter_maxes: np.ndarray,
+                          transform_interior_margin: float,
                           rom_tolerance: float,
                           max_rom_training_dirs: int,
                           training_dirs: list,
@@ -625,6 +627,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         bounded_parameter_handling,
         parameter_mins,
         parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
         variational_correlation_cholesky=variational_correlation_cholesky,
     )
 
@@ -642,6 +645,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             bounded_parameter_handling,
             parameter_mins,
             parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
             variational_correlation_cholesky=variational_correlation_cholesky,
         )
 
@@ -655,6 +659,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             bounded_parameter_handling,
             parameter_mins,
             parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
             variational_correlation_cholesky=variational_correlation_cholesky,
         )
     else:
@@ -939,6 +944,8 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                parameter_space: ParameterSpace,
                                parameter_mins: np.ndarray,
                                parameter_maxes: np.ndarray,
+                               transform_interior_margin: float,
+                               min_physical_variational_std_fraction: float,
                                bounded_parameter_handling: str) -> None:
     assert restart_file is None, "run_mf_vi currently does not support restart_file."
     assert os.path.isabs(absolute_vi_directory), (
@@ -962,6 +969,9 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     assert min_variational_std > 0.0, "min_variational_std must be positive"
     assert max_variational_std > min_variational_std, (
         "max_variational_std must be greater than min_variational_std"
+    )
+    assert min_physical_variational_std_fraction >= 0.0, (
+        "min_physical_variational_std_fraction must be non-negative"
     )
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
@@ -987,6 +997,9 @@ def _validate_run_mf_vi_inputs(restart_file: str,
             f"the parameter_space of size {parameter_dimensionality}"
         )
     if bounded_parameter_handling == 'transform':
+        assert 0.0 <= transform_interior_margin < 0.5, (
+            "transform_interior_margin must be in [0.0, 0.5)"
+        )
         assert parameter_mins is not None, "parameter_mins must be provided for bounded_parameter_handling='transform'"
         assert parameter_maxes is not None, "parameter_maxes must be provided for bounded_parameter_handling='transform'"
         assert np.size(parameter_mins) == parameter_dimensionality, (
@@ -1030,6 +1043,8 @@ def run_mf_vi(model: QoiModel,
               use_mfmc_control_variate: bool = True,
               rom_base_sampling_strategy: str = 'coupled',
               bounded_parameter_handling: str = 'transform',
+              transform_interior_margin: float = 1e-8,
+              min_physical_variational_std_fraction: float = 1e-8,
               **legacy_kwargs):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
@@ -1053,6 +1068,11 @@ def run_mf_vi(model: QoiModel,
         rom_base_sampling_strategy: Strategy for ROM-base sample selection.
             'coupled' (default) reuses the FOM sample set for ROM-base
             evaluations. 'separate' draws an independent ROM-base sample set.
+        transform_interior_margin: Margin used by bounded_parameter_handling='transform'
+            to keep mapped samples away from exact bounds.
+        min_physical_variational_std_fraction: Minimum physical-space
+            variational standard deviation as a fraction of each parameter range
+            when bounded_parameter_handling='transform'.
         legacy_kwargs: Optional scalar overrides for fields in
             `optimizer_config` and `line_search_config`.
 
@@ -1163,6 +1183,8 @@ def run_mf_vi(model: QoiModel,
         parameter_space=parameter_space,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
+        min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         bounded_parameter_handling=bounded_parameter_handling,
     )
 
@@ -1179,6 +1201,7 @@ def run_mf_vi(model: QoiModel,
             initial_samples,
             parameter_mins,
             parameter_maxes,
+            transform_interior_margin,
         )
     else:
         optimizer_initial_samples = initial_samples
@@ -1191,6 +1214,17 @@ def run_mf_vi(model: QoiModel,
         variational_log_std,
         min_variational_std,
         max_variational_std,
+    )
+    variational_log_std = _enforce_variational_log_std_bounds(
+        variational_mean,
+        variational_log_std,
+        min_variational_std,
+        max_variational_std,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        min_physical_variational_std_fraction,
     )
     variational_correlation_cholesky = None
     if variational_distribution == 'multivariate':
@@ -1224,6 +1258,7 @@ def run_mf_vi(model: QoiModel,
         rom_base_sampling_strategy=rom_base_sampling_strategy,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
         rom_tolerance=rom_tolerance,
         max_rom_training_dirs=max_rom_training_dirs,
         training_dirs=[],
@@ -1320,6 +1355,17 @@ def run_mf_vi(model: QoiModel,
                 min_variational_std,
                 max_variational_std,
             )
+            test_variational_log_std = _enforce_variational_log_std_bounds(
+                test_variational_mean,
+                test_variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                min_physical_variational_std_fraction,
+            )
         else:
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
@@ -1341,6 +1387,17 @@ def run_mf_vi(model: QoiModel,
                 test_variational_log_std,
                 min_variational_std,
                 max_variational_std,
+            )
+            test_variational_log_std = _enforce_variational_log_std_bounds(
+                test_variational_mean,
+                test_variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                min_physical_variational_std_fraction,
             )
 
         test_state = _evaluate_mf_vi_state(
@@ -1369,6 +1426,7 @@ def run_mf_vi(model: QoiModel,
             rom_base_sampling_strategy=rom_base_sampling_strategy,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
             training_dirs=state['training_dirs'],
@@ -1497,6 +1555,8 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         use_mfmc_control_variate: bool = True,
                         rom_base_sampling_strategy: str = 'coupled',
                         bounded_parameter_handling: str = 'transform',
+                        transform_interior_margin: float = 1e-8,
+                        min_physical_variational_std_fraction: float = 1e-8,
                         rom_type: str = "gp",
                         rom_args: Optional[dict] = None,
                         **legacy_kwargs):
@@ -1584,4 +1644,6 @@ def mf_vi_with_auto_rom(model: QoiModel,
         use_mfmc_control_variate=use_mfmc_control_variate,
         rom_base_sampling_strategy=rom_base_sampling_strategy,
         bounded_parameter_handling=bounded_parameter_handling,
+        transform_interior_margin=transform_interior_margin,
+        min_physical_variational_std_fraction=min_physical_variational_std_fraction,
     )

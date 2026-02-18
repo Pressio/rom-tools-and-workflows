@@ -3,7 +3,7 @@ import os
 import time
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.workflows.inverse.eki_utils import run_eki_iteration
+from romtools.workflows.inverse.eki_utils import run_vi_iteration
 from romtools.workflows.inverse.eki_utils import bound_samples
 from romtools.workflows.inverse.vi_optimization_methods import (
     NewtonSolver,
@@ -202,18 +202,79 @@ def _logit(values: np.ndarray) -> np.ndarray:
     return np.log(values / (1.0 - values))
 
 
+def _compute_transform_jacobian_diagonal(optimizer_values: np.ndarray,
+                                         parameter_mins: np.ndarray,
+                                         parameter_maxes: np.ndarray,
+                                         transform_interior_margin: float) -> np.ndarray:
+    margin_scale = 1.0 - 2.0 * transform_interior_margin
+    if margin_scale <= 0.0:
+        raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
+    bounded_unit = _sigmoid(optimizer_values)
+    return (
+        (parameter_maxes - parameter_mins)
+        * margin_scale
+        * bounded_unit
+        * (1.0 - bounded_unit)
+    )
+
+
+def _enforce_variational_log_std_bounds(variational_mean: np.ndarray,
+                                        variational_log_std: np.ndarray,
+                                        min_variational_std: float,
+                                        max_variational_std: float,
+                                        bounded_parameter_handling: str,
+                                        parameter_mins: np.ndarray,
+                                        parameter_maxes: np.ndarray,
+                                        transform_interior_margin: float,
+                                        min_physical_variational_std_fraction: float) -> np.ndarray:
+    clipped_log_std = _clip_variational_log_std(
+        variational_log_std,
+        min_variational_std,
+        max_variational_std,
+    )
+    if bounded_parameter_handling != 'transform' or min_physical_variational_std_fraction <= 0.0:
+        return clipped_log_std
+
+    if parameter_mins is None or parameter_maxes is None:
+        raise ValueError("parameter bounds are required for bounded_parameter_handling='transform'.")
+
+    parameter_ranges = parameter_maxes - parameter_mins
+    physical_std_floor = min_physical_variational_std_fraction * parameter_ranges
+    jacobian_diagonal = _compute_transform_jacobian_diagonal(
+        variational_mean,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+    )
+    jacobian_diagonal = np.maximum(np.abs(jacobian_diagonal), 1e-16)
+    variational_std = np.exp(clipped_log_std)
+    required_optimizer_std = physical_std_floor / jacobian_diagonal
+    adjusted_std = np.maximum(variational_std, required_optimizer_std)
+    adjusted_std = np.clip(adjusted_std, min_variational_std, max_variational_std)
+    return np.log(adjusted_std)
+
+
 def _transform_optimizer_to_parameter(optimizer_samples: np.ndarray,
                                       parameter_mins: np.ndarray,
-                                      parameter_maxes: np.ndarray) -> np.ndarray:
-    bounded_unit = _sigmoid(optimizer_samples)
+                                      parameter_maxes: np.ndarray,
+                                      transform_interior_margin: float = 0.0) -> np.ndarray:
+    margin_scale = 1.0 - 2.0 * transform_interior_margin
+    if margin_scale <= 0.0:
+        raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
+    bounded_unit = transform_interior_margin + margin_scale * _sigmoid(optimizer_samples)
     return parameter_mins[None, :] + (parameter_maxes - parameter_mins)[None, :] * bounded_unit
 
 
 def _transform_parameter_to_optimizer(parameter_samples: np.ndarray,
                                       parameter_mins: np.ndarray,
-                                      parameter_maxes: np.ndarray) -> np.ndarray:
+                                      parameter_maxes: np.ndarray,
+                                      transform_interior_margin: float = 0.0) -> np.ndarray:
     parameter_ranges = parameter_maxes - parameter_mins
     unit_values = (parameter_samples - parameter_mins[None, :]) / parameter_ranges[None, :]
+    margin_scale = 1.0 - 2.0 * transform_interior_margin
+    if margin_scale <= 0.0:
+        raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
+    unit_values = (unit_values - transform_interior_margin) / margin_scale
     unit_values = np.clip(unit_values, 1e-12, 1.0 - 1e-12)
     return _logit(unit_values)
 
@@ -537,6 +598,7 @@ def _draw_parameter_samples(variational_mean: np.ndarray,
                             bounded_parameter_handling: str,
                             parameter_mins: np.ndarray,
                             parameter_maxes: np.ndarray,
+                            transform_interior_margin: float = 0.0,
                             standard_normal_samples: np.ndarray = None,
                             variational_correlation_cholesky: np.ndarray = None):
     bounded_parameter_handling = _normalize_bounded_parameter_handling(bounded_parameter_handling)
@@ -569,6 +631,7 @@ def _draw_parameter_samples(variational_mean: np.ndarray,
             optimizer_samples,
             parameter_mins,
             parameter_maxes,
+            transform_interior_margin,
         )
     else:
         parameter_samples = bound_samples(optimizer_samples, parameter_mins, parameter_maxes)
@@ -581,7 +644,7 @@ def _run_vi_iteration_samples(model: QoiModel,
                               parameter_names,
                               parameter_samples: np.ndarray,
                               evaluation_concurrency: int):
-    return run_eki_iteration(
+    return run_vi_iteration(
         model,
         observations,
         run_directory_base,
@@ -703,6 +766,7 @@ def _evaluate_vi_state(model: QoiModel,
                        max_variational_std: float,
                        parameter_mins: np.ndarray,
                        parameter_maxes: np.ndarray,
+                       transform_interior_margin: float = 0.0,
                        variational_correlation_cholesky: np.ndarray = None,
                        elbo_scaling_factor: float = 1.0):
     optimizer_samples, parameter_samples = _draw_parameter_samples(
@@ -714,6 +778,7 @@ def _evaluate_vi_state(model: QoiModel,
         bounded_parameter_handling,
         parameter_mins,
         parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
         variational_correlation_cholesky=variational_correlation_cholesky,
     )
 
@@ -759,6 +824,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
                                            max_variational_std: float,
                                            parameter_mins: np.ndarray,
                                            parameter_maxes: np.ndarray,
+                                           transform_interior_margin: float,
                                            line_search_objective: str,
                                            standard_normal_samples: np.ndarray = None,
                                            variational_correlation_cholesky: np.ndarray = None,
@@ -772,6 +838,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
         bounded_parameter_handling,
         parameter_mins,
         parameter_maxes,
+        transform_interior_margin,
         standard_normal_samples,
         variational_correlation_cholesky,
     )
@@ -879,6 +946,8 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             observations_covariance: np.ndarray,
                             observations: np.ndarray,
                             elbo_scaling_factor: float,
+                            transform_interior_margin: float,
+                            min_physical_variational_std_fraction: float,
                             parameter_space: ParameterSpace,
                             parameter_mins: np.ndarray,
                             parameter_maxes: np.ndarray,
@@ -907,6 +976,9 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
     assert max_variational_std > min_variational_std, (
         "max_variational_std must be greater than min_variational_std"
     )
+    assert min_physical_variational_std_fraction >= 0.0, (
+        "min_physical_variational_std_fraction must be non-negative"
+    )
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
@@ -930,6 +1002,9 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
             f"the parameter_space of size {parameter_dimensionality}"
         )
     if bounded_parameter_handling == 'transform':
+        assert 0.0 <= transform_interior_margin < 0.5, (
+            "transform_interior_margin must be in [0.0, 0.5)"
+        )
         assert parameter_mins is not None, "parameter_mins must be provided for bounded_parameter_handling='transform'"
         assert parameter_maxes is not None, "parameter_maxes must be provided for bounded_parameter_handling='transform'"
         assert np.size(parameter_mins) == parameter_dimensionality, (
@@ -966,6 +1041,8 @@ def run_vi(model: QoiModel,
            baseline_method: str = None,
            variational_distribution: str = 'diagonal',
            bounded_parameter_handling: str = 'transform',
+           transform_interior_margin: float = 1e-8,
+           min_physical_variational_std_fraction: float = 1e-8,
            **legacy_kwargs):
     '''
     Run Gaussian variational inference with score-function gradients.
@@ -1013,6 +1090,11 @@ def run_vi(model: QoiModel,
             means/scales.
         bounded_parameter_handling: Parameter bounds handling. Supported options
             are 'clip' and 'transform'.
+        transform_interior_margin: Margin used by bounded_parameter_handling='transform'
+            to keep mapped samples away from exact bounds.
+        min_physical_variational_std_fraction: Minimum physical-space
+            variational standard deviation as a fraction of each parameter range
+            when bounded_parameter_handling='transform'.
         legacy_kwargs: Optional scalar overrides for fields in
             `optimizer_config` and `line_search_config`.
 
@@ -1112,6 +1194,8 @@ def run_vi(model: QoiModel,
         observations_covariance=observations_covariance,
         observations=observations,
         elbo_scaling_factor=elbo_scaling_factor,
+        transform_interior_margin=transform_interior_margin,
+        min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         parameter_space=parameter_space,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
@@ -1132,6 +1216,7 @@ def run_vi(model: QoiModel,
                 initial_samples,
                 parameter_mins,
                 parameter_maxes,
+                transform_interior_margin,
             )
         else:
             optimizer_initial_samples = initial_samples
@@ -1144,6 +1229,17 @@ def run_vi(model: QoiModel,
             variational_log_std,
             min_variational_std,
             max_variational_std,
+        )
+        variational_log_std = _enforce_variational_log_std_bounds(
+            variational_mean,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            min_physical_variational_std_fraction,
         )
         if variational_distribution == 'multivariate':
             variational_correlation_cholesky = _compute_correlation_cholesky_from_samples(
@@ -1169,6 +1265,7 @@ def run_vi(model: QoiModel,
             max_variational_std,
             parameter_mins,
             parameter_maxes,
+            transform_interior_margin,
             variational_correlation_cholesky,
             elbo_scaling_factor,
         )
@@ -1181,6 +1278,17 @@ def run_vi(model: QoiModel,
             restart_data['variational_log_std'],
             min_variational_std,
             max_variational_std,
+        )
+        variational_log_std = _enforce_variational_log_std_bounds(
+            variational_mean,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            min_physical_variational_std_fraction,
         )
         if 'bounded_parameter_handling' in restart_data:
             restart_bounded_parameter_handling = str(restart_data['bounded_parameter_handling'].item())
@@ -1437,6 +1545,17 @@ def run_vi(model: QoiModel,
                 min_variational_std,
                 max_variational_std,
             )
+            test_variational_log_std = _enforce_variational_log_std_bounds(
+                test_variational_mean,
+                test_variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                min_physical_variational_std_fraction,
+            )
 
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
             test_candidate = _evaluate_vi_candidate_for_line_search(
@@ -1457,6 +1576,7 @@ def run_vi(model: QoiModel,
                 max_variational_std,
                 parameter_mins,
                 parameter_maxes,
+                transform_interior_margin,
                 line_search_objective,
                 line_search_standard_normal_samples,
                 variational_correlation_cholesky,
@@ -1604,6 +1724,17 @@ def run_vi(model: QoiModel,
                 min_variational_std,
                 max_variational_std,
             )
+            test_variational_log_std = _enforce_variational_log_std_bounds(
+                test_variational_mean,
+                test_variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                min_physical_variational_std_fraction,
+            )
 
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
             test_candidate = _evaluate_vi_candidate_for_line_search(
@@ -1624,6 +1755,7 @@ def run_vi(model: QoiModel,
                 max_variational_std,
                 parameter_mins,
                 parameter_maxes,
+                transform_interior_margin,
                 line_search_objective,
                 line_search_standard_normal_samples,
                 variational_correlation_cholesky,

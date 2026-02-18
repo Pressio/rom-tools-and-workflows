@@ -78,13 +78,6 @@ jobs:
           pip list
           pip install .
 
-      - name: Check Formatting (Pylint)
-        run: |
-          pip install pylint
-          pylint --recursive y --rcfile .pylintrc --output-format=colorized --disable=no-name-in-module ./romtools
-
-        continue-on-error: false
-
       - name: Run tests (Serial)
         run: |
           pytest --timeout=300

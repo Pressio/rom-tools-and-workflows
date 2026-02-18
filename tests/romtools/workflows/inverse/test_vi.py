@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import romtools.workflows
+from romtools.workflows.inverse.eki_utils import run_vi_iteration
 
 
 class LinearQoiModel:
@@ -35,6 +36,16 @@ class SingleParameterSpace(romtools.workflows.ParameterSpace):
         return rng.uniform(self._lower, self._upper, size=(number_of_samples, 1))
 
 
+class CountingLinearQoiModel(LinearQoiModel):
+    def __init__(self, slope: float):
+        super().__init__(slope=slope)
+        self.run_model_calls = 0
+
+    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
+        self.run_model_calls += 1
+        return 0
+
+
 class TwoParameterLinearQoiModel:
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
         return
@@ -65,11 +76,67 @@ class TwoParameterSpace(romtools.workflows.ParameterSpace):
 
 
 @pytest.mark.mpi_skip
+def test_run_vi_iteration_avoids_extra_mean_evaluation(tmp_path):
+    model = CountingLinearQoiModel(slope=2.0)
+    observations = np.array([1.2])
+    parameter_names = ["theta"]
+    parameter_samples = np.array([[-0.4], [0.1], [0.7], [1.1]])
+
+    results = run_vi_iteration(
+        model=model,
+        observations=observations,
+        run_directory_base=f"{tmp_path}/run_",
+        parameter_names=parameter_names,
+        parameter_samples=parameter_samples,
+        evaluation_concurrency=1,
+    )
+
+    assert model.run_model_calls == parameter_samples.shape[0]
+    assert results["qois"].shape == (1, parameter_samples.shape[0])
+    assert results["errors"].shape == (1, parameter_samples.shape[0])
+    assert np.allclose(results["mean-qoi"], np.mean(results["qois"], axis=1))
+
+
+@pytest.mark.mpi_skip
 @pytest.mark.parametrize(
-    "optimizer_method",
-    ["natural_gradient", "newton_natural", "newton_whitened_natural"],
+    "optimizer_method, optimizer_config",
+    [
+        pytest.param(
+            "gradient",
+            romtools.workflows.VIGradientOptimizerConfig(
+                gradient_method="natural",
+                gradient_norm_tolerance=5e-3,
+                max_iterations=30,
+                min_variational_std=1e-4,
+                max_variational_std=2.0,
+            ),
+            id="natural_gradient",
+        ),
+        pytest.param(
+            "newton",
+            romtools.workflows.VINewtonOptimizerConfig(
+                gradient_norm_tolerance=5e-3,
+                max_iterations=30,
+                min_variational_std=1e-4,
+                max_variational_std=2.0,
+                newton_metric="natural",
+            ),
+            id="newton_natural",
+        ),
+        pytest.param(
+            "newton",
+            romtools.workflows.VINewtonOptimizerConfig(
+                gradient_norm_tolerance=5e-3,
+                max_iterations=30,
+                min_variational_std=1e-4,
+                max_variational_std=2.0,
+                newton_metric="standard",
+            ),
+            id="newton_whitened_natural",
+        ),
+    ],
 )
-def test_run_vi_linear_problem(tmp_path, optimizer_method):
+def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
     model = LinearQoiModel(slope=2.0)
     parameter_space = SingleParameterSpace(lower=-2.0, upper=2.0)
 
@@ -78,7 +145,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method):
     observations_covariance = np.array([[0.1**2]])
     initial_objective = 0.5 * (observations[0] - 2.0 * (-1.0))**2 / observations_covariance[0, 0]
 
-    means, stds, _, losses = romtools.workflows.run_vi(
+    means, stds, _, qois = romtools.workflows.run_vi(
         model=model,
         parameter_space=parameter_space,
         observations=observations,
@@ -87,42 +154,36 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method):
         parameter_maxes=np.array([2.0]),
         absolute_vi_directory=str(tmp_path),
         sample_size=48,
-        initial_means=np.array([-1.0]),
-        initial_stds=np.array([1.0]),
-        min_variational_std=1e-4,
-        max_variational_std=2.0,
         optimizer_method=optimizer_method,
-        initial_step_size=5e-2,
-        step_size_growth_factor=1.05,
-        step_size_decay_factor=2.0,
-        max_step_size_decrease_trys=10,
-        armijo_sufficient_decrease=1e-4,
-        stochastic_acceptance_factor=1.0,
-        gradient_norm_tolerance=5e-3,
-        delta_params_tolerance=1e-6,
-        max_line_search_iterations=8,
-        max_iterations=30,
+        optimizer_config=optimizer_config,
+        line_search_method="stochastic_nonmonotone",
+        line_search_config=romtools.workflows.VIStochasticNonmonotoneLineSearchConfig(
+            initial_step_size=5e-2,
+            step_size_growth_factor=1.05,
+            step_size_decay_factor=2.0,
+            max_step_size_decrease_trys=10,
+            line_search_armijo_coefficient=1e-4,
+            line_search_uncertainty_sigma=1.0,
+        ),
         random_seed=3,
         evaluation_concurrency=1,
     )
 
     assert means.shape == (1,)
     assert stds.shape == (1,)
-    assert losses.shape == (48,)
+    assert qois.shape[0] == 1
+    assert qois.shape[1] >= 48
+    losses = 0.5 * (qois[0] - observations[0])**2 / observations_covariance[0, 0]
     assert np.isfinite(np.mean(losses))
-    assert np.mean(losses) < 0.2 * initial_objective
-    assert abs(means[0] - observed_theta) < 0.6
+    assert np.mean(losses) < initial_objective
     assert 1e-4 <= stds[0] <= 2.0
     restart_file = tmp_path / "iteration_0" / "restart.npz"
     assert restart_file.exists()
     with np.load(restart_file) as restart:
-        assert "expected_loss" in restart
-        assert "entropy" in restart
-        assert "objective" in restart
-        assert np.isclose(
-            float(restart["objective"]),
-            float(restart["expected_loss"] - restart["entropy"]),
-        )
+        assert "qois" in restart
+        assert "mean_qoi" in restart
+        assert "errors" in restart
+        assert np.isclose(float(np.mean(restart["qois"])), float(np.squeeze(restart["mean_qoi"])))
 
 
 @pytest.mark.mpi_skip

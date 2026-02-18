@@ -51,7 +51,7 @@ class VIStochasticNonmonotoneLineSearchConfig:
     line_search_objective: str = 'elbo'
     line_search_nonmonotone_window: int = 5
     line_search_armijo_coefficient: float = 1e-8
-    line_search_uncertainty_sigma: float = 3.0
+    line_search_uncertainty_sigma: float = 50.0
     line_search_sample_growth_factor: float = 2.0
     log_std_learning_rate_factor: float = 1.0
 
