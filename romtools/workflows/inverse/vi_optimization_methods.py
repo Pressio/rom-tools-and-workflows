@@ -18,13 +18,13 @@ class VIGradientOptimizerConfig:
 
 @dataclass
 class VINewtonOptimizerConfig:
-    gradient_norm_tolerance: float = 1e-5
+    gradient_norm_tolerance: float = 5e-5
     max_iterations: int = 1000
     max_log_std_update: float = 0.5
-    min_variational_std: float = 1e-6
+    min_variational_std: float = 1e-8
     max_variational_std: float = 1e6
     newton_metric: str = 'standard'
-    newton_regularization: float = 1e-1
+    newton_regularization: float = 1e-2
 
 
 @dataclass
@@ -37,7 +37,7 @@ class VILegacyLineSearchConfig:
     relaxation_parameter: float = 2.05
     line_search_objective: str = 'elbo'
     line_search_sample_growth_factor: float = 1.0
-    log_std_learning_rate_factor: float = 1e-1
+    log_std_learning_rate_factor: float = 1.0
 
 
 @dataclass
@@ -50,9 +50,9 @@ class VIStochasticNonmonotoneLineSearchConfig:
     relaxation_parameter: float = 2.05
     line_search_objective: str = 'elbo'
     line_search_nonmonotone_window: int = 5
-    line_search_armijo_coefficient: float = 1e-8
-    line_search_uncertainty_sigma: float = 50.0
-    line_search_sample_growth_factor: float = 2.0
+    line_search_armijo_coefficient: float = 1e-6
+    line_search_uncertainty_sigma: float = 4.0
+    line_search_sample_growth_factor: float = 1.0
     log_std_learning_rate_factor: float = 1.0
 
 

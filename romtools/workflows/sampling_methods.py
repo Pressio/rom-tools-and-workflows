@@ -40,3 +40,18 @@ def LatinHypercubeSampler(number_of_samples: int, dimensionality: int = 1, seed=
     '''
     sampler = qmc.LatinHypercube(dimensionality, seed=seed)
     return sampler.random(n=number_of_samples)
+
+
+def RandomizedQuasiMonteCarloSampler(number_of_samples: int,
+                                     dimensionality: int = 1,
+                                     seed=None) -> np.ndarray:
+    '''
+    Generate randomized quasi-Monte Carlo samples using Owen-scrambled Sobol.
+
+    Randomization preserves low-discrepancy structure while ensuring unbiased
+    integral estimation in expectation over the scrambling.
+
+    Conforms to the Sampler protocol.
+    '''
+    sampler = qmc.Sobol(d=dimensionality, scramble=True, seed=seed)
+    return sampler.random(n=number_of_samples)

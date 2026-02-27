@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from romtools.workflows.inverse.eki_utils import bound_samples, run_eki_iteration
+from romtools.workflows.inverse.eki_utils import run_eki_iteration
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
     SteepestDescentSolver,
@@ -20,7 +20,10 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     _raise_for_unused_legacy_kwargs,
 )
 from romtools.workflows.inverse.vi_drivers import (
+    _append_vi_history,
+    _compute_component_standard_error,
     _compute_correlation_cholesky_from_samples,
+    _compute_gradient_signal_to_noise_ratio,
     _clip_variational_log_std,
     _enforce_variational_log_std_bounds,
     _compute_gradient_norm,
@@ -29,23 +32,35 @@ from romtools.workflows.inverse.vi_drivers import (
     _compute_log_likelihood_precision_operator,
     _compute_optimal_baseline,
     _compute_relative_mse,
+    _convert_physical_moments_to_optimizer_moments,
     _compute_newton_metric_scale,
     _compute_newton_step,
     _compute_update_directions,
     _compute_variational_std,
     _draw_parameter_samples,
+    _extract_variational_initialization,
+    _initialize_variational_from_mean_cov,
     _normalize_baseline_method,
     _normalize_bounded_parameter_handling,
-    _normalize_variational_distribution,
+    _normalize_sampling_method,
+    _print_gradient_signal_to_noise_ratio,
     _print_vi_parameters,
+    _initialize_vi_history,
+    _load_vi_history_from_restart,
+    _pack_vi_history,
     _resolve_elbo_scaling_factor,
     _resolve_parameter_bounds,
+    _prune_old_restart_files,
     _resolve_restart_file,
-    _transform_parameter_to_optimizer,
+    _save_vi_history,
+    _write_iteration_stats_file,
 )
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
 from romtools.workflows.models import QoiModel
-from romtools.workflows.parameter_spaces import ParameterSpace
+from romtools.workflows.parameter_spaces import (
+    GaussianParameterSpace,
+    MultivariateGaussianParameterSpace,
+)
 
 
 def _compute_rom_relative_error(rom_qois: np.ndarray, fom_qois: np.ndarray, epsilon: float = 1e-16) -> float:
@@ -53,6 +68,32 @@ def _compute_rom_relative_error(rom_qois: np.ndarray, fom_qois: np.ndarray, epsi
     if denominator <= epsilon:
         return float(np.linalg.norm(rom_qois - fom_qois))
     return float(np.linalg.norm(rom_qois - fom_qois) / denominator)
+
+
+def _normalize_correlation_estimator(correlation_estimator: str) -> str:
+    estimator = correlation_estimator.strip().lower()
+    if estimator in ('in_sample', 'insample', 'default'):
+        return 'in_sample'
+    if estimator in ('kfold', 'k_fold'):
+        return 'kfold'
+    raise ValueError(
+        f"Unsupported correlation_estimator '{correlation_estimator}'. "
+        "Supported options are 'in_sample' and 'kfold'."
+    )
+
+
+def _normalize_mfmc_control_variate_mode(mfmc_control_variate_mode: str) -> str:
+    mode = mfmc_control_variate_mode.strip().lower()
+    if mode in ("componentwise", "component", "diag", "diagonal"):
+        return "componentwise"
+    if mode in ("scalar", "isotropic"):
+        return "scalar"
+    if mode in ("matrix", "joint", "full"):
+        return "matrix"
+    raise ValueError(
+        f"Unsupported mfmc_control_variate_mode '{mfmc_control_variate_mode}'. "
+        "Supported options are 'componentwise', 'scalar', and 'matrix'."
+    )
 
 
 def _build_iteration_training_data(run_directory_base: str,
@@ -89,25 +130,41 @@ def _append_training_data(training_dirs: list,
 
 def _compute_mfmc_alpha(high_terms: np.ndarray,
                         low_terms: np.ndarray,
-                        epsilon: float = 1e-12) -> np.ndarray:
+                        epsilon: float = 1e-12,
+                        mode: str = "componentwise") -> np.ndarray:
     trailing_shape = high_terms.shape[1:]
     high_flat = high_terms.reshape(high_terms.shape[0], -1)
     low_flat = low_terms.reshape(low_terms.shape[0], -1)
+    mode = _normalize_mfmc_control_variate_mode(mode)
     centered_high = high_flat - np.mean(high_flat, axis=0, keepdims=True)
     centered_low = low_flat - np.mean(low_flat, axis=0, keepdims=True)
-    covariance = np.mean(centered_high * centered_low, axis=0)
-    low_variance = np.mean(centered_low ** 2, axis=0)
-    # Fall back to no control variate when low-fidelity variance is near zero.
-    alphas = np.zeros_like(covariance)
-    nonzero = low_variance > epsilon
-    alphas[nonzero] = covariance[nonzero] / low_variance[nonzero]
-    return alphas.reshape(trailing_shape)
+    if mode == "componentwise":
+        covariance = np.mean(centered_high * centered_low, axis=0)
+        low_variance = np.mean(centered_low ** 2, axis=0)
+        # Fall back to no control variate when low-fidelity variance is near zero.
+        alphas = np.zeros_like(covariance)
+        nonzero = low_variance > epsilon
+        alphas[nonzero] = covariance[nonzero] / low_variance[nonzero]
+        return alphas.reshape(trailing_shape)
+    if mode == "scalar":
+        numerator = np.sum(np.mean(centered_high * centered_low, axis=0))
+        denominator = np.sum(np.mean(centered_low ** 2, axis=0))
+        if denominator <= epsilon:
+            return np.array(0.0)
+        return np.array(numerator / denominator)
+
+    dimensionality = low_flat.shape[1]
+    covariance_low = (centered_low.T @ centered_low) / low_flat.shape[0]
+    covariance_cross = (centered_low.T @ centered_high) / low_flat.shape[0]
+    regularized_covariance_low = covariance_low + epsilon * np.eye(dimensionality)
+    return np.linalg.pinv(regularized_covariance_low) @ covariance_cross
 
 
 def _mfmc_gradient_estimator(high_terms: np.ndarray,
                              low_terms_base: np.ndarray,
                              low_terms_extra: np.ndarray,
-                             use_control_variate: bool) -> Tuple[np.ndarray, np.ndarray]:
+                             use_control_variate: bool,
+                             control_variate_mode: str) -> Tuple[np.ndarray, np.ndarray]:
     trailing_shape = high_terms.shape[1:]
     high_flat = high_terms.reshape(high_terms.shape[0], -1)
     low_base_flat = low_terms_base.reshape(low_terms_base.shape[0], -1)
@@ -117,21 +174,38 @@ def _mfmc_gradient_estimator(high_terms: np.ndarray,
             np.zeros(high_flat.shape[1]).reshape(trailing_shape),
         )
 
+    control_variate_mode = _normalize_mfmc_control_variate_mode(control_variate_mode)
     if use_control_variate:
-        alpha = _compute_mfmc_alpha(high_terms, low_terms_base)
+        alpha = _compute_mfmc_alpha(
+            high_terms,
+            low_terms_base,
+            mode=control_variate_mode,
+        )
     else:
-        alpha = np.ones(trailing_shape)
-    alpha_flat = alpha.reshape(-1)
+        if control_variate_mode == "matrix":
+            dimensionality = high_flat.shape[1]
+            alpha = np.eye(dimensionality)
+        elif control_variate_mode == "scalar":
+            alpha = np.array(1.0)
+        else:
+            alpha = np.ones(trailing_shape)
 
     # Hierarchical low-fidelity correction using independent low-fidelity samples.
     # low_terms_full = [low_terms_base; low_terms_extra] with low_terms_base size
     # matched to the high-fidelity sample count.
     low_extra_flat = low_terms_extra.reshape(low_terms_extra.shape[0], -1)
     low_terms_full = np.vstack([low_base_flat, low_extra_flat])
-    estimate_flat = (
-        np.mean(high_flat, axis=0)
-        + alpha_flat * (np.mean(low_terms_full, axis=0) - np.mean(low_base_flat, axis=0))
-    )
+    low_mean_delta = np.mean(low_terms_full, axis=0) - np.mean(low_base_flat, axis=0)
+    if control_variate_mode == "matrix":
+        estimate_flat = np.mean(high_flat, axis=0) + low_mean_delta @ alpha
+    elif control_variate_mode == "scalar":
+        estimate_flat = np.mean(high_flat, axis=0) + alpha.item() * low_mean_delta
+    else:
+        alpha_flat = alpha.reshape(-1)
+        estimate_flat = (
+            np.mean(high_flat, axis=0)
+            + alpha_flat * low_mean_delta
+        )
     return estimate_flat.reshape(trailing_shape), alpha
 
 
@@ -145,8 +219,43 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
                                       rom_log_likelihoods_extra: np.ndarray,
                                       baseline_method: str,
                                       use_mfmc_control_variate: bool,
+                                      mfmc_control_variate_mode: str = "componentwise",
                                       variational_correlation_cholesky: np.ndarray = None,
                                       elbo_scaling_factor: float = 1.0):
+    def _compute_mfmc_estimator_standard_error(high_terms: np.ndarray,
+                                               low_terms_base: np.ndarray,
+                                               low_terms_extra: np.ndarray,
+                                               alpha: np.ndarray,
+                                               control_variate_mode: str) -> np.ndarray:
+        trailing_shape = high_terms.shape[1:]
+        high_flat = high_terms.reshape(high_terms.shape[0], -1)
+        if low_terms_extra is None or low_terms_extra.shape[0] == 0:
+            return _compute_component_standard_error(high_flat).reshape(trailing_shape)
+
+        low_base_flat = low_terms_base.reshape(low_terms_base.shape[0], -1)
+        low_extra_flat = low_terms_extra.reshape(low_terms_extra.shape[0], -1)
+        ratio = low_extra_flat.shape[0] / (low_base_flat.shape[0] + low_extra_flat.shape[0])
+        control_variate_mode = _normalize_mfmc_control_variate_mode(control_variate_mode)
+        if control_variate_mode == "matrix":
+            beta_matrix = ratio * alpha
+            corrected_high_terms = high_flat - low_base_flat @ beta_matrix
+            projected_low_extra = low_extra_flat @ beta_matrix
+            low_extra_standard_error = _compute_component_standard_error(projected_low_extra)
+        elif control_variate_mode == "scalar":
+            beta_scalar = ratio * alpha.item()
+            corrected_high_terms = high_flat - beta_scalar * low_base_flat
+            low_extra_standard_error = abs(beta_scalar) * _compute_component_standard_error(low_extra_flat)
+        else:
+            alpha_flat = alpha.reshape(-1)
+            beta_flat = ratio * alpha_flat
+            corrected_high_terms = high_flat - beta_flat[None, :] * low_base_flat
+            low_extra_standard_error = np.abs(beta_flat) * _compute_component_standard_error(low_extra_flat)
+        corrected_high_standard_error = _compute_component_standard_error(corrected_high_terms)
+        return np.sqrt(
+            corrected_high_standard_error ** 2
+            + low_extra_standard_error ** 2
+        ).reshape(trailing_shape)
+
     # Build score-function terms for either diagonal or fixed-correlation Gaussian families.
     def _compute_scores(optimizer_samples: np.ndarray):
         centered = optimizer_samples - variational_mean[None, :]
@@ -242,16 +351,47 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         low_mean_terms_base,
         low_mean_terms_extra,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
     )
     gradient_log_std, alpha_log_std = _mfmc_gradient_estimator(
         high_log_std_terms,
         low_log_std_terms_base,
         low_log_std_terms_extra,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
+    )
+    gradient_standard_error_mean = _compute_mfmc_estimator_standard_error(
+        high_mean_terms,
+        low_mean_terms_base,
+        low_mean_terms_extra,
+        alpha_mean,
+        mfmc_control_variate_mode,
+    )
+    gradient_standard_error_log_std = _compute_mfmc_estimator_standard_error(
+        high_log_std_terms,
+        low_log_std_terms_base,
+        low_log_std_terms_extra,
+        alpha_log_std,
+        mfmc_control_variate_mode,
     )
     # Entropy gradient contribution for log-std parameters.
     gradient_log_std += elbo_scaling_factor
-    return gradient_mean, gradient_log_std, baseline_mean, baseline_log_std, alpha_mean, alpha_log_std
+    gradient_signal_to_noise_ratio = _compute_gradient_signal_to_noise_ratio(
+        np.concatenate([gradient_mean, gradient_log_std]),
+        np.concatenate([
+            gradient_standard_error_mean.reshape(-1),
+            gradient_standard_error_log_std.reshape(-1),
+        ]),
+    )
+    return (
+        gradient_mean,
+        gradient_log_std,
+        baseline_mean,
+        baseline_log_std,
+        alpha_mean,
+        alpha_log_std,
+        gradient_signal_to_noise_ratio,
+    )
 
 
 def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
@@ -264,6 +404,7 @@ def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
                                              rom_log_likelihoods_extra: np.ndarray,
                                              baseline_method: str,
                                              use_mfmc_control_variate: bool,
+                                             mfmc_control_variate_mode: str = "componentwise",
                                              variational_correlation_cholesky: np.ndarray = None,
                                              elbo_scaling_factor: float = 1.0):
     hessian_full = _compute_mfmc_reinforce_hessian_full(
@@ -277,6 +418,7 @@ def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
         rom_log_likelihoods_extra,
         baseline_method,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
         variational_correlation_cholesky,
         elbo_scaling_factor,
     )
@@ -296,6 +438,7 @@ def _compute_mfmc_reinforce_hessian_full(optimizer_samples_fom: np.ndarray,
                                          rom_log_likelihoods_extra: np.ndarray,
                                          baseline_method: str,
                                          use_mfmc_control_variate: bool,
+                                         mfmc_control_variate_mode: str = "componentwise",
                                          variational_correlation_cholesky: np.ndarray = None,
                                          elbo_scaling_factor: float = 1.0):
     dimensionality = variational_mean.size
@@ -472,18 +615,21 @@ def _compute_mfmc_reinforce_hessian_full(optimizer_samples_fom: np.ndarray,
         low_mean_terms_base,
         low_mean_terms_extra,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
     )
     hessian_diagonal_log_std, _ = _mfmc_gradient_estimator(
         high_log_std_terms,
         low_log_std_terms_base,
         low_log_std_terms_extra,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
     )
     hessian_cross, _ = _mfmc_gradient_estimator(
         high_cross_terms,
         low_cross_terms_base,
         low_cross_terms_extra,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
     )
 
     hessian_full = np.block([
@@ -549,38 +695,78 @@ def _save_mf_vi_restart(restart_path: str,
                         variational_distribution: str,
                         variational_correlation_cholesky: np.ndarray,
                         elbo_scaling_factor: float,
+                        elbo_relative_tolerance: float,
+                        initial_elbo_reference: float,
                         iteration: int,
                         step_size: float,
                         bounded_parameter_handling: str,
-                        optimization_method: str):
+                        optimization_method: str,
+                        mfmc_control_variate_mode: str,
+                        vi_history=None,
+                        sampling_method: str = None):
     save_data = dict(
-        optimizer_samples=state['optimizer_samples'],
-        parameter_samples=state['parameter_samples'],
-        qois=state['qois_fom'],
-        mean_qoi=state['mean_qoi_fom'],
-        errors=state['errors_fom'],
         log_likelihoods=state['log_likelihoods_fom'],
+        mean_relative_mse=float(state['mean_relative_mse']),
         variational_mean=variational_mean,
         variational_log_std=variational_log_std,
         variational_distribution=variational_distribution,
         elbo_scaling_factor=elbo_scaling_factor,
+        elbo_relative_tolerance=(
+            np.nan if elbo_relative_tolerance is None else float(elbo_relative_tolerance)
+        ),
+        initial_elbo_reference=float(initial_elbo_reference),
         iteration=iteration,
         step_size=step_size,
         bounded_parameter_handling=bounded_parameter_handling,
         optimization_method=optimization_method,
-        rom_error=state['rom_error'],
-        mfmc_alpha_mean=state['mfmc_alpha_mean'],
-        mfmc_alpha_log_std=state['mfmc_alpha_log_std'],
+        mfmc_control_variate_mode=mfmc_control_variate_mode,
+        sampling_method=sampling_method,
         training_directories=np.array(state['training_dirs']),
         rom_training_directories=np.array(state['rom_training_dirs']),
         training_parameters=state['training_parameters'],
         training_qois=state['training_qois'],
         rom_training_parameters=state['rom_training_parameters'],
         rom_training_qois=state['rom_training_qois'],
+        gradient_signal_to_noise_ratio=float(state.get('gradient_signal_to_noise_ratio', np.nan)),
+        rng_state=np.array(np.random.get_state(), dtype=object),
     )
+    if vi_history is not None:
+        save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
         save_data['variational_correlation_cholesky'] = variational_correlation_cholesky
     np.savez(restart_path, **save_data)
+
+
+def _restart_has_full_state(restart_data) -> bool:
+    required_keys = (
+        'parameter_samples_fom',
+        'parameter_samples_rom_base',
+        'parameter_samples_rom_only',
+        'qois',
+        'qois_rom_base',
+        'qois_rom_only',
+        'mean_qoi',
+        'errors',
+        'log_likelihoods',
+        'log_likelihoods_rom_base',
+        'log_likelihoods_rom_only',
+        'gradient_mean',
+        'gradient_log_std',
+        'hessian_diagonal_mean',
+        'hessian_diagonal_log_std',
+        'update_direction_mean',
+        'update_direction_log_std',
+        'baseline_mean',
+        'baseline_log_std',
+        'entropy',
+        'elbo',
+        'mean_misfit',
+        'mean_relative_mse',
+        'mfmc_alpha_mean',
+        'mfmc_alpha_log_std',
+        'rom_error',
+    )
+    return all(key in restart_data for key in required_keys)
 
 
 def _evaluate_mf_vi_state(model: QoiModel,
@@ -599,6 +785,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           covariance_regularization: float,
                           baseline_method: str,
                           use_mfmc_control_variate: bool,
+                          mfmc_control_variate_mode: str,
                           variational_correlation_cholesky: np.ndarray,
                           elbo_scaling_factor: float,
                           gradient_method: str,
@@ -611,12 +798,16 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           transform_interior_margin: float,
                           rom_tolerance: float,
                           max_rom_training_dirs: int,
+                          correlation_estimator: str,
+                          correlation_k_folds: int,
                           training_dirs: list,
                           training_parameters: np.ndarray,
                           training_qois: np.ndarray,
                           rom_training_dirs: list,
                           rom_training_parameters: np.ndarray,
-                          rom_training_qois: np.ndarray):
+                          rom_training_qois: np.ndarray,
+                          log_likelihood_precision_operator: np.ndarray = None,
+                          sampling_method: str = 'mc'):
     run_directory_base = f'{iteration_directory}/run_fom_sample_set_0_'
     optimizer_samples_fom, parameter_samples_fom = _draw_parameter_samples(
         variational_mean,
@@ -629,6 +820,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         parameter_maxes,
         transform_interior_margin=transform_interior_margin,
         variational_correlation_cholesky=variational_correlation_cholesky,
+        sampling_method=sampling_method,
     )
 
     if rom_base_sampling_strategy == 'coupled':
@@ -647,6 +839,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_maxes,
             transform_interior_margin=transform_interior_margin,
             variational_correlation_cholesky=variational_correlation_cholesky,
+            sampling_method=sampling_method,
         )
 
     if rom_extra_sample_size > 0:
@@ -661,6 +854,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_maxes,
             transform_interior_margin=transform_interior_margin,
             variational_correlation_cholesky=variational_correlation_cholesky,
+            sampling_method=sampling_method,
         )
     else:
         optimizer_samples_rom_extra = np.zeros((0, variational_mean.size))
@@ -690,6 +884,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
     )
 
     rom_model_candidate = rom_model
+    rom_model_uses_current_iteration = rom_model is None
     candidate_rom_training_dirs = copy.deepcopy(rom_training_dirs)
     candidate_rom_training_parameters = (
         None if rom_training_parameters is None else rom_training_parameters.copy()
@@ -732,6 +927,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             candidate_rom_training_parameters,
             candidate_rom_training_qois,
         )
+        rom_model_uses_current_iteration = True
         rom_rebuilt_this_iteration = True
         rom_results_base = run_eki_iteration(
             rom_model_candidate,
@@ -763,10 +959,11 @@ def _evaluate_mf_vi_state(model: QoiModel,
             'errors': np.zeros((fom_results['errors'].shape[0], 0)),
         }
 
-    log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
-        observations_covariance,
-        covariance_regularization,
-    )
+    if log_likelihood_precision_operator is None:
+        log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
+            observations_covariance,
+            covariance_regularization,
+        )
 
     fom_log_likelihoods, fom_misfits = _compute_log_likelihoods(
         fom_results['errors'],
@@ -774,12 +971,72 @@ def _evaluate_mf_vi_state(model: QoiModel,
         covariance_regularization,
         precision_operator=log_likelihood_precision_operator,
     )
-    rom_log_likelihoods_base, _ = _compute_log_likelihoods(
-        rom_results_base['errors'],
-        observations_covariance,
-        covariance_regularization,
-        precision_operator=log_likelihood_precision_operator,
+    use_kfold_correlation = (
+        correlation_estimator == 'kfold'
+        and rom_base_sampling_strategy == 'coupled'
+        and rom_model_uses_current_iteration
+        and fom_sample_size >= 2
     )
+    if use_kfold_correlation:
+        fold_count = min(correlation_k_folds, fom_sample_size)
+        if fold_count >= 2:
+            rom_errors_base = np.zeros_like(fom_results['errors'])
+            fold_indices = np.array_split(np.arange(fom_sample_size), fold_count)
+            current_iteration_dirs = iteration_training_dirs[:-1]
+            current_iteration_parameters = iteration_training_parameters[:-1, :]
+            current_iteration_qois = iteration_training_qois[:-1, :]
+            for fold_id, heldout_indices in enumerate(fold_indices):
+                if heldout_indices.size == 0:
+                    continue
+                in_fold_mask = np.ones(fom_sample_size, dtype=bool)
+                in_fold_mask[heldout_indices] = False
+                in_fold_indices = np.where(in_fold_mask)[0]
+                in_fold_dirs = [current_iteration_dirs[index] for index in in_fold_indices]
+                in_fold_parameters = current_iteration_parameters[in_fold_indices, :]
+                in_fold_qois = current_iteration_qois[in_fold_indices, :]
+                #training_parameters is None or training_qois is None:
+                fold_training_dirs = in_fold_dirs
+                fold_training_parameters = in_fold_parameters
+                fold_training_qois = in_fold_qois
+                #else:
+                #    fold_training_dirs = list(training_dirs) + in_fold_dirs
+                #    fold_training_parameters = np.vstack([training_parameters, in_fold_parameters])
+                #    fold_training_qois = np.vstack([training_qois, in_fold_qois])
+                fold_rom_model = rom_model_builder.build_from_training_dirs(
+                    iteration_directory,
+                    fold_training_dirs,
+                    fold_training_parameters,
+                    fold_training_qois,
+                )
+                fold_results = run_eki_iteration(
+                    fold_rom_model,
+                    observations,
+                    f'{iteration_directory}/run_rom_kfold_{fold_id}_',
+                    parameter_names,
+                    parameter_samples_rom_base[heldout_indices, :],
+                    rom_evaluation_concurrency,
+                )
+                rom_errors_base[:, heldout_indices] = fold_results['errors']
+            rom_log_likelihoods_base, _ = _compute_log_likelihoods(
+                rom_errors_base,
+                observations_covariance,
+                covariance_regularization,
+                precision_operator=log_likelihood_precision_operator,
+            )
+        else:
+            rom_log_likelihoods_base, _ = _compute_log_likelihoods(
+                rom_results_base['errors'],
+                observations_covariance,
+                covariance_regularization,
+                precision_operator=log_likelihood_precision_operator,
+            )
+    else:
+        rom_log_likelihoods_base, _ = _compute_log_likelihoods(
+            rom_results_base['errors'],
+            observations_covariance,
+            covariance_regularization,
+            precision_operator=log_likelihood_precision_operator,
+        )
     if rom_extra_sample_size > 0:
         rom_log_likelihoods_extra, _ = _compute_log_likelihoods(
             rom_results_extra['errors'],
@@ -795,7 +1052,15 @@ def _evaluate_mf_vi_state(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
-    gradient_mean, gradient_log_std, baseline_mean, baseline_log_std, alpha_mean, alpha_log_std = (
+    (
+        gradient_mean,
+        gradient_log_std,
+        baseline_mean,
+        baseline_log_std,
+        alpha_mean,
+        alpha_log_std,
+        gradient_signal_to_noise_ratio,
+    ) = (
         _compute_mfmc_reinforce_gradients(
             optimizer_samples_fom,
             optimizer_samples_rom_base,
@@ -807,6 +1072,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             rom_log_likelihoods_extra,
             baseline_method,
             use_mfmc_control_variate,
+            mfmc_control_variate_mode,
             variational_correlation_cholesky,
             elbo_scaling_factor,
         )
@@ -822,6 +1088,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         rom_log_likelihoods_extra,
         baseline_method,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
         variational_correlation_cholesky,
         elbo_scaling_factor,
     )
@@ -836,6 +1103,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         rom_log_likelihoods_extra,
         baseline_method,
         use_mfmc_control_variate,
+        mfmc_control_variate_mode,
         variational_correlation_cholesky,
         elbo_scaling_factor,
     )
@@ -904,6 +1172,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'gradient_method': normalized_gradient_method,
         'baseline_mean': baseline_mean,
         'baseline_log_std': baseline_log_std,
+        'gradient_signal_to_noise_ratio': gradient_signal_to_noise_ratio,
         'mfmc_alpha_mean': alpha_mean,
         'mfmc_alpha_log_std': alpha_log_std,
         'rom_error': rom_error,
@@ -937,17 +1206,22 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                max_log_std_update: float,
                                newton_regularization: float,
                                covariance_regularization: float,
+                               restart_files_to_keep: int,
+                               correlation_k_folds: int,
                                observations_covariance: np.ndarray,
                                observations: np.ndarray,
                                elbo_scaling_factor: float,
+                               elbo_relative_tolerance: float,
+                               sampling_method: str,
                                max_rom_training_history: int,
-                               parameter_space: ParameterSpace,
+                               variational_parameter_space,
                                parameter_mins: np.ndarray,
                                parameter_maxes: np.ndarray,
                                transform_interior_margin: float,
                                min_physical_variational_std_fraction: float,
                                bounded_parameter_handling: str) -> None:
-    assert restart_file is None, "run_mf_vi currently does not support restart_file."
+    if restart_file is not None:
+        assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
     assert os.path.isabs(absolute_vi_directory), (
         f"absolute_vi_directory is not an absolute path ({absolute_vi_directory})"
     )
@@ -976,6 +1250,8 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
+    assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
+    assert correlation_k_folds >= 2, "correlation_k_folds must be >= 2"
     assert observations_covariance.shape[0] == observations_covariance.shape[1], (
         "observations_covariance must be square"
     )
@@ -983,18 +1259,33 @@ def _validate_run_mf_vi_inputs(restart_file: str,
         "observations_covariance shape must match observations size"
     )
     assert elbo_scaling_factor > 0.0, "elbo_scaling_factor must be positive"
+    if elbo_relative_tolerance is not None:
+        assert elbo_relative_tolerance >= 0.0, "elbo_relative_tolerance must be non-negative"
+    _normalize_sampling_method(sampling_method)
     assert max_rom_training_history >= 1, "max_rom_training_history must be >= 1"
 
-    parameter_dimensionality = parameter_space.get_dimensionality()
+    parameter_names, initial_variational_mean, initial_variational_covariance, _ = (
+        _extract_variational_initialization(variational_parameter_space)
+    )
+    parameter_dimensionality = np.asarray(initial_variational_mean).size
+    assert len(parameter_names) > 0, "variational_parameter_space must define at least one parameter"
+    covariance = np.asarray(initial_variational_covariance)
+    assert covariance.ndim == 2, "initial variational covariance must be a 2D array"
+    assert covariance.shape[0] == covariance.shape[1], (
+        "initial variational covariance must be square"
+    )
+    assert covariance.shape[0] == parameter_dimensionality, (
+        "initial variational covariance shape must match initial variational mean size"
+    )
     if parameter_mins is not None:
         assert np.size(parameter_mins) == parameter_dimensionality, (
             f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with "
-            f"the parameter_space of size {parameter_dimensionality}"
+            f"the variational dimensionality of size {parameter_dimensionality}"
         )
     if parameter_maxes is not None:
         assert np.size(parameter_maxes) == parameter_dimensionality, (
             f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with "
-            f"the parameter_space of size {parameter_dimensionality}"
+            f"the variational dimensionality of size {parameter_dimensionality}"
         )
     if bounded_parameter_handling == 'transform':
         assert 0.0 <= transform_interior_margin < 0.5, (
@@ -1004,11 +1295,11 @@ def _validate_run_mf_vi_inputs(restart_file: str,
         assert parameter_maxes is not None, "parameter_maxes must be provided for bounded_parameter_handling='transform'"
         assert np.size(parameter_mins) == parameter_dimensionality, (
             f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with "
-            f"the parameter_space of size {parameter_dimensionality}"
+            f"the variational dimensionality of size {parameter_dimensionality}"
         )
         assert np.size(parameter_maxes) == parameter_dimensionality, (
             f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with "
-            f"the parameter_space of size {parameter_dimensionality}"
+            f"the variational dimensionality of size {parameter_dimensionality}"
         )
         assert np.all(parameter_maxes > parameter_mins), (
             "All parameter_maxes entries must be greater than parameter_mins entries "
@@ -1018,7 +1309,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
 
 def run_mf_vi(model: QoiModel,
               rom_model_builder: QoiModelBuilderWithTrainingData,
-              parameter_space: ParameterSpace,
+              variational_parameter_space,
               observations: np.ndarray,
               observations_covariance: np.ndarray,
               parameter_mins: np.ndarray = None,
@@ -1034,13 +1325,18 @@ def run_mf_vi(model: QoiModel,
               rom_tolerance: float = 0.005,
               max_rom_training_history: int = 1,
               random_seed: int = 1,
-              fom_evaluation_concurrency=1,
+              sampling_method: str = 'mc',
+              fom_evaluation_concurrency=10,
               rom_evaluation_concurrency=1,
               covariance_regularization: float = 1e-7,
+              restart_files_to_keep: int = 10,
+              correlation_estimator: str = 'in_sample',
+              correlation_k_folds: int = 5,
               elbo_scaling_factor='diag_mean',
+              elbo_relative_tolerance: float = None,
               baseline_method: str = None,
-              variational_distribution: str = 'diagonal',
               use_mfmc_control_variate: bool = True,
+              mfmc_control_variate_mode: str = 'componentwise',
               rom_base_sampling_strategy: str = 'coupled',
               bounded_parameter_handling: str = 'transform',
               transform_interior_margin: float = 1e-8,
@@ -1050,6 +1346,11 @@ def run_mf_vi(model: QoiModel,
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
     Args:
+        variational_parameter_space: Either GaussianParameterSpace (diagonal VI)
+            or MultivariateGaussianParameterSpace (multivariate VI). Provides
+            parameter names and initial Gaussian moments in physical parameter
+            space. For bounded_parameter_handling='transform', moments are
+            mapped to optimizer space internally.
         parameter_mins: Optional lower bounds on parameters.
         parameter_maxes: Optional upper bounds on parameters.
         restart_file: Optional restart file path.
@@ -1065,6 +1366,12 @@ def run_mf_vi(model: QoiModel,
             are `VILegacyLineSearchConfig` for line_search_method='legacy' and
             `VIStochasticNonmonotoneLineSearchConfig` for
             line_search_method='stochastic_nonmonotone'.
+        sampling_method: Sampling method for variational draws. Supported
+            options are 'mc' and 'rqmc'.
+        mfmc_control_variate_mode: Control-variate coefficient strategy.
+            'componentwise' computes one scalar coefficient per component.
+            'scalar' computes one shared scalar coefficient (A = alpha I).
+            'matrix' computes a joint linear map across components.
         rom_base_sampling_strategy: Strategy for ROM-base sample selection.
             'coupled' (default) reuses the FOM sample set for ROM-base
             evaluations. 'separate' draws an independent ROM-base sample set.
@@ -1080,6 +1387,7 @@ def run_mf_vi(model: QoiModel,
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
     """
     start_time = time.time()
+    start_cpu_time = time.process_time()
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
         parameter_mins,
         parameter_maxes,
@@ -1147,16 +1455,21 @@ def run_mf_vi(model: QoiModel,
     )
 
     bounded_parameter_handling = _normalize_bounded_parameter_handling(bounded_parameter_handling)
-    variational_distribution = _normalize_variational_distribution(variational_distribution)
+    (
+        parameter_names,
+        initial_variational_mean,
+        initial_variational_covariance,
+        variational_distribution,
+    ) = _extract_variational_initialization(variational_parameter_space)
+    sampling_method = _normalize_sampling_method(sampling_method)
+    correlation_estimator = _normalize_correlation_estimator(correlation_estimator)
     if baseline_method is None:
         baseline_method = 'loo'
     baseline_method = _normalize_baseline_method(baseline_method)
+    mfmc_control_variate_mode = _normalize_mfmc_control_variate_mode(
+        mfmc_control_variate_mode
+    )
     rom_base_sampling_strategy = _normalize_rom_base_sampling_strategy(rom_base_sampling_strategy)
-    if bounded_parameter_handling == 'transform':
-        if parameter_mins is None and hasattr(parameter_space, 'parameter_mins'):
-            parameter_mins = np.asarray(parameter_space.parameter_mins)
-        if parameter_maxes is None and hasattr(parameter_space, 'parameter_maxes'):
-            parameter_maxes = np.asarray(parameter_space.parameter_maxes)
     _validate_run_mf_vi_inputs(
         restart_file=restart_file,
         absolute_vi_directory=absolute_vi_directory,
@@ -1176,98 +1489,334 @@ def run_mf_vi(model: QoiModel,
         max_log_std_update=max_log_std_update,
         newton_regularization=newton_regularization,
         covariance_regularization=covariance_regularization,
+        restart_files_to_keep=restart_files_to_keep,
+        correlation_k_folds=correlation_k_folds,
         observations_covariance=observations_covariance,
         observations=observations,
         elbo_scaling_factor=elbo_scaling_factor,
+        elbo_relative_tolerance=elbo_relative_tolerance,
+        sampling_method=sampling_method,
         max_rom_training_history=max_rom_training_history,
-        parameter_space=parameter_space,
+        variational_parameter_space=variational_parameter_space,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         transform_interior_margin=transform_interior_margin,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         bounded_parameter_handling=bounded_parameter_handling,
     )
+    log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
+        observations_covariance,
+        covariance_regularization,
+    )
 
-    np.random.seed(random_seed)
-    parameter_names = parameter_space.get_names()
     iteration = 0
     step_size = min(initial_step_size, max_step_size)
+    variational_correlation_cholesky = None
+    vi_history = _initialize_vi_history()
 
-    total_initial_samples = fom_sample_size + max(rom_extra_sample_size, 1)
-    initial_samples = parameter_space.generate_samples(total_initial_samples)
-    initial_samples = bound_samples(initial_samples, parameter_mins, parameter_maxes)
-    if bounded_parameter_handling == 'transform':
-        optimizer_initial_samples = _transform_parameter_to_optimizer(
-            initial_samples,
+    if restart_file is None:
+        np.random.seed(random_seed)
+        initial_optimizer_mean, initial_optimizer_covariance = (
+            _convert_physical_moments_to_optimizer_moments(
+                initial_variational_mean,
+                initial_variational_covariance,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+            )
+        )
+        (
+            variational_mean,
+            variational_log_std,
+            variational_correlation_cholesky,
+        ) = _initialize_variational_from_mean_cov(
+            initial_optimizer_mean,
+            initial_optimizer_covariance,
+            variational_distribution,
+            min_variational_std,
+            max_variational_std,
+        )
+        variational_log_std = _enforce_variational_log_std_bounds(
+            variational_mean,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            bounded_parameter_handling,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            min_physical_variational_std_fraction,
         )
+
+        state = _evaluate_mf_vi_state(
+            model=model,
+            rom_model=None,
+            rom_model_builder=rom_model_builder,
+            observations=observations,
+            observations_covariance=observations_covariance,
+            iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
+            parameter_names=parameter_names,
+            variational_mean=variational_mean,
+            variational_log_std=variational_log_std,
+            fom_sample_size=fom_sample_size,
+            rom_extra_sample_size=rom_extra_sample_size,
+            fom_evaluation_concurrency=fom_evaluation_concurrency,
+            rom_evaluation_concurrency=rom_evaluation_concurrency,
+            covariance_regularization=covariance_regularization,
+            baseline_method=baseline_method,
+            use_mfmc_control_variate=use_mfmc_control_variate,
+            mfmc_control_variate_mode=mfmc_control_variate_mode,
+            variational_correlation_cholesky=variational_correlation_cholesky,
+            elbo_scaling_factor=elbo_scaling_factor,
+            gradient_method=gradient_method,
+            bounded_parameter_handling=bounded_parameter_handling,
+            min_variational_std=min_variational_std,
+            max_variational_std=max_variational_std,
+            rom_base_sampling_strategy=rom_base_sampling_strategy,
+            parameter_mins=parameter_mins,
+            parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
+            rom_tolerance=rom_tolerance,
+            max_rom_training_dirs=max_rom_training_dirs,
+            correlation_estimator=correlation_estimator,
+            correlation_k_folds=correlation_k_folds,
+            training_dirs=[],
+            training_parameters=None,
+            training_qois=None,
+            rom_training_dirs=[],
+            rom_training_parameters=None,
+            rom_training_qois=None,
+            log_likelihood_precision_operator=log_likelihood_precision_operator,
+            sampling_method=sampling_method,
+        )
+        initial_elbo_reference = float(state['elbo'])
     else:
-        optimizer_initial_samples = initial_samples
-
-    variational_mean = np.mean(optimizer_initial_samples, axis=0)
-    variational_std = np.std(optimizer_initial_samples, axis=0, ddof=1)
-    variational_std = np.maximum(variational_std, min_variational_std)
-    variational_log_std = np.log(variational_std)
-    variational_log_std = _clip_variational_log_std(
-        variational_log_std,
-        min_variational_std,
-        max_variational_std,
-    )
-    variational_log_std = _enforce_variational_log_std_bounds(
-        variational_mean,
-        variational_log_std,
-        min_variational_std,
-        max_variational_std,
-        bounded_parameter_handling,
-        parameter_mins,
-        parameter_maxes,
-        transform_interior_margin,
-        min_physical_variational_std_fraction,
-    )
-    variational_correlation_cholesky = None
-    if variational_distribution == 'multivariate':
-        variational_correlation_cholesky = _compute_correlation_cholesky_from_samples(
-            optimizer_initial_samples
+        restart_data = np.load(restart_file, allow_pickle=True)
+        vi_history = _load_vi_history_from_restart(restart_data)
+        if 'rng_state' in restart_data:
+            np.random.set_state(tuple(restart_data['rng_state'].tolist()))
+        else:
+            np.random.seed(random_seed)
+        iteration = int(restart_data['iteration'])
+        step_size = min(float(restart_data['step_size']), max_step_size)
+        variational_mean = restart_data['variational_mean']
+        variational_log_std = _clip_variational_log_std(
+            restart_data['variational_log_std'],
+            min_variational_std,
+            max_variational_std,
+        )
+        variational_log_std = _enforce_variational_log_std_bounds(
+            variational_mean,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            min_physical_variational_std_fraction,
         )
 
-    state = _evaluate_mf_vi_state(
-        model=model,
-        rom_model=None,
-        rom_model_builder=rom_model_builder,
-        observations=observations,
-        observations_covariance=observations_covariance,
-        iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
-        parameter_names=parameter_names,
-        variational_mean=variational_mean,
-        variational_log_std=variational_log_std,
-        fom_sample_size=fom_sample_size,
-        rom_extra_sample_size=rom_extra_sample_size,
-        fom_evaluation_concurrency=fom_evaluation_concurrency,
-        rom_evaluation_concurrency=rom_evaluation_concurrency,
-        covariance_regularization=covariance_regularization,
-        baseline_method=baseline_method,
-        use_mfmc_control_variate=use_mfmc_control_variate,
-        variational_correlation_cholesky=variational_correlation_cholesky,
-        elbo_scaling_factor=elbo_scaling_factor,
-        gradient_method=gradient_method,
-        bounded_parameter_handling=bounded_parameter_handling,
-        min_variational_std=min_variational_std,
-        max_variational_std=max_variational_std,
-        rom_base_sampling_strategy=rom_base_sampling_strategy,
-        parameter_mins=parameter_mins,
-        parameter_maxes=parameter_maxes,
-        transform_interior_margin=transform_interior_margin,
-        rom_tolerance=rom_tolerance,
-        max_rom_training_dirs=max_rom_training_dirs,
-        training_dirs=[],
-        training_parameters=None,
-        training_qois=None,
-        rom_training_dirs=[],
-        rom_training_parameters=None,
-        rom_training_qois=None,
-    )
+        if 'bounded_parameter_handling' in restart_data:
+            restart_bounded_parameter_handling = str(
+                restart_data['bounded_parameter_handling'].item()
+            )
+            if restart_bounded_parameter_handling != bounded_parameter_handling:
+                raise ValueError(
+                    "restart_file bounded_parameter_handling does not match current run."
+                )
+        if 'variational_distribution' in restart_data:
+            restart_variational_distribution = str(restart_data['variational_distribution'].item())
+            if restart_variational_distribution != variational_distribution:
+                raise ValueError(
+                    "restart_file variational_distribution does not match current run."
+                )
+        if 'optimization_method' in restart_data:
+            restart_optimization_method = str(restart_data['optimization_method'].item()).strip().lower()
+            if restart_optimization_method != optimization_method:
+                raise ValueError("restart_file optimization_method does not match current run.")
+        if 'mfmc_control_variate_mode' in restart_data:
+            restart_control_variate_mode = _normalize_mfmc_control_variate_mode(
+                str(restart_data['mfmc_control_variate_mode'].item())
+            )
+            if restart_control_variate_mode != mfmc_control_variate_mode:
+                raise ValueError("restart_file mfmc_control_variate_mode does not match current run.")
+        if 'sampling_method' in restart_data:
+            restart_sampling_method = _normalize_sampling_method(
+                str(restart_data['sampling_method'].item())
+            )
+            if restart_sampling_method != sampling_method:
+                raise ValueError("restart_file sampling_method does not match current run.")
+        if 'elbo_scaling_factor' in restart_data:
+            restart_elbo_scaling_factor = float(restart_data['elbo_scaling_factor'])
+            if not np.isclose(restart_elbo_scaling_factor, elbo_scaling_factor):
+                raise ValueError("restart_file elbo_scaling_factor does not match current run.")
+        if 'elbo_relative_tolerance' in restart_data:
+            restart_elbo_relative_tolerance = float(restart_data['elbo_relative_tolerance'])
+            restart_tolerance_is_none = np.isnan(restart_elbo_relative_tolerance)
+            current_tolerance_is_none = elbo_relative_tolerance is None
+            if restart_tolerance_is_none != current_tolerance_is_none:
+                raise ValueError("restart_file elbo_relative_tolerance does not match current run.")
+            if (
+                not current_tolerance_is_none
+                and not np.isclose(restart_elbo_relative_tolerance, elbo_relative_tolerance)
+            ):
+                raise ValueError("restart_file elbo_relative_tolerance does not match current run.")
+
+        if variational_distribution == 'multivariate':
+            if 'variational_correlation_cholesky' in restart_data:
+                variational_correlation_cholesky = restart_data['variational_correlation_cholesky']
+            elif 'optimizer_samples' in restart_data:
+                variational_correlation_cholesky = _compute_correlation_cholesky_from_samples(
+                    restart_data['optimizer_samples']
+                )
+            else:
+                raise ValueError(
+                    "restart_file is missing variational_correlation_cholesky for multivariate VI."
+                )
+
+        training_directory_key = (
+            'training_directories'
+            if 'training_directories' in restart_data
+            else 'training_dirs'
+        )
+        rom_training_directory_key = (
+            'rom_training_directories'
+            if 'rom_training_directories' in restart_data
+            else 'rom_training_dirs'
+        )
+        if training_directory_key not in restart_data or rom_training_directory_key not in restart_data:
+            raise ValueError(
+                "restart_file missing training_directories/rom_training_directories."
+            )
+        if (
+            'training_parameters' not in restart_data
+            or 'training_qois' not in restart_data
+            or 'rom_training_parameters' not in restart_data
+            or 'rom_training_qois' not in restart_data
+        ):
+            raise ValueError(
+                "restart_file missing training parameters or qois arrays."
+            )
+
+        training_dirs = restart_data[training_directory_key].tolist()
+        rom_training_dirs = restart_data[rom_training_directory_key].tolist()
+        training_parameters = restart_data['training_parameters']
+        training_qois = restart_data['training_qois']
+        rom_training_parameters = restart_data['rom_training_parameters']
+        rom_training_qois = restart_data['rom_training_qois']
+        rom_model = rom_model_builder.build_from_training_dirs(
+            f'{absolute_vi_directory}/iteration_{iteration}',
+            rom_training_dirs,
+            rom_training_parameters,
+            rom_training_qois,
+        )
+
+        if _restart_has_full_state(restart_data):
+            hessian_full = restart_data['hessian_full'] if 'hessian_full' in restart_data else None
+            state = {
+                'optimizer_samples': restart_data['optimizer_samples']
+                if 'optimizer_samples' in restart_data else np.vstack([
+                    restart_data['parameter_samples_fom'],
+                    restart_data['parameter_samples_rom_base'],
+                    restart_data['parameter_samples_rom_only'],
+                ]),
+                'parameter_samples': restart_data['parameter_samples']
+                if 'parameter_samples' in restart_data else np.vstack([
+                    restart_data['parameter_samples_fom'],
+                    restart_data['parameter_samples_rom_base'],
+                    restart_data['parameter_samples_rom_only'],
+                ]),
+                'parameter_samples_fom': restart_data['parameter_samples_fom'],
+                'parameter_samples_rom_base': restart_data['parameter_samples_rom_base'],
+                'parameter_samples_rom_only': restart_data['parameter_samples_rom_only'],
+                'qois_fom': restart_data['qois'],
+                'mean_qoi_fom': restart_data['mean_qoi'],
+                'errors_fom': restart_data['errors'],
+                'qois_rom_base': restart_data['qois_rom_base'],
+                'qois_rom_coupled': restart_data['qois_rom_base'],
+                'qois_rom_only': restart_data['qois_rom_only'],
+                'log_likelihoods_fom': restart_data['log_likelihoods'],
+                'log_likelihoods_rom_base': restart_data['log_likelihoods_rom_base'],
+                'log_likelihoods_rom_coupled': restart_data['log_likelihoods_rom_base'],
+                'log_likelihoods_rom_only': restart_data['log_likelihoods_rom_only'],
+                'mean_misfit': float(restart_data['mean_misfit']),
+                'mean_relative_mse': float(restart_data['mean_relative_mse']),
+                'entropy': float(restart_data['entropy']),
+                'elbo': float(restart_data['elbo']),
+                'gradient_mean': restart_data['gradient_mean'],
+                'gradient_log_std': restart_data['gradient_log_std'],
+                'hessian_diagonal_mean': restart_data['hessian_diagonal_mean'],
+                'hessian_diagonal_log_std': restart_data['hessian_diagonal_log_std'],
+                'hessian_full': hessian_full,
+                'update_direction_mean': restart_data['update_direction_mean'],
+                'update_direction_log_std': restart_data['update_direction_log_std'],
+                'gradient_method': gradient_method,
+                'baseline_mean': restart_data['baseline_mean'],
+                'baseline_log_std': restart_data['baseline_log_std'],
+                'gradient_signal_to_noise_ratio': float(restart_data['gradient_signal_to_noise_ratio'])
+                if 'gradient_signal_to_noise_ratio' in restart_data else np.nan,
+                'mfmc_alpha_mean': restart_data['mfmc_alpha_mean'],
+                'mfmc_alpha_log_std': restart_data['mfmc_alpha_log_std'],
+                'rom_error': float(restart_data['rom_error']),
+                'rom_rebuilt_this_iteration': bool(
+                    restart_data['rom_rebuilt_this_iteration']
+                ) if 'rom_rebuilt_this_iteration' in restart_data else False,
+                'rom_model': rom_model,
+                'training_dirs': training_dirs,
+                'training_parameters': training_parameters,
+                'training_qois': training_qois,
+                'rom_training_dirs': rom_training_dirs,
+                'rom_training_parameters': rom_training_parameters,
+                'rom_training_qois': rom_training_qois,
+            }
+        else:
+            state = _evaluate_mf_vi_state(
+                model=model,
+                rom_model=rom_model,
+                rom_model_builder=rom_model_builder,
+                observations=observations,
+                observations_covariance=observations_covariance,
+                iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
+                parameter_names=parameter_names,
+                variational_mean=variational_mean,
+                variational_log_std=variational_log_std,
+                fom_sample_size=fom_sample_size,
+                rom_extra_sample_size=rom_extra_sample_size,
+                fom_evaluation_concurrency=fom_evaluation_concurrency,
+                rom_evaluation_concurrency=rom_evaluation_concurrency,
+                covariance_regularization=covariance_regularization,
+                baseline_method=baseline_method,
+                use_mfmc_control_variate=use_mfmc_control_variate,
+                mfmc_control_variate_mode=mfmc_control_variate_mode,
+                variational_correlation_cholesky=variational_correlation_cholesky,
+                elbo_scaling_factor=elbo_scaling_factor,
+                gradient_method=gradient_method,
+                bounded_parameter_handling=bounded_parameter_handling,
+                min_variational_std=min_variational_std,
+                max_variational_std=max_variational_std,
+                rom_base_sampling_strategy=rom_base_sampling_strategy,
+                parameter_mins=parameter_mins,
+                parameter_maxes=parameter_maxes,
+                transform_interior_margin=transform_interior_margin,
+                rom_tolerance=rom_tolerance,
+                max_rom_training_dirs=max_rom_training_dirs,
+                correlation_estimator=correlation_estimator,
+                correlation_k_folds=correlation_k_folds,
+                training_dirs=training_dirs,
+                training_parameters=training_parameters,
+                training_qois=training_qois,
+                rom_training_dirs=rom_training_dirs,
+                rom_training_parameters=rom_training_parameters,
+                rom_training_qois=rom_training_qois,
+                log_likelihood_precision_operator=log_likelihood_precision_operator,
+                sampling_method=sampling_method,
+            )
+        if 'initial_elbo_reference' in restart_data:
+            initial_elbo_reference = float(restart_data['initial_elbo_reference'])
+        else:
+            initial_elbo_reference = float(state['elbo'])
 
     _save_mf_vi_restart(
         f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
@@ -1277,14 +1826,37 @@ def run_mf_vi(model: QoiModel,
         variational_distribution,
         variational_correlation_cholesky,
         elbo_scaling_factor,
+        elbo_relative_tolerance,
+        initial_elbo_reference,
         iteration,
         step_size,
         bounded_parameter_handling,
         optimization_method,
+        mfmc_control_variate_mode,
+        vi_history=vi_history,
+        sampling_method=sampling_method,
     )
+    _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
 
     gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
+    cpu_time = time.process_time() - start_cpu_time
+    if len(vi_history['cpu_time_seconds']) <= iteration:
+        _append_vi_history(
+            vi_history,
+            variational_mean,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            variational_correlation_cholesky,
+            state['mean_relative_mse'],
+            state['log_likelihoods_fom'],
+            cpu_time,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+        )
     alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
     alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
     print(
@@ -1293,6 +1865,7 @@ def run_mf_vi(model: QoiModel,
         f'alpha_mean: {alpha_mean_scalar:.5f}, alpha_logstd: {alpha_log_scalar:.5f}, '
         f'Step size: {step_size:.5f}, Gradient norm: {gradient_norm:.5f}, Wall time: {wall_time:.5f}'
     )
+    _print_gradient_signal_to_noise_ratio(state)
     _print_vi_parameters(
         variational_mean,
         variational_log_std,
@@ -1301,11 +1874,25 @@ def run_mf_vi(model: QoiModel,
         optimizer_samples=state['optimizer_samples'],
         parameter_samples=state['parameter_samples'],
     )
+    _write_iteration_stats_file(
+        f'{absolute_vi_directory}/iteration_{iteration}',
+        variational_mean,
+        variational_log_std,
+        min_variational_std,
+        max_variational_std,
+        variational_correlation_cholesky,
+        state['elbo'],
+        state['log_likelihoods_fom'],
+        state['mean_relative_mse'],
+        wall_time,
+        cpu_time,
+    )
 
     iteration += 1
     step_failed_counter = 0
     steepest_descent_solver = SteepestDescentSolver()
     accepted_elbo_history = [state['elbo']]
+    elbo_converged = False
 
     while iteration < max_iterations and gradient_norm > gradient_norm_tolerance:
         current_fom_sample_size = int(np.ceil(
@@ -1417,6 +2004,7 @@ def run_mf_vi(model: QoiModel,
             covariance_regularization=covariance_regularization,
             baseline_method=baseline_method,
             use_mfmc_control_variate=use_mfmc_control_variate,
+            mfmc_control_variate_mode=mfmc_control_variate_mode,
             variational_correlation_cholesky=variational_correlation_cholesky,
             elbo_scaling_factor=elbo_scaling_factor,
             gradient_method=gradient_method,
@@ -1429,12 +2017,16 @@ def run_mf_vi(model: QoiModel,
             transform_interior_margin=transform_interior_margin,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
+            correlation_estimator=correlation_estimator,
+            correlation_k_folds=correlation_k_folds,
             training_dirs=state['training_dirs'],
             training_parameters=state['training_parameters'],
             training_qois=state['training_qois'],
             rom_training_dirs=state['rom_training_dirs'],
             rom_training_parameters=state['rom_training_parameters'],
             rom_training_qois=state['rom_training_qois'],
+            log_likelihood_precision_operator=log_likelihood_precision_operator,
+            sampling_method=sampling_method,
         )
 
         if line_search_method == 'legacy':
@@ -1461,19 +2053,45 @@ def run_mf_vi(model: QoiModel,
             variational_log_std = test_variational_log_std*1.0
             state = test_state
             accepted_elbo_history.append(state['elbo'])
+            relative_elbo_improvement = (
+                float(state['elbo']) / (initial_elbo_reference + 1e-16)
+            )
+            if (
+                elbo_relative_tolerance is not None
+                and relative_elbo_improvement <= elbo_relative_tolerance
+            ):
+                elbo_converged = True
 
             step_size = min(step_size * step_size_growth_factor, max_step_size)
 
             gradient_norm = _compute_gradient_norm(state, optimization_method)
             wall_time = time.time() - start_time
+            cpu_time = time.process_time() - start_cpu_time
+            _append_vi_history(
+                vi_history,
+                variational_mean,
+                variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                variational_correlation_cholesky,
+                state['mean_relative_mse'],
+                state['log_likelihoods_fom'],
+                cpu_time,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+            )
             alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
             alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
             print(
                 f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, ELBO: {state["elbo"]:.5f}, '
+                f'Relative ELBO (initial ref): {relative_elbo_improvement:.5e}, '
                 f'ROM err: {state["rom_error"]:.5f}, alpha_mean: {alpha_mean_scalar:.5f}, '
                 f'alpha_logstd: {alpha_log_scalar:.5f}, Step size: {step_size:.5e}, '
                 f'Gradient norm: {gradient_norm:.5f}, Wall time: {wall_time:.5f}'
             )
+            _print_gradient_signal_to_noise_ratio(state)
             _print_vi_parameters(
                 variational_mean,
                 variational_log_std,
@@ -1481,6 +2099,19 @@ def run_mf_vi(model: QoiModel,
                 max_variational_std,
                 optimizer_samples=state['optimizer_samples'],
                 parameter_samples=state['parameter_samples'],
+            )
+            _write_iteration_stats_file(
+                f'{absolute_vi_directory}/iteration_{iteration}',
+                variational_mean,
+                variational_log_std,
+                min_variational_std,
+                max_variational_std,
+                variational_correlation_cholesky,
+                state['elbo'],
+                state['log_likelihoods_fom'],
+                state['mean_relative_mse'],
+                wall_time,
+                cpu_time,
             )
             _save_mf_vi_restart(
                 f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
@@ -1490,12 +2121,24 @@ def run_mf_vi(model: QoiModel,
                 variational_distribution,
                 variational_correlation_cholesky,
                 elbo_scaling_factor,
+                elbo_relative_tolerance,
+                initial_elbo_reference,
                 iteration,
                 step_size,
                 bounded_parameter_handling,
                 optimization_method,
+                mfmc_control_variate_mode,
+                vi_history=vi_history,
+                sampling_method=sampling_method,
             )
+            _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
             iteration += 1
+            if elbo_converged:
+                print(
+                    "ELBO relative-improvement tolerance reached "
+                    f"({relative_elbo_improvement:.5e} <= {elbo_relative_tolerance:.5e}), terminating"
+                )
+                break
         else:
             step_failed_counter += 1
             step_size /= step_size_decay_factor
@@ -1518,6 +2161,8 @@ def run_mf_vi(model: QoiModel,
 
     if iteration >= max_iterations:
         print('Max iterations reached, terminating')
+    elif elbo_converged:
+        print('ELBO relative-improvement tolerance reached!')
     elif gradient_norm <= gradient_norm_tolerance:
         print('Gradient norm dropped below tolerance!')
 
@@ -1526,11 +2171,12 @@ def run_mf_vi(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
+    _save_vi_history(absolute_vi_directory, vi_history)
     return variational_mean, variational_std, state['parameter_samples_fom'], state['qois_fom']
 
 
 def mf_vi_with_auto_rom(model: QoiModel,
-                        parameter_space: ParameterSpace,
+                        variational_parameter_space,
                         observations: np.ndarray,
                         observations_covariance: np.ndarray,
                         parameter_mins: np.ndarray = None,
@@ -1546,13 +2192,18 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         rom_tolerance: float = 0.005,
                         max_rom_training_history: int = 1,
                         random_seed: int = 1,
+                        sampling_method: str = 'mc',
                         fom_evaluation_concurrency=1,
                         rom_evaluation_concurrency=1,
                         covariance_regularization: float = 1e-8,
+                        restart_files_to_keep: int = 10,
+                        correlation_estimator: str = 'in_sample',
+                        correlation_k_folds: int = 5,
                         elbo_scaling_factor='diag_mean',
+                        elbo_relative_tolerance: float = None,
                         baseline_method: str = None,
-                        variational_distribution: str = 'diagonal',
                         use_mfmc_control_variate: bool = True,
+                        mfmc_control_variate_mode: str = 'componentwise',
                         rom_base_sampling_strategy: str = 'coupled',
                         bounded_parameter_handling: str = 'transform',
                         transform_interior_margin: float = 1e-8,
@@ -1599,8 +2250,9 @@ def mf_vi_with_auto_rom(model: QoiModel,
     rom_args = {} if rom_args is None else dict(rom_args)
     rom_type_normalized = rom_type.strip().lower()
     if rom_type_normalized == "gp":
+        variational_parameter_names = list(variational_parameter_space.get_names())
         rom_model_builder = GaussianProcessQoiModelBuilderWithTrainingData(
-            parameter_names=parameter_space.get_names(),
+            parameter_names=variational_parameter_names,
             pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.999999),
             max_pod_modes=rom_args.get("max_pod_modes"),
             kernel=rom_args.get("kernel"),
@@ -1619,7 +2271,7 @@ def mf_vi_with_auto_rom(model: QoiModel,
     return run_mf_vi(
         model=model,
         rom_model_builder=rom_model_builder,
-        parameter_space=parameter_space,
+        variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=parameter_mins,
@@ -1635,13 +2287,18 @@ def mf_vi_with_auto_rom(model: QoiModel,
         rom_tolerance=rom_tolerance,
         max_rom_training_history=max_rom_training_history,
         random_seed=random_seed,
+        sampling_method=sampling_method,
         fom_evaluation_concurrency=fom_evaluation_concurrency,
         rom_evaluation_concurrency=rom_evaluation_concurrency,
         covariance_regularization=covariance_regularization,
+        restart_files_to_keep=restart_files_to_keep,
+        correlation_estimator=correlation_estimator,
+        correlation_k_folds=correlation_k_folds,
         elbo_scaling_factor=elbo_scaling_factor,
+        elbo_relative_tolerance=elbo_relative_tolerance,
         baseline_method=baseline_method,
-        variational_distribution=variational_distribution,
         use_mfmc_control_variate=use_mfmc_control_variate,
+        mfmc_control_variate_mode=mfmc_control_variate_mode,
         rom_base_sampling_strategy=rom_base_sampling_strategy,
         bounded_parameter_handling=bounded_parameter_handling,
         transform_interior_margin=transform_interior_margin,

@@ -14,6 +14,7 @@ romtools.workflows.parameter\_spaces
       GaussianParameterSpace
       HeterogeneousParameterSpace
       HomogeneousParameterSpace
+      MultivariateGaussianParameterSpace
       ParameterSpace
       UniformParameterSpace
    
