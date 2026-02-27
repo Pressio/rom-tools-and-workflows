@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from romtools.workflows.inverse.eki_utils import run_eki_iteration
+from romtools.workflows.inverse.eki_utils import run_vi_iteration
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
     SteepestDescentSolver,
@@ -101,15 +101,8 @@ def _build_iteration_training_data(run_directory_base: str,
                                    qoi_results) -> Tuple[list, np.ndarray, np.ndarray]:
     sample_count = parameter_samples.shape[0]
     training_dirs = [f'{run_directory_base}{sample_index}' for sample_index in range(sample_count)]
-    training_dirs.append(f'{run_directory_base}mean')
-    training_parameters = np.vstack([
-        parameter_samples,
-        np.mean(parameter_samples, axis=0)[None, :],
-    ])
-    training_qois = np.vstack([
-        qoi_results['qois'].T,
-        qoi_results['mean-qoi'][None, :],
-    ])
+    training_parameters = parameter_samples.copy()
+    training_qois = qoi_results['qois'].T.copy()
     return training_dirs, training_parameters, training_qois
 
 
@@ -861,7 +854,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         parameter_samples_rom_extra = np.zeros((0, variational_mean.size))
 
     run_directory_base = f'{iteration_directory}/run_fom_sample_set_0_'
-    fom_results = run_eki_iteration(
+    fom_results = run_vi_iteration(
         model,
         observations,
         run_directory_base,
@@ -903,7 +896,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         )
 
     run_directory_base = f'{iteration_directory}/run_rom_sample_set_0_'
-    rom_results_base = run_eki_iteration(
+    rom_results_base = run_vi_iteration(
         rom_model_candidate,
         observations,
         run_directory_base,
@@ -929,7 +922,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         )
         rom_model_uses_current_iteration = True
         rom_rebuilt_this_iteration = True
-        rom_results_base = run_eki_iteration(
+        rom_results_base = run_vi_iteration(
             rom_model_candidate,
             observations,
             run_directory_base,
@@ -944,7 +937,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
 
     if rom_extra_sample_size > 0:
         run_directory_base = f'{iteration_directory}/run_rom_sample_set_1_'
-        rom_results_extra = run_eki_iteration(
+        rom_results_extra = run_vi_iteration(
             rom_model_candidate,
             observations,
             run_directory_base,
@@ -982,9 +975,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
         if fold_count >= 2:
             rom_errors_base = np.zeros_like(fom_results['errors'])
             fold_indices = np.array_split(np.arange(fom_sample_size), fold_count)
-            current_iteration_dirs = iteration_training_dirs[:-1]
-            current_iteration_parameters = iteration_training_parameters[:-1, :]
-            current_iteration_qois = iteration_training_qois[:-1, :]
+            current_iteration_dirs = iteration_training_dirs
+            current_iteration_parameters = iteration_training_parameters
+            current_iteration_qois = iteration_training_qois
             for fold_id, heldout_indices in enumerate(fold_indices):
                 if heldout_indices.size == 0:
                     continue
@@ -1008,7 +1001,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
                     fold_training_parameters,
                     fold_training_qois,
                 )
-                fold_results = run_eki_iteration(
+                fold_results = run_vi_iteration(
                     fold_rom_model,
                     observations,
                     f'{iteration_directory}/run_rom_kfold_{fold_id}_',
@@ -1447,7 +1440,7 @@ def run_mf_vi(model: QoiModel,
         line_search_armijo_coefficient = resolved_line_search_config.line_search_armijo_coefficient
         line_search_uncertainty_sigma = resolved_line_search_config.line_search_uncertainty_sigma
 
-    max_rom_training_dirs = int(max_rom_training_history * (fom_sample_size + 1))
+    max_rom_training_dirs = int(max_rom_training_history * fom_sample_size)
 
     elbo_scaling_factor = _resolve_elbo_scaling_factor(
         elbo_scaling_factor,
