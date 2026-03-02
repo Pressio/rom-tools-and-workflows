@@ -1,0 +1,75 @@
+Greedy reduced basis status 
+Running FOM sample 0 
+Running FOM sample 1 
+Creating ROM bases 
+Greedy iteration # 0
+Parameter samples: 
+ [[0.29190602 0.07231212]
+ [0.49994293 0.03093092]
+ [0.42676881 0.01014152]
+ [0.40705615 0.03521051]
+ [0.30201303 0.05434286]
+ [0.29082194 0.06883673]
+ [0.39797833 0.08793363]
+ [0.48633359 0.06737628]
+ [0.2917649  0.05631029]
+ [0.42994692 0.02061205]]
+    Running ROM sample 2
+    Running ROM sample 3
+    Running ROM sample 4
+    Running ROM sample 5
+    Running ROM sample 6
+    Running ROM sample 7
+    Running ROM sample 8
+    Running ROM sample 9
+Sample 2 had the highest error indicator of 5.2740013040484275 
+Running FOM sample 2
+Sample 2 had an error of nan
+Computing ROM bases 
+Greedy iteration # 1
+Parameter samples: 
+ [[0.29190602 0.07231212]
+ [0.49994293 0.03093092]
+ [0.42676881 0.01014152]
+ [0.40705615 0.03521051]
+ [0.30201303 0.05434286]
+ [0.29082194 0.06883673]
+ [0.39797833 0.08793363]
+ [0.48633359 0.06737628]
+ [0.2917649  0.05631029]
+ [0.42994692 0.02061205]
+ [0.10042846 0.0968579 ]]
+    Running ROM sample 3
+    Running ROM sample 4
+    Running ROM sample 5
+    Running ROM sample 6
+    Running ROM sample 7
+    Running ROM sample 8
+    Running ROM sample 9
+    Running ROM sample 10
+Sample 10 had the highest error indicator of 3.778115651245416 
+Our MLEM error estimate is nan
+Running FOM sample 10
+Sample 10 had an error of nan
+Computing ROM bases 
+Greedy iteration # 2
+Parameter samples: 
+ [[0.29190602 0.07231212]
+ [0.49994293 0.03093092]
+ [0.42676881 0.01014152]
+ [0.40705615 0.03521051]
+ [0.30201303 0.05434286]
+ [0.29082194 0.06883673]
+ [0.39797833 0.08793363]
+ [0.48633359 0.06737628]
+ [0.2917649  0.05631029]
+ [0.42994692 0.02061205]
+ [0.10042846 0.0968579 ]
+ [0.34360134 0.06953994]]
+    Running ROM sample 3
+    Running ROM sample 4
+    Running ROM sample 5
+    Running ROM sample 6
+    Running ROM sample 7
+    Running ROM sample 8
+    Running ROM sample 9

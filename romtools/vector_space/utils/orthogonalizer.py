@@ -46,11 +46,17 @@
 '''
 The OrthogonalizerClass is used to orthogonalize a basis at the end of the
 construction of a vector space.  Specifically, given a basis
-$$\\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K},$$
-the orthogonalizer will compute a new, orthogonalized basis $\\boldsymbol \\Phi_{\\*}$
+.. math::
+
+   \\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}
+
+the orthogonalizer will compute a new, orthogonalized basis :math:`\\boldsymbol \\Phi_{\\*}`
 where
-$$\\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
-In the above, $\\mathbf{W}$ is a weighting matrix (typically the cell volumes).
+.. math::
+
+   \\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
+
+In the above, :math:`\\mathbf{W}` is a weighting matrix (typically the cell volumes).
 '''
 
 from typing import Protocol
@@ -84,7 +90,9 @@ class EuclideanL2Orthogonalizer:
     '''
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
-    $$\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.$$
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
 
     This class conforms to `Orthogonalizer` protocol.
     '''
@@ -121,8 +129,11 @@ class EuclideanVectorWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
-    $$\\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},$$
-    where $\\mathbf{w}$ is the weighting vector. Typically, this inner product
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+
+    where :math:`\\mathbf{w}` is the weighting vector. Typically, this inner product
     is used for orthogonalizing with respect to cell volumes
 
     This class conforms to `Orthogonalizer` protocol.
@@ -160,4 +171,56 @@ class EuclideanVectorWeightedL2Orthogonalizer:
         tmp = scipy.sparse.diags(np.sqrt(self.__weighting_vector)) @ my_array
         my_array, _ = self.__qr_picked(tmp, mode='reduced')
         my_array = scipy.sparse.diags(np.sqrt(1./self.__weighting_vector)) @ my_array
+        return my_array
+
+
+class EuclideanMatrixWeightedL2Orthogonalizer:
+    '''
+    Orthogonalizes the basis in an SPD matrix-weighted Euclidean L2 inner product,
+    i.e., the output basis will satisfy
+    .. math::
+
+       \\boldsymbol \\Phi_{\\*}^T \\mathbf{M}\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+
+    where :math:`\\mathbf{M}` is the SPD weighting matrix. Typically, this inner product
+    is used for orthogonalizing with respect to a mass matrix 
+
+    This class conforms to `Orthogonalizer` protocol.
+    '''
+    def __init__(self, weighting_matrix: np.ndarray, qrFnc=None) -> None:
+        '''
+        Constructor for the EuclideanMatrixWeightedL2Orthogonalizer that
+        initializes the orthogonalizer with the provided weighting matrix and
+        an optional custom QR decomposition function.
+        Args:
+            weighting_vector (np.ndarray): a 2-D NumPy array that the matrix will be orthogonalized against. The
+                length of the array must match the number of rows in the matrix that will be orthogonalized.
+            qrFnc: a callable to use for computing the QR decomposition.
+                    IMPORTANT: must conform to the API of
+                    [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
+                    If `None`, internally we use `np.linalg.qr`.
+                    Note: this is useful when you want to use a custom qr, for example when your snapshots are
+                    distributed with MPI, or maybe you have a fancy qr function that you can use.
+        '''
+        print("Warning, EuclideanMatrixWeightedL2Orthogonalizer is currently not implemented for distributed memory cases")
+        self.__weighting_matrix = weighting_matrix
+        # Compute the sqrt matrix such that sqrt(W)^T \sqrt(W) = W
+        self.__weighting_matrix_sqrt = np.linalg.cholesky(weighting_matrix).transpose()
+        self.__qr_picked = np.linalg.qr if qrFnc is None else qrFnc
+
+    def orthogonalize(self, my_array: np.ndarray) -> np.ndarray:
+        '''
+        Orthogonalizes the input matrix using the specified weighting matrix and returns the orthogonalized matrix.
+
+        Args:
+            my_array (np.ndarray): The input matrix to be orthogonalized.
+
+        Returns:
+            np.ndarray: The orthogonalized matrix.
+        '''
+        assert my_array.shape[0] == self.__weighting_matrix.shape[0], "Weighting vector does not match basis size"
+        
+        tmp = self.__weighting_matrix_sqrt @ my_array
+        my_array, _ = self.__qr_picked(tmp, mode='reduced')
+        my_array = np.linalg.solve(self.__weighting_matrix_sqrt, my_array)
         return my_array

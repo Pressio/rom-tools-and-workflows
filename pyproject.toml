@@ -5,19 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "romtools"
 dynamic = ["version"]
+readme = "README.md"
 requires-python = ">=3.8"
+scripts = { romtools-format = "romtools.workflows.formatting:main" }
 dependencies = [
-    'docutils',
-    'importlib-metadata',
     'numpy',
     'scipy',
     'matplotlib',
-    'pdoc',
-    'pytest==7.4.4',   # released Dec 31st, 2023
-    'pytest-mpi>=0.6', # released Jan 8th, 2022
-    'pytest-timeout',
 ]
-# using pytest>=8.0.0 causes CI failures (likely compatibility issues with pytest-mpi)
 
 [tool.setuptools.dynamic]
 version = {file = "version.txt"}
@@ -29,3 +24,17 @@ where = ["."]
 [project.optional-dependencies]
 WithMPI = ['mpi4py>3.1.4']
 WithH5py = ['h5py']
+docs = [
+    'docutils',
+    'sphinx',
+    'pydata-sphinx-theme',
+    'sphinx-copybutton',
+    'sphinx-design',
+    'myst-nb>=0.18',
+    'jupyter-sphinx',
+]
+test = [
+    'pytest==7.4.4',
+    'pytest-mpi>=0.6',
+    'pytest-timeout',
+]

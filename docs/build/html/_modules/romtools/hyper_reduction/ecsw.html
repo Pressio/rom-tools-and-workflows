@@ -1,0 +1,931 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.hyper_reduction.ecsw &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=949a1ff5" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=87e54e7c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=c277b2ea" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=ff8fa330"></script>
+    <script src="../../../_static/thebelab-helper.js"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/hyper_reduction/ecsw';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.hyper_reduction.ecsw</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.hyper_reduction.ecsw</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+<span class="c1">#                         ROM Tools and Workflows</span>
+<span class="c1"># Copyright 2019 National Technology &amp; Engineering Solutions of Sandia,LLC</span>
+<span class="c1">#                              (NTESS)</span>
+<span class="c1">#</span>
+<span class="c1"># Under the terms of Contract DE-NA0003525 with NTESS, the</span>
+<span class="c1"># U.S. Government retains certain rights in this software.</span>
+<span class="c1">#</span>
+<span class="c1"># ROM Tools and Workflows is licensed under BSD-3-Clause terms of use:</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions</span>
+<span class="c1"># are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright</span>
+<span class="c1"># notice, this list of conditions and the following disclaimer in the</span>
+<span class="c1"># documentation and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Neither the name of the copyright holder nor the names of its</span>
+<span class="c1"># contributors may be used to endorse or promote products derived</span>
+<span class="c1"># from this software without specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</span>
+<span class="c1"># &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT</span>
+<span class="c1"># LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS</span>
+<span class="c1"># FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE</span>
+<span class="c1"># COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c1"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES</span>
+<span class="c1"># (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR</span>
+<span class="c1"># SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)</span>
+<span class="c1"># HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,</span>
+<span class="c1"># STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING</span>
+<span class="c1"># IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="c1"># Questions? Contact Eric Parish (ejparis@sandia.gov)</span>
+<span class="c1">#</span>
+<span class="c1"># ************************************************************************</span>
+<span class="c1">#</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Implementation of Energy-conserving sampling and weighting (ECSW) hyper-reduction</span>
+
+<span class="sd">Energy-conserving sampling and weighting (ECSW) is a hyper-reduction approach</span>
+<span class="sd">originally developed specifically for solid mechanics problems, but it has</span>
+<span class="sd">since been generalized. It is a project-then-approximate hyper-reduction</span>
+<span class="sd">approach, similar in spirit and implementation to empirical cubature</span>
+<span class="sd">approaches. The name comes from the energy conservation properties the method</span>
+<span class="sd">has for solid mechanics applications; note that this property is not provable</span>
+<span class="sd">for general systems.</span>
+
+<span class="sd">Given a set of residual snapshots ECSW computes sampling indices :math:`GID_i` and</span>
+<span class="sd">weights :math:`\\xi_i`. Specifically, the residual snapshots must be computed for</span>
+<span class="sd">reconstructed full-order model snapshots,</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\boldsymbol r_i = \\boldsymbol r( \\boldsymbol \\Phi \\boldsymbol \\Phi^T (\\mathbf{u}_i - \\mathbf{u}_0))</span>
+
+<span class="sd">where :math:`\\boldsymbol r_i` is the residual :math:`i`th residual snapshot,</span>
+<span class="sd">:math:`\\mathbf{u}_i` is the :math:`i`th state snapshot, and :math:`\\boldsymbol \\Phi` is the</span>
+<span class="sd">trial basis.</span>
+
+<span class="sd">The goal of ECSW is to find a sparse set of weights to approximate the reduced</span>
+<span class="sd">residual with a subset of local test-basis/residual products</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">   \\sum_{e \\in \\mathcal{E}} \\xi_e \\boldsymbol \\Psi_e^T \\boldsymbol r_e \\approx \\Psi^T \\boldsymbol r</span>
+
+<span class="sd">For more details, consult Chapman et al. 2016 DOI: 10.1002/nme.5332.</span>
+
+<span class="sd">The ECSW class contains the methods needed to compute sampling indices and</span>
+<span class="sd">weights given a set of residual snapshot and trial basis data.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">romtools.linalg.linalg</span> <span class="k">as</span> <span class="nn">la</span>
+
+
+<div class="viewcode-block" id="ECSWsolver">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw.ECSWsolver">[docs]</a>
+<span class="k">class</span> <span class="nc">ECSWsolver</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Abstract base class for ECSW solvers</span>
+
+<span class="sd">    ECSW solvers should take in a linear system constructed from projected residual vector</span>
+<span class="sd">    snapshots and the contributions at each mesh degree of freedom to the projected snapshot.</span>
+<span class="sd">    The solvers should return arrays with sample mesh indices and weights.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver_param_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set solver parameters to non-default values</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            (optional) solver_param_dict: dictionary, with some of the following keys:</span>
+<span class="sd">            max_iters: int, maximum overall iterations</span>
+<span class="sd">            max_non_neg_iters: int, maximum inner iterations to enforce non-negativity</span>
+<span class="sd">            max_iters_res_unchanged: int, maximum number of iterations without any change in the residual norm before terminating</span>
+<span class="sd">            zero_tol: int, tolerance used to check if weights or residual norm changes are near zero</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">full_mesh_lhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compute the sample mesh DoF indices and corresponding weights</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where n_snap is the number of residual snapshots,</span>
+<span class="sd">                                                                n_rom is the ROM dimension,</span>
+<span class="sd">            and n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)</span>
+<span class="sd">            full_mesh_rhs: (n_snap*n_rom,) numpy array</span>
+<span class="sd">            tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of numpy ndarrays.</span>
+<span class="sd">            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.</span>
+<span class="sd">            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span></div>
+
+
+
+<span class="c1"># ecsw non-negative least-squares class</span>
+<span class="c1"># TODO: scipy loss and enhancement method for testing? Won&#39;t work in place of</span>
+<span class="c1">#       this function because tau can&#39;t be specified</span>
+
+
+<div class="viewcode-block" id="ECSWsolverNNLS">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw.ECSWsolverNNLS">[docs]</a>
+<span class="k">class</span> <span class="nc">ECSWsolverNNLS</span><span class="p">(</span><span class="n">ECSWsolver</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs,</span>
+<span class="sd">    compute sample mesh indices and weights for ECSW using the non-negative least squares algorithm</span>
+<span class="sd">    from Chapman et al. 2016 DOI: 10.1002/nme.5332.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver_param_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Set default solver parameter values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span> <span class="o">=</span> <span class="mi">10000</span>  <span class="c1"># maximum overall iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_non_neg_iters</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">100</span>  <span class="c1"># maximum inner iterations to enforce non-negativity</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iters_res_unchanged</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># maximum number of iterations without any change in residual before terminating</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span> <span class="o">=</span> <span class="mf">1e-12</span>  <span class="c1"># tolerance used to check if weights or residual norm changes are near zero</span>
+
+        <span class="k">if</span> <span class="n">solver_param_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;max_iters&quot;</span> <span class="ow">in</span> <span class="n">solver_param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span><span class="s2">&quot;max_iters&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;max_non_neg_iters&quot;</span> <span class="ow">in</span> <span class="n">solver_param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_non_neg_iters</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span><span class="s2">&quot;max_non_neg_iters&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;max_iters_res_unchanged&quot;</span> <span class="ow">in</span> <span class="n">solver_param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_iters_res_unchanged</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span>
+                    <span class="s2">&quot;max_iters_res_unchanged&quot;</span>
+                <span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;zero_tol&quot;</span> <span class="ow">in</span> <span class="n">solver_param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span><span class="s2">&quot;zero_tol&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">full_mesh_lhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compute the sample mesh DoF indices and corresponding weights using the non-negative least squares algorithm</span>
+<span class="sd">        from Chapman et al. 2016 DOI: 10.1002/nme.5332.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">           \\min \\| \\text{full\\_mesh\\_lhs} \\cdot \\text{full\\_mesh\\_weights} - \\text{full\\_mesh\\_rhs} \\|_2^2</span>
+<span class="sd">           \\quad \\text{s.t.} \\quad \\text{full\\_mesh\\_weights} \\ge 0, \\\\</span>
+<span class="sd">           \\| \\text{full\\_mesh\\_lhs} \\cdot \\text{full\\_mesh\\_weights} - \\text{full\\_mesh\\_rhs} \\|_2</span>
+<span class="sd">           &lt; \\text{tolerance} \\| \\text{full\\_mesh\\_rhs} \\|_2</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            full_mesh_lhs: (n_snap*n_rom, n_dof) numpy ndarray, where</span>
+<span class="sd">                                n_snap is the number of residual snapshots,</span>
+<span class="sd">                                n_rom is the ROM dimension, and</span>
+<span class="sd">                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements)</span>
+<span class="sd">            full_mesh_rhs: (n_snap*n_rom,) numpy array</span>
+<span class="sd">            tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of numpy ndarrays.</span>
+<span class="sd">            First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.</span>
+<span class="sd">            Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">n_dof</span> <span class="o">=</span> <span class="n">full_mesh_lhs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># initialize</span>
+        <span class="n">iters</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sample_mesh_indicies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">full_mesh_rhs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">residual_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+        <span class="n">target_norm</span> <span class="o">=</span> <span class="n">tolerance</span> <span class="o">*</span> <span class="n">residual_norm</span>
+
+        <span class="n">full_mesh_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_dof</span><span class="p">)</span>
+        <span class="n">full_mesh_candidate_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_dof</span><span class="p">)</span>
+
+        <span class="n">residual_norm_unchanged</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># add nodes to sample mesh until tolerance is met</span>
+        <span class="k">while</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">residual_norm</span> <span class="o">&gt;</span> <span class="n">target_norm</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">residual_norm_unchanged</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iters_res_unchanged</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">iters</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="c1"># determine new node to add to sample mesh</span>
+            <span class="n">weighted_residual</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">residual</span><span class="p">)</span>
+
+            <span class="c1"># make sure mesh entity hasn&#39;t already been selected</span>
+            <span class="n">still_searching</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_dof</span><span class="p">:</span>
+                <span class="n">still_searching</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">while</span> <span class="n">still_searching</span><span class="p">:</span>
+                <span class="n">mesh_index</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">weighted_residual</span><span class="p">)</span>
+                <span class="n">still_searching</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="n">mesh_index</span> <span class="ow">in</span> <span class="n">sample_mesh_indicies</span><span class="p">:</span>
+                    <span class="n">still_searching</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">weighted_residual</span><span class="p">[</span><span class="n">mesh_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">weighted_residual</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">weighted_residual</span> <span class="o">-</span> <span class="n">weighted_residual</span><span class="p">[</span><span class="n">mesh_index</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-15</span>
+                    <span class="p">):</span>
+                        <span class="c1"># All elements are the same, select random element outside of sample mesh</span>
+                        <span class="n">unselected_indicies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_dof</span><span class="p">),</span> <span class="n">sample_mesh_indicies</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span>
+                        <span class="p">)</span>
+                        <span class="n">mesh_index</span> <span class="o">=</span> <span class="n">unselected_indicies</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">still_searching</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># add new mesh entity index</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">n_dof</span><span class="p">:</span>
+                <span class="n">sample_mesh_indicies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mesh_index</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;iteration=</span><span class="si">{</span><span class="n">iters</span><span class="si">}</span><span class="s2">  sample mesh size=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">)</span><span class="si">}</span><span class="s2">  &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;residual norm=</span><span class="si">{</span><span class="n">residual_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">  ratio to target=</span><span class="si">{</span><span class="n">residual_norm</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">target_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">iters</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># compute corresponding weights</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_non_neg_iters</span><span class="p">):</span>
+                <span class="n">sample_mesh_lhs</span> <span class="o">=</span> <span class="n">full_mesh_lhs</span><span class="p">[:,</span> <span class="n">sample_mesh_indicies</span><span class="p">]</span>
+                <span class="n">sample_mesh_candidate_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">sample_mesh_lhs</span><span class="p">),</span> <span class="n">full_mesh_rhs</span>
+                <span class="p">)</span>
+                <span class="n">full_mesh_candidate_weights</span> <span class="o">*=</span> <span class="mi">0</span>
+                <span class="n">full_mesh_candidate_weights</span><span class="p">[</span><span class="n">sample_mesh_indicies</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">sample_mesh_candidate_weights</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">sample_mesh_candidate_weights</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">full_mesh_weights</span> <span class="o">=</span> <span class="n">full_mesh_candidate_weights</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="k">break</span>
+                <span class="c1"># line search to enforce non-negativity</span>
+                <span class="n">max_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__max_feasible_step</span><span class="p">(</span>
+                    <span class="n">full_mesh_weights</span><span class="p">[</span><span class="n">sample_mesh_indicies</span><span class="p">],</span>
+                    <span class="n">sample_mesh_candidate_weights</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">full_mesh_weights_new</span> <span class="o">=</span> <span class="n">full_mesh_weights</span> <span class="o">+</span> <span class="n">max_step</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">full_mesh_candidate_weights</span> <span class="o">-</span> <span class="n">full_mesh_weights</span>
+                <span class="p">)</span>
+
+                <span class="c1"># remove zero valued indices</span>
+                <span class="n">near_zero_inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span>
+                    <span class="n">full_mesh_weights_new</span><span class="p">[</span><span class="n">sample_mesh_indicies</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span>
+                <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">samp_inds_for_removal</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">sample_mesh_indicies</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">near_zero_inds</span>
+                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">samp_ind</span> <span class="ow">in</span> <span class="n">samp_inds_for_removal</span><span class="p">:</span>
+                    <span class="n">sample_mesh_indicies</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">samp_ind</span><span class="p">)</span>
+
+                <span class="c1"># increment iteration count</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;iteration=</span><span class="si">{</span><span class="n">iters</span><span class="si">}</span><span class="s2">  sample mesh size=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">)</span><span class="si">}</span><span class="s2">  &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;residual norm=</span><span class="si">{</span><span class="n">residual_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">  ratio to target=</span><span class="si">{</span><span class="n">residual_norm</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">target_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">iters</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">full_mesh_weights</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">full_mesh_weights_new</span>
+
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_non_neg_iters</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Error: NNLS algorithm failed to compute weights&quot;</span><span class="p">)</span>
+
+            <span class="c1"># update least-squares residual</span>
+            <span class="n">sample_mesh_weights</span> <span class="o">=</span> <span class="n">full_mesh_weights</span><span class="p">[</span><span class="n">sample_mesh_indicies</span><span class="p">]</span>
+            <span class="n">residual</span> <span class="o">=</span> <span class="n">full_mesh_rhs</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sample_mesh_lhs</span><span class="p">,</span> <span class="n">sample_mesh_weights</span><span class="p">)</span>
+            <span class="n">residul_old_norm</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">residual_norm</span>
+            <span class="n">residual_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">residual_norm</span> <span class="o">-</span> <span class="n">residul_old_norm</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span><span class="p">:</span>
+                <span class="n">residual_norm_unchanged</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">residual_norm_unchanged</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="n">residual_norm_unchanged</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iters_res_unchanged</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;WARNING: Norm has not changed more than </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iters_res_unchanged</span><span class="si">}</span><span class="s2"> steps, exiting NNLS.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NNLS complete! Final stats:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;iteration=</span><span class="si">{</span><span class="n">iters</span><span class="si">}</span><span class="s2">  sample mesh size=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">)</span><span class="si">}</span><span class="s2">  &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;residual norm=</span><span class="si">{</span><span class="n">residual_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">  ratio to target=</span><span class="si">{</span><span class="n">residual_norm</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">target_norm</span><span class="si">:</span><span class="s2">.8e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sample_mesh_indicies</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span> <span class="n">sample_mesh_weights</span>
+
+    <span class="k">def</span> <span class="nf">__max_feasible_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">candidate_weights</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        determine maximum update step size such that:</span>
+<span class="sd">        weights + step_size * (candidate_weights-weights) &gt;=0</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            weights: (n,) array</span>
+<span class="sd">            candidate_weights: (n, array)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            step_size: double</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">candidate_weights</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">step_size</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">step_size_i</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">candidate_weights</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">step_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">step_size</span><span class="p">,</span> <span class="n">step_size_i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">step_size</span></div>
+
+
+
+<span class="c1"># ESCW helper functions for specific test basis types</span>
+
+
+<span class="k">def</span> <span class="nf">_construct_linear_system</span><span class="p">(</span>
+    <span class="n">residual_snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">test_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_var</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Construct the linear system required for ECSW with a fixed test basis, such as POD-Galerkin projection.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where</span>
+<span class="sd">                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),</span>
+<span class="sd">                                n_var is the number of residual variables, and</span>
+<span class="sd">                                n_snap is the number of snapshots</span>
+<span class="sd">        test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.</span>
+<span class="sd">        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,</span>
+<span class="sd">                                                           x-momentum, y-momentum, z-momentum, and energy)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        full_mesh_lhs: (n_snap*n_mode, n_dof) numpy ndarray, the left-hand side of the linear system required by the ECSW solver</span>
+<span class="sd">        full_mesh_rhs: (n_snap*n_rom,) numpy array, the right-hand side of the linear system required by the ECSW solver</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="n">n_dof</span><span class="p">,</span> <span class="n">n_snap</span><span class="p">)</span> <span class="o">=</span> <span class="n">residual_snapshots</span><span class="o">.</span><span class="n">shape</span>
+    <span class="p">(</span><span class="n">n_var_tb</span><span class="p">,</span> <span class="n">n_dof_tb</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">)</span> <span class="o">=</span> <span class="n">test_basis</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">n_var</span> <span class="o">==</span> <span class="n">n_var_tb</span>
+    <span class="k">assert</span> <span class="n">n_dof</span> <span class="o">==</span> <span class="n">n_dof_tb</span>
+    <span class="c1"># construct ECSW system</span>
+    <span class="n">full_mesh_lhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_snap</span> <span class="o">*</span> <span class="n">n_mode</span><span class="p">,</span> <span class="n">n_dof</span><span class="p">))</span>
+
+    <span class="c1"># left-hand side</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dof</span><span class="p">):</span>
+        <span class="c1"># should be projection of all variables for a given mesh DoF</span>
+        <span class="n">phi_block</span> <span class="o">=</span> <span class="n">test_basis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># n_var x n_mode</span>
+        <span class="n">res_snaps_block</span> <span class="o">=</span> <span class="n">residual_snapshots</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># n_var x n_snap</span>
+        <span class="n">full_mesh_lhs_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span>
+            <span class="n">phi_block</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">res_snaps_block</span>
+        <span class="p">)</span>  <span class="c1"># n_modes x n_snaps matrix</span>
+        <span class="n">full_mesh_lhs</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">full_mesh_lhs_block</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
+
+    <span class="c1"># right-hand-side</span>
+    <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span>
+
+
+<div class="viewcode-block" id="ecsw_fixed_test_basis">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw.ecsw_fixed_test_basis">[docs]</a>
+<span class="k">def</span> <span class="nf">ecsw_fixed_test_basis</span><span class="p">(</span>
+    <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
+    <span class="n">residual_snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">test_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">n_var</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    ECSW implementation for a fixed test basis, such as POD-Galerkin projection</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.</span>
+<span class="sd">        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where</span>
+<span class="sd">                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),</span>
+<span class="sd">                                n_var is the number of residual variables, and</span>
+<span class="sd">                                n_snap is the number of snapshots</span>
+<span class="sd">        test_basis: (n_var, n_dof, n_mode) numpy ndarray, where n_mode is the number of modes in the basis.</span>
+<span class="sd">        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,</span>
+<span class="sd">                                                      x-momentum, y-momentum, z-momentum, and energy)</span>
+<span class="sd">        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of numpy ndarrays.</span>
+<span class="sd">        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.</span>
+<span class="sd">        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># TODO need to incorporate residual scales here too, perhaps using scaler.py</span>
+    <span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">_construct_linear_system</span><span class="p">(</span>
+        <span class="n">residual_snapshots</span><span class="p">,</span> <span class="n">test_basis</span><span class="p">,</span> <span class="n">n_var</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ecsw_solver</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ecsw_varying_test_basis">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw.ecsw_varying_test_basis">[docs]</a>
+<span class="k">def</span> <span class="nf">ecsw_varying_test_basis</span><span class="p">(</span>
+    <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
+    <span class="n">residual_snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">test_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">n_var</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    ECSW implementation for a varying test basis, such as Least-Squares Petrov-Galerkin projection</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.</span>
+<span class="sd">        residual_snapshots: (n_var, n_dof, n_snap) numpy ndarray, where</span>
+<span class="sd">                                n_dof is the number of mesh degrees of freedom (DoFs) (nodes, volumes, or elements),</span>
+<span class="sd">                                n_var is the number of residual variables,</span>
+<span class="sd">                                and n_snap is the number of snapshots</span>
+<span class="sd">        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where</span>
+<span class="sd">                                n_snap is the number of test basis snapshots and</span>
+<span class="sd">                                n_mode is the number of modes in the basis.</span>
+<span class="sd">        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,</span>
+<span class="sd">                                                      x-momentum, y-momentum, z-momentum, and energy)</span>
+<span class="sd">        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of numpy ndarrays.</span>
+<span class="sd">        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.</span>
+<span class="sd">        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="n">n_dof</span><span class="p">,</span> <span class="n">n_snap</span><span class="p">)</span> <span class="o">=</span> <span class="n">residual_snapshots</span><span class="o">.</span><span class="n">shape</span>
+    <span class="p">(</span><span class="n">n_snap_tb</span><span class="p">,</span> <span class="n">n_var_tb</span><span class="p">,</span> <span class="n">n_dof_tb</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">test_basis</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">n_var</span> <span class="o">==</span> <span class="n">n_var_tb</span>
+    <span class="k">assert</span> <span class="n">n_dof</span> <span class="o">==</span> <span class="n">n_dof_tb</span>
+    <span class="k">assert</span> <span class="n">n_snap</span> <span class="o">==</span> <span class="n">n_snap_tb</span>
+
+    <span class="c1"># Construct sequence of fixed test basis matrices, then stack them</span>
+    <span class="n">lhs_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rhs_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_snap</span><span class="p">):</span>
+        <span class="c1"># TODO need to incorporate residual scales here too, perhaps using scaler.py</span>
+        <span class="n">test_basis_i</span> <span class="o">=</span> <span class="n">test_basis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">residual_snapshot_i</span> <span class="o">=</span> <span class="n">residual_snapshots</span><span class="p">[:,:,</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">residual_snapshot_i</span> <span class="o">=</span> <span class="n">residual_snapshot_i</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">_construct_linear_system</span><span class="p">(</span>
+            <span class="n">residual_snapshot_i</span><span class="p">,</span> <span class="n">test_basis_i</span><span class="p">,</span> <span class="n">n_var</span>
+        <span class="p">)</span>
+        <span class="n">lhs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">)</span>
+        <span class="n">rhs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">full_mesh_rhs</span><span class="p">)</span>
+
+    <span class="n">full_mesh_lhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">lhs_list</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">rhs_list</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ecsw_solver</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ecsw_lspg_zero_residual">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw.ecsw_lspg_zero_residual">[docs]</a>
+<span class="k">def</span> <span class="nf">ecsw_lspg_zero_residual</span><span class="p">(</span>
+    <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
+    <span class="n">test_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">n_var</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    ECSW implementation for Least-Squares Petrov-Galerkin projection of a discrete system with near-zero residual snapshots</span>
+<span class="sd">    Uses the test basis as a snapshot instead, as proposed in section 3.2 of</span>
+<span class="sd">    https://www.sciencedirect.com/science/article/pii/S0045782522004558.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ecsw_solver: ECSWsolver object corresponding to a child class with concrete implementations such as ECSWsolverNNLS.</span>
+<span class="sd">        test_basis: (n_snap, n_var, n_dof, n_mode) numpy ndarray, where</span>
+<span class="sd">                        n_snap is the number of test basis snapshots and</span>
+<span class="sd">                        n_mode is the number of modes in the basis.</span>
+<span class="sd">        n_var: int, the number of residual variables (e.g. for fluid flow, residual variable could be mass,</span>
+<span class="sd">                                                      x-momentum, y-momentum, z-momentum, and energy)</span>
+<span class="sd">        tolerance: Double, the ECSW tolerance parameter. Lower values of tolerance will result in more mesh DoF samples</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of numpy ndarrays.</span>
+<span class="sd">        First array: (n_dof_sample_mesh,) numpy ndarray of ints, the mesh indices in the sample mesh.</span>
+<span class="sd">        Second array: (n_dof_sample_mesh,) numpy ndarray of doubles, the corresponding sample mesh weights.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="p">(</span><span class="n">n_snap</span><span class="p">,</span> <span class="n">n_var</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">test_basis</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c1"># Construct sequence of fixed test basis matrices, then stack them</span>
+    <span class="n">lhs_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rhs_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_snap</span><span class="p">):</span>
+        <span class="c1"># TODO need to incorporate residual scales here too, perhaps using scaler.py</span>
+        <span class="n">test_basis_i</span> <span class="o">=</span> <span class="n">test_basis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">_construct_linear_system</span><span class="p">(</span>
+            <span class="n">test_basis_i</span><span class="p">,</span> <span class="n">test_basis_i</span><span class="p">,</span> <span class="n">n_var</span>
+        <span class="p">)</span>
+        <span class="n">lhs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">)</span>
+        <span class="n">rhs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">full_mesh_rhs</span><span class="p">)</span>
+
+    <span class="n">full_mesh_lhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">lhs_list</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">full_mesh_rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">rhs_list</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ecsw_solver</span><span class="p">(</span><span class="n">full_mesh_lhs</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

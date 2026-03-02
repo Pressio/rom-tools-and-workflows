@@ -1,0 +1,56 @@
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.9/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 1112, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/util.py", line 74, in wrapped
+    return just_run(coro(*args, **kwargs))
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/util.py", line 53, in just_run
+    return loop.run_until_complete(coro)
+  File "/opt/anaconda3/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 553, in async_execute
+    await self.async_execute_cell(
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 857, in async_execute_cell
+    self._check_raise_for_error(cell, exec_reply)
+  File "/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 760, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+#What if we tried to create a parameter space that didn't meet the interface of the ParameterSpace
+# As an example, let's say we didn't include the "get_names" method
+class BadBasicParameterSpace(ParameterSpace):
+
+    def __init__(self):
+        #We will have two variables, x and y
+        self.var_names = ['x','y']
+
+        # The dimension of the parameter space is 2 (x and y)
+        self.dim_ = 2
+
+        # In this example we will consider uncorrelated variables w/ mean [1,2] and standard deviation [0.1,0.2]
+        self.means_ = np.array([1,2])
+        self.stds_ = np.array([0.1,0.2]) 
+
+    def get_dimensionality(self):
+        return self.dim_
+
+    def generate_samples(self, number_of_samples: int, seed=None):
+        samples = np.random.normal(self.means_,self.stds_,size=(number_of_samples,self.dim_))
+        return samples
+
+#Python will throw an error when we try to instatiate
+if __name__ == "__main__":
+    myBadBasicParameterSpace = BadBasicParameterSpace()
+------------------
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mTypeError[0m                                 Traceback (most recent call last)
+[0;32m/var/folders/93/nk63fv3x72sg82k1wprycgjm003297/T/ipykernel_86280/3551915838.py[0m in [0;36m<module>[0;34m[0m
+[1;32m     23[0m [0;31m#Python will throw an error when we try to instatiate[0m[0;34m[0m[0;34m[0m[0m
+[1;32m     24[0m [0;32mif[0m [0m__name__[0m [0;34m==[0m [0;34m"__main__"[0m[0;34m:[0m[0;34m[0m[0;34m[0m[0m
+[0;32m---> 25[0;31m     [0mmyBadBasicParameterSpace[0m [0;34m=[0m [0mBadBasicParameterSpace[0m[0;34m([0m[0;34m)[0m[0;34m[0m[0;34m[0m[0m
+[0m
+[0;31mTypeError[0m: Can't instantiate abstract class BadBasicParameterSpace with abstract method get_names
+TypeError: Can't instantiate abstract class BadBasicParameterSpace with abstract method get_names
+

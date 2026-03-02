@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+
+\title{Natural-Metric Newton Option (Short Note)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Overview}
+For variational inference with Gaussian parameters
+\[
+\theta = \begin{bmatrix}\mu \\ \ell\end{bmatrix},
+\quad \ell = \log \sigma,
+\]
+we added a Newton option with \texttt{newton\_metric = "natural"}.
+This keeps the same objective and Hessian estimate, but applies Newton in
+approximately Fisher-whitened coordinates.
+
+\section*{Metric Scaling Used}
+For a diagonal Gaussian family, the implementation uses a block-diagonal scale
+\[
+S = \mathrm{diag}\!\left(\sigma_1,\dots,\sigma_d,\sqrt{\tfrac12},\dots,\sqrt{\tfrac12}\right).
+\]
+This is consistent with the diagonal Fisher factors (up to constants) for
+\(\mu\) and \(\ell\) blocks.
+
+\section*{Where This Scaling Comes From}
+For one scalar Gaussian factor \(q(z)=\mathcal N(\mu,\sigma^2)\), with
+\(\ell=\log \sigma\),
+\[
+\log q(z) = -\ell - \frac12\left(\frac{(z-\mu)^2}{\sigma^2} + \log(2\pi)\right).
+\]
+The score components are
+\[
+\partial_\mu \log q = \frac{z-\mu}{\sigma^2},
+\qquad
+\partial_\ell \log q = -1 + \frac{(z-\mu)^2}{\sigma^2}.
+\]
+Using \(z\sim q\), the Fisher matrix entries are
+\[
+F_{\mu\mu} = \mathbb E\!\left[(\partial_\mu \log q)^2\right] = \frac{1}{\sigma^2},
+\quad
+F_{\ell\ell} = \mathbb E\!\left[(\partial_\ell \log q)^2\right] = 2,
+\quad
+F_{\mu\ell}=0.
+\]
+For independent dimensions, \(F\) is block diagonal:
+\[
+F = \mathrm{diag}\!\left(\frac{1}{\sigma_1^2},\dots,\frac{1}{\sigma_d^2},2,\dots,2\right),
+\]
+so
+\[
+F^{-1/2}
+= \mathrm{diag}\!\left(\sigma_1,\dots,\sigma_d,\sqrt{\tfrac12},\dots,\sqrt{\tfrac12}\right)
+= S.
+\]
+That is exactly the scaling used in the implementation.
+
+\section*{Newton Step in Natural-Metric Coordinates}
+Given gradient \(g\) and Hessian \(H\) in the original coordinates, we form
+\[
+\tilde g = S g,\qquad \tilde H = S H S.
+\]
+Then solve the regularized Newton system
+\[
+\tilde H\,\tilde\Delta = \tilde g,
+\]
+and map back
+\[
+\Delta = S \tilde\Delta.
+\]
+The code applies SPD projection/regularization to \(\tilde H\) before solving.
+
+\section*{Why This Newton Step Is Reasonable}
+The local KL geometry is determined by \(F\). A second-order local model in
+original coordinates is
+\[
+m(\Delta\theta) = g^\top \Delta\theta + \frac12 \Delta\theta^\top H \Delta\theta.
+\]
+With the change of variables \(\Delta\theta = S u\) (Fisher whitening),
+\[
+m(u) = (Sg)^\top u + \frac12 u^\top (S H S) u,
+\]
+which is a standard Euclidean quadratic model in \(u\). Newton in \(u\)-space
+therefore gives the transformed system above and maps back with
+\(\Delta\theta = S\tilde\Delta\).
+
+This is an approximate natural-Newton method (practical and common): it uses
+the Fisher metric as a preconditioning geometry but does not include full
+Riemannian connection terms (\(\partial F/\partial\theta\)).
+
+\section*{Trust Region Variant}
+For trust-region Newton, the same transform is used:
+\[
+(\tilde g,\tilde H) = (Sg,SHS),
+\]
+the trust-region subproblem is solved in transformed coordinates, and the step is
+mapped back with \(\Delta = S\tilde\Delta\). Radius adaptation and acceptance
+logic remain unchanged.
+
+\section*{Configuration}
+Use:
+\begin{verbatim}
+optimizer_method = "newton"
+optimizer_config = VINewtonOptimizerConfig(
+    newton_metric="natural",
+    ...
+)
+\end{verbatim}
+The default remains \texttt{newton\_metric = "standard"}.
+
+\section*{Note}
+This is an approximate natural-Newton construction (a practical preconditioned
+Newton), not a full Riemannian Newton method with connection terms.
+
+\end{document}

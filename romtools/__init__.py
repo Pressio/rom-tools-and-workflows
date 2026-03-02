@@ -74,7 +74,7 @@ The Python library, called `romtools`, contains abstract interfaces and function
 
 # Demos/tutorials
 
-Please see https://pressio.github.io/rom-tools-and-workflows-demos for demos and tutorials
+Please see the Demos section of the documentation for demos and tutorials.
 
 # License
 ```plaintext

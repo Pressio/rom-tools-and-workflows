@@ -47,32 +47,52 @@
 This module defines the API to work with a vector subspace.
 A vector subspace is foundational to reduced-order models.
 In a ROM, a high-dimensional state is restricted to live within a low-dimensional vector space, known as a trial space.
-Mathematically, given a "FOM" vector $\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}$, we can write
-$$\\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}$$
+Mathematically, given a "FOM" vector :math:`\\mathbf{u} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}}`,
+we can write
+
+.. math::
+
+   \\mathbf{u} \\approx \\tilde{\\mathbf{u}} \\in \\mathcal{V} + \\mathbf{u}_{\\mathrm{shift}}
+
 where
-- $\\mathcal{V}$ with $\\text{dim}(\\mathcal{V}) = K \\le N_{\\mathrm{vars}}  N_{\\mathrm{x}}$ is the trial space
-- $N_{\\mathrm{vars}}$ is the number of PDE variables (e.g., 5 for the compressible Navier-Stokes equations in 3D)
-- $N_{\\mathrm{x}}$ is the number of spatial DOFs
+
+- :math:`\\mathcal{V}` with :math:`\\text{dim}(\\mathcal{V}) = K \\le N_{\\mathrm{vars}}  N_{\\mathrm{x}}`
+  is the trial space
+- :math:`N_{\\mathrm{vars}}` is the number of PDE variables (e.g., 5 for the compressible Navier-Stokes equations in 3D)
+- :math:`N_{\\mathrm{x}}` is the number of spatial DOFs
 
 Formally, we can describe this low-dimensional representation with a basis and an affine offset,
-$$\\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}$$
-where $\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}} \\times K}$ is the basis matrix
-($K$ is the number of basis), $\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}$ are the reduced, or generalized coordinates,
-$\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}$ is the shift vector (or affine offset),
-and, by definition, $\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)$.
 
-The `VectorSpace` abstract class defined below encapsulates the information of an affine vector space, $\\mathcal{V}$,
-by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the vector space,
-while decoupling this representation from *how* it is computed.
+.. math::
 
-####We rely on a tensor representation!
+   \\tilde{\\mathbf{u}}  = \\boldsymbol \\Phi \\hat{\\mathbf{u}} + \\mathbf{u}_{\\mathrm{shift}}
+
+where :math:`\\boldsymbol \\Phi \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}} \\times K}` is the basis matrix
+(:math:`K` is the number of basis), :math:`\\hat{\\mathbf{u}} \\in \\mathbb{R}^{K}` are the reduced, or generalized
+coordinates, :math:`\\mathbf{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}}  N_{\\mathrm{x}}}` is the
+shift vector (or affine offset), and, by definition, :math:`\\mathcal{V} \\equiv \\mathrm{range}(\\boldsymbol \\Phi)`.
+
+The `VectorSpace` abstract class defined below encapsulates the information of an affine vector space,
+:math:`\\mathcal{V}`, by virtue of providing access to a basis matrix, a shift vector, and the dimensionality of the
+vector space, while decoupling this representation from *how* it is computed.
+
+Tensor representation
+---------------------
 
 Our representation of the basis and the affine offset for a vector space is based on tensors
-$$\\mathcal{\\Phi} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K},$$
-$$\\mathcal{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}.$$
+
+.. math::
+
+   \\mathcal{\\Phi} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times K}
+
+.. math::
+
+   \\mathcal{u}_{\\mathrm{shift}} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}}}
+
 Internally, we remark that all tensors are reshaped into 2D matrices, e.g., when performing SVD.
 
-###**Content**
+Content
+-------
 
 We currently provide the following concrete classes:
 
@@ -82,8 +102,8 @@ We currently provide the following concrete classes:
 
 which derive from the abstract class `VectorSpace`.
 
+API
 ---
-##**API**
 '''
 
 from typing import Tuple, Protocol, Callable
@@ -135,9 +155,11 @@ class DictionaryVectorSpace():
 
     This class conforms to `VectorSpace` protocol.
 
-    Given a snapshot matrix $\\mathbf{S}$, we set the basis to be
+    Given a snapshot matrix :math:`\\mathbf{S}`, we set the basis to be
 
-    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})$$
+    .. math::
+
+       \\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}})
 
     where the orthogonalization and shifts are defined by their
     respective classes
@@ -152,7 +174,7 @@ class DictionaryVectorSpace():
 
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
-                $\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+                :math:`\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}`
             shifter: Class that shifts the basis.
             orthogonalizer: Class that orthogonalizes the basis.
 
@@ -193,13 +215,17 @@ class VectorSpaceFromPOD():
 
     This class conforms to `VectorSpace` protocol.
 
-    Given a snapshot matrix $\\mathbf{S}$, we compute the basis $\\boldsymbol \\Phi$ as
+    Given a snapshot matrix :math:`\\mathbf{S}`, we compute the basis :math:`\\boldsymbol \\Phi` as
 
+    .. math::
 
-    $$\\boldsymbol U = \\mathrm{SVD}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))$$
-    $$\\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))$$
+       \\boldsymbol U = \\mathrm{SVD}(\\mathrm{prescale}(\\mathbf{S} - \\mathbf{u}_{\\mathrm{shift}}))
 
-    where $\\boldsymbol U$ are the left singular vectors and the
+    .. math::
+
+       \\boldsymbol \\Phi = \\mathrm{orthogonalize}(\\mathrm{postscale}(\\mathrm{truncate}( \\boldsymbol U )))
+
+    where :math:`\\boldsymbol U` are the left singular vectors and the
     orthogonalization, truncation, scaling, and shifts are defined by their respective classes.
 
     For truncation, we enable truncation based on a fixed dimension or the
@@ -218,7 +244,7 @@ class VectorSpaceFromPOD():
 
         Args:
             snapshots (np.ndarray): Snapshot data in tensor form
-                $\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}$
+                :math:`\\in \\mathbb{R}^{ N_{\\mathrm{vars}} \\times N_{\\mathrm{x}} \\times N_{samples}}`
             truncater (Truncater): Concrete implementation for truncating the basis.
             shifter (Shifter): Concrete implementation responsible for shifting the basis.
             orthogonalizer (Orthogonalizer): Concrete implementation that orthogonalizes the basis.
@@ -280,8 +306,8 @@ class VectorSpaceFromPOD():
 
 def _tensor_to_matrix(tensor_input: np.ndarray) -> np.ndarray:
     '''
-    Converts a tensor with shape $[N, M, P]$ to a matrix representation
-    in which the first two dimension are collapsed $[N M, P]$.
+    Converts a tensor with shape `[N, M, P]` to a matrix representation
+    in which the first two dimension are collapsed `[N M, P]`.
     '''
     output_tensor = tensor_input.reshape(tensor_input.shape[0]*tensor_input.shape[1],
                                          tensor_input.shape[2])

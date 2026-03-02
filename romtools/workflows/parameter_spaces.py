@@ -45,7 +45,7 @@
 
 '''
 Model reduction is often focused on parameterized PDEs, where
-$\\boldsymbol \\mu$ is the parameter set.
+:math:`\\boldsymbol \\mu` is the parameter set.
 The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
@@ -82,6 +82,19 @@ class ParameterSpace(abc.ABC):
         (number_of_samples, self.get_dimensionality())
         '''
 
+
+class BoundedParameterSpace(ParameterSpace):
+    '''Abstract implementation'''
+
+    @abc.abstractmethod
+    def bound_samples(self, samples : np.ndarray) -> np.array:
+        '''
+        Inputs: a sample distribution that potentially exceeds
+                the bounds of the parameter space
+        Outputs:
+                a bounded sample distribution 
+        (number_of_samples, self.get_dimensionality())
+        '''
 
 ##########################################
 # Concrete ParameterSpace Classes
