@@ -52,6 +52,7 @@ html_sidebars = {
     "**": ["sidebar-nav-bs", "page-toc"],
 }
 html_css_files = ["custom.css"]
+html_js_files = ["ask-repo.js"]
 html_title = f"{project} v{release}"
 html_static_path = ["_static"]
 
