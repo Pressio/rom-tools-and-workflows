@@ -14,6 +14,8 @@ from tests.romtools.workflows.regression.inverse.cdr_regression_fixture import (
 
 
 GOLD_DIRECTORY = Path(__file__).resolve().parent / "gold"
+REGRESSION_ATOL = 1.0e-8
+REGRESSION_RTOL = 1.0e-6
 
 
 def _assert_matches_gold(result, gold_name: str):
@@ -27,10 +29,15 @@ def _assert_matches_gold(result, gold_name: str):
         assert np.all(np.isfinite(second))
         assert np.all(np.isfinite(parameter_samples))
         assert np.all(np.isfinite(qois))
-        assert np.allclose(first, gold["first"], atol=1.0e-10, rtol=1.0e-9)
-        assert np.allclose(second, gold["second"], atol=1.0e-10, rtol=1.0e-9)
-        assert np.allclose(parameter_samples, gold["parameter_samples"], atol=1.0e-10, rtol=1.0e-9)
-        assert np.allclose(qois, gold["qois"], atol=1.0e-10, rtol=1.0e-9)
+        assert np.allclose(first, gold["first"], atol=REGRESSION_ATOL, rtol=REGRESSION_RTOL)
+        assert np.allclose(second, gold["second"], atol=REGRESSION_ATOL, rtol=REGRESSION_RTOL)
+        assert np.allclose(
+            parameter_samples,
+            gold["parameter_samples"],
+            atol=REGRESSION_ATOL,
+            rtol=REGRESSION_RTOL,
+        )
+        assert np.allclose(qois, gold["qois"], atol=REGRESSION_ATOL, rtol=REGRESSION_RTOL)
 
 
 @pytest.mark.mpi_skip

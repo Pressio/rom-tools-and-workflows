@@ -241,7 +241,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
     assert "mean_log_prior:" in stats_text
     assert "mean_relative_mse:" in stats_text
     assert "cpu_time_seconds:" in stats_text
-    with np.load(restart_file) as restart:
+    with np.load(restart_file, allow_pickle=True) as restart:
         assert "log_likelihoods" in restart
         assert "log_priors" in restart
         assert "mean_relative_mse" in restart
@@ -261,7 +261,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
     assert np.all(physical_variational_mean <= 2.0)
     history_file = tmp_path / "history.npz"
     assert history_file.exists()
-    with np.load(history_file) as history:
+    with np.load(history_file, allow_pickle=True) as history:
         assert "vi_history_variational_mean" in history
         assert "vi_history_variational_covariance" in history
         assert "vi_history_relative_mse" in history
@@ -314,7 +314,7 @@ def test_run_vi_uses_distinct_prior_and_initial_variational_spaces(tmp_path):
         evaluation_concurrency=1,
     )
 
-    with np.load(tmp_path / "iteration_0" / "restart.npz") as restart:
+    with np.load(tmp_path / "iteration_0" / "restart.npz", allow_pickle=True) as restart:
         assert np.allclose(restart["prior_mean"], np.array([0.2]))
         assert np.allclose(restart["prior_covariance"], np.array([[0.16]]))
         assert np.allclose(restart["variational_mean"], np.array([-0.6]))
@@ -444,7 +444,7 @@ def test_run_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
 
     restart_file = tmp_path / "iteration_0" / "restart.npz"
     assert restart_file.exists()
-    with np.load(restart_file) as restart:
+    with np.load(restart_file, allow_pickle=True) as restart:
         assert "elbo_relative_tolerance" in restart
         assert np.isclose(float(restart["elbo_relative_tolerance"]), elbo_relative_tolerance)
         assert "sampling_method" in restart
@@ -532,7 +532,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
     )
 
     restart_file = tmp_path / "iteration_0" / "restart.npz"
-    with np.load(restart_file) as restart:
+    with np.load(restart_file, allow_pickle=True) as restart:
         assert str(restart["variational_mean_coordinates"].item()) == "physical"
         assert np.all(restart["variational_mean"] >= -2.0)
         assert np.all(restart["variational_mean"] <= 2.0)
@@ -568,7 +568,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
     assert qois.shape[0] == 1
     assert np.all(np.isfinite(means))
     assert np.all(np.isfinite(stds))
-    with np.load(tmp_path / "iteration_1" / "restart.npz") as restart:
+    with np.load(tmp_path / "iteration_1" / "restart.npz", allow_pickle=True) as restart:
         assert str(restart["variational_mean_coordinates"].item()) == "physical"
         assert np.all(np.isfinite(restart["variational_mean"]))
         assert np.all(restart["variational_mean"] >= -2.0)
