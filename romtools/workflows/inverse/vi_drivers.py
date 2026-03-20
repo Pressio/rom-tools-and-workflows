@@ -20,24 +20,20 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     VIStochasticNonmonotoneLineSearchConfig,
     _normalize_line_search_method,
     _normalize_line_search_objective,
+    _normalize_newton_hessian_type,
     _normalize_newton_metric,
     _normalize_optimization_method,
     _resolve_line_search_config,
     _resolve_optimizer_config,
-    _raise_for_unused_legacy_kwargs,
 )
 
 
 def _resolve_parameter_bounds(parameter_mins: np.ndarray,
-                              parameter_maxes: np.ndarray,
-                              legacy_kwargs: dict) -> Tuple[np.ndarray, np.ndarray]:
-    _ = legacy_kwargs
+                              parameter_maxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return parameter_mins, parameter_maxes
 
 
-def _resolve_restart_file(restart_file: str,
-                          legacy_kwargs: dict) -> str:
-    _ = legacy_kwargs
+def _resolve_restart_file(restart_file: str) -> str:
     if restart_file is None:
         return None
     if not isinstance(restart_file, str):
@@ -110,6 +106,154 @@ def _compute_log_likelihoods(errors: np.ndarray,
     return log_likelihoods, misfits
 
 
+def _extract_gaussian_parameter_space(parameter_space,
+                                      argument_name: str = 'parameter_space'):
+    if isinstance(parameter_space, GaussianParameterSpace):
+        parameter_names = list(parameter_space.get_names())
+        gaussian_parameters = parameter_space._get_parameter_list()
+        means = np.asarray([parameter._mean for parameter in gaussian_parameters], dtype=float)
+        stds = np.asarray([parameter._std for parameter in gaussian_parameters], dtype=float)
+        covariance = np.diag(stds ** 2)
+        return parameter_names, means, covariance, 'diagonal'
+    if isinstance(parameter_space, MultivariateGaussianParameterSpace):
+        parameter_names = list(parameter_space.get_names())
+        means = np.asarray(parameter_space._means, dtype=float)
+        covariance = np.asarray(parameter_space._covariance, dtype=float)
+        return parameter_names, means, covariance, 'multivariate'
+    raise TypeError(
+        f"{argument_name} must be GaussianParameterSpace or "
+        "MultivariateGaussianParameterSpace."
+    )
+
+
+def _resolve_variational_initialization(prior_parameter_space,
+                                        initial_variational_parameter_space=None):
+    if initial_variational_parameter_space is None:
+        initial_variational_parameter_space = prior_parameter_space
+    return _extract_gaussian_parameter_space(
+        initial_variational_parameter_space,
+        argument_name='initial_variational_parameter_space',
+    )
+
+
+def _validate_gaussian_parameter_spaces(prior_parameter_space,
+                                        initial_variational_parameter_space=None):
+    prior_names, prior_mean, prior_covariance, prior_distribution = _extract_gaussian_parameter_space(
+        prior_parameter_space,
+        argument_name='prior_parameter_space',
+    )
+    (
+        initial_names,
+        initial_mean,
+        initial_covariance,
+        variational_distribution,
+    ) = _resolve_variational_initialization(
+        prior_parameter_space,
+        initial_variational_parameter_space,
+    )
+    if prior_names != initial_names:
+        raise ValueError(
+            "prior_parameter_space and initial_variational_parameter_space must define the same "
+            "parameter names in the same order."
+        )
+    if prior_distribution != variational_distribution:
+        raise ValueError(
+            "prior_parameter_space and initial_variational_parameter_space must use the same "
+            "Gaussian family."
+        )
+    return (
+        prior_names,
+        prior_mean,
+        prior_covariance,
+        prior_distribution,
+        initial_mean,
+        initial_covariance,
+        variational_distribution,
+    )
+
+
+def _compute_gaussian_log_density_data(covariance: np.ndarray):
+    covariance = np.asarray(covariance, dtype=float)
+    covariance = 0.5 * (covariance + covariance.T)
+    covariance_diagonal = np.diag(covariance)
+    if np.array_equal(covariance, np.diag(covariance_diagonal)):
+        absolute_diagonal = np.abs(covariance_diagonal)
+        cutoff = 1e-15 * np.max(absolute_diagonal)
+        precision_diagonal = np.zeros_like(covariance_diagonal, dtype=float)
+        nonzero_entries = absolute_diagonal > cutoff
+        precision_diagonal[nonzero_entries] = 1.0 / covariance_diagonal[nonzero_entries]
+        log_det = float(np.sum(np.log(covariance_diagonal)))
+        return precision_diagonal, log_det
+
+    sign, log_det = np.linalg.slogdet(covariance)
+    if sign <= 0.0:
+        raise ValueError("Gaussian covariance must be positive definite.")
+    return np.linalg.pinv(covariance), float(log_det)
+
+
+def _compute_gaussian_log_densities(samples: np.ndarray,
+                                    mean: np.ndarray,
+                                    precision_operator: np.ndarray,
+                                    covariance_log_det: float) -> np.ndarray:
+    centered_samples = samples - mean[None, :]
+    if precision_operator.ndim == 1:
+        quadratic_terms = np.sum((centered_samples ** 2) * precision_operator[None, :], axis=1)
+    else:
+        weighted_samples = centered_samples @ precision_operator
+        quadratic_terms = np.sum(centered_samples * weighted_samples, axis=1)
+    dimensionality = mean.size
+    normalizer = dimensionality * np.log(2.0 * np.pi) + covariance_log_det
+    return -0.5 * (quadratic_terms + normalizer)
+
+
+def _compute_log_transform_jacobian(optimizer_samples: np.ndarray,
+                                    bounded_parameter_handling: str,
+                                    parameter_mins: np.ndarray,
+                                    parameter_maxes: np.ndarray,
+                                    transform_interior_margin: float,
+                                    transform_map: str) -> np.ndarray:
+    if bounded_parameter_handling != 'transform':
+        return np.zeros(optimizer_samples.shape[0], dtype=float)
+    jacobian_diagonal = _compute_transform_jacobian_diagonal(
+        optimizer_samples,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
+    safe_diagonal = np.maximum(np.abs(jacobian_diagonal), 1e-300)
+    return np.sum(np.log(safe_diagonal), axis=1)
+
+
+def _compute_log_prior_and_joint_terms(log_likelihoods: np.ndarray,
+                                       parameter_samples: np.ndarray,
+                                       optimizer_samples: np.ndarray,
+                                       prior_mean: np.ndarray,
+                                       prior_precision_operator: np.ndarray,
+                                       prior_covariance_log_det: float,
+                                       bounded_parameter_handling: str,
+                                       parameter_mins: np.ndarray,
+                                       parameter_maxes: np.ndarray,
+                                       transform_interior_margin: float,
+                                       transform_map: str):
+    log_priors = _compute_gaussian_log_densities(
+        parameter_samples,
+        prior_mean,
+        prior_precision_operator,
+        prior_covariance_log_det,
+    )
+    log_transform_jacobian = _compute_log_transform_jacobian(
+        optimizer_samples,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
+    log_joint_terms = log_likelihoods + log_priors + log_transform_jacobian
+    return log_priors, log_transform_jacobian, log_joint_terms
+
+
 def _compute_relative_mse(errors: np.ndarray,
                           observations: np.ndarray,
                           epsilon: float = 1e-16):
@@ -145,7 +289,7 @@ def _compute_gradient_signal_to_noise_ratio(gradient: np.ndarray,
 
 
 def _compute_state_elbo_standard_error(state, elbo_scaling_factor: float) -> float:
-    return abs(elbo_scaling_factor) * _compute_standard_error(state['log_likelihoods'])
+    return abs(elbo_scaling_factor) * _compute_standard_error(state['log_joint_terms'])
 
 
 def _compute_optimal_baseline(values: np.ndarray, score_functions: np.ndarray) -> np.ndarray:
@@ -192,22 +336,10 @@ def _compute_variational_covariance(variational_std: np.ndarray,
     return (variational_std[:, None] * correlation) * variational_std[None, :]
 
 
-def _extract_variational_initialization(variational_parameter_space):
-    if isinstance(variational_parameter_space, GaussianParameterSpace):
-        parameter_names = list(variational_parameter_space.get_names())
-        gaussian_parameters = variational_parameter_space._get_parameter_list()
-        means = np.asarray([parameter._mean for parameter in gaussian_parameters], dtype=float)
-        stds = np.asarray([parameter._std for parameter in gaussian_parameters], dtype=float)
-        covariance = np.diag(stds ** 2)
-        return parameter_names, means, covariance, 'diagonal'
-    if isinstance(variational_parameter_space, MultivariateGaussianParameterSpace):
-        parameter_names = list(variational_parameter_space.get_names())
-        means = np.asarray(variational_parameter_space._means, dtype=float)
-        covariance = np.asarray(variational_parameter_space._covariance, dtype=float)
-        return parameter_names, means, covariance, 'multivariate'
-    raise TypeError(
-        "variational_parameter_space must be GaussianParameterSpace or "
-        "MultivariateGaussianParameterSpace."
+def _extract_variational_initialization(initial_variational_parameter_space):
+    return _extract_gaussian_parameter_space(
+        initial_variational_parameter_space,
+        argument_name='initial_variational_parameter_space',
     )
 
 
@@ -279,9 +411,15 @@ def _write_iteration_stats_file(iteration_directory: str,
                                 variational_correlation_cholesky: np.ndarray,
                                 elbo: float,
                                 log_likelihoods: np.ndarray,
+                                log_priors: np.ndarray,
                                 mean_relative_mse: float,
                                 wall_time: float,
-                                cpu_time: float) -> None:
+                                cpu_time: float,
+                                bounded_parameter_handling: str = 'clip',
+                                parameter_mins: np.ndarray = None,
+                                parameter_maxes: np.ndarray = None,
+                                transform_interior_margin: float = 0.0,
+                                transform_map: str = 'sigmoid') -> None:
     os.makedirs(iteration_directory, exist_ok=True)
     variational_std, _ = _compute_variational_std(
         variational_log_std,
@@ -293,20 +431,74 @@ def _write_iteration_stats_file(iteration_directory: str,
         variational_correlation_cholesky,
     )
     mean_log_likelihood = float(np.mean(log_likelihoods))
+    mean_log_prior = float(np.mean(log_priors))
+    persisted_variational_mean = _get_persisted_variational_mean(
+        variational_mean,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
     with open(f"{iteration_directory}/stats.txt", "w", encoding="utf-8") as stats_file:
         stats_file.write(f"elbo: {float(elbo):.16e}\n")
         stats_file.write(f"mean_relative_mse: {float(mean_relative_mse):.16e}\n")
         stats_file.write(f"mean_log_likelihood: {mean_log_likelihood:.16e}\n")
+        stats_file.write(f"mean_log_prior: {mean_log_prior:.16e}\n")
         stats_file.write(f"wall_time_seconds: {float(wall_time):.16e}\n")
         stats_file.write(f"cpu_time_seconds: {float(cpu_time):.16e}\n")
         stats_file.write(
             "variational_mean: "
-            f"{np.array2string(variational_mean, precision=16, separator=', ')}\n"
+            f"{np.array2string(persisted_variational_mean, precision=16, separator=', ')}\n"
         )
         stats_file.write(
             "variational_covariance: "
             f"{np.array2string(variational_covariance, precision=16, separator=', ')}\n"
         )
+
+
+def _get_persisted_variational_mean(variational_mean: np.ndarray,
+                                    bounded_parameter_handling: str,
+                                    parameter_mins: np.ndarray = None,
+                                    parameter_maxes: np.ndarray = None,
+                                    transform_interior_margin: float = 0.0,
+                                    transform_map: str = 'sigmoid') -> np.ndarray:
+    persisted_mean = variational_mean.copy()
+    if bounded_parameter_handling == 'transform':
+        persisted_mean = _transform_optimizer_to_parameter(
+            variational_mean[None, :],
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            transform_map,
+        )[0]
+    return persisted_mean
+
+
+def _restore_variational_mean_from_restart(restart_data,
+                                           bounded_parameter_handling: str,
+                                           parameter_mins: np.ndarray = None,
+                                           parameter_maxes: np.ndarray = None,
+                                           transform_interior_margin: float = 0.0,
+                                           transform_map: str = 'sigmoid') -> np.ndarray:
+    persisted_variational_mean = restart_data['variational_mean']
+    coordinate_system = None
+    if 'variational_mean_coordinates' in restart_data:
+        coordinate_system = str(restart_data['variational_mean_coordinates'].item()).strip().lower()
+    if bounded_parameter_handling != 'transform':
+        return persisted_variational_mean
+    if coordinate_system != 'physical':
+        raise ValueError(
+            "Restart file variational_mean_coordinates must be 'physical'; "
+            "older optimizer-coordinate restart files are not supported."
+        )
+    return _transform_parameter_to_optimizer(
+        persisted_variational_mean[None, :],
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )[0]
 
 
 def _initialize_vi_history():
@@ -352,7 +544,8 @@ def _append_vi_history(vi_history,
                        bounded_parameter_handling: str = 'clip',
                        parameter_mins: np.ndarray = None,
                        parameter_maxes: np.ndarray = None,
-                       transform_interior_margin: float = 0.0) -> None:
+                       transform_interior_margin: float = 0.0,
+                       transform_map: str = 'sigmoid') -> None:
     variational_std, _ = _compute_variational_std(
         variational_log_std,
         min_variational_std,
@@ -362,14 +555,14 @@ def _append_vi_history(vi_history,
         variational_std,
         variational_correlation_cholesky,
     )
-    history_variational_mean = variational_mean.copy()
-    if bounded_parameter_handling == 'transform':
-        history_variational_mean = _transform_optimizer_to_parameter(
-            variational_mean[None, :],
-            parameter_mins,
-            parameter_maxes,
-            transform_interior_margin,
-        )[0]
+    history_variational_mean = _get_persisted_variational_mean(
+        variational_mean,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
     vi_history['variational_mean'].append(history_variational_mean)
     vi_history['variational_covariance'].append(variational_covariance.copy())
     vi_history['relative_mse'].append(float(mean_relative_mse))
@@ -488,19 +681,52 @@ def _logit(values: np.ndarray) -> np.ndarray:
     return np.log(values / (1.0 - values))
 
 
+def _normalize_transform_map(transform_map: str) -> str:
+    normalized = transform_map.strip().lower()
+    if normalized in ('sigmoid', 'logistic'):
+        return 'sigmoid'
+    if normalized in ('arctan', 'atan'):
+        return 'arctan'
+    raise ValueError(
+        f"Unsupported transform_map '{transform_map}'. "
+        "Supported options are 'sigmoid' and 'arctan'."
+    )
+
+
+def _transform_unit_from_optimizer(optimizer_values: np.ndarray,
+                                   transform_map: str) -> np.ndarray:
+    transform_map = _normalize_transform_map(transform_map)
+    if transform_map == 'sigmoid':
+        return _sigmoid(optimizer_values)
+    return 0.5 + np.arctan(optimizer_values) / np.pi
+
+
+def _inverse_transform_unit_to_optimizer(unit_values: np.ndarray,
+                                         transform_map: str) -> np.ndarray:
+    transform_map = _normalize_transform_map(transform_map)
+    if transform_map == 'sigmoid':
+        return _logit(unit_values)
+    return np.tan(np.pi * (unit_values - 0.5))
+
+
 def _compute_transform_jacobian_diagonal(optimizer_values: np.ndarray,
                                          parameter_mins: np.ndarray,
                                          parameter_maxes: np.ndarray,
-                                         transform_interior_margin: float) -> np.ndarray:
+                                         transform_interior_margin: float,
+                                         transform_map: str = 'sigmoid') -> np.ndarray:
     margin_scale = 1.0 - 2.0 * transform_interior_margin
     if margin_scale <= 0.0:
         raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
-    bounded_unit = _sigmoid(optimizer_values)
+    transform_map = _normalize_transform_map(transform_map)
+    bounded_unit = _transform_unit_from_optimizer(optimizer_values, transform_map)
+    if transform_map == 'sigmoid':
+        base_jacobian = bounded_unit * (1.0 - bounded_unit)
+    else:
+        base_jacobian = 1.0 / (np.pi * (1.0 + optimizer_values ** 2))
     return (
         (parameter_maxes - parameter_mins)
         * margin_scale
-        * bounded_unit
-        * (1.0 - bounded_unit)
+        * base_jacobian
     )
 
 
@@ -512,7 +738,8 @@ def _enforce_variational_log_std_bounds(variational_mean: np.ndarray,
                                         parameter_mins: np.ndarray,
                                         parameter_maxes: np.ndarray,
                                         transform_interior_margin: float,
-                                        min_physical_variational_std_fraction: float) -> np.ndarray:
+                                        min_physical_variational_std_fraction: float,
+                                        transform_map: str = 'sigmoid') -> np.ndarray:
     clipped_log_std = _clip_variational_log_std(
         variational_log_std,
         min_variational_std,
@@ -531,6 +758,7 @@ def _enforce_variational_log_std_bounds(variational_mean: np.ndarray,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin,
+        transform_map,
     )
     jacobian_diagonal = np.maximum(np.abs(jacobian_diagonal), 1e-16)
     variational_std = np.exp(clipped_log_std)
@@ -543,18 +771,23 @@ def _enforce_variational_log_std_bounds(variational_mean: np.ndarray,
 def _transform_optimizer_to_parameter(optimizer_samples: np.ndarray,
                                       parameter_mins: np.ndarray,
                                       parameter_maxes: np.ndarray,
-                                      transform_interior_margin: float = 0.0) -> np.ndarray:
+                                      transform_interior_margin: float = 0.0,
+                                      transform_map: str = 'sigmoid') -> np.ndarray:
     margin_scale = 1.0 - 2.0 * transform_interior_margin
     if margin_scale <= 0.0:
         raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
-    bounded_unit = transform_interior_margin + margin_scale * _sigmoid(optimizer_samples)
+    bounded_unit = transform_interior_margin + margin_scale * _transform_unit_from_optimizer(
+        optimizer_samples,
+        transform_map,
+    )
     return parameter_mins[None, :] + (parameter_maxes - parameter_mins)[None, :] * bounded_unit
 
 
 def _transform_parameter_to_optimizer(parameter_samples: np.ndarray,
                                       parameter_mins: np.ndarray,
                                       parameter_maxes: np.ndarray,
-                                      transform_interior_margin: float = 0.0) -> np.ndarray:
+                                      transform_interior_margin: float = 0.0,
+                                      transform_map: str = 'sigmoid') -> np.ndarray:
     parameter_ranges = parameter_maxes - parameter_mins
     unit_values = (parameter_samples - parameter_mins[None, :]) / parameter_ranges[None, :]
     margin_scale = 1.0 - 2.0 * transform_interior_margin
@@ -562,7 +795,7 @@ def _transform_parameter_to_optimizer(parameter_samples: np.ndarray,
         raise ValueError("transform_interior_margin must be in [0.0, 0.5).")
     unit_values = (unit_values - transform_interior_margin) / margin_scale
     unit_values = np.clip(unit_values, 1e-12, 1.0 - 1e-12)
-    return _logit(unit_values)
+    return _inverse_transform_unit_to_optimizer(unit_values, transform_map)
 
 
 def _convert_physical_moments_to_optimizer_moments(physical_mean: np.ndarray,
@@ -570,7 +803,8 @@ def _convert_physical_moments_to_optimizer_moments(physical_mean: np.ndarray,
                                                    bounded_parameter_handling: str,
                                                    parameter_mins: np.ndarray,
                                                    parameter_maxes: np.ndarray,
-                                                   transform_interior_margin: float):
+                                                   transform_interior_margin: float,
+                                                   transform_map: str = 'sigmoid'):
     if bounded_parameter_handling != 'transform':
         return physical_mean.copy(), physical_covariance.copy()
 
@@ -579,12 +813,14 @@ def _convert_physical_moments_to_optimizer_moments(physical_mean: np.ndarray,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin,
+        transform_map,
     )[0]
     jacobian_diagonal = _compute_transform_jacobian_diagonal(
         optimizer_mean,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin,
+        transform_map,
     )
     inverse_jacobian_diagonal = np.zeros_like(jacobian_diagonal)
     nonzero_jacobian = np.abs(jacobian_diagonal) > 1e-15
@@ -891,6 +1127,7 @@ def _compute_gradient_norm(state, optimization_method: str):
 
 def _compute_newton_step(state,
                          newton_regularization: float,
+                         newton_hessian_type: str = 'diagonal',
                          metric_scale: np.ndarray = None):
     gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
     hessian = state.get('hessian_full')
@@ -906,7 +1143,10 @@ def _compute_newton_step(state,
             transformed_hessian = (
                 metric_scale[:, None] * transformed_hessian * metric_scale[None, :]
             )
-    solver = NewtonSolver(regularization=newton_regularization)
+    solver = NewtonSolver(
+        regularization=newton_regularization,
+        hessian_type=newton_hessian_type,
+    )
     step = solver.step(transformed_gradient, transformed_hessian)
     if metric_scale is not None:
         step = metric_scale * step
@@ -949,6 +1189,7 @@ def _draw_parameter_samples(variational_mean: np.ndarray,
                             parameter_mins: np.ndarray,
                             parameter_maxes: np.ndarray,
                             transform_interior_margin: float = 0.0,
+                            transform_map: str = 'sigmoid',
                             standard_normal_samples: np.ndarray = None,
                             variational_correlation_cholesky: np.ndarray = None,
                             sampling_method: str = 'mc'):
@@ -988,6 +1229,7 @@ def _draw_parameter_samples(variational_mean: np.ndarray,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            transform_map,
         )
     else:
         parameter_samples = bound_samples(optimizer_samples, parameter_mins, parameter_maxes)
@@ -1017,11 +1259,19 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
                                  observations_covariance: np.ndarray,
                                  variational_mean: np.ndarray,
                                  variational_log_std: np.ndarray,
+                                 prior_mean: np.ndarray,
+                                 prior_precision_operator: np.ndarray,
+                                 prior_covariance_log_det: float,
                                  covariance_regularization: float,
                                  baseline_method: str,
                                  gradient_method: str,
+                                 bounded_parameter_handling: str,
                                  min_variational_std: float,
                                  max_variational_std: float,
+                                 parameter_mins: np.ndarray,
+                                 parameter_maxes: np.ndarray,
+                                 transform_interior_margin: float = 0.0,
+                                 transform_map: str = 'sigmoid',
                                  variational_correlation_cholesky: np.ndarray = None,
                                  elbo_scaling_factor: float = 1.0,
                                  log_likelihood_precision_operator: np.ndarray = None):
@@ -1035,7 +1285,20 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         covariance_regularization,
         precision_operator=log_likelihood_precision_operator,
     )
-    scaled_log_likelihoods = elbo_scaling_factor * log_likelihoods
+    log_priors, log_transform_jacobian, log_joint_terms = _compute_log_prior_and_joint_terms(
+        log_likelihoods,
+        parameter_samples,
+        optimizer_samples,
+        prior_mean,
+        prior_precision_operator,
+        prior_covariance_log_det,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
+    scaled_log_joint_terms = elbo_scaling_factor * log_joint_terms
     relative_mses = _compute_relative_mse(errors, observations)
 
     variational_std, variational_log_std = _compute_variational_std(
@@ -1053,7 +1316,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         optimizer_samples,
         variational_mean,
         variational_std,
-        scaled_log_likelihoods,
+        scaled_log_joint_terms,
         baseline_method,
         variational_correlation_cholesky,
         elbo_scaling_factor,
@@ -1062,7 +1325,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         optimizer_samples,
         variational_mean,
         variational_std,
-        scaled_log_likelihoods,
+        scaled_log_joint_terms,
         baseline_method,
         variational_correlation_cholesky,
     )
@@ -1070,7 +1333,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         optimizer_samples,
         variational_mean,
         variational_std,
-        scaled_log_likelihoods,
+        scaled_log_joint_terms,
         baseline_method,
         variational_correlation_cholesky,
     )
@@ -1086,7 +1349,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
     if variational_correlation_cholesky is not None:
         entropy += np.sum(np.log(np.diag(variational_correlation_cholesky)))
     entropy *= elbo_scaling_factor
-    elbo = np.mean(scaled_log_likelihoods) + entropy
+    elbo = np.mean(scaled_log_joint_terms) + entropy
 
     state = {
         'optimizer_samples': optimizer_samples,
@@ -1095,6 +1358,9 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         'mean_qoi': mean_qoi,
         'errors': errors,
         'log_likelihoods': log_likelihoods,
+        'log_priors': log_priors,
+        'log_joint_terms': log_joint_terms,
+        'log_transform_jacobian': log_transform_jacobian,
         'mean_misfit': np.mean(misfits),
         'mean_relative_mse': np.mean(relative_mses),
         'entropy': entropy,
@@ -1121,6 +1387,9 @@ def _evaluate_vi_state(model: QoiModel,
                        parameter_names,
                        variational_mean: np.ndarray,
                        variational_log_std: np.ndarray,
+                       prior_mean: np.ndarray,
+                       prior_precision_operator: np.ndarray,
+                       prior_covariance_log_det: float,
                        sample_size: int,
                        evaluation_concurrency: int,
                        covariance_regularization: float,
@@ -1132,6 +1401,7 @@ def _evaluate_vi_state(model: QoiModel,
                        parameter_mins: np.ndarray,
                        parameter_maxes: np.ndarray,
                        transform_interior_margin: float = 0.0,
+                       transform_map: str = 'sigmoid',
                        variational_correlation_cholesky: np.ndarray = None,
                        elbo_scaling_factor: float = 1.0,
                        log_likelihood_precision_operator: np.ndarray = None,
@@ -1146,6 +1416,7 @@ def _evaluate_vi_state(model: QoiModel,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         variational_correlation_cholesky=variational_correlation_cholesky,
         sampling_method=sampling_method,
     )
@@ -1165,11 +1436,19 @@ def _evaluate_vi_state(model: QoiModel,
         observations_covariance=observations_covariance,
         variational_mean=variational_mean,
         variational_log_std=variational_log_std,
+        prior_mean=prior_mean,
+        prior_precision_operator=prior_precision_operator,
+        prior_covariance_log_det=prior_covariance_log_det,
         covariance_regularization=covariance_regularization,
         baseline_method=baseline_method,
         gradient_method=gradient_method,
+        bounded_parameter_handling=bounded_parameter_handling,
         min_variational_std=min_variational_std,
         max_variational_std=max_variational_std,
+        parameter_mins=parameter_mins,
+        parameter_maxes=parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         variational_correlation_cholesky=variational_correlation_cholesky,
         elbo_scaling_factor=elbo_scaling_factor,
         log_likelihood_precision_operator=log_likelihood_precision_operator,
@@ -1182,6 +1461,9 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
                                            parameter_names,
                                            variational_mean: np.ndarray,
                                            variational_log_std: np.ndarray,
+                                           prior_mean: np.ndarray,
+                                           prior_precision_operator: np.ndarray,
+                                           prior_covariance_log_det: float,
                                            sample_size: int,
                                            evaluation_concurrency: int,
                                            covariance_regularization: float,
@@ -1193,6 +1475,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
                                            parameter_mins: np.ndarray,
                                            parameter_maxes: np.ndarray,
                                            transform_interior_margin: float,
+                                           transform_map: str,
                                            line_search_objective: str,
                                            standard_normal_samples: np.ndarray = None,
                                            variational_correlation_cholesky: np.ndarray = None,
@@ -1208,6 +1491,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin,
+        transform_map,
         standard_normal_samples,
         variational_correlation_cholesky,
     )
@@ -1235,11 +1519,19 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
             observations_covariance=observations_covariance,
             variational_mean=variational_mean,
             variational_log_std=variational_log_std,
+            prior_mean=prior_mean,
+            prior_precision_operator=prior_precision_operator,
+            prior_covariance_log_det=prior_covariance_log_det,
             covariance_regularization=covariance_regularization,
             baseline_method=baseline_method,
             gradient_method=gradient_method,
+            bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
+            parameter_mins=parameter_mins,
+            parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
             variational_correlation_cholesky=variational_correlation_cholesky,
             elbo_scaling_factor=elbo_scaling_factor,
             log_likelihood_precision_operator=log_likelihood_precision_operator,
@@ -1252,6 +1544,8 @@ def _save_vi_restart(restart_path: str,
                      variational_mean: np.ndarray,
                      variational_log_std: np.ndarray,
                      variational_distribution: str,
+                     prior_mean: np.ndarray,
+                     prior_covariance: np.ndarray,
                      variational_correlation_cholesky: np.ndarray,
                      elbo_scaling_factor: float,
                      elbo_relative_tolerance: float,
@@ -1259,6 +1553,7 @@ def _save_vi_restart(restart_path: str,
                      iteration: int,
                      step_size: float,
                      bounded_parameter_handling: str,
+                     transform_map: str,
                      baseline_method: str,
                      optimization_method: str,
                      line_search_objective: str,
@@ -1268,14 +1563,29 @@ def _save_vi_restart(restart_path: str,
                      line_search_uncertainty_sigma: float = None,
                      line_search_sample_growth_factor: float = None,
                      log_std_learning_rate_factor: float = None,
+                     parameter_mins: np.ndarray = None,
+                     parameter_maxes: np.ndarray = None,
+                     transform_interior_margin: float = 0.0,
                      vi_history=None,
                      sampling_method: str = None):
+    persisted_variational_mean = _get_persisted_variational_mean(
+        variational_mean,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
     save_data = dict(
         log_likelihoods=state['log_likelihoods'],
+        log_priors=state['log_priors'],
         mean_relative_mse=float(state['mean_relative_mse']),
-        variational_mean=variational_mean,
+        variational_mean=persisted_variational_mean,
+        variational_mean_coordinates='physical',
         variational_log_std=variational_log_std,
         variational_distribution=variational_distribution,
+        prior_mean=prior_mean,
+        prior_covariance=prior_covariance,
         elbo_scaling_factor=elbo_scaling_factor,
         elbo_relative_tolerance=(
             np.nan if elbo_relative_tolerance is None else float(elbo_relative_tolerance)
@@ -1284,6 +1594,7 @@ def _save_vi_restart(restart_path: str,
         iteration=iteration,
         step_size=step_size,
         bounded_parameter_handling=bounded_parameter_handling,
+        transform_map=transform_map,
         baseline_method=baseline_method,
         optimization_method=optimization_method,
         line_search_objective=line_search_objective,
@@ -1320,6 +1631,7 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             max_variational_std: float,
                             max_log_std_update: float,
                             newton_regularization: float,
+                            newton_hessian_type: str,
                             covariance_regularization: float,
                             restart_files_to_keep: int,
                             observations_covariance: np.ndarray,
@@ -1328,8 +1640,10 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             elbo_relative_tolerance: float,
                             sampling_method: str,
                             transform_interior_margin: float,
+                            transform_map: str,
                             min_physical_variational_std_fraction: float,
-                            variational_parameter_space,
+                            prior_parameter_space,
+                            initial_variational_parameter_space,
                             restart_file: str,
                             parameter_mins: np.ndarray,
                             parameter_maxes: np.ndarray,
@@ -1363,6 +1677,7 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
     )
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
+    _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
     assert observations_covariance.shape[0] == observations_covariance.shape[1], (
@@ -1375,12 +1690,16 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
     if elbo_relative_tolerance is not None:
         assert elbo_relative_tolerance >= 0.0, "elbo_relative_tolerance must be non-negative"
     _normalize_sampling_method(sampling_method)
+    _normalize_transform_map(transform_map)
 
-    parameter_names, initial_variational_mean, initial_variational_covariance, _ = (
-        _extract_variational_initialization(variational_parameter_space)
+    parameter_names, _, _, _, initial_variational_mean, initial_variational_covariance, _ = (
+        _validate_gaussian_parameter_spaces(
+            prior_parameter_space,
+            initial_variational_parameter_space,
+        )
     )
     parameter_dimensionality = np.asarray(initial_variational_mean).size
-    assert len(parameter_names) > 0, "variational_parameter_space must define at least one parameter"
+    assert len(parameter_names) > 0, "prior_parameter_space must define at least one parameter"
     covariance = np.asarray(initial_variational_covariance)
     assert covariance.ndim == 2, "initial variational covariance must be a 2D array"
     assert covariance.shape[0] == covariance.shape[1], (
@@ -1420,11 +1739,12 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
 
 
 def run_vi(model: QoiModel,
-           variational_parameter_space,
+           prior_parameter_space,
            observations: np.ndarray,
            observations_covariance: np.ndarray,
            parameter_mins: np.ndarray = None,
            parameter_maxes: np.ndarray = None,
+           initial_variational_parameter_space=None,
            restart_file: str = None,
            optimizer_method: str = 'gradient',
            optimizer_config=None,
@@ -1441,9 +1761,9 @@ def run_vi(model: QoiModel,
            elbo_relative_tolerance: float = None,
            baseline_method: str = None,
            bounded_parameter_handling: str = 'transform',
-           transform_interior_margin: float = 1e-8,
-           min_physical_variational_std_fraction: float = 1e-8,
-           **legacy_kwargs):
+           transform_interior_margin: float = 1e-6,
+           transform_map: str = 'sigmoid',
+           min_physical_variational_std_fraction: float = 1e-6):
     '''
     Run Gaussian variational inference with score-function gradients.
 
@@ -1454,16 +1774,18 @@ def run_vi(model: QoiModel,
 
     Args:
         model: QoiModel to evaluate at sampled parameters.
-        variational_parameter_space: Either GaussianParameterSpace (diagonal VI)
-            or MultivariateGaussianParameterSpace (multivariate VI). Provides
-            parameter names and initial Gaussian moments in physical parameter
-            space. For bounded_parameter_handling='transform', moments are
-            mapped to optimizer space internally.
+        prior_parameter_space: Either GaussianParameterSpace (diagonal VI)
+            or MultivariateGaussianParameterSpace (multivariate VI). Defines
+            the Bayesian prior in physical parameter space.
         observations: Observed QoI vector.
         observations_covariance: Observation covariance matrix.
         parameter_mins: Optional lower bounds on parameters.
         parameter_maxes: Optional upper bounds on parameters.
-        restart_file: Optional restart file path.
+        initial_variational_parameter_space: Optional Gaussian initializer for
+            the variational state in physical parameter space. Defaults to the
+            prior moments.
+        restart_file: Optional restart file path. Restart files written by this
+            routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
             options are 'gradient' and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
@@ -1500,11 +1822,11 @@ def run_vi(model: QoiModel,
             are 'clip' and 'transform'.
         transform_interior_margin: Margin used by bounded_parameter_handling='transform'
             to keep mapped samples away from exact bounds.
+        transform_map: Transform used by bounded_parameter_handling='transform'.
+            Supported options are 'sigmoid' and 'arctan'.
         min_physical_variational_std_fraction: Minimum physical-space
             variational standard deviation as a fraction of each parameter range
             when bounded_parameter_handling='transform'.
-        legacy_kwargs: Optional scalar overrides for fields in
-            `optimizer_config` and `line_search_config`.
 
     Returns:
         Tuple of (variational_mean, variational_std, parameter_samples, qois).
@@ -1515,24 +1837,20 @@ def run_vi(model: QoiModel,
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
         parameter_mins,
         parameter_maxes,
-        legacy_kwargs,
     )
-    restart_file = _resolve_restart_file(restart_file, legacy_kwargs)
+    restart_file = _resolve_restart_file(restart_file)
     optimization_method, resolved_optimizer_config = _resolve_optimizer_config(
         optimizer_method,
         optimizer_config,
-        legacy_kwargs,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
         line_search_config,
-        legacy_kwargs,
         VILegacyLineSearchConfig(),
         VIStochasticNonmonotoneLineSearchConfig(),
     )
-    _raise_for_unused_legacy_kwargs(legacy_kwargs, 'run_vi')
 
     gradient_method = 'standard'
     if optimization_method == 'gradient':
@@ -1546,9 +1864,13 @@ def run_vi(model: QoiModel,
     newton_defaults = VINewtonOptimizerConfig()
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
     newton_regularization = newton_defaults.newton_regularization
+    newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     if optimization_method == 'newton':
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
+        newton_hessian_type = _normalize_newton_hessian_type(
+            resolved_optimizer_config.newton_hessian_type
+        )
 
     initial_step_size = resolved_line_search_config.initial_step_size
     max_step_size = resolved_line_search_config.max_step_size
@@ -1572,16 +1894,23 @@ def run_vi(model: QoiModel,
         observations_covariance,
     )
     bounded_parameter_handling = _normalize_bounded_parameter_handling(bounded_parameter_handling)
+    transform_map = _normalize_transform_map(transform_map)
     if baseline_method is None:
         baseline_method = 'loo'
     baseline_method = _normalize_baseline_method(baseline_method)
     sampling_method = _normalize_sampling_method(sampling_method)
     (
         parameter_names,
+        prior_mean,
+        prior_covariance,
+        _,
         initial_variational_mean,
         initial_variational_covariance,
         variational_distribution,
-    ) = _extract_variational_initialization(variational_parameter_space)
+    ) = _validate_gaussian_parameter_spaces(
+        prior_parameter_space,
+        initial_variational_parameter_space,
+    )
     variational_distribution = _normalize_variational_distribution(variational_distribution)
     line_search_objective = _normalize_line_search_objective(line_search_objective)
     _validate_run_vi_inputs(
@@ -1601,6 +1930,7 @@ def run_vi(model: QoiModel,
         max_variational_std=max_variational_std,
         max_log_std_update=max_log_std_update,
         newton_regularization=newton_regularization,
+        newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
         observations_covariance=observations_covariance,
@@ -1609,8 +1939,10 @@ def run_vi(model: QoiModel,
         elbo_relative_tolerance=elbo_relative_tolerance,
         sampling_method=sampling_method,
         transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=initial_variational_parameter_space,
         restart_file=restart_file,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
@@ -1619,6 +1951,9 @@ def run_vi(model: QoiModel,
     log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
         observations_covariance,
         covariance_regularization,
+    )
+    prior_precision_operator, prior_covariance_log_det = _compute_gaussian_log_density_data(
+        prior_covariance,
     )
     variational_correlation_cholesky = None
     vi_history = _initialize_vi_history()
@@ -1635,6 +1970,7 @@ def run_vi(model: QoiModel,
                 parameter_mins,
                 parameter_maxes,
                 transform_interior_margin,
+                transform_map,
             )
         )
 
@@ -1659,6 +1995,7 @@ def run_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             min_physical_variational_std_fraction,
+            transform_map,
         )
 
         run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
@@ -1670,6 +2007,9 @@ def run_vi(model: QoiModel,
             parameter_names,
             variational_mean,
             variational_log_std,
+            prior_mean,
+            prior_precision_operator,
+            prior_covariance_log_det,
             sample_size,
             evaluation_concurrency,
             covariance_regularization,
@@ -1681,6 +2021,7 @@ def run_vi(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            transform_map,
             variational_correlation_cholesky,
             elbo_scaling_factor,
             log_likelihood_precision_operator,
@@ -1696,7 +2037,14 @@ def run_vi(model: QoiModel,
             np.random.seed(random_seed)
         iteration = int(restart_data['iteration'])
         step_size = min(float(restart_data['step_size']), max_step_size)
-        variational_mean = restart_data['variational_mean']
+        variational_mean = _restore_variational_mean_from_restart(
+            restart_data,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            transform_map,
+        )
         variational_log_std = _clip_variational_log_std(
             restart_data['variational_log_std'],
             min_variational_std,
@@ -1712,6 +2060,7 @@ def run_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             min_physical_variational_std_fraction,
+            transform_map,
         )
         if 'bounded_parameter_handling' in restart_data:
             restart_bounded_parameter_handling = str(restart_data['bounded_parameter_handling'].item())
@@ -1719,6 +2068,12 @@ def run_vi(model: QoiModel,
                 raise ValueError(
                     "Restart file bounded_parameter_handling does not match current run."
                 )
+        if 'transform_map' in restart_data:
+            restart_transform_map = _normalize_transform_map(
+                str(restart_data['transform_map'].item())
+            )
+            if restart_transform_map != transform_map:
+                raise ValueError("Restart file transform_map does not match current run.")
         if 'baseline_method' in restart_data:
             restart_baseline_method = str(restart_data['baseline_method'].item())
             if restart_baseline_method != baseline_method:
@@ -1810,6 +2165,13 @@ def run_vi(model: QoiModel,
             )
             if restart_sampling_method != sampling_method:
                 raise ValueError("Restart file sampling_method does not match current run.")
+        if 'prior_mean' in restart_data and not np.allclose(restart_data['prior_mean'], prior_mean):
+            raise ValueError("Restart file prior_mean does not match current run.")
+        if 'prior_covariance' in restart_data and not np.allclose(
+            restart_data['prior_covariance'],
+            prior_covariance,
+        ):
+            raise ValueError("Restart file prior_covariance does not match current run.")
 
         run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
         state = _evaluate_vi_state(
@@ -1820,6 +2182,9 @@ def run_vi(model: QoiModel,
             parameter_names,
             variational_mean,
             variational_log_std,
+            prior_mean,
+            prior_precision_operator,
+            prior_covariance_log_det,
             sample_size,
             evaluation_concurrency,
             covariance_regularization,
@@ -1831,6 +2196,7 @@ def run_vi(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            transform_map,
             variational_correlation_cholesky,
             elbo_scaling_factor,
             log_likelihood_precision_operator,
@@ -1847,6 +2213,8 @@ def run_vi(model: QoiModel,
             variational_mean,
             variational_log_std,
             variational_distribution,
+            prior_mean,
+            prior_covariance,
             variational_correlation_cholesky,
             elbo_scaling_factor,
             elbo_relative_tolerance,
@@ -1854,6 +2222,7 @@ def run_vi(model: QoiModel,
             iteration,
             step_size,
             bounded_parameter_handling,
+            transform_map,
             baseline_method,
             optimization_method,
             line_search_objective,
@@ -1863,6 +2232,9 @@ def run_vi(model: QoiModel,
             line_search_uncertainty_sigma,
             line_search_sample_growth_factor,
             log_std_learning_rate_factor,
+            parameter_mins=parameter_mins,
+            parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
             vi_history=vi_history,
             sampling_method=sampling_method,
         )
@@ -1886,6 +2258,7 @@ def run_vi(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            transform_map,
         )
     print(
         f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -1910,6 +2283,7 @@ def run_vi(model: QoiModel,
         variational_correlation_cholesky,
         state['elbo'],
         state['log_likelihoods'],
+        state['log_priors'],
         state['mean_relative_mse'],
         wall_time,
         cpu_time,
@@ -1989,6 +2363,7 @@ def run_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 min_physical_variational_std_fraction,
+                transform_map,
             )
 
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
@@ -2000,6 +2375,9 @@ def run_vi(model: QoiModel,
                 parameter_names,
                 test_variational_mean,
                 test_variational_log_std,
+                prior_mean,
+                prior_precision_operator,
+                prior_covariance_log_det,
                 line_search_sample_size,
                 evaluation_concurrency,
                 covariance_regularization,
@@ -2011,6 +2389,7 @@ def run_vi(model: QoiModel,
                 parameter_mins,
                 parameter_maxes,
                 transform_interior_margin,
+                transform_map,
                 line_search_objective,
                 line_search_standard_normal_samples,
                 variational_correlation_cholesky,
@@ -2051,19 +2430,27 @@ def run_vi(model: QoiModel,
                     test_state = _build_vi_state_from_results(
                         optimizer_samples=test_candidate['optimizer_samples'],
                         parameter_samples=test_candidate['parameter_samples'],
-                        iteration_results=test_candidate['iteration_results'],
-                        observations=observations,
-                        observations_covariance=observations_covariance,
-                        variational_mean=test_variational_mean,
-                        variational_log_std=test_variational_log_std,
-                        covariance_regularization=covariance_regularization,
-                        baseline_method=baseline_method,
-                        gradient_method=gradient_method,
-                        min_variational_std=min_variational_std,
-                        max_variational_std=max_variational_std,
-                        variational_correlation_cholesky=variational_correlation_cholesky,
-                        elbo_scaling_factor=elbo_scaling_factor,
-                        log_likelihood_precision_operator=log_likelihood_precision_operator,
+                    iteration_results=test_candidate['iteration_results'],
+                    observations=observations,
+                    observations_covariance=observations_covariance,
+                    variational_mean=test_variational_mean,
+                    variational_log_std=test_variational_log_std,
+                    prior_mean=prior_mean,
+                    prior_precision_operator=prior_precision_operator,
+                    prior_covariance_log_det=prior_covariance_log_det,
+                    covariance_regularization=covariance_regularization,
+                    baseline_method=baseline_method,
+                    gradient_method=gradient_method,
+                    bounded_parameter_handling=bounded_parameter_handling,
+                    min_variational_std=min_variational_std,
+                    max_variational_std=max_variational_std,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
+                    transform_map=transform_map,
+                    variational_correlation_cholesky=variational_correlation_cholesky,
+                    elbo_scaling_factor=elbo_scaling_factor,
+                    log_likelihood_precision_operator=log_likelihood_precision_operator,
                     )
                 state = test_state
                 accepted_elbo_history.append(state['elbo'])
@@ -2095,6 +2482,7 @@ def run_vi(model: QoiModel,
                     parameter_mins,
                     parameter_maxes,
                     transform_interior_margin,
+                    transform_map,
                 )
                 print(
                     f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -2121,9 +2509,15 @@ def run_vi(model: QoiModel,
                     variational_correlation_cholesky,
                     state['elbo'],
                     state['log_likelihoods'],
+                    state['log_priors'],
                     state['mean_relative_mse'],
                     wall_time,
                     cpu_time,
+                    bounded_parameter_handling,
+                    parameter_mins,
+                    parameter_maxes,
+                    transform_interior_margin,
+                    transform_map,
                 )
 
                 _save_vi_restart(
@@ -2132,6 +2526,8 @@ def run_vi(model: QoiModel,
                     variational_mean,
                     variational_log_std,
                     variational_distribution,
+                    prior_mean,
+                    prior_covariance,
                     variational_correlation_cholesky,
                     elbo_scaling_factor,
                     elbo_relative_tolerance,
@@ -2139,6 +2535,7 @@ def run_vi(model: QoiModel,
                     iteration,
                     step_size,
                     bounded_parameter_handling,
+                    transform_map,
                     baseline_method,
                     optimization_method,
                     line_search_objective,
@@ -2148,6 +2545,9 @@ def run_vi(model: QoiModel,
                     line_search_uncertainty_sigma,
                     line_search_sample_growth_factor,
                     log_std_learning_rate_factor,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
                 )
@@ -2192,6 +2592,7 @@ def run_vi(model: QoiModel,
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
                 newton_regularization,
+                newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
             )
             line_search_predicted_slope = float(
@@ -2220,6 +2621,7 @@ def run_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 min_physical_variational_std_fraction,
+                transform_map,
             )
 
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
@@ -2231,6 +2633,9 @@ def run_vi(model: QoiModel,
                 parameter_names,
                 test_variational_mean,
                 test_variational_log_std,
+                prior_mean,
+                prior_precision_operator,
+                prior_covariance_log_det,
                 line_search_sample_size,
                 evaluation_concurrency,
                 covariance_regularization,
@@ -2242,6 +2647,7 @@ def run_vi(model: QoiModel,
                 parameter_mins,
                 parameter_maxes,
                 transform_interior_margin,
+                transform_map,
                 line_search_objective,
                 line_search_standard_normal_samples,
                 variational_correlation_cholesky,
@@ -2282,19 +2688,27 @@ def run_vi(model: QoiModel,
                     test_state = _build_vi_state_from_results(
                         optimizer_samples=test_candidate['optimizer_samples'],
                         parameter_samples=test_candidate['parameter_samples'],
-                        iteration_results=test_candidate['iteration_results'],
-                        observations=observations,
-                        observations_covariance=observations_covariance,
-                        variational_mean=test_variational_mean,
-                        variational_log_std=test_variational_log_std,
-                        covariance_regularization=covariance_regularization,
-                        baseline_method=baseline_method,
-                        gradient_method=gradient_method,
-                        min_variational_std=min_variational_std,
-                        max_variational_std=max_variational_std,
-                        variational_correlation_cholesky=variational_correlation_cholesky,
-                        elbo_scaling_factor=elbo_scaling_factor,
-                        log_likelihood_precision_operator=log_likelihood_precision_operator,
+                    iteration_results=test_candidate['iteration_results'],
+                    observations=observations,
+                    observations_covariance=observations_covariance,
+                    variational_mean=test_variational_mean,
+                    variational_log_std=test_variational_log_std,
+                    prior_mean=prior_mean,
+                    prior_precision_operator=prior_precision_operator,
+                    prior_covariance_log_det=prior_covariance_log_det,
+                    covariance_regularization=covariance_regularization,
+                    baseline_method=baseline_method,
+                    gradient_method=gradient_method,
+                    bounded_parameter_handling=bounded_parameter_handling,
+                    min_variational_std=min_variational_std,
+                    max_variational_std=max_variational_std,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
+                    transform_map=transform_map,
+                    variational_correlation_cholesky=variational_correlation_cholesky,
+                    elbo_scaling_factor=elbo_scaling_factor,
+                    log_likelihood_precision_operator=log_likelihood_precision_operator,
                     )
                 state = test_state
                 step_size = min(step_size * step_size_growth_factor, max_step_size)
@@ -2326,6 +2740,7 @@ def run_vi(model: QoiModel,
                     parameter_mins,
                     parameter_maxes,
                     transform_interior_margin,
+                    transform_map,
                 )
                 print(
                     f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -2352,9 +2767,15 @@ def run_vi(model: QoiModel,
                     variational_correlation_cholesky,
                     state['elbo'],
                     state['log_likelihoods'],
+                    state['log_priors'],
                     state['mean_relative_mse'],
                     wall_time,
                     cpu_time,
+                    bounded_parameter_handling,
+                    parameter_mins,
+                    parameter_maxes,
+                    transform_interior_margin,
+                    transform_map,
                 )
 
                 _save_vi_restart(
@@ -2363,6 +2784,8 @@ def run_vi(model: QoiModel,
                     variational_mean,
                     variational_log_std,
                     variational_distribution,
+                    prior_mean,
+                    prior_covariance,
                     variational_correlation_cholesky,
                     elbo_scaling_factor,
                     elbo_relative_tolerance,
@@ -2370,6 +2793,7 @@ def run_vi(model: QoiModel,
                     iteration,
                     step_size,
                     bounded_parameter_handling,
+                    transform_map,
                     baseline_method,
                     optimization_method,
                     line_search_objective,
@@ -2379,6 +2803,9 @@ def run_vi(model: QoiModel,
                     line_search_uncertainty_sigma,
                     line_search_sample_growth_factor,
                     log_std_learning_rate_factor,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
                 )

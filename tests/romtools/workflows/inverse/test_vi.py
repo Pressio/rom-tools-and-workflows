@@ -3,6 +3,7 @@ import pytest
 
 import romtools.workflows
 from romtools.workflows.inverse.eki_utils import run_vi_iteration
+from romtools.workflows.inverse import vi_drivers
 from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
     MultivariateGaussianParameterSpace,
@@ -78,6 +79,46 @@ class TwoParameterSpace(romtools.workflows.ParameterSpace):
     def generate_samples(self, number_of_samples: int, seed=None) -> np.ndarray:
         rng = np.random.default_rng(seed)
         return rng.uniform(self._lower, self._upper, size=(number_of_samples, 2))
+
+
+def test_arctan_transform_round_trip():
+    parameter_mins = np.array([-2.0, -1.0])
+    parameter_maxes = np.array([3.0, 2.0])
+    optimizer_values = np.array([[-4.0, -0.5], [0.0, 0.8], [2.5, 3.0]])
+    transformed = vi_drivers._transform_optimizer_to_parameter(
+        optimizer_values,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin=1e-6,
+        transform_map="arctan",
+    )
+    recovered = vi_drivers._transform_parameter_to_optimizer(
+        transformed,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin=1e-6,
+        transform_map="arctan",
+    )
+    assert np.allclose(recovered, optimizer_values, atol=1e-10, rtol=1e-10)
+
+
+def test_run_vi_rejects_removed_legacy_kwargs():
+    model = LinearQoiModel(slope=2.0)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    with pytest.raises(TypeError, match="unexpected keyword argument 'max_iterations'"):
+        romtools.workflows.run_vi(
+            model=model,
+            prior_parameter_space=variational_parameter_space,
+            observations=np.array([0.0]),
+            observations_covariance=np.eye(1),
+            max_iterations=10,
+        )
 
 
 @pytest.mark.mpi_skip
@@ -157,7 +198,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
 
     means, stds, _, qois = romtools.workflows.run_vi(
         model=model,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
@@ -197,17 +238,27 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
     assert "variational_mean:" in stats_text
     assert "variational_covariance:" in stats_text
     assert "mean_log_likelihood:" in stats_text
+    assert "mean_log_prior:" in stats_text
     assert "mean_relative_mse:" in stats_text
     assert "cpu_time_seconds:" in stats_text
     with np.load(restart_file) as restart:
         assert "log_likelihoods" in restart
+        assert "log_priors" in restart
         assert "mean_relative_mse" in restart
+        assert "prior_mean" in restart
+        assert "prior_covariance" in restart
         assert "variational_mean" in restart
+        assert "variational_mean_coordinates" in restart
+        assert str(restart["variational_mean_coordinates"].item()) == "physical"
         assert "variational_log_std" in restart
         assert "iteration" in restart
         assert "step_size" in restart
         assert "rng_state" in restart
-        optimizer_variational_mean = restart["variational_mean"].copy()
+        physical_variational_mean = restart["variational_mean"].copy()
+    assert np.all(np.isfinite(physical_variational_mean))
+    assert physical_variational_mean.shape == (1,)
+    assert np.all(physical_variational_mean >= -2.0)
+    assert np.all(physical_variational_mean <= 2.0)
     history_file = tmp_path / "history.npz"
     assert history_file.exists()
     with np.load(history_file) as history:
@@ -222,16 +273,91 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert history["vi_history_variational_covariance"].shape[0] == num_entries
         assert history["vi_history_relative_mse"].shape[0] == num_entries
         assert history["vi_history_loglikelihood"].shape[0] == num_entries
-        transform_interior_margin = 1e-8
-        margin_scale = 1.0 - 2.0 * transform_interior_margin
-        bounded_unit = transform_interior_margin + margin_scale / (
-            1.0 + np.exp(-optimizer_variational_mean)
-        )
-        expected_physical_mean = -2.0 + 4.0 * bounded_unit
-        assert np.allclose(
-            history["vi_history_variational_mean"][-1],
-            expected_physical_mean,
-        )
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_uses_distinct_prior_and_initial_variational_spaces(tmp_path):
+    model = LinearQoiModel(slope=1.0)
+    prior_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.2]),
+        stds=np.array([0.4]),
+        sampler=MonteCarloSampler,
+    )
+    initial_variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([-0.6]),
+        stds=np.array([0.1]),
+        sampler=MonteCarloSampler,
+    )
+
+    romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=initial_variational_parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.array([[0.2**2]]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=4,
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=0,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=2,
+        evaluation_concurrency=1,
+    )
+
+    with np.load(tmp_path / "iteration_0" / "restart.npz") as restart:
+        assert np.allclose(restart["prior_mean"], np.array([0.2]))
+        assert np.allclose(restart["prior_covariance"], np.array([[0.16]]))
+        assert np.allclose(restart["variational_mean"], np.array([-0.6]))
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
+    model = LinearQoiModel(slope=1.0)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    means, stds, parameter_samples, qois = romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.array([[0.2**2]]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=8,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+            newton_hessian_type="full",
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=4,
+        evaluation_concurrency=1,
+    )
+
+    assert means.shape == (1,)
+    assert stds.shape == (1,)
+    assert parameter_samples.shape[1] == 1
+    assert qois.shape[0] == 1
 
 
 @pytest.mark.mpi_skip
@@ -248,7 +374,7 @@ def test_run_vi_multivariate_newton_supported(tmp_path):
 
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=model,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_vi_directory=str(tmp_path),
@@ -294,7 +420,7 @@ def test_run_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
 
     romtools.workflows.run_vi(
         model=model,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_vi_directory=str(tmp_path),
@@ -326,6 +452,130 @@ def test_run_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
 
 
 @pytest.mark.mpi_skip
+def test_run_vi_accepts_arctan_transform_map(tmp_path):
+    model = LinearQoiModel(slope=1.5)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([0.7]),
+        sampler=MonteCarloSampler,
+    )
+    observations = np.array([0.5])
+    observations_covariance = np.array([[0.15**2]])
+
+    means, stds, parameter_samples, qois = romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=10,
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="transform",
+        transform_map="arctan",
+        random_seed=9,
+        evaluation_concurrency=1,
+    )
+
+    assert means.shape == (1,)
+    assert stds.shape == (1,)
+    assert parameter_samples.shape[1] == 1
+    assert qois.shape[0] == 1
+    assert np.all(np.isfinite(parameter_samples))
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_path):
+    model = LinearQoiModel(slope=1.5)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([0.7]),
+        sampler=MonteCarloSampler,
+    )
+    observations = np.array([0.5])
+    observations_covariance = np.array([[0.15**2]])
+
+    romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=10,
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="transform",
+        random_seed=9,
+        evaluation_concurrency=1,
+    )
+
+    restart_file = tmp_path / "iteration_0" / "restart.npz"
+    with np.load(restart_file) as restart:
+        assert str(restart["variational_mean_coordinates"].item()) == "physical"
+        assert np.all(restart["variational_mean"] >= -2.0)
+        assert np.all(restart["variational_mean"] <= 2.0)
+
+    means, stds, parameter_samples, qois = romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        restart_file=str(restart_file),
+        sample_size=10,
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="transform",
+        random_seed=9,
+        evaluation_concurrency=1,
+    )
+
+    assert means.shape == (1,)
+    assert stds.shape == (1,)
+    assert parameter_samples.shape[1] == 1
+    assert qois.shape[0] == 1
+    assert np.all(np.isfinite(means))
+    assert np.all(np.isfinite(stds))
+    with np.load(tmp_path / "iteration_1" / "restart.npz") as restart:
+        assert str(restart["variational_mean_coordinates"].item()) == "physical"
+        assert np.all(np.isfinite(restart["variational_mean"]))
+        assert np.all(restart["variational_mean"] >= -2.0)
+        assert np.all(restart["variational_mean"] <= 2.0)
+
+
+@pytest.mark.mpi_skip
 def test_run_vi_limits_number_of_restart_files(tmp_path):
     model = LinearQoiModel(slope=1.0)
     variational_parameter_space = GaussianParameterSpace(
@@ -339,7 +589,7 @@ def test_run_vi_limits_number_of_restart_files(tmp_path):
 
     romtools.workflows.run_vi(
         model=model,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_vi_directory=str(tmp_path),

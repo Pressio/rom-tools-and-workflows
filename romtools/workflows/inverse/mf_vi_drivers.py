@@ -14,15 +14,16 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     VILegacyLineSearchConfig,
     VIStochasticNonmonotoneLineSearchConfig,
     _normalize_line_search_method as _normalize_line_search_method_shared,
+    _normalize_newton_hessian_type,
     _normalize_newton_metric,
     _resolve_line_search_config,
     _resolve_optimizer_config,
-    _raise_for_unused_legacy_kwargs,
 )
 from romtools.workflows.inverse.vi_drivers import (
     _append_vi_history,
     _compute_component_standard_error,
     _compute_correlation_cholesky_from_samples,
+    _compute_gaussian_log_density_data,
     _compute_gradient_signal_to_noise_ratio,
     _clip_variational_log_std,
     _enforce_variational_log_std_bounds,
@@ -32,16 +33,18 @@ from romtools.workflows.inverse.vi_drivers import (
     _compute_log_likelihood_precision_operator,
     _compute_optimal_baseline,
     _compute_relative_mse,
+    _compute_log_prior_and_joint_terms,
     _convert_physical_moments_to_optimizer_moments,
     _compute_newton_metric_scale,
     _compute_newton_step,
     _compute_update_directions,
     _compute_variational_std,
     _draw_parameter_samples,
-    _extract_variational_initialization,
+    _get_persisted_variational_mean,
     _initialize_variational_from_mean_cov,
     _normalize_baseline_method,
     _normalize_bounded_parameter_handling,
+    _normalize_transform_map,
     _normalize_sampling_method,
     _print_gradient_signal_to_noise_ratio,
     _print_vi_parameters,
@@ -52,7 +55,9 @@ from romtools.workflows.inverse.vi_drivers import (
     _resolve_parameter_bounds,
     _prune_old_restart_files,
     _resolve_restart_file,
+    _restore_variational_mean_from_restart,
     _save_vi_history,
+    _validate_gaussian_parameter_spaces,
     _write_iteration_stats_file,
 )
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
@@ -656,15 +661,15 @@ def _compute_standard_error(samples: np.ndarray) -> float:
     return float(np.std(samples, ddof=1) / np.sqrt(sample_count))
 
 
-def _compute_mfmc_log_likelihood_standard_error(fom_log_likelihoods: np.ndarray,
-                                                rom_log_likelihoods_base: np.ndarray,
-                                                rom_log_likelihoods_extra: np.ndarray) -> float:
-    fom_standard_error = _compute_standard_error(fom_log_likelihoods)
-    if rom_log_likelihoods_extra.size == 0:
+def _compute_mfmc_standard_error(fom_terms: np.ndarray,
+                                 rom_terms_base: np.ndarray,
+                                 rom_terms_extra: np.ndarray) -> float:
+    fom_standard_error = _compute_standard_error(fom_terms)
+    if rom_terms_extra.size == 0:
         return fom_standard_error
-    low_fidelity_full = np.concatenate([rom_log_likelihoods_base, rom_log_likelihoods_extra])
+    low_fidelity_full = np.concatenate([rom_terms_base, rom_terms_extra])
     low_fidelity_full_standard_error = _compute_standard_error(low_fidelity_full)
-    low_fidelity_base_standard_error = _compute_standard_error(rom_log_likelihoods_base)
+    low_fidelity_base_standard_error = _compute_standard_error(rom_terms_base)
     return float(np.sqrt(
         fom_standard_error ** 2
         + low_fidelity_full_standard_error ** 2
@@ -673,12 +678,12 @@ def _compute_mfmc_log_likelihood_standard_error(fom_log_likelihoods: np.ndarray,
 
 
 def _compute_state_elbo_standard_error(state, elbo_scaling_factor: float) -> float:
-    mfmc_log_likelihood_standard_error = _compute_mfmc_log_likelihood_standard_error(
-        state['log_likelihoods_fom'],
-        state['log_likelihoods_rom_base'],
-        state['log_likelihoods_rom_only'],
+    mfmc_joint_standard_error = _compute_mfmc_standard_error(
+        state['log_joint_terms_fom'],
+        state['log_joint_terms_rom_base'],
+        state['log_joint_terms_rom_only'],
     )
-    return abs(elbo_scaling_factor) * mfmc_log_likelihood_standard_error
+    return abs(elbo_scaling_factor) * mfmc_joint_standard_error
 
 
 def _save_mf_vi_restart(restart_path: str,
@@ -686,6 +691,8 @@ def _save_mf_vi_restart(restart_path: str,
                         variational_mean: np.ndarray,
                         variational_log_std: np.ndarray,
                         variational_distribution: str,
+                        prior_mean: np.ndarray,
+                        prior_covariance: np.ndarray,
                         variational_correlation_cholesky: np.ndarray,
                         elbo_scaling_factor: float,
                         elbo_relative_tolerance: float,
@@ -693,16 +700,32 @@ def _save_mf_vi_restart(restart_path: str,
                         iteration: int,
                         step_size: float,
                         bounded_parameter_handling: str,
+                        transform_map: str,
                         optimization_method: str,
                         mfmc_control_variate_mode: str,
+                        parameter_mins: np.ndarray = None,
+                        parameter_maxes: np.ndarray = None,
+                        transform_interior_margin: float = 0.0,
                         vi_history=None,
                         sampling_method: str = None):
+    persisted_variational_mean = _get_persisted_variational_mean(
+        variational_mean,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
+    )
     save_data = dict(
         log_likelihoods=state['log_likelihoods_fom'],
+        log_priors=state['log_priors_fom'],
         mean_relative_mse=float(state['mean_relative_mse']),
-        variational_mean=variational_mean,
+        variational_mean=persisted_variational_mean,
+        variational_mean_coordinates='physical',
         variational_log_std=variational_log_std,
         variational_distribution=variational_distribution,
+        prior_mean=prior_mean,
+        prior_covariance=prior_covariance,
         elbo_scaling_factor=elbo_scaling_factor,
         elbo_relative_tolerance=(
             np.nan if elbo_relative_tolerance is None else float(elbo_relative_tolerance)
@@ -711,6 +734,7 @@ def _save_mf_vi_restart(restart_path: str,
         iteration=iteration,
         step_size=step_size,
         bounded_parameter_handling=bounded_parameter_handling,
+        transform_map=transform_map,
         optimization_method=optimization_method,
         mfmc_control_variate_mode=mfmc_control_variate_mode,
         sampling_method=sampling_method,
@@ -741,8 +765,12 @@ def _restart_has_full_state(restart_data) -> bool:
         'mean_qoi',
         'errors',
         'log_likelihoods',
+        'log_priors',
+        'log_joint_terms',
         'log_likelihoods_rom_base',
+        'log_joint_terms_rom_base',
         'log_likelihoods_rom_only',
+        'log_joint_terms_rom_only',
         'gradient_mean',
         'gradient_log_std',
         'hessian_diagonal_mean',
@@ -771,6 +799,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           parameter_names,
                           variational_mean: np.ndarray,
                           variational_log_std: np.ndarray,
+                          prior_mean: np.ndarray,
+                          prior_precision_operator: np.ndarray,
+                          prior_covariance_log_det: float,
                           fom_sample_size: int,
                           rom_extra_sample_size: int,
                           fom_evaluation_concurrency: int,
@@ -789,6 +820,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           parameter_mins: np.ndarray,
                           parameter_maxes: np.ndarray,
                           transform_interior_margin: float,
+                          transform_map: str,
                           rom_tolerance: float,
                           max_rom_training_dirs: int,
                           correlation_estimator: str,
@@ -812,6 +844,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         parameter_mins,
         parameter_maxes,
         transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         variational_correlation_cholesky=variational_correlation_cholesky,
         sampling_method=sampling_method,
     )
@@ -831,6 +864,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
             variational_correlation_cholesky=variational_correlation_cholesky,
             sampling_method=sampling_method,
         )
@@ -846,6 +880,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
             variational_correlation_cholesky=variational_correlation_cholesky,
             sampling_method=sampling_method,
         )
@@ -914,6 +949,13 @@ def _evaluate_mf_vi_state(model: QoiModel,
         candidate_rom_training_dirs = candidate_training_dirs[-max_rom_training_dirs:]
         candidate_rom_training_parameters = candidate_training_parameters[-max_rom_training_dirs:]
         candidate_rom_training_qois = candidate_training_qois[-max_rom_training_dirs:]
+        print(
+            "Retraining ROM: "
+            f"iteration_directory={iteration_directory}, "
+            f"rom_error={rom_error:.5e}, "
+            f"rom_tolerance={rom_tolerance:.5e}, "
+            f"training_samples={len(candidate_rom_training_dirs)}"
+        )
         rom_model_candidate = rom_model_builder.build_from_training_dirs(
             iteration_directory,
             candidate_rom_training_dirs,
@@ -1040,6 +1082,57 @@ def _evaluate_mf_vi_state(model: QoiModel,
     else:
         rom_log_likelihoods_extra = np.zeros(0)
 
+    fom_log_priors, fom_log_transform_jacobian, fom_log_joint_terms = (
+        _compute_log_prior_and_joint_terms(
+            fom_log_likelihoods,
+            parameter_samples_fom,
+            optimizer_samples_fom,
+            prior_mean,
+            prior_precision_operator,
+            prior_covariance_log_det,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            transform_map,
+        )
+    )
+    rom_log_priors_base, rom_log_transform_jacobian_base, rom_log_joint_terms_base = (
+        _compute_log_prior_and_joint_terms(
+            rom_log_likelihoods_base,
+            parameter_samples_rom_base,
+            optimizer_samples_rom_base,
+            prior_mean,
+            prior_precision_operator,
+            prior_covariance_log_det,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            transform_map,
+        )
+    )
+    if rom_extra_sample_size > 0:
+        rom_log_priors_extra, rom_log_transform_jacobian_extra, rom_log_joint_terms_extra = (
+            _compute_log_prior_and_joint_terms(
+                rom_log_likelihoods_extra,
+                parameter_samples_rom_extra,
+                optimizer_samples_rom_extra,
+                prior_mean,
+                prior_precision_operator,
+                prior_covariance_log_det,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                transform_map,
+            )
+        )
+    else:
+        rom_log_priors_extra = np.zeros(0)
+        rom_log_transform_jacobian_extra = np.zeros(0)
+        rom_log_joint_terms_extra = np.zeros(0)
+
     variational_std, variational_log_std = _compute_variational_std(
         variational_log_std,
         min_variational_std,
@@ -1060,9 +1153,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
             optimizer_samples_rom_extra,
             variational_mean,
             variational_std,
-            fom_log_likelihoods,
-            rom_log_likelihoods_base,
-            rom_log_likelihoods_extra,
+            fom_log_joint_terms,
+            rom_log_joint_terms_base,
+            rom_log_joint_terms_extra,
             baseline_method,
             use_mfmc_control_variate,
             mfmc_control_variate_mode,
@@ -1076,9 +1169,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
         optimizer_samples_rom_extra,
         variational_mean,
         variational_std,
-        fom_log_likelihoods,
-        rom_log_likelihoods_base,
-        rom_log_likelihoods_extra,
+        fom_log_joint_terms,
+        rom_log_joint_terms_base,
+        rom_log_joint_terms_extra,
         baseline_method,
         use_mfmc_control_variate,
         mfmc_control_variate_mode,
@@ -1091,9 +1184,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
         optimizer_samples_rom_extra,
         variational_mean,
         variational_std,
-        fom_log_likelihoods,
-        rom_log_likelihoods_base,
-        rom_log_likelihoods_extra,
+        fom_log_joint_terms,
+        rom_log_joint_terms_base,
+        rom_log_joint_terms_extra,
         baseline_method,
         use_mfmc_control_variate,
         mfmc_control_variate_mode,
@@ -1113,17 +1206,17 @@ def _evaluate_mf_vi_state(model: QoiModel,
         entropy += np.sum(np.log(np.diag(variational_correlation_cholesky)))
     entropy *= elbo_scaling_factor
     if rom_extra_sample_size > 0:
-        low_fidelity_full_log_likelihoods = np.concatenate(
-            [rom_log_likelihoods_base, rom_log_likelihoods_extra]
+        low_fidelity_full_log_joint_terms = np.concatenate(
+            [rom_log_joint_terms_base, rom_log_joint_terms_extra]
         )
-        mfmc_mean_log_likelihood = (
-            np.mean(fom_log_likelihoods)
-            + np.mean(low_fidelity_full_log_likelihoods)
-            - np.mean(rom_log_likelihoods_base)
+        mfmc_mean_log_joint = (
+            np.mean(fom_log_joint_terms)
+            + np.mean(low_fidelity_full_log_joint_terms)
+            - np.mean(rom_log_joint_terms_base)
         )
     else:
-        mfmc_mean_log_likelihood = np.mean(fom_log_likelihoods)
-    elbo = elbo_scaling_factor * mfmc_mean_log_likelihood + entropy
+        mfmc_mean_log_joint = np.mean(fom_log_joint_terms)
+    elbo = elbo_scaling_factor * mfmc_mean_log_joint + entropy
 
     optimizer_samples = np.vstack([
         optimizer_samples_fom,
@@ -1148,9 +1241,18 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'qois_rom_coupled': rom_results_base['qois'],
         'qois_rom_only': rom_results_extra['qois'],
         'log_likelihoods_fom': fom_log_likelihoods,
+        'log_priors_fom': fom_log_priors,
+        'log_joint_terms_fom': fom_log_joint_terms,
+        'log_transform_jacobian_fom': fom_log_transform_jacobian,
         'log_likelihoods_rom_base': rom_log_likelihoods_base,
+        'log_priors_rom_base': rom_log_priors_base,
+        'log_joint_terms_rom_base': rom_log_joint_terms_base,
+        'log_transform_jacobian_rom_base': rom_log_transform_jacobian_base,
         'log_likelihoods_rom_coupled': rom_log_likelihoods_base,
         'log_likelihoods_rom_only': rom_log_likelihoods_extra,
+        'log_priors_rom_only': rom_log_priors_extra,
+        'log_joint_terms_rom_only': rom_log_joint_terms_extra,
+        'log_transform_jacobian_rom_only': rom_log_transform_jacobian_extra,
         'mean_misfit': np.mean(fom_misfits),
         'mean_relative_mse': np.mean(_compute_relative_mse(fom_results['errors'], observations)),
         'entropy': entropy,
@@ -1198,6 +1300,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                max_variational_std: float,
                                max_log_std_update: float,
                                newton_regularization: float,
+                               newton_hessian_type: str,
                                covariance_regularization: float,
                                restart_files_to_keep: int,
                                correlation_k_folds: int,
@@ -1207,10 +1310,12 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                elbo_relative_tolerance: float,
                                sampling_method: str,
                                max_rom_training_history: int,
-                               variational_parameter_space,
+                               prior_parameter_space,
+                               initial_variational_parameter_space,
                                parameter_mins: np.ndarray,
                                parameter_maxes: np.ndarray,
                                transform_interior_margin: float,
+                               transform_map: str,
                                min_physical_variational_std_fraction: float,
                                bounded_parameter_handling: str) -> None:
     if restart_file is not None:
@@ -1242,6 +1347,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     )
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
+    _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
     assert correlation_k_folds >= 2, "correlation_k_folds must be >= 2"
@@ -1255,13 +1361,17 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     if elbo_relative_tolerance is not None:
         assert elbo_relative_tolerance >= 0.0, "elbo_relative_tolerance must be non-negative"
     _normalize_sampling_method(sampling_method)
+    _normalize_transform_map(transform_map)
     assert max_rom_training_history >= 1, "max_rom_training_history must be >= 1"
 
-    parameter_names, initial_variational_mean, initial_variational_covariance, _ = (
-        _extract_variational_initialization(variational_parameter_space)
+    parameter_names, _, _, _, initial_variational_mean, initial_variational_covariance, _ = (
+        _validate_gaussian_parameter_spaces(
+            prior_parameter_space,
+            initial_variational_parameter_space,
+        )
     )
     parameter_dimensionality = np.asarray(initial_variational_mean).size
-    assert len(parameter_names) > 0, "variational_parameter_space must define at least one parameter"
+    assert len(parameter_names) > 0, "prior_parameter_space must define at least one parameter"
     covariance = np.asarray(initial_variational_covariance)
     assert covariance.ndim == 2, "initial variational covariance must be a 2D array"
     assert covariance.shape[0] == covariance.shape[1], (
@@ -1302,11 +1412,12 @@ def _validate_run_mf_vi_inputs(restart_file: str,
 
 def run_mf_vi(model: QoiModel,
               rom_model_builder: QoiModelBuilderWithTrainingData,
-              variational_parameter_space,
+              prior_parameter_space,
               observations: np.ndarray,
               observations_covariance: np.ndarray,
               parameter_mins: np.ndarray = None,
               parameter_maxes: np.ndarray = None,
+              initial_variational_parameter_space=None,
               restart_file: str = None,
               optimizer_method: str = 'gradient',
               optimizer_config=None,
@@ -1333,20 +1444,22 @@ def run_mf_vi(model: QoiModel,
               rom_base_sampling_strategy: str = 'coupled',
               bounded_parameter_handling: str = 'transform',
               transform_interior_margin: float = 1e-8,
-              min_physical_variational_std_fraction: float = 1e-8,
-              **legacy_kwargs):
+              transform_map: str = 'sigmoid',
+              min_physical_variational_std_fraction: float = 1e-8):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
     Args:
-        variational_parameter_space: Either GaussianParameterSpace (diagonal VI)
-            or MultivariateGaussianParameterSpace (multivariate VI). Provides
-            parameter names and initial Gaussian moments in physical parameter
-            space. For bounded_parameter_handling='transform', moments are
-            mapped to optimizer space internally.
+        prior_parameter_space: Either GaussianParameterSpace (diagonal VI)
+            or MultivariateGaussianParameterSpace (multivariate VI). Defines
+            the Bayesian prior in physical parameter space.
         parameter_mins: Optional lower bounds on parameters.
         parameter_maxes: Optional upper bounds on parameters.
-        restart_file: Optional restart file path.
+        initial_variational_parameter_space: Optional Gaussian initializer for
+            the variational state in physical parameter space. Defaults to the
+            prior moments.
+        restart_file: Optional restart file path. Restart files written by this
+            routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
             options are 'gradient' and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
@@ -1370,11 +1483,11 @@ def run_mf_vi(model: QoiModel,
             evaluations. 'separate' draws an independent ROM-base sample set.
         transform_interior_margin: Margin used by bounded_parameter_handling='transform'
             to keep mapped samples away from exact bounds.
+        transform_map: Transform used by bounded_parameter_handling='transform'.
+            Supported options are 'sigmoid' and 'arctan'.
         min_physical_variational_std_fraction: Minimum physical-space
             variational standard deviation as a fraction of each parameter range
             when bounded_parameter_handling='transform'.
-        legacy_kwargs: Optional scalar overrides for fields in
-            `optimizer_config` and `line_search_config`.
 
     Returns:
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
@@ -1384,20 +1497,17 @@ def run_mf_vi(model: QoiModel,
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
         parameter_mins,
         parameter_maxes,
-        legacy_kwargs,
     )
-    restart_file = _resolve_restart_file(restart_file, legacy_kwargs)
+    restart_file = _resolve_restart_file(restart_file)
     optimization_method, resolved_optimizer_config = _resolve_optimizer_config(
         optimizer_method,
         optimizer_config,
-        legacy_kwargs,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
         line_search_config,
-        legacy_kwargs,
         VILegacyLineSearchConfig(
             step_size_growth_factor=1.05,
             relaxation_parameter=10.0,
@@ -1407,7 +1517,6 @@ def run_mf_vi(model: QoiModel,
             relaxation_parameter=10.0,
         ),
     )
-    _raise_for_unused_legacy_kwargs(legacy_kwargs, 'run_mf_vi')
 
     gradient_method = 'standard'
     if optimization_method == 'gradient':
@@ -1421,9 +1530,13 @@ def run_mf_vi(model: QoiModel,
     newton_defaults = VINewtonOptimizerConfig(newton_regularization=1e-8)
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
     newton_regularization = newton_defaults.newton_regularization
+    newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     if optimization_method == 'newton':
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
+        newton_hessian_type = _normalize_newton_hessian_type(
+            resolved_optimizer_config.newton_hessian_type
+        )
 
     initial_step_size = resolved_line_search_config.initial_step_size
     max_step_size = resolved_line_search_config.max_step_size
@@ -1448,12 +1561,19 @@ def run_mf_vi(model: QoiModel,
     )
 
     bounded_parameter_handling = _normalize_bounded_parameter_handling(bounded_parameter_handling)
+    transform_map = _normalize_transform_map(transform_map)
     (
         parameter_names,
+        prior_mean,
+        prior_covariance,
+        _,
         initial_variational_mean,
         initial_variational_covariance,
         variational_distribution,
-    ) = _extract_variational_initialization(variational_parameter_space)
+    ) = _validate_gaussian_parameter_spaces(
+        prior_parameter_space,
+        initial_variational_parameter_space,
+    )
     sampling_method = _normalize_sampling_method(sampling_method)
     correlation_estimator = _normalize_correlation_estimator(correlation_estimator)
     if baseline_method is None:
@@ -1481,6 +1601,7 @@ def run_mf_vi(model: QoiModel,
         max_variational_std=max_variational_std,
         max_log_std_update=max_log_std_update,
         newton_regularization=newton_regularization,
+        newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
         correlation_k_folds=correlation_k_folds,
@@ -1490,16 +1611,21 @@ def run_mf_vi(model: QoiModel,
         elbo_relative_tolerance=elbo_relative_tolerance,
         sampling_method=sampling_method,
         max_rom_training_history=max_rom_training_history,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=initial_variational_parameter_space,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         bounded_parameter_handling=bounded_parameter_handling,
     )
     log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
         observations_covariance,
         covariance_regularization,
+    )
+    prior_precision_operator, prior_covariance_log_det = _compute_gaussian_log_density_data(
+        prior_covariance,
     )
 
     iteration = 0
@@ -1517,6 +1643,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_mins,
                 parameter_maxes,
                 transform_interior_margin,
+                transform_map,
             )
         )
         (
@@ -1540,6 +1667,7 @@ def run_mf_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             min_physical_variational_std_fraction,
+            transform_map,
         )
 
         state = _evaluate_mf_vi_state(
@@ -1552,6 +1680,9 @@ def run_mf_vi(model: QoiModel,
             parameter_names=parameter_names,
             variational_mean=variational_mean,
             variational_log_std=variational_log_std,
+            prior_mean=prior_mean,
+            prior_precision_operator=prior_precision_operator,
+            prior_covariance_log_det=prior_covariance_log_det,
             fom_sample_size=fom_sample_size,
             rom_extra_sample_size=rom_extra_sample_size,
             fom_evaluation_concurrency=fom_evaluation_concurrency,
@@ -1570,6 +1701,7 @@ def run_mf_vi(model: QoiModel,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
             correlation_estimator=correlation_estimator,
@@ -1593,7 +1725,14 @@ def run_mf_vi(model: QoiModel,
             np.random.seed(random_seed)
         iteration = int(restart_data['iteration'])
         step_size = min(float(restart_data['step_size']), max_step_size)
-        variational_mean = restart_data['variational_mean']
+        variational_mean = _restore_variational_mean_from_restart(
+            restart_data,
+            bounded_parameter_handling,
+            parameter_mins,
+            parameter_maxes,
+            transform_interior_margin,
+            transform_map,
+        )
         variational_log_std = _clip_variational_log_std(
             restart_data['variational_log_std'],
             min_variational_std,
@@ -1609,6 +1748,7 @@ def run_mf_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             min_physical_variational_std_fraction,
+            transform_map,
         )
 
         if 'bounded_parameter_handling' in restart_data:
@@ -1619,6 +1759,12 @@ def run_mf_vi(model: QoiModel,
                 raise ValueError(
                     "restart_file bounded_parameter_handling does not match current run."
                 )
+        if 'transform_map' in restart_data:
+            restart_transform_map = _normalize_transform_map(
+                str(restart_data['transform_map'].item())
+            )
+            if restart_transform_map != transform_map:
+                raise ValueError("restart_file transform_map does not match current run.")
         if 'variational_distribution' in restart_data:
             restart_variational_distribution = str(restart_data['variational_distribution'].item())
             if restart_variational_distribution != variational_distribution:
@@ -1641,6 +1787,13 @@ def run_mf_vi(model: QoiModel,
             )
             if restart_sampling_method != sampling_method:
                 raise ValueError("restart_file sampling_method does not match current run.")
+        if 'prior_mean' in restart_data and not np.allclose(restart_data['prior_mean'], prior_mean):
+            raise ValueError("restart_file prior_mean does not match current run.")
+        if 'prior_covariance' in restart_data and not np.allclose(
+            restart_data['prior_covariance'],
+            prior_covariance,
+        ):
+            raise ValueError("restart_file prior_covariance does not match current run.")
         if 'elbo_scaling_factor' in restart_data:
             restart_elbo_scaling_factor = float(restart_data['elbo_scaling_factor'])
             if not np.isclose(restart_elbo_scaling_factor, elbo_scaling_factor):
@@ -1731,9 +1884,13 @@ def run_mf_vi(model: QoiModel,
                 'qois_rom_coupled': restart_data['qois_rom_base'],
                 'qois_rom_only': restart_data['qois_rom_only'],
                 'log_likelihoods_fom': restart_data['log_likelihoods'],
+                'log_priors_fom': restart_data['log_priors'],
+                'log_joint_terms_fom': restart_data['log_joint_terms'],
                 'log_likelihoods_rom_base': restart_data['log_likelihoods_rom_base'],
+                'log_joint_terms_rom_base': restart_data['log_joint_terms_rom_base'],
                 'log_likelihoods_rom_coupled': restart_data['log_likelihoods_rom_base'],
                 'log_likelihoods_rom_only': restart_data['log_likelihoods_rom_only'],
+                'log_joint_terms_rom_only': restart_data['log_joint_terms_rom_only'],
                 'mean_misfit': float(restart_data['mean_misfit']),
                 'mean_relative_mse': float(restart_data['mean_relative_mse']),
                 'entropy': float(restart_data['entropy']),
@@ -1775,6 +1932,9 @@ def run_mf_vi(model: QoiModel,
                 parameter_names=parameter_names,
                 variational_mean=variational_mean,
                 variational_log_std=variational_log_std,
+                prior_mean=prior_mean,
+                prior_precision_operator=prior_precision_operator,
+                prior_covariance_log_det=prior_covariance_log_det,
                 fom_sample_size=fom_sample_size,
                 rom_extra_sample_size=rom_extra_sample_size,
                 fom_evaluation_concurrency=fom_evaluation_concurrency,
@@ -1793,6 +1953,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_mins=parameter_mins,
                 parameter_maxes=parameter_maxes,
                 transform_interior_margin=transform_interior_margin,
+                transform_map=transform_map,
                 rom_tolerance=rom_tolerance,
                 max_rom_training_dirs=max_rom_training_dirs,
                 correlation_estimator=correlation_estimator,
@@ -1817,6 +1978,8 @@ def run_mf_vi(model: QoiModel,
         variational_mean,
         variational_log_std,
         variational_distribution,
+        prior_mean,
+        prior_covariance,
         variational_correlation_cholesky,
         elbo_scaling_factor,
         elbo_relative_tolerance,
@@ -1824,8 +1987,12 @@ def run_mf_vi(model: QoiModel,
         iteration,
         step_size,
         bounded_parameter_handling,
+        transform_map,
         optimization_method,
         mfmc_control_variate_mode,
+        parameter_mins=parameter_mins,
+        parameter_maxes=parameter_maxes,
+        transform_interior_margin=transform_interior_margin,
         vi_history=vi_history,
         sampling_method=sampling_method,
     )
@@ -1849,6 +2016,7 @@ def run_mf_vi(model: QoiModel,
             parameter_mins,
             parameter_maxes,
             transform_interior_margin,
+            transform_map,
         )
     alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
     alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
@@ -1876,9 +2044,15 @@ def run_mf_vi(model: QoiModel,
         variational_correlation_cholesky,
         state['elbo'],
         state['log_likelihoods_fom'],
+        state['log_priors_fom'],
         state['mean_relative_mse'],
         wall_time,
         cpu_time,
+        bounded_parameter_handling,
+        parameter_mins,
+        parameter_maxes,
+        transform_interior_margin,
+        transform_map,
     )
 
     iteration += 1
@@ -1945,11 +2119,13 @@ def run_mf_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 min_physical_variational_std_fraction,
+                transform_map,
             )
         else:
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
                 newton_regularization,
+                newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
             )
             line_search_predicted_slope = float(
@@ -1978,6 +2154,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 min_physical_variational_std_fraction,
+                transform_map,
             )
 
         test_state = _evaluate_mf_vi_state(
@@ -1990,6 +2167,9 @@ def run_mf_vi(model: QoiModel,
             parameter_names=parameter_names,
             variational_mean=test_variational_mean,
             variational_log_std=test_variational_log_std,
+            prior_mean=prior_mean,
+            prior_precision_operator=prior_precision_operator,
+            prior_covariance_log_det=prior_covariance_log_det,
             fom_sample_size=current_fom_sample_size,
             rom_extra_sample_size=current_rom_extra_sample_size,
             fom_evaluation_concurrency=fom_evaluation_concurrency,
@@ -2008,6 +2188,7 @@ def run_mf_vi(model: QoiModel,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
             correlation_estimator=correlation_estimator,
@@ -2074,6 +2255,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_mins,
                 parameter_maxes,
                 transform_interior_margin,
+                transform_map,
             )
             alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
             alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
@@ -2102,9 +2284,15 @@ def run_mf_vi(model: QoiModel,
                 variational_correlation_cholesky,
                 state['elbo'],
                 state['log_likelihoods_fom'],
+                state['log_priors_fom'],
                 state['mean_relative_mse'],
                 wall_time,
                 cpu_time,
+                bounded_parameter_handling,
+                parameter_mins,
+                parameter_maxes,
+                transform_interior_margin,
+                transform_map,
             )
             _save_mf_vi_restart(
                 f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
@@ -2112,6 +2300,8 @@ def run_mf_vi(model: QoiModel,
                 variational_mean,
                 variational_log_std,
                 variational_distribution,
+                prior_mean,
+                prior_covariance,
                 variational_correlation_cholesky,
                 elbo_scaling_factor,
                 elbo_relative_tolerance,
@@ -2119,8 +2309,12 @@ def run_mf_vi(model: QoiModel,
                 iteration,
                 step_size,
                 bounded_parameter_handling,
+                transform_map,
                 optimization_method,
                 mfmc_control_variate_mode,
+                parameter_mins=parameter_mins,
+                parameter_maxes=parameter_maxes,
+                transform_interior_margin=transform_interior_margin,
                 vi_history=vi_history,
                 sampling_method=sampling_method,
             )
@@ -2169,11 +2363,12 @@ def run_mf_vi(model: QoiModel,
 
 
 def mf_vi_with_auto_rom(model: QoiModel,
-                        variational_parameter_space,
+                        prior_parameter_space,
                         observations: np.ndarray,
                         observations_covariance: np.ndarray,
                         parameter_mins: np.ndarray = None,
                         parameter_maxes: np.ndarray = None,
+                        initial_variational_parameter_space=None,
                         restart_file: str = None,
                         optimizer_method: str = 'gradient',
                         optimizer_config=None,
@@ -2200,10 +2395,10 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         rom_base_sampling_strategy: str = 'coupled',
                         bounded_parameter_handling: str = 'transform',
                         transform_interior_margin: float = 1e-8,
+                        transform_map: str = 'sigmoid',
                         min_physical_variational_std_fraction: float = 1e-8,
                         rom_type: str = "gp",
-                        rom_args: Optional[dict] = None,
-                        **legacy_kwargs):
+                        rom_args: Optional[dict] = None):
     """
     Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
     Accepts the same rom_base_sampling_strategy options as run_mf_vi.
@@ -2211,20 +2406,17 @@ def mf_vi_with_auto_rom(model: QoiModel,
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
         parameter_mins,
         parameter_maxes,
-        legacy_kwargs,
     )
-    restart_file = _resolve_restart_file(restart_file, legacy_kwargs)
+    restart_file = _resolve_restart_file(restart_file)
     resolved_optimizer_method, resolved_optimizer_config = _resolve_optimizer_config(
         optimizer_method,
         optimizer_config,
-        legacy_kwargs,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
     )
     resolved_line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
         line_search_config,
-        legacy_kwargs,
         VILegacyLineSearchConfig(
             step_size_growth_factor=1.05,
             max_step_size_decrease_trys=10,
@@ -2238,15 +2430,14 @@ def mf_vi_with_auto_rom(model: QoiModel,
             line_search_uncertainty_sigma=5.0,
         ),
     )
-    _raise_for_unused_legacy_kwargs(legacy_kwargs, 'mf_vi_with_auto_rom')
 
     rom_args = {} if rom_args is None else dict(rom_args)
     rom_type_normalized = rom_type.strip().lower()
     if rom_type_normalized == "gp":
-        variational_parameter_names = list(variational_parameter_space.get_names())
+        variational_parameter_names = list(prior_parameter_space.get_names())
         rom_model_builder = GaussianProcessQoiModelBuilderWithTrainingData(
             parameter_names=variational_parameter_names,
-            pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.999999),
+            pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.9999),
             max_pod_modes=rom_args.get("max_pod_modes"),
             kernel=rom_args.get("kernel"),
             noise_variance=rom_args.get("noise_variance"),
@@ -2264,11 +2455,12 @@ def mf_vi_with_auto_rom(model: QoiModel,
     return run_mf_vi(
         model=model,
         rom_model_builder=rom_model_builder,
-        variational_parameter_space=variational_parameter_space,
+        prior_parameter_space=prior_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
+        initial_variational_parameter_space=initial_variational_parameter_space,
         restart_file=restart_file,
         optimizer_method=resolved_optimizer_method,
         optimizer_config=resolved_optimizer_config,
@@ -2295,5 +2487,6 @@ def mf_vi_with_auto_rom(model: QoiModel,
         rom_base_sampling_strategy=rom_base_sampling_strategy,
         bounded_parameter_handling=bounded_parameter_handling,
         transform_interior_margin=transform_interior_margin,
+        transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
     )
