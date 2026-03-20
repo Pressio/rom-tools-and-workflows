@@ -8,9 +8,11 @@ sample evaluation and optional restarts.
 Single-fidelity EKI
 -------------------
 
-.. autofunction:: romtools.workflows.inverse.run_eki.run_eki
+.. autofunction:: romtools.workflows.inverse.eki_drivers.run_eki
+   :no-index:
 
 Multi-fidelity EKI
 ------------------
 
-.. autofunction:: romtools.workflows.inverse.run_mf_eki.run_mf_eki
+.. autofunction:: romtools.workflows.inverse.mf_eki_drivers.run_mf_eki
+   :no-index:

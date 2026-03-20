@@ -1,3 +1,22 @@
+"""
+Inverse workflows estimate unknown model parameters from observed data.
+
+An inverse problem starts from a forward model, experimental or synthetic
+observations, and a parameterized uncertainty model. The goal is to identify
+parameter values, or a posterior distribution over parameter values, that make
+the model predictions consistent with the observations.
+
+romtools currently supports:
+
+- Ensemble Kalman inversion (EKI) for derivative-free parameter calibration.
+- Multifidelity EKI with control variates and adaptive reduced-order model
+  refresh strategies.
+- Variational inference (VI) with gradient and Newton optimizers for Gaussian
+  variational families.
+- Multifidelity VI with control variates and adaptive reduced-order model
+  updates.
+"""
+
 from importlib import import_module as _import_module
 
 #from romtools.workflows.inverse.bfgs_drivers import *

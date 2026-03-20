@@ -34,6 +34,7 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     :caption: Basic concept tutorials
     :maxdepth: 1
 
+    basis_construction
     vector_space
     parameter_space
 
@@ -41,8 +42,10 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     :caption: Single model workflow tutorials
     :maxdepth: 1
 
+    your_first_problem
     models
     workflows
+    holdout_sampling
 
 .. toctree::
     :caption: ROM-FOM workflow tutorials

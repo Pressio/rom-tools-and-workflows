@@ -3,7 +3,7 @@ import os
 import time
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.workflows.inverse.eki_utils import *
+from romtools.workflows.inverse._inverse_utils import *
 
 def run_eki(model: QoiModel,
                  parameter_space: ParameterSpace,

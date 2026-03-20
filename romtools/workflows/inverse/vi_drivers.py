@@ -1,3 +1,118 @@
+r"""
+Variational inference drivers for Gaussian posterior approximations.
+
+This module provides derivative-free variational inference (VI) routines for
+black-box forward models. An approximate posterior is represented by a
+Gaussian variational family, and the optimizer updates the variational
+parameters to maximize the evidence lower bound (ELBO).
+
+.. rubric:: Theory
+
+``run_vi`` solves a Gaussian variational inference problem by maximizing
+
+.. math::
+
+   \max_{\zeta}\;
+   \mathbb{E}_{\theta \sim q(\theta;\zeta)}
+   \left[
+   \log p(y,\theta) - \log q(\theta;\zeta)
+   \right],
+
+where :math:`q(\theta;\zeta)` is the variational search distribution and
+:math:`\zeta` denotes its parameters. In this implementation, the variational
+family is Gaussian in either diagonal form or fixed-correlation multivariate
+form, with the optimizer state stored as the variational mean and log standard
+deviation.
+
+For black-box forward models, the code uses the score-function
+(REINFORCE/log-likelihood-trick) estimator instead of reparameterization
+gradients through the PDE model:
+
+.. math::
+
+   \nabla_{\zeta}
+   \mathbb{E}_{\theta \sim q(\theta;\zeta)}
+   \left[\mathcal{L}(\theta;\zeta)\right]
+   =
+   \mathbb{E}_{\theta \sim q(\theta;\zeta)}
+   \left[
+   \mathcal{L}(\theta;\zeta)\,
+   \nabla_{\zeta}\log q(\theta;\zeta)
+   \right],
+
+with
+
+.. math::
+
+   \mathcal{L}(\theta;\zeta)
+   =
+   \log p(y,\theta) - \log q(\theta;\zeta).
+
+The expectation is approximated with Monte Carlo or randomized quasi-Monte
+Carlo samples from the current variational distribution. Because only
+:math:`\nabla_{\zeta}\log q` is needed, the forward model itself is treated as
+derivative-free.
+
+When ``optimizer_method="newton"``, the routine also forms a second-order
+score-function estimator for curvature:
+
+.. math::
+
+   \nabla_{\zeta}^2
+   \mathbb{E}_{\theta \sim q(\theta;\zeta)}
+   \left[\mathcal{L}(\theta;\zeta)\right]
+   =
+   \mathbb{E}_{\theta \sim q(\theta;\zeta)}
+   \left[
+   \mathcal{L}(\theta;\zeta)
+   \left(
+   \nabla_{\zeta}\log q\,\nabla_{\zeta}\log q^{\top}
+   + \nabla_{\zeta}^2 \log q
+   \right)
+   \right].
+
+This is the curvature model used by the Newton update path. The implementation
+supports a metric rescaling via ``newton_metric`` and either diagonal or full
+projected Hessian solves via ``newton_hessian_type``.
+
+.. rubric:: Variance Reduction
+
+The gradient estimator optionally supports a baseline through
+``baseline_method``. In particular, the leave-one-out option subtracts a
+sample mean baseline that is independent of the current score term,
+preserving unbiasedness while reducing Monte Carlo variance:
+
+.. math::
+
+   \widehat g_{\mathrm{LOO}}
+   =
+   \frac{1}{N}\sum_{i=1}^{N}
+   \left(
+   \mathcal{L}(\theta^{(i)};\zeta) - b^{(-i)}
+   \right)
+   \nabla_{\zeta}\log q(\theta^{(i)};\zeta),
+
+where :math:`b^{(-i)}` is the mean ELBO over all samples except
+:math:`\theta^{(i)}`.
+
+.. rubric:: Gaussian Structure
+
+For Gaussian priors and Gaussian variational families, the ELBO integrand
+decomposes into
+
+.. math::
+
+   \log p(y,\theta)
+   =
+   \log p(y\mid\theta) + \log p_0(\theta),
+
+so the forward-model dependence enters through the log-likelihood term, while
+the prior and variational-density terms are handled analytically. This is why
+the routine can remain derivative-free with respect to the forward model while
+still using gradient- and Hessian-based updates in the variational
+parameters.
+"""
+
 import numpy as np
 import os
 import re
@@ -9,8 +124,8 @@ from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
     MultivariateGaussianParameterSpace,
 )
-from romtools.workflows.inverse.eki_utils import run_vi_iteration
-from romtools.workflows.inverse.eki_utils import bound_samples
+from romtools.workflows.inverse._inverse_utils import run_vi_iteration
+from romtools.workflows.inverse._inverse_utils import bound_samples
 from romtools.workflows.inverse.vi_optimization_methods import (
     NewtonSolver,
     SteepestDescentSolver,

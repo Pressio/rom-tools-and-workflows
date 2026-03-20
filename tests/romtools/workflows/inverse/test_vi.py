@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse.eki_utils import run_vi_iteration
+from romtools.workflows.inverse._inverse_utils import run_vi_iteration
 from romtools.workflows.inverse import vi_drivers
 from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
