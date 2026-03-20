@@ -20,22 +20,6 @@ encapsulate all the information needed to run a given algorithm.
      </div>
    </div>
 
-.. rst-class:: docs-hero-cta
-
-.. button-link:: api
-   :color: primary
-   :class: sd-btn-primary
-   :link-type: doc
-
-   Explore the API
-
-.. button-link:: demos/index
-   :color: secondary
-   :class: sd-btn-secondary
-   :link-type: doc
-
-   Open the demos
-
 Choose your path
 ----------------
 
@@ -60,6 +44,34 @@ Choose your path
       :link-type: doc
 
       Example applications with large-scale ROM results.
+
+Capabilities
+------------
+
+.. grid:: 3
+   :gutter: 2
+   :class-container: docs-home-grid
+
+   .. grid-item-card:: Trial Space Construction
+      :link: generated/romtools.vector_space
+      :link-type: doc
+
+      Build reduced trial spaces through vector-space construction, shifting,
+      scaling, orthogonalization, and truncation tools.
+
+   .. grid-item-card:: Inverse Workflows
+      :link: generated/romtools.workflows.inverse
+      :link-type: doc
+
+      Explore ensemble Kalman inversion, variational inference, and
+      multifidelity inverse workflows.
+
+   .. grid-item-card:: Sampling Workflows
+      :link: generated/romtools.workflows.sampling
+      :link-type: doc
+
+      Access parameter sampling workflows and related workflow interfaces for
+      model evaluation studies.
 
 .. toctree::
    :hidden:

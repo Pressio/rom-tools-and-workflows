@@ -1,5 +1,5 @@
 Construct your first basis!
-=======================
+===========================
 
 This tutorial will show you how to construct a basis.
 
@@ -7,4 +7,4 @@ This tutorial will show you how to construct a basis.
    :maxdepth: 2
    :caption: Contents:
 
-   notebooks/test2.ipynb
+   test2.ipynb

@@ -51,8 +51,13 @@ The ParameterSpace class encapsulates the notion of the parameter space.
 import abc
 from typing import Iterable
 import numpy as np
+from scipy.stats import norm
 
-from romtools.workflows.sampling_methods import Sampler, MonteCarloSampler
+from romtools.workflows.sampling_methods import (
+    Sampler,
+    MonteCarloSampler,
+    RandomizedQuasiMonteCarloSampler,
+)
 from romtools.workflows.parameters import Parameter, StringParameter, UniformParameter, GaussianParameter
 
 
@@ -180,6 +185,34 @@ class GaussianParameterSpace(HomogeneousParameterSpace):
 
     def __init__(self, parameter_names: Iterable[str], means, stds, sampler: Sampler):
         super().__init__(parameter_names, sampler=sampler, param_constructor=GaussianParameter, mean=means, std=stds)
+
+
+class MultivariateGaussianParameterSpace(ParameterSpace):
+    '''
+    Multivariate Gaussian parameter space with dense covariance coupling
+    across all parameter dimensions.
+    '''
+
+    def __init__(self, parameter_names: Iterable[str], means, covariance, sampler: Sampler = MonteCarloSampler):
+        self._parameter_names = list(parameter_names)
+        self._means = np.asarray(means)
+        self._covariance = np.asarray(covariance)
+        self._sampler = sampler
+
+        assert self._means.shape == (len(self._parameter_names),)
+        assert self._covariance.shape == (len(self._parameter_names), len(self._parameter_names))
+        self._cholesky_factor = np.linalg.cholesky(self._covariance)
+
+    def get_names(self) -> Iterable[str]:
+        return self._parameter_names
+
+    def get_dimensionality(self) -> int:
+        return len(self._parameter_names)
+
+    def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
+        iid_samples = self._sampler(number_of_samples, self.get_dimensionality(), seed)
+        std_normal_samples = norm.ppf(iid_samples)
+        return self._means + std_normal_samples @ self._cholesky_factor.T
 
 
 class ConstParameterSpace(HomogeneousParameterSpace):

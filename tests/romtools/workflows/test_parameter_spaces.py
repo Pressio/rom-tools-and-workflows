@@ -6,6 +6,7 @@ from romtools.workflows.parameters import StringParameter
 from romtools.workflows.parameter_spaces import EmptyParameterSpace
 from romtools.workflows.parameter_spaces import UniformParameterSpace
 from romtools.workflows.parameter_spaces import GaussianParameterSpace
+from romtools.workflows.parameter_spaces import MultivariateGaussianParameterSpace
 from romtools.workflows.parameter_spaces import ConstParameterSpace
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 
@@ -48,6 +49,24 @@ def test_gaussian_param_space():
     np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
 
 
+def test_multivariate_gaussian_param_space():
+    param_space = MultivariateGaussianParameterSpace(
+        ['p1', 'p2'],
+        means=[-1, 0.5],
+        covariance=[[1.0, 0.2], [0.2, 4.0]],
+        sampler=MonteCarloSampler
+    )
+    assert param_space.get_names() == ['p1', 'p2']
+    assert param_space.get_dimensionality() == 2
+
+    s = param_space.generate_samples(3, seed=1)
+    assert s.shape == (3, 2)
+    gold = [[-1.209518,  1.619855],
+            [-4.684948, -1.267207],
+            [-2.050449, -2.349773]]
+    np.testing.assert_allclose(s, gold, rtol=1e-5, atol=1e-8)
+
+
 def test_const_param_space():
     param_space = ConstParameterSpace(['p1', 'p2', 'p3'], [1, 3, 'p3val'])
     assert param_space.get_names() == ['p1', 'p2', 'p3']
@@ -80,6 +99,5 @@ def test_hetero_param_space():
                                [0.72032449, 0.14675589, 0.34556073, 0.41919451],
                                rtol=1e-5, atol=1e-8)
     assert (s[:, 2] == ['p3val', 'p3val', 'p3val', 'p3val']).all()
-
 
 

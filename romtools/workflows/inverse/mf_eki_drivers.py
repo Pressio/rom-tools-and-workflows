@@ -2,7 +2,7 @@ import numpy as np
 import os
 import time
 from typing import Optional
-from romtools.workflows.inverse.eki_utils import *
+from romtools.workflows.inverse._inverse_utils import *
 from romtools.workflows.models import QoiModel
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
 from romtools.rom.qoi_surrogates import GaussianProcessKernel, GaussianProcessQoiModel
