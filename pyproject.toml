@@ -28,6 +28,7 @@ WithH5py = ['h5py']
 [tool.pytest.ini_options]
 markers = [
     "regression: regression tests with checked-in gold files",
+]
 docs = [
     'docutils',
     'sphinx',
