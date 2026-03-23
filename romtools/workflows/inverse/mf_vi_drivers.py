@@ -125,6 +125,7 @@ from romtools.workflows.inverse._inverse_utils import run_vi_iteration
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
     SteepestDescentSolver,
+    VIAdaGradOptimizerConfig,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -142,6 +143,7 @@ from romtools.workflows.inverse.vi_drivers import (
     _compute_gaussian_log_density_data,
     _compute_gradient_signal_to_noise_ratio,
     _clip_variational_log_std,
+    _compute_adagrad_step,
     _enforce_variational_log_std_bounds,
     _compute_gradient_norm,
     _compute_leave_one_out_baseline,
@@ -151,6 +153,7 @@ from romtools.workflows.inverse.vi_drivers import (
     _compute_relative_mse,
     _compute_log_prior_and_joint_terms,
     _convert_physical_moments_to_optimizer_moments,
+    _initialize_adagrad_accumulators,
     _compute_newton_metric_scale,
     _compute_newton_step,
     _compute_update_directions,
@@ -173,6 +176,7 @@ from romtools.workflows.inverse.vi_drivers import (
     _resolve_restart_file,
     _restore_variational_mean_from_restart,
     _save_vi_history,
+    _update_adagrad_accumulators,
     _validate_gaussian_parameter_spaces,
     _write_iteration_stats_file,
 )
@@ -819,6 +823,8 @@ def _save_mf_vi_restart(restart_path: str,
                         transform_map: str,
                         optimization_method: str,
                         mfmc_control_variate_mode: str,
+                        adagrad_accumulator_mean: np.ndarray = None,
+                        adagrad_accumulator_log_std: np.ndarray = None,
                         parameter_mins: np.ndarray = None,
                         parameter_maxes: np.ndarray = None,
                         transform_interior_margin: float = 0.0,
@@ -863,6 +869,10 @@ def _save_mf_vi_restart(restart_path: str,
         gradient_signal_to_noise_ratio=float(state.get('gradient_signal_to_noise_ratio', np.nan)),
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
+    if adagrad_accumulator_mean is not None:
+        save_data['adagrad_accumulator_mean'] = adagrad_accumulator_mean
+    if adagrad_accumulator_log_std is not None:
+        save_data['adagrad_accumulator_log_std'] = adagrad_accumulator_log_std
     if vi_history is not None:
         save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
@@ -1577,9 +1587,10 @@ def run_mf_vi(model: QoiModel,
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
-            options are 'gradient' and 'newton'.
+            options are 'gradient', 'adagrad', and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
+            `VIAdaGradOptimizerConfig` for optimizer_method='adagrad',
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
             are 'legacy' and 'stochastic_nonmonotone'. Defaults to
@@ -1619,6 +1630,7 @@ def run_mf_vi(model: QoiModel,
         optimizer_method,
         optimizer_config,
         VIGradientOptimizerConfig(),
+        VIAdaGradOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
@@ -1635,13 +1647,22 @@ def run_mf_vi(model: QoiModel,
     )
 
     gradient_method = 'standard'
-    if optimization_method == 'gradient':
+    if optimization_method in ('gradient', 'adagrad'):
         gradient_method = resolved_optimizer_config.gradient_method
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
     max_log_std_update = resolved_optimizer_config.max_log_std_update
     min_variational_std = resolved_optimizer_config.min_variational_std
     max_variational_std = resolved_optimizer_config.max_variational_std
+    adagrad_epsilon = 1e-8
+    adagrad_initial_accumulator_value = 0.0
+    if optimization_method == 'adagrad':
+        adagrad_epsilon = resolved_optimizer_config.adagrad_epsilon
+        adagrad_initial_accumulator_value = resolved_optimizer_config.initial_accumulator_value
+        assert adagrad_epsilon > 0.0, "adagrad_epsilon must be positive"
+        assert adagrad_initial_accumulator_value >= 0.0, (
+            "initial_accumulator_value must be non-negative"
+        )
 
     newton_defaults = VINewtonOptimizerConfig(newton_regularization=1e-8)
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
@@ -1748,6 +1769,8 @@ def run_mf_vi(model: QoiModel,
     step_size = min(initial_step_size, max_step_size)
     variational_correlation_cholesky = None
     vi_history = _initialize_vi_history()
+    adagrad_accumulator_mean = None
+    adagrad_accumulator_log_std = None
 
     if restart_file is None:
         np.random.seed(random_seed)
@@ -1785,6 +1808,11 @@ def run_mf_vi(model: QoiModel,
             min_physical_variational_std_fraction,
             transform_map,
         )
+        if optimization_method == 'adagrad':
+            adagrad_accumulator_mean, adagrad_accumulator_log_std = _initialize_adagrad_accumulators(
+                variational_mean.size,
+                adagrad_initial_accumulator_value,
+            )
 
         state = _evaluate_mf_vi_state(
             model=model,
@@ -1891,6 +1919,16 @@ def run_mf_vi(model: QoiModel,
             restart_optimization_method = str(restart_data['optimization_method'].item()).strip().lower()
             if restart_optimization_method != optimization_method:
                 raise ValueError("restart_file optimization_method does not match current run.")
+        if optimization_method == 'adagrad':
+            if (
+                'adagrad_accumulator_mean' not in restart_data
+                or 'adagrad_accumulator_log_std' not in restart_data
+            ):
+                raise ValueError(
+                    "restart_file missing AdaGrad accumulators for optimizer_method='adagrad'."
+                )
+            adagrad_accumulator_mean = restart_data['adagrad_accumulator_mean']
+            adagrad_accumulator_log_std = restart_data['adagrad_accumulator_log_std']
         if 'mfmc_control_variate_mode' in restart_data:
             restart_control_variate_mode = _normalize_mfmc_control_variate_mode(
                 str(restart_data['mfmc_control_variate_mode'].item())
@@ -2105,7 +2143,9 @@ def run_mf_vi(model: QoiModel,
         bounded_parameter_handling,
         transform_map,
         optimization_method,
-        mfmc_control_variate_mode,
+        adagrad_accumulator_mean=adagrad_accumulator_mean,
+        adagrad_accumulator_log_std=adagrad_accumulator_log_std,
+        mfmc_control_variate_mode=mfmc_control_variate_mode,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         transform_interior_margin=transform_interior_margin,
@@ -2203,12 +2243,20 @@ def run_mf_vi(model: QoiModel,
             )
 
         line_search_predicted_slope = 0.0
-        if optimization_method == 'gradient':
+        if optimization_method in ('gradient', 'adagrad'):
             gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
-            step = steepest_descent_solver.step(gradient)
-            dimensionality = state['update_direction_mean'].size
-            direction_mean = step[:dimensionality]
-            direction_log_std = step[dimensionality:]
+            if optimization_method == 'gradient':
+                step = steepest_descent_solver.step(gradient)
+                dimensionality = state['update_direction_mean'].size
+                direction_mean = step[:dimensionality]
+                direction_log_std = step[dimensionality:]
+            else:
+                direction_mean, direction_log_std = _compute_adagrad_step(
+                    state,
+                    adagrad_accumulator_mean,
+                    adagrad_accumulator_log_std,
+                    adagrad_epsilon,
+                )
             line_search_predicted_slope = float(
                 np.dot(state['gradient_mean'], direction_mean)
                 + np.dot(state['gradient_log_std'], direction_log_std)
@@ -2342,6 +2390,15 @@ def run_mf_vi(model: QoiModel,
             variational_mean = test_variational_mean*1.0
             variational_log_std = test_variational_log_std*1.0
             state = test_state
+            if optimization_method == 'adagrad':
+                (
+                    adagrad_accumulator_mean,
+                    adagrad_accumulator_log_std,
+                ) = _update_adagrad_accumulators(
+                    state,
+                    adagrad_accumulator_mean,
+                    adagrad_accumulator_log_std,
+                )
             accepted_elbo_history.append(state['elbo'])
             relative_elbo_improvement = (
                 float(state['elbo']) / (initial_elbo_reference + 1e-16)
@@ -2427,7 +2484,9 @@ def run_mf_vi(model: QoiModel,
                 bounded_parameter_handling,
                 transform_map,
                 optimization_method,
-                mfmc_control_variate_mode,
+                adagrad_accumulator_mean=adagrad_accumulator_mean,
+                adagrad_accumulator_log_std=adagrad_accumulator_log_std,
+                mfmc_control_variate_mode=mfmc_control_variate_mode,
                 parameter_mins=parameter_mins,
                 parameter_maxes=parameter_maxes,
                 transform_interior_margin=transform_interior_margin,
@@ -2528,6 +2587,7 @@ def mf_vi_with_auto_rom(model: QoiModel,
         optimizer_method,
         optimizer_config,
         VIGradientOptimizerConfig(),
+        VIAdaGradOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
     )
     resolved_line_search_method, resolved_line_search_config = _resolve_line_search_config(

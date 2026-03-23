@@ -29,6 +29,18 @@ class VINewtonOptimizerConfig:
 
 
 @dataclass
+class VIAdaGradOptimizerConfig:
+    gradient_method: str = 'standard'
+    gradient_norm_tolerance: float = 1e-5
+    max_iterations: int = 1000
+    max_log_std_update: float = 0.5
+    min_variational_std: float = 1e-6
+    max_variational_std: float = 1e6
+    adagrad_epsilon: float = 1e-8
+    initial_accumulator_value: float = 0.0
+
+
+@dataclass
 class VILegacyLineSearchConfig:
     initial_step_size: float = 1e-2
     max_step_size: float = np.inf
@@ -59,10 +71,10 @@ class VIStochasticNonmonotoneLineSearchConfig:
 
 def _normalize_optimization_method(optimization_method: str):
     method = optimization_method.strip().lower()
-    if method not in ('gradient', 'newton'):
+    if method not in ('gradient', 'adagrad', 'newton'):
         raise ValueError(
             f"Unsupported optimization_method '{optimization_method}'. "
-            "Supported options are 'gradient' and 'newton'."
+            "Supported options are 'gradient', 'adagrad', and 'newton'."
         )
     return method
 
@@ -116,10 +128,14 @@ def _normalize_newton_hessian_type(newton_hessian_type: str):
 def _resolve_optimizer_config(optimizer_method: str,
                               optimizer_config,
                               default_gradient_config: VIGradientOptimizerConfig = None,
+                              default_adagrad_config: VIAdaGradOptimizerConfig = None,
                               default_newton_config: VINewtonOptimizerConfig = None):
     normalized_optimizer_method = _normalize_optimization_method(optimizer_method)
     gradient_config = copy.deepcopy(default_gradient_config) if default_gradient_config is not None else (
         VIGradientOptimizerConfig()
+    )
+    adagrad_config = copy.deepcopy(default_adagrad_config) if default_adagrad_config is not None else (
+        VIAdaGradOptimizerConfig()
     )
     newton_config = copy.deepcopy(default_newton_config) if default_newton_config is not None else (
         VINewtonOptimizerConfig()
@@ -127,10 +143,12 @@ def _resolve_optimizer_config(optimizer_method: str,
 
     optimizer_type_by_method = {
         'gradient': VIGradientOptimizerConfig,
+        'adagrad': VIAdaGradOptimizerConfig,
         'newton': VINewtonOptimizerConfig,
     }
     default_config_by_method = {
         'gradient': gradient_config,
+        'adagrad': adagrad_config,
         'newton': newton_config,
     }
 
@@ -190,6 +208,18 @@ class SteepestDescentSolver:
 
     def step(self, gradient: np.ndarray) -> np.ndarray:
         return np.nan_to_num(gradient, nan=0.0, posinf=0.0, neginf=0.0)
+
+
+class AdaGradSolver:
+    """Generic AdaGrad solver."""
+
+    def __init__(self, epsilon: float = 1e-8):
+        self.epsilon = epsilon
+
+    def step(self, gradient: np.ndarray, accumulator: np.ndarray) -> np.ndarray:
+        gradient = np.nan_to_num(gradient, nan=0.0, posinf=0.0, neginf=0.0)
+        accumulator = np.nan_to_num(accumulator, nan=0.0, posinf=0.0, neginf=0.0)
+        return gradient / np.sqrt(accumulator + self.epsilon)
 
 
 class NewtonSolver:

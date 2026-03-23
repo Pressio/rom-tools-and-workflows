@@ -121,6 +121,12 @@ def test_run_vi_rejects_removed_legacy_kwargs():
         )
 
 
+def test_score_function_control_variate_alias_maps_to_optimal():
+    assert vi_drivers._normalize_baseline_method("score_function") == "optimal"
+    assert vi_drivers._normalize_baseline_method("score-function") == "optimal"
+    assert vi_drivers._normalize_baseline_method("control_variate") == "optimal"
+
+
 @pytest.mark.mpi_skip
 def test_run_vi_iteration_avoids_extra_mean_evaluation(tmp_path):
     model = CountingLinearQoiModel(slope=2.0)
@@ -179,6 +185,17 @@ def test_run_vi_iteration_avoids_extra_mean_evaluation(tmp_path):
                 newton_metric="standard",
             ),
             id="newton_whitened_natural",
+        ),
+        pytest.param(
+            "adagrad",
+            romtools.workflows.VIAdaGradOptimizerConfig(
+                gradient_method="natural",
+                gradient_norm_tolerance=5e-3,
+                max_iterations=30,
+                min_variational_std=1e-4,
+                max_variational_std=2.0,
+            ),
+            id="adagrad_natural",
         ),
     ],
 )
@@ -273,6 +290,47 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert history["vi_history_variational_covariance"].shape[0] == num_entries
         assert history["vi_history_relative_mse"].shape[0] == num_entries
         assert history["vi_history_loglikelihood"].shape[0] == num_entries
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_accepts_score_function_control_variate_alias(tmp_path):
+    model = LinearQoiModel(slope=2.0)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    means, stds, parameter_samples, qois = romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=np.array([0.3]),
+        observations_covariance=np.array([[0.1**2]]),
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=8,
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        baseline_method="score_function",
+        bounded_parameter_handling="transform",
+        random_seed=7,
+        evaluation_concurrency=1,
+    )
+
+    assert means.shape == (1,)
+    assert stds.shape == (1,)
+    assert parameter_samples.shape[1] == 1
+    assert qois.shape[0] == 1
 
 
 @pytest.mark.mpi_skip
@@ -573,6 +631,55 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
         assert np.all(np.isfinite(restart["variational_mean"]))
         assert np.all(restart["variational_mean"] >= -2.0)
         assert np.all(restart["variational_mean"] <= 2.0)
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_adagrad_restart_persists_accumulators(tmp_path):
+    model = LinearQoiModel(slope=1.5)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([0.7]),
+        sampler=MonteCarloSampler,
+    )
+    observations = np.array([0.5])
+    observations_covariance = np.array([[0.15**2]])
+
+    romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=variational_parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=10,
+        optimizer_method="adagrad",
+        optimizer_config=romtools.workflows.VIAdaGradOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+            initial_accumulator_value=0.25,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-2,
+            max_step_size=1e-2,
+            step_size_growth_factor=1.0,
+        ),
+        bounded_parameter_handling="transform",
+        random_seed=9,
+        evaluation_concurrency=1,
+    )
+
+    with np.load(tmp_path / "iteration_0" / "restart.npz", allow_pickle=True) as restart:
+        assert "adagrad_accumulator_mean" in restart
+        assert "adagrad_accumulator_log_std" in restart
+        assert np.allclose(restart["adagrad_accumulator_mean"], np.array([0.25]))
+        assert np.allclose(restart["adagrad_accumulator_log_std"], np.array([0.25]))
+
+    with np.load(tmp_path / "iteration_1" / "restart.npz", allow_pickle=True) as restart:
+        assert np.all(restart["adagrad_accumulator_mean"] >= 0.25)
+        assert np.all(restart["adagrad_accumulator_log_std"] >= 0.25)
 
 
 @pytest.mark.mpi_skip

@@ -127,8 +127,10 @@ from romtools.workflows.parameter_spaces import (
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration
 from romtools.workflows.inverse._inverse_utils import bound_samples
 from romtools.workflows.inverse.vi_optimization_methods import (
+    AdaGradSolver,
     NewtonSolver,
     SteepestDescentSolver,
+    VIAdaGradOptimizerConfig,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -729,10 +731,12 @@ def _normalize_bounded_parameter_handling(bounded_parameter_handling: str):
 
 def _normalize_baseline_method(baseline_method: str):
     method = baseline_method.strip().lower()
+    if method in ('score_function', 'score-function', 'control_variate', 'control-variate'):
+        return 'optimal'
     if method not in ('none', 'loo', 'optimal'):
         raise ValueError(
             f"Unsupported baseline_method '{baseline_method}'. "
-            "Supported options are 'none', 'loo', and 'optimal'."
+            "Supported options are 'none', 'loo', 'optimal', and 'score_function'."
         )
     return method
 
@@ -1228,6 +1232,30 @@ def _compute_update_directions(gradient_mean: np.ndarray,
     return update_direction_mean, update_direction_log_std, method
 
 
+def _initialize_adagrad_accumulators(dimensionality: int,
+                                     initial_accumulator_value: float):
+    accumulators = np.full(dimensionality, initial_accumulator_value, dtype=float)
+    return accumulators.copy(), accumulators.copy()
+
+
+def _compute_adagrad_step(state,
+                          accumulator_mean: np.ndarray,
+                          accumulator_log_std: np.ndarray,
+                          adagrad_epsilon: float):
+    solver = AdaGradSolver(epsilon=adagrad_epsilon)
+    direction_mean = solver.step(state['update_direction_mean'], accumulator_mean)
+    direction_log_std = solver.step(state['update_direction_log_std'], accumulator_log_std)
+    return direction_mean, direction_log_std
+
+
+def _update_adagrad_accumulators(state,
+                                 accumulator_mean: np.ndarray,
+                                 accumulator_log_std: np.ndarray):
+    updated_accumulator_mean = accumulator_mean + state['update_direction_mean'] ** 2
+    updated_accumulator_log_std = accumulator_log_std + state['update_direction_log_std'] ** 2
+    return updated_accumulator_mean, updated_accumulator_log_std
+
+
 def _compute_gradient_norm(state, optimization_method: str):
     if optimization_method == 'newton':
         return np.sqrt(
@@ -1673,6 +1701,8 @@ def _save_vi_restart(restart_path: str,
                      optimization_method: str,
                      line_search_objective: str,
                      line_search_method: str,
+                     adagrad_accumulator_mean: np.ndarray = None,
+                     adagrad_accumulator_log_std: np.ndarray = None,
                      line_search_nonmonotone_window: int = None,
                      line_search_armijo_coefficient: float = None,
                      line_search_uncertainty_sigma: float = None,
@@ -1719,6 +1749,10 @@ def _save_vi_restart(restart_path: str,
         sampling_method=sampling_method,
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
+    if adagrad_accumulator_mean is not None:
+        save_data['adagrad_accumulator_mean'] = adagrad_accumulator_mean
+    if adagrad_accumulator_log_std is not None:
+        save_data['adagrad_accumulator_log_std'] = adagrad_accumulator_log_std
     if line_search_method == 'stochastic_nonmonotone':
         save_data['line_search_nonmonotone_window'] = line_search_nonmonotone_window
         save_data['line_search_armijo_coefficient'] = line_search_armijo_coefficient
@@ -1902,9 +1936,10 @@ def run_vi(model: QoiModel,
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
-            options are 'gradient' and 'newton'.
+            options are 'gradient', 'adagrad', and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
+            `VIAdaGradOptimizerConfig` for optimizer_method='adagrad',
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
             are 'legacy' and 'stochastic_nonmonotone'. Defaults to
@@ -1931,8 +1966,10 @@ def run_vi(model: QoiModel,
             variational guess. When set, VI stops when
             `elbo_current / (elbo_initial + 1e-16)` is less than or equal to
             this tolerance.
-        baseline_method: Baseline used in REINFORCE gradient estimation.
-            Supported options are 'none', 'loo', and 'optimal'.
+        baseline_method: Baseline or control variate used in REINFORCE
+            gradient estimation. Supported options are 'none', 'loo',
+            'optimal', and 'score_function'. The 'score_function' option is
+            an alias for the optimal score-function control variate.
         bounded_parameter_handling: Parameter bounds handling. Supported options
             are 'clip' and 'transform'.
         transform_interior_margin: Margin used by bounded_parameter_handling='transform'
@@ -1958,6 +1995,7 @@ def run_vi(model: QoiModel,
         optimizer_method,
         optimizer_config,
         VIGradientOptimizerConfig(),
+        VIAdaGradOptimizerConfig(),
         VINewtonOptimizerConfig(),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
@@ -1968,13 +2006,22 @@ def run_vi(model: QoiModel,
     )
 
     gradient_method = 'standard'
-    if optimization_method == 'gradient':
+    if optimization_method in ('gradient', 'adagrad'):
         gradient_method = resolved_optimizer_config.gradient_method
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
     max_log_std_update = resolved_optimizer_config.max_log_std_update
     min_variational_std = resolved_optimizer_config.min_variational_std
     max_variational_std = resolved_optimizer_config.max_variational_std
+    adagrad_epsilon = 1e-8
+    adagrad_initial_accumulator_value = 0.0
+    if optimization_method == 'adagrad':
+        adagrad_epsilon = resolved_optimizer_config.adagrad_epsilon
+        adagrad_initial_accumulator_value = resolved_optimizer_config.initial_accumulator_value
+        assert adagrad_epsilon > 0.0, "adagrad_epsilon must be positive"
+        assert adagrad_initial_accumulator_value >= 0.0, (
+            "initial_accumulator_value must be non-negative"
+        )
 
     newton_defaults = VINewtonOptimizerConfig()
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
@@ -2072,6 +2119,8 @@ def run_vi(model: QoiModel,
     )
     variational_correlation_cholesky = None
     vi_history = _initialize_vi_history()
+    adagrad_accumulator_mean = None
+    adagrad_accumulator_log_std = None
 
     if restart_file is None:
         np.random.seed(random_seed)
@@ -2112,6 +2161,11 @@ def run_vi(model: QoiModel,
             min_physical_variational_std_fraction,
             transform_map,
         )
+        if optimization_method == 'adagrad':
+            adagrad_accumulator_mean, adagrad_accumulator_log_std = _initialize_adagrad_accumulators(
+                variational_mean.size,
+                adagrad_initial_accumulator_value,
+            )
 
         run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
         state = _evaluate_vi_state(
@@ -2208,6 +2262,16 @@ def run_vi(model: QoiModel,
             )
             if restart_optimization_method != optimization_method:
                 raise ValueError("Restart file optimization_method does not match current run.")
+        if optimization_method == 'adagrad':
+            if (
+                'adagrad_accumulator_mean' not in restart_data
+                or 'adagrad_accumulator_log_std' not in restart_data
+            ):
+                raise ValueError(
+                    "Restart file missing AdaGrad accumulators for optimizer_method='adagrad'."
+                )
+            adagrad_accumulator_mean = restart_data['adagrad_accumulator_mean']
+            adagrad_accumulator_log_std = restart_data['adagrad_accumulator_log_std']
         if 'line_search_objective' in restart_data:
             restart_line_search_objective = str(restart_data['line_search_objective'].item())
             if restart_line_search_objective != line_search_objective:
@@ -2342,11 +2406,13 @@ def run_vi(model: QoiModel,
             optimization_method,
             line_search_objective,
             line_search_method,
-            line_search_nonmonotone_window,
-            line_search_armijo_coefficient,
-            line_search_uncertainty_sigma,
-            line_search_sample_growth_factor,
-            log_std_learning_rate_factor,
+            adagrad_accumulator_mean=adagrad_accumulator_mean,
+            adagrad_accumulator_log_std=adagrad_accumulator_log_std,
+            line_search_nonmonotone_window=line_search_nonmonotone_window,
+            line_search_armijo_coefficient=line_search_armijo_coefficient,
+            line_search_uncertainty_sigma=line_search_uncertainty_sigma,
+            line_search_sample_growth_factor=line_search_sample_growth_factor,
+            log_std_learning_rate_factor=log_std_learning_rate_factor,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
@@ -2445,12 +2511,20 @@ def run_vi(model: QoiModel,
                 variational_std_for_metric,
             )
 
-        if optimization_method == 'gradient':
+        if optimization_method in ('gradient', 'adagrad'):
             gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
-            step = steepest_descent_solver.step(gradient)
-            dimensionality = state['update_direction_mean'].size
-            direction_mean = step[:dimensionality]
-            direction_log_std = step[dimensionality:]
+            if optimization_method == 'gradient':
+                step = steepest_descent_solver.step(gradient)
+                dimensionality = state['update_direction_mean'].size
+                direction_mean = step[:dimensionality]
+                direction_log_std = step[dimensionality:]
+            else:
+                direction_mean, direction_log_std = _compute_adagrad_step(
+                    state,
+                    adagrad_accumulator_mean,
+                    adagrad_accumulator_log_std,
+                    adagrad_epsilon,
+                )
 
             line_search_predicted_slope = float(
                 np.dot(state['gradient_mean'], direction_mean)
@@ -2568,6 +2642,15 @@ def run_vi(model: QoiModel,
                     log_likelihood_precision_operator=log_likelihood_precision_operator,
                     )
                 state = test_state
+                if optimization_method == 'adagrad':
+                    (
+                        adagrad_accumulator_mean,
+                        adagrad_accumulator_log_std,
+                    ) = _update_adagrad_accumulators(
+                        state,
+                        adagrad_accumulator_mean,
+                        adagrad_accumulator_log_std,
+                    )
                 accepted_elbo_history.append(state['elbo'])
                 step_size = min(step_size * step_size_growth_factor, max_step_size)
                 line_search_standard_normal_cache = None
@@ -2655,11 +2738,13 @@ def run_vi(model: QoiModel,
                     optimization_method,
                     line_search_objective,
                     line_search_method,
-                    line_search_nonmonotone_window,
-                    line_search_armijo_coefficient,
-                    line_search_uncertainty_sigma,
-                    line_search_sample_growth_factor,
-                    log_std_learning_rate_factor,
+                    adagrad_accumulator_mean=adagrad_accumulator_mean,
+                    adagrad_accumulator_log_std=adagrad_accumulator_log_std,
+                    line_search_nonmonotone_window=line_search_nonmonotone_window,
+                    line_search_armijo_coefficient=line_search_armijo_coefficient,
+                    line_search_uncertainty_sigma=line_search_uncertainty_sigma,
+                    line_search_sample_growth_factor=line_search_sample_growth_factor,
+                    log_std_learning_rate_factor=log_std_learning_rate_factor,
                     parameter_mins=parameter_mins,
                     parameter_maxes=parameter_maxes,
                     transform_interior_margin=transform_interior_margin,
