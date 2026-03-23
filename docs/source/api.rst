@@ -36,5 +36,7 @@ API Reference
 .. toctree::
    :hidden:
 
+   Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_eki>
+   Multifidelity Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_mf_eki>
    Variational Inference <generated/romtools.workflows.inverse.vi_drivers>
    Multifidelity Variational Inference <generated/romtools.workflows.inverse.mf_vi_drivers>

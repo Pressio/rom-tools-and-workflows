@@ -1,3 +1,86 @@
+r"""
+Single-fidelity ensemble Kalman inversion drivers.
+
+This module provides a derivative-free ensemble Kalman inversion (EKI)
+workflow for black-box forward models. The algorithm evolves an ensemble of
+parameter realizations so that the corresponding model outputs become
+consistent with observed quantities of interest.
+
+.. rubric:: Theory
+
+``run_eki`` solves a deterministic inverse problem by repeatedly updating an
+ensemble :math:`\{\theta^{(j)}\}_{j=1}^{J}`. At each iteration the forward
+model is evaluated on every ensemble member, producing QoIs
+:math:`g(\theta^{(j)})`. The ensemble mean prediction is compared with the
+observations :math:`y`, and the parameter ensemble is corrected with a
+Kalman-style affine update.
+
+With parameter anomalies
+
+.. math::
+
+   S_{\theta}
+   =
+   \frac{1}{\sqrt{J-1}}
+   \left[
+   \theta^{(1)} - \bar{\theta}, \ldots, \theta^{(J)} - \bar{\theta}
+   \right],
+
+and QoI anomalies
+
+.. math::
+
+   S_y
+   =
+   \frac{1}{\sqrt{J-1}}
+   \left[
+   g(\theta^{(1)}) - \bar{g}, \ldots, g(\theta^{(J)}) - \bar{g}
+   \right],
+
+the implementation forms the update directions by solving
+
+.. math::
+
+   \Delta \Theta
+   =
+   S_{\theta} S_y^{\top}
+   \left(
+   S_y S_y^{\top} + \Gamma_y + \lambda I
+   \right)^{-1}
+   \left[
+   y - g(\theta^{(1)}), \ldots, y - g(\theta^{(J)})
+   \right],
+
+where :math:`\Gamma_y` is the observation covariance and :math:`\lambda` is
+the Tikhonov regularization parameter. Each ensemble member is then updated by
+adding a scaled column of :math:`\Delta \Theta`.
+
+.. rubric:: Step Acceptance
+
+The routine uses a simple trust-region-like acceptance rule on top of the EKI
+update. A trial step is accepted only if the mean observation-space error norm
+decreases by at least the factor set by ``relaxation_parameter``. Accepted
+steps grow the step size by ``step_size_growth_factor``; rejected steps shrink
+it by ``step_size_decay_factor`` until either a step is accepted or the
+maximum number of retries is reached.
+
+.. rubric:: Practical Notes
+
+- The forward model is treated as derivative-free; only QoI evaluations are
+  required.
+- Parameter bounds are enforced by clipping sampled and updated parameters to
+  ``parameter_mins`` and ``parameter_maxes`` when provided.
+- Restart files store the ensemble, QoIs, mean QoI, and current step size so
+  long runs can be resumed from an iteration directory.
+
+.. rubric:: Relation to ``run_mf_eki``
+
+``run_eki`` is the single-fidelity baseline. The multifidelity driver
+:func:`romtools.workflows.inverse.mf_eki_drivers.run_mf_eki` augments this
+workflow with ROM control variates and adaptive surrogate rebuilding, but the
+high-fidelity correction and step-acceptance logic remain closely related.
+"""
+
 import numpy as np
 import os
 import time
@@ -25,38 +108,58 @@ def run_eki(model: QoiModel,
                  random_seed: int = 1,
                  evaluation_concurrency = 1,
                  restart_file = None):
-    '''
+    """
     Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
 
-    This routine iteratively updates a parameter ensemble to match observations
-    using model evaluations and a Kalman-style update. It supports adaptive
-    step sizing, restart files, and concurrent sample evaluation.
+    The routine draws or restores a parameter ensemble, evaluates the forward
+    model for every ensemble member, forms the ensemble Kalman correction, and
+    accepts or rejects trial updates based on the reduction in mean QoI error.
+    The workflow is fully derivative-free with respect to ``model``.
 
     Args:
         model: QoiModel to evaluate at ensemble samples.
-        parameter_space: ParameterSpace used to draw the initial ensemble.
-        observations: Observed QoI vector.
-        observations_covariance: Observation covariance matrix.
-        parameter_mins: Optional lower bounds on parameters.
-        parameter_maxes: Optional upper bounds on parameters.
-        absolute_eki_directory: Absolute path to the working directory for runs.
-        ensemble_size: Number of ensemble members.
-        initial_step_size: Initial step size for the update.
-        regularization_parameter: Tikhonov regularization parameter.
-        step_size_growth_factor: Growth factor when a step is accepted.
-        step_size_decay_factor: Decay factor when a step is rejected.
-        max_step_size_decrease_trys: Max consecutive step reductions before exit.
-        relaxation_parameter: Error reduction factor for step acceptance.
-        error_norm_tolerance: Stop when mean error norm falls below this value.
-        delta_params_tolerance: Stop when parameter update norm falls below this value.
+        parameter_space: ParameterSpace used to draw the initial ensemble when
+            ``restart_file`` is not provided.
+        observations: Observed QoI vector :math:`y`.
+        observations_covariance: Observation covariance matrix
+            :math:`\Gamma_y` used in the Kalman solve.
+        parameter_mins: Optional lower bounds applied to sampled and updated
+            parameters.
+        parameter_maxes: Optional upper bounds applied to sampled and updated
+            parameters.
+        absolute_eki_directory: Absolute path to the working directory. Each
+            accepted or tested iteration writes into
+            ``iteration_<k>/run_*`` subdirectories under this path.
+        ensemble_size: Number of ensemble members used in the EKI update.
+        initial_step_size: Initial multiplier applied to the computed Kalman
+            update directions.
+        regularization_parameter: Tikhonov regularization added to the QoI
+            covariance solve for numerical stability.
+        step_size_growth_factor: Factor used to increase the step size after
+            an accepted iteration.
+        step_size_decay_factor: Factor used to decrease the step size after a
+            rejected trial iteration.
+        max_step_size_decrease_trys: Maximum number of consecutive rejected
+            trial steps before the routine exits.
+        relaxation_parameter: Acceptance threshold on the mean error norm. A
+            trial step is accepted when the new norm is below
+            ``relaxation_parameter * current_error_norm``.
+        error_norm_tolerance: Stop when the mean observation-space error norm
+            falls below this value.
+        delta_params_tolerance: Stop when the norm of the proposed ensemble
+            update falls below this value.
         max_iterations: Maximum number of EKI iterations.
-        random_seed: RNG seed for initial sampling.
-        evaluation_concurrency: Concurrent model evaluations per iteration.
-        restart_file: Optional restart file path.
+        random_seed: RNG seed used for the initial ensemble draw.
+        evaluation_concurrency: Number of concurrent model evaluations used by
+            each EKI iteration.
+        restart_file: Optional ``.npz`` restart file produced by a prior EKI
+            run. When set, the saved ensemble, QoIs, error state, and step
+            size are restored instead of drawing a new ensemble.
 
     Returns:
-        Tuple of (parameter_samples, qois) from the final iteration.
-    '''
+        Tuple ``(parameter_samples, qois)`` containing the final ensemble and
+        the corresponding QoI matrix from the last accepted iteration.
+    """
 
 
 
