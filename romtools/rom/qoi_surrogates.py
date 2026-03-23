@@ -48,6 +48,17 @@ class GaussianProcessRegressorLite:
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
         return y_mean.ravel()
+    
+    def predict_mean_and_std(self, x_query: np.ndarray) -> tuple[np.ndarray,np.ndarray]:
+        if self._x_train is None or self._alpha is None:
+            raise RuntimeError("GaussianProcessRegressorLite has not been fit yet.")
+        x_query = np.asarray(x_query, dtype=float)
+        kx = self.kernel(x_query, self._x_train)
+        y_mean = kx @ self._alpha
+        y_var = self.kernel(x_query,x_query) - kx.T @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx))
+        y_std = np.sqrt(y_var)
+        return y_mean.ravel(),y_std.ravel()
+
 
     @staticmethod
     def log_marginal_likelihood(x_train: np.ndarray,
