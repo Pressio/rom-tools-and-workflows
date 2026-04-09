@@ -4,20 +4,22 @@ from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.rom.qoi_surrogates import GaussianProcessRegressorLite
 from romtools.workflows.inverse._inverse_utils import bound_samples
 import numpy as np
-from scipy.stats.norm import norm
-from scipy import minimize
+from scipy import stats
+from scipy.optimize import minimize
 
 def objective_function(qoi: np.ndarray, observations: np.ndarray):
-    return np.sum((qoi.flatten() - observations.flatten())**2) / np.sum((observations.flatten())**2)
+    return np.sum((qoi.flatten() - observations.flatten())**2) # / np.sum((observations.flatten())**2)
 
 def _expected_improvement(gp_regressor: GaussianProcessRegressorLite, 
                           obj_min: float, 
                           parameter_samples: np.ndarray):
 
     mu,sigma = gp_regressor.predict_mean_and_std(parameter_samples)
-    Z = (parameter_samples - mu[:,None]) / sigma
 
-    EI = (obj_min[:,None] - mu) * norm.cdf(Z)+ sigma * norm.pdf(Z)
+    Z = (mu - obj_min) / sigma
+
+    norm = stats.norm
+    EI = (obj_min - mu) * norm.cdf(Z)+ sigma * norm.pdf(Z)
     mask = sigma < 1e-12
     EI[mask] = 0.0
     return EI
@@ -35,6 +37,8 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessRegressorLite,
         parameter_bounds = ()
         for lb,ub in zip(parameter_mins,parameter_maxes):
             parameter_bounds += ((lb,ub),)
+    else:
+        parameter_bounds = None
 
     def objective_fcn(parameter_sample):
         parameter_sample = np.asarray(parameter_sample, float)

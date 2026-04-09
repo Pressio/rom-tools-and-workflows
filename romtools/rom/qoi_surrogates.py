@@ -55,7 +55,8 @@ class GaussianProcessRegressorLite:
         x_query = np.asarray(x_query, dtype=float)
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
-        y_var = self.kernel(x_query,x_query) - kx.T @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx))
+
+        y_var = self.kernel(x_query,x_query) - kx @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx.T))
         y_std = np.sqrt(y_var)
         return y_mean.ravel(),y_std.ravel()
 
