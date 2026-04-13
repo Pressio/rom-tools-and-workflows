@@ -85,7 +85,8 @@ def test_rosenbrock(tmp_path):
                  absolute_ego_directory=tmp_path,
                  number_initial_samples = 20,
                  evaluation_concurrency = 1,
-                 random_seed=74)
+                 random_seed=74,
+                 use_relative_error=False)
 
     assert( qoi_min < 1 )
     assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.1 )

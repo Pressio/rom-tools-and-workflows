@@ -27,6 +27,7 @@ def run_ego(model: QoiModel,
                  number_initial_samples: int=4,
                  random_seed: int = 1,
                  evaluation_concurrency = 1,
+                 use_relative_error: bool = True,
                  restart_file = None):
     """
     Run a single-fidelity efficient global optimization
@@ -56,6 +57,10 @@ def run_ego(model: QoiModel,
     """
 
     start_time = time.time()
+    # check that relative error is well-posed:
+    if use_relative_error:
+        assert(np.linalg.norm(observations) > 0)
+
     # Initial design point(s)
     if restart_file is None:
         parameter_samples = parameter_space.generate_samples(number_initial_samples, seed=random_seed)
@@ -71,7 +76,7 @@ def run_ego(model: QoiModel,
         for initial_sample in range(number_initial_samples):
             run_directory = f'{run_directory_base}{initial_sample}'
             qoi, error, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[initial_sample])
-            obj = objective_function(qoi,observations)
+            obj = objective_function(qoi,observations,relative=use_relative_error)
             qois.append(qoi)
             errors.append(error)
             objs.append(obj)
@@ -110,7 +115,7 @@ def run_ego(model: QoiModel,
         # evaluate function at new design point
         run_directory = f'{absolute_ego_directory}/iteration_{iteration}/run'
         qoi_new, error_new, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample_new)
-        obj_new = np.array([objective_function(qoi_new, observations),])
+        obj_new = np.array([objective_function(qoi_new, observations, relative=use_relative_error),])
 
         # update sample vectors
         parameter_samples = np.vstack([parameter_samples,parameter_sample_new])

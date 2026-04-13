@@ -7,8 +7,11 @@ import numpy as np
 from scipy import stats
 from scipy.optimize import minimize
 
-def objective_function(qoi: np.ndarray, observations: np.ndarray):
-    return np.sum((qoi.flatten() - observations.flatten())**2) # / np.sum((observations.flatten())**2)
+def objective_function(qoi: np.ndarray, observations: np.ndarray, relative=True):
+    scale = 1.0
+    if relative:
+        scale = 1 / np.sum((observations.flatten())**2) 
+    return np.sum((qoi.flatten() - observations.flatten())**2) * scale
 
 def _expected_improvement(gp_regressor: GaussianProcessQoiModel, 
                           obj_min: float, 
