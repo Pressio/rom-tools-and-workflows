@@ -1,7 +1,7 @@
 """Optimization methods and configs used by inverse EGO workflows."""
 
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.rom.qoi_surrogates import GaussianProcessRegressorLite
+from romtools.rom.qoi_surrogates import GaussianProcessQoiModel
 from romtools.workflows.inverse._inverse_utils import bound_samples
 import numpy as np
 from scipy import stats
@@ -10,11 +10,11 @@ from scipy.optimize import minimize
 def objective_function(qoi: np.ndarray, observations: np.ndarray):
     return np.sum((qoi.flatten() - observations.flatten())**2) # / np.sum((observations.flatten())**2)
 
-def _expected_improvement(gp_regressor: GaussianProcessRegressorLite, 
+def _expected_improvement(gp_regressor: GaussianProcessQoiModel, 
                           obj_min: float, 
-                          parameter_samples: np.ndarray):
+                          parameter_sample: np.ndarray):
 
-    mu,sigma = gp_regressor.predict_mean_and_std(parameter_samples)
+    mu,sigma = gp_regressor.compute_qoi_and_var("",parameter_sample)
 
     Z = (mu - obj_min) / sigma
 
@@ -24,7 +24,7 @@ def _expected_improvement(gp_regressor: GaussianProcessRegressorLite,
     EI[mask] = 0.0
     return EI
 
-def argmax_expected_improvement(gp_regressor: GaussianProcessRegressorLite, 
+def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel, 
                                  obj_min: float,
                                  parameter_space: ParameterSpace,
                                  parameter_mins: np.ndarray = None,

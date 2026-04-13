@@ -60,6 +60,7 @@ class RosenbrockParameterSpace(romtools.workflows.ParameterSpace):
         Returns np.array of shape
         (number_of_samples, self.get_dimensionality())
         '''
+        np.random.seed(seed)
         samples = np.random.uniform(low=self.parameter_mins,high=self.parameter_maxes,size=(number_of_samples,self.dimension))
         return samples
 
@@ -70,8 +71,6 @@ def test_rosenbrock(tmp_path):
 
     my_parameter_space = RosenbrockParameterSpace()
 
-    # Run sampling algorithm
-    ensemble_size = 5
 
 
     obs = np.array([0.0])
@@ -80,14 +79,16 @@ def test_rosenbrock(tmp_path):
     parameter_sample_min, obj_min, qoi_min = romtools.workflows.run_ego(model = model,
                  parameter_space = my_parameter_space,
                  observations = obs,
-                 number_of_iterations = 20,
-                 parameter_mins = None,
-                 parameter_maxes = None,
+                 number_of_iterations = 60,
+                 parameter_mins = my_parameter_space.parameter_mins,
+                 parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
-                 evaluation_concurrency = 1)
+                 number_initial_samples = 20,
+                 evaluation_concurrency = 1,
+                 random_seed=74)
 
-    print(parameter_sample_min, obj_min, qoi_min)
-    #assert( np.allclose(params_mean,np.array([1.0,1.0]),atol=1e-3))
+    assert( qoi_min < 1 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.1 )
 
 if __name__=='__main__':
     test_rosenbrock(os.getcwd() + "/work")

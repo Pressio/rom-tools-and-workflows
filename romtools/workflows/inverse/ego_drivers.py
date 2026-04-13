@@ -88,8 +88,6 @@ def run_ego(model: QoiModel,
         errors = restart_file['errors']
         objs = restart_file['objs']
 
-    gp_regressor = GaussianProcessRegressorLite()
-
     # Optimization loop
     wall_time = time.time() - start_time
     obj_min = np.min(objs)
@@ -100,7 +98,7 @@ def run_ego(model: QoiModel,
     while iteration < number_of_iterations:
 
         # fit GP to samples
-        gp_regressor.fit(parameter_samples,objs)
+        gp_regressor = GaussianProcessQoiModel(parameter_samples,objs,tune_hyperparameters=True)
 
         # determine design point that maximizes expected improvement
         parameter_sample_new = argmax_expected_improvement(gp_regressor,
@@ -118,7 +116,6 @@ def run_ego(model: QoiModel,
         parameter_samples = np.vstack([parameter_samples,parameter_sample_new])
         qois = np.vstack([qois,qoi_new])
         errors = np.vstack([errors,error_new])
-        print(objs.shape,obj_new.shape)
         objs = np.concatenate([objs,obj_new])
 
         wall_time = time.time() - start_time
