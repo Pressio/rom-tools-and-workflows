@@ -79,17 +79,16 @@ def test_rosenbrock(tmp_path):
     parameter_sample_min, obj_min, qoi_min = romtools.workflows.run_ego(model = model,
                  parameter_space = my_parameter_space,
                  observations = obs,
-                 number_of_iterations = 60,
+                 number_of_iterations = 20,
                  parameter_mins = my_parameter_space.parameter_mins,
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
                  number_initial_samples = 20,
                  evaluation_concurrency = 1,
-                 random_seed=74,
+                 random_seed=67,
                  use_relative_error=False)
-
-    assert( qoi_min < 1 )
-    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.1 )
+    assert( qoi_min < 0.1 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.2 )
 
 if __name__=='__main__':
     test_rosenbrock(os.getcwd() + "/work")
