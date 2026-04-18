@@ -33,7 +33,7 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
                                  parameter_mins: np.ndarray = None,
                                  parameter_maxes: np.ndarray = None,
                                  num_restarts: int=25,
-                                 random_seed: int = 1):
+                                 random_seed: int = None):
     
     # determine bounds (if any)
     if parameter_mins is not None:

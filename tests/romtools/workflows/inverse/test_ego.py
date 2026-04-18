@@ -9,7 +9,7 @@ import romtools.workflows
 
 
 
-class RosenbrockModel:
+class QuadraticModel:
     '''
     Protocol for a model that has a return_qoi implementation
     '''
@@ -29,10 +29,10 @@ class RosenbrockModel:
     def compute_qoi(self, run_directory: str, parameter_sample: dict) -> np.ndarray:
         x = parameter_sample['x']
         y = parameter_sample['y']
-        f = (self.a_ - x)**2 + self.b_*(y - x**2)**2
+        f = self.a_*(1.0 - x)**2 + self.b_*(1.0 - y)**2
         return np.array([f])
 
-class RosenbrockParameterSpace(romtools.workflows.ParameterSpace):
+class QuadraticParameterSpace(romtools.workflows.ParameterSpace):
     def __init__(self):
         self.parameter_mins = np.array([0.0,0.0])
         self.parameter_maxes = np.array([2.0,2.0])
@@ -67,9 +67,9 @@ class RosenbrockParameterSpace(romtools.workflows.ParameterSpace):
 @pytest.mark.mpi_skip
 def test_rosenbrock(tmp_path):
     # Construct the fom model
-    model = RosenbrockModel(a=1,b=100)
+    model = QuadraticModel(a=1,b=4)
 
-    my_parameter_space = RosenbrockParameterSpace()
+    my_parameter_space = QuadraticParameterSpace()
 
 
 
@@ -79,7 +79,7 @@ def test_rosenbrock(tmp_path):
     parameter_sample_min, obj_min, qoi_min = romtools.workflows.run_ego(model = model,
                  parameter_space = my_parameter_space,
                  observations = obs,
-                 number_of_iterations = 20,
+                 number_of_iterations = 30,
                  parameter_mins = my_parameter_space.parameter_mins,
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
@@ -87,8 +87,9 @@ def test_rosenbrock(tmp_path):
                  evaluation_concurrency = 1,
                  random_seed=67,
                  use_relative_error=False)
+    print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
     assert( qoi_min < 0.1 )
-    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.2 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.1 )
 
 if __name__=='__main__':
     test_rosenbrock(os.getcwd() + "/work")

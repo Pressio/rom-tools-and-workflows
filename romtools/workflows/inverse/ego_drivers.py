@@ -25,7 +25,7 @@ def run_ego(model: QoiModel,
                  parameter_maxes: np.ndarray = None,
                  absolute_ego_directory: str = os.getcwd() + "/work/",
                  number_initial_samples: int=4,
-                 random_seed: int = 1,
+                 random_seed: int = None,
                  evaluation_concurrency = 1,
                  use_relative_error: bool = True,
                  restart_file = None):
@@ -110,7 +110,8 @@ def run_ego(model: QoiModel,
                                                             obj_min,
                                                             parameter_space,
                                                             parameter_mins,
-                                                            parameter_maxes)
+                                                            parameter_maxes,
+                                                            random_seed=random_seed)
 
         # evaluate function at new design point
         run_directory = f'{absolute_ego_directory}/iteration_{iteration}/run'
