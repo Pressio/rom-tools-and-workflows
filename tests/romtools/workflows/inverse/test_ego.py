@@ -79,7 +79,7 @@ def test_rosenbrock(tmp_path):
     parameter_sample_min, obj_min, qoi_min = romtools.workflows.run_ego(model = model,
                  parameter_space = my_parameter_space,
                  observations = obs,
-                 number_of_iterations = 30,
+                 number_of_iterations = 40,
                  parameter_mins = my_parameter_space.parameter_mins,
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
