@@ -84,7 +84,6 @@ def test_rosenbrock(tmp_path):
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
                  number_initial_samples = 20,
-                 evaluation_concurrency = 1,
                  random_seed=None,
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
