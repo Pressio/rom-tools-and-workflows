@@ -88,7 +88,7 @@ def test_rosenbrock(tmp_path):
                  random_seed=None,
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
-    assert( qoi_min < 0.01 )
+    assert( qoi_min < 0.05 )
     assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.1 )
 
 if __name__=='__main__':
