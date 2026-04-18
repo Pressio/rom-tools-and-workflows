@@ -26,7 +26,6 @@ def run_ego(model: QoiModel,
                  absolute_ego_directory: str = os.getcwd() + "/work/",
                  number_initial_samples: int=4,
                  random_seed: int = None,
-                 evaluation_concurrency = 1,
                  use_relative_error: bool = True,
                  restart_file = None):
     """
@@ -41,19 +40,21 @@ def run_ego(model: QoiModel,
             parameters.
         parameter_maxes: Optional upper bounds applied to sampled and updated
             parameters.
-        absolute_eki_directory: Absolute path to the working directory. Each
+        absolute_ego_directory: Absolute path to the working directory. Each
             accepted or tested iteration writes into
             ``iteration_<k>/run_*`` subdirectories under this path.
-        evaluation_concurrency: Number of concurrent model evaluations used by
-            the initial sampling. EGO is sequential and does not support concurrency
-            during iterations. 
+        number_initial_samples: Optional number of model samples to train the 
+            initial Gaussian process. Default is 4. 
+        random_seed: Optional seed to fix random sampling. Default is None.
+        use_relative_error: Optional boolean to use relative error with respect
+            to observations as the objective runtion. Default is None.
         restart_file: Optional ``.npz`` restart file produced by a prior EGO
             run. When set, the saved samples and QoIs are restored instead of 
             drawing a new sample.
 
     Returns:
-        Tuple ``(parameters, qois)`` containing the final input parameters and
-        the corresponding QoI matrix from the last iteration.
+        Tuple ``(parameter_sample_min, obj_min, qoi_min)`` containing the final input parameters and
+        the corresponding minimum objective function and QoI as of the last iteration.
     """
 
     start_time = time.time()
