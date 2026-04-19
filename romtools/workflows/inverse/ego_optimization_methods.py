@@ -6,6 +6,7 @@ from romtools.workflows.inverse._inverse_utils import bound_samples
 import numpy as np
 from scipy import stats
 from scipy.optimize import minimize
+import copy
 
 def objective_function(qoi: np.ndarray, observations: np.ndarray, relative=True):
     scale = 1.0
@@ -62,3 +63,44 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
 
     return best_parameter_sample
 
+def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiModel, 
+                                                obj_min: float,
+                                                parameter_samples: np.ndarray,
+                                                objective_function_samples: np.ndarray,
+                                                batch_size: int,
+                                                parameter_space: ParameterSpace,
+                                                parameter_mins: np.ndarray = None,
+                                                parameter_maxes: np.ndarray = None,
+                                                num_restarts: int=25,
+                                                random_seed: int = None):
+    
+    number_of_samples = parameter_samples.shape[0]
+    my_parameter_samples = parameter_samples.copy()
+    my_objective_function_samples = objective_function_samples.copy()
+    my_gp_regressor = copy.deepcopy(gp_regressor)
+    my_kernel = copy.deepcopy(my_gp_regressor.kernel)
+    
+    # generate objective function evaluation "Lie". 
+    # Since we are minimizing the objective function, using the maximum objective 
+    # function is the pesimistic case in which exploration is weighed over exploitation.
+    # Using the minimum objective function is the optimistic case which emphasizes exploitation.
+    # Using the mean objective function is a compromise between the two former choices
+    L = np.max(my_objective_function_samples)
+
+    for i in range(batch_size):
+        best_parameter_sample = argmax_expected_improvement(my_gp_regressor,
+                                                            obj_min,
+                                                            parameter_space,
+                                                            parameter_mins,
+                                                            parameter_maxes,
+                                                            num_restarts,
+                                                            random_seed)
+        my_parameter_samples = np.vstack([my_parameter_samples,best_parameter_sample])
+        my_objective_function_samples = np.concatenate([my_objective_function_samples,L])
+        # Refit GP here!
+        my_gp_regressor = GaussianProcessQoiModel(my_parameter_samples,
+                                                  my_objective_function_samples,
+                                                  kernel=my_kernel)
+
+    # only return new samples
+    return my_parameter_samples[number_of_samples:]
