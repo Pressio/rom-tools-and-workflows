@@ -48,6 +48,18 @@ class GaussianProcessRegressorLite:
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
         return y_mean.ravel()
+    
+    def predict_mean_and_std(self, x_query: np.ndarray) -> tuple[np.ndarray,np.ndarray]:
+        if self._x_train is None or self._alpha is None:
+            raise RuntimeError("GaussianProcessRegressorLite has not been fit yet.")
+        x_query = np.asarray(x_query, dtype=float)
+        kx = self.kernel(x_query, self._x_train)
+        y_mean = kx @ self._alpha
+
+        y_var = self.kernel(x_query,x_query) - kx @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx.T))
+        y_std = np.sqrt(y_var)
+        return y_mean.ravel(),y_std.ravel()
+
 
     @staticmethod
     def log_marginal_likelihood(x_train: np.ndarray,
@@ -66,7 +78,7 @@ class GaussianProcessRegressorLite:
         alpha = np.linalg.solve(chol.T, np.linalg.solve(chol, y_train))
         log_det = np.sum(np.log(np.diag(chol)))
         n = y_train.shape[0]
-        lml = -0.5 * float(y_train.T @ alpha) - log_det - 0.5 * n * np.log(2.0 * np.pi)
+        lml = -0.5 * float(np.squeeze(y_train.T @ alpha)) - log_det - 0.5 * n * np.log(2.0 * np.pi)
         return lml
 
 
@@ -132,6 +144,21 @@ class GaussianProcessQoiModel:
             return np.asarray([coeffs[0]])
         qoi = self._mean_qoi + self._pod_modes @ coeffs
         return np.asarray(qoi).ravel()
+    
+    def compute_qoi_and_var(self, run_directory: str, parameter_sample: dict) -> np.ndarray:
+        x = self._parameter_sample_to_array(parameter_sample)
+
+        predictions = [gp.predict_mean_and_std(x[None, :]) for gp in self._gps]
+        mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
+        std_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
+        mean_coeffs = self._unscale_targets(mean_coeffs)
+        std_coeffs = self._unscale_targets(std_coeffs)
+        if self._pod_modes is None:
+            return np.asarray([mean_coeffs[0]]), np.asarray([std_coeffs[0]])
+        qoi_mean = self._mean_qoi + self._pod_modes @ mean_coeffs
+        # assume pod modes are not correlated (should revisit this assumption)
+        qoi_std = np.sqrt(self._pod_modes @ (std_coeffs*std_coeffs))
+        return np.asarray(qoi_mean).ravel(), np.asarray(qoi_std).ravel()
 
     def _parameter_sample_to_array(self, parameter_sample: dict) -> np.ndarray:
         if isinstance(parameter_sample, dict):

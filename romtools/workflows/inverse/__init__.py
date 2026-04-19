@@ -25,6 +25,8 @@ from romtools.workflows.inverse.mf_eki_drivers import *
 from romtools.workflows.inverse.mf_vi_drivers import *
 from romtools.workflows.inverse.vi_drivers import *
 from romtools.workflows.inverse.vi_optimization_methods import *
+from romtools.workflows.inverse.ego_drivers import *
+from romtools.workflows.inverse.ego_optimization_methods import *
 
 # Expose submodules as attributes so `import romtools.workflows.inverse.mf_eki_drivers as m`
 # binds to the module instead of the function imported above.
