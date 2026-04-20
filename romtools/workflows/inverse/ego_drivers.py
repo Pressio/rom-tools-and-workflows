@@ -29,7 +29,7 @@ def run_ego(model: QoiModel,
                  number_initial_samples: int=4,
                  random_seed: int = None,
                  use_relative_error: bool = True,
-                 restart_file = None,
+                 restart_file: str=None,
                  expected_improvement_epsilon: float=0.0):
     """
     Run a single-fidelity efficient global optimization
@@ -156,7 +156,7 @@ def run_batch_ego(model: QoiModel,
                     random_seed: int = None,
                     evaluation_concurrency: int=-1,
                     use_relative_error: bool = True,
-                    restart_file = None,
+                    restart_file: str=None,
                     expected_improvement_epsilon: float=0.0,
                     constant_liar_type: str='pessimistic'):
     """
@@ -281,6 +281,7 @@ def run_batch_ego(model: QoiModel,
         objs_new = np.zeros((batch_size))
         qois_new = np.zeros((batch_size,1))
         errors_new = np.zeros((batch_size,1))
+        run_directory_base = f'{absolute_ego_directory}/iteration_{iteration}/run_'
         if evaluation_concurrency == 1:
             # evaluate function at new design point
             for i,parameter_sample_new in enumerate(parameter_samples_new):

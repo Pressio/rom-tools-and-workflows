@@ -97,8 +97,6 @@ def test_quadratic_batch(tmp_path):
 
     my_parameter_space = QuadraticParameterSpace()
 
-
-
     obs = np.array([0.0])
     obs_cov = np.eye(obs.size)*0.0
 
@@ -120,4 +118,4 @@ def test_quadratic_batch(tmp_path):
 
 if __name__=='__main__':
     test_quadratic(os.getcwd() + "/work")
-    test_quadratic_batch(os.getcwd() + "/work")
+    test_quadratic_batch(os.getcwd() + "/work_batch")
