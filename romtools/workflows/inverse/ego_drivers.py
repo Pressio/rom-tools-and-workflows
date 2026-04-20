@@ -29,7 +29,8 @@ def run_ego(model: QoiModel,
                  number_initial_samples: int=4,
                  random_seed: int = None,
                  use_relative_error: bool = True,
-                 restart_file = None):
+                 restart_file = None,
+                 expected_improvement_epsilon: float=0.0):
     """
     Run a single-fidelity efficient global optimization
 
@@ -53,6 +54,8 @@ def run_ego(model: QoiModel,
         restart_file: Optional ``.npz`` restart file produced by a prior EGO
             run. When set, the saved samples and QoIs are restored instead of 
             drawing a new sample.
+        expected_improvement_epsilon: Optional parameter for expected improvement.
+            Values greater than zero will promote design space exploration
 
     Returns:
         Tuple ``(parameter_sample_min, obj_min, qoi_min)`` containing the final input parameters and
@@ -114,7 +117,8 @@ def run_ego(model: QoiModel,
                                                             parameter_space,
                                                             parameter_mins,
                                                             parameter_maxes,
-                                                            random_seed=random_seed)
+                                                            random_seed=random_seed,
+                                                            epsilon=expected_improvement_epsilon)
 
         # evaluate function at new design point
         run_directory = f'{absolute_ego_directory}/iteration_{iteration}/run'
@@ -152,7 +156,9 @@ def run_batch_ego(model: QoiModel,
                     random_seed: int = None,
                     evaluation_concurrency: int=-1,
                     use_relative_error: bool = True,
-                    restart_file = None):
+                    restart_file = None,
+                    expected_improvement_epsilon: float=0.0,
+                    constant_liar_type: str='pessimistic'):
     """
     Run a single-fidelity batch efficient global optimization
 
@@ -180,6 +186,11 @@ def run_batch_ego(model: QoiModel,
         restart_file: Optional ``.npz`` restart file produced by a prior EGO
             run. When set, the saved samples and QoIs are restored instead of 
             drawing a new sample.
+        expected_improvement_epsilon: Optional parameter for expected improvement.
+            Values greater than zero will promote design space exploration
+        constant_liar_type: Optional string for type of constant liar aquisition
+            function. Valid options are "pessimistic", "optimistic", and "average".
+        
 
     Returns:
         Tuple ``(parameter_sample_min, obj_min, qoi_min)`` containing the final input parameters and
@@ -263,7 +274,9 @@ def run_batch_ego(model: QoiModel,
                                                                             parameter_space,
                                                                             parameter_mins,
                                                                             parameter_maxes,
-                                                                            random_seed=random_seed)
+                                                                            random_seed=random_seed,
+                                                                            epsilon=expected_improvement_epsilon,
+                                                                            liar_type=constant_liar_type)
 
         objs_new = np.zeros((batch_size))
         qois_new = np.zeros((batch_size,1))

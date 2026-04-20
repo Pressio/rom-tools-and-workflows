@@ -16,14 +16,15 @@ def objective_function(qoi: np.ndarray, observations: np.ndarray, relative=True)
 
 def _expected_improvement(gp_regressor: GaussianProcessQoiModel, 
                           obj_min: float, 
-                          parameter_sample: np.ndarray):
+                          parameter_sample: np.ndarray,
+                          epsilon: float=0.0):
 
     mu,sigma = gp_regressor.compute_qoi_and_var("",parameter_sample)
 
-    Z = (mu - obj_min) / sigma
+    Z = (mu - obj_min - epsilon) / sigma
 
     norm = stats.norm
-    EI = (obj_min - mu) * norm.cdf(Z)+ sigma * norm.pdf(Z)
+    EI = (obj_min + epsilon - mu) * norm.cdf(Z)+ sigma * norm.pdf(Z)
     mask = sigma < 1e-12
     EI[mask] = 0.0
     return EI
@@ -34,7 +35,8 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
                                  parameter_mins: np.ndarray = None,
                                  parameter_maxes: np.ndarray = None,
                                  num_restarts: int=25,
-                                 random_seed: int = None):
+                                 random_seed: int = None,
+                                 epsilon: float=0.0):
     
     # determine bounds (if any)
     if parameter_mins is not None:
@@ -46,7 +48,7 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
 
     def objective_fcn(parameter_sample):
         parameter_sample = np.asarray(parameter_sample, float)
-        return -_expected_improvement(gp_regressor, obj_min, parameter_sample[None, :])
+        return -_expected_improvement(gp_regressor, obj_min, parameter_sample[None, :],epsilon)
 
     best_parameter_sample = None
     best_obj = np.inf
@@ -72,7 +74,9 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
                                                 parameter_mins: np.ndarray = None,
                                                 parameter_maxes: np.ndarray = None,
                                                 num_restarts: int=25,
-                                                random_seed: int = None):
+                                                random_seed: int = None,
+                                                epsilon: float=0.0,
+                                                liar_type: str='pessimistic'):
     
     number_of_samples = parameter_samples.shape[0]
     my_parameter_samples = parameter_samples.copy()
@@ -82,10 +86,17 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
     
     # generate objective function evaluation "Lie". 
     # Since we are minimizing the objective function, using the maximum objective 
-    # function is the pesimistic case in which exploration is weighed over exploitation.
+    # function is the pessimistic case in which exploration is weighed over exploitation.
     # Using the minimum objective function is the optimistic case which emphasizes exploitation.
     # Using the mean objective function is a compromise between the two former choices
-    L = np.array([np.max(my_objective_function_samples),])
+    L = np.zeros(1)
+    if liar_type == 'pessimistic':
+        L[0] = np.max(my_objective_function_samples)
+    elif liar_type == 'optimistic':
+        L[0] = np.min(my_objective_function_samples)
+    elif liar_type == 'average':
+        L[0] = np.min(my_objective_function_samples)
+    
 
     for i in range(batch_size):
         best_parameter_sample = argmax_expected_improvement(my_gp_regressor,
@@ -94,7 +105,8 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
                                                             parameter_mins,
                                                             parameter_maxes,
                                                             num_restarts,
-                                                            random_seed)
+                                                            random_seed,
+                                                            epsilon)
         my_parameter_samples = np.vstack([my_parameter_samples,best_parameter_sample])
         my_objective_function_samples = np.concatenate([my_objective_function_samples,L])
         # Refit GP here!
