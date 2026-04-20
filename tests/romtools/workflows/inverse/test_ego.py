@@ -65,7 +65,7 @@ class QuadraticParameterSpace(romtools.workflows.ParameterSpace):
         return samples
 
 @pytest.mark.mpi_skip
-def test_rosenbrock(tmp_path):
+def test_quadratic(tmp_path):
     # Construct the fom model
     model = QuadraticModel(a=1,b=4)
 
@@ -90,5 +90,34 @@ def test_rosenbrock(tmp_path):
     assert( qoi_min < 0.05 )
     assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.15 )
 
+@pytest.mark.mpi_skip
+def test_quadratic_batch(tmp_path):
+    # Construct the fom model
+    model = QuadraticModel(a=1,b=4)
+
+    my_parameter_space = QuadraticParameterSpace()
+
+
+
+    obs = np.array([0.0])
+    obs_cov = np.eye(obs.size)*0.0
+
+    parameter_sample_min, obj_min, qoi_min = romtools.workflows.run_batch_ego(model = model,
+                 parameter_space = my_parameter_space,
+                 observations = obs,
+                 number_of_iterations = 15,
+                 batch_size = 4,
+                 parameter_mins = my_parameter_space.parameter_mins,
+                 parameter_maxes = my_parameter_space.parameter_maxes,
+                 absolute_ego_directory=tmp_path,
+                 number_initial_samples = 20,
+                 random_seed=None,
+                 evaluation_concurrency=4,
+                 use_relative_error=False)
+    print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
+    assert( qoi_min < 0.05 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.15 )
+
 if __name__=='__main__':
-    test_rosenbrock(os.getcwd() + "/work")
+    test_quadratic(os.getcwd() + "/work")
+    test_quadratic_batch(os.getcwd() + "/work")

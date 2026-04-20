@@ -85,7 +85,7 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
     # function is the pesimistic case in which exploration is weighed over exploitation.
     # Using the minimum objective function is the optimistic case which emphasizes exploitation.
     # Using the mean objective function is a compromise between the two former choices
-    L = np.max(my_objective_function_samples)
+    L = np.array([np.max(my_objective_function_samples),])
 
     for i in range(batch_size):
         best_parameter_sample = argmax_expected_improvement(my_gp_regressor,

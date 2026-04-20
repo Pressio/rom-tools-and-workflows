@@ -187,12 +187,15 @@ def run_batch_ego(model: QoiModel,
     """
 
     start_time = time.time()
+    mp_cntxt = multiprocessing.get_context("fork")
+
     # check that relative error is well-posed:
     if use_relative_error:
         assert(np.linalg.norm(observations) > 0)
 
     # if evaluation concurrency is not explicitly set, make it equal to batch_size
-    evaluation_concurrency = batch_size
+    if evaluation_concurrency < 0:
+        evaluation_concurrency = batch_size
 
     # Initial design point(s)
     if restart_file is None:
@@ -205,15 +208,27 @@ def run_batch_ego(model: QoiModel,
         objs = []
         # run model at samples
         iteration = 0
-        run_directory_base = f'{absolute_ego_directory}/iteration_{0}/run_'
-        # TODO run in batches!
-        for initial_sample in range(number_initial_samples):
-            run_directory = f'{run_directory_base}{initial_sample}'
-            qoi, error, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[initial_sample])
-            obj = objective_function(qoi,observations,relative=use_relative_error)
-            qois.append(qoi)
-            errors.append(error)
-            objs.append(obj)
+        run_directory_base = f'{absolute_ego_directory}/iteration_0/run_'
+
+        if evaluation_concurrency == 1:
+            for initial_sample in range(number_initial_samples):
+                run_directory = f'{run_directory_base}{initial_sample}'
+                qoi, error, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[initial_sample])
+                obj = objective_function(qoi,observations,relative=use_relative_error)
+                qois.append(qoi)
+                errors.append(error)
+                objs.append(obj)
+        else:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
+                these_futures = [executor.submit(prepare_and_run, model, observations, f'{run_directory_base}{initial_sample}', parameter_names, parameter_samples[initial_sample]) for initial_sample in range(number_initial_samples)]
+                concurrent.futures.wait(these_futures)
+            for future in these_futures:
+                qoi, error, _ = future.result()
+                obj = objective_function(qoi,observations,relative=use_relative_error)
+                qois.append(qoi)
+                errors.append(error)
+                objs.append(obj)
+
         qois = np.array(qois)
         errors = np.array(errors)
         objs = np.array(objs)
@@ -240,7 +255,6 @@ def run_batch_ego(model: QoiModel,
         gp_regressor = GaussianProcessQoiModel(parameter_samples,objs,tune_hyperparameters=True)
 
         # determine design point that maximizes expected improvement
-        # TODO replace with batch aquisition function
         parameter_samples_new = q_point_expected_improvement_constant_liar(gp_regressor,
                                                                             obj_min,
                                                                             parameter_samples,
@@ -251,17 +265,32 @@ def run_batch_ego(model: QoiModel,
                                                                             parameter_maxes,
                                                                             random_seed=random_seed)
 
-        # TODO run batch of parameters in parallel
-        # evaluate function at new design point
-        run_directory = f'{absolute_ego_directory}/iteration_{iteration}/run'
-        qoi_new, error_new, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample_new)
-        obj_new = np.array([objective_function(qoi_new, observations, relative=use_relative_error),])
+        objs_new = np.zeros((batch_size))
+        qois_new = np.zeros((batch_size,1))
+        errors_new = np.zeros((batch_size,1))
+        if evaluation_concurrency == 1:
+            # evaluate function at new design point
+            for i,parameter_sample_new in enumerate(parameter_samples_new):
+                run_directory = f'{run_directory_base}{i}'
+                qoi_new, error_new, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample_new)
+                objs_new[i] = objective_function(qoi_new, observations, relative=use_relative_error)
+                qois_new[i] = qoi_new
+                errors_new[i] = error_new
+        else:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
+                these_futures = [executor.submit(prepare_and_run, model, observations, f'{run_directory_base}{i}', parameter_names, parameter_samples_new[i]) for i in range(batch_size)]
+                concurrent.futures.wait(these_futures)
+            for i,future in enumerate(these_futures):
+                qoi_new, error_new, _ = future.result()
+                objs_new[i] = objective_function(qoi_new,observations,relative=use_relative_error)
+                qois_new[i] = qoi_new
+                errors_new[i] = error_new
 
         # update sample vectors
-        parameter_samples = np.vstack([parameter_samples,parameter_sample_new])
-        qois = np.vstack([qois,qoi_new])
-        errors = np.vstack([errors,error_new])
-        objs = np.concatenate([objs,obj_new])
+        parameter_samples = np.vstack([parameter_samples,parameter_samples_new])
+        qois = np.vstack([qois,qois_new])
+        errors = np.vstack([errors,errors_new])
+        objs = np.concatenate([objs,objs_new])
 
         wall_time = time.time() - start_time
         i_min = np.argmin(objs)
