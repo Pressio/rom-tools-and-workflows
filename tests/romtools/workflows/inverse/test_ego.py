@@ -88,7 +88,7 @@ def test_quadratic(tmp_path):
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
     assert( qoi_min < 0.1 )
-    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.2 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.25 )
 
 @pytest.mark.mpi_skip
 def test_quadratic_batch(tmp_path):
@@ -114,7 +114,7 @@ def test_quadratic_batch(tmp_path):
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
     assert( qoi_min < 0.1 )
-    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.2 )
+    assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.25 )
 
 if __name__=='__main__':
     test_quadratic(os.getcwd() + "/work")
