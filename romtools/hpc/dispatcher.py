@@ -19,9 +19,7 @@ class Dispatcher:
 
     Arguments:
         logger: An instance of the Logger class for logging
-        remote: The remote host to connect to
-        user: The username to use for the connection
-        port: The port to use for the connection (default: 22)
+        sampling_directory: An optional string for your local output directory
 
     The basic command is therefore:
         ssh user@remote -p port
@@ -42,7 +40,6 @@ class Dispatcher:
         # Initialization
         self.__connect_to_remote()
         self.__set_up_directories()
-        # self.__create_remote_root()
 
     # ------------------------------------------------------------------
     # Initialization and setup
@@ -71,9 +68,6 @@ class Dispatcher:
                 os.path.join(self.config.remote_root, self.sampling_directory),
                 base_dir=True
             )
-
-    def __create_remote_root(self) -> None:
-        self.conn.run(f"mkdir -p {shlex.quote(self.config.remote_root)}")
 
     # ------------------------------------------------------------------
     # Resource management
@@ -200,16 +194,6 @@ class Dispatcher:
             self.logger.debug(f"Job {job_id} still running...")
             time.sleep(self.config.poll_interval)
         self.logger.log(f"Job {job_id} completed.")
-
-    @require_connection
-    def __stop_all_jobs(self) -> None:
-        self.logger.log("Stopping all running jobs...")
-        for job_id in self.current_jobs:
-            try:
-                self.cancel_job(job_id)
-            except Exception as e:
-                self.logger.log(f"Failed to cancel job {job_id}: {e}")
-        self.current_jobs.clear()
 
     # ------------------------------------------------------------------
     # Result collection
