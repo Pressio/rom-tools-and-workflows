@@ -59,7 +59,7 @@ The only class you need to interact with is `Dispatcher`. It manages all remote 
 The `Dispatcher` takes in these arguments:
 
 - `logger`: An instance of the Logger class for logging
-- `sampling_directory`: An optional string for your local output directory (defaults to `hpctools/`)
+- `sampling_directory`: An optional string for your local + remote output directory (defaults to `hpctools/`)
 
 **dispatch(cmd, run_directory=None):**
 
