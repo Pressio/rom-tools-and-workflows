@@ -3,11 +3,19 @@ import os
 import shutil
 import subprocess
 
+from romtools.hpc.dispatcher import Dispatcher
 
-def create_empty_dir(dir_name: str):
+
+def create_empty_dir(dir_name: str, dispatcher: Dispatcher = None):
     '''
     Create empty directory
+
+    If dispatcher is provided, the directory is created on the remote host.
     '''
+    if dispatcher is not None:
+        dispatcher.create_remote_directory(dir_name)
+        return
+
     if os.path.exists(dir_name):
         pass
     else:

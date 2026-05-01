@@ -7,18 +7,15 @@ import numpy as np
 
 from romtools.hpc.dispatcher import Dispatcher
 
-class BasicModel:
+class ExampleModel:
 
     def __init__(self, dispatcher: Dispatcher = None) -> None:
         self.dispatcher = dispatcher
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
 
-        if self.dispatcher is not None:
-            self.dispatcher.create_remote_directory(run_directory)
-            return
-
-        os.makedirs(run_directory, exist_ok=True)
+        # Run directory is on remote host if dispatcher exists
+        pass
 
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
 
@@ -33,7 +30,7 @@ class BasicModel:
                 '
             """)
             self.dispatcher.dispatch(cmd, run_directory=run_directory)
-            return
+            return 0
 
         file_name = f"output-{socket.gethostname()}.txt"
         path = os.path.join(run_directory, file_name)

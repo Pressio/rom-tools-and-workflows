@@ -43,12 +43,15 @@
 # ************************************************************************
 #
 
+import io
 import os
 import time
+import tempfile
 import numpy as np
 import concurrent.futures
 import multiprocessing
 
+from romtools.hpc.dispatcher import Dispatcher
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
@@ -86,6 +89,28 @@ def _compute_qoi_statistics(qoi_samples):
         "qoi_num_samples": np.array([qoi_array.shape[0]], dtype=int),
     }
 
+def _save_np_array(path: str, arr: np.ndarray, fmt: str, dispatcher: Dispatcher = None):
+    if dispatcher is not None:
+        buffer = io.StringIO()
+        np.savetxt(buffer, arr, fmt=fmt)
+        dispatcher.write_text(path, buffer.getvalue())
+    else:
+        np.savetxt(path, arr, fmt=fmt)
+
+def _save_npz(path_without_ext: str, dispatcher=None, **arrays):
+    if dispatcher is None:
+        np.savez(path_without_ext, **arrays)
+    else:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_base = os.path.join(tmpdir, os.path.basename(path_without_ext))
+            np.savez(local_base, **arrays)
+            dispatcher.put(local_base + ".npz", path_without_ext + ".npz")
+
+
+def _path_exists(path: str, dispatcher: Dispatcher = None) -> bool:
+    if dispatcher is not None:
+        return dispatcher.path_exists(path)
+    return os.path.exists(path)
 
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
@@ -94,7 +119,8 @@ def run_sampling(model: Model,
                  number_of_samples: int = 10,
                  random_seed: int = 1,
                  dry_run: bool = False,
-                 overwrite: bool = False):
+                 overwrite: bool = False,
+                 dispatcher: Dispatcher = None):
     '''
     Core algorithm
     '''
@@ -113,14 +139,16 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # Create folder if it doesn't exist
-    create_empty_dir(absolute_sampling_directory)
+    create_empty_dir(absolute_sampling_directory, dispatcher=dispatcher)
 
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
 
     # Save parameter samples
-    np.savetxt(f'{absolute_sampling_directory}/sample_parameters.txt', parameter_samples, fmt="%s "*parameter_space.get_dimensionality())
+    samples_file = os.path.join(absolute_sampling_directory, 'sample_parameters.txt')
+    fmt = "%s "*parameter_space.get_dimensionality()
+    _save_np_array(samples_file, parameter_samples, fmt, dispatcher)
 
     # Set up model directories
     run_directory_base = f'{absolute_sampling_directory}/run_'
@@ -129,7 +157,7 @@ def run_sampling(model: Model,
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
         run_directory = f'{run_directory_base}{sample_index}'
-        create_empty_dir(run_directory)
+        create_empty_dir(run_directory, dispatcher=dispatcher)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
         model.populate_run_directory(run_directory, parameter_dict)
         run_directories.append(run_directory)
@@ -149,7 +177,8 @@ def run_sampling(model: Model,
             for sample_index in range(0, number_of_samples):
                 print("=======  Sample " + str(sample_index) + " ============")
                 run_directory = f'{run_directory_base}{sample_index}'
-                if "passed.txt" in os.listdir(run_directory) and not overwrite:
+                passed_file = os.path.join(run_directory, 'passed.txt')
+                if _path_exists(passed_file, dispatcher) and not overwrite:
                     print("Skipping (Sample has already run successfully)")
                     if model_has_qoi:
                         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
@@ -159,7 +188,7 @@ def run_sampling(model: Model,
                 else:
                     print("Running")
                     parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi)
+                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi, dispatcher=dispatcher)
                     if model_has_qoi:
                         run_times[sample_index], qoi = sample_result
                         if qoi is not None:
@@ -167,15 +196,16 @@ def run_sampling(model: Model,
                             qoi_samples.append(qoi)
                     else:
                         run_times[sample_index] = sample_result
+
                     sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-                    np.savez(f'{sample_stats_save_directory}/sampling_stats',
-                             run_times=run_times)
+                    _save_npz(f'{sample_stats_save_directory}/sampling_stats', dispatcher, run_times=run_times)
         else:
             #Identify samples to run
             samples_to_run = []
             for sample_index in range(0, number_of_samples):
                 run_directory = f'{run_directory_base}{sample_index}'
-                if "passed.txt" in os.listdir(run_directory) and not overwrite:
+                passed_file = os.path.join(run_directory, 'passed.txt')
+                if _path_exists(passed_file, dispatcher) and not overwrite:
                     print(f"Skipping sample {sample_index} (Sample has already run successfully)")
                     if model_has_qoi:
                         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
@@ -192,6 +222,7 @@ def run_sampling(model: Model,
                         model,
                         _create_parameter_dict(parameter_names, parameter_samples[sample_id]),
                         model_has_qoi,
+                        dispatcher,
                     ): sample_id for sample_id in samples_to_run
                 }
 
@@ -209,13 +240,14 @@ def run_sampling(model: Model,
                 else:
                     run_time = sample_result
                 run_times.append(run_time)
+
             sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-            np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
+            _save_npz(f'{sample_stats_save_directory}/sampling_stats', dispatcher, run_times=run_times)
 
         if model_has_qoi and qoi_samples:
             qoi_stats = _compute_qoi_statistics(qoi_samples)
             sample_stats_save_directory = f'{run_directory_base}0/../'
-            np.savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times, **qoi_stats)
+            _save_npz(f'{sample_stats_save_directory}/sampling_stats', dispatcher, run_times=run_times, **qoi_stats)
             print("QoI statistics:")
             print(f"  count: {qoi_stats['qoi_num_samples'][0]}")
             print(f"  mean: {qoi_stats['qoi_mean']}")
@@ -226,7 +258,7 @@ def run_sampling(model: Model,
     return run_directories
 
 
-def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False):
+def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Dispatcher = None):
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
     flag = model.run_model(run_directory, parameter_sample)
@@ -236,7 +268,8 @@ def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute
 
     if flag == 0:
         print(f"Sample {run_id} is complete, run time = {run_time}")
-        np.savetxt(os.path.join(run_directory, 'passed.txt'), np.array([0]), '%i')
+        passed_file = os.path.join(run_directory, 'passed.txt')
+        _save_np_array(passed_file, np.array([0]), '%i', dispatcher)
         if compute_qoi:
             qoi = _compute_qoi_for_sample(model, run_directory, parameter_sample)
     else:

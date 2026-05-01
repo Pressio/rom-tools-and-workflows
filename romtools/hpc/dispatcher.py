@@ -149,7 +149,7 @@ class Dispatcher:
             run_directory: The directory in which to execute the command on the remote host.
 
         Returns:
-            The SLURM job ID as a string.s
+            The SLURM job ID as a string
         """
         slurm_script_name = self.__generate_slurm_script(cmd, run_directory=run_directory)
         if run_directory:
@@ -243,6 +243,11 @@ class Dispatcher:
     # Public API
     # ------------------------------------------------------------------
 
+    def _resolve_remote_path(self, remote_path: str, preserve_relative: bool = False) -> str:
+        if os.path.isabs(remote_path) or preserve_relative:
+            return remote_path
+        return os.path.join(self.config.remote_root, remote_path)
+
     @require_connection
     def cancel_job(self, job_id: str) -> str:
         output = self.conn.run(f"scancel {job_id}")
@@ -251,12 +256,41 @@ class Dispatcher:
 
     @require_connection
     def create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
-        # TODO: Need better method here
-        if not os.path.isabs(remote_dir) and not base_dir:
-            remote_dir = f"{shlex.quote(self.config.remote_root)}/{remote_dir}"
+        remote_dir = self._resolve_remote_path(remote_dir, preserve_relative=base_dir)
 
         self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
         self.logger.log(f"Created remote directory: {remote_dir}")
+
+    @require_connection
+    def write_text(self, remote_path: str, content: str) -> None:
+        """
+        Write text content to a file on the remote host.
+        """
+        remote_path = self._resolve_remote_path(remote_path)
+        outer = "__HPCTOOLS_FILE_EOF__"
+        cmd = f"cat > {shlex.quote(remote_path)} << '{outer}'\n{content}\n{outer}\n"
+        res = self.conn.run(cmd)
+        if not res.ok:
+            raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
+        self.logger.log(f"Wrote remote file: {remote_path}")
+
+    @require_connection
+    def put(self, local_path: str, remote_path: str) -> None:
+        remote_path = self._resolve_remote_path(remote_path)
+        self.conn.put(local_path, remote_path)
+        self.logger.log(f"Uploaded local file {local_path} to {self.conn.host}:{remote_path}")
+
+    @require_connection
+    def get(self, remote_path: str, local_path: str) -> None:
+        remote_path = self._resolve_remote_path(remote_path)
+        self.conn.get(remote_path, local_path)
+        self.logger.log(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
+
+    @require_connection
+    def path_exists(self, remote_path: str) -> bool:
+        remote_path = self._resolve_remote_path(remote_path)
+        result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
+        return result.ok
 
     @require_connection
     def dispatch(self, cmd: str, run_directory: str = None) -> str:

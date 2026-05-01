@@ -1,7 +1,7 @@
 import numpy as np
 import romtools.workflows.parameter_spaces
 
-class BasicParameterSpace(romtools.workflows.parameter_spaces.ParameterSpace):
+class ExampleParameterSpace(romtools.workflows.parameter_spaces.ParameterSpace):
     def __init__(self):
         self._names = ['x', 'y']
         self._mins = [0.0, 0.0]
