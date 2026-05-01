@@ -37,7 +37,4 @@ class ExampleModel:
         content = f"{socket.gethostname()}\n{int(time.time())}\n"
         with open(path, "w") as f:
             f.write(f"{content}\n")
-        return
-
-    def compute_qoi(self, run_directory: str, parameter_sample: dict) -> np.ndarray:
-        pass
+        return 0

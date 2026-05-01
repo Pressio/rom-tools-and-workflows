@@ -9,7 +9,7 @@ from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
 if __name__ == '__main__':
 
     # This will be created both locally and off of remote_root
-    output_dir_name = "testing_272"
+    output_dir_name = "sample_00"
 
     logger = Logger()
     with Dispatcher(
@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
         model = ExampleModel(dispatcher)
         params = ExampleParameterSpace()
-        num_samples = 5
+        num_samples = 1
 
         romtools.workflows.run_sampling(
             model = model,
