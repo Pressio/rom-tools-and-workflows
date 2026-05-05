@@ -7,26 +7,26 @@ from your local environment.
 
 ### Installation
 
-Install the hpc dependencies with
+Install the romtools dependencies with
 
 ```bash
-pip install .[hpc]
+pip install -e .
 ```
 
 in the project root.
 
 ## Running
 
-Run the basic workflow with:
+Run the example workflow with:
 
 ```sh
-python romtools/hpc/basic/workflow.py -r <remote-host> -u <username> -a <account/wcid>
+python romtools/hpc/example/workflow.py -r <remote-host> -u <username> -a <account/wcid>
 ```
 
 See all available arguments with:
 
 ```sh
-python romtools/hpc/basic/workflow.py -h
+python romtools/hpc/example/workflow.py -h
 ```
 
 ### Using a YAML Input File

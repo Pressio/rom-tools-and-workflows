@@ -205,7 +205,7 @@ class Dispatcher:
         Transfer the self.sampling_directory from remote to local.
         """
         remote_sampling_dir = f"{self.config.remote_root}/{self.sampling_directory}"
-        self.logger.log(f"Transfering results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}", local=True)
+        self.logger.log(f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}", local=True)
 
         # Pack all results into an archive
         archive_name = f"{self.config.job_name}.tar.gz"
