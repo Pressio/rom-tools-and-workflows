@@ -18,8 +18,11 @@ def prepare_and_run(model, observations, run_directory, parameter_names, paramet
     assert isinstance(qoi,np.ndarray), "Error, compute_qoi must return an np.ndarray"
     error = observations - qoi
     run_time = time.time() - ts
-    
-    return qoi, error, run_time 
+    summary = None
+    if hasattr(model, "get_last_run_summary"):
+        summary = model.get_last_run_summary(run_directory, parameter_dict)
+
+    return qoi, error, run_time, summary
 
 def bound_samples(samples,samples_min,samples_max):
     if samples_max is not None: 
@@ -38,12 +41,14 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
         # Run at parameter mean
         run_directory = f'{run_directory_base}mean'
         parameter_means = np.mean(parameter_samples, axis=0)
-        mean_qoi, mean_error, run_time = prepare_and_run(model, observations, run_directory, parameter_names, parameter_means)
+        mean_qoi, mean_error, run_time, mean_summary = prepare_and_run(model, observations, run_directory, parameter_names, parameter_means)
         qois = np.zeros((mean_qoi.size, ensemble_size))
         errors = np.zeros((mean_qoi.size, ensemble_size))
+        sample_summaries = []
         for ensemble_member in range(ensemble_size):
             run_directory = f'{run_directory_base}{ensemble_member}'
-            qois[:, ensemble_member], errors[:, ensemble_member], run_time = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[ensemble_member])
+            qois[:, ensemble_member], errors[:, ensemble_member], run_time, summary = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[ensemble_member])
+            sample_summaries.append(summary)
     else:
         samples_to_run = list(range(ensemble_size))
         with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
@@ -56,16 +61,27 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
         
         for i, future in enumerate(these_futures):
             if i == 0:
-                mean_qoi, mean_error, run_time = future.result() 
+                mean_qoi, mean_error, run_time, mean_summary = future.result() 
                 qois = np.zeros((mean_qoi.size, ensemble_size))
                 errors = np.zeros((mean_qoi.size, ensemble_size))
+                sample_summaries = []
             else:
-                qois[:, i-1], errors[:, i-1], run_time = future.result()
+                qois[:, i-1], errors[:, i-1], run_time, summary = future.result()
+                sample_summaries.append(summary)
     
     results = {}
     results['qois'] = qois
     results['mean-qoi'] = mean_qoi
     results['errors'] = errors
+    results['sample_summaries'] = sample_summaries
+    results['mean_summary'] = mean_summary
+    if hasattr(model, "print_iteration_summary"):
+        model.print_iteration_summary(
+            run_directory_base,
+            parameter_names,
+            parameter_samples,
+            results,
+        )
     return results 
 
 
@@ -77,7 +93,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
 
     if evaluation_concurrency == 1:
         first_run_directory = f'{run_directory_base}0'
-        first_qoi, first_error, run_time = prepare_and_run(
+        first_qoi, first_error, run_time, first_summary = prepare_and_run(
             model,
             observations,
             first_run_directory,
@@ -88,15 +104,17 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
         errors = np.zeros((first_qoi.size, ensemble_size))
         qois[:, 0] = first_qoi
         errors[:, 0] = first_error
+        sample_summaries = [first_summary]
         for ensemble_member in range(1, ensemble_size):
             run_directory = f'{run_directory_base}{ensemble_member}'
-            qois[:, ensemble_member], errors[:, ensemble_member], run_time = prepare_and_run(
+            qois[:, ensemble_member], errors[:, ensemble_member], run_time, summary = prepare_and_run(
                 model,
                 observations,
                 run_directory,
                 parameter_names,
                 parameter_samples[ensemble_member],
             )
+            sample_summaries.append(summary)
     else:
         samples_to_run = list(range(ensemble_size))
         with concurrent.futures.ProcessPoolExecutor(
@@ -116,16 +134,26 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
             ]
             concurrent.futures.wait(these_futures)
 
-        first_qoi, first_error, run_time = these_futures[0].result()
+        first_qoi, first_error, run_time, first_summary = these_futures[0].result()
         qois = np.zeros((first_qoi.size, ensemble_size))
         errors = np.zeros((first_qoi.size, ensemble_size))
         qois[:, 0] = first_qoi
         errors[:, 0] = first_error
+        sample_summaries = [first_summary]
         for i, future in enumerate(these_futures[1:], start=1):
-            qois[:, i], errors[:, i], run_time = future.result()
+            qois[:, i], errors[:, i], run_time, summary = future.result()
+            sample_summaries.append(summary)
 
     results = {}
     results['qois'] = qois
     results['mean-qoi'] = np.mean(qois, axis=1)
     results['errors'] = errors
+    results['sample_summaries'] = sample_summaries
+    if hasattr(model, "print_iteration_summary"):
+        model.print_iteration_summary(
+            run_directory_base,
+            parameter_names,
+            parameter_samples,
+            results,
+        )
     return results
