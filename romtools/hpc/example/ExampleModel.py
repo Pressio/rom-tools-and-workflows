@@ -9,17 +9,14 @@ from romtools.hpc.dispatcher import Dispatcher
 
 class ExampleModel:
 
-    def __init__(self, dispatcher: Dispatcher = None) -> None:
-        self.dispatcher = dispatcher
-
-    def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
+    def populate_run_directory(self, run_directory: str, parameter_sample: dict, dispatcher: Dispatcher = None) -> None:
 
         # Run directory is on remote host if dispatcher exists
         pass
 
-    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
+    def run_model(self, run_directory: str, parameter_sample: dict, dispatcher: Dispatcher = None) -> int:
 
-        if self.dispatcher is not None:
+        if dispatcher is not None:
             file_name = "output-$(hostname).txt"
             cmd = textwrap.dedent(f"""\
                 srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 bash -c '
@@ -29,7 +26,7 @@ class ExampleModel:
                 EOF
                 '
             """)
-            self.dispatcher.dispatch(cmd, run_directory=run_directory)
+            dispatcher.dispatch(cmd, run_directory=run_directory)
             return 0
 
         file_name = f"output-{socket.gethostname()}.txt"

@@ -139,7 +139,7 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # Create folder if it doesn't exist
-    create_empty_dir(absolute_sampling_directory, dispatcher=dispatcher)
+    create_empty_dir(absolute_sampling_directory, dispatcher)
 
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
@@ -157,9 +157,9 @@ def run_sampling(model: Model,
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
     for sample_index in range(starting_sample_index, end_sample_index):
         run_directory = f'{run_directory_base}{sample_index}'
-        create_empty_dir(run_directory, dispatcher=dispatcher)
+        create_empty_dir(run_directory, dispatcher)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
-        model.populate_run_directory(run_directory, parameter_dict)
+        model.populate_run_directory(run_directory, parameter_dict, dispatcher)
         run_directories.append(run_directory)
 
     # Print MPI warnings
@@ -188,7 +188,7 @@ def run_sampling(model: Model,
                 else:
                     print("Running")
                     parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi, dispatcher=dispatcher)
+                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi, dispatcher)
                     if model_has_qoi:
                         run_times[sample_index], qoi = sample_result
                         if qoi is not None:
@@ -261,7 +261,7 @@ def run_sampling(model: Model,
 def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Dispatcher = None):
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
-    flag = model.run_model(run_directory, parameter_sample)
+    flag = model.run_model(run_directory, parameter_sample, dispatcher)
     tf = time.time()
     run_time = tf - ts
     qoi = None

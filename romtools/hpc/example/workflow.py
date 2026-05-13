@@ -17,7 +17,7 @@ if __name__ == '__main__':
         sampling_directory=output_dir_name,
     ) as dispatcher:
 
-        model = ExampleModel(dispatcher)
+        model = ExampleModel()
         params = ExampleParameterSpace()
         num_samples = 1
 
