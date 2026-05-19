@@ -3,8 +3,6 @@ import time
 import socket
 import textwrap
 
-import numpy as np
-
 from romtools.hpc.dispatcher import Dispatcher
 
 class ExampleModel:
