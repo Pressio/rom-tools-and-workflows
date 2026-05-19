@@ -35,6 +35,6 @@ def require_connection(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if self.conn is None:
-            raise RuntimeError("No connection established. Call __connect_to_remote() first.")
+            raise RuntimeError(f"No connection established. Call __connect_to_remote() before using {func.__name__}.")
         return func(self, *args, **kwargs)
     return wrapper

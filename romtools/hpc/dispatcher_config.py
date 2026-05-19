@@ -104,10 +104,7 @@ class DispatcherConfig:
         if not isinstance(data, dict):
             raise ValueError("YAML config must be a mapping/dictionary at the top level.")
 
-        # allow either nested or flat structure
-        section_map = { k: v.keys() for k, v in SCHEMA.items() }
-
-        # If any known section exists, treat as nested; otherwise treat as flat.
+        section_map = {k: v.keys() for k, v in SCHEMA.items()}
         is_nested = any(k in data for k in section_map.keys())
 
         def apply_kv(key: str, value):
@@ -150,10 +147,10 @@ class DispatcherConfig:
             for arg_name, arg in items.items():
                 new_group.add_argument(arg["cli"], f"--{arg_name}", type=arg["type"], help=arg["help"])
 
-        args = parser.parse_args()
+        args, _ = parser.parse_known_args()
         for name, value in vars(args).items():
             if name == "input":
-                continue  # already handled in __parse_yaml
+                continue
             if hasattr(self, name):
                 setattr(self, name, value)
             else:

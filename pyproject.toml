@@ -12,6 +12,8 @@ dependencies = [
     'numpy',
     'scipy',
     'matplotlib',
+    'argparse',
+    'pyyaml',
 ]
 
 [tool.setuptools.dynamic]
@@ -24,10 +26,6 @@ where = ["."]
 [project.optional-dependencies]
 WithMPI = ['mpi4py>3.1.4']
 WithH5py = ['h5py']
-hpc = [
-    'argparse',
-    'pyyaml',
-]
 docs = [
     'docutils',
     'sphinx',
