@@ -1,8 +1,13 @@
+import io
 import os
 import re
 import time
 import shlex
+import tempfile
+import posixpath
 from typing import Optional
+
+import numpy as np
 
 from romtools.hpc.dispatcher_config import DispatcherConfig
 from romtools.hpc.logger import Logger
@@ -20,6 +25,7 @@ class Dispatcher:
     Arguments:
         logger: An instance of the Logger class for logging
         sampling_directory: An optional string for your local output directory
+        local_only: If True, do not attempt to establish an SSH connection or run any remote commands.
 
     The basic command is therefore:
         ssh user@remote -p port
@@ -27,7 +33,7 @@ class Dispatcher:
     Ensure that this command works without a password prompt (e.g., by setting up SSH keys)
     before using this tool.
     """
-    def __init__(self, logger: Logger, sampling_directory: str = "hpctools"):
+    def __init__(self, logger: Logger, sampling_directory: str = "hpctools", local_only: bool = False):
         # Core members
         self.logger = logger
         self.conn : Optional[Connection] = None
@@ -37,8 +43,14 @@ class Dispatcher:
         # Maintain list of current jobs
         self.current_jobs = []
 
-        # Initialization
-        self.__connect_to_remote()
+        # Establish connection (if desired)
+        if not local_only:
+            if self.config.remote and self.config.user:
+                self.__connect_to_remote()
+            else:
+                self.logger.log("Remote host or user not specified. Running in local-only mode.", local=True)
+
+        # Initialize directories
         self.__set_up_directories()
 
     # ------------------------------------------------------------------
@@ -46,9 +58,10 @@ class Dispatcher:
     # ------------------------------------------------------------------
 
     def __connect_to_remote(self) -> None:
-        assert self.config.remote is not None, "Remote host must be specified (use --remote argument on command line)."
-        assert self.config.user is not None, "Username must be specified (use --user argument on command line)."
-
+        """
+        Attempts to establish an SSH connection to the remote host using the provided configuration.
+        Exits if the connection fails.
+        """
         try:
             self.conn = Connection(host=self.config.remote, user=self.config.user, port=self.config.port)
             self.logger.set_hostname(self.conn.host)
@@ -64,19 +77,28 @@ class Dispatcher:
 
         # Then create the remote output directory
         if self.conn:
-            self.create_remote_directory(
+            self._create_remote_directory(
                 os.path.join(self.config.remote_root, self.sampling_directory),
                 base_dir=True
             )
 
     # ------------------------------------------------------------------
+    # Utility methods
+    # ------------------------------------------------------------------
+
+    def _resolve_remote_path(self, remote_path: str, preserve_relative: bool = False) -> str:
+        if os.path.isabs(remote_path) or preserve_relative:
+            return remote_path
+        return os.path.join(self.config.remote_root, remote_path)
+
+    # ------------------------------------------------------------------
     # Resource management
     # ------------------------------------------------------------------
 
+    @require_connection
     def close(self):
-        if self.conn:
-            self.conn.close()
-            self.logger.log("Connection closed.", local=True)
+        self.conn.close()
+        self.logger.log("Connection closed.", local=True)
 
     def __enter__(self):
         return self
@@ -240,29 +262,11 @@ class Dispatcher:
         self.logger.debug(f"Cleaned up archives.")
 
     # ------------------------------------------------------------------
-    # Public API
+    # I/O methods
     # ------------------------------------------------------------------
 
-    def _resolve_remote_path(self, remote_path: str, preserve_relative: bool = False) -> str:
-        if os.path.isabs(remote_path) or preserve_relative:
-            return remote_path
-        return os.path.join(self.config.remote_root, remote_path)
-
     @require_connection
-    def cancel_job(self, job_id: str) -> str:
-        output = self.conn.run(f"scancel {job_id}")
-        self.logger.log(f"Cancelled SLURM job {job_id}.")
-        return output
-
-    @require_connection
-    def create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
-        remote_dir = self._resolve_remote_path(remote_dir, preserve_relative=base_dir)
-
-        self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
-        self.logger.log(f"Created remote directory: {remote_dir}")
-
-    @require_connection
-    def write_text(self, remote_path: str, content: str) -> None:
+    def _write_text(self, remote_path: str, content: str) -> None:
         """
         Write text content to a file on the remote host.
         """
@@ -273,6 +277,22 @@ class Dispatcher:
         if not res.ok:
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
         self.logger.log(f"Wrote remote file: {remote_path}")
+
+    @require_connection
+    def _create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
+        remote_dir = self._resolve_remote_path(remote_dir, preserve_relative=base_dir)
+        self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
+        self.logger.log(f"Created remote directory: {remote_dir}")
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    @require_connection
+    def cancel_job(self, job_id: str) -> str:
+        output = self.conn.run(f"scancel {job_id}")
+        self.logger.log(f"Cancelled SLURM job {job_id}.")
+        return output
 
     @require_connection
     def put(self, local_path: str, remote_path: str) -> None:
@@ -286,14 +306,47 @@ class Dispatcher:
         self.conn.get(remote_path, local_path)
         self.logger.log(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
 
-    @require_connection
-    def path_exists(self, remote_path: str) -> bool:
-        remote_path = self._resolve_remote_path(remote_path)
-        result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
-        return result.ok
+    def path_exists(self, path: str) -> bool:
+        if self.conn:
+            remote_path = self._resolve_remote_path(path)
+            result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
+            return result.ok
+        return os.path.exists(path)
+
+    def create_empty_dir(self, dir_name: str):
+        if self.conn:
+            self._create_remote_directory(dir_name)
+        else:
+            os.makedirs(dir_name, exist_ok=True)
 
     @require_connection
     def dispatch(self, cmd: str, run_directory: str = None) -> str:
         job_id = self.__submit_slurm_job(cmd, run_directory)
         self.__wait_for_job(job_id)
         self.__collect_results()
+
+    def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
+        if self.conn:
+            buffer = io.StringIO()
+            np.savetxt(buffer, arr, fmt=fmt)
+            self._write_text(path, buffer.getvalue())
+        else:
+            np.savetxt(path, arr, fmt=fmt)
+        self.logger.log(f"Saved array to path {path}", local=(not self.conn))
+
+    def np_savez(self, path: str, **arrays) -> None:
+        """
+        Write multiple arrays to a .npz file.
+            - If a connection exists, the .npz file is first written to a local temp directory and then uploaded to the remote host.
+            - If no connection exists, the .npz file is written directly to the specified path.
+        """
+        if self.conn:
+            remote_dir = posixpath.dirname(path) or "."
+            assert self.path_exists(remote_dir)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                local_base = os.path.join(tmpdir, os.path.basename(path))
+                np.savez(local_base, **arrays)
+                self.put(local_base + ".npz", path + ".npz")
+        else:
+            np.savez(path, **arrays)
+        self.logger.log(f"Saved arrays to path {path}", local=(not self.conn))
