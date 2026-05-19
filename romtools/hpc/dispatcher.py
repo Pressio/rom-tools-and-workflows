@@ -289,12 +289,6 @@ class Dispatcher:
     # ------------------------------------------------------------------
 
     @require_connection
-    def cancel_job(self, job_id: str) -> str:
-        output = self.conn.run(f"scancel {job_id}")
-        self.logger.log(f"Cancelled SLURM job {job_id}.")
-        return output
-
-    @require_connection
     def put(self, local_path: str, remote_path: str) -> None:
         remote_path = self._resolve_remote_path(remote_path)
         self.conn.put(local_path, remote_path)
