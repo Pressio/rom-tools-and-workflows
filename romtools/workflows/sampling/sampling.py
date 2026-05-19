@@ -119,7 +119,7 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # Create folder if it doesn't exist
-    create_empty_dir(absolute_sampling_directory, dispatcher)
+    dispatcher.create_empty_dir(absolute_sampling_directory)
 
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
