@@ -33,9 +33,9 @@ class Dispatcher:
     Ensure that this command works without a password prompt (e.g., by setting up SSH keys)
     before using this tool.
     """
-    def __init__(self, logger: Logger, sampling_directory: str = "hpctools", local_only: bool = False):
+    def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools", local_only: bool = False):
         # Core members
-        self.logger = logger
+        self.logger = logger if logger is not None else Logger()
         self.conn : Optional[Connection] = None
         self.sampling_directory = os.path.basename(sampling_directory)
         self.config = DispatcherConfig(self.logger)
@@ -48,7 +48,7 @@ class Dispatcher:
             if self.config.remote and self.config.user:
                 self.__connect_to_remote()
             else:
-                self.logger.log("Remote host or user not specified. Running in local-only mode.", local=True)
+                self.logger.log("Remote host or user not specified (use -h for options). Running locally.", local=True)
 
         # Initialize directories
         self.__set_up_directories()
@@ -341,12 +341,25 @@ class Dispatcher:
             - If no connection exists, the .npz file is written directly to the specified path.
         """
         if self.conn:
-            remote_dir = posixpath.dirname(path) or "."
+            remote_path = posixpath.normpath(path)
+            if not remote_path.endswith(".npz"):
+                remote_path += ".npz"
+
+            remote_dir = posixpath.dirname(remote_path) or "."
             assert self.path_exists(remote_dir)
+
             with tempfile.TemporaryDirectory() as tmpdir:
-                local_base = os.path.join(tmpdir, os.path.basename(path))
-                np.savez(local_base, **arrays)
-                self.put(local_base + ".npz", path + ".npz")
+                local_path = os.path.join(tmpdir, posixpath.basename(remote_path))
+                np.savez(local_path, **arrays)
+                self.put(local_path, remote_path)
+
+            final_path = remote_path
         else:
-            np.savez(path, **arrays)
-        self.logger.log(f"Saved arrays to path {path}", local=(not self.conn))
+            local_path = os.path.normpath(path)
+            if not local_path.endswith(".npz"):
+                local_path += ".npz"
+
+            np.savez(local_path, **arrays)
+            final_path = local_path
+
+        self.logger.log(f"Saved arrays to path {final_path}", local=(not self.conn))
