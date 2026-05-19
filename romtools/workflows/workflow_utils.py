@@ -3,10 +3,8 @@ import os
 import shutil
 import subprocess
 
-from romtools.hpc.dispatcher import Dispatcher
 
-
-def create_empty_dir(dir_name: str, dispatcher: Dispatcher = None):
+def create_empty_dir(dir_name: str):
     '''
     Create empty directory
     '''
