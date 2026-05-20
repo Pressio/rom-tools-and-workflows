@@ -1,7 +1,7 @@
 import romtools.workflows
 
 from romtools.hpc.logger import Logger
-from romtools.hpc.dispatcher import Dispatcher
+from romtools.hpc.remote_dispatcher import RemoteDispatcher
 
 from romtools.hpc.example.ExampleModel import ExampleModel
 from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     output_dir_name = "sample_00"
 
     logger = Logger()
-    with Dispatcher(
+    with RemoteDispatcher(
         logger,
         sampling_directory=output_dir_name,
     ) as dispatcher:
