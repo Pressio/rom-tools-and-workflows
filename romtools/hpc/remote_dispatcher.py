@@ -4,14 +4,18 @@ import re
 import time
 import shlex
 import tempfile
-import posixpath
 
 import numpy as np
+import posixpath as ppath
+from typing import Optional
 
-from romtools.hpc.dispatcher_base import DispatcherBase
-from romtools.hpc.logger import Logger
+from romtools.hpc.util.logger import Logger
+from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
-from romtools.hpc.scheduler import create_slurm_script
+from romtools.hpc.configuration import Configuration
+
+from romtools.hpc.util.slurm import create_slurm_script
+from romtools.hpc.util.decorators import require_connection
 
 ## ----------------------------------------------------------------------------
 
@@ -23,31 +27,31 @@ class RemoteDispatcher(DispatcherBase):
     Arguments:
         logger: An instance of the Logger class for logging
         sampling_directory: An optional string for your local output directory
-        local_only: If True, do not attempt to establish an SSH connection or run any remote commands.
 
     The basic command is therefore:
         ssh user@remote -p port
-
-    Ensure that this command works without a password prompt (e.g., by setting up SSH keys)
-    before using this tool.
     """
-    def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools"):
+    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
         # Core members
         super().__init__(logger, sampling_directory)
+        self.conn : Optional[Connection] = None
+        self.collector : Optional[Collector] = None
+        self.sampling_directory = os.path.basename(sampling_directory)
 
-        # Maintain list of current jobs
-        self.current_jobs = []
+        # Parse configuration
+        self.config = Configuration()
+        self.logger = logger if logger is not None else Logger(self.config.debug)
 
         if not self.config.remote or not self.config.user:
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
 
         # Establish connection
         self.__connect_to_remote()
-
-        # Then create the remote output directory
-        self.__create_remote_directory(
-            os.path.join(self.config.remote_root, self.sampling_directory),
-            base_dir=True
+        self.collector = Collector(
+            self.conn,
+            self.config,
+            sampling_directory=self.sampling_directory,
+            logger=self.logger,
         )
 
     # ------------------------------------------------------------------
@@ -72,9 +76,9 @@ class RemoteDispatcher(DispatcherBase):
     # ------------------------------------------------------------------
 
     def __resolve_remote_path(self, remote_path: str, preserve_relative: bool = False) -> str:
-        if os.path.isabs(remote_path) or preserve_relative:
+        if ppath.isabs(remote_path) or preserve_relative:
             return remote_path
-        return os.path.join(self.config.remote_root, remote_path)
+        return ppath.join(self.config.remote_root, remote_path)
 
     # ------------------------------------------------------------------
     # Resource management
@@ -123,8 +127,12 @@ class RemoteDispatcher(DispatcherBase):
         self.logger.debug(f"Generated SLURM script:\n{script_content}", local=True)
 
         remote_script_name = f"{self.config.job_name}_slurm.sh"
-        script_base = f"{shlex.quote(self.config.remote_root)}/{run_directory}" if run_directory else f"{shlex.quote(self.config.remote_root)}/{self.sampling_directory}"
-        remote_script_path = f"{script_base}/{self.config.job_name}_slurm.sh"
+        script_base = (
+            ppath.join(self.config.remote_root, run_directory)
+            if run_directory
+            else ppath.join(self.config.remote_root, self.sampling_directory)
+        )
+        remote_script_path = ppath.join(script_base, remote_script_name)
 
         # Write the SLURM script content to the remote file using a heredoc
         outer = "__HPCTOOLS_SLURM_EOF__"
@@ -151,10 +159,15 @@ class RemoteDispatcher(DispatcherBase):
         """
         slurm_script_name = self.__generate_slurm_script(cmd, run_directory=run_directory)
         if run_directory:
-            full_run_dir = f"{shlex.quote(self.config.remote_root)}/{run_directory}"
-            result = self.conn.run(f"cd {full_run_dir} && sbatch {shlex.quote(slurm_script_name)}")
+            full_run_dir = ppath.join(self.config.remote_root, run_directory)
+            result = self.conn.run(
+                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
+            )
         else:
-            result = self.conn.run(f"cd {shlex.quote(self.sampling_directory)} && sbatch {shlex.quote(slurm_script_name)}")
+            full_run_dir = ppath.join(self.config.remote_root, self.sampling_directory)
+            result = self.conn.run(
+                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
+            )
 
         if not result.ok:
             raise RuntimeError(f"sbatch failed:\n{result.stderr}")
@@ -164,8 +177,6 @@ class RemoteDispatcher(DispatcherBase):
         if not match:
             raise RuntimeError(f"Could not parse job ID from sbatch output: {result.stdout!r}")
         job_id = match.group(1)
-
-        self.current_jobs.append(job_id)
 
         self.logger.log(f"Submitted SLURM job {job_id}")
         return job_id
@@ -182,58 +193,19 @@ class RemoteDispatcher(DispatcherBase):
             job_id:        The SLURM job ID to monitor.
             poll_interval: Seconds between squeue polls (default: 30).
         """
-        self.logger.log(f"Waiting for SLURM job {job_id} to complete (polling every {self.config.poll_interval}s)...")
-        while True:
-            result = self.conn.run(f"squeue -j {job_id} -h")
-            if not result.stdout.strip():
-                # Job no longer appears in the queue — it has finished.
-                break
-            self.logger.debug(f"Job {job_id} still running...")
-            time.sleep(self.config.poll_interval)
-        self.logger.log(f"Job {job_id} completed.")
-
-    # ------------------------------------------------------------------
-    # Result collection
-    # ------------------------------------------------------------------
-
-    def __collect_results(self) -> None:
-        """
-        Transfer the self.sampling_directory from remote to local.
-        """
-        remote_sampling_dir = f"{self.config.remote_root}/{self.sampling_directory}"
-        self.logger.log(f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}", local=True)
-
-        # Pack all results into an archive
-        archive_name = f"{self.config.job_name}.tar.gz"
-        remote_archive_path = f"{self.config.remote_root}/{archive_name}"
-        pack_cmd = (
-            f"tar -czf {shlex.quote(remote_archive_path)} "
-            f"-C {shlex.quote(self.config.remote_root)}/{self.sampling_directory} ."
-        )
-        pack_result = self.conn.run(pack_cmd)
-        if not pack_result.ok:
-            raise RuntimeError(f"Remote result archive failed: {pack_result.stderr}")
-
-        self.logger.log(f"Packed remote results into archive: {remote_archive_path}")
-
-        # Copy remote archive to local
-        self.conn.get(remote_archive_path, archive_name)
-
-        self.logger.log(f"Copied remote archive to local: {archive_name}")
-
-        # Unzip local archive into self.sampling_directory
-        os.makedirs(self.sampling_directory, exist_ok=True)
-        unpack_cmd = f"tar -xzf {shlex.quote(archive_name)} -C {shlex.quote(self.sampling_directory)}"
-        result = os.system(unpack_cmd)
-        if result != 0:
-            raise RuntimeError(f"Failed to unpack local archive: {archive_name}")
-
-        self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
-
-        # Clean up both archives
-        os.remove(archive_name)
-        self.conn.run(f"rm {shlex.quote(remote_archive_path)}")
-        self.logger.debug(f"Cleaned up archives.")
+        self.logger.log(f"Polling SLURM job {job_id} every {self.config.poll_interval}s (Ctrl+C to cancel job)...")
+        try:
+            while True:
+                result = self.conn.run(f"squeue -j {job_id} -h")
+                if not result.stdout.strip():
+                    # Job no longer appears in the queue — it has finished.
+                    break
+                self.logger.debug(f"Job {job_id} still running...")
+                time.sleep(self.config.poll_interval)
+            self.logger.log(f"Job {job_id} completed.")
+        except KeyboardInterrupt:
+            self.__cancel_job(job_id)
+            raise
 
     # ------------------------------------------------------------------
     # I/O methods
@@ -251,9 +223,12 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
         self.logger.log(f"Wrote remote file: {remote_path}")
 
+    @require_connection
     def __create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
         remote_dir = self.__resolve_remote_path(remote_dir, preserve_relative=base_dir)
-        self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
+        result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
+        if not result.ok:
+            raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
         self.logger.log(f"Created remote directory: {remote_dir}")
 
     # ------------------------------------------------------------------
@@ -281,7 +256,8 @@ class RemoteDispatcher(DispatcherBase):
     def dispatch(self, cmd: str, run_directory: str = None) -> str:
         job_id = self.__submit_slurm_job(cmd, run_directory)
         self.__wait_for_job(job_id)
-        self.__collect_results()
+        self.collector.collect_results()
+        return job_id
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         buffer = io.StringIO()
@@ -292,19 +268,21 @@ class RemoteDispatcher(DispatcherBase):
     def np_savez(self, path: str, **arrays) -> None:
         """
         Write multiple arrays to a .npz file.
-        The .npz file is first written to a local temp directory and then uploaded to the remote host.
+            - If a connection exists, the .npz file is first written to a local temp directory and then uploaded to the remote host.
+            - If no connection exists, the .npz file is written directly to the specified path.
         """
-        remote_path = posixpath.normpath(path)
+        remote_path = ppath.normpath(path)
         if not remote_path.endswith(".npz"):
             remote_path += ".npz"
 
-        remote_dir = posixpath.dirname(remote_path) or "."
+        remote_dir = ppath.dirname(remote_path) or "."
         assert self.path_exists(remote_dir)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            local_path = os.path.join(tmpdir, posixpath.basename(remote_path))
+            local_path = os.path.join(tmpdir, ppath.basename(remote_path))
             np.savez(local_path, **arrays)
             self.put(local_path, remote_path)
 
         final_path = remote_path
-        self.logger.log(f"Saved arrays to path {final_path}", local=False)
+
+        self.logger.log(f"Saved arrays to path {final_path}", local=(not self.conn))

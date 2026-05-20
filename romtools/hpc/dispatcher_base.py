@@ -12,10 +12,6 @@ class DispatcherBase:
         self.sampling_directory = sampling_directory
         self.config = DispatcherConfig(self.logger)
 
-        # Create the local output directory
-        os.makedirs(self.sampling_directory, exist_ok=True)
-        self.logger.log(f"Local sampling directory: {self.sampling_directory}", local=True)
-
     # ------------------------------------------------------------------
     # Resource management
     # ------------------------------------------------------------------

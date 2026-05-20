@@ -1,7 +1,6 @@
-import argparse
 import os
-
-from romtools.hpc.logger import Logger
+import argparse
+import warnings
 
 try:
     import yaml
@@ -16,6 +15,7 @@ SCHEMA = {
     },
     "workflow": {
         "remote_root": {"cli": "-R", "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
+        "collect":     {"cli": "-o", "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, the entire run directory is retrieved."},
     },
     "slurm": {
         "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
@@ -27,22 +27,58 @@ SCHEMA = {
         "poll_interval":  {"cli": "-P", "type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
         "account":        {"cli": "-a", "type": str, "help": "The account WCID to charge for the SLURM job."},
     },
+    "output": {
+        "debug": {"cli": "-d", "type": bool, "help": "Whether to enable debug logging."},
+    }
 }
 
-class DispatcherConfig:
+def _normalize_collect(value):
     """
-    Handles parsing a yaml file and any supplied commandline args.
+    Normalize collect specifications into a list of strings.
+
+    Accepted forms:
+      - None
+      - "foo.txt,*.log,results/"
+      - ["foo.txt", "*.log", "results/"]
+
+    Returns:
+      - None if unspecified
+      - list[str] if specified
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        items = [item.strip() for item in value.split(",") if item.strip()]
+        return items or None
+
+    if isinstance(value, list):
+        items = []
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"Invalid collect entry {item!r}; all entries must be strings."
+                )
+            item = item.strip()
+            if item:
+                items.append(item)
+        return items or None
+
+    raise ValueError(
+        f"Invalid collect value {value!r}; expected a string or list of strings."
+    )
+
+
+class Configuration:
+    """
+    Handles parsing a yaml file and any supplied command-line args.
 
     Precedence:
       1. CLI args (overwrite YAML)
       2. YAML file values (if provided)
       3. class defaults
     """
-    def __init__(self, logger: Logger):
-        # Core members
-        self.logger = logger
-        self.output_dir = "output"
-
+    def __init__(self):
         # SSH configuration
         self.remote = None
         self.user = None
@@ -61,6 +97,13 @@ class DispatcherConfig:
         # Workflow configuration
         self.remote_root = "hpctools_campaigns"
 
+        # Output and logging configuration
+        self.debug = False
+
+        # Optional list of files/directories/globs to retrieve from the remote run directory.
+        # If None, the entire run directory is retrieved.
+        self.collect = None
+
         # Parse YAML first, then CLI overwrites YAML
         self.__parse_yaml()
         self.__parse_args()
@@ -74,7 +117,7 @@ class DispatcherConfig:
 
         YAML may be either:
           - a flat mapping (keys match attribute names), or
-          - a nested mapping with sections: core, ssh, slurm, workflow
+          - a nested mapping with sections: ssh, slurm, workflow
         """
         pre = argparse.ArgumentParser(add_help=False)
         pre.add_argument(
@@ -108,23 +151,25 @@ class DispatcherConfig:
         is_nested = any(k in data for k in section_map.keys())
 
         def apply_kv(key: str, value):
-            if hasattr(self, key):
+            if key == "collect":
+                self.collect = _normalize_collect(value)
+            elif hasattr(self, key):
                 setattr(self, key, value)
             else:
-                self.logger.log(f"Warning: Unrecognized YAML key '{key}' will be ignored.", local=True)
+                warnings.warn(f"Warning: Unrecognized YAML key '{key}' will be ignored.", UserWarning)
 
         if is_nested:
-            for section, keys in section_map.items():
+            for section, _ in section_map.items():
                 sec = data.get(section, {})
                 if sec is None:
                     continue
                 if not isinstance(sec, dict):
-                    self.logger.log(f"Warning: YAML section '{section}' should be a mapping; ignoring.", local=True)
+                    warnings.warn(f"Warning: YAML section '{section}' should be a mapping; ignoring.", UserWarning)
                     continue
                 for k, v in sec.items():
                     apply_kv(k, v)
 
-            # Also allow extra top-level flat keys alongside sections (optional)
+            # Also allow extra top-level flat keys alongside sections
             for k, v in data.items():
                 if k in section_map:
                     continue
@@ -135,7 +180,7 @@ class DispatcherConfig:
 
     def __parse_args(self) -> None:
         parser = argparse.ArgumentParser(
-            description="Dispatch work to a remote host.",
+            description="Configure the HPC dispatcher.",
             argument_default=argparse.SUPPRESS,
         )
 
@@ -151,7 +196,9 @@ class DispatcherConfig:
         for name, value in vars(args).items():
             if name == "input":
                 continue
-            if hasattr(self, name):
+            if name == "collect":
+                self.collect = _normalize_collect(value)
+            elif hasattr(self, name):
                 setattr(self, name, value)
             else:
-                self.logger.log(f"Warning: Unrecognized argument '{name}' will be ignored.", local=True)
+                warnings.warn(f"Warning: Unrecognized argument '{name}' will be ignored.", UserWarning)

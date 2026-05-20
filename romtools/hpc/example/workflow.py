@@ -1,6 +1,6 @@
 import romtools.workflows
 
-from romtools.hpc.logger import Logger
+from romtools.hpc.util.logger import Logger
 from romtools.hpc.remote_dispatcher import RemoteDispatcher
 
 from romtools.hpc.example.ExampleModel import ExampleModel
@@ -9,11 +9,9 @@ from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
 if __name__ == '__main__':
 
     # This will be created both locally and off of remote_root
-    output_dir_name = "sample_00"
+    output_dir_name = "sample_01"
 
-    logger = Logger()
     with RemoteDispatcher(
-        logger,
         sampling_directory=output_dir_name,
     ) as dispatcher:
 

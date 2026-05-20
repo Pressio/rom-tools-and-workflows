@@ -1,6 +1,6 @@
 import romtools.workflows
 
-from romtools.hpc.logger import Logger
+from romtools.hpc.util.logger import Logger
 
 from romtools.hpc.example.ExampleModelNoConn import ExampleModelNoConn
 from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
