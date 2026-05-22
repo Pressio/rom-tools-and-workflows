@@ -92,10 +92,22 @@ class Collector:
 
         Wildcard patterns are expanded remotely relative to remote_sampling_dir.
         Unmatched wildcard patterns are ignored with a warning.
+
+        Returns True if collection was performed, False if collection was skipped.
         """
         collect_patterns = self.__validate_collect_patterns()
 
-        if collect_patterns is None:
+        # Collect nothing
+        if collect_patterns is None or len(collect_patterns) == 0:
+            self.logger.log(
+                "SKIPPING RESULTS COLLECTION: "
+                "Specify files, directories, or glob patterns to bring back to your "
+                "local host by setting the 'collect' field in your configuration.")
+            return False
+
+        # Collect everything
+        collect_all = ["*", "all", "everything"]
+        if any(p.lower() in collect_all for p in collect_patterns):
             pack_cmd = (
                 f"tar -czf {shlex.quote(remote_archive_path)} "
                 f"-C {shlex.quote(remote_sampling_dir)} ."
@@ -105,8 +117,9 @@ class Collector:
                 raise RuntimeError(f"Remote result archive failed: {pack_result.stderr}")
 
             self.logger.log(f"Packed remote results into archive: {remote_archive_path}")
-            return
+            return True
 
+        # Collect the specified files/directories/patterns
         resolved_paths = []
         warnings = []
 
@@ -166,6 +179,8 @@ class Collector:
 
         self.logger.log(f"Packed remote results into archive: {remote_archive_path}")
 
+        return True
+
     @staticmethod
     def __safe_extract_tar(archive_path: str, target_dir: str) -> None:
         target_abs = os.path.abspath(target_dir)
@@ -200,7 +215,10 @@ class Collector:
         archive_name = f"{self.config.job_name}.tar.gz"
         remote_archive_path = ppath.join(self.config.remote_root, archive_name)
 
-        self.__pack_remote_results(remote_sampling_dir, remote_archive_path)
+        do_collection = self.__pack_remote_results(remote_sampling_dir, remote_archive_path)
+
+        if not do_collection:
+            return
 
         # Copy remote archive to local
         self.conn.get(remote_archive_path, archive_name)

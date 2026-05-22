@@ -275,8 +275,25 @@ class RemoteDispatcher(DispatcherBase):
         if not remote_path.endswith(".npz"):
             remote_path += ".npz"
 
+<<<<<<< HEAD:romtools/hpc/remote_dispatcher.py
         remote_dir = ppath.dirname(remote_path) or "."
         assert self.path_exists(remote_dir)
+=======
+            remote_dir = ppath.dirname(remote_path) or "."
+            assert self.path_exists(remote_dir)
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                local_path = os.path.join(tmpdir, ppath.basename(remote_path))
+                np.savez(local_path, **arrays)
+                self.put(local_path, remote_path)
+
+            final_path = remote_path
+
+        else:
+            local_path = os.path.normpath(path)
+            if not local_path.endswith(".npz"):
+                local_path += ".npz"
+>>>>>>> 1bfa517 (#274: do not collect results unless specified):romtools/hpc/dispatcher.py
 
         with tempfile.TemporaryDirectory() as tmpdir:
             local_path = os.path.join(tmpdir, ppath.basename(remote_path))

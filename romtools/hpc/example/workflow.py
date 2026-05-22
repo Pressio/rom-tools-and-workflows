@@ -1,6 +1,5 @@
 import romtools.workflows
 
-from romtools.hpc.util.logger import Logger
 from romtools.hpc.remote_dispatcher import RemoteDispatcher
 
 from romtools.hpc.example.ExampleModel import ExampleModel
@@ -9,11 +8,9 @@ from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
 if __name__ == '__main__':
 
     # This will be created both locally and off of remote_root
-    output_dir_name = "sample_01"
+    sampling_dir = "sample_all_collect"
 
-    with RemoteDispatcher(
-        sampling_directory=output_dir_name,
-    ) as dispatcher:
+    with RemoteDispatcher(sampling_dir) as dispatcher:
 
         model = ExampleModel()
         params = ExampleParameterSpace()
@@ -22,7 +19,7 @@ if __name__ == '__main__':
         romtools.workflows.run_sampling(
             model = model,
             parameter_space = params,
-            absolute_sampling_directory = output_dir_name,
+            absolute_sampling_directory = sampling_dir,
             evaluation_concurrency = 1,
             number_of_samples = num_samples,
             random_seed = 1,
