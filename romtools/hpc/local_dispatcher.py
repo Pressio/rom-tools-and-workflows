@@ -1,0 +1,44 @@
+
+
+import numpy as np
+import os
+
+from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.logger import Logger
+
+class LocalDispatcher(DispatcherBase):
+    """
+    LocalDispatcher is a subclass of DispatcherBase that implements the core functionality
+    for dispatching ROM workflows on the local machine. It overrides methods to set up
+    directories and execute commands without SSH, making it suitable for local execution.
+    """
+    def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools"):
+        super().__init__(logger=logger, sampling_directory=sampling_directory)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def path_exists(self, path: str) -> bool:
+        return os.path.exists(path)
+
+    def create_empty_dir(self, dir_name: str):
+        os.makedirs(dir_name, exist_ok=True)
+
+    def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
+        np.savetxt(path, arr, fmt=fmt)
+        self.logger.log(f"Saved array to path {path}", local=True)
+
+    def np_savez(self, path: str, **arrays) -> None:
+        """
+        Write multiple arrays to a .npz file.
+        The .npz file is written directly to the specified path.
+        """
+        local_path = os.path.normpath(path)
+        if not local_path.endswith(".npz"):
+            local_path += ".npz"
+
+        np.savez(local_path, **arrays)
+        final_path = local_path
+
+        self.logger.log(f"Saved arrays to path {final_path}", local=True)

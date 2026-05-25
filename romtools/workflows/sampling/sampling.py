@@ -43,15 +43,14 @@
 # ************************************************************************
 #
 
-import io
 import os
 import time
-import tempfile
 import numpy as np
 import concurrent.futures
 import multiprocessing
 
-from romtools.hpc.dispatcher import Dispatcher
+from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.local_dispatcher import LocalDispatcher
 from romtools.workflows.workflow_utils import create_empty_dir
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
@@ -97,7 +96,7 @@ def run_sampling(model: Model,
                  random_seed: int = 1,
                  dry_run: bool = False,
                  overwrite: bool = False,
-                 dispatcher: Dispatcher = None):
+                 dispatcher: DispatcherBase = None):
     '''
     Core algorithm
     '''
@@ -113,7 +112,7 @@ def run_sampling(model: Model,
     #
 
     if dispatcher is None:
-        dispatcher = Dispatcher()
+        dispatcher = LocalDispatcher()
     mp_cntxt=multiprocessing.get_context("spawn")
 
     np.random.seed(random_seed)
@@ -238,7 +237,7 @@ def run_sampling(model: Model,
     return run_directories
 
 
-def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Dispatcher = None):
+def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: DispatcherBase = None):
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
     flag = model.run_model(run_directory, parameter_sample, dispatcher)

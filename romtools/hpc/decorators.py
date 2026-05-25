@@ -26,15 +26,3 @@ def dispatch(fn: T) -> T:
         )
 
     return cast(T, wrapper)
-
-## ----------------------------------------------------------------------------
-## Ensuring a connection exists before executing a method
-
-def require_connection(func):
-    """Ensure a connection exists before executing a method."""
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if self.conn is None:
-            raise RuntimeError(f"No connection established. Call __connect_to_remote() before using {func.__name__}.")
-        return func(self, *args, **kwargs)
-    return wrapper
