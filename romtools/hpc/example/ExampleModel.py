@@ -24,3 +24,5 @@ class ExampleModel:
             '
         """)
         dispatcher.dispatch(cmd, run_directory=run_directory)
+
+        return 0

@@ -2,15 +2,15 @@
 import numpy as np
 import os
 
-from romtools.hpc.dispatcher_config import DispatcherConfig
-from romtools.hpc.logger import Logger
+from romtools.hpc.util.logger import Logger
+from romtools.hpc.configuration import Configuration
 
 
 class DispatcherBase:
-    def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools"):
-        self.logger = logger if logger is not None else Logger()
+    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
+        self.config = Configuration()
+        self.logger = logger if logger is not None else Logger(self.config.debug)
         self.sampling_directory = sampling_directory
-        self.config = DispatcherConfig(self.logger)
 
     # ------------------------------------------------------------------
     # Resource management

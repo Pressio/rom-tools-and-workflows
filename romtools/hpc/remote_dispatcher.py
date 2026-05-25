@@ -12,10 +12,9 @@ from typing import Optional
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
-from romtools.hpc.configuration import Configuration
+from romtools.hpc.dispatcher_base import DispatcherBase
 
 from romtools.hpc.util.slurm import create_slurm_script
-from romtools.hpc.util.decorators import require_connection
 
 ## ----------------------------------------------------------------------------
 
@@ -32,15 +31,13 @@ class RemoteDispatcher(DispatcherBase):
         ssh user@remote -p port
     """
     def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
+        # Initialize the base Dispatcher class (sets up config and logger)
+        super().__init__(sampling_directory, logger)
+
         # Core members
-        super().__init__(logger, sampling_directory)
         self.conn : Optional[Connection] = None
         self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
-
-        # Parse configuration
-        self.config = Configuration()
-        self.logger = logger if logger is not None else Logger(self.config.debug)
 
         if not self.config.remote or not self.config.user:
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
@@ -223,7 +220,6 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
         self.logger.log(f"Wrote remote file: {remote_path}")
 
-    @require_connection
     def __create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
         remote_dir = self.__resolve_remote_path(remote_dir, preserve_relative=base_dir)
         result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
@@ -275,25 +271,8 @@ class RemoteDispatcher(DispatcherBase):
         if not remote_path.endswith(".npz"):
             remote_path += ".npz"
 
-<<<<<<< HEAD:romtools/hpc/remote_dispatcher.py
         remote_dir = ppath.dirname(remote_path) or "."
         assert self.path_exists(remote_dir)
-=======
-            remote_dir = ppath.dirname(remote_path) or "."
-            assert self.path_exists(remote_dir)
-
-            with tempfile.TemporaryDirectory() as tmpdir:
-                local_path = os.path.join(tmpdir, ppath.basename(remote_path))
-                np.savez(local_path, **arrays)
-                self.put(local_path, remote_path)
-
-            final_path = remote_path
-
-        else:
-            local_path = os.path.normpath(path)
-            if not local_path.endswith(".npz"):
-                local_path += ".npz"
->>>>>>> 1bfa517 (#274: do not collect results unless specified):romtools/hpc/dispatcher.py
 
         with tempfile.TemporaryDirectory() as tmpdir:
             local_path = os.path.join(tmpdir, ppath.basename(remote_path))
