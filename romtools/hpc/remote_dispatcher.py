@@ -307,4 +307,4 @@ class RemoteDispatcher(DispatcherBase):
             self.put(local_path, remote_path)
 
         final_path = remote_path
-        self.logger.log(f"Saved arrays to path {final_path}", local=(not self.conn))
+        self.logger.log(f"Saved arrays to path {final_path}", local=False)

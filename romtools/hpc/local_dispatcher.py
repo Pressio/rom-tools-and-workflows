@@ -41,4 +41,4 @@ class LocalDispatcher(DispatcherBase):
         np.savez(local_path, **arrays)
         final_path = local_path
 
-        self.logger.log(f"Saved arrays to path {final_path}", local=(not self.conn))
+        self.logger.log(f"Saved arrays to path {final_path}", local=True)
