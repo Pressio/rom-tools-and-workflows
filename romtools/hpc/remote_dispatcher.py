@@ -35,6 +35,9 @@ class RemoteDispatcher(DispatcherBase):
         # Core members
         super().__init__(logger, sampling_directory)
 
+        # Maintain list of current jobs
+        self.current_jobs = []
+
         if not self.config.remote or not self.config.user:
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
 
