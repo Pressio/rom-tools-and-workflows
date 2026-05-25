@@ -106,7 +106,7 @@ class Collector:
             return False
 
         # Collect everything
-        collect_all = ["*", "all", "everything"]
+        collect_all = ["*", "all", "everything", "any"]
         if any(p.lower() in collect_all for p in collect_patterns):
             pack_cmd = (
                 f"tar -czf {shlex.quote(remote_archive_path)} "
