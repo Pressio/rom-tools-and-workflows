@@ -32,13 +32,14 @@ class RemoteDispatcher(DispatcherBase):
     before using this tool.
     """
     def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools"):
-        if not self.config.remote or not self.config.user:
-            raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
         # Core members
         super().__init__(logger, sampling_directory)
 
+        if not self.config.remote or not self.config.user:
+            raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
+
         # Establish connection
-        self.conn : Connection = self.__connect_to_remote()
+        self.__connect_to_remote()
 
         # Then create the remote output directory
         self.__create_remote_directory(
