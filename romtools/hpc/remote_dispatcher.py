@@ -44,6 +44,8 @@ class RemoteDispatcher(DispatcherBase):
 
         # Establish connection
         self.__connect_to_remote()
+
+        # Initialize and validate the Collector
         self.collector = Collector(
             self.conn,
             self.config,

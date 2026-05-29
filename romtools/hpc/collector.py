@@ -27,16 +27,20 @@ class Collector:
         sampling_directory: str,
         logger: Logger = None,
     ):
+        # Initialize member variables
         self.conn = conn
         self.config = config
         self.sampling_directory = os.path.basename(sampling_directory)
         self.logger = logger or Logger()
 
+        # Validate the collect patterns
+        self.__validate()
+
     # ------------------------------------------------------------------
-    # Validation and parsing
+    # Validation
     # ------------------------------------------------------------------
 
-    def __validate_collect_patterns(self) -> Optional[List[str]]:
+    def __validate(self) -> Optional[List[str]]:
         """
         Validate and normalize config.collect.
 
@@ -81,6 +85,10 @@ class Collector:
             raise ValueError("collect was specified, but no valid patterns were provided.")
 
         return cleaned_patterns
+
+    # ------------------------------------------------------------------
+    # Packing and unpacking remote results
+    # ------------------------------------------------------------------
 
     def __pack_remote_results(self, remote_sampling_dir: str, remote_archive_path: str) -> None:
         """
