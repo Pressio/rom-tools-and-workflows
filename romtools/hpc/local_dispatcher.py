@@ -3,8 +3,8 @@
 import numpy as np
 import os
 
+from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatcher_base import DispatcherBase
-from romtools.hpc.logger import Logger
 
 class LocalDispatcher(DispatcherBase):
     """
@@ -12,8 +12,8 @@ class LocalDispatcher(DispatcherBase):
     for dispatching ROM workflows on the local machine. It overrides methods to set up
     directories and execute commands without SSH, making it suitable for local execution.
     """
-    def __init__(self, logger: Logger = None, sampling_directory: str = "hpctools"):
-        super().__init__(logger=logger, sampling_directory=sampling_directory)
+    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
+        super().__init__(sampling_directory=sampling_directory, logger=logger)
 
     # ------------------------------------------------------------------
     # Public API

@@ -51,7 +51,7 @@ import multiprocessing
 
 from romtools.hpc.dispatcher_base import DispatcherBase
 from romtools.hpc.local_dispatcher import LocalDispatcher
-from romtools.workflows.workflow_utils import create_empty_dir
+
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
 
@@ -253,7 +253,7 @@ def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute
             qoi = _compute_qoi_for_sample(model, run_directory, parameter_sample)
     else:
         print(f"Sample {run_id} failed, run time = {run_time}")
-    print(" ")
+        print(" ")
     if compute_qoi:
         return run_time, qoi
     return run_time
