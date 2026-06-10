@@ -21,22 +21,26 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
+
+    Input data:
+
+    .. code-block:: text
 
        rank 0  2.2
                3.3
@@ -48,11 +52,18 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
       =======================
        rank 2  -4.
 
-    res = la.max(a, comm)
-    then ALL ranks will contain res = 51.
+    Suppose that we do:
+
+    .. code-block:: python
+
+        res = la.max(a, comm)
+
+    Then all ranks will contain res = 51.
 
     Example 2:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2  1.3  4.
                3.3  5.0  33.
@@ -66,97 +77,113 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
        res = la.max(a, axis=0, comm)
 
-    then every rank will contain the same res which is an array = ([51., 8., 33])
+    Then every rank will contain the same res which is an array = ([51., 8., 33])
     this is because the max is queried for the 0-th axis which is the
-    axis along which the data array is distributed.
-    So this operation must be a collective operation.
+    axis along which the data array is distributed. So this operation must be a
+    collective operation.
 
     Suppose that we do:
+
+    .. code-block:: python
 
       res = la.max(a, axis=1, comm)
 
-    then res is now a rank-1 array as follows
+    Then res is now a rank-1 array as follows:
 
-       rank 0  4.
-               33.
-      =======================
-       rank 1  40.
-               51.
-               9.
-               45.
-      =======================
-       rank 2  9.
+    .. code-block:: text
 
-    because the axis queried for the max is NOT a distributed axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+        rank 0  4.
+                33.
+        =======================
+        rank 1  40.
+                51.
+                9.
+                45.
+        =======================
+        rank 2  9.
 
+    Because the axis queried for the max is NOT a distributed axis so this
+    operation is purely local and the result has the same distribution as the
+    original array.
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.max(a, axis=0, comm)
 
-    then res is now a rank-2 array as follows:
+    Then res is now a rank-2 array as follows:
 
-       /  6.  5.   /  5.   8.   3.   1.  /  3.
-      / 4.   5.   / 4.   6.   9.   4.   /  9.
-     /           /                     /
-    /    r1     /         r2          /  r3
+    .. code-block:: text
 
-    because the axis queried for the max is NOT a distributed axis
-    and this is effectively a reduction over the 0-th axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+           /  6.  5.   /  5.   8.   3.   1.  /  3.
+          / 4.   5.   / 4.   6.   9.   4.   /  9.
+         /           /                     /
+        /    r1     /         r2          /  r3
 
-    Suppose that we do:
-
-      res = la.max(a, axis=1, comm)
-
-    then this is effectively a reduction over axis=1,
-    and every rank will contain the same res which is a rank-2 array as follows
-
-                  5.  8.
-                  8.  6.
-                  9.  5.
-
-    this is because the max is queried for the 0-th axis which is the
-    axis along which the data array is distributed.
-    So this operation must be a collective operation and we know that
-    memory-wise it is feasible to hold because this is no larger than the
-    local allocation on each rank.
+    Because the axis queried for the max is NOT a distributed axis and this is
+    effectively a reduction over the 0-th axis so this operation is purely local
+    and the result has the same distribution as the original array.
 
     Suppose that we do:
 
-      res = la.max(a, axis=2, comm)
+    .. code-block:: python
 
-    then res is now a rank-2 array as follows
+        res = la.max(a, axis=1, comm)
 
-            r0     ||          r1           ||  r2
-                   ||                       ||
-          3.   4.  ||   4.   8.   2.   4.   ||   2.
-          6.   5.  ||  -2.   4.   8.  -3.   ||   8.
-          4.   5.  ||   5.   6.   9.   1.   ||   9.
-                   ||                       ||
+    Then this is effectively a reduction over axis=1, and every rank will
+    contain the same res which is a rank-2 array as follows:
 
-    because the axis queried for the max is NOT a distributed axis
-    and this is effectively a reduction over the 2-th axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+    .. code-block:: text
+
+        5.  8.
+        8.  6.
+        9.  5.
+
+    This is because the max is queried for the 0-th axis which is the axis along
+    which the data array is distributed. So this operation must be a collective
+    operation and we know that memory-wise it is feasible to hold because this
+    is no larger than the local allocation on each rank.
+
+    Suppose that we do:
+
+    .. code-block:: python
+
+        res = la.max(a, axis=2, comm)
+
+    Then res is now a rank-2 array as follows:
+
+    .. code-block:: text
+
+          r0     ||          r1           ||  r2
+                 ||                       ||
+        3.   4.  ||   4.   8.   2.   4.   ||   2.
+        6.   5.  ||  -2.   4.   8.  -3.   ||   8.
+        4.   5.  ||   5.   6.   9.   1.   ||   9.
+                 ||                       ||
+
+    Because the axis queried for the max is NOT a distributed axis and this is
+    effectively a reduction over the 2-th axis so this operation is purely local
+    and the result has the same distribution as the original array.
 
     '''
     # Enforce preconditions
