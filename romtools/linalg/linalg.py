@@ -4,6 +4,7 @@ see this for why this file exists and is done this way
 https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1
 '''
 
+import builtins
 import warnings
 import numpy as np
 from romtools.linalg.parallel_utils import assert_axis_is_none_or_within_rank
@@ -1174,6 +1175,63 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     return A_g, b_g
 
 # ----------------------------------------------------
+def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: int):
+    '''
+    Parameters:
+        snapshot_loader: capable of loading blocks of columns (of X)
+        block_size (int): TODO
+        N (int): number of rows (of X)
+        M (int): number of columns/snapshots (of X)
+        k (int): target rank
+        p (int): oversampling parameter
+    Returns:
+        Uk, ndarray(shape=(N, k)): approximate POD modes
+        Sk, ndarray(shape=(k,)): approximate POD singular values
+        Vk, ndarray(shape=(k, M)): approximate right singular vectors
+    '''
+
+    assert block_size < M
+    # NOTE: block_size = M -> no more streaming...
+    # NOTE: block_size = 1 -> minimum memory, lot of I/O.
+
+    assert k <= N and k <= M
+
+    # sketch dimension
+    l = k + p
+    assert l <= N and l <= M
+
+    # pass 1
+    omega = np.random.randn(M, l)
+    Y = np.zeros(shape=(N, l))
+    for start in range(0, M, block_size):
+        end = builtins.min(start + block_size, M)
+        Xb = snapshot_loader(start, end)
+        Ob = omega[start:end, :]
+        Y += Xb @ Ob
+
+    # compute orthonormal basis
+    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
+    Q = Uy[:, 0:l]
+
+    # pass 2
+    B = np.zeros(shape=(l, M))
+    for start in range(0, M, block_size):
+        end = builtins.min(start + block_size, M)
+        Xb = snapshot_loader(start, end)
+        Bb = Q.T @ Xb
+        B[:, start:end] = Bb
+
+    # compute approximate SVD
+    Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    U = Q @ Utilde
+
+    # results
+    Uk = U[:, 0:k]
+    Sk = S[0:k]
+    Vk = Vt[0:k, :]
+    return (Uk, Sk, Vk)
+
+# ----------------------------------------------------
 # ----------------------------------------------------
 
 # pylint: disable=redefined-builtin
@@ -1186,3 +1244,4 @@ std = _basic_std_via_python
 product = _basic_product_via_python
 pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
+streaming_pod = _streaming_pod
