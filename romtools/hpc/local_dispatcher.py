@@ -15,9 +15,25 @@ class LocalDispatcher(DispatcherBase):
     def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
         super().__init__(sampling_directory=sampling_directory, logger=logger)
 
+    def __copy(self, src, dst):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if os.path.isdir(src):
+            os.system(f"cp -r {src} {dst}")
+        else:
+            os.system(f"cp {src} {dst}")
+        self.logger.log(f"Copied {src} to {dst}", local=True)
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def get(self, remote_path: str, local_path: str) -> None:
+        """Local 'get' is just a copy from remote_path to local_path."""
+        self.__copy(remote_path, local_path)
+
+    def put(self, local_path: str, remote_path: str) -> None:
+        """Local 'put' is just a copy from local_path to remote_path."""
+        self.__copy(local_path, remote_path)
 
     def path_exists(self, path: str) -> bool:
         return os.path.exists(path)

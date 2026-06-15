@@ -8,7 +8,6 @@ from typing import List, Optional
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.connection import Connection
-from romtools.hpc.configuration import Configuration
 
 class Collector:
     """
@@ -23,7 +22,7 @@ class Collector:
     def __init__(
         self,
         conn: Connection,
-        config: Configuration,
+        config: dict,
         sampling_directory: str,
         logger: Logger = None,
     ):
@@ -34,7 +33,7 @@ class Collector:
         self.logger = logger or Logger()
 
         # Validate the collect patterns
-        self.__validate()
+        self.patterns = self.__validate()
 
     # ------------------------------------------------------------------
     # Validation
@@ -51,13 +50,14 @@ class Collector:
         Raises:
             ValueError: if any pattern is invalid or if collect is specified but empty.
         """
-        if self.config.collect is None:
+        collect_patterns = self.config.get("collect")
+        if collect_patterns is None:
             return None
 
         cleaned_patterns = []
         forbidden_chars = {"\n", "\r"}
 
-        for pattern in self.config.collect:
+        for pattern in collect_patterns:
             if not pattern or not pattern.strip():
                 continue
 
@@ -94,7 +94,7 @@ class Collector:
         """
         Create a tar.gz archive of remote results.
 
-        If self.config.collect is None, archives the entire sampling directory.
+        If self.config["collect"] is None, archives the entire sampling directory.
         Otherwise, archives only the validated files/directories/glob patterns
         relative to the sampling directory.
 
@@ -103,10 +103,8 @@ class Collector:
 
         Returns True if collection was performed, False if collection was skipped.
         """
-        collect_patterns = self.__validate_collect_patterns()
-
         # Collect nothing
-        if collect_patterns is None or len(collect_patterns) == 0:
+        if self.patterns is None or len(self.patterns) == 0:
             self.logger.log(
                 "SKIPPING RESULTS COLLECTION: "
                 "Specify files, directories, or glob patterns to bring back to your "
@@ -115,7 +113,7 @@ class Collector:
 
         # Collect everything
         collect_all = ["*", "all", "everything", "any"]
-        if any(p.lower() in collect_all for p in collect_patterns):
+        if any(p.lower() in collect_all for p in self.patterns):
             pack_cmd = (
                 f"tar -czf {shlex.quote(remote_archive_path)} "
                 f"-C {shlex.quote(remote_sampling_dir)} ."
@@ -134,7 +132,7 @@ class Collector:
         def is_glob_pattern(pattern: str) -> bool:
             return any(ch in pattern for ch in ("*", "?", "["))
 
-        for pattern in collect_patterns:
+        for pattern in self.patterns:
             if is_glob_pattern(pattern):
                 expand_cmd = (
                     f"cd {shlex.quote(remote_sampling_dir)} && "
@@ -214,14 +212,14 @@ class Collector:
         - Otherwise, archive and retrieve only the specified files/directories/glob patterns,
         interpreted relative to the remote sampling directory.
         """
-        remote_sampling_dir = ppath.join(self.config.remote_root, self.sampling_directory)
+        remote_sampling_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
         self.logger.log(
             f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}",
             local=True,
         )
 
-        archive_name = f"{self.config.job_name}.tar.gz"
-        remote_archive_path = ppath.join(self.config.remote_root, archive_name)
+        archive_name = f"{self.config.get('job_name')}.tar.gz"
+        remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
 
         do_collection = self.__pack_remote_results(remote_sampling_dir, remote_archive_path)
 

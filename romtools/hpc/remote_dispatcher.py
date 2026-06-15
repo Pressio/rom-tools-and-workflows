@@ -12,6 +12,7 @@ from typing import Optional
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
+from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatcher_base import DispatcherBase
 
 from romtools.hpc.util.slurm import create_slurm_script
@@ -39,7 +40,7 @@ class RemoteDispatcher(DispatcherBase):
         self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
 
-        if not self.config.remote or not self.config.user:
+        if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
 
         # Establish connection
@@ -63,7 +64,7 @@ class RemoteDispatcher(DispatcherBase):
         Exits if the connection fails.
         """
         try:
-            self.conn = Connection(host=self.config.remote, user=self.config.user, port=self.config.port)
+            self.conn = Connection(host=self.config.get("remote"), user=self.config.get("user"), port=self.config.get("port"))
             self.logger.set_hostname(self.conn.host)
             self.logger.log(f"Connection established with {self.conn.host}.", local=True)
             return
@@ -77,7 +78,7 @@ class RemoteDispatcher(DispatcherBase):
     def __resolve_remote_path(self, remote_path: str, preserve_relative: bool = False) -> str:
         if ppath.isabs(remote_path) or preserve_relative:
             return remote_path
-        return ppath.join(self.config.remote_root, remote_path)
+        return ppath.join(self.config.get("remote_root"), remote_path)
 
     # ------------------------------------------------------------------
     # Resource management
@@ -97,7 +98,7 @@ class RemoteDispatcher(DispatcherBase):
         remote host, and return the remote path.
 
         Args:
-            base_command: The command to run in the SLURM job (executed from self.config.remote_root).
+            base_command: The command to run in the SLURM job (executed from self.config.get("remote_root")).
 
         If a local SLURM script is provided (via configuration), it will be uploaded directly without modification
         and base_command will be ignored.
@@ -105,31 +106,35 @@ class RemoteDispatcher(DispatcherBase):
         Returns:
             The remote path of the uploaded SLURM script.
         """
-        if base_command is None and self.config.script is None:
+        script = self.config.get("script")
+        remote_root = self.config.get("remote_root")
+
+        if base_command is None and script is None:
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
-        if self.config.script:
-            script_name = os.path.basename(self.config.script)
-            remote_script_path = f"{self.config.remote_root}/{self.sampling_directory}/{script_name}"
-            self.conn.put(self.config.script, remote_script_path)
-            self.logger.log(f"Uploaded local script {self.config.script} to {self.conn.host}:{remote_script_path}")
+        if script:
+            script_name = os.path.basename(script)
+            remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
+            self.conn.put(script, remote_script_path)
+            self.logger.log(f"Uploaded local script {script} to {self.conn.host}:{remote_script_path}")
             return script_name
 
         script_content = create_slurm_script(
-            job_name=self.config.job_name,
-            num_nodes=self.config.num_nodes,
-            tasks_per_node=self.config.tasks_per_node,
-            wall_time=self.config.wall_time,
-            wcid=self.config.account,
-            partition=self.config.partition,
-            command=base_command)
+            job_name       = self.config.get("job_name"),
+            num_nodes      = self.config.get("num_nodes"),
+            tasks_per_node = self.config.get("tasks_per_node"),
+            wall_time      = self.config.get("wall_time"),
+            wcid           = self.config.get("account"),
+            partition      = self.config.get("partition"),
+            command        = base_command)
+
         self.logger.debug(f"Generated SLURM script:\n{script_content}", local=True)
 
-        remote_script_name = f"{self.config.job_name}_slurm.sh"
+        remote_script_name = f"{self.config.get('job_name')}_slurm.sh"
         script_base = (
-            ppath.join(self.config.remote_root, run_directory)
+            ppath.join(remote_root, run_directory)
             if run_directory
-            else ppath.join(self.config.remote_root, self.sampling_directory)
+            else ppath.join(remote_root, self.sampling_directory)
         )
         remote_script_path = ppath.join(script_base, remote_script_name)
 
@@ -158,12 +163,12 @@ class RemoteDispatcher(DispatcherBase):
         """
         slurm_script_name = self.__generate_slurm_script(cmd, run_directory=run_directory)
         if run_directory:
-            full_run_dir = ppath.join(self.config.remote_root, run_directory)
+            full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
             result = self.conn.run(
                 f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
             )
         else:
-            full_run_dir = ppath.join(self.config.remote_root, self.sampling_directory)
+            full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
             result = self.conn.run(
                 f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
             )
@@ -192,7 +197,8 @@ class RemoteDispatcher(DispatcherBase):
             job_id:        The SLURM job ID to monitor.
             poll_interval: Seconds between squeue polls (default: 30).
         """
-        self.logger.log(f"Polling SLURM job {job_id} every {self.config.poll_interval}s (Ctrl+C to cancel job)...")
+        poll_interval = self.config.get("poll_interval")
+        self.logger.log(f"Polling SLURM job {job_id} every {poll_interval}s (Ctrl+C to cancel job)...")
         try:
             while True:
                 result = self.conn.run(f"squeue -j {job_id} -h")
@@ -200,7 +206,7 @@ class RemoteDispatcher(DispatcherBase):
                     # Job no longer appears in the queue — it has finished.
                     break
                 self.logger.debug(f"Job {job_id} still running...")
-                time.sleep(self.config.poll_interval)
+                time.sleep(poll_interval)
             self.logger.log(f"Job {job_id} completed.")
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
@@ -251,7 +257,34 @@ class RemoteDispatcher(DispatcherBase):
     def create_empty_dir(self, dir_name: str):
         self.__create_remote_directory(dir_name)
 
-    def dispatch(self, cmd: str, run_directory: str = None) -> str:
+    def __run(self, cmd: str, run_directory: str = None) -> None:
+        resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
+        remote_cmd = f"cd {shlex.quote(resolved_run_dir)} && {cmd}"
+        res = self.conn.run(remote_cmd)
+        if not res.ok:
+            raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
+        self.logger.debug(f"Executed command on remote host: {cmd}")
+
+    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> str:
+        """
+        Main method of the Dispatcher. Dispatches provided work to the
+        remote host, polls the job, and collects results.
+
+        Args:
+            cmd: The command to run in the SLURM job.
+                 Should be executable from self.config.get("remote_root") or the specified run_directory.
+                 If not provided, dispatcher must be configured with
+                 a SLURM script that includes the command to run.
+            run_directory: The directory in which to execute the command or SLURM job
+                 on the remote host. If not provided, defaults to self.config.get("remote_root").
+            with_slurm: If True, the command will be run as a SLURM job.
+                 If False, the command will be executed directly without SLURM.
+
+        Returns the SLURM job ID if applicable.
+        """
+        if not with_slurm:
+            self.__run(cmd, run_directory=run_directory)
+            return "No SLURM job submitted."
         job_id = self.__submit_slurm_job(cmd, run_directory)
         self.__wait_for_job(job_id)
         self.collector.collect_results()

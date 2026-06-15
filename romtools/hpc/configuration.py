@@ -29,8 +29,9 @@ SCHEMA = {
     },
     "output": {
         "debug": {"cli": "-d", "type": bool, "help": "Whether to enable debug logging."},
-    }
+    },
 }
+
 
 def _normalize_collect(value):
     """
@@ -104,6 +105,9 @@ class Configuration:
         # If None, the entire run directory is retrieved.
         self.collect = None
 
+        # User-defined fields loaded only from YAML "user-defined"
+        self.user_defined = {}
+
         # Parse YAML first, then CLI overwrites YAML
         self.__parse_yaml()
         self.__parse_args()
@@ -117,7 +121,11 @@ class Configuration:
 
         YAML may be either:
           - a flat mapping (keys match attribute names), or
-          - a nested mapping with sections: ssh, slurm, workflow
+          - a nested mapping with sections: ssh, slurm, workflow, output, user-defined
+
+        The special "user-defined" section must be a mapping/dictionary and is stored
+        as-is in self.user_defined. Its contents are not interpreted as individual
+        configuration attributes.
         """
         pre = argparse.ArgumentParser(add_help=False)
         pre.add_argument(
@@ -147,8 +155,8 @@ class Configuration:
         if not isinstance(data, dict):
             raise ValueError("YAML config must be a mapping/dictionary at the top level.")
 
-        section_map = {k: v.keys() for k, v in SCHEMA.items()}
-        is_nested = any(k in data for k in section_map.keys())
+        section_names = set(SCHEMA.keys()) | {"user-defined"}
+        is_nested = any(k in data for k in section_names)
 
         def apply_kv(key: str, value):
             if key == "collect":
@@ -156,27 +164,54 @@ class Configuration:
             elif hasattr(self, key):
                 setattr(self, key, value)
             else:
-                warnings.warn(f"Warning: Unrecognized YAML key '{key}' will be ignored.", UserWarning)
+                warnings.warn(
+                    f"Warning: Unrecognized YAML key '{key}' will be ignored.",
+                    UserWarning
+                )
 
         if is_nested:
-            for section, _ in section_map.items():
+            for section in SCHEMA.keys():
                 sec = data.get(section, {})
                 if sec is None:
                     continue
                 if not isinstance(sec, dict):
-                    warnings.warn(f"Warning: YAML section '{section}' should be a mapping; ignoring.", UserWarning)
+                    warnings.warn(
+                        f"Warning: YAML section '{section}' should be a mapping; ignoring.",
+                        UserWarning
+                    )
                     continue
                 for k, v in sec.items():
                     apply_kv(k, v)
 
-            # Also allow extra top-level flat keys alongside sections
+            user_defined_section = data.get("user-defined", {})
+            if user_defined_section is None:
+                pass
+            elif not isinstance(user_defined_section, dict):
+                warnings.warn(
+                    "Warning: YAML section 'user-defined' should be a mapping; ignoring.",
+                    UserWarning,
+                )
+            else:
+                self.user_defined.update(user_defined_section)
+
+            # Also allow extra top-level flat keys alongside sections,
+            # except for the reserved nested section "user-defined".
             for k, v in data.items():
-                if k in section_map:
+                if k in section_names:
                     continue
                 apply_kv(k, v)
         else:
             for k, v in data.items():
-                apply_kv(k, v)
+                if k == "user-defined":
+                    if not isinstance(v, dict):
+                        warnings.warn(
+                            "Warning: YAML key 'user-defined' should be a mapping; ignoring.",
+                            UserWarning,
+                        )
+                    else:
+                        self.user_defined.update(v)
+                else:
+                    apply_kv(k, v)
 
     def __parse_args(self) -> None:
         parser = argparse.ArgumentParser(
@@ -188,9 +223,16 @@ class Configuration:
         parser.add_argument("-i", "--input", type=str, help="Path to a YAML configuration file.")
 
         for group, items in SCHEMA.items():
+            if not items:
+                continue
             new_group = parser.add_argument_group(group)
             for arg_name, arg in items.items():
-                new_group.add_argument(arg["cli"], f"--{arg_name}", type=arg["type"], help=arg["help"])
+                new_group.add_argument(
+                    arg["cli"],
+                    f"--{arg_name}",
+                    type=arg["type"],
+                    help=arg["help"]
+                )
 
         args, _ = parser.parse_known_args()
         for name, value in vars(args).items():
@@ -201,4 +243,10 @@ class Configuration:
             elif hasattr(self, name):
                 setattr(self, name, value)
             else:
-                warnings.warn(f"Warning: Unrecognized argument '{name}' will be ignored.", UserWarning)
+                warnings.warn(
+                    f"Warning: Unrecognized argument '{name}' will be ignored.",
+                    UserWarning
+                )
+
+    def to_dict(self):
+        return self.__dict__.copy()
