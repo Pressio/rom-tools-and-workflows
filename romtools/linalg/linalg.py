@@ -4,6 +4,8 @@ see this for why this file exists and is done this way
 https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1
 '''
 
+from pathlib import Path
+
 import builtins
 import warnings
 import numpy as np
@@ -1175,6 +1177,29 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     return A_g, b_g
 
 # ----------------------------------------------------
+def load_snapshot(dataset_dir: str, i: int):
+    '''
+    TODO
+    '''
+    path = Path(dataset_dir)
+    return np.loadtxt(path / f"snapshot_{i}.txt")
+
+def _snapshot_loader(dataset_dir: str, start: int, end: int):
+    '''
+    Parameters:
+        dataset_dir: TODO
+        start (int): TODO
+        end (int): TODO
+    Return:
+        Xb: TODO
+    '''
+    snapshots = []
+    for i in range(start, end):
+        Xbi = load_snapshot(dataset_dir, i)
+        snapshots.append(Xbi)
+    Xb = np.column_stack(snapshots)
+    return Xb
+
 def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: int):
     '''
     Parameters:
@@ -1244,4 +1269,5 @@ std = _basic_std_via_python
 product = _basic_product_via_python
 pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
+snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
