@@ -1236,7 +1236,7 @@ def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: 
 
     # compute orthonormal basis
     Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
-    Q = Uy[:, 0:l]
+    Q = Uy[:, :l]
 
     # pass 2
     B = np.zeros(shape=(l, M))
@@ -1247,14 +1247,11 @@ def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: 
         B[:, start:end] = Bb
 
     # compute approximate SVD
-    Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)
-    U = Q @ Utilde
+    U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    U = Q @ U_tilde
 
     # results
-    Uk = U[:, 0:k]
-    Sk = S[0:k]
-    Vk = Vt[0:k, :]
-    return (Uk, Sk, Vk)
+    return (U[:, :k], S[:k], Vt[:k, :])
 
 # ----------------------------------------------------
 # ----------------------------------------------------
