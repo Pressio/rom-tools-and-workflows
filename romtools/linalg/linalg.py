@@ -1253,6 +1253,71 @@ def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: 
     # results
     return (U[:, :k], S[:k], Vt[:k, :])
 
+def local_column_range(rank, size, M):
+    q, r = divmod(M, size)
+
+    start = rank * q + builtins.min(rank, r)
+    end = start + q + (1 if rank < r else 0)
+
+    return start, end
+
+def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=None):
+    '''
+    TODO
+    '''
+    from mpi4py import MPI
+    if comm is None:
+        comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
+    l = k + p
+    assert l <= N and l <= M
+
+    # pass 1: distribute
+    if rank == 0:
+        omega = np.random.randn(M, l)
+    else:
+        omega = None
+
+    omega = comm.bcast(omega, root=0)
+
+    start, end = local_column_range(rank, size, M)
+    X_local = snapshot_loader(start, end)
+    omega_local = omega[start:end, :]
+    Y_local = X_local @ omega_local # shape=(N,l)
+    Y = np.zeros(shape=(N,l))
+    comm.Allreduce(Y_local, Y, op=MPI.SUM)
+
+    # compute orthonormal basis: no distribute
+    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
+    Q = Uy[:, :l]
+
+    # pass 2: distribute
+    B_local = Q.T @ X_local # shape=(l, M_local)
+
+    # gather
+    B_parts = comm.gather(B_local, root=0)
+
+    if rank == 0:
+        B = np.hstack(B_parts)
+        U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    else:
+        U_tilde = None
+        S = None
+        Vt = None
+
+    # broadcast
+    U_tilde = comm.bcast(U_tilde, root=0)
+    S = comm.bcast(S, root=0)
+    Vt = comm.bcast(Vt, root=0)
+
+    # compute approximate SVD
+    U = Q @ U_tilde
+
+    # results
+    return (U[:, :k], S[:k], Vt[:k, :])
+
 # ----------------------------------------------------
 # ----------------------------------------------------
 
@@ -1268,3 +1333,4 @@ pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
 snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
+streaming_pod_mpi = _streaming_pod_mpi
