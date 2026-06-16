@@ -1253,7 +1253,29 @@ def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: 
     # results
     return (U[:, :k], S[:k], Vt[:k, :])
 
-def local_column_range(rank, size, M):
+def _local_column_range(rank, size, M):
+    '''
+    Compute the range of matrix columns assigned to a given process.
+
+    Parameters:
+        rank (int): identifier of the current process
+        size (int): total number of processes
+        M (int): total number of columns to distribute
+    Returns:
+        start (int): index of the first column assigned to the process (inclusive)
+        end (int): index of the last column boundary (exclusive)
+
+    Notes:
+        - Columns are distributed as evenly as possible among processes.
+        - If M is not divisible by size, the first (M % size) processes receive
+        one additional column.
+
+    Example:
+        For M = 10 and size = 3:
+        - rank 0 -> columns [0, 4)
+        - rank 1 -> columns [4, 7)
+        - rank 2 -> columns [7, 10)
+    '''
     q, r = divmod(M, size)
 
     start = rank * q + builtins.min(rank, r)
@@ -1282,7 +1304,7 @@ def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=Non
 
     omega = comm.bcast(omega, root=0)
 
-    start, end = local_column_range(rank, size, M)
+    start, end = _local_column_range(rank, size, M)
     X_local = snapshot_loader(start, end)
     omega_local = omega[start:end, :]
     Y_local = X_local @ omega_local # shape=(N,l)
@@ -1333,4 +1355,5 @@ pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
 snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
+local_column_range = _local_column_range
 streaming_pod_mpi = _streaming_pod_mpi
