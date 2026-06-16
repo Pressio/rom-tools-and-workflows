@@ -48,8 +48,8 @@ def test_python_local_column_range_r2_s1_m8():
 
     start, end = _local_column_range(rank=rank, size=size, M=M)
 
-    gold_start = -1
-    gold_end = -1
+    gold_start = 16
+    gold_end = 24
 
     assert gold_start == start
     assert gold_end == end
@@ -61,8 +61,8 @@ def test_python_local_column_range_r2_s3_m8():
 
     start, end = _local_column_range(rank=rank, size=size, M=M)
 
-    gold_start = -1
-    gold_end = -1
+    gold_start = 6
+    gold_end = 8
 
     assert gold_start == start
     assert gold_end == end
