@@ -1179,7 +1179,14 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
 # ----------------------------------------------------
 def load_snapshot(dataset_dir: str, i: int):
     '''
-    TODO
+    Load snapshot i from disk.
+
+    Parameters:
+        dataset_dir (str): directory containing snapshot files.
+        i (int): snapshot index.
+
+    Returns:
+        ndarray(shape=(N,)): snapshot vector.
     '''
     path = Path(dataset_dir)
     return np.loadtxt(path / f"snapshot_{i}.txt")
@@ -1187,11 +1194,12 @@ def load_snapshot(dataset_dir: str, i: int):
 def _snapshot_loader(dataset_dir: str, start: int, end: int):
     '''
     Parameters:
-        dataset_dir: TODO
-        start (int): TODO
-        end (int): TODO
+        dataset_dir (str): directory containing snapshot files.
+        start (int): first snapshot index (inclusive).
+        end (int): last snapshot index (exclusive).
+
     Return:
-        Xb: TODO
+        Xb, ndarray(shape=(N, end-start)): block of snapshots stacked as columns.
     '''
     snapshots = []
     for i in range(start, end):
@@ -1203,16 +1211,17 @@ def _snapshot_loader(dataset_dir: str, start: int, end: int):
 def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: int):
     '''
     Parameters:
-        snapshot_loader: capable of loading blocks of columns (of X)
-        block_size (int): TODO
-        N (int): number of rows (of X)
-        M (int): number of columns/snapshots (of X)
-        k (int): target rank
-        p (int): oversampling parameter
+        snapshot_loader: capable of loading blocks of columns (of X).
+        block_size (int): number of snapshots loaded at once.
+        N (int): number of rows (of X).
+        M (int): number of columns/snapshots (of X).
+        k (int): target rank.
+        p (int): oversampling parameter.
+
     Returns:
-        Uk, ndarray(shape=(N, k)): approximate POD modes
-        Sk, ndarray(shape=(k,)): approximate POD singular values
-        Vk, ndarray(shape=(k, M)): approximate right singular vectors
+        Uk, ndarray(shape=(N, k)): approximate POD modes.
+        Sk, ndarray(shape=(k,)): approximate POD singular values.
+        Vk, ndarray(shape=(k, M)): approximate right singular vectors.
     '''
 
     assert block_size < M
@@ -1261,6 +1270,7 @@ def _local_column_range(rank, size, M):
         rank (int): identifier of the current process
         size (int): total number of processes
         M (int): total number of columns to distribute
+
     Returns:
         start (int): index of the first column assigned to the process (inclusive)
         end (int): index of the last column boundary (exclusive)
@@ -1285,7 +1295,21 @@ def _local_column_range(rank, size, M):
 
 def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=None):
     '''
-    TODO
+    Distributed randomized streaming POD using MPI.
+
+    Parameters:
+        snapshot_loader: callable(start, end) returning locally assigned
+            snapshot columns with shape (N, end-start).
+        N (int): number of rows of the snapshot matrix X.
+        M (int): number of columns (snapshots) of X.
+        k (int): target rank.
+        p (int): oversampling parameter.
+        comm: MPI communicator (defaults to MPI.COMM_WORLD).
+
+    Returns:
+        Uk, ndarray(shape=(N, k)): approximate POD modes.
+        Sk, ndarray(shape=(k,)): approximate POD singular values.
+        Vk, ndarray(shape=(k, M)): approximate right singular vectors.
     '''
     from mpi4py import MPI
     if comm is None:

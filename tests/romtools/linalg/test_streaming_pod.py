@@ -106,7 +106,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_2():
     gold_S = 14.269
     assert np.isclose(S[0], gold_S, atol=0.1)
 
-def test_python_streaming_pod_serial_rank2_2x4_block_size_3():
+def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k1_p1():
     # setup
     path = "tests/romtools/linalg/snapshots/rank2_2x4"
     loader = lambda s, e: _snapshot_loader(path, s, e)
@@ -116,7 +116,24 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_3():
         snapshot_loader=loader,
         block_size=3,
         N=2, M=4,
-        k=1, p=1, # TODO, create test with k=2, p=0
+        k=1, p=1,
+    )
+
+    # POD singular values
+    gold_S = 14.269
+    assert np.isclose(S[0], gold_S, atol=0.1)
+
+def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k2_p0():
+    # setup
+    path = "tests/romtools/linalg/snapshots/rank2_2x4"
+    loader = lambda s, e: _snapshot_loader(path, s, e)
+
+    # execution
+    U, S, Vt = _streaming_pod(
+        snapshot_loader=loader,
+        block_size=3,
+        N=2, M=4,
+        k=2, p=0,
     )
 
     # POD singular values
@@ -137,16 +154,19 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_2_k3_p1():
     )
 
     # POD modes
-    print(U)
-    # TODO
+    gold_U = np.array([
+        [0.60745381, -0.12139554, -0.06134325],
+        [0.71823071, 0.02364053, -0.0664763],
+        [0.32900733, -0.00665702, 0.41838163],
+        [0.05720764, 0.99161197, 0.03054496],
+        [0.06021605, 0.03695457, -0.90323957],
+    ])
+    corr = abs(U[:, 0] @ gold_U[:, 0])
+    assert np.isclose(corr, 1.0, atol=1e-4)
 
     # POD singular values
     gold_S = np.array([23.46, 7.69, 1.54])
     assert np.allclose(S[:3], gold_S, atol=1e-2)
-
-    # right singular vectors
-    print(Vt)
-    # TODO
 
 def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1():
     # setup
@@ -162,16 +182,19 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1():
     )
 
     # POD modes
-    print(U)
-    # TODO
+    gold_U = np.array([
+        [0.60745381, -0.12139554, -0.06134325],
+        [0.71823071, 0.02364053, -0.0664763],
+        [0.32900733, -0.00665702, 0.41838163],
+        [0.05720764, 0.99161197, 0.03054496],
+        [0.06021605, 0.03695457, -0.90323957],
+    ])
+    corr = abs(U[:, 0] @ gold_U[:, 0])
+    assert np.isclose(corr, 1.0, atol=1e-4)
 
     # POD singular values
     gold_S = np.array([23.46, 7.69, 1.54])
     assert np.allclose(S[:3], gold_S, atol=1e-2)
-
-    # right singular vectors
-    print(Vt)
-    # TODO
 
 def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k2_p2():
     # setup
@@ -187,16 +210,19 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k2_p2():
     )
 
     # POD modes
-    print(U)
-    # TODO
+    gold_U = np.array([
+        [0.60745381, -0.12139554, -0.06134325],
+        [0.71823071, 0.02364053, -0.0664763],
+        [0.32900733, -0.00665702, 0.41838163],
+        [0.05720764, 0.99161197, 0.03054496],
+        [0.06021605, 0.03695457, -0.90323957],
+    ])
+    corr = abs(U[:, 0] @ gold_U[:, 0])
+    assert np.isclose(corr, 1.0, atol=1e-4)
 
     # POD singular values
     gold_S = np.array([23.46, 7.69])
     assert np.allclose(S, gold_S, atol=1e-2)
-
-    # right singular vectors
-    print(Vt)
-    # TODO
 
 if __name__ == "__main__":
     test_python_streaming_pod_serial_rank1_2x2()
@@ -205,7 +231,8 @@ if __name__ == "__main__":
 
     test_python_streaming_pod_serial_rank2_2x4_block_size_1()
     test_python_streaming_pod_serial_rank2_2x4_block_size_2()
-    test_python_streaming_pod_serial_rank2_2x4_block_size_3()
+    test_python_streaming_pod_serial_rank2_2x4_block_size_3_k1_p1()
+    test_python_streaming_pod_serial_rank2_2x4_block_size_3_k2_p0()
 
     test_python_streaming_pod_serial_rank3_5x8_block_size_2_k3_p1()
     test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1()

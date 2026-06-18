@@ -35,9 +35,16 @@ def test_streaming_pod_mpi_rank3_5x8_k1_p1():
         assert S.shape == (k,)
         assert Vt.shape == (k, M)
 
-        # POD singular values
-        gold_S = np.array([23.46])
-        print("k1_p1" + str(S))
+        # POD modes
+        gold_U = np.array([
+            [0.60745381, -0.12139554, -0.06134325],
+            [0.71823071, 0.02364053, -0.0664763],
+            [0.32900733, -0.00665702, 0.41838163],
+            [0.05720764, 0.99161197, 0.03054496],
+            [0.06021605, 0.03695457, -0.90323957],
+        ])
+        corr = abs(U[:, 0] @ gold_U[:, 0])
+        assert np.isclose(corr, 1.0, atol=0.1)
 
 def test_streaming_pod_mpi_rank3_5x8_k1_p2():
     np.random.seed(327)
@@ -67,7 +74,8 @@ def test_streaming_pod_mpi_rank3_5x8_k1_p2():
         assert Vt.shape == (k, M)
 
         # POD singular values
-        print("k1_p2" + str(S))
+        gold_S = np.array([23.46])
+        assert np.allclose(S, gold_S, atol=0.1)
 
 def test_streaming_pod_mpi_rank3_5x8_k3_p1():
     np.random.seed(327)
@@ -96,10 +104,19 @@ def test_streaming_pod_mpi_rank3_5x8_k3_p1():
         assert S.shape == (k,)
         assert Vt.shape == (k, M)
 
+        # POD modes
+        gold_U = np.array([
+            [0.60745381, -0.12139554, -0.06134325],
+            [0.71823071, 0.02364053, -0.0664763],
+            [0.32900733, -0.00665702, 0.41838163],
+            [0.05720764, 0.99161197, 0.03054496],
+            [0.06021605, 0.03695457, -0.90323957],
+        ])
+        corr = abs(U[:, 0] @ gold_U[:, 0])
+        assert np.isclose(corr, 1.0, atol=0.0001)
+
         # POD singular values
         gold_S = np.array([23.46, 7.69, 1.54])
-        print("k3_p1" + str(S))
-        print(gold_S)
         assert np.allclose(S, gold_S, atol=1e-2)
 
 if __name__ == "__main__":
