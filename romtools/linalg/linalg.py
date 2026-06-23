@@ -1186,7 +1186,7 @@ def load_snapshot(dataset_dir: str, i: int):
         i (int): snapshot index.
 
     Returns:
-        ndarray(shape=(N,)): snapshot vector.
+        - ndarray(shape=(N,)) - snapshot vector.
     '''
     path = Path(dataset_dir)
     return np.loadtxt(path / f"snapshot_{i}.txt")
