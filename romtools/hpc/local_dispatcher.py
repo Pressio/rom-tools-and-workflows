@@ -1,8 +1,10 @@
 
 
-import numpy as np
 import os
+import subprocess
+import numpy as np
 
+from romtools.hpc.connection import Result
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatcher_base import DispatcherBase
 
@@ -40,6 +42,14 @@ class LocalDispatcher(DispatcherBase):
 
     def create_empty_dir(self, dir_name: str):
         os.makedirs(dir_name, exist_ok=True)
+
+    def dispatch(self, cmd: str, run_directory: str = None) -> None:
+        result = subprocess.run(
+            f"cd {run_directory} && {cmd}",
+            capture_output=True,
+            text=True
+        )
+        return Result(result.stdout, result.stderr, result.returncode)
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         np.savetxt(path, arr, fmt=fmt)

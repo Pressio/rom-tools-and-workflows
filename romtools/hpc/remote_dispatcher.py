@@ -189,6 +189,21 @@ class RemoteDispatcher(DispatcherBase):
     # Job monitoring
     # ------------------------------------------------------------------
 
+    def __cancel_job(self, job_id: str) -> None:
+        """
+        Cancel the specified SLURM job.
+
+        Args: job_id (the SLURM job ID)
+        """
+        try:
+            res = self.conn.run(f"scancel {job_id}")
+            if res.ok:
+                self.logger.log(f"Cancelled job {job_id}.")
+            else:
+                self.logger.log(f"Could not cancel job {job_id}: {res.stderr}")
+        except Exception as e:
+            self.logger.log(f"Failed to cancel job {job_id}: {e}")
+
     def __wait_for_job(self, job_id: str) -> None:
         """
         Block until the SLURM job is no longer in the queue (RUNNING or PENDING).

@@ -32,7 +32,6 @@ SCHEMA = {
     },
 }
 
-
 def _normalize_collect(value):
     """
     Normalize collect specifications into a list of strings.
@@ -69,6 +68,32 @@ def _normalize_collect(value):
         f"Invalid collect value {value!r}; expected a string or list of strings."
     )
 
+def _add_value_param(grp, arg_name, arg):
+    grp.add_argument(
+        arg["cli"],
+        f"--{arg_name}",
+        dest=arg_name,
+        type=arg["type"],
+        default=argparse.SUPPRESS,
+        help=arg["help"],
+    )
+
+def _add_flag_param(grp, arg_name, arg):
+    grp.add_argument(
+        arg["cli"],
+        f"--{arg_name}",
+        dest=arg_name,
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help=arg["help"],
+    )
+
+def _add_schema_arg(grp, item):
+    name, arg = item
+    if arg["type"] == bool:
+        _add_flag_param(grp, name, arg)
+    else:
+        _add_value_param(grp, name, arg)
 
 class Configuration:
     """
@@ -225,14 +250,10 @@ class Configuration:
         for group, items in SCHEMA.items():
             if not items:
                 continue
-            new_group = parser.add_argument_group(group)
-            for arg_name, arg in items.items():
-                new_group.add_argument(
-                    arg["cli"],
-                    f"--{arg_name}",
-                    type=arg["type"],
-                    help=arg["help"]
-                )
+
+            new_grp = parser.add_argument_group(group)
+            for arg in items.items():
+                _add_schema_arg(new_grp, arg)
 
         args, _ = parser.parse_known_args()
         for name, value in vars(args).items():
