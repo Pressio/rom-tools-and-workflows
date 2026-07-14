@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     with RemoteDispatcher(sampling_dir) as dispatcher:
 
-        model = ExampleModel()
+        model = ExampleModel(dispatcher)
         params = ExampleParameterSpace()
         num_samples = 1
 

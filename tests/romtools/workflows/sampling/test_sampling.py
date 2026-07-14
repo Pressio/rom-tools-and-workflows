@@ -13,13 +13,13 @@ class MockModel:
     def __init__(self):
         pass
 
-    def populate_run_directory(self, run_dir, parameter_sample, dispatcher=None):
+    def populate_run_directory(self, run_dir, parameter_sample):
         parameter_values = np.zeros(0)
         for parameter_name in list(parameter_sample.keys()):
             parameter_values = np.append(parameter_values, parameter_sample[parameter_name])
         np.savez(f'{run_dir}/parameter_values.npz', parameter_values=parameter_values)
 
-    def run_model(self, run_dir, parameter_sample, dispatcher=None):
+    def run_model(self, run_dir, parameter_sample):
         print("running model in ", run_dir)
         params_input = np.load(f'{run_dir}/parameter_values.npz')['parameter_values']
         for i in range(0, len(parameter_sample)):
@@ -36,15 +36,15 @@ class MockModel:
 
 
 class MockQoiModel:
-    def populate_run_directory(self, run_dir, parameter_sample, dispatcher=None):
+    def populate_run_directory(self, run_dir, parameter_sample):
         parameter_values = np.asarray(list(parameter_sample.values()), dtype=float)
         np.savez(f'{run_dir}/parameter_values.npz', parameter_values=parameter_values)
 
-    def run_model(self, run_dir, parameter_sample, dispatcher=None):
+    def run_model(self, run_dir, parameter_sample):
         np.savetxt(f'{run_dir}/passed.txt', np.array([0]), '%i')
         return 0
 
-    def compute_qoi(self, run_dir, parameter_sample, dispatcher=None):
+    def compute_qoi(self, run_dir, parameter_sample):
         parameter_values = np.load(f'{run_dir}/parameter_values.npz')['parameter_values']
         return np.array([np.sum(parameter_values)])
 

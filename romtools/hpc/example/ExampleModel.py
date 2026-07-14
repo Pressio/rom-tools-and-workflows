@@ -3,16 +3,18 @@ import time
 import socket
 import textwrap
 
-from romtools.hpc.remote_dispatcher import RemoteDispatcher
+from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.local_dispatcher import LocalDispatcher
 
 class ExampleModel:
 
-    def populate_run_directory(self, run_directory: str, parameter_sample: dict, dispatcher: RemoteDispatcher = None) -> None:
+    def __init__(self, dispatcher: DispatcherBase = LocalDispatcher()):
+        self.dispatcher = dispatcher
 
-        # Run directory is on remote host if dispatcher exists
+    def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
         pass
 
-    def run_model(self, run_directory: str, parameter_sample: dict, dispatcher: RemoteDispatcher) -> int:
+    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
 
         file_name = "output-$(hostname).txt"
         cmd = textwrap.dedent(f"""\
@@ -23,6 +25,6 @@ class ExampleModel:
             EOF
             '
         """)
-        dispatcher.dispatch(cmd, run_directory=run_directory)
+        self.dispatcher.dispatch(cmd, run_directory=run_directory)
 
         return 0
