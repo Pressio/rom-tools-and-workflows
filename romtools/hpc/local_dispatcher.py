@@ -1,6 +1,7 @@
 
 
 import os
+import shlex
 import subprocess
 import numpy as np
 
@@ -15,7 +16,10 @@ class LocalDispatcher(DispatcherBase):
     directories and execute commands without SSH, making it suitable for local execution.
     """
     def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
-        super().__init__(sampling_directory=sampling_directory, logger=logger)
+        # Local execution has no use for remote/SLURM CLI flags, and reading
+        # the real process argv here would pick up whatever CLI args the
+        # embedding process was started with (e.g. pytest's own flags).
+        super().__init__(sampling_directory=sampling_directory, logger=logger, argv=[])
 
     def __copy(self, src, dst):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -44,8 +48,10 @@ class LocalDispatcher(DispatcherBase):
         os.makedirs(dir_name, exist_ok=True)
 
     def dispatch(self, cmd: str, run_directory: str = None) -> None:
+        full_cmd = f"cd {shlex.quote(run_directory)} && {cmd}" if run_directory else cmd
         result = subprocess.run(
-            f"cd {run_directory} && {cmd}",
+            full_cmd,
+            shell=True,
             capture_output=True,
             text=True
         )

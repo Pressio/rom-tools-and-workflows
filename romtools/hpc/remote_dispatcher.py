@@ -31,7 +31,7 @@ class RemoteDispatcher(DispatcherBase):
     The basic command is therefore:
         ssh user@remote -p port
     """
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
+    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
         # Initialize the base Dispatcher class (sets up config and logger)
         super().__init__(sampling_directory, logger)
 
@@ -43,8 +43,12 @@ class RemoteDispatcher(DispatcherBase):
         if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
 
-        # Establish connection
-        self.__connect_to_remote()
+        # Establish connection, or use the one provided (e.g. by tests)
+        if connection is not None:
+            self.conn = connection
+            self.logger.set_hostname(self.conn.host)
+        else:
+            self.__connect_to_remote()
 
         # Initialize and validate the Collector
         self.collector = Collector(

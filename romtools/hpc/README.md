@@ -31,7 +31,7 @@ python romtools/hpc/example/workflow.py -h
 
 ### Using a YAML Input File
 
-Instead of supplying every argument on the command line, you can use the `-i` (or `--input`) arg to specify a YAML 
+Instead of supplying every argument on the command line, you can use the `-i` (or `--input`) arg to specify a YAML
 file with your config. There is an `example.yaml` file to reference how it can be used. Arguments can either be
 flat-mapped or set in a hierarchical structure (refer to the example for this hierarchy).
 

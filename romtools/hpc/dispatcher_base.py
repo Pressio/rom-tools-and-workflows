@@ -7,8 +7,8 @@ from romtools.hpc.configuration import Configuration
 
 
 class DispatcherBase:
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
-        self.config = Configuration().to_dict()
+    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None, argv: list = None):
+        self.config = Configuration(argv=argv).to_dict()
         self.logger = logger if logger is not None else Logger(self.config["debug"])
         self.sampling_directory = sampling_directory
 

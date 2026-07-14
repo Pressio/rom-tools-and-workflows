@@ -14,7 +14,8 @@ class Collector:
     Handles collecting results from remote HPC runs.
 
     The collect specification can be:
-      - None: retrieve the entire run directory
+      - None: do not retrieve anything
+      - "all", "*", "any": retrieves everything
       - A comma-separated string of files/directories/globs to retrieve
       - A list of strings specifying files/directories/globs to retrieve
     """

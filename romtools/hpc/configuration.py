@@ -103,8 +103,17 @@ class Configuration:
       1. CLI args (overwrite YAML)
       2. YAML file values (if provided)
       3. class defaults
+
+    Args:
+        argv: Argument list to parse instead of the real process argv
+            (sys.argv[1:]). Pass an explicit list (e.g. []) to build a
+            Configuration without reading the host process's CLI args --
+            useful for embedding (e.g. LocalDispatcher) where those args
+            aren't meant to apply.
     """
-    def __init__(self):
+    def __init__(self, argv: list = None):
+        self._argv = argv
+
         # SSH configuration
         self.remote = None
         self.user = None
@@ -160,7 +169,7 @@ class Configuration:
             default=None,
             help="Path to a YAML configuration file."
         )
-        ns, _ = pre.parse_known_args()
+        ns, _ = pre.parse_known_args(self._argv)
         config_path = ns.input
 
         if not config_path:
@@ -255,7 +264,7 @@ class Configuration:
             for arg in items.items():
                 _add_schema_arg(new_grp, arg)
 
-        args, _ = parser.parse_known_args()
+        args, _ = parser.parse_known_args(self._argv)
         for name, value in vars(args).items():
             if name == "input":
                 continue
