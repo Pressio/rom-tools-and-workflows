@@ -138,7 +138,7 @@ def run_sampling(model: Model,
         run_directory = f'{run_directory_base}{sample_index}'
         dispatcher.create_empty_dir(run_directory)
         parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
-        model.populate_run_directory(run_directory, parameter_dict, dispatcher)
+        model.populate_run_directory(run_directory, parameter_dict)
         run_directories.append(run_directory)
 
     # Print MPI warnings
@@ -240,7 +240,7 @@ def run_sampling(model: Model,
 def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: DispatcherBase = None):
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
-    flag = model.run_model(run_directory, parameter_sample, dispatcher)
+    flag = model.run_model(run_directory, parameter_sample)
     tf = time.time()
     run_time = tf - ts
     qoi = None
