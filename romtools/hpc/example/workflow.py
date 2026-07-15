@@ -25,5 +25,5 @@ if __name__ == '__main__':
             random_seed = 1,
             dry_run = False,
             overwrite = True,
-            dispatcher = dispatcher,
+            dispatcher = dispatcher
         )
