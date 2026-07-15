@@ -233,11 +233,11 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if comm == None, returns the index of the maximum value (identical to np.argmax)
-        if comm != None, returns a tuple containing (value, index, rank):
-            value: the global maximum
-            index: the local index of the global maximum
-            rank:  the rank on which the global maximum resides
+        - if comm == None, returns the index of the maximum value (identical to np.argmax)
+        - if comm != None, returns a tuple containing (value, index, rank):
+            - value: the global maximum
+            - index: the local index of the global maximum
+            - rank: the rank on which the global maximum resides
 
     Preconditions:
       - a is at most a rank-3 tensor
@@ -250,7 +250,9 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
       - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2
                3.3
@@ -264,13 +266,17 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
         res = la.argmax(a, comm)
 
     then ALL ranks will contain res = (1, 1).
     (The global maximum (51.) occurs at index 1 of the local array on Rank 1.)
 
     Example 2:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2  1.3  4.
                3.3  5.0  33.
@@ -284,25 +290,31 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
        res = la.argmax(a, comm)
 
     then ALL ranks will contain res = (3, 1)
     (The global maximum (51.) occurs at index 3 of the flattened local array on Rank 1.)
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.argmax(a, comm)
 
