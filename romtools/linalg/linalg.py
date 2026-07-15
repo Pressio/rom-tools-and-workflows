@@ -805,56 +805,67 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2
-               3.3
-      =======================
-       rank 1  40.
-               51.
-               -24.
-               45.
-      =======================
-       rank 2  -4.
+    .. code-block:: text
 
-    res = la.std(a, comm)
+        rank 0  2.2
+                3.3
+        =======================
+        rank 1  40.
+                51.
+                -24.
+                45.
+        =======================
+        rank 2  -4.
+
+    .. code-block:: python
+
+        res = la.std(a, comm)
+
     then ALL ranks will contain res = 26.71
 
     Example 2:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2  1.3  4.
-               3.3  5.0  33.
-      =======================
-       rank 1  40.  -2.  -4.
-               51.   4.   6.
-               -24.  8.   9.
-               45.  -3.  -4.
-      =======================
-       rank 2  -4.  8.   9.
+    .. code-block:: text
+
+        rank 0  2.2  1.3  4.
+                3.3  5.0  33.
+        =======================
+        rank 1  40.  -2.  -4.
+                51.   4.   6.
+                -24.  8.   9.
+                45.  -3.  -4.
+        =======================
+        rank 2. -4.  8.   9.
 
     Suppose that we do:
 
-       res = la.std(a, axis=0, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=0, comm)
 
     then every rank will contain the same res which is:
 
-       res  = ([26.71,  4.12 , 11.55])
+    .. code-block:: python
+
+       res = ([26.71,  4.12 , 11.55])
 
     this is because the standard deviation is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -862,47 +873,57 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=1, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=1, comm)
 
     then res is now a rank-1 array as follows
 
-       rank 0  1.12
-               13.62
-      =======================
-       rank 1  20.29
-               21.70
-               15.33
-               22.87
-      =======================
-       rank 2  5.91
+    .. code-block:: text
+
+        rank 0  1.12
+                13.62
+        =======================
+        rank 1  20.29
+                21.70
+                15.33
+                22.87
+        =======================
+        rank 2  5.91
 
     because the axis queried for the standard deviation is NOT a distributed axis
     so this operation is purely local and the result has the same distribution
     as the original array.
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.std(a, axis=0, comm)
 
     then res is now a rank-2 array as follows:
 
-       /   5.5578   2.6247   /    2.8674   4.0277   1.2472   3.2998   /   1.2472
-      / 1.2472   0.9428     / 3.3993   0.8165   4.9666   3.5590      / 5.9067
-     /                     /                                        /
-    /          r1         /                  r2                    /     r3
+    .. code-block:: text
+
+           /   5.5578   2.6247   /    2.8674   4.0277   1.2472   3.2998   /   1.2472
+          / 1.2472   0.9428     / 3.3993   0.8165   4.9666   3.5590      / 5.9067
+         /                     /                                        /
+        /          r1         /                  r2                    /     r3
 
     because the axis queried for the standard deviation is NOT a distributed axis
     and this is effectively a reduction over the 0-th axis
@@ -911,14 +932,18 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=1, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=1, comm)
 
     then this is effectively a reduction over axis=1,
     and every rank will contain the same res which is a rank-2 array as follows
 
-              3.14934396  2.16653584
-              4.14039336  3.28881841
-              5.06287004  3.84919817
+    .. code-block:: text
+
+        3.14934396  2.16653584
+        4.14039336  3.28881841
+        5.06287004  3.84919817
 
     this is because the standard deviation is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -928,9 +953,13 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=2, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=2, comm)
 
     then res is now a rank-2 array as follows
+
+    .. code-block:: text
 
            r0      ||          r1           ||  r2
                    ||                       ||
