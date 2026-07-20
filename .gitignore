@@ -10,3 +10,7 @@ build
 # Ignore custom HPC configurations (but track the example file)
 romtools/hpc/config/*
 !romtools/hpc/config/example.yaml
+
+# Docs builds
+docs/build/
+docs/source/generated/
