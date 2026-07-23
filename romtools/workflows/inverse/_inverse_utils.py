@@ -71,7 +71,7 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
 
 def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency):
     """Run a VI iteration for sampled parameters only (no explicit mean run)."""
-    mp_cntxt = multiprocessing.get_context("fork")
+    mp_cntxt = multiprocessing.get_context("spawn")
     ensemble_size = np.shape(parameter_samples)[0]
     assert ensemble_size > 0, "parameter_samples must contain at least one sample"
 

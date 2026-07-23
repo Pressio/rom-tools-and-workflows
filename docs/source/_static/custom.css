@@ -223,6 +223,148 @@ html[data-theme="dark"] .docs-home-grid .sd-card {
   color: var(--docs-muted);
 }
 
+.ask-repo-widget {
+  min-width: min(26rem, 42vw);
+}
+
+.ask-repo-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.ask-repo-input,
+.ask-repo-dialog-input {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--docs-ink);
+  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
+  min-width: 0;
+  outline: none;
+}
+
+.ask-repo-input {
+  width: min(22rem, 36vw);
+  font-size: 0.92rem;
+}
+
+.ask-repo-input:focus,
+.ask-repo-dialog-input:focus {
+  border-color: rgba(249, 115, 22, 0.85);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+}
+
+.ask-repo-button,
+.ask-repo-dialog-button,
+.ask-repo-close {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.62rem 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #fff;
+}
+
+.ask-repo-button:hover,
+.ask-repo-dialog-button:hover,
+.ask-repo-close:hover {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+
+.ask-repo-dialog-button-secondary {
+  background: #0f172a;
+}
+
+.ask-repo-dialog-button-secondary:hover {
+  background: #1f2937;
+}
+
+.ask-repo-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(5px);
+  z-index: 2000;
+}
+
+.ask-repo-overlay.is-open {
+  display: flex;
+}
+
+.ask-repo-dialog {
+  width: min(52rem, 100%);
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--docs-card);
+  color: var(--docs-ink);
+  border-radius: 24px;
+  box-shadow: var(--docs-shadow);
+  padding: 1.35rem;
+}
+
+.ask-repo-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ask-repo-dialog-title {
+  font-family: "Source Serif 4", "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ask-repo-dialog-form {
+  margin-bottom: 0.85rem;
+}
+
+.ask-repo-dialog-input {
+  width: 100%;
+}
+
+.ask-repo-dialog-actions {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.ask-repo-hint {
+  color: var(--docs-muted);
+  margin-bottom: 0.8rem;
+}
+
+.ask-repo-preview {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(148, 163, 184, 0.12);
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+}
+
+html[data-theme="dark"] .ask-repo-input,
+html[data-theme="dark"] .ask-repo-dialog-input {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+html[data-theme="dark"] .ask-repo-preview {
+  background: rgba(15, 23, 42, 0.75);
+}
+
+html[data-theme="dark"] .ask-repo-overlay {
+  background: rgba(2, 6, 23, 0.58);
+}
+
 @media (max-width: 700px) {
   .docs-home-hero {
     padding: 2.5rem 2rem;
@@ -236,5 +378,17 @@ html[data-theme="dark"] .docs-home-grid .sd-card {
   .docs-hero-cta .sd-btn {
     width: 100%;
     text-align: center;
+  }
+
+  .ask-repo-widget {
+    display: none;
+  }
+
+  .ask-repo-dialog-form {
+    margin-bottom: 0.85rem;
+  }
+
+  .ask-repo-dialog-actions {
+    flex-direction: column;
   }
 }

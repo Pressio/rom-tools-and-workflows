@@ -1,0 +1,15 @@
+ssh:
+  remote: <cluster>
+  user: <username>
+
+workflow:
+  remote_root: Develop/Pressio/hpctools-testing
+
+slurm:
+  job_name: hpctools_job
+  num_nodes: 1
+  tasks_per_node: 1
+  wall_time: "00:01:00"
+  partition: short
+  poll_interval: 5
+  account: <wcid>

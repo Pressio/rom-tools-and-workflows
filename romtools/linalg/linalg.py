@@ -4,6 +4,9 @@ see this for why this file exists and is done this way
 https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1
 '''
 
+from pathlib import Path
+
+import builtins
 import warnings
 import numpy as np
 from romtools.linalg.parallel_utils import assert_axis_is_none_or_within_rank
@@ -21,22 +24,26 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
+
+    Input data:
+
+    .. code-block:: text
 
        rank 0  2.2
                3.3
@@ -48,11 +55,18 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
       =======================
        rank 2  -4.
 
-    res = la.max(a, comm)
-    then ALL ranks will contain res = 51.
+    Suppose that we do:
+
+    .. code-block:: python
+
+        res = la.max(a, comm)
+
+    Then all ranks will contain res = 51.
 
     Example 2:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2  1.3  4.
                3.3  5.0  33.
@@ -66,97 +80,113 @@ def _basic_max_via_python(a: np.ndarray, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
        res = la.max(a, axis=0, comm)
 
-    then every rank will contain the same res which is an array = ([51., 8., 33])
+    Then every rank will contain the same res which is an array = ([51., 8., 33])
     this is because the max is queried for the 0-th axis which is the
-    axis along which the data array is distributed.
-    So this operation must be a collective operation.
+    axis along which the data array is distributed. So this operation must be a
+    collective operation.
 
     Suppose that we do:
+
+    .. code-block:: python
 
       res = la.max(a, axis=1, comm)
 
-    then res is now a rank-1 array as follows
+    Then res is now a rank-1 array as follows:
 
-       rank 0  4.
-               33.
-      =======================
-       rank 1  40.
-               51.
-               9.
-               45.
-      =======================
-       rank 2  9.
+    .. code-block:: text
 
-    because the axis queried for the max is NOT a distributed axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+        rank 0  4.
+                33.
+        =======================
+        rank 1  40.
+                51.
+                9.
+                45.
+        =======================
+        rank 2  9.
 
+    Because the axis queried for the max is NOT a distributed axis so this
+    operation is purely local and the result has the same distribution as the
+    original array.
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.max(a, axis=0, comm)
 
-    then res is now a rank-2 array as follows:
+    Then res is now a rank-2 array as follows:
 
-       /  6.  5.   /  5.   8.   3.   1.  /  3.
-      / 4.   5.   / 4.   6.   9.   4.   /  9.
-     /           /                     /
-    /    r1     /         r2          /  r3
+    .. code-block:: text
 
-    because the axis queried for the max is NOT a distributed axis
-    and this is effectively a reduction over the 0-th axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+           /  6.  5.   /  5.   8.   3.   1.  /  3.
+          / 4.   5.   / 4.   6.   9.   4.   /  9.
+         /           /                     /
+        /    r1     /         r2          /  r3
 
-    Suppose that we do:
-
-      res = la.max(a, axis=1, comm)
-
-    then this is effectively a reduction over axis=1,
-    and every rank will contain the same res which is a rank-2 array as follows
-
-                  5.  8.
-                  8.  6.
-                  9.  5.
-
-    this is because the max is queried for the 0-th axis which is the
-    axis along which the data array is distributed.
-    So this operation must be a collective operation and we know that
-    memory-wise it is feasible to hold because this is no larger than the
-    local allocation on each rank.
+    Because the axis queried for the max is NOT a distributed axis and this is
+    effectively a reduction over the 0-th axis so this operation is purely local
+    and the result has the same distribution as the original array.
 
     Suppose that we do:
 
-      res = la.max(a, axis=2, comm)
+    .. code-block:: python
 
-    then res is now a rank-2 array as follows
+        res = la.max(a, axis=1, comm)
 
-            r0     ||          r1           ||  r2
-                   ||                       ||
-          3.   4.  ||   4.   8.   2.   4.   ||   2.
-          6.   5.  ||  -2.   4.   8.  -3.   ||   8.
-          4.   5.  ||   5.   6.   9.   1.   ||   9.
-                   ||                       ||
+    Then this is effectively a reduction over axis=1, and every rank will
+    contain the same res which is a rank-2 array as follows:
 
-    because the axis queried for the max is NOT a distributed axis
-    and this is effectively a reduction over the 2-th axis
-    so this operation is purely local and the result has the same distribution
-    as the original array.
+    .. code-block:: text
+
+        5.  8.
+        8.  6.
+        9.  5.
+
+    This is because the max is queried for the 0-th axis which is the axis along
+    which the data array is distributed. So this operation must be a collective
+    operation and we know that memory-wise it is feasible to hold because this
+    is no larger than the local allocation on each rank.
+
+    Suppose that we do:
+
+    .. code-block:: python
+
+        res = la.max(a, axis=2, comm)
+
+    Then res is now a rank-2 array as follows:
+
+    .. code-block:: text
+
+          r0     ||          r1           ||  r2
+                 ||                       ||
+        3.   4.  ||   4.   8.   2.   4.   ||   2.
+        6.   5.  ||  -2.   4.   8.  -3.   ||   8.
+        4.   5.  ||   5.   6.   9.   1.   ||   9.
+                 ||                       ||
+
+    Because the axis queried for the max is NOT a distributed axis and this is
+    effectively a reduction over the 2-th axis so this operation is purely local
+    and the result has the same distribution as the original array.
 
     '''
     # Enforce preconditions
@@ -203,11 +233,11 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if comm == None, returns the index of the maximum value (identical to np.argmax)
-        if comm != None, returns a tuple containing (value, index, rank):
-            value: the global maximum
-            index: the local index of the global maximum
-            rank:  the rank on which the global maximum resides
+        - if comm == None, returns the index of the maximum value (identical to np.argmax)
+        - if comm != None, returns a tuple containing (value, index, rank):
+            - value: the global maximum
+            - index: the local index of the global maximum
+            - rank: the rank on which the global maximum resides
 
     Preconditions:
       - a is at most a rank-3 tensor
@@ -220,7 +250,9 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
       - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2
                3.3
@@ -234,13 +266,17 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
         res = la.argmax(a, comm)
 
     then ALL ranks will contain res = (1, 1).
     (The global maximum (51.) occurs at index 1 of the local array on Rank 1.)
 
     Example 2:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2  1.3  4.
                3.3  5.0  33.
@@ -254,25 +290,31 @@ def _basic_argmax_via_python(a: np.ndarray, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
        res = la.argmax(a, comm)
 
     then ALL ranks will contain res = (3, 1)
     (The global maximum (51.) occurs at index 3 of the flattened local array on Rank 1.)
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.argmax(a, comm)
 
@@ -334,50 +376,59 @@ def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2
-               3.3
-      =======================
-       rank 1  40.
-               51.
-               -24.
-               45.
-      =======================
-       rank 2  -4.
+    .. code-block:: text
 
-    res = la.min(a, comm)
+        rank 0  2.2
+                3.3
+        =======================
+        rank 1  40.
+                51.
+                -24.
+                45.
+        =======================
+        rank 2  -4.
+
+    .. code-block:: python
+
+        res = la.min(a, comm)
+
     then ALL ranks will contain res = -4.
 
     Example 2:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2  1.3  4.
-               3.3  5.0  33.
-      =======================
-       rank 1  40.  -2.  -4.
-               51.   4.   6.
-               -24.  8.   9.
-               45.  -3.  -4.
-      =======================
-       rank 2  -4.  8.   9.
+    .. code-block:: text
+
+        rank 0  2.2  1.3  4.
+                3.3  5.0  33.
+        =======================
+        rank 1  40.  -2.  -4.
+                51.   4.   6.
+                -24.  8.   9.
+                45.  -3.  -4.
+        =======================
+        rank 2  -4.  8.   9.
 
     Suppose that we do:
+
+    .. code-block:: python
 
        res = la.min(a, axis=0, comm)
 
@@ -388,48 +439,57 @@ def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
       res = la.min(a, axis=1, comm)
 
     then res is now a rank-1 array as follows
 
-       rank 0  1.3
-               3.3
-      =======================
-       rank 1  -4.
-               4.
-               -24.
-               -4.
-      =======================
-       rank 2  -4.
+    .. code-block:: text
+
+        rank 0  1.3
+                3.3
+        =======================
+        rank 1  -4.
+                4.
+                -24.
+                -4.
+        =======================
+        rank 2  -4.
 
     because the axis queried for the min is NOT a distributed axis
     so this operation is purely local and the result has the same distribution
     as the original array.
 
-
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.max(a, axis=0, comm)
 
     then res is now a rank-2 array as follows:
 
-       /  -7.  -1.  /  -2.   -1.   0.   -6.  /  0.
-      / 1.    3.   / -4.    4.   -2.   -4.  /  -4.
-     /            /                        /
-    /     r1     /           r2           /   r3
+    .. code-block:: text
+
+           /  -7.  -1.  /  -2.   -1.   0.   -6.  /  0.
+          / 1.    3.   / -4.    4.   -2.   -4.  /  -4.
+         /            /                        /
+        /     r1     /           r2           /   r3
 
     because the axis queried for the max is NOT a distributed axis
     and this is effectively a reduction over the 0-th axis
@@ -438,14 +498,18 @@ def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.max(a, axis=1, comm)
+    .. code-block:: python
+
+        res = la.max(a, axis=1, comm)
 
     then this is effectively a reduction over axis=1,
     and every rank will contain the same res which is a rank-2 array as follows
 
-                    -4.   1.
-                    -3.  -6.
-                    -4.  -7.
+    .. code-block:: text
+
+        -4.   1.
+        -3.  -6.
+        -4.  -7.
 
     this is because the max is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -455,9 +519,13 @@ def _basic_min_via_python(a: np.ndarray, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.max(a, axis=2, comm)
+    .. code-block:: python
+
+        res = la.max(a, axis=2, comm)
 
     then res is now a rank-2 array as follows
+
+    .. code-block:: text
 
              r0    ||          r1           ||  r2
                    ||                       ||
@@ -517,22 +585,24 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
+
+    .. code-block:: text
 
        rank 0  2.2
                3.3
@@ -544,30 +614,38 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
       =======================
        rank 2  -4.
 
-    res = la.mean(a, comm)
+    .. code-block:: python
+
+        res = la.mean(a, comm)
+
     then ALL ranks will contain res = 16.21
 
-
     Example 2:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2  1.3  4.
-               3.3  5.0  33.
-      =======================
-       rank 1  40.  -2.  -4.
-               51.   4.   6.
-               -24.  8.   9.
-               45.  -3.  -4.
-      =======================
-       rank 2  -4.  8.   9.
+    .. code-block:: text
+
+        rank 0  2.2  1.3  4.
+                3.3  5.0  33.
+        =======================
+        rank 1  40.  -2.  -4.
+                51.   4.   6.
+                -24.  8.   9.
+                45.  -3.  -4.
+        =======================
+        rank 2  -4.   8.   9.
 
     Suppose that we do:
+
+    .. code-block:: python
 
        res = la.mean(a, axis=0, comm)
 
     then every rank will contain the same res which is:
 
-       res  = ([16.21,  3.04,  7.57])
+    .. code-block:: python
+
+       res = ([16.21,  3.04,  7.57])
 
     this is because the mean is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -575,48 +653,57 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
       res = la.mean(a, axis=1, comm)
 
     then res is now a rank-1 array as follows
 
-       rank 0  2.5
-               13.77
-      =======================
-       rank 1  11.33
-               20.33
-               -2.33
-               12.67
-      =======================
-       rank 2  4.33
+    .. code-block:: text
+
+        rank 0  2.5
+                13.77
+        =======================
+        rank 1  11.33
+                20.33
+                -2.33
+                12.67
+        =======================
+        rank 2  4.33
 
     because the axis queried for the mean is NOT a distributed axis
     so this operation is purely local and the result has the same distribution
     as the original array.
 
-
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.mean(a, axis=0, comm)
 
     then res is now a rank-2 array as follows:
 
-       /   0.6667   2.6667  /    1.6667   2.3333   1.6667   -1.3333  /   1.6667
-      / 2.3333  3.6667     / -0.6667.   5.       5.      -1.        /  4.3333
-     /                    /                                        /
-    /         r1         /                  r2                    /    r3
+    .. code-block:: text
+
+           /   0.6667   2.6667  /    1.6667   2.3333   1.6667   -1.3333  /   1.6667
+          / 2.3333  3.6667     / -0.6667.   5.       5.      -1.        /  4.3333
+         /                    /                                        /
+        /         r1         /                  r2                    /    r3
 
     because the axis queried for the mean is NOT a distributed axis
     and this is effectively a reduction over the 0-th axis
@@ -625,14 +712,18 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
       res = la.mean(a, axis=1, comm)
 
     then this is effectively a reduction over axis=1,
     and every rank will contain the same res which is a rank-2 array as follows
 
-              1.71428571  3.1428571
-              3.         -0.5714285
-              3.28571429  1.4285714
+    .. code-block:: text
+
+        1.71428571  3.1428571
+        3.         -0.5714285
+        3.28571429  1.4285714
 
     this is because the mean is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -642,9 +733,13 @@ def _basic_mean_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
+    .. code-block:: python
+
       res = la.mean(a, axis=2, comm)
 
     then res is now a rank-2 array as follows
+
+    .. code-block:: text
 
            r0      ||          r1           ||  r2
                    ||                       ||
@@ -710,56 +805,67 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
         comm (MPI_Comm): MPI communicator (default: None)
 
     Returns:
-        if axis == None, returns a scalar
-        if axis is not None, returns an array of dimension a.ndim - 1
+        - if axis == None, returns a scalar
+        - if axis is not None, returns an array of dimension a.ndim - 1
 
     Preconditions:
-      - a is at most a rank-3 tensor
-      - if a is a distributed 2-D array, it must be distributed along axis=0,
-        and every rank must have the same a.shape[1]
-      - if a is a distributed 3-D tensor, it must be distributed along axis=1,
-        and every rank must have the same a.shape[0] and a.shape[2]
-      - if axis != None, then it must be an int
+        - a is at most a rank-3 tensor
+        - if a is a distributed 2-D array, it must be distributed along axis=0,
+          and every rank must have the same a.shape[1]
+        - if a is a distributed 3-D tensor, it must be distributed along axis=1,
+          and every rank must have the same a.shape[0] and a.shape[2]
+        - if axis != None, then it must be an int
 
     Postconditions:
-      - a and comm are not modified
+        - a and comm are not modified
 
     Example 1:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2
-               3.3
-      =======================
-       rank 1  40.
-               51.
-               -24.
-               45.
-      =======================
-       rank 2  -4.
+    .. code-block:: text
 
-    res = la.std(a, comm)
+        rank 0  2.2
+                3.3
+        =======================
+        rank 1  40.
+                51.
+                -24.
+                45.
+        =======================
+        rank 2  -4.
+
+    .. code-block:: python
+
+        res = la.std(a, comm)
+
     then ALL ranks will contain res = 26.71
 
     Example 2:
-    **********
+    ^^^^^^^^^^
 
-       rank 0  2.2  1.3  4.
-               3.3  5.0  33.
-      =======================
-       rank 1  40.  -2.  -4.
-               51.   4.   6.
-               -24.  8.   9.
-               45.  -3.  -4.
-      =======================
-       rank 2  -4.  8.   9.
+    .. code-block:: text
+
+        rank 0  2.2  1.3  4.
+                3.3  5.0  33.
+        =======================
+        rank 1  40.  -2.  -4.
+                51.   4.   6.
+                -24.  8.   9.
+                45.  -3.  -4.
+        =======================
+        rank 2. -4.  8.   9.
 
     Suppose that we do:
 
-       res = la.std(a, axis=0, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=0, comm)
 
     then every rank will contain the same res which is:
 
-       res  = ([26.71,  4.12 , 11.55])
+    .. code-block:: python
+
+       res = ([26.71,  4.12 , 11.55])
 
     this is because the standard deviation is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -767,47 +873,57 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=1, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=1, comm)
 
     then res is now a rank-1 array as follows
 
-       rank 0  1.12
-               13.62
-      =======================
-       rank 1  20.29
-               21.70
-               15.33
-               22.87
-      =======================
-       rank 2  5.91
+    .. code-block:: text
+
+        rank 0  1.12
+                13.62
+        =======================
+        rank 1  20.29
+                21.70
+                15.33
+                22.87
+        =======================
+        rank 2  5.91
 
     because the axis queried for the standard deviation is NOT a distributed axis
     so this operation is purely local and the result has the same distribution
     as the original array.
 
     Example 3:
-    **********
+    ^^^^^^^^^^
 
-       / 3.   4.   /  2.   8.   2.   1.   / 2.
-      /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
-     /  -7.   5. /    5.   0.   3.   1. /   3.
-    |-----------|----------------------|--------
-    | 2.   3.   |  4.   5.  -2.   4.   | -4.
-    | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
-    | 4.   3.   | -4.   6.   9.  -4.   |  9.
+    .. code-block:: text
 
-        r0                r1              r2
+           / 3.   4.   /  2.   8.   2.   1.   / 2.
+          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -> slice T(:,:,1)
+         /  -7.   5. /    5.   0.   3.   1. /   3.
+        |-----------|----------------------|--------
+        | 2.   3.   |  4.   5.  -2.   4.   | -4.
+        | 1.   5.   | -2.   4.   8.  -3.   |  8.    ->  slice T(:,:,0)
+        | 4.   3.   | -4.   6.   9.  -4.   |  9.
+
+            r0                r1              r2
 
     Suppose that we do:
+
+    .. code-block:: python
 
         res = la.std(a, axis=0, comm)
 
     then res is now a rank-2 array as follows:
 
-       /   5.5578   2.6247   /    2.8674   4.0277   1.2472   3.2998   /   1.2472
-      / 1.2472   0.9428     / 3.3993   0.8165   4.9666   3.5590      / 5.9067
-     /                     /                                        /
-    /          r1         /                  r2                    /     r3
+    .. code-block:: text
+
+           /   5.5578   2.6247   /    2.8674   4.0277   1.2472   3.2998   /   1.2472
+          / 1.2472   0.9428     / 3.3993   0.8165   4.9666   3.5590      / 5.9067
+         /                     /                                        /
+        /          r1         /                  r2                    /     r3
 
     because the axis queried for the standard deviation is NOT a distributed axis
     and this is effectively a reduction over the 0-th axis
@@ -816,14 +932,18 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=1, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=1, comm)
 
     then this is effectively a reduction over axis=1,
     and every rank will contain the same res which is a rank-2 array as follows
 
-              3.14934396  2.16653584
-              4.14039336  3.28881841
-              5.06287004  3.84919817
+    .. code-block:: text
+
+        3.14934396  2.16653584
+        4.14039336  3.28881841
+        5.06287004  3.84919817
 
     this is because the standard deviation is queried for the 0-th axis which is the
     axis along which the data array is distributed.
@@ -833,9 +953,13 @@ def _basic_std_via_python(a: np.ndarray, dtype=None, axis=None, comm=None):
 
     Suppose that we do:
 
-      res = la.std(a, axis=2, comm)
+    .. code-block:: python
+
+        res = la.std(a, axis=2, comm)
 
     then res is now a rank-2 array as follows
+
+    .. code-block:: text
 
            r0      ||          r1           ||  r2
                    ||                       ||
@@ -1174,6 +1298,352 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     return A_g, b_g
 
 # ----------------------------------------------------
+def load_snapshot(dataset_dir: str, i: int):
+    '''
+    Load snapshot i from disk.
+
+    Parameters:
+        dataset_dir (str): directory containing snapshot files.
+        i (int): snapshot index.
+
+    Returns:
+        - ndarray(shape=(N,)) - snapshot vector.
+    '''
+    path = Path(dataset_dir)
+    return np.loadtxt(path / f"snapshot_{i}.txt")
+
+def _snapshot_loader(dataset_dir: str, start: int, end: int):
+    '''
+    Load a contiguous range of snapshots from a dataset directory and stack them
+    as columns in a single matrix.
+
+    Parameters:
+        dataset_dir (str): directory containing snapshot files.
+        start (int): first snapshot index (inclusive).
+        end (int): last snapshot index (exclusive).
+
+    Return:
+        - Xb, ndarray(shape=(N, end-start)) - block of snapshots stacked as columns.
+
+    Exemple 1
+    ^^^^^^^^^
+
+    Load snapshots 0 through 9:
+
+    .. code-block:: text
+
+        >>> Xb = _snapshot_loader("data/snapshots", 0, 10)
+        >>> Xb.shape
+        (N, 10)
+
+    Exemple 2
+    ^^^^^^^^^
+
+    Load a subset of snapshots for a training block:
+
+    .. code-block:: text
+
+        >>> Xb = _snapshot_loader("data/snapshots", 20, 25)
+        >>> Xb.shape
+        (N, 5)
+    '''
+    snapshots = []
+    for i in range(start, end):
+        Xbi = load_snapshot(dataset_dir, i)
+        snapshots.append(Xbi)
+    Xb = np.column_stack(snapshots)
+    return Xb
+
+def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: int):
+    '''
+    Compute an approximate POD/SVD decomposition of a snapshot matrix using a
+    two-pass randomized streaming algorithm that processes snapshots in blocks.
+
+    Parameters:
+        snapshot_loader: capable of loading blocks of columns (of X).
+        block_size (int): number of snapshots loaded at once.
+        N (int): number of rows (of X).
+        M (int): number of columns/snapshots (of X).
+        k (int): target rank.
+        p (int): oversampling parameter.
+
+    Returns:
+        - Uk, ndarray(shape=(N, k)) - approximate POD modes.
+        - Sk, ndarray(shape=(k,)) - approximate POD singular values.
+        - Vk, ndarray(shape=(k, M)) - approximate right singular vectors.
+
+    Example 1
+    ^^^^^^^^^
+
+    Compute the first 3 POD modes from 8 snapshots loaded in blocks of 2:
+
+    .. code-block:: text
+
+        >>> path = "data/snapshots/rank3_5x8"
+        >>> loader = lambda s, e: _snapshot_loader(path, s, e)
+        >>> U, S, Vt = _streaming_pod(
+                snapshot_loader=loader,
+                block_size=2,
+                N=5, M=8,
+                k=3, p=1,
+            )
+
+        >>> U.shape
+        (5, 3)
+
+        >>> S.shape
+        (3,)
+
+        >>> Vt.shape
+        (3, 8)
+
+    Example 2
+    ^^^^^^^^^
+
+    Compute a rank-10 approximation of a larger dataset while limiting memory
+    usage by loading snapshots in blocks of 50:
+
+    .. code-block:: text
+
+        >>> U, S, Vt = _streaming_pod(
+                snapshot_loader=loader,
+                block_size=50,
+                N=1000, M=500,
+                k=10, p=5,
+            )
+
+        >>> U.shape
+        (1000, 10)
+
+        >>> S.shape
+        (10,)
+
+        >>> Vt.shape
+        (10, 500)
+    '''
+
+    assert block_size < M
+    # NOTE: block_size = M -> no more streaming...
+    # NOTE: block_size = 1 -> minimum memory, lot of I/O.
+
+    assert k <= N and k <= M
+
+    # sketch dimension
+    l = k + p
+    assert l <= N and l <= M
+
+    # pass 1
+    omega = np.random.randn(M, l)
+    Y = np.zeros(shape=(N, l))
+    for start in range(0, M, block_size):
+        end = builtins.min(start + block_size, M)
+        Xb = snapshot_loader(start, end)
+        Ob = omega[start:end, :]
+        Y += Xb @ Ob
+
+    # compute orthonormal basis
+    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
+    Q = Uy[:, :l]
+
+    # pass 2
+    B = np.zeros(shape=(l, M))
+    for start in range(0, M, block_size):
+        end = builtins.min(start + block_size, M)
+        Xb = snapshot_loader(start, end)
+        Bb = Q.T @ Xb
+        B[:, start:end] = Bb
+
+    # compute approximate SVD
+    U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    U = Q @ U_tilde
+
+    # results
+    return (U[:, :k], S[:k], Vt[:k, :])
+
+def _local_column_range(rank, size, M):
+    '''
+    Compute the range of matrix columns assigned to a given process.
+
+    Parameters:
+        rank (int): identifier of the current process
+        size (int): total number of processes
+        M (int): total number of columns to distribute
+
+    Returns:
+        - start (int) - index of the first column assigned to the process (inclusive).
+        - end (int) - index of the last column boundary (exclusive).
+
+    Postconditions:
+        - Columns are distributed as evenly as possible among processes.
+        - If M is not divisible by size, the first (M % size) processes receive one additional column.
+
+    Example 1
+    ^^^^^^^^^
+
+    For size = 3 and M = 10:
+
+    .. code-block:: text
+
+        >>> start, end = _local_column_range(rank=0, size=3, M=10)
+        (0, 4)
+
+        >>> start, end = _local_column_range(rank=1, size, M)
+        (4, 7)
+
+        >>> start, end = _local_column_range(rank=1, size, M)
+        (7, 10)
+
+    Example 2
+    ^^^^^^^^^
+
+    For size = 4 and M = 8:
+
+    .. code-block:: text
+
+        >>> start, end = _local_column_range(rank=0, size=4, M=8)
+        (0, 2)
+
+        >>> start, end = _local_column_range(rank=1, size, M)
+        (2, 4)
+
+        >>> start, end = _local_column_range(rank=2, size, M)
+        (4, 6)
+
+        >>> start, end = _local_column_range(rank=3, size, M)
+        (6, 8)
+    '''
+    q, r = divmod(M, size)
+
+    start = rank * q + builtins.min(rank, r)
+    end = start + q + (1 if rank < r else 0)
+
+    return start, end
+
+def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=None):
+    '''
+    Distributed randomized streaming POD using MPI by partitioning snapshot
+    columns across processes and combining local computations through collective
+    communication.
+
+    Parameters:
+        snapshot_loader: callable(start, end) returning locally assigned
+            snapshot columns with shape (N, end-start).
+        N (int): number of rows of the snapshot matrix X.
+        M (int): number of columns (snapshots) of X.
+        k (int): target rank.
+        p (int): oversampling parameter.
+        comm: MPI communicator (defaults to MPI.COMM_WORLD).
+
+    Returns:
+        - Uk, ndarray(shape=(N, k)) - approximate POD modes.
+        - Sk, ndarray(shape=(k,)) - approximate POD singular values.
+        - Vk, ndarray(shape=(k, M)) - approximate right singular vectors transposed.
+
+    Example 1
+    ^^^^^^^^^
+
+    Compute a rank-3 POD approximation using 4 MPI processes.
+
+    .. code-block:: bash
+
+        mpirun -n 4 python pod_mpi.py
+
+    .. code-block:: text
+
+        >>> comm = MPI.COMM_WORLD
+        >>> loader = lambda s, e: _snapshot_loader("snapshots/rank3_5x8", s, e)
+        >>> U, S, Vt = _streaming_pod_mpi(
+                snapshot_loader=loader,
+                N=5, M=8,
+                k=1, p=1,
+                comm=comm
+            )
+
+        >>> U.shape
+        (5, 1)
+
+        >>> S.shape
+        (1,)
+
+        >>> Vt.shape
+        (1, 8)
+
+    Example 2
+    ^^^^^^^^^
+
+    Compute a rank-10 POD approximation of a large snapshot matrix distributed
+    across 8 MPI processes.
+
+    .. code-block:: bash
+
+        mpirun -n 8 python pod_mpi.py
+
+    .. code-block:: text
+
+        >>> U, S, Vt = _streaming_pod_mpi(
+            snapshot_loader=loader,
+            N=5000, M=1000,
+            k=10, p=5,
+            comm=comm
+        )
+
+        >>> U.shape
+        (5000, 10)
+    '''
+    from mpi4py import MPI
+    if comm is None:
+        comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
+    l = k + p
+    assert l <= N and l <= M
+
+    # pass 1: distribute
+    if rank == 0:
+        omega = np.random.randn(M, l)
+    else:
+        omega = None
+
+    omega = comm.bcast(omega, root=0)
+
+    start, end = _local_column_range(rank, size, M)
+    X_local = snapshot_loader(start, end)
+    omega_local = omega[start:end, :]
+    Y_local = X_local @ omega_local # shape=(N,l)
+    Y = np.zeros(shape=(N,l))
+    comm.Allreduce(Y_local, Y, op=MPI.SUM)
+
+    # compute orthonormal basis: no distribute
+    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
+    Q = Uy[:, :l]
+
+    # pass 2: distribute
+    B_local = Q.T @ X_local # shape=(l, M_local)
+
+    # gather
+    B_parts = comm.gather(B_local, root=0)
+
+    if rank == 0:
+        B = np.hstack(B_parts)
+        U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    else:
+        U_tilde = None
+        S = None
+        Vt = None
+
+    # broadcast
+    U_tilde = comm.bcast(U_tilde, root=0)
+    S = comm.bcast(S, root=0)
+    Vt = comm.bcast(Vt, root=0)
+
+    # compute approximate SVD
+    U = Q @ U_tilde
+
+    # results
+    return (U[:, :k], S[:k], Vt[:k, :])
+
+# ----------------------------------------------------
 # ----------------------------------------------------
 
 # pylint: disable=redefined-builtin
@@ -1186,3 +1656,7 @@ std = _basic_std_via_python
 product = _basic_product_via_python
 pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
+snapshot_loader = _snapshot_loader
+streaming_pod = _streaming_pod
+local_column_range = _local_column_range
+streaming_pod_mpi = _streaming_pod_mpi
