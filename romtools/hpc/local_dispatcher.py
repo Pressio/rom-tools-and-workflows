@@ -47,7 +47,7 @@ class LocalDispatcher(DispatcherBase):
     def create_empty_dir(self, dir_name: str):
         os.makedirs(dir_name, exist_ok=True)
 
-    def dispatch(self, cmd: str, run_directory: str = None) -> None:
+    def dispatch(self, cmd: str, run_directory: str = None) -> int:
         full_cmd = f"cd {shlex.quote(run_directory)} && {cmd}" if run_directory else cmd
         result = subprocess.run(
             full_cmd,
@@ -55,7 +55,7 @@ class LocalDispatcher(DispatcherBase):
             capture_output=True,
             text=True
         )
-        return Result(result.stdout, result.stderr, result.returncode)
+        return result.returncode
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         np.savetxt(path, arr, fmt=fmt)

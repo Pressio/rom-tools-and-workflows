@@ -19,6 +19,21 @@ from romtools.hpc.util.slurm import create_slurm_script
 
 ## ----------------------------------------------------------------------------
 
+SLURM_TERMINAL_STATES = {
+    "BOOT_FAIL",
+    "CANCELLED",
+    "COMPLETED",
+    "DEADLINE",
+    "FAILED",
+    "NODE_FAIL",
+    "OUT_OF_MEMORY",
+    "PREEMPTED",
+    "TIMEOUT",
+}
+JOB_SUCCESS = 0
+JOB_FAILED = 1
+JOB_STATUS_UNKNOWN = 2
+
 class RemoteDispatcher(DispatcherBase):
     """
     Main class of ROM's HPC tools. Establishes SSH connection to remote host, dispatches
@@ -208,15 +223,63 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __wait_for_job(self, job_id: str) -> None:
+    def __get_sacct_status(self, job_id: str, sacct_start_time: str = None):
+        """
+        Return the SLURM accounting state and exit code for a completed/disappeared job.
+
+        Returns:
+            tuple[str, str] | tuple[None, None]:
+                (state, exit_code), or (None, None) if sacct does not have the record yet.
+        """
+        jid = shlex.quote(str(job_id))
+
+        cmd = (
+            f"sacct -j {jid} -X -n -P "
+            "--format=JobIDRaw,State%30,ExitCode"
+        )
+
+        if sacct_start_time is not None:
+            cmd += f" --starttime {shlex.quote(sacct_start_time)}"
+
+        result = self.conn.run(cmd)
+
+        if not result.ok:
+            self.logger.debug(f"sacct failed for job {job_id}: {result.stderr}")
+            return None, None
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split("|")
+            if len(parts) < 3:
+                continue
+
+            sacct_job_id = parts[0].strip()
+            state = parts[1].strip().split()[0].upper()
+            exit_code = parts[2].strip()
+
+            if sacct_job_id == str(job_id):
+                return state, exit_code
+
+        return None, None
+
+    def __wait_for_job(self, job_id: str, sacct_start_time=None) -> int:
         """
         Block until the SLURM job is no longer in the queue (RUNNING or PENDING).
 
         Args:
             job_id:        The SLURM job ID to monitor.
             poll_interval: Seconds between squeue polls (default: 30).
+
+        Returns:
+            0: Success
+            1: Failed
+            2: Unknown
         """
         poll_interval = self.config.get("poll_interval")
+        accounting_timeout = self.config.get("accounting_timeout")
         self.logger.log(f"Polling SLURM job {job_id} every {poll_interval}s (Ctrl+C to cancel job)...")
         try:
             while True:
@@ -226,7 +289,41 @@ class RemoteDispatcher(DispatcherBase):
                     break
                 self.logger.debug(f"Job {job_id} still running...")
                 time.sleep(poll_interval)
-            self.logger.log(f"Job {job_id} completed.")
+
+            self.logger.log(f"Job {job_id} completed. Retrieving sacct status...")
+            start_wait = time.time()
+            while True:
+                state, exit_code = self.__get_sacct_status(job_id, sacct_start_time)
+                elapsed = time.time() - start_wait
+                if state is None:
+                    if elapsed > accounting_timeout:
+                        return JOB_STATUS_UNKNOWN
+
+                    self.logger.debug(
+                        f"Job {job_id} is no longer in squeue, but sacct has no "
+                        f"record yet. Waiting..."
+                    )
+                    time.sleep(min(5, poll_interval))
+                    continue
+
+                self.logger.debug(
+                    f"sacct reports job {job_id}: state={state}, exit_code={exit_code}"
+                )
+
+                if state not in SLURM_TERMINAL_STATES:
+                    if elapsed > accounting_timeout:
+                        return JOB_STATUS_UNKNOWN
+                    time.sleep(min(5, poll_interval))
+                    continue
+
+                if state == "COMPLETED" and exit_code == "0:0":
+                    return JOB_SUCCESS
+
+                self.logger.log(
+                    f"Job {job_id} finished unsuccessfully: state={state}, exit_code={exit_code}"
+                )
+                return JOB_FAILED
+
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
             raise
@@ -284,7 +381,24 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
         self.logger.debug(f"Executed command on remote host: {cmd}")
 
-    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> str:
+    def __get_remote_sacct_start_time(self, margin_seconds: int = 60) -> str:
+        """
+        Return a Slurm-compatible timestamp from the remote machine's timezone.
+        """
+        margin_seconds = int(margin_seconds)
+
+        result = self.conn.run(
+            f"date -d '{margin_seconds} seconds ago' '+%Y-%m-%dT%H:%M:%S'"
+        )
+
+        if not result.ok:
+            raise RuntimeError(
+                f"Failed to get remote time for sacct start time: {result.stderr}"
+            )
+
+        return result.stdout.strip()
+
+    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> int:
         """
         Main method of the Dispatcher. Dispatches provided work to the
         remote host, polls the job, and collects results.
@@ -304,10 +418,11 @@ class RemoteDispatcher(DispatcherBase):
         if not with_slurm:
             self.__run(cmd, run_directory=run_directory)
             return "No SLURM job submitted."
+        sacct_start_time = self.__get_remote_sacct_start_time()
         job_id = self.__submit_slurm_job(cmd, run_directory)
-        self.__wait_for_job(job_id)
+        status = self.__wait_for_job(job_id, sacct_start_time)
         self.collector.collect_results()
-        return job_id
+        return status
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         buffer = io.StringIO()
