@@ -272,8 +272,8 @@ class RemoteDispatcher(DispatcherBase):
         Returns:
             -1 if unable to retrieve sacct status
 
-            job exit code + linux signal number otherwise (the result from sacct)
-            '0:0', etc
+            Job exit code + linux signal number otherwise (the result from sacct)
+            Example: '0:0'
         """
         poll_interval = self.config.get("poll_interval")
         accounting_timeout = self.config.get("accounting_timeout")

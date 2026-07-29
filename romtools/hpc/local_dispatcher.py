@@ -5,7 +5,6 @@ import shlex
 import subprocess
 import numpy as np
 
-from romtools.hpc.connection import Result
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatcher_base import DispatcherBase
 
