@@ -41,7 +41,7 @@ class DispatcherBase:
     def create_empty_dir(self, dir_name: str):
         pass
 
-    def dispatch(self, cmd: str, run_directory: str = None) -> int:
+    def dispatch(self, cmd: str, run_directory: str = None) -> str:
         pass
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:

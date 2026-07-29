@@ -1,10 +1,12 @@
 import io
 import sys
 import tarfile
+import time
 
 import pytest
 
 from romtools.hpc.connection import Result
+from romtools.hpc.configuration import Configuration
 
 
 class FakeConnection:
@@ -29,6 +31,11 @@ class FakeConnection:
         for matcher, result in self._responses:
             if matcher in command:
                 return result() if callable(result) else result
+
+        # fallbacks
+        if "date -d" in command:
+            Result(stdout=str(time.time()), stderr="", exited=0)
+
         return Result(stdout="", stderr="", exited=0)
 
     def put(self, local, remote):
@@ -65,23 +72,10 @@ def fake_connection():
 @pytest.fixture
 def make_config():
     def _make(**overrides):
-        config = {
-            "remote": "test-host",
-            "user": "test-user",
-            "port": 22,
-            "script": None,
-            "job_name": "test_job",
-            "num_nodes": 1,
-            "tasks_per_node": 1,
-            "wall_time": "00:01:00",
-            "partition": "short",
-            "account": "test-account",
-            "poll_interval": 0,
-            "remote_root": "hpctools_campaigns",
-            "debug": False,
-            "collect": None,
-            "user_defined": {},
-        }
+        config = Configuration().to_dict()
+        config['remote'] = "test-host"
+        config['user'] = 'test-user'
+        config['accounting_timeout'] = 0
         config.update(overrides)
         return config
 

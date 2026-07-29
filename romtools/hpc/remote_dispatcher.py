@@ -12,7 +12,6 @@ from typing import Optional
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
-from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatcher_base import DispatcherBase
 
 from romtools.hpc.util.slurm import create_slurm_script
@@ -30,9 +29,6 @@ SLURM_TERMINAL_STATES = {
     "PREEMPTED",
     "TIMEOUT",
 }
-JOB_SUCCESS = 0
-JOB_FAILED = 1
-JOB_STATUS_UNKNOWN = 2
 
 class RemoteDispatcher(DispatcherBase):
     """
@@ -265,7 +261,7 @@ class RemoteDispatcher(DispatcherBase):
 
         return None, None
 
-    def __wait_for_job(self, job_id: str, sacct_start_time=None) -> int:
+    def __wait_for_job(self, job_id: str, sacct_start_time=None) -> str:
         """
         Block until the SLURM job is no longer in the queue (RUNNING or PENDING).
 
@@ -274,9 +270,10 @@ class RemoteDispatcher(DispatcherBase):
             poll_interval: Seconds between squeue polls (default: 30).
 
         Returns:
-            0: Success
-            1: Failed
-            2: Unknown
+            -1 if unable to retrieve sacct status
+
+            job exit code + linux signal number otherwise (the result from sacct)
+            '0:0', etc
         """
         poll_interval = self.config.get("poll_interval")
         accounting_timeout = self.config.get("accounting_timeout")
@@ -297,7 +294,7 @@ class RemoteDispatcher(DispatcherBase):
                 elapsed = time.time() - start_wait
                 if state is None:
                     if elapsed > accounting_timeout:
-                        return JOB_STATUS_UNKNOWN
+                        return -1
 
                     self.logger.debug(
                         f"Job {job_id} is no longer in squeue, but sacct has no "
@@ -312,17 +309,15 @@ class RemoteDispatcher(DispatcherBase):
 
                 if state not in SLURM_TERMINAL_STATES:
                     if elapsed > accounting_timeout:
-                        return JOB_STATUS_UNKNOWN
+                        return -1
                     time.sleep(min(5, poll_interval))
                     continue
 
-                if state == "COMPLETED" and exit_code == "0:0":
-                    return JOB_SUCCESS
-
-                self.logger.log(
-                    f"Job {job_id} finished unsuccessfully: state={state}, exit_code={exit_code}"
-                )
-                return JOB_FAILED
+                if not (state == "COMPLETED" and exit_code == "0:0"):
+                    self.logger.log(
+                        f"Job {job_id} finished unsuccessfully: state={state}, exit_code={exit_code}"
+                    )
+                return exit_code
 
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
@@ -398,7 +393,7 @@ class RemoteDispatcher(DispatcherBase):
 
         return result.stdout.strip()
 
-    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> int:
+    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> str:
         """
         Main method of the Dispatcher. Dispatches provided work to the
         remote host, polls the job, and collects results.
@@ -413,7 +408,7 @@ class RemoteDispatcher(DispatcherBase):
             with_slurm: If True, the command will be run as a SLURM job.
                  If False, the command will be executed directly without SLURM.
 
-        Returns the SLURM job ID if applicable.
+        Returns the SLURM job exit code in sacct format of 0:0, or "No SLURM JOB submitted.".
         """
         if not with_slurm:
             self.__run(cmd, run_directory=run_directory)
