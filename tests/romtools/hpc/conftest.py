@@ -75,7 +75,7 @@ def make_config():
         config = Configuration().to_dict()
         config['remote'] = "test-host"
         config['user'] = 'test-user'
-        config['accounting_timeout'] = 0
+        config['timeout'] = 0
         config.update(overrides)
         return config
 
