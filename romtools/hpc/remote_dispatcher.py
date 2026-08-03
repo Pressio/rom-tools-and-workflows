@@ -10,7 +10,7 @@ import posixpath as ppath
 from typing import Optional
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, get_sacct_status
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
 from romtools.hpc.dispatcher_base import DispatcherBase
@@ -208,14 +208,53 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
+    def __get_sacct_status(self, job_id: str):
+        """
+        Return the SLURM accounting state and exit code for a completed/disappeared job.
+
+        Returns:
+            tuple[str, str] | tuple[None, None]:
+                (state, exit_code), or (None, None) if sacct does not have the record yet.
+        """
+        jid = shlex.quote(str(job_id))
+
+        cmd = (
+            f"sacct -j {jid} -X -n -P "
+            "--format=JobIDRaw,State%30,ExitCode"
+        )
+
+        result = self.conn.run(cmd)
+
+        if not result.ok:
+            self.logger.log(f"sacct failed for job {job_id}: {result.stderr}")
+            return None, None
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split("|")
+            if len(parts) < 3:
+                continue
+
+            sacct_job_id = parts[0].strip()
+            state = parts[1].strip().split()[0].upper()
+            exit_code = parts[2].strip()
+
+            if sacct_job_id == str(job_id):
+                return state, exit_code
+
+        self.logger.debug(f"sacct did not find job {job_id}")
+        return None, None
 
     def __wait_for_status(self, job_id: str):
         timeout = self.config.get("timeout")
         start_wait = time.time()
-        poll_interval = 5
+        sacct_poll_interval = 5
 
         while True:
-            state, exit_code = get_sacct_status(job_id, self.conn, self.logger)
+            state, exit_code = self.__get_sacct_status(job_id)
 
             elapsed = time.time() - start_wait
             if state is None:
@@ -226,7 +265,7 @@ class RemoteDispatcher(DispatcherBase):
                     f"Job {job_id} is no longer in squeue, but sacct has no "
                     f"record yet. Waiting..."
                 )
-                time.sleep(poll_interval)
+                time.sleep(sacct_poll_interval)
                 continue
 
             self.logger.debug(
@@ -236,7 +275,7 @@ class RemoteDispatcher(DispatcherBase):
             if state not in SLURM_TERMINAL_STATES:
                 if elapsed > timeout:
                     return -1
-                time.sleep(poll_interval)
+                time.sleep(sacct_poll_interval)
                 continue
 
             if not (state == "COMPLETED" and exit_code == "0:0"):

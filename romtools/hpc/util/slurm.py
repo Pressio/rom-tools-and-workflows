@@ -1,7 +1,4 @@
 import textwrap
-import shlex
-
-from romtools.hpc.connection import Connection
 
 SLURM_TERMINAL_STATES = {
     "BOOT_FAIL",
@@ -41,42 +38,3 @@ def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall
 {command}
 """)
     return slurm_script
-
-def get_sacct_status(job_id: str, conn: Connection, logger):
-    """
-    Return the SLURM accounting state and exit code for a completed/disappeared job.
-
-    Returns:
-        tuple[str, str] | tuple[None, None]:
-            (state, exit_code), or (None, None) if sacct does not have the record yet.
-    """
-    jid = shlex.quote(str(job_id))
-
-    cmd = (
-        f"sacct -j {jid} -X -n -P "
-        "--format=JobIDRaw,State%30,ExitCode"
-    )
-
-    result = conn.run(cmd)
-
-    if not result.ok:
-        logger.log(f"sacct failed for job {job_id}: {result.stderr}")
-        return None, None
-
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-
-        parts = line.split("|")
-        if len(parts) < 3:
-            continue
-
-        sacct_job_id = parts[0].strip()
-        state = parts[1].strip().split()[0].upper()
-        exit_code = parts[2].strip()
-
-        if sacct_job_id == str(job_id):
-            return state, exit_code
-
-    return None, None
