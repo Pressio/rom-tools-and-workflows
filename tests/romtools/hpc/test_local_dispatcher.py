@@ -98,29 +98,25 @@ def test_np_savez_round_trip(tmp_path, dispatcher):
 def test_dispatch_runs_command_and_captures_output(tmp_path, dispatcher):
     result = dispatcher.dispatch("echo hello", run_directory=str(tmp_path))
 
-    assert result.ok
-    assert result.stdout.strip() == "hello"
+    assert result == "0:0"
 
 
 def test_dispatch_without_run_directory_runs_in_cwd(dispatcher):
     result = dispatcher.dispatch("echo hello")
 
-    assert result.ok
-    assert result.stdout.strip() == "hello"
+    assert result == "0:0"
 
 
 def test_dispatch_reports_failure_without_raising(dispatcher):
     result = dispatcher.dispatch("exit 1")
 
-    assert not result.ok
-    assert result.exited == 1
+    assert result == "1:0"
 
 
 def test_dispatch_runs_relative_to_run_directory(tmp_path, dispatcher):
     marker = tmp_path / "marker.txt"
     marker.write_text("present")
 
-    result = dispatcher.dispatch("cat marker.txt", run_directory=str(tmp_path))
+    result = dispatcher.dispatch("grep -qF 'present' marker.txt", run_directory=str(tmp_path))
 
-    assert result.ok
-    assert result.stdout.strip() == "present"
+    assert result == "0:0"

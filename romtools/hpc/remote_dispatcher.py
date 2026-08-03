@@ -10,9 +10,9 @@ import posixpath as ppath
 from typing import Optional
 
 from romtools.hpc.util.logger import Logger
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection
-from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatcher_base import DispatcherBase
 
 from romtools.hpc.util.slurm import create_slurm_script
@@ -208,13 +208,94 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __wait_for_job(self, job_id: str) -> None:
+    def __get_sacct_status(self, job_id: str):
+        """
+        Return the SLURM accounting state and exit code for a completed/disappeared job.
+
+        Returns:
+            tuple[str, str] | tuple[None, None]:
+                (state, exit_code), or (None, None) if sacct does not have the record yet.
+        """
+        jid = shlex.quote(str(job_id))
+
+        cmd = (
+            f"sacct -j {jid} -X -n -P "
+            "--format=JobIDRaw,State%30,ExitCode"
+        )
+
+        result = self.conn.run(cmd)
+
+        if not result.ok:
+            self.logger.log(f"sacct failed for job {job_id}: {result.stderr}")
+            return None, None
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split("|")
+            if len(parts) < 3:
+                continue
+
+            sacct_job_id = parts[0].strip()
+            state = parts[1].strip().split()[0].upper()
+            exit_code = parts[2].strip()
+
+            if sacct_job_id == str(job_id):
+                return state, exit_code
+
+        self.logger.debug(f"sacct did not find job {job_id}")
+        return None, None
+
+    def __wait_for_status(self, job_id: str):
+        timeout = self.config.get("timeout")
+        start_wait = time.time()
+        sacct_poll_interval = 5
+
+        while True:
+            state, exit_code = self.__get_sacct_status(job_id)
+
+            elapsed = time.time() - start_wait
+            if state is None:
+                if elapsed > timeout:
+                    return -1
+
+                self.logger.debug(
+                    f"Job {job_id} is no longer in squeue, but sacct has no "
+                    f"record yet. Waiting..."
+                )
+                time.sleep(sacct_poll_interval)
+                continue
+
+            self.logger.debug(
+                f"sacct reports job {job_id}: state={state}, exit_code={exit_code}"
+            )
+
+            if state not in SLURM_TERMINAL_STATES:
+                if elapsed > timeout:
+                    return -1
+                time.sleep(sacct_poll_interval)
+                continue
+
+            if not (state == "COMPLETED" and exit_code == "0:0"):
+                self.logger.log(
+                    f"Job {job_id} finished unsuccessfully: state={state}, exit_code={exit_code}"
+                )
+            return exit_code
+
+    def __wait_for_job(self, job_id: str) -> str:
         """
         Block until the SLURM job is no longer in the queue (RUNNING or PENDING).
 
         Args:
             job_id:        The SLURM job ID to monitor.
-            poll_interval: Seconds between squeue polls (default: 30).
+
+        Returns:
+            Job exit code + linux signal number (the result from sacct)
+            Example: '0:0'
+
+            -1 otherwise
         """
         poll_interval = self.config.get("poll_interval")
         self.logger.log(f"Polling SLURM job {job_id} every {poll_interval}s (Ctrl+C to cancel job)...")
@@ -226,7 +307,10 @@ class RemoteDispatcher(DispatcherBase):
                     break
                 self.logger.debug(f"Job {job_id} still running...")
                 time.sleep(poll_interval)
-            self.logger.log(f"Job {job_id} completed.")
+
+            self.logger.log(f"Job {job_id} completed. Retrieving sacct status...")
+            return self.__wait_for_status(job_id)
+
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
             raise
@@ -299,15 +383,15 @@ class RemoteDispatcher(DispatcherBase):
             with_slurm: If True, the command will be run as a SLURM job.
                  If False, the command will be executed directly without SLURM.
 
-        Returns the SLURM job ID if applicable.
+        Returns the SLURM job exit code in sacct format of 0:0, or "No SLURM JOB submitted.".
         """
         if not with_slurm:
             self.__run(cmd, run_directory=run_directory)
             return "No SLURM job submitted."
         job_id = self.__submit_slurm_job(cmd, run_directory)
-        self.__wait_for_job(job_id)
+        status = self.__wait_for_job(job_id)
         self.collector.collect_results()
-        return job_id
+        return status
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         buffer = io.StringIO()
