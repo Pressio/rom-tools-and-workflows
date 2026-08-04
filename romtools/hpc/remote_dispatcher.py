@@ -75,6 +75,11 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             raise RuntimeError(f"Failed to establish SSH connection: {e}")
 
+    def upload(self, run_directory) -> None:
+        if upload := self.config.get("upload"):
+            for f in upload:
+                self.put(f, f"{run_directory}/{os.path.basename(f)}")
+
     # ------------------------------------------------------------------
     # Utility methods
     # ------------------------------------------------------------------
@@ -121,7 +126,7 @@ class RemoteDispatcher(DispatcherBase):
             remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
             self.conn.put(script, remote_script_path)
             self.logger.log(f"Uploaded local script {script} to {self.conn.host}:{remote_script_path}")
-            return script_name
+            return remote_script_path
 
         script_content = create_slurm_script(
             job_name       = self.config.get("job_name"),
@@ -152,7 +157,7 @@ class RemoteDispatcher(DispatcherBase):
 
         self.logger.log(f"Wrote SLURM script to {self.conn.host}:{remote_script_path}")
 
-        return remote_script_name
+        return remote_script_path
 
     def __submit_slurm_job(self,  cmd: str = None, run_directory: str = None) -> str:
         """
@@ -165,16 +170,16 @@ class RemoteDispatcher(DispatcherBase):
         Returns:
             The SLURM job ID as a string
         """
-        slurm_script_name = self.__generate_slurm_script(cmd, run_directory=run_directory)
+        remote_script_path = self.__generate_slurm_script(cmd, run_directory=run_directory)
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
             result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
+                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
             )
         else:
             full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
             result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(slurm_script_name)}"
+                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
             )
 
         if not result.ok:
@@ -280,7 +285,7 @@ class RemoteDispatcher(DispatcherBase):
 
             if not (state == "COMPLETED" and exit_code == "0:0"):
                 self.logger.log(
-                    f"Job {job_id} finished unsuccessfully: state={state}, exit_code={exit_code}"
+                    f"Job {job_id} failed: state={state}, exit_code={exit_code}"
                 )
             return exit_code
 
