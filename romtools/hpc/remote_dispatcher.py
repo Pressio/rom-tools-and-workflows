@@ -173,9 +173,9 @@ class RemoteDispatcher(DispatcherBase):
         remote_script_path = self.__generate_slurm_script(cmd, run_directory=run_directory)
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
-            cmd = f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
-            self.logger.log(f"Executing command: {cmd}")
-            result = self.conn.run(cmd)
+            result = self.conn.run(
+                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
+            )
         else:
             full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
             result = self.conn.run(
