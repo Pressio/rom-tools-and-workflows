@@ -16,6 +16,7 @@ SCHEMA = {
     "workflow": {
         "remote_root": {"cli": "-R", "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
         "collect":     {"cli": "-o", "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
+        "upload":      {"cli": "-U", "type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
     },
     "slurm": {
         "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
@@ -140,6 +141,7 @@ class Configuration:
         # Optional list of files/directories/globs to retrieve from the remote run directory.
         # If None, the entire run directory is retrieved.
         self.collect = None
+        self.upload = None
 
         # User-defined fields loaded only from YAML "user-defined"
         self.user_defined = {}
@@ -270,8 +272,8 @@ class Configuration:
         for name, value in vars(args).items():
             if name == "input":
                 continue
-            if name == "collect":
-                self.collect = _normalize_collect(value)
+            if name == "collect" or name == "upload":
+                setattr(self, name, _normalize_collect(value))
             elif hasattr(self, name):
                 setattr(self, name, value)
             else:
