@@ -68,7 +68,8 @@ def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config
 
     result = dispatcher.dispatch("./my_app")
 
-    assert result == "0:0"
+    assert result.ok
+    assert result.exited == 0
     assert any(c.startswith("cd campaigns/hpctools && sbatch") for c in conn.calls)
     assert any(c == "squeue -j 123 -h" for c in conn.calls)
     assert any(c.startswith("rm -f") for c in conn.calls)
