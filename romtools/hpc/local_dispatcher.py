@@ -7,6 +7,7 @@ import numpy as np
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.connection import Result
 
 class LocalDispatcher(DispatcherBase):
     """
@@ -46,7 +47,7 @@ class LocalDispatcher(DispatcherBase):
     def create_empty_dir(self, dir_name: str):
         os.makedirs(dir_name, exist_ok=True)
 
-    def dispatch(self, cmd: str, run_directory: str = None) -> str:
+    def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         """
         Returns:
             sacct format string of job exit code + linux signal number (always 0 in local)
@@ -59,7 +60,8 @@ class LocalDispatcher(DispatcherBase):
             capture_output=True,
             text=True
         )
-        return f"{result.returncode}:0"
+
+        return Result(result.stdout, result.stderr, result.returncode)
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         np.savetxt(path, arr, fmt=fmt)

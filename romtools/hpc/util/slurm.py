@@ -38,3 +38,14 @@ def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall
 {command}
 """)
     return slurm_script
+
+def slurm_exitcode_to_python_style(exitcode: str) -> int:
+    if exitcode is None:
+        return None
+    status_str, signal_str = exitcode.split(":")
+    status = int(status_str)
+    signal = int(signal_str)
+
+    if signal != 0:
+        return -signal
+    return status

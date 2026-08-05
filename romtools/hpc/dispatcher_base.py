@@ -4,6 +4,7 @@ import os
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.configuration import Configuration
+from romtools.hpc.connection import Result
 
 
 class DispatcherBase:
@@ -41,7 +42,7 @@ class DispatcherBase:
     def create_empty_dir(self, dir_name: str):
         pass
 
-    def dispatch(self, cmd: str, run_directory: str = None) -> str:
+    def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         pass
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
