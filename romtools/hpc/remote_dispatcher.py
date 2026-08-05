@@ -324,7 +324,7 @@ class RemoteDispatcher(DispatcherBase):
             self.__cancel_job(job_id)
             raise
 
-    def __get_job_std_outerr(self, job_id, run_directory=None):
+    def __get_job_output(self, job_id, run_directory=None):
         def get_file_contents(filepath):
             cmd = (
                 f"cat {filepath}"
@@ -347,7 +347,6 @@ class RemoteDispatcher(DispatcherBase):
         stderr_filepath = os.path.join(out_dir, f"slurm-{jid}.err")
 
         return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
-
 
     # ------------------------------------------------------------------
     # I/O methods
@@ -425,7 +424,7 @@ class RemoteDispatcher(DispatcherBase):
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = slurm_exitcode_to_python_style(self.__wait_for_job(job_id))
         self.collector.collect_results()
-        job_stdout, job_stderr = self.__get_job_std_outerr(job_id, run_directory)
+        job_stdout, job_stderr = self.__get_job_output(job_id, run_directory)
         return Result(job_stdout, job_stderr, status)
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
