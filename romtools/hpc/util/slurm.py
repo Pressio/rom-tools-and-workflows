@@ -51,7 +51,7 @@ def slurm_exitcode_to_python_style(exitcode: str) -> int:
         return -signal
     return status
 
-def parse_sbatch_args(script: str) -> tuple[str | None, str | None]:
+def parse_sbatch_out_args(script: str) -> tuple[str | None, str | None]:
     if not script:
         return None, None
 

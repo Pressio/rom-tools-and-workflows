@@ -1,4 +1,4 @@
-from romtools.hpc.util.slurm import create_slurm_script, parse_sbatch_args
+from romtools.hpc.util.slurm import create_slurm_script, parse_sbatch_out_args
 
 
 def test_create_slurm_script_renders_all_fields():
@@ -49,7 +49,7 @@ echo "hello"
 """
     )
 
-    out_f, err_f = parse_sbatch_args(script)
+    out_f, err_f = parse_sbatch_out_args(script)
 
     assert out_f == "custom-%j.out"
     assert err_f == "custom-%j.err"

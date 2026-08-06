@@ -10,7 +10,7 @@ import posixpath as ppath
 from typing import Optional
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_args
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatcher_base import DispatcherBase
@@ -126,7 +126,7 @@ class RemoteDispatcher(DispatcherBase):
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
         if script:
-            self.script_specified_out, self.script_specified_err = parse_sbatch_args(script)
+            self.script_specified_out, self.script_specified_err = parse_sbatch_out_args(script)
 
             script_name = os.path.basename(script)
             remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
