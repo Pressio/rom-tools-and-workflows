@@ -1,4 +1,5 @@
 import textwrap
+import shlex
 
 SLURM_TERMINAL_STATES = {
     "BOOT_FAIL",
@@ -49,3 +50,56 @@ def slurm_exitcode_to_python_style(exitcode: str) -> int:
     if signal != 0:
         return -signal
     return status
+
+def parse_sbatch_args(script: str) -> tuple[str | None, str | None]:
+    if not script:
+        return None, None
+
+    specified_out, specified_err = None, None
+
+    with open(script, "r") as runscript:
+        for line in runscript:
+            line = line.strip()
+
+            if not line.startswith("#SBATCH"):
+                continue
+
+            args = shlex.split(line[len("#SBATCH"):].strip())
+
+            i = 0
+            while i < len(args):
+                arg = args[i]
+
+                if arg.startswith("--output="):
+                    specified_out = arg.split("=", 1)[1]
+
+                elif arg == "--output" and i + 1 < len(args):
+                    specified_out = args[i + 1]
+                    i += 1
+
+                elif arg.startswith("-o") and arg != "-o":
+                    specified_out = arg[2:]
+
+                elif arg == "-o" and i + 1 < len(args):
+                    specified_out = args[i + 1]
+                    i += 1
+
+                elif arg.startswith("--error="):
+                    specified_err = arg.split("=", 1)[1]
+
+                elif arg == "--error" and i + 1 < len(args):
+                    specified_err = args[i + 1]
+                    i += 1
+
+                elif arg.startswith("-e") and arg != "-e":
+                    specified_err = arg[2:]
+
+                elif arg == "-e" and i + 1 < len(args):
+                    specified_err = args[i + 1]
+                    i += 1
+
+                i += 1
+
+            if specified_out is not None and specified_err is not None:
+                break
+    return specified_out, specified_err

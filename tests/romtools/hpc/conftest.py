@@ -34,9 +34,9 @@ class FakeConnection:
 
         # fallbacks
         if "date -d" in command:
-            Result(stdout=str(time.time()), stderr="", exited=0)
+            Result(stdout=str(time.time()), stderr="", exit_code=0)
 
-        return Result(stdout="", stderr="", exited=0)
+        return Result(stdout="", stderr="", exit_code=0)
 
     def put(self, local, remote):
         self.put_calls.append((local, remote))

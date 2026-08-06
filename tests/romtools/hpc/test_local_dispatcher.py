@@ -113,7 +113,7 @@ def test_dispatch_reports_failure_without_raising(dispatcher):
     result = dispatcher.dispatch("exit 1")
 
     assert not result.ok
-    assert result.exited == 1
+    assert result.exit_code == 1
 
 
 def test_dispatch_runs_relative_to_run_directory(tmp_path, dispatcher):

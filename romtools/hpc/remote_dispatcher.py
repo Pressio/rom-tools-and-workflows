@@ -10,7 +10,7 @@ import posixpath as ppath
 from typing import Optional
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_args
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatcher_base import DispatcherBase
@@ -39,6 +39,10 @@ class RemoteDispatcher(DispatcherBase):
         self.conn : Optional[Connection] = None
         self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
+
+        # If script specifies out and/or error file, use those instead of the default
+        self.script_specified_out = None
+        self.script_specified_err = None
 
         if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
@@ -122,6 +126,8 @@ class RemoteDispatcher(DispatcherBase):
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
         if script:
+            self.script_specified_out, self.script_specified_err = parse_sbatch_args(script)
+
             script_name = os.path.basename(script)
             remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
             self.conn.put(script, remote_script_path)
@@ -171,17 +177,26 @@ class RemoteDispatcher(DispatcherBase):
             The SLURM job ID as a string
         """
         remote_script_path = self.__generate_slurm_script(cmd, run_directory=run_directory)
-        output_cmd = "--output=slurm-%j.out --error=slurm-%j.err "
+
+        output_args = []
+        if self.script_specified_out is None:
+            output_args.append("--output=slurm-%j.out")
+            # If user only specified out file, they probably expect stderr to go there
+            if self.script_specified_err is None:
+                output_args.append("--error=slurm-%j.err")
+
+        output_cmd = " ".join(output_args)
+        if output_cmd:
+            output_cmd += " "
+
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
-            result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(remote_script_path)}"
-            )
         else:
             full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
-            result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(remote_script_path)}"
-            )
+
+        result = self.conn.run(
+            f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(remote_script_path)}"
+        )
 
         if not result.ok:
             raise RuntimeError(f"sbatch failed:\n{result.stderr}")
@@ -318,20 +333,15 @@ class RemoteDispatcher(DispatcherBase):
                 time.sleep(poll_interval)
 
             self.logger.log(f"Job {job_id} completed. Retrieving sacct status...")
-            return self.__wait_for_status(job_id)
+            return slurm_exitcode_to_python_style(self.__wait_for_status(job_id))
 
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
             raise
 
-    def __get_job_output(self, job_id, run_directory=None):
-        def get_file_contents(filepath):
-            cmd = (
-                f"cat {filepath}"
-            )
-
-            result = self.conn.run(cmd)
-
+    def __get_job_output(self, job_id: int, run_directory:str=None) -> tuple[str, str]:
+        def get_file_contents(filepath: str) -> str:
+            result = self.conn.run(f"cat {filepath}")
             if not result.ok:
                 self.logger.log(f"Could not read file {filepath}: {result.stderr}")
                 return ""
@@ -343,8 +353,8 @@ class RemoteDispatcher(DispatcherBase):
 
         out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
 
-        stdout_filepath = os.path.join(out_dir, f"slurm-{jid}.out")
-        stderr_filepath = os.path.join(out_dir, f"slurm-{jid}.err")
+        stdout_filepath = os.path.join(out_dir, f"slurm-{jid}.out" if self.script_specified_out is None else self.script_specified_out.replace("%j", jid))
+        stderr_filepath = os.path.join(out_dir, f"slurm-{jid}.err" if self.script_specified_err is None else self.script_specified_err.replace("%j", jid))
 
         return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
 
@@ -422,7 +432,7 @@ class RemoteDispatcher(DispatcherBase):
             self.__run(cmd, run_directory=run_directory)
             return "No SLURM job submitted."
         job_id = self.__submit_slurm_job(cmd, run_directory)
-        status = slurm_exitcode_to_python_style(self.__wait_for_job(job_id))
+        status = self.__wait_for_job(job_id)
         self.collector.collect_results()
         job_stdout, job_stderr = self.__get_job_output(job_id, run_directory)
         return Result(job_stdout, job_stderr, status)

@@ -1,4 +1,4 @@
-from romtools.hpc.util.slurm import create_slurm_script
+from romtools.hpc.util.slurm import create_slurm_script, parse_sbatch_args
 
 
 def test_create_slurm_script_renders_all_fields():
@@ -35,3 +35,21 @@ def test_create_slurm_script_preserves_multiline_command():
     )
 
     assert "echo start\necho end" in script
+
+def test_parse_script_detects_slurm_output_and_error(tmp_path):
+    script = tmp_path / "run.sh"
+
+    script.write_text(
+        """#!/bin/bash
+#SBATCH --job-name=test-job
+#SBATCH --output=custom-%j.out
+#SBATCH --error custom-%j.err
+
+echo "hello"
+"""
+    )
+
+    out_f, err_f = parse_sbatch_args(script)
+
+    assert out_f == "custom-%j.out"
+    assert err_f == "custom-%j.err"
