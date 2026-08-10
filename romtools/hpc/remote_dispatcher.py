@@ -229,7 +229,7 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __get_sacct_status(self, job_id: str):
+    def __get_sacct_status(self, job_id: str) -> tuple[str | None, str | None]:
         """
         Return the SLURM accounting state and exit code for a completed/disappeared job.
 
@@ -244,7 +244,7 @@ class RemoteDispatcher(DispatcherBase):
         # main script exits successfully
         cmd = (
             f"sacct -j {jid} -X -n -P "
-            "--format=JobIDRaw,State%30,DerivedExitCode"
+            "--format=JobIDRaw,State%30,ExitCode,DerivedExitCode"
         )
 
         result = self.conn.run(cmd)
@@ -259,15 +259,20 @@ class RemoteDispatcher(DispatcherBase):
                 continue
 
             parts = line.split("|")
-            if len(parts) < 3:
+            if len(parts) < 4:
                 continue
 
             sacct_job_id = parts[0].strip()
             state = parts[1].strip().split()[0].upper()
             exit_code = parts[2].strip()
+            derived_exit_code = parts[3].strip()
 
             if sacct_job_id == str(job_id):
-                return state, exit_code
+                # Default to exit_code, return derived_exit_code if exit_code is 0 and derived is not.
+                if exit_code == "0:0" and derived_exit_code != "0:0":
+                    return state, derived_exit_code
+                else:
+                    return state, exit_code
 
         self.logger.debug(f"sacct did not find job {job_id}")
         return None, None

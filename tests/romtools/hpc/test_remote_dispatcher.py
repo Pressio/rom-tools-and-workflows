@@ -60,7 +60,7 @@ def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config
         ("squeue -j 123 -h", Result("", "", 0)),
         ("tar -czf", Result("", "", 0)),
         ("rm -f", Result("", "", 0)),
-        ("sacct -j", Result("123 | COMPLETED | 0:0", "", 0)),
+        ("sacct -j", Result("123|COMPLETED|0:0|0:0", "", 0)),
     ]
     conn = ArchiveFakeConnection(responses=responses)
     config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
