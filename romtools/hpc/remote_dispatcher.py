@@ -10,9 +10,9 @@ import posixpath as ppath
 from typing import Optional
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.collector import Collector
-from romtools.hpc.connection import Connection
+from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatcher_base import DispatcherBase
 
 from romtools.hpc.util.slurm import create_slurm_script
@@ -39,6 +39,10 @@ class RemoteDispatcher(DispatcherBase):
         self.conn : Optional[Connection] = None
         self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
+
+        # If script specifies out and/or error file, use those instead of the default
+        self.script_specified_out = None
+        self.script_specified_err = None
 
         if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
@@ -122,6 +126,8 @@ class RemoteDispatcher(DispatcherBase):
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
         if script:
+            self.script_specified_out, self.script_specified_err = parse_sbatch_out_args(script)
+
             script_name = os.path.basename(script)
             remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
             self.conn.put(script, remote_script_path)
@@ -171,16 +177,26 @@ class RemoteDispatcher(DispatcherBase):
             The SLURM job ID as a string
         """
         remote_script_path = self.__generate_slurm_script(cmd, run_directory=run_directory)
+
+        output_args = []
+        if self.script_specified_out is None:
+            output_args.append("--output=slurm-%j.out")
+            # If user only specified out file, they probably expect stderr to go there
+            if self.script_specified_err is None:
+                output_args.append("--error=slurm-%j.err")
+
+        output_cmd = " ".join(output_args)
+        if output_cmd:
+            output_cmd += " "
+
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
-            result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
-            )
         else:
             full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
-            result = self.conn.run(
-                f"cd {shlex.quote(full_run_dir)} && sbatch {shlex.quote(remote_script_path)}"
-            )
+
+        result = self.conn.run(
+            f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(remote_script_path)}"
+        )
 
         if not result.ok:
             raise RuntimeError(f"sbatch failed:\n{result.stderr}")
@@ -213,7 +229,7 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __get_sacct_status(self, job_id: str):
+    def __get_sacct_status(self, job_id: str) -> tuple[str | None, str | None]:
         """
         Return the SLURM accounting state and exit code for a completed/disappeared job.
 
@@ -223,9 +239,12 @@ class RemoteDispatcher(DispatcherBase):
         """
         jid = shlex.quote(str(job_id))
 
+        # ExitCode reflects batch script's exit code
+        # DerivedExitCode can reflect failures from job steps, even if the
+        # main script exits successfully
         cmd = (
             f"sacct -j {jid} -X -n -P "
-            "--format=JobIDRaw,State%30,ExitCode"
+            "--format=JobIDRaw,State%30,ExitCode,DerivedExitCode"
         )
 
         result = self.conn.run(cmd)
@@ -240,15 +259,20 @@ class RemoteDispatcher(DispatcherBase):
                 continue
 
             parts = line.split("|")
-            if len(parts) < 3:
+            if len(parts) < 4:
                 continue
 
             sacct_job_id = parts[0].strip()
             state = parts[1].strip().split()[0].upper()
             exit_code = parts[2].strip()
+            derived_exit_code = parts[3].strip()
 
             if sacct_job_id == str(job_id):
-                return state, exit_code
+                # Default to exit_code, return derived_exit_code if exit_code is 0 and derived is not.
+                if exit_code == "0:0" and derived_exit_code != "0:0":
+                    return state, derived_exit_code
+                else:
+                    return state, exit_code
 
         self.logger.debug(f"sacct did not find job {job_id}")
         return None, None
@@ -264,7 +288,7 @@ class RemoteDispatcher(DispatcherBase):
             elapsed = time.time() - start_wait
             if state is None:
                 if elapsed > timeout:
-                    return -1
+                    return None
 
                 self.logger.debug(
                     f"Job {job_id} is no longer in squeue, but sacct has no "
@@ -279,7 +303,7 @@ class RemoteDispatcher(DispatcherBase):
 
             if state not in SLURM_TERMINAL_STATES:
                 if elapsed > timeout:
-                    return -1
+                    return None
                 time.sleep(sacct_poll_interval)
                 continue
 
@@ -300,7 +324,7 @@ class RemoteDispatcher(DispatcherBase):
             Job exit code + linux signal number (the result from sacct)
             Example: '0:0'
 
-            -1 otherwise
+            'None' otherwise
         """
         poll_interval = self.config.get("poll_interval")
         self.logger.log(f"Polling SLURM job {job_id} every {poll_interval}s (Ctrl+C to cancel job)...")
@@ -314,11 +338,30 @@ class RemoteDispatcher(DispatcherBase):
                 time.sleep(poll_interval)
 
             self.logger.log(f"Job {job_id} completed. Retrieving sacct status...")
-            return self.__wait_for_status(job_id)
+            return slurm_exitcode_to_python_style(self.__wait_for_status(job_id))
 
         except KeyboardInterrupt:
             self.__cancel_job(job_id)
             raise
+
+    def __get_job_output(self, job_id: int, run_directory:str=None) -> tuple[str, str]:
+        def get_file_contents(filepath: str) -> str:
+            result = self.conn.run(f"cat {filepath}")
+            if not result.ok:
+                self.logger.log(f"Could not read file {filepath}: {result.stderr}")
+                return ""
+
+            return result.stdout
+
+        self.logger.log("Retrieving job output...")
+        jid = shlex.quote(str(job_id))
+
+        out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
+
+        stdout_filepath = os.path.join(out_dir, f"slurm-{jid}.out" if self.script_specified_out is None else self.script_specified_out.replace("%j", jid))
+        stderr_filepath = os.path.join(out_dir, f"slurm-{jid}.err" if self.script_specified_err is None else self.script_specified_err.replace("%j", jid))
+
+        return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
 
     # ------------------------------------------------------------------
     # I/O methods
@@ -373,7 +416,7 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
         self.logger.debug(f"Executed command on remote host: {cmd}")
 
-    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> str:
+    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
         """
         Main method of the Dispatcher. Dispatches provided work to the
         remote host, polls the job, and collects results.
@@ -396,7 +439,8 @@ class RemoteDispatcher(DispatcherBase):
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = self.__wait_for_job(job_id)
         self.collector.collect_results()
-        return status
+        job_stdout, job_stderr = self.__get_job_output(job_id, run_directory)
+        return Result(job_stdout, job_stderr, status)
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         buffer = io.StringIO()

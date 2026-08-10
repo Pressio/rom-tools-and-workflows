@@ -87,6 +87,8 @@ Then you `run_model()` method can be as simple as:
 This will copy your local SLURM script onto the remote host, submit it, and poll
 it until it completes.
 
+The SLURM script is called with `--output` and `--error` flags to split and return job output.
+
 2. **Manual Commands**
 
 The alternative is to have the dispatcher create your SLURM script for you.
