@@ -344,7 +344,7 @@ class RemoteDispatcher(DispatcherBase):
             self.__cancel_job(job_id)
             raise
 
-    def __get_job_output(self, job_id: int, run_directory:str=None) -> tuple[str, str]:
+    def __get_job_output(self, job_id: int, run_directory:str=None) -> Tuple[str, str]:
         def get_file_contents(filepath: str) -> str:
             result = self.conn.run(f"cat {filepath}")
             if not result.ok:
