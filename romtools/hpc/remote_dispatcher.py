@@ -7,7 +7,7 @@ import tempfile
 
 import numpy as np
 import posixpath as ppath
-from typing import Optional
+from typing import Optional, Tuple
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_out_args
@@ -229,7 +229,7 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __get_sacct_status(self, job_id: str) -> tuple[Optional[str], Optional[str]]:
+    def __get_sacct_status(self, job_id: str) -> Tuple[Optional[str], Optional[str]]:
         """
         Return the SLURM accounting state and exit code for a completed/disappeared job.
 
