@@ -1,5 +1,6 @@
 import textwrap
 import shlex
+from typing import Optional
 
 SLURM_TERMINAL_STATES = {
     "BOOT_FAIL",
@@ -51,7 +52,7 @@ def slurm_exitcode_to_python_style(exitcode: str) -> int:
         return -signal
     return status
 
-def parse_sbatch_out_args(script: str) -> tuple[str | None, str | None]:
+def parse_sbatch_out_args(script: str) -> tuple[Optional[str], Optional[str]]:
     if not script:
         return None, None
 

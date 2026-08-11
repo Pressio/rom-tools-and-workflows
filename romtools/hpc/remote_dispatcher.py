@@ -229,7 +229,7 @@ class RemoteDispatcher(DispatcherBase):
         except Exception as e:
             self.logger.log(f"Failed to cancel job {job_id}: {e}")
 
-    def __get_sacct_status(self, job_id: str) -> tuple[str | None, str | None]:
+    def __get_sacct_status(self, job_id: str) -> tuple[Optional[str], Optional[str]]:
         """
         Return the SLURM accounting state and exit code for a completed/disappeared job.
 
