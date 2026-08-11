@@ -1,12 +1,36 @@
 import numpy as np
 import pytest
 
-from romtools.linalg.linalg import _snapshot_loader, _streaming_pod
+from romtools.linalg.linalg import _streaming_pod
+
+
+RANK1_2X2_SNAPSHOTS = np.array([
+    [2., 4.],
+    [1., 2.],
+])
+RANK2_2X2_SNAPSHOTS = np.array([
+    [3., 0.],
+    [0., 1.],
+])
+RANK2_2X4_SNAPSHOTS = np.array([
+    [1., 2., 3., 4.],
+    [5., 6., 7., 8.],
+])
+RANK3_5X8_SNAPSHOTS = np.array([
+    [1., 2., 3., 4., 5., 6., 7., 8.],
+    [2., 3., 4., 5., 6., 7., 8., 9.],
+    [1., 1., 2., 2., 3., 3., 4., 4.],
+    [5., 4., 3., 2., 1., 0., -1., -2.],
+    [0., 1., 0., 1., 0., 1., 0., 1.],
+])
+
+
+def _create_array_loader(snapshots):
+    return lambda start, end: snapshots[..., start:end]
 
 def test_python_streaming_pod_serial_rank1_2x2():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank1_2x2"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK1_2X2_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -32,8 +56,7 @@ def test_python_streaming_pod_serial_rank1_2x2():
 
 def test_python_streaming_pod_serial_rank2_2x2():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank2_2x2"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK2_2X2_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -59,8 +82,7 @@ def test_python_streaming_pod_serial_rank2_2x2():
 
 def test_python_streaming_pod_serial_rank2_2x4_block_size_1():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank2_2x4"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK2_2X4_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -92,8 +114,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_1():
 
 def test_python_streaming_pod_serial_rank2_2x4_block_size_2():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank2_2x4"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK2_2X4_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -109,8 +130,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_2():
 
 def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k1_p1():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank2_2x4"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK2_2X4_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -126,8 +146,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k1_p1():
 
 def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k2_p0():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank2_2x4"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK2_2X4_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -143,8 +162,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k2_p0():
 
 def test_python_streaming_pod_serial_rank3_5x8_block_size_2_k3_p1():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank3_5x8"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK3_5X8_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -171,8 +189,7 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_2_k3_p1():
 
 def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank3_5x8"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK3_5X8_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(
@@ -199,8 +216,7 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1():
 
 def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k2_p2():
     # setup
-    path = "tests/romtools/linalg/snapshots/rank3_5x8"
-    loader = lambda s, e: _snapshot_loader(path, s, e)
+    loader = _create_array_loader(RANK3_5X8_SNAPSHOTS)
 
     # execution
     U, S, Vt = _streaming_pod(

@@ -4,8 +4,6 @@ see this for why this file exists and is done this way
 https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1
 '''
 
-from pathlib import Path
-
 import builtins
 import warnings
 import numpy as np
@@ -1298,63 +1296,6 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
 
     return A_g, b_g
 
-# ----------------------------------------------------
-def load_snapshot(dataset_dir: str, i: int):
-    '''
-    Load snapshot i from disk.
-
-    Parameters:
-        dataset_dir (str): directory containing snapshot files.
-        i (int): snapshot index.
-
-    Returns:
-        - ndarray(shape=(N,)) - snapshot vector.
-    '''
-    path = Path(dataset_dir)
-    return np.loadtxt(path / f"snapshot_{i}.txt")
-
-def _snapshot_loader(dataset_dir: str, start: int, end: int):
-    '''
-    Load a contiguous range of snapshots from a dataset directory and stack them
-    as columns in a single matrix.
-
-    Parameters:
-        dataset_dir (str): directory containing snapshot files.
-        start (int): first snapshot index (inclusive).
-        end (int): last snapshot index (exclusive).
-
-    Return:
-        - Xb, ndarray(shape=(N, end-start)) - block of snapshots stacked as columns.
-
-    Exemple 1
-    ^^^^^^^^^
-
-    Load snapshots 0 through 9:
-
-    .. code-block:: text
-
-        >>> Xb = _snapshot_loader("data/snapshots", 0, 10)
-        >>> Xb.shape
-        (N, 10)
-
-    Exemple 2
-    ^^^^^^^^^
-
-    Load a subset of snapshots for a training block:
-
-    .. code-block:: text
-
-        >>> Xb = _snapshot_loader("data/snapshots", 20, 25)
-        >>> Xb.shape
-        (N, 5)
-    '''
-    snapshots = []
-    for i in range(start, end):
-        Xbi = load_snapshot(dataset_dir, i)
-        snapshots.append(Xbi)
-    Xb = np.column_stack(snapshots)
-    return Xb
-
 def _streaming_pod(snapshot_loader: SnapshotLoader,
                    block_size: int, n_snapshots: int,
                    k: int, p: int, svdFnc=None, comm=None):
@@ -1579,6 +1520,5 @@ std = _basic_std_via_python
 product = _basic_product_via_python
 pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
-snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
 local_column_range = _local_column_range
