@@ -77,8 +77,8 @@ def test_streaming_vector_space_row_distributed_scaling():
         snapshot_loader=loader,
         block_size=2,
         n_snapshots=5,
-        basis_dimension=3,
-        oversampling=2,
+        max_basis_dimension=5,
+        truncater=utils.BasisSizeTruncater(3),
         scaler=scaler,
         svdFnc=SvdMethodOfSnapshots(comm),
         comm=comm,
@@ -115,7 +115,7 @@ def test_streaming_vector_space_row_distributed_scaling():
             assert np.isclose(correlation, 1.0, atol=1e-10)
         assert np.allclose(
             vector_space.get_singular_values(),
-            in_memory_space.get_singular_values()[:3],
+            in_memory_space.get_singular_values(),
         )
 
 if __name__ == "__main__":

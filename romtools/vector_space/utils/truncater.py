@@ -59,7 +59,7 @@ We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
 
-from typing import Protocol
+from typing import Optional, Protocol
 import numpy as np
 import romtools.linalg.linalg as la
 
@@ -69,9 +69,14 @@ class LeftSingularVectorTruncater(Protocol):
     Interface for the Truncater class.
     '''
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray,
+                 total_energy: Optional[float] = None) -> np.ndarray:
         '''
-        Truncate left singular vectors
+        Truncate left singular vectors.
+
+        ``total_energy`` is the squared Frobenius norm of the full snapshot
+        matrix when it is available. This permits energy-based truncation when
+        ``singular_values`` contains only a leading portion of the spectrum.
         '''
         ...
 
@@ -85,7 +90,8 @@ class NoOpTruncater():
     def __init__(self) -> None:
         pass
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray: # pylint: disable=unused-argument
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray,
+                 total_energy: Optional[float] = None) -> np.ndarray: # pylint: disable=unused-argument
         return basis
 
 
@@ -108,20 +114,25 @@ class BasisSizeTruncater():
 
         self.__basis_dimension = basis_dimension
         self.__singular_values = None
+        self.__total_energy = None
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray: # pylint: disable=unused-argument
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray,
+                 total_energy: Optional[float] = None) -> np.ndarray:
         '''
         Truncate the basis based on the specified dimension.
 
         Args:
             basis (np.ndarray): The original basis matrix.
             singular_values (np.ndarray): The array of singular values associated with the basis matrix.
+            total_energy (float): Optional squared Frobenius norm of the full
+                snapshot matrix.
 
         Returns:
             np.ndarray: The truncated basis matrix with the specified dimension.
         '''
         # Check if basis dimension is larger than array and give error.
         self.__singular_values = singular_values
+        self.__total_energy = total_energy
         if self.__basis_dimension > np.shape(basis)[1]:
             raise ValueError('Given basis dimension is greater than size of basis array: ',
                              self.__basis_dimension, ' > ', np.shape(basis)[1])
@@ -138,7 +149,10 @@ class BasisSizeTruncater():
         if self.__singular_values is None:
             raise ValueError('Error, singular values not yet initialized. Must call truncate before calling get_energy')
 
-        energy = np.cumsum(self.__singular_values**2)/(np.sum(self.__singular_values**2) + 1.e-30)
+        total_energy = self.__total_energy
+        if total_energy is None:
+            total_energy = np.sum(self.__singular_values**2)
+        energy = np.cumsum(self.__singular_values**2)/(total_energy + 1.e-30)
         energy = energy[self.__basis_dimension-1]
         return energy
 
@@ -146,7 +160,7 @@ class EnergyBasedTruncater():
     '''
     Truncates based on the decay of singular values, i.e., will define :math:`K` to
     be the number of singular values such that the cumulative energy retained
-    is greater than some threshold.
+    meets or exceeds a threshold.
 
     This class conforms to the :class:`LeftSingularVectorTruncater` protocol.
     '''
@@ -160,19 +174,31 @@ class EnergyBasedTruncater():
         self.__energy_threshold_ = threshold
         self.__energy = None
 
-    def truncate(self, basis: np.ndarray, singular_values: np.ndarray) -> np.ndarray:
+    def truncate(self, basis: np.ndarray, singular_values: np.ndarray,
+                 total_energy: Optional[float] = None) -> np.ndarray:
         '''
         Truncate the basis based on the energy threshold.
 
         Args:
             basis (np.ndarray): The original basis matrix.
             singular_values (np.ndarray): The array of singular values associated with the basis matrix.
+            total_energy (float): Optional squared Frobenius norm of the full
+                snapshot matrix. If omitted, the supplied singular values are
+                treated as the complete spectrum.
 
         Returns:
             np.ndarray: The truncated basis matrix based on the energy threshold.
         '''
-        energy = np.cumsum(singular_values**2)/(np.sum(singular_values**2) + 1.e-30)
-        basis_dimension = la.argmax(energy > self.__energy_threshold_) + 1
+        if total_energy is None:
+            total_energy = np.sum(singular_values**2)
+        energy = np.cumsum(singular_values**2)/(total_energy + 1.e-30)
+        threshold_reached = energy >= self.__energy_threshold_
+        if not np.any(threshold_reached):
+            raise ValueError(
+                "Energy threshold cannot be reached with the available modes; "
+                "increase max_basis_dimension"
+            )
+        basis_dimension = la.argmax(threshold_reached) + 1
         self.__energy = energy[basis_dimension - 1]
         return basis[:, 0:basis_dimension]
 

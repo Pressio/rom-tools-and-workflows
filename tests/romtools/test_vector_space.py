@@ -159,8 +159,8 @@ def test_vector_space_from_streaming_pod():
         snapshot_loader=loader,
         block_size=4,
         n_snapshots=6,
-        basis_dimension=3,
-        oversampling=3,
+        max_basis_dimension=6,
+        truncater=utils.BasisSizeTruncater(3),
     )
 
     snapshot_matrix = _tensor_to_matrix(snapshots)
@@ -169,7 +169,7 @@ def test_vector_space_from_streaming_pod():
 
     assert vector_space.extents() == (3, 8, 3)
     assert np.allclose(vector_space.get_shift_vector(), 0.0)
-    assert np.allclose(vector_space.get_singular_values(), exact_svals[:3])
+    assert np.allclose(vector_space.get_singular_values(), exact_svals)
     assert np.allclose(
         np.abs(basis_matrix.T @ exact_basis[:, :3]),
         np.eye(3),
@@ -188,8 +188,8 @@ def test_streaming_vector_space_orthogonalizer():
         snapshot_loader=loader,
         block_size=3,
         n_snapshots=4,
-        basis_dimension=2,
-        oversampling=2,
+        max_basis_dimension=4,
+        truncater=utils.BasisSizeTruncater(2),
         orthogonalizer=utils.EuclideanL2Orthogonalizer(),
     )
 
@@ -207,8 +207,7 @@ def test_streaming_vector_space_requires_tensor_blocks():
             snapshot_loader=loader,
             block_size=2,
             n_snapshots=4,
-            basis_dimension=1,
-            oversampling=0,
+            max_basis_dimension=1,
         )
 
 
@@ -245,8 +244,8 @@ def test_streaming_vector_space_scalers(scaler_factory, expected_passes):
         snapshot_loader=loader,
         block_size=2,
         n_snapshots=6,
-        basis_dimension=3,
-        oversampling=3,
+        max_basis_dimension=6,
+        truncater=utils.BasisSizeTruncater(3),
         scaler=scaler_factory(),
     )
     in_memory_space = rt.VectorSpaceFromPOD(
@@ -269,10 +268,78 @@ def test_streaming_vector_space_scalers(scaler_factory, expected_passes):
 
     assert np.allclose(
         streaming_space.get_singular_values(),
-        in_memory_space.get_singular_values()[:3],
+        in_memory_space.get_singular_values(),
     )
     assert np.array_equal(snapshots, original_snapshots)
     assert requested_ranges == [(0, 2), (2, 4), (4, 6)] * expected_passes
+
+
+@pytest.mark.mpi_skip
+def test_streaming_vector_space_noop_truncater_retains_candidate_basis():
+    snapshots = np.random.default_rng(19).normal(size=(2, 4, 5))
+    loader = lambda start, end: snapshots[..., start:end]
+
+    vector_space = rt.VectorSpaceFromStreamingPOD(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=5,
+        max_basis_dimension=4,
+    )
+
+    assert vector_space.extents() == (2, 4, 4)
+    assert vector_space.get_singular_values().shape == (4,)
+
+
+@pytest.mark.mpi_skip
+def test_streaming_vector_space_energy_truncation_uses_full_energy():
+    snapshots = np.diag([3.0, 2.0, 1.0])[None, ...]
+    loader = lambda start, end: snapshots[..., start:end]
+    truncater = utils.EnergyBasedTruncater(0.8)
+
+    vector_space = rt.VectorSpaceFromStreamingPOD(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=3,
+        max_basis_dimension=3,
+        truncater=truncater,
+    )
+
+    assert vector_space.extents() == (1, 3, 2)
+    assert np.isclose(truncater.get_energy(), 13.0 / 14.0)
+
+
+@pytest.mark.mpi_skip
+def test_streaming_vector_space_energy_uses_prescaled_snapshots():
+    snapshots = np.diag([3.0, 2.0, 1.0])[None, ...]
+    loader = lambda start, end: snapshots[..., start:end]
+    truncater = utils.EnergyBasedTruncater(0.7)
+
+    vector_space = rt.VectorSpaceFromStreamingPOD(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=3,
+        max_basis_dimension=3,
+        truncater=truncater,
+        scaler=utils.VectorScaler(np.array([3.0, 1.0, 1.0])),
+    )
+
+    assert vector_space.extents() == (1, 3, 2)
+    assert np.isclose(truncater.get_energy(), 5.0 / 6.0)
+
+
+@pytest.mark.mpi_skip
+def test_streaming_vector_space_energy_truncation_rejects_small_cap():
+    snapshots = np.diag([3.0, 2.0, 1.0])[None, ...]
+    loader = lambda start, end: snapshots[..., start:end]
+
+    with pytest.raises(ValueError, match="increase max_basis_dimension"):
+        rt.VectorSpaceFromStreamingPOD(
+            snapshot_loader=loader,
+            block_size=2,
+            n_snapshots=3,
+            max_basis_dimension=1,
+            truncater=utils.EnergyBasedTruncater(0.8),
+        )
 
 
 if __name__ == "__main__":

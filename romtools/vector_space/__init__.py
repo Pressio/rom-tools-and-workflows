@@ -314,15 +314,18 @@ class VectorSpaceFromStreamingPOD():
 
     This class conforms to the VectorSpace protocol. Snapshot data is loaded
     twice by the streaming POD algorithm, and only one block is held at a time.
-    Data-derived scalers perform one additional initialization pass.
+    Data-derived scalers perform one additional initialization pass. The
+    randomized algorithm first computes up to ``max_basis_dimension`` candidate
+    modes, after which the supplied truncater selects the retained basis. Energy
+    truncation is measured against the complete pre-scaled snapshot matrix.
     '''
 
     def __init__(self,
                  snapshot_loader: SnapshotLoader,
                  block_size: int,
                  n_snapshots: int,
-                 basis_dimension: int,
-                 oversampling: int,
+                 max_basis_dimension: int,
+                 truncater: LeftSingularVectorTruncater = NoOpTruncater(),
                  orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
                  scaler: StreamingScaler = NoOpScaler(),
                  svdFnc: Callable = None,
@@ -335,8 +338,9 @@ class VectorSpaceFromStreamingPOD():
                 tensor of shape (n_var, n_dofs, end-start).
             block_size: Maximum number of snapshots loaded at once.
             n_snapshots: Total number of snapshots available to the loader.
-            basis_dimension: Number of POD modes to retain.
-            oversampling: Randomized POD oversampling dimension.
+            max_basis_dimension: Number of randomized candidate POD modes.
+            truncater: Truncater selecting the final basis from the candidate
+                modes.
             orthogonalizer: Optional final basis orthogonalizer.
             scaler: Scaler supporting streaming initialization.
             svdFnc: NumPy-compatible range-sketch SVD callable.
@@ -351,12 +355,11 @@ class VectorSpaceFromStreamingPOD():
             scaler.pre_scale(snapshot_block)
             return snapshot_block
 
-        basis, svals, _ = la.streaming_pod(
+        basis, svals, _, total_energy = la.streaming_pod(
             snapshot_loader=scaled_snapshot_loader,
             block_size=block_size,
             n_snapshots=n_snapshots,
-            k=basis_dimension,
-            p=oversampling,
+            max_basis_dimension=max_basis_dimension,
             svdFnc=svdFnc,
             comm=comm,
         )
@@ -366,15 +369,20 @@ class VectorSpaceFromStreamingPOD():
             )
 
         self.__svals = svals
-        scaler.post_scale(basis)
         n_var = basis.shape[0]
+        basis_matrix = _tensor_to_matrix(basis)
+        basis_matrix = truncater.truncate(
+            basis_matrix, svals, total_energy=total_energy
+        )
+        basis = _matrix_to_tensor(n_var, basis_matrix)
+        scaler.post_scale(basis)
         basis_matrix = _tensor_to_matrix(basis)
         basis_matrix = orthogonalizer.orthogonalize(basis_matrix)
         self.__basis = _matrix_to_tensor(n_var, basis_matrix)
         self.__shift_vector = np.zeros(self.__basis.shape[:2])
 
     def get_singular_values(self) -> np.ndarray:
-        '''Returns the retained approximate singular values.'''
+        '''Returns the approximate singular values of the candidate basis.'''
         return self.__svals
 
     def get_shift_vector(self) -> np.ndarray:

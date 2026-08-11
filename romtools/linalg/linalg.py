@@ -1298,7 +1298,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
 
 def _streaming_pod(snapshot_loader: SnapshotLoader,
                    block_size: int, n_snapshots: int,
-                   k: int, p: int, svdFnc=None, comm=None):
+                   max_basis_dimension: int, svdFnc=None, comm=None):
     """
     Compute a randomized streaming POD from indexed snapshot blocks.
 
@@ -1311,25 +1311,27 @@ def _streaming_pod(snapshot_loader: SnapshotLoader,
         snapshot_loader: Snapshot loader called as snapshot_loader(start, end).
         block_size (int): Maximum number of snapshots loaded at once.
         n_snapshots (int): Total number of snapshots.
-        k (int): Target rank.
-        p (int): Oversampling parameter.
+        max_basis_dimension (int): Number of randomized candidate modes to
+            compute. A caller may subsequently truncate these modes further.
         svdFnc: NumPy-compatible SVD callable used for the range sketch. NumPy
             is used by default in serial. A callable is required with MPI.
         comm: Optional MPI communicator enabling row-distributed execution.
 
     Returns:
-        - Uk, ndarray(shape=(*local_state_shape, k)): POD modes.
-        - Sk, ndarray(shape=(k,)): approximate singular values.
-        - Vkt, ndarray(shape=(k, n_snapshots)): right singular vectors.
+        - U, ndarray(shape=(*local_state_shape, max_basis_dimension)):
+          candidate POD modes.
+        - S, ndarray(shape=(max_basis_dimension,)): approximate singular values.
+        - Vt, ndarray(shape=(max_basis_dimension, n_snapshots)): right singular
+          vectors.
+        - total_energy (float): Squared Frobenius norm of the complete snapshot
+          matrix.
     """
     if block_size <= 0:
         raise ValueError("block_size must be positive")
     if n_snapshots <= 0:
         raise ValueError("n_snapshots must be positive")
-    if k <= 0:
-        raise ValueError("k must be positive")
-    if p < 0:
-        raise ValueError("p must be nonnegative")
+    if max_basis_dimension <= 0:
+        raise ValueError("max_basis_dimension must be positive")
 
     distributed = comm is not None and comm.Get_size() > 1
     if distributed and svdFnc is None:
@@ -1343,9 +1345,10 @@ def _streaming_pod(snapshot_loader: SnapshotLoader,
         rank = 0
 
     range_svd = np.linalg.svd if svdFnc is None else svdFnc
-    sketch_dimension = k + p
+    sketch_dimension = max_basis_dimension
     state_shape = None
     range_sketch = None
+    local_total_energy = 0.0
 
     # Pass one: form the local rows of Y = X Omega.
     for start in range(0, n_snapshots, block_size):
@@ -1380,13 +1383,15 @@ def _streaming_pod(snapshot_loader: SnapshotLoader,
 
             if sketch_dimension > global_rows or sketch_dimension > n_snapshots:
                 raise ValueError(
-                    "k + p cannot exceed either global snapshot matrix dimension"
+                    "max_basis_dimension cannot exceed either global snapshot "
+                    "matrix dimension"
                 )
             range_sketch = np.zeros((local_rows, sketch_dimension))
         elif snapshot_block.shape[:-1] != state_shape:
             raise ValueError("snapshot loader returned inconsistent state dimensions")
 
         snapshot_matrix = snapshot_block.reshape((-1, end - start))
+        local_total_energy += float(np.vdot(snapshot_matrix, snapshot_matrix).real)
         if distributed:
             if rank == 0:
                 omega_block = np.random.randn(end - start, sketch_dimension)
@@ -1396,6 +1401,11 @@ def _streaming_pod(snapshot_loader: SnapshotLoader,
         else:
             omega_block = np.random.randn(end - start, sketch_dimension)
         range_sketch += snapshot_matrix @ omega_block
+
+    if distributed:
+        total_energy = comm.allreduce(local_total_energy, op=MPI.SUM)
+    else:
+        total_energy = local_total_energy
 
     left_vectors, _, _ = range_svd(
         range_sketch,
@@ -1444,8 +1454,8 @@ def _streaming_pod(snapshot_loader: SnapshotLoader,
         )
 
     modes = Q @ core_left_vectors
-    local_modes = modes[:, :k].reshape((*state_shape, k))
-    return local_modes, singular_values[:k], right_vectors[:k, :]
+    local_modes = modes.reshape((*state_shape, max_basis_dimension))
+    return local_modes, singular_values, right_vectors, total_energy
 
 
 def _local_column_range(rank, size, M):

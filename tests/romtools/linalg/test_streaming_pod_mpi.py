@@ -22,12 +22,11 @@ def test_streaming_pod_row_distributed():
     loader = lambda start, end: local_snapshots[:, start:end]
 
     np.random.seed(327)
-    local_U, S, Vt = _streaming_pod(
+    local_U, S, Vt, total_energy = _streaming_pod(
         snapshot_loader=loader,
         block_size=3,
         n_snapshots=8,
-        k=3,
-        p=2,
+        max_basis_dimension=5,
         svdFnc=SvdMethodOfSnapshots(comm),
         comm=comm,
     )
@@ -36,12 +35,13 @@ def test_streaming_pod_row_distributed():
     if rank == 0:
         U = np.vstack(gathered_U)
         exact_U, exact_S, _ = np.linalg.svd(snapshots, full_matrices=False)
-        assert U.shape == (5, 3)
-        assert S.shape == (3,)
-        assert Vt.shape == (3, 8)
-        assert np.allclose(S, exact_S[:3])
+        assert U.shape == (5, 5)
+        assert S.shape == (5,)
+        assert Vt.shape == (5, 8)
+        assert np.allclose(S, exact_S)
+        assert np.isclose(total_energy, np.sum(snapshots**2))
         assert np.allclose(
-            np.abs(U.T @ exact_U[:, :3]), np.eye(3), atol=1e-10
+            np.abs(U.T @ exact_U), np.eye(5), atol=1e-10
         )
 
 
@@ -56,7 +56,6 @@ def test_streaming_pod_distributed_requires_svd_functor():
             snapshot_loader=loader,
             block_size=2,
             n_snapshots=4,
-            k=1,
-            p=1,
+            max_basis_dimension=2,
             comm=comm,
         )
