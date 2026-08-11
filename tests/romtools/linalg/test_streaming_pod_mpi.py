@@ -45,7 +45,7 @@ def test_streaming_pod_row_distributed():
         )
 
 
-@pytest.mark.mpi(min_size=2)
+@pytest.mark.mpi(min_size=3)
 def test_streaming_pod_distributed_requires_svd_functor():
     comm = MPI.COMM_WORLD
     snapshots = np.ones((2, 4))
