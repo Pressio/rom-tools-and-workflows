@@ -1,4 +1,4 @@
-romtools.vector\_space.utils.shifter
+﻿romtools.vector\_space.utils.shifter
 ====================================
 
 .. automodule:: romtools.vector_space.utils.shifter
@@ -12,6 +12,8 @@ romtools.vector\_space.utils.shifter
       create_constant_shifter
       create_firstvec_shifter
       create_noop_shifter
+      create_streaming_average_shifter
+      create_streaming_firstvec_shifter
       create_vector_shifter
    
    .. rubric:: Classes
@@ -19,4 +21,5 @@ romtools.vector\_space.utils.shifter
    .. autosummary::
    
       Shifter
+      StreamingShifter
    

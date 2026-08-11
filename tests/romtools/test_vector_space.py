@@ -179,6 +179,118 @@ def test_vector_space_from_streaming_pod():
 
 
 @pytest.mark.mpi_skip
+@pytest.mark.parametrize("shift_kind", ["average", "first", "vector"])
+def test_streaming_pod_full_sketch_matches_standard_pod_with_shift(shift_kind):
+    snapshots = np.random.default_rng(47).normal(size=(3, 8, 6))
+    original_snapshots = snapshots.copy()
+    requested_ranges = []
+
+    def loader(start, end):
+        requested_ranges.append((start, end))
+        return snapshots[..., start:end]
+
+    if shift_kind == "average":
+        streaming_shifter = utils.create_streaming_average_shifter()
+        standard_shifter = utils.create_average_shifter(snapshots)
+        initialization_ranges = [(0, 2), (2, 4), (4, 6)]
+    elif shift_kind == "first":
+        streaming_shifter = utils.create_streaming_firstvec_shifter()
+        standard_shifter = utils.create_firstvec_shifter(snapshots)
+        initialization_ranges = [(0, 1)]
+    else:
+        shift_vector = snapshots[..., 0] / 3.0
+        streaming_shifter = utils.create_vector_shifter(shift_vector)
+        standard_shifter = utils.create_vector_shifter(shift_vector)
+        initialization_ranges = []
+
+    np.random.seed(113)
+    streaming_space = rt.VectorSpaceFromStreamingPOD(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=6,
+        max_basis_dimension=6,
+        truncater=utils.BasisSizeTruncater(3),
+        shifter=streaming_shifter,
+    )
+    standard_space = rt.VectorSpaceFromPOD(
+        snapshots=snapshots.copy(),
+        truncater=utils.BasisSizeTruncater(3),
+        shifter=standard_shifter,
+    )
+
+    streaming_basis = _tensor_to_matrix(streaming_space.get_basis())
+    standard_basis = _tensor_to_matrix(standard_space.get_basis())
+    assert np.allclose(
+        np.abs(streaming_basis.T @ standard_basis), np.eye(3), atol=1e-10
+    )
+    assert np.allclose(
+        streaming_space.get_singular_values(),
+        standard_space.get_singular_values(),
+    )
+    assert np.allclose(
+        streaming_space.get_shift_vector(), standard_space.get_shift_vector()
+    )
+    assert streaming_space.extents() == standard_space.extents()
+    assert np.array_equal(snapshots, original_snapshots)
+    assert requested_ranges == initialization_ranges + [
+        (0, 2), (2, 4), (4, 6),
+        (0, 2), (2, 4), (4, 6),
+    ]
+
+
+@pytest.mark.mpi_skip
+def test_streaming_pod_shift_precedes_data_derived_scaling():
+    snapshots = np.random.default_rng(53).normal(size=(3, 7, 6))
+    snapshots[..., 4:] *= 8.0
+    original_snapshots = snapshots.copy()
+    requested_ranges = []
+
+    def loader(start, end):
+        requested_ranges.append((start, end))
+        return snapshots[..., start:end]
+
+    streaming_shifter = utils.create_streaming_average_shifter()
+    standard_shifter = utils.create_average_shifter(snapshots)
+    streaming_space = rt.VectorSpaceFromStreamingPOD(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=6,
+        max_basis_dimension=6,
+        truncater=utils.BasisSizeTruncater(3),
+        shifter=streaming_shifter,
+        scaler=utils.VariableScaler("variance"),
+    )
+    standard_space = rt.VectorSpaceFromPOD(
+        snapshots=snapshots.copy(),
+        truncater=utils.BasisSizeTruncater(3),
+        shifter=standard_shifter,
+        scaler=utils.VariableScaler("variance"),
+    )
+
+    streaming_basis = _tensor_to_matrix(streaming_space.get_basis())
+    standard_basis = _tensor_to_matrix(standard_space.get_basis())
+    for mode in range(3):
+        correlation = abs(
+            streaming_basis[:, mode] @ standard_basis[:, mode]
+        )
+        correlation /= (
+            np.linalg.norm(streaming_basis[:, mode])
+            * np.linalg.norm(standard_basis[:, mode])
+        )
+        assert np.isclose(correlation, 1.0, atol=1e-10)
+
+    assert np.allclose(
+        streaming_space.get_singular_values(),
+        standard_space.get_singular_values(),
+    )
+    assert np.allclose(
+        streaming_space.get_shift_vector(), standard_space.get_shift_vector()
+    )
+    assert np.array_equal(snapshots, original_snapshots)
+    assert requested_ranges == [(0, 2), (2, 4), (4, 6)] * 4
+
+
+@pytest.mark.mpi_skip
 def test_streaming_vector_space_orthogonalizer():
     rng = np.random.default_rng(13)
     snapshots = rng.normal(size=(2, 5, 4))

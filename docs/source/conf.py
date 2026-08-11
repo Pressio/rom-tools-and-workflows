@@ -1,14 +1,24 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../.."))
+repository_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.insert(0, repository_root)
+
+# Notebook cells execute in a separate Python process, so changes made only to
+# this process's sys.path are not visible to them. Put the checkout first on
+# PYTHONPATH as well to prevent an older installed romtools package from being
+# imported while building the documentation.
+existing_pythonpath = os.environ.get("PYTHONPATH")
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    path for path in (repository_root, existing_pythonpath) if path
+)
 
 project = "ROM Tools and Workflows"
 copyright = "2019, National Technology & Engineering Solutions of Sandia, LLC"
 
 
 def get_version():
-    with open(os.path.abspath("../../version.txt")) as version_file:
+    with open(os.path.join(repository_root, "version.txt")) as version_file:
         return version_file.read().strip()
 
 

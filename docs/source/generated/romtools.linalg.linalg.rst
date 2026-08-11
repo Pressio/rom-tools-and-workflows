@@ -3,11 +3,11 @@
 
 .. automodule:: romtools.linalg.linalg
 
-
+   
    .. rubric:: Functions
 
    .. autosummary::
-
+   
       argmax
       local_column_range
       max
@@ -19,3 +19,4 @@
       std
       streaming_pod
       thin_svd
+   

@@ -68,7 +68,9 @@ affine offset.
 Affine offsets can be useful for a variety of reasons, including satisfying boundary conditions, and satisfying initial
 conditions.
 
-The _Shifter class encapsulates the affine offset.
+The :class:`Shifter` protocol encapsulates the affine offset. The
+:class:`StreamingShifter` protocol additionally supports initializing a
+data-derived shift vector from snapshot blocks loaded on demand.
 
 API
 ---
@@ -79,6 +81,7 @@ from numbers import Number
 from typing import Protocol
 import numpy as np
 import romtools.linalg.linalg as la
+from romtools.vector_space.utils.snapshot_loader import SnapshotLoader
 
 
 class Shifter(Protocol):
@@ -93,6 +96,19 @@ class Shifter(Protocol):
 
     def get_shift_vector(self) -> np.ndarray:
         '''Returns the vector used to shift the data.'''
+        ...
+
+
+class StreamingShifter(Shifter, Protocol):
+    '''Shifter interface required by streaming POD vector spaces.'''
+
+    def initialize_shift_vector_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        '''Initialize a shift vector from snapshot blocks when required.'''
         ...
 
 
@@ -115,6 +131,15 @@ class _Shifter():
         '''Shifts the input array in place by subtracting the provided shift vector.'''
         my_array -= self.__shift_vector[..., None]
 
+    def initialize_shift_vector_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        '''No-op initialization for a shifter with a fixed shift vector.'''
+        _ = snapshot_loader, block_size, n_snapshots, comm
+
     def apply_inverse_shift(self, my_array: np.ndarray) -> None:
         '''Shifts the input array in place by adding the provided shift vector.'''
         my_array += self.__shift_vector[..., None]
@@ -124,14 +149,118 @@ class _Shifter():
         return self.__shift_vector
 
 
-def create_noop_shifter(my_array: np.ndarray) -> Shifter:
+class _StreamingDataDerivedShifter:
+    '''Base implementation for shifters initialized from snapshot blocks.'''
+
+    def __init__(self) -> None:
+        self._shift_vector = None
+
+    def apply_shift(self, my_array: np.ndarray) -> None:
+        '''Shift an input block in place.'''
+        self._check_initialized()
+        my_array -= self._shift_vector[..., None]
+
+    def apply_inverse_shift(self, my_array: np.ndarray) -> None:
+        '''Inverse-shift an input block in place.'''
+        self._check_initialized()
+        my_array += self._shift_vector[..., None]
+
+    def get_shift_vector(self) -> np.ndarray:
+        '''Return the initialized shift vector.'''
+        self._check_initialized()
+        return self._shift_vector
+
+    def _check_initialized(self) -> None:
+        if self._shift_vector is None:
+            raise RuntimeError(
+                "Streaming shifter has not been initialized from a snapshot loader"
+            )
+
+
+class _StreamingAverageShifter(_StreamingDataDerivedShifter):
+    '''Streaming temporal-average shifter implementation.'''
+
+    def initialize_shift_vector_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        _validate_streaming_shifter_parameters(block_size, n_snapshots)
+        state_shape = None
+        snapshot_sum = None
+
+        for start in range(0, n_snapshots, block_size):
+            end = min(start + block_size, n_snapshots)
+            block = np.asarray(snapshot_loader(start, end))
+            state_shape = _validate_streaming_snapshot_block(
+                block, start, end, state_shape, comm
+            )
+            if snapshot_sum is None:
+                accumulation_dtype = np.result_type(block.dtype, np.float64)
+                snapshot_sum = np.zeros(state_shape, dtype=accumulation_dtype)
+            snapshot_sum += np.sum(block, axis=-1)
+
+        self._shift_vector = snapshot_sum / n_snapshots
+
+
+class _StreamingFirstVectorShifter(_StreamingDataDerivedShifter):
+    '''Streaming first-snapshot shifter implementation.'''
+
+    def initialize_shift_vector_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        _validate_streaming_shifter_parameters(block_size, n_snapshots)
+        block = np.asarray(snapshot_loader(0, 1))
+        _validate_streaming_snapshot_block(block, 0, 1, None, comm)
+        self._shift_vector = np.array(block[..., 0], copy=True)
+
+
+def _validate_streaming_shifter_parameters(
+        block_size: int, n_snapshots: int) -> None:
+    if block_size <= 0:
+        raise ValueError("block_size must be positive")
+    if n_snapshots <= 0:
+        raise ValueError("n_snapshots must be positive")
+
+
+def _validate_streaming_snapshot_block(
+        block: np.ndarray,
+        start: int,
+        end: int,
+        state_shape,
+        comm=None):
+    if block.ndim != 3:
+        raise ValueError("snapshot loader must return three-dimensional blocks")
+    if block.shape[-1] != end - start:
+        raise ValueError("snapshot loader returned an incorrect number of snapshots")
+    if state_shape is not None and block.shape[:-1] != state_shape:
+        raise ValueError("snapshot loader returned inconsistent state dimensions")
+
+    if state_shape is None and comm is not None and comm.Get_size() > 1:
+        from mpi4py import MPI
+        variable_counts = comm.allgather(block.shape[0])
+        if any(count != variable_counts[0] for count in variable_counts):
+            raise ValueError("variable count must match across MPI ranks")
+        minimum_local_dofs = comm.allreduce(block.shape[1], op=MPI.MIN)
+        if minimum_local_dofs <= 0:
+            raise ValueError("each MPI rank must own at least one spatial DOF")
+
+    return block.shape[:-1]
+
+
+def create_noop_shifter(my_array: np.ndarray) -> StreamingShifter:
     '''No op implementation.'''
     shift_vector = np.zeros((my_array.shape[0], my_array.shape[1]))
     shifter = _Shifter(shift_vector)
     return shifter
 
 
-def create_constant_shifter(shift_value, my_array: np.ndarray) -> Shifter:
+def create_constant_shifter(
+        shift_value, my_array: np.ndarray) -> StreamingShifter:
     '''Shifts the data by a constant value.'''
     if isinstance(shift_value, np.ndarray):
         shift_vector = np.empty((my_array.shape[0], my_array.shape[1],))
@@ -146,20 +275,30 @@ def create_constant_shifter(shift_value, my_array: np.ndarray) -> Shifter:
     return shifter
 
 
-def create_vector_shifter(shift_vector: np.ndarray) -> Shifter:
+def create_vector_shifter(shift_vector: np.ndarray) -> StreamingShifter:
     '''Shifts the data by a user-input vector.'''
     shifter = _Shifter(shift_vector)
     return shifter
 
 
-def create_average_shifter(my_array: np.ndarray) -> Shifter:
+def create_average_shifter(my_array: np.ndarray) -> StreamingShifter:
     '''Shifts the data by the average of a data matrix.'''
     shift_vector = la.mean(my_array, axis=2)
     return _Shifter(shift_vector)
 
 
-def create_firstvec_shifter(my_array: np.ndarray) -> Shifter:
+def create_firstvec_shifter(my_array: np.ndarray) -> StreamingShifter:
     '''Shifts the data by the first vector of a data matrix.'''
     shift_vector = my_array[:, :, 0]
     shifter = _Shifter(shift_vector)
     return shifter
+
+
+def create_streaming_average_shifter() -> StreamingShifter:
+    '''Create a shifter initialized from the temporal average of streamed data.'''
+    return _StreamingAverageShifter()
+
+
+def create_streaming_firstvec_shifter() -> StreamingShifter:
+    '''Create a shifter initialized from the first streamed snapshot.'''
+    return _StreamingFirstVectorShifter()

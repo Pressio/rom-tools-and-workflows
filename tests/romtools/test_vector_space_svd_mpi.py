@@ -60,7 +60,7 @@ def test_vector_space_from_pod_mpi():
 
 
 @pytest.mark.mpi(min_size=3)
-def test_streaming_vector_space_row_distributed_scaling():
+def test_streaming_vector_space_row_distributed_shifting_and_scaling():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -71,21 +71,28 @@ def test_streaming_vector_space_row_distributed_scaling():
     local_snapshots = snapshots[:, start:end].copy()
     original_local_snapshots = local_snapshots.copy()
     loader = lambda first, last: local_snapshots[..., first:last]
+    shifter = utils.create_streaming_average_shifter()
     scaler = utils.VariableScaler("variance")
 
     vector_space = rt.VectorSpaceFromStreamingPOD(
         snapshot_loader=loader,
         block_size=2,
         n_snapshots=5,
-        max_basis_dimension=5,
+        max_basis_dimension=4,
         truncater=utils.BasisSizeTruncater(3),
+        shifter=shifter,
         scaler=scaler,
         svdFnc=SvdMethodOfSnapshots(comm),
         comm=comm,
     )
 
-    expected_scales = np.std(snapshots, axis=(1, 2))
+    shift_vector = np.mean(snapshots, axis=2)
+    shifted_snapshots = snapshots - shift_vector[..., None]
+    expected_scales = np.std(shifted_snapshots, axis=(1, 2))
     assert np.allclose(scaler.var_scales_, expected_scales)
+    assert np.allclose(
+        vector_space.get_shift_vector(), shift_vector[:, start:end]
+    )
     assert np.array_equal(local_snapshots, original_local_snapshots)
     assert vector_space.extents() == (2, end - start, 3)
 
@@ -100,6 +107,7 @@ def test_streaming_vector_space_row_distributed_scaling():
         in_memory_space = rt.VectorSpaceFromPOD(
             snapshots=snapshots.copy(),
             truncater=utils.BasisSizeTruncater(3),
+            shifter=utils.create_average_shifter(snapshots),
             scaler=utils.VariableScaler("variance"),
         )
         expected_basis = in_memory_space.get_basis()
@@ -115,7 +123,7 @@ def test_streaming_vector_space_row_distributed_scaling():
             assert np.isclose(correlation, 1.0, atol=1e-10)
         assert np.allclose(
             vector_space.get_singular_values(),
-            in_memory_space.get_singular_values(),
+            in_memory_space.get_singular_values()[:4],
         )
 
 if __name__ == "__main__":
