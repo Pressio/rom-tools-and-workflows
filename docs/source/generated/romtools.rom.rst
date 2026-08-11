@@ -11,3 +11,4 @@ romtools.rom
    :recursive:
 
    projections
+   qoi_surrogates

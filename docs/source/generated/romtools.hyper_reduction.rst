@@ -12,3 +12,7 @@ romtools.hyper\_reduction
 
    deim
    ecsw
+   new_deim
+   qdeim
+   test
+   tmp

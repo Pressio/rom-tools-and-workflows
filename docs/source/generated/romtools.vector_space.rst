@@ -11,6 +11,7 @@ romtools.vector\_space
       DictionaryVectorSpace
       VectorSpace
       VectorSpaceFromPOD
+      VectorSpaceFromStreamingPOD
    
 .. rubric:: Modules
 

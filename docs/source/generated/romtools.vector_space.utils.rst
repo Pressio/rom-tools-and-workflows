@@ -14,5 +14,6 @@ romtools.vector\_space.utils
    outputter
    scaler
    shifter
+   snapshot_loader
    svd_method_of_snapshots
    truncater

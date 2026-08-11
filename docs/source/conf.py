@@ -37,6 +37,11 @@ autodoc_typehints = "description"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 
+# Enable dollar-delimited math ($...$ inline, $$...$$ display) in MyST/myst_nb
+# markdown cells. Without this, MyST escapes the dollar signs and MathJax never
+# processes the equations.
+myst_enable_extensions = ["dollarmath", "amsmath"]
+
 templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"

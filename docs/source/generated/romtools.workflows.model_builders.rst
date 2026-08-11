@@ -10,5 +10,6 @@ romtools.workflows.model\_builders
    
       ModelBuilder
       QoiModelBuilder
+      QoiModelBuilderWithTrainingData
       QoiModelWithErrorEstimateBuilder
    

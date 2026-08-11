@@ -11,6 +11,7 @@ romtools.vector\_space.utils.scaler
       NoOpScaler
       ScalarScaler
       Scaler
+      StreamingScaler
       VariableAndVectorScaler
       VariableScaler
       VectorScaler

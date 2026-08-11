@@ -45,6 +45,7 @@
 
 '''
 Constructing a basis via POD typically entails computing the SVD of a snapshot matrix,
+
 .. math::
 
    \\mathbf{U} ,\\mathbf{\\Sigma} = \\mathrm{svd}(\\mathbf{S})
@@ -53,7 +54,7 @@ and then selecting the first :math:`K` left singular vectors (i.e., the first :m
 columns of :math:`\\mathbf{U}`). Typically, :math:`K` is determined through the decay of
 the singular values.
 
-The truncater class is desined to truncate a basis.
+The truncater class is designed to truncate a basis.
 We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
@@ -79,7 +80,7 @@ class NoOpTruncater():
     '''
     No op implementation
 
-    This class conforms to `LeftSingularVectorTruncater` protocol.
+    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -92,7 +93,7 @@ class BasisSizeTruncater():
     '''
     Truncates to a specified number of singular vectors, as specified in the constructor
 
-    This class conforms to `LeftSingularVectorTruncater` protocol.
+    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, basis_dimension: int) -> None:
         '''
@@ -147,7 +148,7 @@ class EnergyBasedTruncater():
     be the number of singular values such that the cumulative energy retained
     is greater than some threshold.
 
-    This class conforms to `LeftSingularVectorTruncater` protocol.
+    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.
     '''
     def __init__(self, threshold: float) -> None:
         '''

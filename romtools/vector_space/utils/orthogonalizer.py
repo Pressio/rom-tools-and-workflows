@@ -44,17 +44,19 @@
 #
 
 '''
-The OrthogonalizerClass is used to orthogonalize a basis at the end of the
+An orthogonalizer is used to orthogonalize a basis at the end of the
 construction of a vector space.  Specifically, given a basis
+
 .. math::
 
    \\boldsymbol \\Phi \\in \\mathbb{R}^{N \\times K}
 
-the orthogonalizer will compute a new, orthogonalized basis :math:`\\boldsymbol \\Phi_{\\*}`
+the orthogonalizer will compute a new, orthogonalized basis :math:`\\boldsymbol \\Phi_{\\ast}`
 where
+
 .. math::
 
-   \\boldsymbol \\Phi_{\\*}^T \\mathbf{W} \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
+   \\boldsymbol \\Phi_{\\ast}^T \\mathbf{W} \\boldsymbol \\Phi_{\\ast} = \\mathbf{I}.
 
 In the above, :math:`\\mathbf{W}` is a weighting matrix (typically the cell volumes).
 '''
@@ -76,7 +78,7 @@ class NoOpOrthogonalizer:
     '''
     No op class (doesn't do anything)
 
-    This class conforms to `Orthogonalizer` protocol.
+    This class conforms to the :class:`Orthogonalizer` protocol.
     '''
     def __init__(self) -> None:
         pass
@@ -90,11 +92,12 @@ class EuclideanL2Orthogonalizer:
     '''
     Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,
     the output basis will satisfy
+
     .. math::
 
-       \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}.
+       \\boldsymbol \\Phi_{\\ast}^T \\boldsymbol \\Phi_{\\ast} = \\mathbf{I}.
 
-    This class conforms to `Orthogonalizer` protocol.
+    This class conforms to the :class:`Orthogonalizer` protocol.
     '''
     def __init__(self, qrFnc=None) -> None:
         '''
@@ -103,8 +106,8 @@ class EuclideanL2Orthogonalizer:
 
             qrFnc: a callable to use for computing the QR decomposition.
                     IMPORTANT: must conform to the API of
-                        [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
-                    If `None`, internally we use `np.linalg.qr`.
+                    `numpy.linalg.qr <https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html>`_.
+                    If ``None``, internally we use ``np.linalg.qr``.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are
                     distributed with MPI, or maybe you have a fancy qr function that you can use.
 
@@ -129,14 +132,15 @@ class EuclideanVectorWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
+
     .. math::
 
-       \\boldsymbol \\Phi_{\\*}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+       \\boldsymbol \\Phi_{\\ast}^T \\mathrm{diag}(\\mathbf{w})\\boldsymbol \\Phi_{\\ast} = \\mathbf{I},
 
     where :math:`\\mathbf{w}` is the weighting vector. Typically, this inner product
     is used for orthogonalizing with respect to cell volumes
 
-    This class conforms to `Orthogonalizer` protocol.
+    This class conforms to the :class:`Orthogonalizer` protocol.
     '''
     def __init__(self, weighting_vector: np.ndarray, qrFnc=None) -> None:
         '''
@@ -148,8 +152,8 @@ class EuclideanVectorWeightedL2Orthogonalizer:
                 length of the array must match the number of rows in the matrix that will be orthogonalized.
             qrFnc: a callable to use for computing the QR decomposition.
                     IMPORTANT: must conform to the API of
-                    [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
-                    If `None`, internally we use `np.linalg.qr`.
+                    `numpy.linalg.qr <https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html>`_.
+                    If ``None``, internally we use ``np.linalg.qr``.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are
                     distributed with MPI, or maybe you have a fancy qr function that you can use.
         '''
@@ -178,14 +182,15 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
     '''
     Orthogonalizes the basis in an SPD matrix-weighted Euclidean L2 inner product,
     i.e., the output basis will satisfy
+
     .. math::
 
-       \\boldsymbol \\Phi_{\\*}^T \\mathbf{M}\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
+       \\boldsymbol \\Phi_{\\ast}^T \\mathbf{M}\\boldsymbol \\Phi_{\\ast} = \\mathbf{I},
 
     where :math:`\\mathbf{M}` is the SPD weighting matrix. Typically, this inner product
     is used for orthogonalizing with respect to a mass matrix 
 
-    This class conforms to `Orthogonalizer` protocol.
+    This class conforms to the :class:`Orthogonalizer` protocol.
     '''
     def __init__(self, weighting_matrix: np.ndarray, qrFnc=None) -> None:
         '''
@@ -197,8 +202,8 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
                 length of the array must match the number of rows in the matrix that will be orthogonalized.
             qrFnc: a callable to use for computing the QR decomposition.
                     IMPORTANT: must conform to the API of
-                    [np.linalg.qr](https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html).
-                    If `None`, internally we use `np.linalg.qr`.
+                    `numpy.linalg.qr <https://numpy.org/doc/stable/reference/generated/numpy.linalg.qr.html>`_.
+                    If ``None``, internally we use ``np.linalg.qr``.
                     Note: this is useful when you want to use a custom qr, for example when your snapshots are
                     distributed with MPI, or maybe you have a fancy qr function that you can use.
         '''

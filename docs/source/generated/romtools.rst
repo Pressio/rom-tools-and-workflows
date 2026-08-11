@@ -11,6 +11,7 @@
    :recursive:
 
    composite_vector_space
+   hpc
    hyper_reduction
    linalg
    rom

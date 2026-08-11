@@ -1,4 +1,4 @@
-﻿romtools.workflows
+romtools.workflows
 ==================
 
 .. automodule:: romtools.workflows
@@ -11,8 +11,10 @@
    :recursive:
 
    dakota
+   enkf
    formatting
    greedy
+   greedy_coupler
    inverse
    model_builders
    models

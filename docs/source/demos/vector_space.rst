@@ -10,6 +10,7 @@ In practice, a vector space comprises a basis and, potentially, an affine offset
 
    notebooks/dictionary_vector_space.ipynb
    notebooks/pod_vector_space.ipynb
+   notebooks/streaming_pod_vector_space.ipynb
    notebooks/orthogonalized_vector_space.ipynb
    notebooks/composite_vector_space.ipynb
 

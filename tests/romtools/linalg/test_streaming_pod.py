@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from romtools.linalg.linalg import _snapshot_loader, _streaming_pod
 
@@ -11,7 +12,7 @@ def test_python_streaming_pod_serial_rank1_2x2():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=1,
-        N=2, M=2,
+        n_snapshots=2,
         k=1, p=1,
     )
 
@@ -38,7 +39,7 @@ def test_python_streaming_pod_serial_rank2_2x2():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=1,
-        N=2, M=2,
+        n_snapshots=2,
         k=1, p=1,
     )
 
@@ -65,7 +66,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_1():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=1,
-        N=2, M=4,
+        n_snapshots=4,
         k=2, p=0,
     )
 
@@ -98,7 +99,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_2():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=2,
-        N=2, M=4,
+        n_snapshots=4,
         k=1, p=1,
     )
 
@@ -115,7 +116,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k1_p1():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=3,
-        N=2, M=4,
+        n_snapshots=4,
         k=1, p=1,
     )
 
@@ -132,7 +133,7 @@ def test_python_streaming_pod_serial_rank2_2x4_block_size_3_k2_p0():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=3,
-        N=2, M=4,
+        n_snapshots=4,
         k=2, p=0,
     )
 
@@ -149,7 +150,7 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_2_k3_p1():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=2,
-        N=5, M=8,
+        n_snapshots=8,
         k=3, p=1,
     )
 
@@ -177,7 +178,7 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k3_p1():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=3,
-        N=5, M=8,
+        n_snapshots=8,
         k=3, p=1,
     )
 
@@ -205,7 +206,7 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k2_p2():
     U, S, Vt = _streaming_pod(
         snapshot_loader=loader,
         block_size=3,
-        N=5, M=8,
+        n_snapshots=8,
         k=2, p=2,
     )
 
@@ -223,6 +224,110 @@ def test_python_streaming_pod_serial_rank3_5x8_block_size_3_k2_p2():
     # POD singular values
     gold_S = np.array([23.46, 7.69])
     assert np.allclose(S, gold_S, atol=1e-2)
+
+
+def test_python_streaming_pod_tensor_loader_and_ranges():
+    snapshots = np.arange(3 * 4 * 5, dtype=float).reshape(3, 4, 5)
+    requested_ranges = []
+
+    class Loader:
+        def __call__(self, start, end):
+            requested_ranges.append((start, end))
+            return snapshots[..., start:end]
+
+    loader = Loader()
+
+    U, S, Vt = _streaming_pod(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=5,
+        k=2,
+        p=1,
+    )
+
+    assert U.shape == (3, 4, 2)
+    assert S.shape == (2,)
+    assert Vt.shape == (2, 5)
+    assert requested_ranges == [(0, 2), (2, 4), (4, 5)] * 2
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"block_size": 0, "n_snapshots": 4, "k": 1, "p": 0},
+        {"block_size": 2, "n_snapshots": 0, "k": 1, "p": 0},
+        {"block_size": 2, "n_snapshots": 4, "k": 0, "p": 0},
+        {"block_size": 2, "n_snapshots": 4, "k": 1, "p": -1},
+    ],
+)
+def test_python_streaming_pod_rejects_invalid_parameters(kwargs):
+    snapshots = np.ones((2, 4))
+    loader = lambda start, end: snapshots[:, start:end]
+    with pytest.raises(ValueError):
+        _streaming_pod(snapshot_loader=loader, **kwargs)
+
+
+def test_python_streaming_pod_rejects_incorrect_block_size():
+    loader = lambda start, end: np.ones((3, end - start + 1))
+    with pytest.raises(ValueError, match="incorrect number"):
+        _streaming_pod(loader, block_size=2, n_snapshots=4, k=1, p=0)
+
+
+def test_python_streaming_pod_rejects_inconsistent_state_shape():
+    call_count = 0
+
+    def loader(start, end):
+        nonlocal call_count
+        call_count += 1
+        n_rows = 3 if call_count == 1 else 4
+        return np.ones((n_rows, end - start))
+
+    with pytest.raises(ValueError, match="inconsistent state dimensions"):
+        _streaming_pod(loader, block_size=2, n_snapshots=4, k=1, p=0)
+
+
+def test_python_streaming_pod_uses_custom_range_svd_once():
+    snapshots = np.random.default_rng(17).normal(size=(6, 5))
+    calls = []
+
+    def custom_svd(matrix, **kwargs):
+        calls.append((matrix.shape, kwargs))
+        return np.linalg.svd(matrix, **kwargs)
+
+    loader = lambda start, end: snapshots[:, start:end]
+    U, S, Vt = _streaming_pod(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=5,
+        k=2,
+        p=3,
+        svdFnc=custom_svd,
+    )
+
+    exact_U, exact_S, _ = np.linalg.svd(snapshots, full_matrices=False)
+    assert len(calls) == 1
+    assert calls[0][0] == (6, 5)
+    assert U.shape == (6, 2)
+    assert Vt.shape == (2, 5)
+    assert np.allclose(S, exact_S[:2])
+    assert np.allclose(np.abs(U.T @ exact_U[:, :2]), np.eye(2))
+
+
+def test_python_streaming_pod_single_rank_comm_uses_serial_path():
+    class SingleRankComm:
+        def Get_size(self):
+            return 1
+
+    snapshots = np.random.default_rng(23).normal(size=(5, 4))
+    loader = lambda start, end: snapshots[:, start:end]
+
+    np.random.seed(11)
+    expected = _streaming_pod(loader, 2, 4, 2, 2)
+    np.random.seed(11)
+    actual = _streaming_pod(loader, 2, 4, 2, 2, comm=SingleRankComm())
+
+    for actual_value, expected_value in zip(actual, expected):
+        assert np.allclose(actual_value, expected_value)
 
 if __name__ == "__main__":
     test_python_streaming_pod_serial_rank1_2x2()

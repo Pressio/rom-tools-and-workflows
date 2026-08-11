@@ -10,6 +10,7 @@ romtools.workflows.sampling\_methods
    
       LatinHypercubeSampler
       MonteCarloSampler
+      RandomizedQuasiMonteCarloSampler
    
    .. rubric:: Classes
 
