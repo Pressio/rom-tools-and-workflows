@@ -379,13 +379,6 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
         self.logger.log(f"Wrote remote file: {remote_path}")
 
-    def __create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
-        remote_dir = self.__resolve_remote_path(remote_dir, preserve_relative=base_dir)
-        result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
-        if not result.ok:
-            raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
-        self.logger.log(f"Created remote directory: {remote_dir}")
-
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -405,8 +398,20 @@ class RemoteDispatcher(DispatcherBase):
         result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
         return result.ok
 
-    def create_empty_dir(self, dir_name: str):
-        self.__create_remote_directory(dir_name)
+    def create_empty_dir(self, dir_name: str, overwrite=False):
+        remote_dir = self.__resolve_remote_path(dir_name, preserve_relative=False)
+        if overwrite:
+            self.logger.log(f"Clearing directory if it exists: {remote_dir}")
+            self.conn.run(f"rm -rf {shlex.quote(remote_dir)}")
+        result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
+        if not result.ok:
+            raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
+        self.logger.log(f"Created remote directory: {remote_dir}")
+
+    def prepare_base_dir(self, dir_name, overwrite = False):
+        if overwrite:
+            self.collector.remove_local_dir()
+        self.create_empty_dir(dir_name, overwrite)
 
     def __run(self, cmd: str, run_directory: str = None) -> None:
         resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
@@ -416,7 +421,7 @@ class RemoteDispatcher(DispatcherBase):
             raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
         self.logger.debug(f"Executed command on remote host: {cmd}")
 
-    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
+    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True, overwrite = False) -> Result:
         """
         Main method of the Dispatcher. Dispatches provided work to the
         remote host, polls the job, and collects results.

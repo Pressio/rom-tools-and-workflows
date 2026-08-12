@@ -3,6 +3,7 @@
 import os
 import shlex
 import subprocess
+import shutil
 import numpy as np
 
 from romtools.hpc.util.logger import Logger
@@ -44,8 +45,15 @@ class LocalDispatcher(DispatcherBase):
     def path_exists(self, path: str) -> bool:
         return os.path.exists(path)
 
-    def create_empty_dir(self, dir_name: str):
+    def create_empty_dir(self, dir_name: str, overwrite=False):
+        if overwrite:
+            if os.path.exists(dir_name) and os.path.isdir:
+                self.logger.log(f"Clearing directory: {dir_name}")
+                shutil.rmtree(dir_name)
         os.makedirs(dir_name, exist_ok=True)
+
+    def prepare_base_dir(self, dir_name: str, overwrite=False):
+        self.create_empty_dir(dir_name, overwrite)
 
     def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         """

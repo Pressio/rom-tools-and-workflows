@@ -39,7 +39,10 @@ class DispatcherBase:
     def path_exists(self, path: str) -> bool:
         pass
 
-    def create_empty_dir(self, dir_name: str):
+    def create_empty_dir(self, dir_name: str, overwrite: bool = False):
+        pass
+
+    def prepare_base_dir(self, dir_name: str, overwrite: bool = False):
         pass
 
     def dispatch(self, cmd: str, run_directory: str = None) -> Result:

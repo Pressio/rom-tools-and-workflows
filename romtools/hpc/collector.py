@@ -2,6 +2,7 @@ import os
 import re
 import shlex
 import tarfile
+import shutil
 
 import posixpath as ppath
 from typing import List, Optional
@@ -203,6 +204,11 @@ class Collector:
     # ------------------------------------------------------------------
     # Public methods
     # ------------------------------------------------------------------
+
+    def remove_local_dir(self):
+        if os.path.exists(self.sampling_directory) and os.path.isdir(self.sampling_directory):
+            self.logger.log(f"Overwriting existing results in {self.sampling_directory}")
+            shutil.rmtree(self.sampling_directory)
 
     def collect_results(self) -> None:
         """
