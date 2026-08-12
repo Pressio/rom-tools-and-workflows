@@ -68,24 +68,42 @@ def run_model_on_samples(model, run_dir_prefix: str, param_space, samples: np.nd
 # OPTIMIZATION
 # ============================================================================
 
-def optimize_single_allocation(budget: float, allocation_type: str, hf_corrs: List[Callable],
-                               lf_corrs: List[Callable], costs: List[Callable], 
-                               bounds: List[Tuple], log_objective: bool, hybrid: bool,
-                               use_torch: bool = True, n_restarts: int = 50) -> Tuple[float, np.ndarray]:
+def optimize_single_allocation(
+    budget: float,
+    allocation_type: str,
+    hf_corrs: List[Callable],
+    lf_corrs: List[Callable],
+    costs: List[Callable],
+    bounds: List[Tuple],
+    log_objective: bool,
+    hybrid: bool,
+    use_torch: bool = True,
+    n_restarts: int = 50,
+    corr_matrix_fn: Optional[Callable] = None,
+) -> Tuple[float, np.ndarray]:
     """Optimize allocation for given budget and type. Returns (variance, allocation)."""
     opt = MFMC(budget, allocation_type, hybrid=hybrid, use_torch=use_torch)
-    opt.set_corrs_and_costs(hf_corrs, lf_corrs, costs)
+    opt.set_corrs_and_costs(
+        hf_corrs,
+        lf_corrs,
+        costs,
+        corr_matrix_fn=corr_matrix_fn,
+    )
     opt.set_objective_and_constraint(log=log_objective, bounds=bounds)
-    
-    best_var, best_alloc = float('inf'), None
+
+    best_var, best_alloc = float("inf"), None
+
     for _ in range(n_restarts):
         opt.solve()
+
         if opt.result.success:
             var = np.exp(opt.result.fun) if log_objective else opt.result.fun
+
             if 0 <= var < best_var:
                 best_var, best_alloc = var, opt.result.x
-    
+
     print(f"{allocation_type} at budget {budget}: variance={best_var:.6f}")
+
     return best_var, best_alloc
 
 
@@ -262,7 +280,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                    log_of_objective: bool = True,
                    overwrite: bool = True,
                    random_seed: int = 2025,
-                   surrogate_method: str = 'neural_network',
+                   surrogate_method: str = 'ah_matrix',
                    use_torch: bool = True):
     """
     Hybrid MFUQ algorithm with multiple auxiliary models.
@@ -284,7 +302,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         log_of_objective: Use log transform in optimization
         overwrite: Overwrite existing results
         random_seed: Random seed
-        surrogate_method: 'neural_network' or 'sigmoid'
+        surrogate_method: 'ah_matrix' or 'ah_componentwise_sigmoid' or 'componentwise_sigmoid'
         use_torch: Use PyTorch for optimization gradients
     """
     # Validate inputs
@@ -329,29 +347,45 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         
         builder = SurrogateBuilder(pilot_list, n_active=1, n_aux=n_aux,
                                  work_dir=work_dir, method=surrogate_method, use_torch=use_torch)
-        hf_corrs, lf_corrs, costs = builder.build(data_npz)
+        hf_corrs, lf_corrs, costs, corr_matrix_fn = builder.build(data_npz)
         
         budget_list = [budget * (i + 1) for i in range(6)]
         bounds = [(1, None)] + [(1.001, None)] * (n_aux + 1) + [tuple(tunable_range)]
         
         logger.write(f"Optimization bounds: {bounds}")
         
-        # Run optimization with surrogate models only (hybrid=False)
+        # Run optimization with surrogate models only (hybrid=True)
         mf_vars, mf_allocs = [], []
         is_vars, is_allocs = [], []
         
         for bgt in budget_list:
             var, alloc = optimize_single_allocation(
-                bgt, 'MF', hf_corrs, lf_corrs, costs, bounds, log_of_objective, 
-                hybrid=False, use_torch=use_torch
+                bgt,
+                "MF",
+                hf_corrs,
+                lf_corrs,
+                costs,
+                bounds,
+                log_of_objective,
+                hybrid=True,
+                use_torch=use_torch,
+                corr_matrix_fn=corr_matrix_fn,
             )
             print(f"  allocation={alloc}")
             mf_vars.append(var)
             mf_allocs.append(alloc)
-            
+
             var, alloc = optimize_single_allocation(
-                bgt, 'IS', hf_corrs, lf_corrs, costs, bounds, log_of_objective,
-                hybrid=False, use_torch=use_torch
+                bgt,
+                "IS",
+                hf_corrs,
+                lf_corrs,
+                costs,
+                bounds,
+                log_of_objective,
+                hybrid=True,
+                use_torch=use_torch,
+                corr_matrix_fn=corr_matrix_fn,
             )
             print(f"  allocation={alloc}")
             is_vars.append(var)
@@ -402,23 +436,46 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         logger.write(f"FOM-ROM correlation: {fom_rom_corr_val:.4f}")
         logger.write(f"Normalized ROM time: {normalized_rom_time_val:.4f}")
         
-        # Build exact functions by replacing ROM entries with exact values
-        # HF correlations: FOM-aux (surrogate) + FOM-ROM (exact)
-        exact_hf = hf_corrs[:n_aux] + [
-            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(fom_rom_corr_val)
+        # Build exact scalar functions for validation.
+        # Do not rely on hf_corrs/lf_corrs here, because the ah_matrix
+        # surrogate backend returns hf_corrs=None and lf_corrs=None.
+        def make_constant(value):
+            value = float(np.asarray(value).squeeze())
+
+            if use_torch:
+                def const_fn(s, v=value):
+                    if torch.is_tensor(s):
+                        return torch.tensor(v, dtype=torch.float64, device=s.device)
+                    return v
+                return const_fn
+
+            return lambda s, v=value: v
+
+        # HF correlations:
+        #   Corr[FOM, aux_i] from pilot data,
+        #   Corr[FOM, trained ROM] from trained ROM validation.
+        exact_hf = [
+            make_constant(corr) for corr in np.asarray(pilot_data.fom_aux_corrs).ravel()
         ]
-        
-        # LF correlations: aux-aux (surrogate) + aux-ROM (exact)
-        n_aux_pairs = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-        exact_lf = lf_corrs[:n_aux_pairs] + [
-            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(corr)
-            for corr in aux_rom_corr_vals
+        exact_hf.append(make_constant(fom_rom_corr_val))
+
+        # LF-LF correlations:
+        #   aux-aux correlations from pilot data,
+        #   aux-ROM correlations from trained ROM validation.
+        exact_lf = [
+            make_constant(corr) for corr in np.asarray(pilot_data.aux_aux_corrs).ravel()
         ]
-        
-        # Costs: aux (surrogate) + ROM (exact)
-        exact_costs = costs[:n_aux] + [
-            (lambda v: (lambda s: torch.as_tensor(v, dtype=torch.double) if use_torch else v))(normalized_rom_time_val)
+        exact_lf.extend([
+            make_constant(corr) for corr in aux_rom_corr_vals
+        ])
+
+        # Costs:
+        #   auxiliary model costs from pilot data,
+        #   trained ROM cost from validation.
+        exact_costs = [
+            make_constant(cost) for cost in np.asarray(pilot_data.normalized_aux_times).ravel()
         ]
+        exact_costs.append(make_constant(normalized_rom_time_val))
         
         bounds_exact = [(1, None)] + [(1.001, None)] * (n_aux + 1) + [(rom_basis_num, rom_basis_num)]
         
@@ -428,16 +485,32 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         
         for bgt in budget_list:
             var, alloc = optimize_single_allocation(
-                bgt, 'MF', exact_hf, exact_lf, exact_costs, bounds_exact, log_of_objective,
-                hybrid=True, use_torch=use_torch
+                bgt,
+                "MF",
+                exact_hf,
+                exact_lf,
+                exact_costs,
+                bounds_exact,
+                log_of_objective,
+                hybrid=True,
+                use_torch=use_torch,
+                corr_matrix_fn=None,
             )
             print(f"  allocation={alloc}")
             mf_vars_ex.append(var)
             mf_allocs_ex.append(alloc)
             
             var, alloc = optimize_single_allocation(
-                bgt, 'IS', exact_hf, exact_lf, exact_costs, bounds_exact, log_of_objective,
-                hybrid=True, use_torch=use_torch
+                bgt,
+                "IS",
+                exact_hf,
+                exact_lf,
+                exact_costs,
+                bounds_exact,
+                log_of_objective,
+                hybrid=True,
+                use_torch=use_torch,
+                corr_matrix_fn=None,
             )
             print(f"  allocation={alloc}")
             is_vars_ex.append(var)
@@ -454,63 +527,130 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         
         # Evaluate surrogates over the range of s values
         surrogate_vals = {}
-        
+
         with torch.no_grad():
-            # FOM-aux correlations and aux costs (constant w.r.t. s)
-            for i in range(n_aux):
-                rho_val = hf_corrs[i]([0, s_plot[0]])
-                cost_val = costs[i]([0, s_plot[0]])
-                
-                # Convert to float if needed
-                if hasattr(rho_val, "detach"):
-                    rho_val = float(rho_val.detach().cpu().numpy())
-                if hasattr(cost_val, "detach"):
-                    cost_val = float(cost_val.detach().cpu().numpy())
-                
-                surrogate_vals[f'rho_fom_aux{i}'] = np.full_like(s_plot, rho_val, dtype=float)
-                surrogate_vals[f'cost_aux{i}'] = np.full_like(s_plot, cost_val, dtype=float)
-            
-            # FOM-ROM correlation and ROM cost (vary with s)
-            rho_fom_rom_vals = []
-            cost_rom_vals = []
-            for s in s_plot:
-                rho_val = hf_corrs[n_aux]([0, s])
-                cost_val = costs[n_aux]([0, s])
-                
-                if hasattr(rho_val, "detach"):
-                    rho_val = float(rho_val.detach().cpu().numpy())
-                if hasattr(cost_val, "detach"):
-                    cost_val = float(cost_val.detach().cpu().numpy())
-                
-                rho_fom_rom_vals.append(rho_val)
-                cost_rom_vals.append(cost_val)
-            
-            surrogate_vals['rho_fom_rom'] = np.array(rho_fom_rom_vals)
-            surrogate_vals['cost_rom'] = np.array(cost_rom_vals)
-            
-            # Aux-aux correlations (constant, only if n_aux > 1)
-            if n_aux > 1:
-                lf_idx = 0
-                for i in range(n_aux):
-                    for j in range(i):
-                        rho_val = lf_corrs[lf_idx]([0, s_plot[0]])
-                        if hasattr(rho_val, "detach"):
-                            rho_val = float(rho_val.detach().cpu().numpy())
-                        
-                        surrogate_vals[f'rho_aux{j}_aux{i}'] = np.full_like(s_plot, rho_val, dtype=float)
-                        lf_idx += 1
-            
-            # Aux-ROM correlations (vary with s)
-            lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
-            for i in range(n_aux):
-                rho_aux_rom_vals = []
+            if corr_matrix_fn is not None:
+                # Matrix-valued AH path.
+                P_vals = []
+
                 for s in s_plot:
-                    rho_val = lf_corrs[lf_start + i]([0, s])
+                    s_tensor = torch.tensor([s], dtype=torch.float64)
+                    P = corr_matrix_fn(s_tensor)
+
+                    if torch.is_tensor(P):
+                        P = P.detach().cpu().numpy()
+
+                    P_vals.append(np.asarray(P, dtype=float))
+
+                P_vals = np.array(P_vals)
+
+                # FOM-aux and aux costs.
+                for i in range(n_aux):
+                    surrogate_vals[f"rho_fom_aux{i}"] = P_vals[:, i + 1, 0]
+
+                    cost_val = costs[i]([0, s_plot[0]])
+                    if hasattr(cost_val, "detach"):
+                        cost_val = float(cost_val.detach().cpu().numpy())
+
+                    surrogate_vals[f"cost_aux{i}"] = np.full_like(
+                        s_plot,
+                        cost_val,
+                        dtype=float,
+                    )
+
+                # FOM-ROM and ROM cost.
+                rom_idx = n_aux + 1
+                surrogate_vals["rho_fom_rom"] = P_vals[:, rom_idx, 0]
+
+                cost_rom_vals = []
+                for s in s_plot:
+                    cost_val = costs[n_aux]([0, s])
+                    if hasattr(cost_val, "detach"):
+                        cost_val = float(cost_val.detach().cpu().numpy())
+                    cost_rom_vals.append(cost_val)
+
+                surrogate_vals["cost_rom"] = np.array(cost_rom_vals)
+
+                # Aux-aux correlations.
+                if n_aux > 1:
+                    for i in range(n_aux):
+                        for j in range(i):
+                            surrogate_vals[f"rho_aux{j}_aux{i}"] = P_vals[:, i + 1, j + 1]
+
+                # Aux-ROM correlations.
+                for i in range(n_aux):
+                    surrogate_vals[f"rho_aux{i}_rom"] = P_vals[:, rom_idx, i + 1]
+
+            else:
+                # Scalar/componentwise paths.
+                for i in range(n_aux):
+                    rho_val = hf_corrs[i]([0, s_plot[0]])
+                    cost_val = costs[i]([0, s_plot[0]])
+
                     if hasattr(rho_val, "detach"):
                         rho_val = float(rho_val.detach().cpu().numpy())
-                    rho_aux_rom_vals.append(rho_val)
-                
-                surrogate_vals[f'rho_aux{i}_rom'] = np.array(rho_aux_rom_vals)
+                    if hasattr(cost_val, "detach"):
+                        cost_val = float(cost_val.detach().cpu().numpy())
+
+                    surrogate_vals[f"rho_fom_aux{i}"] = np.full_like(
+                        s_plot,
+                        rho_val,
+                        dtype=float,
+                    )
+                    surrogate_vals[f"cost_aux{i}"] = np.full_like(
+                        s_plot,
+                        cost_val,
+                        dtype=float,
+                    )
+
+                rho_fom_rom_vals = []
+                cost_rom_vals = []
+
+                for s in s_plot:
+                    rho_val = hf_corrs[n_aux]([0, s])
+                    cost_val = costs[n_aux]([0, s])
+
+                    if hasattr(rho_val, "detach"):
+                        rho_val = float(rho_val.detach().cpu().numpy())
+                    if hasattr(cost_val, "detach"):
+                        cost_val = float(cost_val.detach().cpu().numpy())
+
+                    rho_fom_rom_vals.append(rho_val)
+                    cost_rom_vals.append(cost_val)
+
+                surrogate_vals["rho_fom_rom"] = np.array(rho_fom_rom_vals)
+                surrogate_vals["cost_rom"] = np.array(cost_rom_vals)
+
+                if n_aux > 1:
+                    lf_idx = 0
+                    for i in range(n_aux):
+                        for j in range(i):
+                            rho_val = lf_corrs[lf_idx]([0, s_plot[0]])
+
+                            if hasattr(rho_val, "detach"):
+                                rho_val = float(rho_val.detach().cpu().numpy())
+
+                            surrogate_vals[f"rho_aux{j}_aux{i}"] = np.full_like(
+                                s_plot,
+                                rho_val,
+                                dtype=float,
+                            )
+                            lf_idx += 1
+
+                lf_start = n_aux * (n_aux - 1) // 2 if n_aux > 1 else 0
+
+                for i in range(n_aux):
+                    rho_aux_rom_vals = []
+
+                    for s in s_plot:
+                        rho_val = lf_corrs[lf_start + i]([0, s])
+
+                        if hasattr(rho_val, "detach"):
+                            rho_val = float(rho_val.detach().cpu().numpy())
+
+                        rho_aux_rom_vals.append(rho_val)
+
+                    surrogate_vals[f"rho_aux{i}_rom"] = np.array(rho_aux_rom_vals)
         
         vis_data = build_visualization_dict(
             pilot_data, surrogate_vals, s_star, budget_list,
