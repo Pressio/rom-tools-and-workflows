@@ -12,6 +12,58 @@ from romtools.workflows.models import QoiModel
 from romtools.workflows.workflow_utils import create_empty_dir
 
 
+def run_model_sample(model, run_dir, params, overwrite=False, verbose=False):
+    """
+    Run a model sample, using cached qoi.txt/time.txt if available.
+
+    Shared by `PilotSampler._run_model` and `run_hybrid_mfuq.py`'s
+    orchestration code, which previously each carried a near-identical
+    copy of this cache-check + populate + run + compute_qoi sequence.
+
+    Parameters
+    ----------
+    model : QoiModel
+        Model to run (FOM, auxiliary model, or ROM).
+    run_dir : str
+        Directory to run the model in (and to cache qoi.txt/time.txt in).
+    params : dict
+        Parameter values for this sample.
+    overwrite : bool
+        If True, ignore any cached qoi.txt/time.txt and re-run.
+    verbose : bool
+        If True, print a message when reading a cached result.
+
+    Returns
+    -------
+    qoi : np.ndarray
+    runtime : np.ndarray
+    """
+    qoi_path = os.path.join(run_dir, "qoi.txt")
+    time_path = os.path.join(run_dir, "time.txt")
+
+    if not overwrite and os.path.exists(qoi_path) and os.path.exists(time_path):
+        if verbose:
+            print("Reading in QoI value and runtime\n")
+        return np.loadtxt(qoi_path), np.loadtxt(time_path)
+
+    create_empty_dir(run_dir)
+    model.populate_run_directory(run_dir, params)
+
+    passed_file = os.path.join(run_dir, "passed.txt")
+    t0 = time.time()
+    code = model.run_model(run_dir, params)
+    qoi = model.compute_qoi(run_dir, params)
+    runtime = time.time() - t0
+
+    if code == 0:
+        np.savetxt(passed_file, [0], fmt="%i")
+
+    np.savetxt(qoi_path, [qoi])
+    np.savetxt(time_path, [runtime])
+
+    return np.array(qoi), np.array(runtime)
+
+
 def pearsonr_with_axis(x, y, axis=0):
     """
     Compute the Pearson correlation coefficient between two arrays along a specified axis.
@@ -266,29 +318,7 @@ class PilotSampler:
 
     def _run_model(self, model, run_dir, params, overwrite):
         """Run a model and compute QoI and runtime."""
-        qoi_path = os.path.join(run_dir, "qoi.txt")
-        time_path = os.path.join(run_dir, "time.txt")
-
-        if not overwrite and os.path.exists(qoi_path) and os.path.exists(time_path):
-            print("Reading in QoI value and runtime\n")
-            return np.loadtxt(qoi_path), np.loadtxt(time_path)
-
-        create_empty_dir(run_dir)
-        model.populate_run_directory(run_dir, params)
-
-        passed_file = os.path.join(run_dir, "passed.txt")
-        t0 = time.time()
-        code = model.run_model(run_dir, params)
-        qoi = model.compute_qoi(run_dir, params)
-        runtime = time.time() - t0
-
-        if code == 0:
-            np.savetxt(passed_file, [0], fmt="%i")
-
-        np.savetxt(qoi_path, [qoi])
-        np.savetxt(time_path, [runtime])
-
-        return np.array(qoi), np.array(runtime)
+        return run_model_sample(model, run_dir, params, overwrite, verbose=True)
 
     def _build_roms(self, train_dirs):
         rom_models = []

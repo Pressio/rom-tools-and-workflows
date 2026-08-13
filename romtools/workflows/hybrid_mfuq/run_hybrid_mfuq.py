@@ -5,7 +5,7 @@ Implements hybrid MFUQ combining FOM, multiple auxiliary models, and variable-fi
 """
 
 import os
-import time
+from dataclasses import dataclass, field
 from typing import List, Tuple, Callable, Dict, Optional
 
 import numpy as np
@@ -13,7 +13,12 @@ import torch
 
 from romtools.workflows.hybrid_mfuq.mfuq_methods import MFMC
 from romtools.workflows.workflow_utils import create_empty_dir
-from romtools.workflows.hybrid_mfuq.pilot_methods import PilotData, PilotSampler, Pilot
+from romtools.workflows.hybrid_mfuq.pilot_methods import (
+    PilotData,
+    PilotSampler,
+    Pilot,
+    run_model_sample,
+)
 from romtools.workflows.hybrid_mfuq.surrogate_methods import SurrogateBuilder
 
 torch.set_num_threads(1)
@@ -23,29 +28,25 @@ torch.set_num_interop_threads(1)
 # ============================================================================
 # MODEL EXECUTION
 # ============================================================================
+#
+# run_model_sample lives in pilot_methods.py and is imported above; it is
+# shared with PilotSampler._run_model (see hybrid_mfuq_simplification_plan.md,
+# T2). run_hybrid_mfuq.py previously carried its own near-identical copy.
 
-def run_model_sample(model, run_dir: str, params: dict, overwrite: bool = False) -> Tuple[float, float]:
-    """Run model sample, using cache if available. Returns (qoi, runtime)."""
-    qoi_path = os.path.join(run_dir, "qoi.txt")
-    time_path = os.path.join(run_dir, "time.txt")
-    
-    if not overwrite and os.path.exists(qoi_path) and os.path.exists(time_path):
-        return np.loadtxt(qoi_path), np.loadtxt(time_path)
-    
-    create_empty_dir(run_dir)
-    model.populate_run_directory(run_dir, params)
-    
-    t0 = time.time()
-    return_code = model.run_model(run_dir, params)
-    qoi = model.compute_qoi(run_dir, params)
-    runtime = time.time() - t0
-    
-    if return_code == 0:
-        np.savetxt(os.path.join(run_dir, "passed.txt"), [0], fmt="%i")
-    np.savetxt(qoi_path, [qoi])
-    np.savetxt(time_path, [runtime])
-    
-    return qoi, runtime
+def _to_float(x):
+    """
+    Convert a possibly-tensor scalar to a plain Python float. Shared by
+    both branches (matrix-valued AH and scalar/componentwise) of Step 5's
+    surrogate-evaluation block, which each repeated the
+    `if hasattr(x, "detach"): x = float(x.detach().cpu().numpy())`
+    pattern roughly ten times. Values that reach here already end up
+    inside a `dtype=float` array either way (np.full_like(..., dtype=float)
+    or np.array() of an all-float list), so converting unconditionally is
+    a pure refactor, not a behavior change.
+    """
+    if hasattr(x, "detach"):
+        x = x.detach().cpu().numpy()
+    return float(x)
 
 
 def run_model_on_samples(model, run_dir_prefix: str, param_space, samples: np.ndarray, 
@@ -105,6 +106,83 @@ def optimize_single_allocation(
     print(f"{allocation_type} at budget {budget}: variance={best_var:.6f}")
 
     return best_var, best_alloc
+
+
+@dataclass
+class AllocationResults:
+    """
+    Container for one allocation type's ("mf" or "is") budget-sweep
+    results, replacing the eight parallel
+    mf_vars/mf_vars_ex/is_vars/is_vars_ex/mf_allocs/mf_allocs_ex/
+    is_allocs/is_allocs_ex lists previously threaded through
+    build_visualization_dict individually (see hybrid_mfuq_simplification_plan.md, T5).
+    """
+    vars: List = field(default_factory=list)
+    vars_ex: List = field(default_factory=list)
+    allocs: List = field(default_factory=list)
+    allocs_ex: List = field(default_factory=list)
+
+
+def sweep_budgets(
+    budget_list: List[float],
+    allocation_type_pair: Tuple[str, str],
+    hf_corrs: List[Callable],
+    lf_corrs: List[Callable],
+    costs: List[Callable],
+    bounds: List[Tuple],
+    log_objective: bool,
+    use_torch: bool,
+    corr_matrix_fn: Optional[Callable],
+) -> Tuple[Tuple[List, List], Tuple[List, List]]:
+    """
+    Run the paired budget sweep shared by Step 2 (surrogate-based
+    optimization) and Step 4 (validation with exact statistics): for each
+    budget in budget_list, call optimize_single_allocation once per type
+    in allocation_type_pair (in order), always with hybrid=True and the
+    same hf_corrs/lf_corrs/costs/bounds/corr_matrix_fn, matching the
+    print/append ordering of the original Step 2 / Step 4 loops exactly.
+
+    Returns ((vars_a, allocs_a), (vars_b, allocs_b)) for the two types in
+    allocation_type_pair, in that order.
+    """
+    type_a, type_b = allocation_type_pair
+    vars_a, allocs_a = [], []
+    vars_b, allocs_b = [], []
+
+    for bgt in budget_list:
+        var, alloc = optimize_single_allocation(
+            bgt,
+            type_a,
+            hf_corrs,
+            lf_corrs,
+            costs,
+            bounds,
+            log_objective,
+            hybrid=True,
+            use_torch=use_torch,
+            corr_matrix_fn=corr_matrix_fn,
+        )
+        print(f"  allocation={alloc}")
+        vars_a.append(var)
+        allocs_a.append(alloc)
+
+        var, alloc = optimize_single_allocation(
+            bgt,
+            type_b,
+            hf_corrs,
+            lf_corrs,
+            costs,
+            bounds,
+            log_objective,
+            hybrid=True,
+            use_torch=use_torch,
+            corr_matrix_fn=corr_matrix_fn,
+        )
+        print(f"  allocation={alloc}")
+        vars_b.append(var)
+        allocs_b.append(alloc)
+
+    return (vars_a, allocs_a), (vars_b, allocs_b)
 
 
 # ============================================================================
@@ -179,12 +257,15 @@ def load_pilot_data(data_npz: str, n_aux: int) -> PilotData:
         )
 
 
-def build_visualization_dict(pilot_data: PilotData, surrogate_vals: Dict[str, np.ndarray], 
-                             s_star: np.ndarray, budget_list: List[float], 
-                             mf_vars: List, mf_vars_ex: List, is_vars: List, is_vars_ex: List, 
-                             is_allocs: List, is_allocs_ex: List, pilot_list: List[int], 
+def build_visualization_dict(pilot_data: PilotData, surrogate_vals: Dict[str, np.ndarray],
+                             s_star: np.ndarray, budget_list: List[float],
+                             alloc_results: Dict[str, AllocationResults],
+                             pilot_list: List[int],
                              s_plot: np.ndarray, n_aux: int) -> Dict:
     """Assemble complete visualization data dictionary."""
+    mf = alloc_results["mf"]
+    is_ = alloc_results["is"]
+
     vis_data = {
         # Pilot data
         'fom_rom_corrs_pilot': pilot_data.fom_rom_corrs,
@@ -195,12 +276,14 @@ def build_visualization_dict(pilot_data: PilotData, surrogate_vals: Dict[str, np
         's_star': s_star,
         'xx': budget_list,
         # Optimization results
-        'fMFs': mf_vars,
-        'fMFs_ex': mf_vars_ex,
-        'fISs': is_vars,
-        'fISs_ex': is_vars_ex,
-        'fISs_alloc': is_allocs,
-        'fISs_alloc_ex': is_allocs_ex,
+        'fMFs': mf.vars,
+        'fMFs_ex': mf.vars_ex,
+        'fMFs_alloc': mf.allocs,
+        'fMFs_alloc_ex': mf.allocs_ex,
+        'fISs': is_.vars,
+        'fISs_ex': is_.vars_ex,
+        'fISs_alloc': is_.allocs,
+        'fISs_alloc_ex': is_.allocs_ex,
         'n_aux': n_aux,
         # Surrogate evaluations
         'rho_fom_rom_vals': surrogate_vals['rho_fom_rom'],
@@ -355,41 +438,17 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         logger.write(f"Optimization bounds: {bounds}")
         
         # Run optimization with surrogate models only (hybrid=True)
-        mf_vars, mf_allocs = [], []
-        is_vars, is_allocs = [], []
-        
-        for bgt in budget_list:
-            var, alloc = optimize_single_allocation(
-                bgt,
-                "MF",
-                hf_corrs,
-                lf_corrs,
-                costs,
-                bounds,
-                log_of_objective,
-                hybrid=True,
-                use_torch=use_torch,
-                corr_matrix_fn=corr_matrix_fn,
-            )
-            print(f"  allocation={alloc}")
-            mf_vars.append(var)
-            mf_allocs.append(alloc)
-
-            var, alloc = optimize_single_allocation(
-                bgt,
-                "IS",
-                hf_corrs,
-                lf_corrs,
-                costs,
-                bounds,
-                log_of_objective,
-                hybrid=True,
-                use_torch=use_torch,
-                corr_matrix_fn=corr_matrix_fn,
-            )
-            print(f"  allocation={alloc}")
-            is_vars.append(var)
-            is_allocs.append(alloc)
+        (mf_vars, mf_allocs), (is_vars, is_allocs) = sweep_budgets(
+            budget_list,
+            ("MF", "IS"),
+            hf_corrs,
+            lf_corrs,
+            costs,
+            bounds,
+            log_of_objective,
+            use_torch,
+            corr_matrix_fn,
+        )
         
         # ====================================================================
         # STEP 3: Train Optimized ROM
@@ -480,41 +539,17 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
         bounds_exact = [(1, None)] + [(1.001, None)] * (n_aux + 1) + [(rom_basis_num, rom_basis_num)]
         
         # Run optimization with exact ROM statistics (hybrid=True)
-        mf_vars_ex, mf_allocs_ex = [], []
-        is_vars_ex, is_allocs_ex = [], []
-        
-        for bgt in budget_list:
-            var, alloc = optimize_single_allocation(
-                bgt,
-                "MF",
-                exact_hf,
-                exact_lf,
-                exact_costs,
-                bounds_exact,
-                log_of_objective,
-                hybrid=True,
-                use_torch=use_torch,
-                corr_matrix_fn=None,
-            )
-            print(f"  allocation={alloc}")
-            mf_vars_ex.append(var)
-            mf_allocs_ex.append(alloc)
-            
-            var, alloc = optimize_single_allocation(
-                bgt,
-                "IS",
-                exact_hf,
-                exact_lf,
-                exact_costs,
-                bounds_exact,
-                log_of_objective,
-                hybrid=True,
-                use_torch=use_torch,
-                corr_matrix_fn=None,
-            )
-            print(f"  allocation={alloc}")
-            is_vars_ex.append(var)
-            is_allocs_ex.append(alloc)
+        (mf_vars_ex, mf_allocs_ex), (is_vars_ex, is_allocs_ex) = sweep_budgets(
+            budget_list,
+            ("MF", "IS"),
+            exact_hf,
+            exact_lf,
+            exact_costs,
+            bounds_exact,
+            log_of_objective,
+            use_torch,
+            None,
+        )
         
         # ====================================================================
         # STEP 5: Generate Visualization Data
@@ -548,9 +583,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                 for i in range(n_aux):
                     surrogate_vals[f"rho_fom_aux{i}"] = P_vals[:, i + 1, 0]
 
-                    cost_val = costs[i]([0, s_plot[0]])
-                    if hasattr(cost_val, "detach"):
-                        cost_val = float(cost_val.detach().cpu().numpy())
+                    cost_val = _to_float(costs[i]([0, s_plot[0]]))
 
                     surrogate_vals[f"cost_aux{i}"] = np.full_like(
                         s_plot,
@@ -564,9 +597,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
 
                 cost_rom_vals = []
                 for s in s_plot:
-                    cost_val = costs[n_aux]([0, s])
-                    if hasattr(cost_val, "detach"):
-                        cost_val = float(cost_val.detach().cpu().numpy())
+                    cost_val = _to_float(costs[n_aux]([0, s]))
                     cost_rom_vals.append(cost_val)
 
                 surrogate_vals["cost_rom"] = np.array(cost_rom_vals)
@@ -584,13 +615,8 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
             else:
                 # Scalar/componentwise paths.
                 for i in range(n_aux):
-                    rho_val = hf_corrs[i]([0, s_plot[0]])
-                    cost_val = costs[i]([0, s_plot[0]])
-
-                    if hasattr(rho_val, "detach"):
-                        rho_val = float(rho_val.detach().cpu().numpy())
-                    if hasattr(cost_val, "detach"):
-                        cost_val = float(cost_val.detach().cpu().numpy())
+                    rho_val = _to_float(hf_corrs[i]([0, s_plot[0]]))
+                    cost_val = _to_float(costs[i]([0, s_plot[0]]))
 
                     surrogate_vals[f"rho_fom_aux{i}"] = np.full_like(
                         s_plot,
@@ -607,13 +633,8 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                 cost_rom_vals = []
 
                 for s in s_plot:
-                    rho_val = hf_corrs[n_aux]([0, s])
-                    cost_val = costs[n_aux]([0, s])
-
-                    if hasattr(rho_val, "detach"):
-                        rho_val = float(rho_val.detach().cpu().numpy())
-                    if hasattr(cost_val, "detach"):
-                        cost_val = float(cost_val.detach().cpu().numpy())
+                    rho_val = _to_float(hf_corrs[n_aux]([0, s]))
+                    cost_val = _to_float(costs[n_aux]([0, s]))
 
                     rho_fom_rom_vals.append(rho_val)
                     cost_rom_vals.append(cost_val)
@@ -625,10 +646,7 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                     lf_idx = 0
                     for i in range(n_aux):
                         for j in range(i):
-                            rho_val = lf_corrs[lf_idx]([0, s_plot[0]])
-
-                            if hasattr(rho_val, "detach"):
-                                rho_val = float(rho_val.detach().cpu().numpy())
+                            rho_val = _to_float(lf_corrs[lf_idx]([0, s_plot[0]]))
 
                             surrogate_vals[f"rho_aux{j}_aux{i}"] = np.full_like(
                                 s_plot,
@@ -643,19 +661,26 @@ def run_hybrid_mfuq(fom_model, aux_models, rom_model_builder, parameter_space,
                     rho_aux_rom_vals = []
 
                     for s in s_plot:
-                        rho_val = lf_corrs[lf_start + i]([0, s])
-
-                        if hasattr(rho_val, "detach"):
-                            rho_val = float(rho_val.detach().cpu().numpy())
+                        rho_val = _to_float(lf_corrs[lf_start + i]([0, s]))
 
                         rho_aux_rom_vals.append(rho_val)
 
                     surrogate_vals[f"rho_aux{i}_rom"] = np.array(rho_aux_rom_vals)
         
+        alloc_results = {
+            "mf": AllocationResults(
+                vars=mf_vars, vars_ex=mf_vars_ex,
+                allocs=mf_allocs, allocs_ex=mf_allocs_ex,
+            ),
+            "is": AllocationResults(
+                vars=is_vars, vars_ex=is_vars_ex,
+                allocs=is_allocs, allocs_ex=is_allocs_ex,
+            ),
+        }
+
         vis_data = build_visualization_dict(
             pilot_data, surrogate_vals, s_star, budget_list,
-            mf_vars, mf_vars_ex, is_vars, is_vars_ex, is_allocs, is_allocs_ex,
-            pilot_list, s_plot, n_aux
+            alloc_results, pilot_list, s_plot, n_aux
         )
         
         vis_path = f"{work_dir}/visualization_data.npz"

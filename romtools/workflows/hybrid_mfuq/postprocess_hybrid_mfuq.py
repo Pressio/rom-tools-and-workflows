@@ -121,11 +121,20 @@ def _direct_curve_labels(
         )
 
 
-def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int) -> plt.Figure:
+def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path) -> plt.Figure:
     """Plot fitted agreement and normalized cost against ROM basis size."""
     basis = _grid(data, "ss")
     pilot_basis = _grid(data, "pp")
     selected_basis = int(round(float(_as_1d(data, "s_star")[-1])))
+
+    surrogate_corr = float(np.interp(selected_basis, basis, _as_1d(data, "rho_fom_rom_vals")))
+    surrogate_cost = float(np.interp(selected_basis, basis, _as_1d(data, "cost_rom_vals")))
+    trained_corr, trained_cost = _trained_rom_statistics(work_directory, surrogate_corr, surrogate_cost)
+    surrogate_aux_corrs = [
+        float(np.interp(selected_basis, basis, _as_1d(data, f"rho_aux{i}_rom_vals")))
+        for i in range(n_aux)
+    ]
+    trained_aux_corrs = _trained_rom_aux_correlations(work_directory, n_aux, surrogate_aux_corrs)
 
     fig, (ax_corr, ax_cost) = plt.subplots(1, 2, figsize=(11.5, 4.2), constrained_layout=True)
 
@@ -166,6 +175,11 @@ def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int) -> plt.F
             zorder=3,
         )
         corr_curves.append((basis, rho, f"{name}–ROM", color))
+        ax_corr.scatter(
+            [selected_basis], [trained_aux_corrs[i]],
+            marker="*", s=200, color=color,
+            edgecolor="white", linewidth=0.8, zorder=5,
+        )
         color2 = plt.cm.Dark2((i+3) % 8)
         rho = _as_1d(data, f"rho_fom_aux{i}_vals") * np.ones_like(basis)
         ax_corr.plot(
@@ -184,6 +198,11 @@ def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int) -> plt.F
             zorder=3,
         )
         corr_curves.append((basis, rho, f"FOM-{name}", color2))
+        ax_corr.scatter(
+            [selected_basis], [float(_as_1d(data, f"rho_fom_aux{i}_pilot")[0])],
+            marker="*", s=200, color=color2,
+            edgecolor="white", linewidth=0.8, zorder=5,
+        )
     ax_corr.axvline(selected_basis, color="0.35", linestyle="--", linewidth=1.2)
     ax_corr.annotate(
         f"selected $s={selected_basis:.0f}$",
@@ -191,6 +210,19 @@ def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int) -> plt.F
         xytext=(5, 5),
         textcoords="offset points",
         color="0.3",
+    )
+    ax_corr.scatter(
+        [selected_basis], [trained_corr],
+        marker="*", s=240, color=COLORS["rom"],
+        edgecolor="white", linewidth=0.8, zorder=5,
+    )
+    ax_corr.legend(
+        handles=[
+            plt.Line2D([0], [0], marker='o', color='none', markerfacecolor='0.35', markeredgecolor='white', markersize=5, linestyle='None'),
+            plt.Line2D([0], [0], marker='*', color='none', markerfacecolor='0.35', markeredgecolor='white', markersize=11, linestyle='None')
+        ],
+        labels=['pilot', 'trained ROM'],loc="lower right", frameon=True, framealpha=0.85,
+        handletextpad=0.5, borderpad=0.4, fontsize=8.5,
     )
     ax_corr.set_title("Model agreement with the ROM")
     ax_corr.set(xlabel="ROM basis size", ylabel="Pearson correlation", ylim=(-0.05, 1.05))
@@ -218,6 +250,19 @@ def _plot_fidelity_and_cost(data: Mapping[str, np.ndarray], n_aux: int) -> plt.F
         ax_cost.plot(basis, costs, color=color, linewidth=1.8)
         cost_curves.append((basis, costs, name, color))
     ax_cost.axvline(selected_basis, color="0.35", linestyle="--", linewidth=1.2)
+    ax_cost.scatter(
+        [selected_basis], [trained_cost],
+        marker="*", s=240, color=COLORS["rom"],
+        edgecolor="white", linewidth=0.8, zorder=5,
+    )
+    ax_cost.legend(
+        handles=[
+            plt.Line2D([0], [0], marker='o', color='none', markerfacecolor='0.35', markeredgecolor='white', markersize=5, linestyle='None'),
+            plt.Line2D([0], [0], marker='*', color='none', markerfacecolor='0.35', markeredgecolor='white', markersize=11, linestyle='None')
+        ],
+        labels=['pilot', 'trained ROM'],loc="lower right", frameon=True, framealpha=0.85,
+        handletextpad=0.5, borderpad=0.4, fontsize=8.5,
+    )
     ax_cost.set_title("Relative evaluation cost")
     ax_cost.set(xlabel="ROM basis size", ylabel="Cost / FOM cost", ylim=(0, None))
     _direct_curve_labels(ax_cost, cost_curves)
@@ -289,6 +334,21 @@ def _trained_rom_statistics(work_directory: Path, fallback_corr: float, fallback
         )
 
 
+def _trained_rom_aux_correlations(
+    work_directory: Path, n_aux: int, fallback_aux_corrs: Sequence[float],
+) -> list[float]:
+    """Read the measured trained-ROM/auxiliary-model correlations, with safe surrogate fallbacks."""
+    trained_results = sorted(work_directory.glob("trained_*_sample_rom_results.npz"))
+    if not trained_results:
+        return list(fallback_aux_corrs)
+    with np.load(trained_results[-1], allow_pickle=False) as trained_data:
+        return [
+            float(np.asarray(trained_data[f"aux{i}_rom_corr"]).item())
+            if f"aux{i}_rom_corr" in trained_data else fallback_aux_corrs[i]
+            for i in range(n_aux)
+        ]
+
+
 def _load_trained_rom_qois(work_directory: Path, basis_size: int, n_samples: int) -> np.ndarray | None:
     """Recover cached trained-ROM QoIs, preserving their pilot-sample ordering."""
     rom_dir = work_directory / "pilot" / "rom_optimized" / f"basis_size_{basis_size}"
@@ -343,11 +403,14 @@ def _stacked_cost_bars(
     return handles
 
 
-def _plot_is_allocations(data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path) -> plt.Figure:
-    """Show the ACV-IS sampling strategy as a cost-partition bar chart."""
+def _plot_allocation_figure(
+    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path,
+    alloc_key: str, alloc_key_ex: str, method_label: str,
+) -> plt.Figure:
+    """Show one allocation type's sampling strategy as a cost-partition bar chart."""
     budget = _as_1d(data, "xx")
-    predicted = _allocation_array(data, "fISs_alloc", len(budget))
-    validated = _allocation_array(data, "fISs_alloc_ex", len(budget))
+    predicted = _allocation_array(data, alloc_key, len(budget))
+    validated = _allocation_array(data, alloc_key_ex, len(budget))
     if predicted.shape[1] != n_aux + 3 or validated.shape[1] != n_aux + 3:
         raise ValueError("Unexpected allocation length; expected N, one ratio per low-fidelity model, and s.")
 
@@ -360,10 +423,12 @@ def _plot_is_allocations(data: Mapping[str, np.ndarray], n_aux: int, work_direct
 
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.4))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.16, top=0.73, wspace=0.26)
-    _stacked_cost_bars(axes[0], budget, pred_components, labels, colors, "Surrogate-optimized allocation")
+    _stacked_cost_bars(
+        axes[0], budget, pred_components, labels, colors, f"Surrogate-optimized allocation ({method_label})"
+    )
     exact_handles = _stacked_cost_bars(
         axes[1], budget, exact_components, labels + ["ROM training"], colors + ["#999999"],
-        "Allocation with the trained ROM",
+        f"Allocation with the trained ROM ({method_label})",
     )
     fig.legend(
         exact_handles, labels + ["ROM training"], loc="upper center", bbox_to_anchor=(0.5, 0.97),
@@ -371,6 +436,16 @@ def _plot_is_allocations(data: Mapping[str, np.ndarray], n_aux: int, work_direct
     )
     _add_panel_labels(axes)
     return fig
+
+
+def _plot_is_allocations(data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path) -> plt.Figure:
+    """Show the ACV-IS sampling strategy as a cost-partition bar chart."""
+    return _plot_allocation_figure(data, n_aux, work_directory, "fISs_alloc", "fISs_alloc_ex", "ACV-IS")
+
+
+def _plot_mf_allocations(data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path) -> plt.Figure:
+    """Show the ACV-MF sampling strategy as a cost-partition bar chart."""
+    return _plot_allocation_figure(data, n_aux, work_directory, "fMFs_alloc", "fMFs_alloc_ex", "ACV-MF")
 
 
 def _plot_control_variate_tradeoff(
@@ -462,11 +537,16 @@ def generate_figures(work_directory: Path, output_dir: Path, formats: Sequence[s
         n_aux = int(np.asarray(data["n_aux"]).item())
         selected_basis = int(round(float(_as_1d(data, "s_star")[-1])))
         figures = {
-            "fidelity_and_cost": _plot_fidelity_and_cost(data, n_aux),
+            "fidelity_and_cost": _plot_fidelity_and_cost(data, n_aux, work_directory),
             "estimator_performance": _plot_estimator_performance(data),
             "is_allocation": _plot_is_allocations(data, n_aux, work_directory),
             "control_variate_tradeoff": _plot_control_variate_tradeoff(data, n_aux, work_directory),
         }
+
+        if "fMFs_alloc" in data:
+            figures["mf_allocation"] = _plot_mf_allocations(data, n_aux, work_directory)
+        else:
+            print(f"Skipping ACV-MF allocation figure: fMFs_alloc was not found in {vis_path.name}.")
 
     pilot_path = work_directory / "pilot_results.npz"
     if pilot_path.is_file():
