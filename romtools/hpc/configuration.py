@@ -27,7 +27,7 @@ SCHEMA = {
         "partition":      {"cli": "-q", "type": str, "help": "The partition to submit the SLURM job to (e.g., batch, short)."},
         "poll_interval":  {"cli": "-P", "type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
         "account":        {"cli": "-a", "type": str, "help": "The account WCID to charge for the SLURM job."},
-        "timeout":        {"cli": "-T", "type": str, "help": "Time until giving up retrieving job's sacct exit code."},
+        "timeout":        {"cli": "-T", "type": float, "help": "Time until giving up retrieving job's sacct exit code."},
     },
     "output": {
         "debug": {"cli": "-d", "type": bool, "help": "Whether to enable debug logging."},

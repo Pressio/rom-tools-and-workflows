@@ -48,6 +48,7 @@ import time
 import numpy as np
 import concurrent.futures
 import multiprocessing
+from typing import Optional
 
 from romtools.hpc.dispatcher_base import DispatcherBase
 from romtools.hpc.local_dispatcher import LocalDispatcher
@@ -96,10 +97,12 @@ def run_sampling(model: Model,
                  random_seed: int = 1,
                  dry_run: bool = False,
                  overwrite: bool = False,
-                 dispatcher: DispatcherBase = LocalDispatcher()):
+                 dispatcher: Optional[DispatcherBase] = None):
     '''
     Core algorithm
     '''
+    if dispatcher is None:
+        dispatcher = LocalDispatcher()
 
     # we use here spawn because the default fork causes issues with mpich,
     # see here: https://github.com/Pressio/rom-tools-and-workflows/pull/206
@@ -165,7 +168,7 @@ def run_sampling(model: Model,
                 else:
                     print("Running")
                     parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi)
+                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi, dispatcher=dispatcher)
                     if model_has_qoi:
                         run_times[sample_index], qoi = sample_result
                         if qoi is not None:
@@ -198,7 +201,8 @@ def run_sampling(model: Model,
                         f'{run_directory_base}{sample_id}',
                         model,
                         _create_parameter_dict(parameter_names, parameter_samples[sample_id]),
-                        model_has_qoi
+                        model_has_qoi,
+                        dispatcher
                     ): sample_id for sample_id in samples_to_run
                 }
 
@@ -234,7 +238,9 @@ def run_sampling(model: Model,
     return run_directories
 
 
-def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: DispatcherBase = LocalDispatcher() ):
+def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Optional[DispatcherBase] = None ):
+    if dispatcher is None:
+        dispatcher = LocalDispatcher()
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
     flag = model.run_model(run_directory, parameter_sample)

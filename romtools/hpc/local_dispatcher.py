@@ -22,11 +22,15 @@ class LocalDispatcher(DispatcherBase):
         super().__init__(sampling_directory=sampling_directory, logger=logger, argv=[])
 
     def __copy(self, src, dst):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        dst_dir = os.path.dirname(dst)
+        if dst_dir:
+            os.makedirs(dst_dir, exist_ok=True)
+
         if os.path.isdir(src):
-            os.system(f"cp -r {src} {dst}")
+            shutil.copytree(src, dst, dirs_exist_ok=True)
         else:
-            os.system(f"cp {src} {dst}")
+            shutil.copy2(src, dst)
+
         self.logger.log(f"Copied {src} to {dst}", local=True)
 
     # ------------------------------------------------------------------

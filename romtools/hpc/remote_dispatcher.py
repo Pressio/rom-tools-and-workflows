@@ -129,7 +129,12 @@ class RemoteDispatcher(DispatcherBase):
             self.script_specified_out, self.script_specified_err = parse_sbatch_out_args(script)
 
             script_name = os.path.basename(script)
-            remote_script_path = f"{remote_root}/{self.sampling_directory}/{script_name}"
+            script_base = (
+                ppath.join(remote_root, run_directory)
+                if run_directory
+                else ppath.join(remote_root, self.sampling_directory)
+            )
+            remote_script_path = ppath.join(script_base, script_name)
             self.conn.put(script, remote_script_path)
             self.logger.log(f"Uploaded local script {script} to {self.conn.host}:{remote_script_path}")
             return remote_script_path
@@ -194,8 +199,9 @@ class RemoteDispatcher(DispatcherBase):
         else:
             full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
 
+        script_name = ppath.basename(remote_script_path)
         result = self.conn.run(
-            f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(remote_script_path)}"
+            f"cd {shlex.quote(full_run_dir)} && sbatch {output_cmd}{shlex.quote(script_name)}"
         )
 
         if not result.ok:

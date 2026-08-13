@@ -91,6 +91,61 @@ def test_dispatch_uses_run_directory_when_given(monkeypatch, make_config, tmp_pa
 
     assert any(c.startswith("cd campaigns/run_00 && sbatch") for c in conn.calls)
 
+def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_path(monkeypatch, make_config, tmp_path):
+    """
+    Regression test: remote_root defaults to a relative path ("hpctools_campaigns").
+    __submit_slurm_job cd's into remote_root/run_directory and must not then hand
+    sbatch a script path that is *also* prefixed with remote_root/run_directory,
+    since that duplicated path can't resolve from the new working directory.
+    """
+    monkeypatch.chdir(tmp_path)
+    responses = [
+        ("sbatch", Result("Submitted batch job 5\n", "", 0)),
+        ("squeue -j 5 -h", Result("", "", 0)),
+        ("tar -czf", Result("", "", 0)),
+        ("rm -f", Result("", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(poll_interval=0, collect=None)
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.dispatch("./my_app", run_directory="run_00")
+
+    assert (
+        "cd hpctools_campaigns/run_00 && sbatch --output=slurm-%j.out "
+        "--error=slurm-%j.err hpctools_job_slurm.sh"
+    ) in conn.calls
+
+
+def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_config, tmp_path):
+    """
+    Regression test: __generate_slurm_script's custom-script branch uploaded to
+    remote_root/sampling_directory even when a run_directory was given, while
+    __submit_slurm_job cd's into remote_root/run_directory - a directory mismatch
+    that left the uploaded script outside the directory sbatch is run from.
+    """
+    monkeypatch.chdir(tmp_path)
+    local_script = tmp_path / "custom_job.sh"
+    local_script.write_text("#!/bin/bash\n#SBATCH --job-name=custom\nsrun ./my_app\n")
+
+    responses = [
+        ("sbatch", Result("Submitted batch job 7\n", "", 0)),
+        ("squeue -j 7 -h", Result("", "", 0)),
+        ("tar -czf", Result("", "", 0)),
+        ("rm -f", Result("", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(script=str(local_script), poll_interval=0, collect=None)
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.dispatch(run_directory="run_00")
+
+    assert conn.put_calls == [(str(local_script), "hpctools_campaigns/run_00/custom_job.sh")]
+    assert (
+        "cd hpctools_campaigns/run_00 && sbatch --output=slurm-%j.out "
+        "--error=slurm-%j.err custom_job.sh"
+    ) in conn.calls
+
 
 def test_dispatch_raises_when_sbatch_fails(monkeypatch, make_config):
     conn = FakeConnection(responses=[("sbatch", Result("", "out of quota", 1))])
