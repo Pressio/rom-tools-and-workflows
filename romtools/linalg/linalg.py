@@ -1888,3 +1888,4 @@ snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
 local_column_range = _local_column_range
 streaming_pod_mpi = _streaming_pod_mpi
+distributed_svd = _distributed_svd
