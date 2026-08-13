@@ -3,6 +3,7 @@
 import os
 import shlex
 import subprocess
+import shutil
 import numpy as np
 
 from romtools.hpc.util.logger import Logger
