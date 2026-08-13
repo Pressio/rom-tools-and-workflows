@@ -1643,6 +1643,7 @@ def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=Non
     # results
     return (U[:, :k], S[:k], Vt[:k, :])
 
+# ----------------------------------------------------
 def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
                      hermitian=False):
     '''Compute the thin SVD of a matrix distributed by rows.
@@ -1827,7 +1828,6 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
 
     return local_left_singular_vectors, singular_values, right_singular_vectors
 
-
 class DistributedSvd:
     '''NumPy-compatible thin SVD callable for a row-distributed matrix.
 
@@ -1871,6 +1871,7 @@ class DistributedSvd:
             compute_uv=compute_uv,
             hermitian=hermitian,
         )
+
 # ----------------------------------------------------
 # ----------------------------------------------------
 
