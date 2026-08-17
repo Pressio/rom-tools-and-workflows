@@ -10,7 +10,7 @@ import posixpath as ppath
 from typing import Optional, Tuple
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, slurm_exitcode_to_python_style, parse_sbatch_out_args
+from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatcher_base import DispatcherBase
@@ -185,10 +185,12 @@ class RemoteDispatcher(DispatcherBase):
 
         output_args = []
         if self.script_specified_out is None:
-            output_args.append("--output=slurm-%j.out")
+            self.script_specified_out = DEFAULT_SLURM_OUTFILE
+            output_args.append(f"--output={self.script_specified_out}")
             # If user only specified out file, they probably expect stderr to go there
             if self.script_specified_err is None:
-                output_args.append("--error=slurm-%j.err")
+                self.script_specified_err = DEFAULT_SLURM_ERRFILE
+                output_args.append(f"--error={self.script_specified_err}")
 
         output_cmd = " ".join(output_args)
         if output_cmd:
@@ -364,8 +366,8 @@ class RemoteDispatcher(DispatcherBase):
 
         out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
 
-        stdout_filepath = os.path.join(out_dir, f"slurm-{jid}.out" if self.script_specified_out is None else self.script_specified_out.replace("%j", jid))
-        stderr_filepath = os.path.join(out_dir, f"slurm-{jid}.err" if self.script_specified_err is None else self.script_specified_err.replace("%j", jid))
+        stdout_filepath = os.path.join(out_dir, self.script_specified_out.replace("%j", jid))
+        stderr_filepath = os.path.join(out_dir, self.script_specified_err.replace("%j", jid))
 
         return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
 

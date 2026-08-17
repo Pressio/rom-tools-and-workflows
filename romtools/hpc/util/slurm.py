@@ -14,6 +14,9 @@ SLURM_TERMINAL_STATES = {
     "TIMEOUT",
 }
 
+DEFAULT_SLURM_OUTFILE = "slurm.out"
+DEFAULT_SLURM_ERRFILE = "slurm.err"
+
 def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall_time: str, wcid: str, partition: str, command: str) -> str:
     """
     Create a SLURM job script with the specified parameters.
