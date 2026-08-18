@@ -1,6 +1,6 @@
 import romtools.workflows
 
-from romtools.hpc.remote_dispatcher import RemoteDispatcher
+from romtools.hpc.dispatchers.remote_dispatcher import RemoteDispatcher
 
 from romtools.hpc.example.ExampleModel import ExampleModel
 from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
