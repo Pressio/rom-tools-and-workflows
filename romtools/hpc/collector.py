@@ -1,13 +1,13 @@
 import os
 import re
 import shlex
-import tarfile
 
 import posixpath as ppath
 from typing import List, Optional
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.connection import Connection
+from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd
 
 class Collector:
     """
@@ -88,119 +88,6 @@ class Collector:
         return cleaned_patterns
 
     # ------------------------------------------------------------------
-    # Packing and unpacking remote results
-    # ------------------------------------------------------------------
-
-    def __pack_remote_results(self, remote_sampling_dir: str, remote_archive_path: str) -> None:
-        """
-        Create a tar.gz archive of remote results.
-
-        If self.config["collect"] is None, archives the entire sampling directory.
-        Otherwise, archives only the validated files/directories/glob patterns
-        relative to the sampling directory.
-
-        Wildcard patterns are expanded remotely relative to remote_sampling_dir.
-        Unmatched wildcard patterns are ignored with a warning.
-
-        Returns True if collection was performed, False if collection was skipped.
-        """
-        # Collect nothing
-        if self.patterns is None or len(self.patterns) == 0:
-            self.logger.log(
-                "SKIPPING RESULTS COLLECTION: "
-                "Specify files, directories, or glob patterns to bring back to your "
-                "local host by setting the 'collect' field in your configuration.")
-            return False
-
-        # Collect everything
-        collect_all = ["*", "all", "everything", "any"]
-        if any(p.lower() in collect_all for p in self.patterns):
-            pack_cmd = (
-                f"tar -czf {shlex.quote(remote_archive_path)} "
-                f"-C {shlex.quote(remote_sampling_dir)} ."
-            )
-            pack_result = self.conn.run(pack_cmd)
-            if not pack_result.ok:
-                raise RuntimeError(f"Remote result archive failed: {pack_result.stderr}")
-
-            self.logger.log(f"Packed remote results into archive: {remote_archive_path}")
-            return True
-
-        # Collect the specified files/directories/patterns
-        resolved_paths = []
-        warnings = []
-
-        def is_glob_pattern(pattern: str) -> bool:
-            return any(ch in pattern for ch in ("*", "?", "["))
-
-        for pattern in self.patterns:
-            if is_glob_pattern(pattern):
-                expand_cmd = (
-                    f"cd {shlex.quote(remote_sampling_dir)} && "
-                    f"for f in {pattern}; do "
-                    f'if [ -e "$f" ]; then printf "%s\\n" "$f"; fi; '
-                    f"done"
-                )
-                result = self.conn.run(expand_cmd)
-
-                if not result.ok:
-                    warnings.append(f"Failed to evaluate collect pattern {pattern!r}: {result.stderr.strip()}")
-                    continue
-
-                matches = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-                if not matches:
-                    warnings.append(f"No files matched collect pattern {pattern!r}")
-                    continue
-
-                for match in matches:
-                    if match not in resolved_paths:
-                        resolved_paths.append(match)
-            else:
-                test_cmd = (
-                    f"cd {shlex.quote(remote_sampling_dir)} && "
-                    f"test -e {shlex.quote(pattern)}"
-                )
-                result = self.conn.run(test_cmd)
-
-                if result.ok:
-                    if pattern not in resolved_paths:
-                        resolved_paths.append(pattern)
-                else:
-                    warnings.append(f"Requested collect path {pattern!r} does not exist")
-
-        for warning in warnings:
-            self.logger.log(f"Warning while collecting selected results: {warning}", local=True)
-
-        if not resolved_paths:
-            raise RuntimeError("No files matched the requested collect patterns.")
-
-        path_args = " ".join(shlex.quote(p) for p in resolved_paths)
-        pack_cmd = (
-            f"tar -czf {shlex.quote(remote_archive_path)} "
-            f"-C {shlex.quote(remote_sampling_dir)} -- {path_args}"
-        )
-
-        pack_result = self.conn.run(pack_cmd)
-        if not pack_result.ok:
-            raise RuntimeError(f"Remote result archive failed: {pack_result.stderr}")
-
-        self.logger.log(f"Packed remote results into archive: {remote_archive_path}")
-
-        return True
-
-    @staticmethod
-    def __safe_extract_tar(archive_path: str, target_dir: str) -> None:
-        target_abs = os.path.abspath(target_dir)
-        with tarfile.open(archive_path, "r:gz") as tar:
-            for member in tar.getmembers():
-                member_abs = os.path.abspath(os.path.join(target_abs, member.name))
-                if os.path.commonpath([target_abs, member_abs]) != target_abs:
-                    raise RuntimeError(
-                        f"Refusing to extract unsafe archive member: {member.name!r}"
-                    )
-            tar.extractall(path=target_abs)
-
-    # ------------------------------------------------------------------
     # Public methods
     # ------------------------------------------------------------------
 
@@ -222,7 +109,7 @@ class Collector:
         archive_name = f"{self.config.get('job_name')}.tar.gz"
         remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
 
-        do_collection = self.__pack_remote_results(remote_sampling_dir, remote_archive_path)
+        do_collection = pack_results(self.logger, lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.patterns)
 
         if not do_collection:
             return
@@ -231,12 +118,11 @@ class Collector:
         self.conn.get(remote_archive_path, archive_name)
         self.logger.log(f"Copied remote archive to local: {archive_name}")
 
+        # Clean up remote archive
+        self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
+        self.logger.debug("Cleaned up remote archive.")
+
         # Unpack local archive into local sampling directory
         os.makedirs(self.sampling_directory, exist_ok=True)
-        self.__safe_extract_tar(archive_name, self.sampling_directory)
+        safe_extract_tar(local_cmd, archive_name, os.path.abspath(self.sampling_directory))
         self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
-
-        # Clean up both archives
-        os.remove(archive_name)
-        self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
-        self.logger.debug("Cleaned up archives.")
