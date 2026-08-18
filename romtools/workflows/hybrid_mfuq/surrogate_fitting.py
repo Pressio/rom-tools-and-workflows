@@ -1,284 +1,207 @@
 """
 Curve-fitting surrogates for Multi-Fidelity UQ.
 
-Tensor-product polynomial and sigmoid fits (numpy and PyTorch backends),
-used by SurrogateBuilder for scalar cost/correlation surrogates.
+Two fits live here, matching the two scalar surrogate families of the
+writeup:
 
-Split out of surrogate_methods.py (see hybrid_mfuq_simplification_plan.md, T6).
+    fit_cost_polynomial   Sec. 4.3.1, normalized cost w_tilde_omega(s_omega)
+    fit_sigmoid           Sec. 4.3.2, generalized sigmoid correlations
+
+Both return a callable that accepts numpy scalars/arrays or torch tensors and
+dispatches on the argument type, so the numpy and torch optimizer backends
+share one fitted model rather than each fitting their own. Fitting itself is
+always done in numpy (SciPy least squares); the returned closure holds the
+fitted parameters as constants, so autograd flows through a tensor input
+without the parameters needing to be torch objects.
+
+Earlier revisions carried a parallel `*_torch` implementation of each fit that
+optimized with LBFGS. That produced genuinely different parameters from the
+SciPy fit, so `use_torch=True` and `use_torch=False` were running different
+surrogates rather than the same surrogate two ways. Those variants are gone.
 """
 
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.optim import LBFGS
 from scipy.optimize import least_squares
 
 
 def _prepare_inputs(ins, outs, expect_dim=None):
     """
-    Reshape ins to [dim, n_data], the input-reshaping step shared by
-    fit_polynomial and fit_sigmoid.
+    Reshape `ins` to [dim, n_data].
 
-    expect_dim=None reproduces fit_polynomial's original heuristic:
-    transpose only if that makes the array wider (shape[0] > shape[1]).
-    expect_dim=1 reproduces fit_sigmoid's original heuristic: transpose
-    unless the first axis already has length 1 (sigmoid fits are always
-    1-D). outs is accepted but not modified here; numpy fits use it
-    as-is in their residuals closures.
+    expect_dim=k forces the input dimension. expect_dim=None auto-detects by
+    transposing only when that makes the array wider, which is correct
+    whenever n_data > dim -- true for every fit here, since a tensor-product
+    fit needs more data points than inputs. Pass expect_dim explicitly if a
+    call site can present fewer data points than dimensions.
+
+    `outs` is accepted for signature symmetry and returned unmodified.
     """
     ins = np.atleast_2d(ins)
 
     if expect_dim is None:
         if ins.shape[0] > ins.shape[1]:
             ins = ins.T
-    else:
-        if ins.shape[0] != expect_dim:
-            ins = ins.T
+    elif ins.shape[0] != expect_dim:
+        ins = ins.T
 
     dim, n_data = ins.shape
     return ins, dim, n_data
 
 
-def fit_polynomial(ins, outs, order=5):
-    '''
-    Fit a tensor product of 1-D polynomials to data.
-    ins: [dim, n_data] or [dim] — input variables
-    outs: [n_data] or scalar — target values
-    '''
-    ins, dim, n_data = _prepare_inputs(ins, outs)
-
-    def evaluate_tensor_product(coeffs, x):
-        coeffs = coeffs.reshape(dim, order + 1)
-        x = np.atleast_2d(x)
-        if x.shape[0] != dim:
-            x = x.T
-        single_input = x.shape[1] == 1 and x.ndim == 2 and x.shape[0] == dim
-
-        result = np.ones(x.shape[1])
-        for d in range(dim):
-            powers = np.vander(x[d], N=order+1, increasing=True)
-            poly_vals = powers @ coeffs[d]
-            result *= poly_vals
-
-        return result[0] if single_input else result
-
-    def residuals(coeffs):
-        return evaluate_tensor_product(coeffs, ins) - outs
-
-    x0 = np.full((dim * (order + 1),), 0.5)
-    result = least_squares(residuals, x0, loss='linear')
-
-    return lambda x: evaluate_tensor_product(result.x, x)
-
-
 def _sigmoid_character(character):
     """
-    Validate/interpret the sigmoid 'character' argument shared by
-    fit_sigmoid and fit_sigmoid_torch. Purely a lookup, no numpy/torch
-    dependence.
+    Interpret the sigmoid `character` argument: returns (increasing, n_params).
+
+    'increasing'/'decreasing' pin one asymptote and fit 4 parameters; [] fits
+    the full 5-parameter generalized sigmoid of Sec. 4.3.2, which is what
+    every call site currently uses.
     """
     if character == 'increasing':
         return True, 4
-    elif character == 'decreasing':
+    if character == 'decreasing':
         return False, 4
-    elif character == []:
+    if character == []:
         return None, 5
-    else:
-        raise ValueError('Invalid character. Options are "increasing", "decreasing", or [].')
+
+    raise ValueError(
+        'Invalid character. Options are "increasing", "decreasing", or [].'
+    )
 
 
-def fit_sigmoid(ins, outs, character=[]):
-    '''
-    Fit a tensor product of 3- or 5-parameter sigmoids to data.
-    
-    ins: shape [dim, n_data] or [dim]
-    outs: shape [n_data] or scalar
-    character: 'increasing', 'decreasing', or [] (for general sigmoid)
-    '''
-    ins, dim, n_data = _prepare_inputs(ins, outs, expect_dim=1)
-    opt, num_vars = _sigmoid_character(character)
-
-    def sigmoid(params, x):
-        if num_vars == 4:
-            A, B, log_nu, log_Q = params
-            nu = np.exp(log_nu)
-            Q = np.exp(log_Q)
-            K = int(not opt)
-            return A + (K - A) / (1 + Q * np.exp((x-B)))**(1 / nu)
-        else:
-            A, K, B, nu, Q = params
-            return A + (K - A) / (1 + Q * np.exp(-B * x))**(1 / nu)
-
-    def evaluate_tensor_product(params, x):
-        x = np.atleast_2d(x)
-        if x.shape[0] != dim:
-            x = x.T
-        single_input = x.shape[1] == 1 and x.ndim == 2
-
-        param_array = params.reshape(dim, num_vars)
-        result = np.ones(x.shape[1])
-        for d in range(dim):
-            result *= sigmoid(param_array[d], x[d])
-        return result[0] if single_input else result
-
-    def residuals(params):
-        return evaluate_tensor_product(params, ins) - outs
-
-    x0 = np.full((dim * num_vars,), 0.5)
-    result = least_squares(residuals, x0, loss='linear')
-
-    return lambda x: evaluate_tensor_product(result.x, x)
-
-
-def _prepare_inputs_torch(ins, outs, expect_dim=None):
+def fit_cost_polynomial(s_grid, costs, order=1):
     """
-    Torch-tensor analogue of _prepare_inputs: converts ins/outs to
-    float64 tensors and reshapes ins to [dim, n_data] using the same
-    transpose-detection heuristic (expect_dim=None for the polynomial
-    fits' shape[0] > shape[1] check, expect_dim=1 for the sigmoid fits'
-    always-dim-1 check).
+    Fit a single 1-D polynomial w_hat(s) = sum_a c_a s^a by linear least
+    squares, per writeup Sec. 4.3.1.
+
+    Deliberately not a tensor product: Sec. 4.3.1 gives each trainable model a
+    cost that depends only on its own basis size, so there is no cross-model
+    coupling to represent and extra input dimensions would only add degrees of
+    freedom the model does not have. Callers fit one of these per trainable
+    ROM. Deliberately not an iterative solve either: the coefficients enter
+    linearly, so the normal equations give them exactly.
+
+    s_grid : (G,) pilot basis sizes B_omega
+    costs  : (G,) normalized pilot costs w_tilde_omega(s_omega,g)
+    order  : polynomial order r (r = 1 in the reported experiments)
     """
-    ins = torch.atleast_2d(torch.as_tensor(ins, dtype=torch.float64))
-    outs = torch.as_tensor(outs, dtype=torch.float64)
+    s = np.asarray(s_grid, dtype=float).reshape(-1)
+    w = np.asarray(costs, dtype=float).reshape(-1)
 
-    if expect_dim is None:
-        if ins.shape[0] > ins.shape[1]:
-            ins = ins.T
-    else:
-        if ins.shape[0] != expect_dim:
-            ins = ins.T
+    if s.size != w.size:
+        raise ValueError(
+            f"fit_cost_polynomial: {s.size} basis sizes vs {w.size} cost values"
+        )
 
-    dim, n_data = ins.shape
-    return ins, outs, dim, n_data
+    order = int(min(order, max(s.size - 1, 0)))
 
+    coeffs, *_ = np.linalg.lstsq(
+        np.vander(s, N=order + 1, increasing=True), w, rcond=None
+    )
 
-def fit_polynomial_torch(ins, outs, order=5):
-    """
-    Fit a tensor product of 1-D polynomials to data (PyTorch version).
-    Returns a callable that preserves gradients.
-    
-    ins: [dim, n_data] or [dim] — input variables
-    outs: [n_data] or scalar — target values
-    """
-    ins, outs, dim, n_data = _prepare_inputs_torch(ins, outs)
-    
-    # Initialize coefficients
-    coeffs = nn.Parameter(torch.full((dim, order + 1), 0.5, dtype=torch.float64))
-    
-    def loss_fn():
-        result = torch.ones(n_data, dtype=torch.float64)
-        for d in range(dim):
-            # Manual Vandermonde construction to avoid inplace operations
-            x = ins[d]
-            powers = torch.stack([x**i for i in range(order + 1)], dim=1)
-            poly_vals = powers @ coeffs[d]
-            result = result * poly_vals
-        return torch.mean((result - outs) ** 2)
-    
-    # Optimize
-    optimizer = LBFGS([coeffs], max_iter=100, line_search_fn='strong_wolfe')
-    def closure():
-        optimizer.zero_grad()
-        loss = loss_fn()
-        loss.backward()
-        return loss
-    optimizer.step(closure)
-    
-    # Detach optimized coefficients but keep them as parameters for gradient flow
-    coeffs_opt = coeffs.detach().clone().requires_grad_(True)
-    
     def evaluate(x):
-        """Evaluates polynomial at x while preserving gradients."""
-        # Convert to tensor while preserving gradients if already a tensor
         if torch.is_tensor(x):
-            x_t = x.to(dtype=torch.float64) if x.dtype != torch.float64 else x
-        else:
-            x_t = torch.as_tensor(x, dtype=torch.float64)
-        
-        x_t = torch.atleast_2d(x_t)
-        if x_t.shape[0] != dim:
-            x_t = x_t.T
-        
-        single_input = (x_t.shape[1] == 1 and x_t.ndim == 2 and x_t.shape[0] == dim)
-        
-        result = torch.ones(x_t.shape[1], dtype=torch.float64, requires_grad=x_t.requires_grad)
-        for d in range(dim):
-            # Manual Vandermonde construction
-            x_d = x_t[d]
-            powers = torch.stack([x_d**i for i in range(order + 1)], dim=1)
-            poly_vals = powers @ coeffs_opt[d]
-            result = result * poly_vals
-        
-        # Always return 0-d tensor for single input (preserves gradients)
-        return result.squeeze() if single_input else result
-    
+            c = torch.as_tensor(coeffs, dtype=torch.float64, device=x.device)
+            x_t = x.to(dtype=torch.float64)
+
+            result = torch.zeros_like(x_t)
+            for a in range(order, -1, -1):
+                result = result * x_t + c[a]
+
+            return result
+
+        x_np = np.asarray(x, dtype=float)
+
+        result = np.zeros_like(x_np, dtype=float)
+        for a in range(order, -1, -1):
+            result = result * x_np + coeffs[a]
+
+        return result if result.ndim else float(result)
+
+    evaluate.coeffs = coeffs
+    evaluate.order = order
+
     return evaluate
 
 
-def fit_sigmoid_torch(ins, outs, character=[]):
+def _sigmoid(params, x, n_params, increasing, backend):
     """
-    Fit a tensor product of 3- or 5-parameter sigmoids to data (PyTorch version).
-    Returns a callable that preserves gradients.
-    
-    ins: shape [dim, n_data] or [dim]
-    outs: shape [n_data] or scalar
-    character: 'increasing', 'decreasing', or [] (for general sigmoid)
-    """
-    ins, outs, dim, n_data = _prepare_inputs_torch(ins, outs, expect_dim=1)
-    opt, num_vars = _sigmoid_character(character)
-    
-    def sigmoid(params, x):
-        if num_vars == 4:
-            A, B, log_nu, log_Q = params
-            nu = torch.exp(log_nu)
-            Q = torch.exp(log_Q)
-            K = int(not opt)
-            return A + (K - A) / (1 + Q * torch.exp((x - B)))**(1 / nu)
-        else:
-            A, K, B, nu, Q = params
-            return A + (K - A) / (1 + Q * torch.exp(-B * x))**(1 / nu)
-    
-    # Initialize parameters
-    params = nn.Parameter(torch.full((dim, num_vars), 0.5, dtype=torch.float64))
-    
-    def loss_fn():
-        result = torch.ones(n_data, dtype=torch.float64)
-        for d in range(dim):
-            result = result * sigmoid(params[d], ins[d])
-        return torch.mean((result - outs) ** 2)
-    
-    # Optimize
-    optimizer = LBFGS([params], max_iter=100, line_search_fn='strong_wolfe')
-    def closure():
-        optimizer.zero_grad()
-        loss = loss_fn()
-        loss.backward()
-        return loss
-    optimizer.step(closure)
-    
-    # Detach optimized parameters but keep them as tensors for gradient flow
-    params_opt = params.detach().clone().requires_grad_(True)
-    
-    def evaluate(x):
-        """Evaluates sigmoid at x while preserving gradients."""
-        # Convert to tensor while preserving gradients if already a tensor
-        if torch.is_tensor(x):
-            x_t = x.to(dtype=torch.float64) if x.dtype != torch.float64 else x
-        else:
-            x_t = torch.as_tensor(x, dtype=torch.float64)
-        
-        x_t = torch.atleast_2d(x_t)
-        if x_t.shape[0] != dim:
-            x_t = x_t.T
-        
-        single_input = (x_t.shape[1] == 1 and x_t.ndim == 2)
-        
-        result = torch.ones(x_t.shape[1], dtype=torch.float64, requires_grad=x_t.requires_grad)
-        for d in range(dim):
-            result = result * sigmoid(params_opt[d], x_t[d])
-        
-        # Always return 0-d tensor for single input (preserves gradients)
-        return result.squeeze() if single_input else result
-    
-    return evaluate
+    Generalized sigmoid of Sec. 4.3.2, evaluated with `backend` (np or torch).
 
+    The 5-parameter form is the one the writeup specifies:
+        sigma(s; A, K, B, nu, Q) = A + (K - A) / (1 + Q exp(-B s))^(1/nu)
+    """
+    if n_params == 4:
+        A, B, log_nu, log_Q = params
+        nu = backend.exp(log_nu)
+        Q = backend.exp(log_Q)
+        K = int(not increasing)
+        return A + (K - A) / (1 + Q * backend.exp(x - B)) ** (1 / nu)
+
+    A, K, B, nu, Q = params
+    return A + (K - A) / (1 + Q * backend.exp(-B * x)) ** (1 / nu)
+
+
+def fit_sigmoid(ins, outs, character=[], expect_dim=None):
+    """
+    Fit a tensor product of generalized sigmoids to correlation data
+    (writeup Sec. 4.3.2), by nonlinear least squares.
+
+    dim = 1 gives the fixed-trainable surrogate p_hat_{i,omega}(s_omega).
+    dim = 2 gives the trainable-trainable tensor product
+    p_hat_{omega,q}(s_omega, s_q) = sigma_omega(s_omega) sigma_q(s_q).
+
+    ins:  [dim, n_data] or [dim]
+    outs: [n_data] or scalar
+    character: 'increasing', 'decreasing', or [] for the general sigmoid
+    expect_dim: force an input dimension (see _prepare_inputs)
+
+    The returned callable accepts numpy or torch input and preserves
+    gradients w.r.t. a tensor argument.
+    """
+    ins, dim, n_data = _prepare_inputs(ins, outs, expect_dim=expect_dim)
+    increasing, n_params = _sigmoid_character(character)
+
+    def evaluate_with(params, x, backend):
+        params = params.reshape(dim, n_params)
+
+        result = None
+        for d in range(dim):
+            term = _sigmoid(params[d], x[d], n_params, increasing, backend)
+            result = term if result is None else result * term
+
+        return result
+
+    def residuals(flat_params):
+        return evaluate_with(flat_params, ins, np) - outs
+
+    result = least_squares(
+        residuals, np.full((dim * n_params,), 0.5), loss='linear'
+    )
+    params_opt = result.x
+
+    def evaluate(x):
+        if torch.is_tensor(x):
+            x_t = torch.atleast_2d(x.to(dtype=torch.float64))
+            if x_t.shape[0] != dim:
+                x_t = x_t.T
+
+            params = torch.as_tensor(
+                params_opt, dtype=torch.float64, device=x_t.device
+            )
+            values = evaluate_with(params, x_t, torch)
+
+            return values.squeeze() if x_t.shape[1] == 1 else values
+
+        x_np = np.atleast_2d(np.asarray(x, dtype=float))
+        if x_np.shape[0] != dim:
+            x_np = x_np.T
+
+        values = evaluate_with(params_opt, x_np, np)
+
+        return values[0] if x_np.shape[1] == 1 else values
+
+    evaluate.params = params_opt
+    evaluate.dim = dim
+
+    return evaluate

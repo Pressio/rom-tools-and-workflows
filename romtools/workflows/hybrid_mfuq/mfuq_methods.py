@@ -1,7 +1,22 @@
+"""
+Approximate control variate optimization for Multi-Fidelity UQ.
+
+`MFMC` solves the hybrid ACV problem (15) of the writeup: it minimizes the
+estimator variance (1 - R^2_ACV(r, s)) / N subject to the budget constraint
+of (2), over the sample count N, the oversampling ratios r, and the trainable
+ROM basis sizes s.
+
+Model ordering and pair flattening come from `model_indices.py`, which also
+carries the writeup-to-code notation map.
+"""
+
 from math import floor
+
 import numpy as np
 import torch
 from scipy.optimize import minimize, NonlinearConstraint
+
+from romtools.workflows.hybrid_mfuq.model_indices import tril_indices
 
 
 class MFMC:
@@ -22,25 +37,12 @@ class MFMC:
     e.g. Archakov--Hansen.
     """
 
-    def __init__(self, budget, kind, hybrid=True, n_active=1, use_torch=True,
-                 reg_eps=1e-8, init_r_upper=20.0):
+    def __init__(self, budget, kind, hybrid=True, n_active=1, use_torch=True):
         self.budget = budget
         self.fac = int(hybrid)
         self.n_active = n_active
         self.use_torch = use_torch
         self.corr_matrix_fn = None
-
-        # Tikhonov regularization added to F*C before solving for R^2. Guards
-        # against the near-singular system that arises as any r_i -> 1 (see
-        # _solve_R2 for why).
-        self.reg_eps = reg_eps
-
-        # Cap used for open-ended oversampling-ratio bounds when drawing
-        # random initial guesses (see _initial_guess). Optimal r's are
-        # rarely anywhere near the budget scale, so falling back to
-        # self.budget there wastes most random restarts on implausible
-        # points.
-        self.init_r_upper = init_r_upper
 
         if kind in ("MF", "ACV-MF"):
             self.type = "ACV-MF"
@@ -89,61 +91,23 @@ class MFMC:
         return s
 
     def _initial_guess(self):
-        """
-        Create a feasibility-aware random initial point.
-
-        Two changes relative to drawing every entry independently and
-        uniformly within self.bounds:
-
-        1. Open-ended oversampling ratios r are capped at self.init_r_upper
-           rather than at self.budget. Optimal r's are almost never near the
-           budget scale, so the old fallback (e.g. r in [1.001, 240] for a
-           budget-240 restart) wasted most random starts on implausible
-           points far from any reasonable optimum.
-        2. N is back-solved from the budget constraint given the drawn r
-           and s, instead of drawn independently. Each restart now starts
-           just inside the feasible region rather than at an arbitrary
-           point SLSQP has to fight its way back from.
-        """
+        """Create a feasible-ish random initial point inside simple bounds."""
         n_lofi = len(self.cost_list)
         dim = 1 + n_lofi + self.n_active
 
         x0 = np.zeros(dim, dtype=float)
 
-        # Draw r (indices 1..n_lofi) and s_active (remaining indices) first.
-        for i in range(1, dim):
-            lo, hi = self.bounds[i]
+        for i, (lo, hi) in enumerate(self.bounds):
             if lo is None:
-                lo = 1.001
+                lo = 1.0
             if hi is None:
-                hi = self.init_r_upper
+                # Reasonable finite upper guess for unbounded variables.
+                hi = max(2.0, self.budget)
 
-            x0[i] = lo if hi <= lo else np.random.uniform(lo, hi)
-
-        r = x0[1:n_lofi + 1]
-        s_active = x0[n_lofi + 1:]
-
-        # Back out N from the budget constraint N * unit_cost <= budget.
-        # Cost surrogates may hold torch parameters internally and can
-        # return a grad-tracking tensor even when handed plain numpy s
-        # (e.g. a fitted polynomial with torch coefficients), so extract
-        # each value through the class's existing tensor/float-safe helper
-        # rather than assuming a plain float.
-        s = self.expand_s(s_active)
-        w = np.array([self._to_numpy_scalar(f(s)) for f in self.cost_list], dtype=float)
-        unit_cost = 1.0 + np.dot(r, w) + self.fac * np.sum(s_active)
-
-        N_lo, N_hi = self.bounds[0]
-        N_lo = 1.0 if N_lo is None else N_lo
-
-        N_feasible = self.budget / max(unit_cost, 1e-8)
-        if N_hi is not None:
-            N_feasible = min(N_feasible, N_hi)
-
-        # Land somewhere inside the feasible strip rather than right on its
-        # boundary, so SLSQP has room to move in either direction.
-        frac = np.random.uniform(0.5, 1.0)
-        x0[0] = max(N_lo, N_feasible * frac)
+            if hi == lo:
+                x0[i] = lo
+            else:
+                x0[i] = np.random.uniform(lo, hi)
 
         return x0
 
@@ -154,19 +118,11 @@ class MFMC:
         return float(value)
 
     @staticmethod
-    def _tril_indices(n):
-        """Strict lower-triangular index pairs, shared by the numpy and
-        torch branches of build_C (backend-independent index math)."""
-        return np.tril_indices(n, -1)
-
-    @staticmethod
     def _split_corr_matrix(P):
         """
         Split a full correlation matrix P, ordered [FOM, LF_1, ..., LF_m],
-        into the HF-LF correlation vector c and the LF-LF correlation
-        matrix C. Shared by the corr_matrix_fn branch of
-        _torch_correlations and _numpy_correlations; identical shape logic
-        in both, only how P itself is obtained differs by backend.
+        into the HF-LF correlation vector c and the LF-LF correlation matrix
+        C, per writeup Eq. (13).
         """
         c = P[1:, 0]
         C = P[1:, 1:]
@@ -208,7 +164,7 @@ class MFMC:
             entries = torch.stack([f(s) for f in self.lf_corr_list])
             n = floor((1 + np.sqrt(1 + 8 * len(entries))) / 2)
 
-            idx_i, idx_j = self._tril_indices(n)
+            idx_i, idx_j = tril_indices(n)
             idx_i_t = torch.tensor(idx_i, dtype=torch.long, device=entries.device)
             idx_j_t = torch.tensor(idx_j, dtype=torch.long, device=entries.device)
 
@@ -222,7 +178,7 @@ class MFMC:
         n = floor((1 + np.sqrt(1 + 8 * len(entries))) / 2)
 
         C = np.eye(n)
-        idx = self._tril_indices(n)
+        idx = tril_indices(n)
         C[idx] = entries
         C[(idx[1], idx[0])] = entries
 
@@ -263,36 +219,21 @@ class MFMC:
 
         return c, C
 
-    def _solve_R2(self, F, C, c):
-        """
-        Solve v^T (F*C)^{-1} v for v = diag(F) * c, with a small Tikhonov
-        term added to F*C.
-
-        As any oversampling ratio r_i approaches its lower bound of 1,
-        diag(F)_i -> 0, which collapses row/column i of F*C toward zero.
-        R^2 itself has a well-defined limit there, but the matrix being
-        inverted becomes severely ill-conditioned right at that boundary,
-        and autograd's backward pass through the solve reuses (and can
-        amplify) that same ill-conditioning. The regularization keeps both
-        the forward solve and its gradient numerically stable without
-        materially perturbing R^2 away from the boundary.
-        """
-        n = F.shape[0]
-
-        if self.use_torch and torch.is_tensor(F):
-            M = F * C + self.reg_eps * torch.eye(n, dtype=F.dtype, device=F.device)
-            v = torch.diag(F) * c
-            return torch.linalg.solve(M, v).dot(v)
-
-        M = F * C + self.reg_eps * np.eye(n)
-        v = np.diag(F) * c
-        return np.linalg.solve(M, v).dot(v)
-
     # ------------------------------------------------------------------
     # Optimization
     # ------------------------------------------------------------------
 
     def set_objective_and_constraint(self, log=True, bounds=None):
+        """
+        Build the objective and constraint of the hybrid ACV problem (15),
+        together with their gradients.
+
+        Each quantity is written once, as a function of the split state
+        (N, r, s_active), and the value/gradient pair is derived from it:
+        under use_torch the same expression is evaluated on tensors and
+        differentiated by autograd, otherwise it is evaluated in numpy and
+        SLSQP falls back to finite differences.
+        """
         self.log = log
 
         n_lofi = len(self.cost_list)
@@ -300,113 +241,72 @@ class MFMC:
 
         self.bounds = bounds if bounds is not None else [(None, None)] * dim
 
-        def objective(x):
-            if self.use_torch:
-                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+        def split(x):
+            return x[0], x[1:n_lofi + 1], x[n_lofi + 1:]
 
-                N = x_torch[0]
-                r = x_torch[1:n_lofi + 1]
-                s_active = x_torch[n_lofi + 1:]
-
-                F = self.build_F(r)
-                c, C = self._torch_correlations(s_active)
-
-                R2 = self._solve_R2(F, C, c)
-
-                val = (1.0 - R2) / N
-                result = torch.log(val) if self.log else val
-
-                return float(result.detach().cpu().numpy())
-
-            N = x[0]
-            r = x[1:n_lofi + 1]
-            s_active = x[n_lofi + 1:]
+        def objective_value(x, torch_mode):
+            """log((1 - R^2_ACV) / N), the objective of (15) via (4)."""
+            N, r, s_active = split(x)
 
             F = self.build_F(r)
-            c, C = self._numpy_correlations(s_active)
-
-            R2 = self._solve_R2(F, C, c)
-
-            val = (1.0 - R2) / N
-            return np.log(val) if self.log else val
-
-        def objective_grad(x):
-            if not self.use_torch:
-                return None
-
-            x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-            N = x_torch[0]
-            r = x_torch[1:n_lofi + 1]
-            s_active = x_torch[n_lofi + 1:]
-
-            F = self.build_F(r)
-            c, C = self._torch_correlations(s_active)
-
-            R2 = self._solve_R2(F, C, c)
-
-            val = (1.0 - R2) / N
-            result = torch.log(val) if self.log else val
-
-            result.backward()
-
-            return x_torch.grad.detach().cpu().numpy().astype(np.float64)
-
-        def constraint(x):
-            if self.use_torch:
-                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-                N = x_torch[0]
-                r = x_torch[1:n_lofi + 1]
-                s_active = x_torch[n_lofi + 1:]
-
-                s = self.expand_s(s_active)
-                w = torch.stack([f(s) for f in self.cost_list])
-
-                result = N * (
-                    1.0 + torch.dot(r, w) + self.fac * torch.sum(s_active)
-                )
-
-                return float(result.detach().cpu().numpy())
-
-            N = x[0]
-            r = x[1:n_lofi + 1]
-            s_active = x[n_lofi + 1:]
-
-            s = self.expand_s(s_active)
-            w = np.array([f(s) for f in self.cost_list], dtype=float)
-
-            return N * (1.0 + np.dot(r, w) + self.fac * np.sum(s_active))
-
-        def constraint_grad(x):
-            if not self.use_torch:
-                return None
-
-            x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-            N = x_torch[0]
-            r = x_torch[1:n_lofi + 1]
-            s_active = x_torch[n_lofi + 1:]
-
-            s = self.expand_s(s_active)
-            w = torch.stack([f(s) for f in self.cost_list])
-
-            result = N * (
-                1.0 + torch.dot(r, w) + self.fac * torch.sum(s_active)
+            c, C = (
+                self._torch_correlations(s_active)
+                if torch_mode
+                else self._numpy_correlations(s_active)
             )
 
-            result.backward()
+            if torch_mode:
+                v = torch.diag(F) * c
+                R2 = torch.linalg.solve(F * C, v).dot(v)
+            else:
+                v = np.diag(F) * c
+                R2 = np.linalg.solve(F * C, v).dot(v)
 
-            return x_torch.grad.detach().cpu().numpy().astype(np.float64)
+            val = (1.0 - R2) / N
 
-        self.objective = objective
-        self.objective_grad = objective_grad
-        self.constraint = constraint
-        self.constraint_grad = constraint_grad
+            if not self.log:
+                return val
 
-    # ------------------------------------------------------------------
-    # Solve
-    # ------------------------------------------------------------------
+            return torch.log(val) if torch_mode else np.log(val)
+
+        def constraint_value(x, torch_mode):
+            """N(1 + r . w(s)) + s . 1, the left side of (2)/(15)."""
+            N, r, s_active = split(x)
+            s = self.expand_s(s_active)
+
+            if torch_mode:
+                w = torch.stack([f(s) for f in self.cost_list])
+                return N * (1.0 + torch.dot(r, w)) + self.fac * torch.sum(s_active)
+
+            w = np.array([f(s) for f in self.cost_list], dtype=float)
+            return N * (1.0 + np.dot(r, w)) + self.fac * np.sum(s_active)
+
+        def as_value(fn):
+            def value(x):
+                if not self.use_torch:
+                    return fn(np.asarray(x, dtype=float), torch_mode=False)
+
+                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+                return float(fn(x_torch, torch_mode=True).detach().cpu().numpy())
+
+            return value
+
+        def as_gradient(fn):
+            def gradient(x):
+                if not self.use_torch:
+                    return None
+
+                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+                fn(x_torch, torch_mode=True).backward()
+
+                return x_torch.grad.detach().cpu().numpy().astype(np.float64)
+
+            return gradient
+
+        self.objective = as_value(objective_value)
+        self.objective_grad = as_gradient(objective_value)
+        self.constraint = as_value(constraint_value)
+        self.constraint_grad = as_gradient(constraint_value)
 
     def solve(self):
         x0 = self._initial_guess()
@@ -442,6 +342,31 @@ class MFMC:
                 options={"maxiter": 500},
             )
 
+    def discretize(self, x):
+        """
+        Map a continuous solution x = [N, r, s_active] to the discrete
+        solution of writeup Eq. (16):
+
+            N_pred = floor(N*),  r_pred = r*,  s_pred = round(s*_T).
+
+        The oversampling ratios stay continuous (only N_i = ceil(r_i N) is
+        ever realized as a count). Basis sizes are rounded rather than
+        floored -- rounding is the intended behavior here; Eq. (16) says
+        floor and is being corrected in the writeup.
+
+        The objective evaluated at this point, not at the relaxed optimum, is
+        the predicted variance V_pred that Algorithm 7 line 4 reports.
+        """
+        n_lofi = len(self.cost_list)
+
+        x_disc = np.array(x, dtype=float).copy()
+        x_disc[0] = np.floor(x_disc[0])
+
+        if self.n_active:
+            x_disc[1 + n_lofi:] = np.round(x_disc[1 + n_lofi:])
+
+        return x_disc
+
     def check_gradients(self, x=None, eps=1e-6, tol=1e-5):
         """
         Compare PyTorch autograd gradients with finite-difference gradients.
@@ -450,8 +375,6 @@ class MFMC:
             raise RuntimeError("Gradient check only available with use_torch=True")
 
         if x is None:
-            n_lofi = len(self.cost_list)
-            dim = 1 + n_lofi + self.n_active
             x = self._initial_guess()
 
         grad_torch = self.objective_grad(x)

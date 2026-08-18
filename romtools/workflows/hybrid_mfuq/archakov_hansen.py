@@ -1,12 +1,13 @@
 """
-Batched Archakov--Hansen correlation-matrix machinery for Multi-Fidelity UQ.
+Batched Archakov--Hansen correlation-matrix machinery (writeup Sec. 4.3.3).
 
 Provides the differentiable, warm-started AH map from unrestricted
 lower-triangular coordinates to valid correlation matrices, the VeclNet
 network that produces those coordinates, the training loop for the
 matrix-valued surrogate, and the resulting corr_matrix_fn wrapper.
 
-Split out of surrogate_methods.py (see hybrid_mfuq_simplification_plan.md, T6).
+The AH parameterization makes P(s) a valid correlation matrix for every value
+of the network output, so no constraints are needed on the network itself.
 """
 
 import numpy as np
@@ -43,6 +44,30 @@ def to_symmetric_tracefree_batch(lower_vecs, n):
     L[:, tril_idx[0], tril_idx[1]] = lower_vecs
 
     return L + L.transpose(1, 2)
+
+
+def insert_fixed_fixed_entries(P, fixed_mask, fixed_values):
+    """
+    Overwrite fixed-fixed entries of a (batched) correlation matrix with
+    known constant values, bypassing the AH parameterization at those
+    positions.
+
+    Used by the default 'ah_matrix_bandaid' strategy, which implements
+    Algorithm 6 line 20 literally: fixed-fixed correlations are known exactly
+    from the pilot and do not depend on any basis size, so they are imposed
+    rather than regressed. This holds them exact outside the training range
+    too, where the AH-parameterized fit can otherwise drift, at the cost of
+    the global PSD guarantee -- the overwrite is not a congruence, so the
+    returned matrix is no longer guaranteed admissible.
+
+    P:            (..., n, n) tensor, single matrix or batch.
+    fixed_mask:   (n, n) bool tensor, symmetric, True where P is overwritten.
+    fixed_values: (n, n) tensor of values to insert at fixed_mask positions
+                  (values elsewhere are unused).
+    """
+    fixed_values = fixed_values.to(dtype=P.dtype, device=P.device)
+    fixed_mask = fixed_mask.to(device=P.device)
+    return torch.where(fixed_mask, fixed_values, P)
 
 
 class WarmStartedArchakovHansenMap(nn.Module):
@@ -204,6 +229,8 @@ def train_ah_matrix_model(
     print_every=50,
     optimizer_cls=optim.Adam,
     optimizer_kwargs=None,
+    fixed_mask=None,
+    fixed_values=None,
 ):
     """
     Train omega_model(s) through the AH map using weighted matrix-entry loss.
@@ -211,6 +238,11 @@ def train_ah_matrix_model(
     The fixed-fixed entries should receive a large weight, while ROM-dependent
     entries receive order-one weight. This does not hard-enforce fixed-fixed
     correlations, but strongly regularizes them while preserving PSD through AH.
+
+    If fixed_mask/fixed_values are given (the 'ah_matrix_bandaid' strategy),
+    fixed-fixed entries of P_pred are hard-overwritten with fixed_values
+    before the loss is computed, so their squared error is identically zero
+    and no up-weighting is needed for them.
 
     The up-weighting of fixed-fixed entries (often ~1e3) makes the early-step
     gradient large and highly non-stationary. Left unclipped, Adam can overshoot
@@ -242,6 +274,9 @@ def train_ah_matrix_model(
 
         gamma = model(inputs)
         P_pred = ah_map(gamma)
+
+        if fixed_mask is not None:
+            P_pred = insert_fixed_fixed_entries(P_pred, fixed_mask, fixed_values)
 
         loss = torch.sum(weights * (P_pred - targets) ** 2) / denom
 
@@ -283,6 +318,12 @@ class AHMatrixCorrelationSurrogate(nn.Module):
     Fixed-fixed entries are not replaced componentwise. Instead, they are
     strongly regularized during training so the returned matrix remains a valid
     AH correlation matrix.
+
+    If fixed_mask/fixed_values are supplied (the 'ah_matrix_bandaid'
+    strategy), fixed-fixed entries of P(s) are additionally hard-overwritten
+    with the known pilot values after the AH map is applied, pinning them
+    exactly (including in extrapolation) at the cost of the global PSD
+    guarantee.
     """
 
     def __init__(
@@ -292,36 +333,59 @@ class AHMatrixCorrelationSurrogate(nn.Module):
         s_min,
         s_max,
         psd_check="none",
+        fixed_mask=None,
+        fixed_values=None,
     ):
         super().__init__()
 
         self.omega_model = omega_model
         self.ah_map = ah_map
 
-        self.s_min = float(s_min)
-        self.s_max = float(s_max)
+        # s_min/s_max are length-k array-likes, one bound pair per trainable
+        # ROM (k == n_active). Stored as 1-D float64 tensors of shape (k,);
+        # normalize_s broadcasts elementwise against these.
+        self.s_min = torch.as_tensor(
+            np.atleast_1d(np.asarray(s_min, dtype=float)), dtype=torch.float64
+        )
+        self.s_max = torch.as_tensor(
+            np.atleast_1d(np.asarray(s_max, dtype=float)), dtype=torch.float64
+        )
         self.psd_check = psd_check
 
+        # (n, n) bandaid override; None reproduces the original AH-only path.
+        self.fixed_mask = fixed_mask
+        self.fixed_values = (
+            fixed_values.to(dtype=torch.float64) if fixed_values is not None else None
+        )
+
     def normalize_s(self, s):
-        return 2.0 * (s - self.s_min) / (self.s_max - self.s_min) - 1.0
+        s_min = self.s_min.to(dtype=s.dtype, device=s.device)
+        s_max = self.s_max.to(dtype=s.dtype, device=s.device)
+        return 2.0 * (s - s_min) / (s_max - s_min) - 1.0
 
     def forward(self, s_active):
+        # MFMC's corr_matrix_fn dispatch passes s_active raw (unexpanded),
+        # so it already has length exactly k -- no [-n_active:] slicing.
         if torch.is_tensor(s_active):
-            s = s_active.reshape(-1)[-1]
+            s = s_active.reshape(-1)
             dtype = s.dtype
             device = s.device
         else:
             s = torch.as_tensor(
-                np.asarray(s_active).reshape(-1)[-1],
+                np.asarray(s_active, dtype=float).reshape(-1),
                 dtype=torch.float64,
             )
             dtype = torch.float64
             device = s.device
 
-        z = self.normalize_s(s).reshape(1, 1).to(dtype=dtype, device=device)
+        k = s.shape[0]
+        z = self.normalize_s(s).reshape(1, k).to(dtype=dtype, device=device)
 
         gamma = self.omega_model(z)
         P = self.ah_map(gamma)[0]
+
+        if self.fixed_mask is not None:
+            P = insert_fixed_fixed_entries(P, self.fixed_mask, self.fixed_values)
 
         if self.psd_check != "none":
             self._check_psd(P)
