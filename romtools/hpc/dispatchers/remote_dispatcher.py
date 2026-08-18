@@ -13,13 +13,13 @@ from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
-from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.dispatchers import BaseDispatcher
 
 from romtools.hpc.util.slurm import create_slurm_script
 
 ## ----------------------------------------------------------------------------
 
-class RemoteDispatcher(DispatcherBase):
+class RemoteDispatcher(BaseDispatcher):
     """
     Main class of ROM's HPC tools. Establishes SSH connection to remote host, dispatches
     desired workflows, and transfers results back to the local machine.
