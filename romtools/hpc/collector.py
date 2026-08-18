@@ -1,13 +1,11 @@
 import os
-import re
 import shlex
 
 import posixpath as ppath
-from typing import List, Optional
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.connection import Connection
-from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd
+from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd, validate
 
 class Collector:
     """
@@ -34,58 +32,9 @@ class Collector:
         self.logger = logger or Logger()
 
         # Validate the collect patterns
-        self.patterns = self.__validate()
-
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
-    def __validate(self) -> Optional[List[str]]:
-        """
-        Validate and normalize config.collect.
-
-        Returns:
-            - None if collect is not specified
-            - list[str] of cleaned patterns otherwise
-
-        Raises:
-            ValueError: if any pattern is invalid or if collect is specified but empty.
-        """
-        collect_patterns = self.config.get("collect")
-        if collect_patterns is None:
-            return None
-
-        cleaned_patterns = []
-        forbidden_chars = {"\n", "\r"}
-
-        for pattern in collect_patterns:
-            if not pattern or not pattern.strip():
-                continue
-
-            p = pattern.strip()
-
-            if p.startswith("-"):
-                raise ValueError(
-                    f"Invalid collect pattern {p!r}: patterns may not begin with '-'."
-                )
-
-            if any(ch in p for ch in forbidden_chars):
-                raise ValueError(
-                    f"Invalid collect pattern {p!r}: contains forbidden characters."
-                )
-
-            # Restrict patterns to path and glob characters to avoid shell injection.
-            if not re.fullmatch(r"[A-Za-z0-9_./*?\[\]\-]+", p):
-                raise ValueError(
-                    f"Invalid collect pattern {p!r}: contains unsupported characters."
-                )
-
-            cleaned_patterns.append(p)
-
-        if not cleaned_patterns:
-            raise ValueError("collect was specified, but no valid patterns were provided.")
-
-        return cleaned_patterns
+        self.patterns = self.config.get("collect")
+        if self.patterns:
+            self.patterns = validate(self.patterns)
 
     # ------------------------------------------------------------------
     # Public methods

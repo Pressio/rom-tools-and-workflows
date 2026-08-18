@@ -1,6 +1,7 @@
 
 import shlex
 import subprocess
+import re
 
 from typing import Optional, List
 from collections.abc import Callable
@@ -18,6 +19,52 @@ def local_cmd(cmd: str):
         text=True
     )
     return Result(res.stdout, res.stderr, 0)
+
+def validate(collect_patterns: List[str]) -> Optional[List[str]]:
+    """
+    Validate and normalize file & directory patterns.
+
+    Returns:
+        - None if collect_patterns is not specified
+        - List[str] of cleaned patterns otherwise
+
+    Raises:
+        ValueError: if any pattern is invalid.
+    """
+    if collect_patterns is None:
+        return None
+
+    cleaned_patterns = []
+    forbidden_chars = {"\n", "\r"}
+
+    for pattern in collect_patterns:
+        if not pattern or not pattern.strip():
+            continue
+
+        p = pattern.strip()
+
+        if p.startswith("-"):
+            raise ValueError(
+                f"Invalid collect pattern {p!r}: patterns may not begin with '-'."
+            )
+
+        if any(ch in p for ch in forbidden_chars):
+            raise ValueError(
+                f"Invalid collect pattern {p!r}: contains forbidden characters."
+            )
+
+        # Restrict patterns to path and glob characters to avoid shell injection.
+        if not re.fullmatch(r"[A-Za-z0-9_./*?\[\]\-]+", p):
+            raise ValueError(
+                f"Invalid collect pattern {p!r}: contains unsupported characters."
+            )
+
+        cleaned_patterns.append(p)
+
+    if not cleaned_patterns:
+        raise ValueError("PATTERN VALIDATE: no valid patterns were provided.")
+
+    return cleaned_patterns
 
 def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> bool:
     """

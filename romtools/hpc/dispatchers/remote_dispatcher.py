@@ -14,7 +14,7 @@ from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE
 from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatchers import BaseDispatcher
-from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd
+from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd, validate
 
 from romtools.hpc.util.slurm import create_slurm_script
 
@@ -62,6 +62,9 @@ class RemoteDispatcher(BaseDispatcher):
             sampling_directory=self.sampling_directory,
             logger=self.logger,
         )
+        self.upload_patterns = self.config.get("upload")
+        if self.upload_patterns:
+            self.upload_patterns = validate(self.upload_patterns)
 
     # ------------------------------------------------------------------
     # Initialization and setup
@@ -81,16 +84,18 @@ class RemoteDispatcher(BaseDispatcher):
             raise RuntimeError(f"Failed to establish SSH connection: {e}")
 
     def upload(self, run_directory) -> None:
+        if not self.upload_patterns:
+            return
+
         remote_root = self.config.get("remote_root")
-        if upload := self.config.get("upload"):
-            tar_name = "dispatcher-upload-files.tar.gz"
-            files_packed = pack_results(self.logger, local_cmd, ".", tar_name, upload)
-            if not files_packed:
-                return
-            tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
-            self.put(tar_name, tar_path)
-            os.remove(tar_name)
-            safe_extract_tar(lambda cmd: self.conn.run(cmd), tar_path, f"{ppath.join(remote_root, run_directory)}")
+        tar_name = "dispatcher-upload-files.tar.gz"
+        files_packed = pack_results(self.logger, local_cmd, ".", tar_name, self.upload_patterns)
+        if not files_packed:
+            return
+        tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
+        self.put(tar_name, tar_path)
+        os.remove(tar_name)
+        safe_extract_tar(lambda cmd: self.conn.run(cmd), tar_path, f"{ppath.join(remote_root, run_directory)}")
 
     # ------------------------------------------------------------------
     # Utility methods
