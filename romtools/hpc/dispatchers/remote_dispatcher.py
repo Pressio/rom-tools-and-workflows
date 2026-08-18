@@ -11,10 +11,9 @@ from typing import Optional, Tuple
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
-from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatchers import BaseDispatcher
-from romtools.hpc.util.file_wrangler import pack_results, safe_extract_tar, local_cmd, validate
+from romtools.hpc.util.file_transfer import pack_results, safe_extract_tar, local_cmd, validate
 
 from romtools.hpc.util.slurm import create_slurm_script
 
@@ -38,7 +37,6 @@ class RemoteDispatcher(BaseDispatcher):
 
         # Core members
         self.conn : Optional[Connection] = None
-        self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
 
         # If slurm script specifies out and/or error file, use those instead of our default
@@ -55,13 +53,11 @@ class RemoteDispatcher(BaseDispatcher):
         else:
             self.__connect_to_remote()
 
-        # Initialize and validate the Collector
-        self.collector = Collector(
-            self.conn,
-            self.config,
-            sampling_directory=self.sampling_directory,
-            logger=self.logger,
-        )
+        # validate collect and upload patterns
+        self.collect_patterns = self.config.get("collect")
+        if self.collect_patterns:
+            self.collect_patterns = validate(self.collect_patterns)
+
         self.upload_patterns = self.config.get("upload")
         if self.upload_patterns:
             self.upload_patterns = validate(self.upload_patterns)
@@ -88,14 +84,45 @@ class RemoteDispatcher(BaseDispatcher):
             return
 
         remote_root = self.config.get("remote_root")
-        tar_name = "dispatcher-upload-files.tar.gz"
-        files_packed = pack_results(self.logger, local_cmd, ".", tar_name, self.upload_patterns)
+        tar_name = f"dispatcher-upload-{self.config.get('job_name')}.tar.gz"
+        files_packed = pack_results(lambda msg: self.logger.log(msg, local=True), local_cmd, ".", tar_name, self.upload_patterns)
         if not files_packed:
             return
         tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
         self.put(tar_name, tar_path)
         os.remove(tar_name)
         safe_extract_tar(lambda cmd: self.conn.run(cmd), tar_path, f"{ppath.join(remote_root, run_directory)}")
+
+    def __collect_results(self) -> None:
+        """
+        Collect results from remote HPC runs.
+        """
+        remote_sampling_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
+        self.logger.log(
+            f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}",
+            local=True,
+        )
+
+        archive_name = f"dispatcher-collect-{self.config.get('job_name')}.tar.gz"
+        remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
+
+        do_collection = pack_results(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
+
+        if not do_collection:
+            return
+
+        # Copy remote archive to local
+        self.conn.get(remote_archive_path, archive_name)
+        self.logger.log(f"Copied remote archive to local: {archive_name}")
+
+        # Clean up remote archive
+        self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
+        self.logger.debug("Cleaned up remote archive.")
+
+        # Unpack local archive into local sampling directory
+        os.makedirs(self.sampling_directory, exist_ok=True)
+        safe_extract_tar(local_cmd, archive_name, os.path.abspath(self.sampling_directory))
+        self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
 
     # ------------------------------------------------------------------
     # Utility methods
@@ -459,7 +486,7 @@ class RemoteDispatcher(BaseDispatcher):
             return "No SLURM job submitted."
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = self.__wait_for_job(job_id)
-        self.collector.collect_results()
+        self.__collect_results()
         job_stdout, job_stderr = self.__get_job_output(job_id, run_directory)
         return Result(job_stdout, job_stderr, status)
 

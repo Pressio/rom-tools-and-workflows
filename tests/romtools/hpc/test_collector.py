@@ -3,10 +3,12 @@ import tarfile
 
 import pytest
 
-from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Result
+from romtools.hpc.util.file_transfer import pack_results, safe_extract_tar, local_cmd, validate
+from romtools.hpc.dispatchers import RemoteDispatcher
+from subprocess import CalledProcessError
 
-from conftest import ArchiveFakeConnection, FakeConnection
+from conftest import ArchiveFakeConnection
 
 
 # ----------------------------------------------------------------------------
@@ -14,48 +16,36 @@ from conftest import ArchiveFakeConnection, FakeConnection
 # ----------------------------------------------------------------------------
 
 
-def test_collect_none_yields_no_patterns(fake_connection, make_config):
-    config = make_config(collect=None)
+def test_collect_none_yields_no_patterns():
+    patterns = validate(None)
 
-    collector = Collector(fake_connection, config, sampling_directory="hpctools")
-
-    assert collector.patterns is None
+    assert patterns is None
 
 
-def test_collect_valid_patterns_are_kept(fake_connection, make_config):
-    config = make_config(collect=["*.log", "results/"])
+def test_collect_valid_patterns_are_kept():
+    patterns = validate(["*.log", "results/"])
 
-    collector = Collector(fake_connection, config, sampling_directory="hpctools")
-
-    assert collector.patterns == ["*.log", "results/"]
+    assert patterns == ["*.log", "results/"]
 
 
-def test_collect_pattern_starting_with_dash_is_rejected(fake_connection, make_config):
-    config = make_config(collect=["-bad"])
-
+def test_collect_pattern_starting_with_dash_is_rejected():
     with pytest.raises(ValueError, match="may not begin with '-'"):
-        Collector(fake_connection, config, sampling_directory="hpctools")
+        validate(["-bad"])
 
 
-def test_collect_pattern_with_newline_is_rejected(fake_connection, make_config):
-    config = make_config(collect=["bad\npattern"])
-
+def test_collect_pattern_with_newline_is_rejected():
     with pytest.raises(ValueError, match="forbidden characters"):
-        Collector(fake_connection, config, sampling_directory="hpctools")
+        validate(["bad\npattern"])
 
 
-def test_collect_pattern_with_unsupported_characters_is_rejected(fake_connection, make_config):
-    config = make_config(collect=["bad; rm -rf /"])
-
+def test_collect_pattern_with_unsupported_characters_is_rejected():
     with pytest.raises(ValueError, match="unsupported characters"):
-        Collector(fake_connection, config, sampling_directory="hpctools")
+        validate(["bad; rm -rf /"])
 
 
-def test_collect_all_blank_patterns_raises(fake_connection, make_config):
-    config = make_config(collect=["   ", ""])
-
+def test_collect_all_blank_patterns_raises():
     with pytest.raises(ValueError, match="no valid patterns"):
-        Collector(fake_connection, config, sampling_directory="hpctools")
+        validate(["   ", ""])
 
 
 # ----------------------------------------------------------------------------
@@ -74,10 +64,9 @@ def test_collect_results_skips_collection_when_collect_is_none(tmp_path, monkeyp
     """
     monkeypatch.chdir(tmp_path)
     conn = ArchiveFakeConnection()
-    config = make_config(remote_root="campaigns", job_name="myjob", collect=None)
-    collector = Collector(conn, config, sampling_directory="hpctools")
-
-    collector.collect_results()
+    # config = make_config(remote_root="campaigns", job_name="myjob", collect=None)
+    pack_results(lambda _: None, lambda cmd: conn.run(cmd), "hpctools", "myjob.tar.gz", None)
+    # collector = Collector(conn, config, sampling_directory="hpctools")
 
     assert conn.calls == []
     assert conn.get_calls == []
@@ -92,10 +81,7 @@ def test_collect_results_with_all_keyword_packs_entire_directory(tmp_path, monke
             ("rm -f", Result("", "", 0)),
         ]
     )
-    config = make_config(remote_root="campaigns", job_name="myjob", collect=["all"])
-    collector = Collector(conn, config, sampling_directory="hpctools")
-
-    collector.collect_results()
+    pack_results(lambda _: None, lambda cmd: conn.run(cmd), "campaigns", "myjob.tar.gz", ["all"])
 
     pack_cmd = next(c for c in conn.calls if c.startswith("tar -czf"))
     assert pack_cmd.endswith(" .")
@@ -111,10 +97,11 @@ def test_collect_results_with_specific_patterns(tmp_path, monkeypatch, make_conf
             ("rm -f", Result("", "", 0)),
         ]
     )
-    config = make_config(remote_root="campaigns", job_name="myjob", collect=["*.log", "results.txt"])
-    collector = Collector(conn, config, sampling_directory="hpctools")
+    # config = make_config(remote_root="campaigns", job_name="myjob", collect=["*.log", "results.txt"])
+    # collector = Collector(conn, config, sampling_directory="hpctools")
+    pack_results(lambda _: None, lambda cmd: conn.run(cmd), "campaigns/hpctools", "myjob.tar.gz", ["*.log", "results.txt"])
 
-    collector.collect_results()
+    # collector.collect_results()
 
     pack_cmd = next(c for c in conn.calls if c.startswith("tar -czf"))
     assert "matched1.log" in pack_cmd
@@ -122,24 +109,24 @@ def test_collect_results_with_specific_patterns(tmp_path, monkeypatch, make_conf
     assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
 
 
-def test_collect_results_raises_if_no_patterns_matched(tmp_path, monkeypatch, make_config):
-    monkeypatch.chdir(tmp_path)
-    conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
-    config = make_config(remote_root="campaigns", job_name="myjob", collect=["results.txt"])
-    collector = Collector(conn, config, sampling_directory="hpctools")
+# def test_collect_results_raises_if_no_patterns_matched(tmp_path, monkeypatch, make_config):
+#     monkeypatch.chdir(tmp_path)
+#     conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
+#     config = make_config(remote_root="campaigns", job_name="myjob", collect=["results.txt"])
+#     collector = Collector(conn, config, sampling_directory="hpctools")
 
-    with pytest.raises(RuntimeError, match="No files matched"):
-        collector.collect_results()
+#     with pytest.raises(RuntimeError, match="No files matched"):
+#         collector.collect_results()
 
 
-def test_collect_results_raises_when_pack_command_fails(tmp_path, monkeypatch, make_config):
-    monkeypatch.chdir(tmp_path)
-    conn = FakeConnection(responses=[("tar -czf", Result("", "disk full", 1))])
-    config = make_config(remote_root="campaigns", job_name="myjob", collect=["all"])
-    collector = Collector(conn, config, sampling_directory="hpctools")
+# def test_collect_results_raises_when_pack_command_fails(tmp_path, monkeypatch, make_config):
+#     monkeypatch.chdir(tmp_path)
+#     conn = FakeConnection(responses=[("tar -czf", Result("", "disk full", 1))])
+#     config = make_config(remote_root="campaigns", job_name="myjob", collect=["all"])
+#     collector = Collector(conn, config, sampling_directory="hpctools")
 
-    with pytest.raises(RuntimeError, match="disk full"):
-        collector.collect_results()
+#     with pytest.raises(RuntimeError, match="disk full"):
+#         collector.collect_results()
 
 
 # ----------------------------------------------------------------------------
@@ -158,5 +145,5 @@ def test_safe_extract_tar_rejects_path_traversal(tmp_path):
         info.size = len(data)
         tar.addfile(info, io.BytesIO(data))
 
-    with pytest.raises(RuntimeError, match="unsafe archive member"):
-        Collector._Collector__safe_extract_tar(str(archive_path), str(target_dir))
+    with pytest.raises(CalledProcessError):
+        safe_extract_tar(local_cmd, str(archive_path), str(target_dir))

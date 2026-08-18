@@ -7,7 +7,6 @@ from typing import Optional, List
 from collections.abc import Callable
 
 from ..connection import Result
-from .logger import Logger as DispatcherLogger
 
 # Helper local cmd function to be passed into the ones below
 def local_cmd(cmd: str):
@@ -66,7 +65,7 @@ def validate(collect_patterns: List[str]) -> Optional[List[str]]:
 
     return cleaned_patterns
 
-def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> bool:
+def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> bool:
     """
     Create a tar.gz archive of results. Intended to work on either
     remote or local machine, depending on run_cmd.
@@ -81,7 +80,7 @@ def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], wor
     """
     # Collect nothing
     if patterns is None or len(patterns) == 0:
-        logger.log(
+        log(
             "SKIPPING TARRING: "
             "No files, directories, or glob patterns to bundle have been specified.")
         return False
@@ -97,7 +96,7 @@ def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], wor
         if not pack_result.ok:
             raise RuntimeError(f"Archive failed: {pack_result.stderr}")
 
-        logger.log(f"Packed results into archive: {archive_path}")
+        log(f"Packed results into archive: {archive_path}")
         return True
 
     # Collect the specified files/directories/patterns
@@ -143,7 +142,7 @@ def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], wor
                 warnings.append(f"Requested collect path {pattern!r} does not exist")
 
     for warning in warnings:
-        logger.log(f"Warning while packing selected results: {warning}", local=True)
+        log(f"Warning while packing selected results: {warning}", local=True)
 
     if not resolved_paths:
         raise RuntimeError("No files matched the requested collect patterns.")
@@ -158,7 +157,7 @@ def pack_results(logger: DispatcherLogger, run_cmd: Callable[[str], Result], wor
     if not pack_result.ok:
         raise RuntimeError(f"Archive failed: {pack_result.stderr}")
 
-    logger.log(f"Packed results into archive: {archive_path}")
+    log(f"Packed results into archive: {archive_path}")
 
     return True
 
