@@ -7,12 +7,12 @@ import shutil
 import numpy as np
 
 from romtools.hpc.util.logger import Logger
-from romtools.hpc.dispatcher_base import DispatcherBase
+from romtools.hpc.dispatchers import BaseDispatcher
 from romtools.hpc.connection import Result
 
-class LocalDispatcher(DispatcherBase):
+class LocalDispatcher(BaseDispatcher):
     """
-    LocalDispatcher is a subclass of DispatcherBase that implements the core functionality
+    LocalDispatcher is a subclass of BaseDispatcher that implements the core functionality
     for dispatching ROM workflows on the local machine. It overrides methods to set up
     directories and execute commands without SSH, making it suitable for local execution.
     """

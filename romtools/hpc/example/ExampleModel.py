@@ -1,11 +1,13 @@
 import textwrap
+from typing import Optional
 
-from romtools.hpc.dispatcher_base import DispatcherBase
-from romtools.hpc.local_dispatcher import LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
 
 class ExampleModel:
 
-    def __init__(self, dispatcher: DispatcherBase = LocalDispatcher()):
+    def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
+        if dispatcher is None:
+            dispatcher = LocalDispatcher()
         self.dispatcher = dispatcher
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:

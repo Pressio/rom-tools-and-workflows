@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pytest
 
-from romtools.hpc.local_dispatcher import LocalDispatcher
+from romtools.hpc.dispatchers import LocalDispatcher
 
 
 @pytest.fixture

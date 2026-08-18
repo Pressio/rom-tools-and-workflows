@@ -3,9 +3,9 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-import romtools.hpc.dispatcher_base as dispatcher_base_module
+import romtools.hpc.dispatchers.base_dispatcher as base_dispatcher_module
 from romtools.hpc.connection import Result
-from romtools.hpc.remote_dispatcher import RemoteDispatcher
+from romtools.hpc.dispatchers import RemoteDispatcher
 
 from conftest import ArchiveFakeConnection, FakeConnection
 
@@ -17,7 +17,7 @@ def _make_dispatcher(monkeypatch, config, connection, sampling_directory="hpctoo
     """
     stub_config = MagicMock()
     stub_config.to_dict.return_value = dict(config)
-    monkeypatch.setattr(dispatcher_base_module, "Configuration", MagicMock(return_value=stub_config))
+    monkeypatch.setattr(base_dispatcher_module, "Configuration", MagicMock(return_value=stub_config))
     return RemoteDispatcher(sampling_directory=sampling_directory, connection=connection)
 
 
@@ -175,7 +175,7 @@ def test_keyboard_interrupt_during_poll_cancels_job(monkeypatch, make_config):
     config = make_config(remote_root="campaigns", poll_interval=1)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
     monkeypatch.setattr(
-        "romtools.hpc.remote_dispatcher.time.sleep",
+        "romtools.hpc.dispatchers.remote_dispatcher.time.sleep",
         MagicMock(side_effect=KeyboardInterrupt),
     )
 

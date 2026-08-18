@@ -28,14 +28,19 @@ You'll need to construct your model with the dispatcher as a member variable.
 Add a basic `__init__` method that takes the dispatcher as input:
 
 ```py
+from typing import Optional
+from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+
 class MyModel:
 
-    def __init__(self, dispatcher: DispatcherBase = LocalDispatcher()):
+    def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
+        if dispatcher is None:
+            dispatcher = LocalDispatcher()
         self.dispatcher = dispatcher
 ```
 
 > [!TIP]
-> We default here to the `LocalDispatcher()` so that the workflow can
+> We default here to the `LocalDispatcher` so that the workflow can
 > function with no remote capability if needed. `LocalDispatcher` overloads
 > all public methods of the `Dispatcher` without actually sending any
 > work to a remote host. For example, both `put()` and `get()` become a local `cp`.

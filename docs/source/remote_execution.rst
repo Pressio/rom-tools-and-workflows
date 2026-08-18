@@ -43,13 +43,18 @@ Construct your model with the dispatcher as a member variable:
 
 .. code-block:: python
 
+   from typing import Optional
+   from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+
    class MyModel:
 
-       def __init__(self, dispatcher: DispatcherBase = LocalDispatcher()):
-           self.dispatcher = dispatcher
+      def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
+         if dispatcher is None:
+            dispatcher = LocalDispatcher()
+         self.dispatcher = dispatcher
 
 .. tip::
-   Defaulting to ``LocalDispatcher()`` lets the workflow function with no
+   Defaulting to ``LocalDispatcher`` lets the workflow function with no
    remote capability if needed.
 
 Step 2: Set up the run directory
