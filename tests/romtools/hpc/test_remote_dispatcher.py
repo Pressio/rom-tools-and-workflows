@@ -112,8 +112,8 @@ def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_pa
     dispatcher.dispatch("./my_app", run_directory="run_00")
 
     assert (
-        "cd hpctools_campaigns/run_00 && sbatch --output=slurm-%j.out "
-        "--error=slurm-%j.err hpctools_job_slurm.sh"
+        "cd hpctools_campaigns/run_00 && sbatch --output=slurm.out "
+        "--error=slurm.err hpctools_job_slurm.sh"
     ) in conn.calls
 
 
@@ -142,8 +142,8 @@ def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_
 
     assert conn.put_calls == [(str(local_script), "hpctools_campaigns/run_00/custom_job.sh")]
     assert (
-        "cd hpctools_campaigns/run_00 && sbatch --output=slurm-%j.out "
-        "--error=slurm-%j.err custom_job.sh"
+        "cd hpctools_campaigns/run_00 && sbatch --output=slurm.out "
+        "--error=slurm.err custom_job.sh"
     ) in conn.calls
 
 
