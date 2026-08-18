@@ -40,9 +40,9 @@ class RemoteDispatcher(DispatcherBase):
         self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
 
-        # If script specifies out and/or error file, use those instead of the default
-        self.script_specified_out = None
-        self.script_specified_err = None
+        # If slurm script specifies out and/or error file, use those instead of our default
+        self.slurm_specified_out = None
+        self.slurm_specified_err = None
 
         if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
@@ -126,7 +126,7 @@ class RemoteDispatcher(DispatcherBase):
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
         if script:
-            self.script_specified_out, self.script_specified_err = parse_sbatch_out_args(script)
+            self.slurm_specified_out, self.slurm_specified_err = parse_sbatch_out_args(script)
 
             script_name = os.path.basename(script)
             script_base = (
@@ -184,13 +184,13 @@ class RemoteDispatcher(DispatcherBase):
         remote_script_path = self.__generate_slurm_script(cmd, run_directory=run_directory)
 
         output_args = []
-        if self.script_specified_out is None:
-            self.script_specified_out = DEFAULT_SLURM_OUTFILE
-            output_args.append(f"--output={self.script_specified_out}")
+        if self.slurm_specified_out is None:
+            self.slurm_specified_out = DEFAULT_SLURM_OUTFILE
+            output_args.append(f"--output={self.slurm_specified_out}")
             # If user only specified out file, they probably expect stderr to go there
-            if self.script_specified_err is None:
-                self.script_specified_err = DEFAULT_SLURM_ERRFILE
-                output_args.append(f"--error={self.script_specified_err}")
+            if self.slurm_specified_err is None:
+                self.slurm_specified_err = DEFAULT_SLURM_ERRFILE
+                output_args.append(f"--error={self.slurm_specified_err}")
 
         output_cmd = " ".join(output_args)
         if output_cmd:
@@ -366,8 +366,8 @@ class RemoteDispatcher(DispatcherBase):
 
         out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
 
-        stdout_filepath = os.path.join(out_dir, self.script_specified_out.replace("%j", jid))
-        stderr_filepath = os.path.join(out_dir, self.script_specified_err.replace("%j", jid))
+        stdout_filepath = os.path.join(out_dir, self.slurm_specified_out.replace("%j", jid))
+        stderr_filepath = os.path.join(out_dir, self.slurm_specified_err.replace("%j", jid))
 
         return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
 
