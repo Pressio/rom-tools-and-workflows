@@ -89,7 +89,8 @@ class RemoteDispatcher(BaseDispatcher):
         if not files_packed:
             return
         tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
-        self.put(tar_name, tar_path)
+        self.conn.put(tar_name, tar_path)
+        self.logger.log(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
         os.remove(tar_name)
         safe_extract_tar(lambda cmd: self.conn.run(cmd), tar_path, f"{ppath.join(remote_root, run_directory)}")
 

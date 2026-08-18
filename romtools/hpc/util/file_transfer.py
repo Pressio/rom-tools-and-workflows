@@ -142,7 +142,7 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
                 warnings.append(f"Requested collect path {pattern!r} does not exist")
 
     for warning in warnings:
-        log(f"Warning while packing selected results: {warning}", local=True)
+        log(f"Warning while packing selected results: {warning}")
 
     if not resolved_paths:
         raise RuntimeError("No files matched the requested collect patterns.")
