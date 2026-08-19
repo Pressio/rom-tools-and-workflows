@@ -13,11 +13,10 @@ def local_cmd(cmd: str):
     res = subprocess.run(
         ["bash", "-c", cmd],
         cwd=".",
-        check=True,
         capture_output=True,
         text=True
     )
-    return Result(res.stdout, res.stderr, 0)
+    return Result(res.stdout, res.stderr, res.returncode)
 
 def validate(collect_patterns: List[str]) -> Optional[List[str]]:
     """
@@ -164,31 +163,59 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
 
 def safe_extract_tar(run_cmd: Callable[[str], Result], archive_path: str, target_dir: str) -> Result:
     """
-    Safely extract a tarball on local or remote machine.
-    Sends the proper bash command into given run_cmd.
+    Safely extract a tarball on local or remote machine using POSIX sh.
 
     Deletes the archive after successful extraction.
     """
 
-    cmd = f'''
-set -euo pipefail
+    script = r'''
+set -eu
 
-archive_path="{archive_path}"
-target_dir="{target_dir}"
+archive_path=$1
+target_dir=$2
+
+tmpdir=${TMPDIR:-/tmp}/safe_extract_tar.$$
+i=0
+
+while ! (umask 077 && mkdir "$tmpdir") 2>/dev/null; do
+    i=$((i + 1))
+    if [ "$i" -ge 10 ]; then
+        printf '%s\n' "Failed to create temporary directory" >&2
+        exit 1
+    fi
+    tmpdir=${TMPDIR:-/tmp}/safe_extract_tar.$$.$i
+done
+
+trap 'rm -rf "$tmpdir"' 0
+trap 'rm -rf "$tmpdir"; exit 1' 1 2 3 15
+
+members_file=$tmpdir/members
 
 mkdir -p "$target_dir"
 
-while IFS= read -r member; do
+tar -tzf "$archive_path" > "$members_file"
+
+while IFS= read -r member || [ -n "$member" ]; do
     case "$member" in
         /*|..|../*|*/..|*/../*)
-            echo "Refusing to extract unsafe archive member: '$member'" >&2
+            printf "Refusing to extract unsafe archive member: '%s'\n" "$member" >&2
             exit 1
             ;;
     esac
-done < <(tar -tzf "$archive_path")
+done < "$members_file"
 
 tar -xzf "$archive_path" -C "$target_dir"
 
-rm -f -- "$archive_path"
+rm -f "$archive_path"
 '''
+
+    cmd = (
+        "sh -c "
+        + shlex.quote(script)
+        + " safe_extract_tar "
+        + shlex.quote(archive_path)
+        + " "
+        + shlex.quote(target_dir)
+    )
+
     return run_cmd(cmd)

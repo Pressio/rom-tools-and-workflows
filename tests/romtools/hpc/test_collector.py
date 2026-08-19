@@ -133,5 +133,5 @@ def test_safe_extract_tar_rejects_path_traversal(tmp_path):
         info.size = len(data)
         tar.addfile(info, io.BytesIO(data))
 
-    with pytest.raises(CalledProcessError):
-        safe_extract_tar(local_cmd, str(archive_path), str(target_dir))
+    res = safe_extract_tar(local_cmd, str(archive_path), str(target_dir))
+    assert not res.ok

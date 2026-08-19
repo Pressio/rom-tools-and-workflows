@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import numpy as np
+import shlex
 import pytest
 
 import romtools.hpc.dispatchers.base_dispatcher as base_dispatcher_module
@@ -298,7 +299,10 @@ def test_upload_extracts_the_same_archive_it_uploaded(monkeypatch, make_config, 
 
     _, uploaded_path = conn.put_calls[0]
     extract_cmd = conn.calls[-1]
-    assert f'archive_path="{uploaded_path}"' in extract_cmd
+
+    parts = shlex.split(extract_cmd)
+
+    assert uploaded_path in parts
 
 
 def test_path_exists_true_and_false(monkeypatch, make_config):
