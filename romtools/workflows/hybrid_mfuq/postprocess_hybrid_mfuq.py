@@ -22,6 +22,7 @@ import argparse
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -103,6 +104,22 @@ def _rom_color(rom_index: int, n_active: int, n_aux: int) -> object:
     return _palette(n_aux + n_active)[n_aux + rom_index]
 
 
+def _rom_training_color(rom_index: int, n_active: int, n_aux: int) -> object:
+    """One color per trainable ROM's training cost, derived from that
+    ROM's own sampling color (see _rom_color) by muting it toward gray.
+    Training and sampling bars for the same ROM therefore share a hue and
+    read as a pair, while different ROMs' training bars stay distinct --
+    previously every ROM's training cost was drawn in the same flat gray,
+    which made the training bars indistinguishable once n_active > 1. The
+    single-ROM case keeps the original gray so those figures are
+    unchanged."""
+    if n_active == 1:
+        return "#999999"
+    base = np.asarray(mcolors.to_rgb(_rom_color(rom_index, n_active, n_aux)))
+    gray = np.asarray(mcolors.to_rgb("#BFBFBF"))
+    return tuple(0.42 * base + 0.58 * gray)
+
+
 def _rom_marker(rom_index: int) -> str:
     """Distinct marker shape per trainable ROM, layered on top of its
     color so a ROM's 'trained' points stay identifiable by shape alone --
@@ -175,7 +192,7 @@ def _direct_curve_labels(
 
 
 def _plot_fidelity_and_cost(
-    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path, n_active: int = 1,
+    data: Mapping[str, np.ndarray], n_aux: int, trained: TrainedRomRecord, n_active: int = 1,
 ) -> plt.Figure:
     """Plot fitted agreement and normalized cost against ROM basis size.
 
@@ -208,7 +225,6 @@ def _plot_fidelity_and_cost(
     marker shape -- not color -- is what ties a point back to its ROM,
     consistent with the legend.
     """
-    s_star = _as_1d(data, "s_star")
     all_pilot_basis = np.unique(np.concatenate(
         [_grid(data, _rom_key(data, "pp", t)) for t in range(n_active)]
     ))
@@ -276,7 +292,9 @@ def _plot_fidelity_and_cost(
     for t in range(n_active):
         basis = _grid(data, _rom_key(data, "ss", t))
         pilot_basis = _grid(data, _rom_key(data, "pp", t))
-        selected_basis = int(round(float(s_star[-(n_active - t)])))
+        # The index comes from the record, which resolved it once and checked
+        # it against what the workflow declared -- never re-derived here.
+        selected_basis = trained.basis_size(t)
         label = _rom_label(t, n_active)
         color = _rom_color(t, n_active, n_aux)
         marker = _rom_marker(t)
@@ -285,12 +303,13 @@ def _plot_fidelity_and_cost(
         cost_rom = _as_1d(data, _rom_key(data, "cost_rom", t, "_vals"))
         surrogate_corr = float(np.interp(selected_basis, basis, rho_fom_rom))
         surrogate_cost = float(np.interp(selected_basis, basis, cost_rom))
-        trained_corr, trained_cost = _trained_rom_statistics(work_directory, t, surrogate_corr, surrogate_cost)
+        trained_corr = trained.fom_correlation(t, surrogate_corr)
+        trained_cost = trained.normalized_cost(t, surrogate_cost)
         surrogate_aux_corrs = [
             float(np.interp(selected_basis, basis, _as_1d(data, _rom_key(data, f"rho_aux{i}_rom", t, "_vals"))))
             for i in range(n_aux)
         ]
-        trained_aux_corrs = _trained_rom_aux_correlations(work_directory, t, n_aux, surrogate_aux_corrs)
+        trained_aux_corrs = trained.aux_correlations(t, surrogate_aux_corrs)
 
         # FOM-ROM_t (top axes).
         ax_corr_top.plot(basis, rho_fom_rom, color=color, linewidth=2.3, zorder=4)
@@ -344,7 +363,7 @@ def _plot_fidelity_and_cost(
             plt.Line2D([0], [0], color=color, marker=marker, markersize=9,
                        markeredgecolor="white", linewidth=2.2)
         )
-        marker_labels.append(f"{label} trained, $s={selected_basis:d}$")
+        marker_labels.append(f"{label} trained, $s={selected_basis:d}${trained.label_suffix(t)}")
 
     fig.legend(
         marker_handles, marker_labels, loc="upper center", bbox_to_anchor=(0.5, 0.985),
@@ -418,64 +437,401 @@ def _allocation_array(data: Mapping[str, np.ndarray], key: str, n_budgets: int) 
     return values
 
 
-def _rom_validation_cost(work_directory: Path, rom_index: int, fallback: float) -> float:
-    """Read the measured ROM_t cost saved after training, if it is available."""
-    trained_results = sorted(work_directory.glob("trained_*_sample_rom_results.npz"))
-    if not trained_results:
-        return fallback
-    with np.load(trained_results[-1], allow_pickle=False) as trained_data:
-        key = f"rom{rom_index}_normalized_time"
-        if key not in trained_data and rom_index == 0:
-            key = "normalized_rom_time"
-        return float(np.asarray(trained_data[key]).item())
+def _trained_results_filename(selected_bases: Sequence[int]) -> str:
+    """Reproduce the trained-results filename that run_hybrid_mfuq writes.
+
+    Step 3 of run_hybrid_mfuq saves to
+    ``trained_{basis_tag}_sample_rom_results.npz``, with
+    ``basis_tag = "-".join(str(b) for b in rom_basis_nums)``.  The tag is the
+    only thing distinguishing one trained-ROM result from another, so it has
+    to be reconstructed exactly.  Earlier revisions took
+    ``sorted(glob("trained_*_sample_rom_results.npz"))[-1]`` instead, which
+    picks the lexicographically last basis tag present in the directory --
+    not the tag belonging to the basis size the figure is labeling.  A work
+    directory accumulates one such file per basis size it has ever been run
+    at (Step 3 reuses a cached file whenever its tag already exists), so that
+    glob quietly reported another ROM's statistics.  Single-vector ROMs were
+    hit hardest: ``trained_1_...`` loses the sort to every tag whose first
+    digit is 2-9, so an s=1 point was almost never its own.
+    """
+    tag = "-".join(str(int(basis)) for basis in selected_bases)
+    return f"trained_{tag}_sample_rom_results.npz"
 
 
-def _trained_rom_statistics(
-    work_directory: Path, rom_index: int, fallback_corr: float, fallback_cost: float,
-) -> tuple[float, float]:
-    """Read the measured trained-ROM_t correlation and cost, with safe surrogate fallbacks."""
-    trained_results = sorted(work_directory.glob("trained_*_sample_rom_results.npz"))
-    if not trained_results:
-        return fallback_corr, fallback_cost
-    with np.load(trained_results[-1], allow_pickle=False) as trained_data:
-        corr_key = f"rom{rom_index}_fom_corr"
-        time_key = f"rom{rom_index}_normalized_time"
-        if rom_index == 0:
-            corr_key = corr_key if corr_key in trained_data else "fom_rom_corr"
-            time_key = time_key if time_key in trained_data else "normalized_rom_time"
-        return (
-            float(np.asarray(trained_data[corr_key]).item()),
-            float(np.asarray(trained_data[time_key]).item()),
-        )
+def _pearson(x: np.ndarray, y: np.ndarray) -> float:
+    """Pearson correlation over jointly finite entries; NaN when undefined.
+
+    This reproduces what the workflow itself computes at validation time:
+    Pilot.estimate_pairwise_correlations reduces, for the single replicate
+    used there, to a plain Pearson coefficient over all pilot samples.  It is
+    also exactly what the QoI-agreement scatter reports, so both figures are
+    guaranteed to agree by construction rather than by convention.
+
+    Returns NaN rather than raising when a series is constant, which is a
+    real possibility for a ROM built from a single basis vector.
+    """
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    if x.size != y.size:
+        return float("nan")
+    finite = np.isfinite(x) & np.isfinite(y)
+    if int(finite.sum()) < 2:
+        return float("nan")
+    x, y = x[finite], y[finite]
+    if np.ptp(x) == 0.0 or np.ptp(y) == 0.0:
+        return float("nan")
+    return float(np.corrcoef(x, y)[0, 1])
 
 
-def _trained_rom_aux_correlations(
-    work_directory: Path, rom_index: int, n_aux: int, fallback_aux_corrs: Sequence[float],
-) -> list[float]:
-    """Read the measured trained-ROM_t/auxiliary-model correlations, with safe surrogate fallbacks."""
-    trained_results = sorted(work_directory.glob("trained_*_sample_rom_results.npz"))
-    if not trained_results:
-        return list(fallback_aux_corrs)
-    with np.load(trained_results[-1], allow_pickle=False) as trained_data:
-        out = []
-        for i in range(n_aux):
-            key = f"aux{i}_rom{rom_index}_corr"
-            if key not in trained_data and rom_index == 0:
-                key = f"aux{i}_rom_corr"
-            out.append(float(np.asarray(trained_data[key]).item()) if key in trained_data else fallback_aux_corrs[i])
-        return out
+def _legacy_rom_qoi_subdir(rom_index: int, basis_size: int) -> str:
+    """The pilot/rom_optimized subdirectory convention of run_hybrid_mfuq.
+
+    Only used for runs whose trained record predates `rom{t}_qoi_subdir`;
+    newer runs declare the directory they wrote, so this convention does not
+    have to be kept in sync across the two scripts.
+    """
+    return f"basis_size_{basis_size}" if rom_index == 0 else f"rom{rom_index}_basis_size_{basis_size}"
 
 
 def _load_trained_rom_qois(
-    work_directory: Path, rom_index: int, basis_size: int, n_samples: int,
+    work_directory: Path, subdir: str, n_samples: int,
 ) -> np.ndarray | None:
-    """Recover cached trained-ROM_t QoIs, preserving their pilot-sample ordering."""
-    subdir = f"basis_size_{basis_size}" if rom_index == 0 else f"rom{rom_index}_basis_size_{basis_size}"
+    """Recover cached trained-ROM QoIs, preserving their pilot-sample ordering."""
     rom_dir = work_directory / "pilot" / "rom_optimized" / subdir
     qoi_paths = [rom_dir / f"run_{sample_index}" / "qoi.txt" for sample_index in range(n_samples)]
     if not all(path.is_file() for path in qoi_paths):
         return None
     return np.asarray([np.loadtxt(path, dtype=float) for path in qoi_paths], dtype=float).reshape(n_samples)
+
+
+class TrainedRomInconsistencyError(RuntimeError):
+    """Raised when sources disagree about which ROM the trained record describes."""
+
+
+class TrainedRomRecord:
+    """The trained ROMs' identity and measured statistics, resolved once.
+
+    Why this exists
+    ---------------
+    A trained-ROM result is meaningless without its index: which trainable
+    ROM, at which basis size, over which pilot set. Older runs carried that
+    index only in a filename (`trained_{tag}_sample_rom_results.npz`) and left
+    each consumer to reconstruct it, so the basis size was re-derived from
+    `s_star` independently in run_hybrid_mfuq Step 3, in the fidelity figure,
+    in the tradeoff figure, and in the QoI scatter's directory lookup. Four
+    derivations of one index, none of them checked against the others; a file
+    picked by glob order could then supply a different ROM's numbers to one
+    figure while another figure read the QoIs of the right one.
+
+    What this class does instead
+    ----------------------------
+    The index is resolved *once*, preferring the value the producer declared,
+    and every figure asks this object for both the basis size it labels and
+    the statistics it draws. Nothing downstream re-derives either.
+
+    Statistics resolution, in order:
+
+    1. `visualization_data.npz`, which newer runs write with the validated
+       trained-ROM statistics alongside the surrogate curves those statistics
+       are plotted against. These are the correlations Step 4 actually fed
+       into the validation optimization, so the trained markers are consistent
+       with the validated variance curves in the estimator-performance figure.
+    2. `trained_{tag}_sample_rom_results.npz` for the exact basis tag, for
+       runs that predate (1). If that file declares its own `rom_basis_nums`,
+       the declaration is verified rather than trusted to the filename.
+    3. The surrogate value at the selected basis size, supplied by the caller
+       and labeled as such in the figure.
+
+    Independently of which source supplied them, the correlations are audited
+    against the cached per-sample QoIs -- the same arrays the QoI-agreement
+    scatter plots. Agreement is then a checked property of the output, not a
+    convention. Disagreement means the record and the cached QoIs describe
+    different ROMs, which raises by default (`on_inconsistency='raise'`).
+    """
+
+    CORRELATION_TOLERANCE = 5e-3
+
+    def __init__(
+        self,
+        data: Mapping[str, np.ndarray],
+        work_directory: Path,
+        n_aux: int,
+        n_active: int,
+        on_inconsistency: str = "raise",
+    ) -> None:
+        self.work_directory = Path(work_directory)
+        self.n_aux = int(n_aux)
+        self.n_active = int(n_active)
+        self.on_inconsistency = on_inconsistency
+
+        self.basis_sizes = self._resolve_basis_sizes(data)
+        self.results_path = self.work_directory / _trained_results_filename(self.basis_sizes)
+
+        self._subdirs = self._resolve_qoi_subdirs(data)
+        self._stored = self._read_stats(data)
+        self._fom_qois, self._aux_qois = self._read_pilot_qois()
+
+        self.qois: dict[int, np.ndarray] = {}
+        self._fom_corr: dict[int, float] = {}
+        self._aux_corr: dict[int, list[float | None]] = {}
+        self._cost: dict[int, float] = {}
+        self._sources: dict[int, dict[str, str]] = {}
+
+        for rom_index in range(self.n_active):
+            self._resolve_rom(rom_index)
+
+    # -- identity ----------------------------------------------------------
+
+    def _fail(self, message: str) -> None:
+        """Raise or warn, depending on `on_inconsistency`."""
+        if self.on_inconsistency == "raise":
+            raise TrainedRomInconsistencyError(message)
+        print(f"Warning: {message}")
+
+    def _resolve_basis_sizes(self, data: Mapping[str, np.ndarray]) -> list[int]:
+        """The one derivation of the trained basis sizes used by every figure.
+
+        `trained_rom_basis_sizes` is what Step 3 actually built, recorded by
+        the producer. Rounding `s_star` reproduces Step 3's own arithmetic and
+        is the only option for older files, but it is a *re-derivation*: it
+        agrees only as long as both scripts round identically. When both are
+        available they are cross-checked, which is what turns the rounding
+        convention from an unstated assumption into a verified one.
+        """
+        derived = [
+            int(round(float(_as_1d(data, "s_star")[-(self.n_active - t)])))
+            for t in range(self.n_active)
+        ]
+        if "trained_rom_basis_sizes" not in data:
+            return derived
+
+        declared = [int(round(v)) for v in np.asarray(data["trained_rom_basis_sizes"], dtype=float).ravel()]
+        if len(declared) != self.n_active:
+            self._fail(
+                f"visualization_data.npz records {len(declared)} trained basis size(s) "
+                f"but n_active={self.n_active}."
+            )
+            return derived
+        if declared != derived:
+            self._fail(
+                f"The trained ROM basis sizes recorded by the workflow ({declared}) disagree "
+                f"with the sizes implied by rounding s_star ({derived}). The figures would "
+                "otherwise label one ROM and plot another; rerun the workflow, or delete "
+                "visualization_data.npz and regenerate it."
+            )
+        return declared
+
+    def _resolve_qoi_subdirs(self, data: Mapping[str, np.ndarray]) -> list[str]:
+        """Per-ROM QoI directories, declared by the producer when available."""
+        if "trained_rom_qoi_subdirs" in data:
+            declared = [str(name) for name in np.asarray(data["trained_rom_qoi_subdirs"]).ravel()]
+            if len(declared) == self.n_active:
+                return declared
+        return [
+            _legacy_rom_qoi_subdir(t, self.basis_sizes[t]) for t in range(self.n_active)
+        ]
+
+    # -- statistics --------------------------------------------------------
+
+    def _read_stats(self, data: Mapping[str, np.ndarray]) -> dict[str, float] | None:
+        """Validated trained-ROM statistics from the best available source."""
+        if "trained_rom_fom_corrs" in data:
+            self.stats_source = "visualization_data.npz"
+            stored = {}
+            corrs = np.asarray(data["trained_rom_fom_corrs"], dtype=float).ravel()
+            times = np.asarray(data["trained_rom_normalized_times"], dtype=float).ravel()
+            for t in range(min(self.n_active, corrs.size)):
+                stored[f"rom{t}_fom_corr"] = float(corrs[t])
+                stored[f"rom{t}_normalized_time"] = float(times[t])
+            for i in range(self.n_aux):
+                key = f"trained_aux{i}_rom_corrs"
+                if key in data:
+                    aux = np.asarray(data[key], dtype=float).ravel()
+                    for t in range(min(self.n_active, aux.size)):
+                        stored[f"aux{i}_rom{t}_corr"] = float(aux[t])
+            return stored
+
+        self.stats_source = self.results_path.name
+        if not self.results_path.is_file():
+            others = sorted(
+                path.name for path in self.work_directory.glob("trained_*_sample_rom_results.npz")
+            )
+            print(f"Trained-ROM statistics: {self.results_path.name} was not found.")
+            if others:
+                print(
+                    f"  Ignoring trained results for other basis sizes ({', '.join(others)}); "
+                    "they describe different ROMs."
+                )
+            return None
+
+        with np.load(self.results_path, allow_pickle=False) as trained_data:
+            declared = (
+                [int(round(v)) for v in np.asarray(trained_data["rom_basis_nums"], dtype=float).ravel()]
+                if "rom_basis_nums" in trained_data
+                else None
+            )
+            stored = {}
+            for key in trained_data.files:
+                values = np.asarray(trained_data[key], dtype=float).reshape(-1) if trained_data[key].dtype.kind in "fiub" else np.empty(0)
+                if values.size == 1:
+                    stored[key] = float(values[0])
+
+        if declared is not None and declared != self.basis_sizes:
+            self._fail(
+                f"{self.results_path.name} records basis sizes {declared} but the figures are "
+                f"drawing {self.basis_sizes}. The filename tag and the file's contents disagree."
+            )
+            return None
+        return stored
+
+    def _read_pilot_qois(self) -> tuple[np.ndarray | None, list[np.ndarray]]:
+        """The master pilot QoIs the audit correlates against."""
+        pilot_path = self.work_directory / "pilot_results.npz"
+        if not pilot_path.is_file():
+            print(
+                f"Trained-ROM statistics: {pilot_path.name} was not found, so the recorded "
+                "correlations cannot be audited against the cached QoIs."
+            )
+            return None, []
+        with np.load(pilot_path, allow_pickle=False) as pilot_data:
+            fom_qois = np.asarray(pilot_data["fom_qois_master"], dtype=float).ravel()
+            aux_qois = [
+                np.asarray(pilot_data[f"aux{i}_qois_master"], dtype=float).ravel()
+                for i in range(self.n_aux)
+                if f"aux{i}_qois_master" in pilot_data
+            ]
+        return fom_qois, aux_qois
+
+    def _stored_scalar(self, *keys: str) -> float | None:
+        if self._stored is None:
+            return None
+        for key in keys:
+            if key in self._stored:
+                return self._stored[key]
+        return None
+
+    def _resolve_rom(self, rom_index: int) -> None:
+        label = _rom_label(rom_index, self.n_active)
+        basis = self.basis_sizes[rom_index]
+        legacy = rom_index == 0
+        sources: dict[str, str] = {}
+
+        qois = None
+        if self._fom_qois is not None:
+            qois = _load_trained_rom_qois(
+                self.work_directory, self._subdirs[rom_index], self._fom_qois.size
+            )
+            if qois is None:
+                print(
+                    f"Trained {label}: cached QoIs for s={basis} "
+                    f"({self._subdirs[rom_index]}) are missing or incomplete; the recorded "
+                    "statistics cannot be audited."
+                )
+        if qois is not None:
+            self.qois[rom_index] = qois
+
+        # FOM-ROM correlation: recorded value drawn, QoI value audits it.
+        recorded = self._stored_scalar(
+            f"rom{rom_index}_fom_corr", *(("fom_rom_corr",) if legacy else ())
+        )
+        audited = _pearson(self._fom_qois, qois) if qois is not None else float("nan")
+        value = self._reconcile(label, basis, "FOM-ROM correlation", recorded, audited)
+        if value is not None:
+            self._fom_corr[rom_index] = value
+            sources["fom_corr"] = "recorded" if recorded is not None else "qois"
+
+        # Auxiliary-ROM correlations.
+        aux_values: list[float | None] = []
+        for i in range(self.n_aux):
+            recorded_aux = self._stored_scalar(
+                f"aux{i}_rom{rom_index}_corr", *((f"aux{i}_rom_corr",) if legacy else ())
+            )
+            audited_aux = (
+                _pearson(self._aux_qois[i], qois)
+                if qois is not None and i < len(self._aux_qois)
+                else float("nan")
+            )
+            aux_values.append(
+                self._reconcile(
+                    label, basis, f"auxiliary {i + 1}-ROM correlation", recorded_aux, audited_aux
+                )
+            )
+        self._aux_corr[rom_index] = aux_values
+        if self.n_aux:
+            sources["aux_corr"] = "surrogate" if any(v is None for v in aux_values) else "recorded"
+
+        # Normalized cost: a timing measurement, not recoverable from QoIs.
+        cost = self._stored_scalar(
+            f"rom{rom_index}_normalized_time", *(("normalized_rom_time",) if legacy else ())
+        )
+        if cost is not None:
+            self._cost[rom_index] = cost
+            sources["cost"] = "recorded"
+
+        for kind, description in (("fom_corr", "FOM-ROM correlation"), ("cost", "normalized cost")):
+            if kind not in sources:
+                sources[kind] = "surrogate"
+                print(
+                    f"Trained {label}: no measured {description} for s={basis}; the figure "
+                    "shows the surrogate value, marked as such."
+                )
+
+        self._sources[rom_index] = sources
+
+    def _reconcile(
+        self, label: str, basis: int, description: str,
+        recorded: float | None, audited: float,
+    ) -> float | None:
+        """Return the value to draw, after checking the two sources agree.
+
+        The recorded value is drawn when present: it is what the validation
+        optimization consumed, so drawing it keeps the trained markers
+        consistent with the validated variance curves. The QoI-derived value
+        is the audit -- in a coherent run the two are the same number computed
+        twice, so any gap is a provenance failure, not a modeling choice.
+        """
+        if not np.isfinite(audited):
+            return recorded
+        if recorded is None:
+            return audited
+        if abs(recorded - audited) > self.CORRELATION_TOLERANCE:
+            self._fail(
+                f"Trained {label} {description} at s={basis} is {audited:.4f} recomputed from "
+                f"the cached QoIs but {recorded:.4f} in {self.stats_source}. The two describe "
+                "different ROMs; retrain at this basis size, or delete the stale artifact."
+            )
+            return audited
+        return recorded
+
+    # -- accessors ---------------------------------------------------------
+
+    def basis_size(self, rom_index: int) -> int:
+        """The basis size every figure labels for ROM `rom_index`."""
+        return self.basis_sizes[rom_index]
+
+    def fom_correlation(self, rom_index: int, surrogate_fallback: float) -> float:
+        return self._fom_corr.get(rom_index, surrogate_fallback)
+
+    def aux_correlations(
+        self, rom_index: int, surrogate_fallbacks: Sequence[float],
+    ) -> list[float]:
+        values = self._aux_corr.get(rom_index) or [None] * len(surrogate_fallbacks)
+        return [
+            fallback if value is None else value
+            for value, fallback in zip(values, surrogate_fallbacks)
+        ]
+
+    def normalized_cost(self, rom_index: int, surrogate_fallback: float) -> float:
+        return self._cost.get(rom_index, surrogate_fallback)
+
+    def label_suffix(self, rom_index: int) -> str:
+        """', surrogate' when a drawn value is not a measurement, else ''."""
+        sources = self._sources.get(rom_index, {})
+        return ", surrogate" if any(s == "surrogate" for s in sources.values()) else ""
+
+    def qoi_pairs(self) -> list[tuple[int, np.ndarray]]:
+        """(rom_index, qois) for every ROM whose cached QoIs were found."""
+        return [(rom_index, self.qois[rom_index]) for rom_index in sorted(self.qois)]
 
 
 def _allocation_cost_components(
@@ -513,7 +869,7 @@ def _allocation_cost_components(
     if training:
         components.extend(allocation[:, n_aux + n_active + 1 + t] for t in range(n_active))
         labels.extend(f"{_rom_label(t, n_active)} training" for t in range(n_active))
-        colors.extend("#999999" for _ in range(n_active))
+        colors.extend(_rom_training_color(t, n_active, n_aux) for t in range(n_active))
     return np.column_stack(components), labels, colors
 
 
@@ -522,6 +878,13 @@ def _stacked_cost_bars(
     title: str, highlight_index: int | None = None, highlight_label: str = "",
 ) -> list[object]:
     """Plot one interpretable cost-allocation bar per budget.
+
+    Bars sit on a categorical axis: the plotting area is divided into one
+    equally sized slot per budget, and bar width and spacing are fixed
+    fractions of a slot. Budget values therefore set only the tick
+    labels, not the geometry, so a widely spread sweep (a log-spaced one,
+    say) still gives every budget the same visual weight instead of
+    crowding the small budgets together at the left edge.
 
     highlight_index, if given, draws a translucent gray outline around
     that budget's stacked bar. Used on the surrogate-optimized panel to
@@ -534,12 +897,10 @@ def _stacked_cost_bars(
     """
     bottoms = np.zeros(len(budget))
     handles = []
-    diffs = np.diff(budget)
-    positive_diffs = diffs[diffs > 0]
-    min_spacing = positive_diffs.min() if positive_diffs.size else budget[0]
-    bar_width = 0.72 * min_spacing if len(budget) > 1 else 0.65 * budget[0]
+    positions = np.arange(len(budget), dtype=float)
+    bar_width = 0.72
     for values, label, color in zip(components.T, labels, colors):
-        bars = ax.bar(budget, values, width=bar_width, bottom=bottoms, color=color, edgecolor="white", linewidth=0.55)
+        bars = ax.bar(positions, values, width=bar_width, bottom=bottoms, color=color, edgecolor="white", linewidth=0.55)
         handles.append(bars[0])
         bottoms += values
 
@@ -547,51 +908,56 @@ def _stacked_cost_bars(
     if highlight_index is not None:
         top = bottoms[highlight_index]
         ax.add_patch(plt.Rectangle(
-            (budget[highlight_index] - bar_width * 0.56, 0), bar_width * 1.12, top,
+            (positions[highlight_index] - bar_width * 0.56, 0), bar_width * 1.12, top,
             fill=True, facecolor="0.5", alpha=0.16,
             edgecolor="0.35", linewidth=1.6, linestyle="--", zorder=0.5,
         ))
         ax.annotate(
             highlight_label or "trained here",
-            (budget[highlight_index], top), xytext=(0, 8), textcoords="offset points",
+            (positions[highlight_index], top), xytext=(0, 8), textcoords="offset points",
             ha="center", va="bottom", fontsize=8, color="0.3",
         )
         top_lim = max(top_lim, top * 1.22)
 
     ax.set_title(title, pad=9)
     ax.set(xlabel="Budget (FOM equivalents)", ylabel="Allocated cost (FOM equivalents)")
-    ax.set_xticks(budget)
+    ax.set_xticks(positions)
     ax.set_xticklabels([f"{value:g}" for value in budget])
+    ax.set_xlim(-0.5, len(budget) - 0.5)
     ax.set_ylim(0, top_lim)
     return handles
 
 
 def _validation_budget_index(
-    data: Mapping[str, np.ndarray], predicted: np.ndarray, n_aux: int, n_active: int,
+    data: Mapping[str, np.ndarray], predicted: np.ndarray, n_aux: int,
+    basis_sizes: Sequence[int],
 ) -> int:
     """Identify which budget's surrogate-optimized ROM basis size(s) were
     actually trained and carried into the validation panel (see
     run_hybrid_mfuq Step 3's validation_budget_idx).
 
     Prefers the explicit 'validation_budget_idx' field written by newer
-    runs; falls back to matching the recorded s_star against each
+    runs; falls back to matching the trained basis size(s) against each
     budget's surrogate-optimized basis size(s), for older
-    visualization_data.npz files that predate that field.
+    visualization_data.npz files that predate that field. `basis_sizes` is
+    the record's resolved index, so this fallback matches on the same
+    numbers every other figure draws.
     """
     if "validation_budget_idx" in data:
         return int(np.asarray(data["validation_budget_idx"]).item())
 
+    n_active = len(basis_sizes)
     if n_active == 0:
         return len(predicted) - 1
 
-    s_star_tail = np.round(_as_1d(data, "s_star")[-n_active:])
+    target = np.asarray(basis_sizes, dtype=float)
     basis_cols = predicted[:, n_aux + n_active + 1: n_aux + n_active + 1 + n_active]
-    matches = np.all(np.round(basis_cols) == s_star_tail[None, :], axis=1)
+    matches = np.all(np.round(basis_cols) == target[None, :], axis=1)
     return int(np.argmax(matches)) if matches.any() else len(predicted) - 1
 
 
 def _plot_allocation_figure(
-    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path,
+    data: Mapping[str, np.ndarray], n_aux: int, trained: TrainedRomRecord,
     alloc_key: str, alloc_key_ex: str, method_label: str, n_active: int = 1,
 ) -> plt.Figure:
     """Show one allocation type's sampling strategy as a cost-partition bar chart."""
@@ -604,11 +970,11 @@ def _plot_allocation_figure(
             f"Unexpected allocation length; expected N, one ratio per low-fidelity "
             f"model, and one basis size per trainable ROM ({expected_cols} columns)."
         )
-    validation_idx = _validation_budget_index(data, predicted, n_aux, n_active)
+    validation_idx = _validation_budget_index(data, predicted, n_aux, trained.basis_sizes)
 
     exact_costs = [
-        _rom_validation_cost(
-            work_directory, t,
+        trained.normalized_cost(
+            t,
             float(np.interp(
                 validated[0, n_aux + n_active + 1 + t],
                 _grid(data, _rom_key(data, "ss", t)),
@@ -641,25 +1007,29 @@ def _plot_allocation_figure(
 
 
 def _plot_is_allocations(
-    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path, n_active: int = 1,
+    data: Mapping[str, np.ndarray], n_aux: int, trained: TrainedRomRecord, n_active: int = 1,
 ) -> plt.Figure:
     """Show the ACV-IS sampling strategy as a cost-partition bar chart."""
-    return _plot_allocation_figure(data, n_aux, work_directory, "fISs_alloc", "fISs_alloc_ex", "ACV-IS", n_active)
+    return _plot_allocation_figure(data, n_aux, trained, "fISs_alloc", "fISs_alloc_ex", "ACV-IS", n_active)
 
 
 def _plot_mf_allocations(
-    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path, n_active: int = 1,
+    data: Mapping[str, np.ndarray], n_aux: int, trained: TrainedRomRecord, n_active: int = 1,
 ) -> plt.Figure:
     """Show the ACV-MF sampling strategy as a cost-partition bar chart."""
-    return _plot_allocation_figure(data, n_aux, work_directory, "fMFs_alloc", "fMFs_alloc_ex", "ACV-MF", n_active)
+    return _plot_allocation_figure(data, n_aux, trained, "fMFs_alloc", "fMFs_alloc_ex", "ACV-MF", n_active)
 
 
 def _plot_control_variate_tradeoff(
-    data: Mapping[str, np.ndarray], n_aux: int, work_directory: Path, n_active: int = 1,
+    data: Mapping[str, np.ndarray], n_aux: int, trained: TrainedRomRecord, n_active: int = 1,
 ) -> plt.Figure:
-    """Show the cost-agreement tradeoff that drives useful control variates."""
-    s_star = _as_1d(data, "s_star")
+    """Show the cost-agreement tradeoff that drives useful control variates.
 
+    Trained-ROM correlations come from `trained`, i.e. from the same cached
+    QoIs the agreement scatter plots, so the |rho| drawn here for a ROM is the
+    magnitude of the rho annotated on that ROM's scatter panel. Surrogate
+    fallbacks are labeled as such rather than presented as measurements.
+    """
     points: list[tuple[str, float, float, object, str]] = [("FOM", 1.0, 1.0, COLORS["fom"], "D")]
     for i, name in enumerate(_model_names(n_aux)):
         points.append((
@@ -670,14 +1040,16 @@ def _plot_control_variate_tradeoff(
             "o",
         ))
     for t in range(n_active):
-        selected_basis = int(round(float(s_star[-(n_active - t)])))
+        selected_basis = trained.basis_size(t)
         basis_grid = _grid(data, _rom_key(data, "ss", t))
         surrogate_corr = float(np.interp(selected_basis, basis_grid, _as_1d(data, _rom_key(data, "rho_fom_rom", t, "_vals"))))
         surrogate_cost = float(np.interp(selected_basis, basis_grid, _as_1d(data, _rom_key(data, "cost_rom", t, "_vals"))))
-        rom_corr, rom_cost = _trained_rom_statistics(work_directory, t, surrogate_corr, surrogate_cost)
+        rom_corr = trained.fom_correlation(t, surrogate_corr)
+        rom_cost = trained.normalized_cost(t, surrogate_cost)
         label = _rom_label(t, n_active)
         points.append((
-            f"Trained {label} ($s={selected_basis:.0f}$)", rom_cost, abs(rom_corr),
+            f"Trained {label} ($s={selected_basis:.0f}${trained.label_suffix(t)})",
+            rom_cost, abs(rom_corr),
             _rom_color(t, n_active, n_aux), _rom_marker(t),
         ))
 
@@ -702,7 +1074,8 @@ def _plot_pilot_qoi_agreement(
     """Create paired FOM-QoI comparisons for all cached control variates.
 
     trained_rom_qois: (rom_index, qois) pairs, one per trainable ROM whose
-    optimized-basis QoIs were found on disk.
+    optimized-basis QoIs were found on disk. Supplied by TrainedRomRecord so
+    these panels and the cost-agreement tradeoff correlate the same arrays.
     """
     fom = np.asarray(pilot_data["fom_qois_master"], dtype=float).ravel()
     comparisons: list[tuple[str, np.ndarray, object]] = [
@@ -744,7 +1117,10 @@ def _save_figure(fig: plt.Figure, output_dir: Path, stem: str, formats: Sequence
         fig.savefig(output_dir / f"{stem}.{extension}", bbox_inches="tight")
 
 
-def generate_figures(work_directory: Path, output_dir: Path, formats: Sequence[str], show: bool) -> list[Path]:
+def generate_figures(
+    work_directory: Path, output_dir: Path, formats: Sequence[str], show: bool,
+    on_inconsistency: str = "raise",
+) -> list[Path]:
     """Generate all figures possible from a completed workflow directory."""
     vis_path = work_directory / "visualization_data.npz"
     if not vis_path.is_file():
@@ -756,33 +1132,34 @@ def generate_figures(work_directory: Path, output_dir: Path, formats: Sequence[s
     with np.load(vis_path, allow_pickle=False) as data:
         n_aux = int(np.asarray(data["n_aux"]).item())
         n_active = int(np.asarray(data["n_active"]).item()) if "n_active" in data else 1
-        s_star = _as_1d(data, "s_star")
-        selected_bases = [int(round(float(s_star[-(n_active - t)]))) for t in range(n_active)]
+        # The trained ROMs' identity and statistics, resolved once and shared
+        # by every figure below. The basis index is resolved here and nowhere
+        # else, so no two figures can label or draw different ROMs.
+        trained = TrainedRomRecord(data, work_directory, n_aux, n_active, on_inconsistency)
 
         figures = {
-            "fidelity_and_cost": _plot_fidelity_and_cost(data, n_aux, work_directory, n_active),
+            "fidelity_and_cost": _plot_fidelity_and_cost(data, n_aux, trained, n_active),
         }
 
         figures["estimator_performance"] = _plot_estimator_performance(data)
-        figures["is_allocation"] = _plot_is_allocations(data, n_aux, work_directory, n_active)
-        figures["control_variate_tradeoff"] = _plot_control_variate_tradeoff(data, n_aux, work_directory, n_active)
+        figures["is_allocation"] = _plot_is_allocations(data, n_aux, trained, n_active)
+        figures["control_variate_tradeoff"] = _plot_control_variate_tradeoff(data, n_aux, trained, n_active)
 
         if "fMFs_alloc" in data:
-            figures["mf_allocation"] = _plot_mf_allocations(data, n_aux, work_directory, n_active)
+            figures["mf_allocation"] = _plot_mf_allocations(data, n_aux, trained, n_active)
         else:
             print(f"Skipping ACV-MF allocation figure: fMFs_alloc was not found in {vis_path.name}.")
 
     pilot_path = work_directory / "pilot_results.npz"
     if pilot_path.is_file():
         with np.load(pilot_path, allow_pickle=False) as pilot_data:
-            n_samples = len(np.asarray(pilot_data["fom_qois_master"]).ravel())
-            trained_rom_qois = []
+            trained_rom_qois = trained.qoi_pairs()
             for t in range(n_active):
-                qois = _load_trained_rom_qois(work_directory, t, selected_bases[t], n_samples)
-                if qois is None:
-                    print(f"Skipping trained-{_rom_label(t, n_active)} QoI scatter: cached optimized-ROM QoIs were not found.")
-                else:
-                    trained_rom_qois.append((t, qois))
+                if t not in trained.qois:
+                    print(
+                        f"Skipping trained-{_rom_label(t, n_active)} QoI scatter: "
+                        "cached optimized-ROM QoIs were not found."
+                    )
             figures["pilot_qoi_agreement"] = _plot_pilot_qoi_agreement(pilot_data, n_aux, trained_rom_qois, n_active)
     else:
         print(f"Skipping pilot QoI agreement: {pilot_path.name} was not found.")
@@ -808,6 +1185,13 @@ def _parse_args() -> argparse.Namespace:
         help="One or more output formats (default: pdf png).",
     )
     parser.add_argument("--no-show", action="store_true", help="Generate figures without opening interactive windows.")
+    parser.add_argument(
+        "--on-inconsistency", choices=("raise", "warn"), default="raise",
+        help=(
+            "What to do when the trained-ROM record, the basis size implied by s_star, and the "
+            "cached QoIs disagree about which ROM is being drawn (default: raise)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -815,7 +1199,10 @@ def main() -> None:
     args = _parse_args()
     work_directory = args.work_directory.expanduser().resolve()
     output_dir = (args.output_dir or work_directory / "publication_figures").expanduser().resolve()
-    outputs = generate_figures(work_directory, output_dir, args.formats, show=not args.no_show)
+    outputs = generate_figures(
+        work_directory, output_dir, args.formats, show=not args.no_show,
+        on_inconsistency=args.on_inconsistency,
+    )
     print("Created:")
     for path in outputs:
         print(f"  {path}")
