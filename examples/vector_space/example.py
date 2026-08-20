@@ -1,1 +1,0 @@
-print('This example is notebook-based.\nOpen: docs/source/demos/notebooks/dictionary_vector_space.ipynb\n      docs/source/demos/notebooks/pod_vector_space.ipynb\n      docs/source/demos/notebooks/orthogonalized_vector_space.ipynb\n      docs/source/demos/notebooks/composite_vector_space.ipynb\n')
