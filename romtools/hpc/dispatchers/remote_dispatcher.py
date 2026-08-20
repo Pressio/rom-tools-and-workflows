@@ -54,13 +54,8 @@ class RemoteDispatcher(BaseDispatcher):
             self.__connect_to_remote()
 
         # validate collect and upload patterns
-        self.collect_patterns = self.config.get("collect")
-        if self.collect_patterns:
-            self.collect_patterns = validate(self.collect_patterns)
-
-        self.upload_patterns = self.config.get("upload")
-        if self.upload_patterns:
-            self.upload_patterns = validate(self.upload_patterns)
+        self.collect_patterns = validate(self.config.get("collect"))
+        self.upload_patterns = validate(self.config.get("upload"))
 
     # ------------------------------------------------------------------
     # Initialization and setup
@@ -79,12 +74,15 @@ class RemoteDispatcher(BaseDispatcher):
         except Exception as e:
             raise RuntimeError(f"Failed to establish SSH connection: {e}")
 
+    def __archive_name(self) -> str:
+        return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
+
     def upload(self, run_directory) -> None:
         if not self.upload_patterns:
             return
 
         remote_root = self.config.get("remote_root")
-        tar_name = f"dispatcher-upload-{self.config.get('job_name')}.tar.gz"
+        tar_name = self.__archive_name()
         files_packed = pack_results(lambda msg: self.logger.log(msg, local=True), local_cmd, ".", tar_name, self.upload_patterns)
         if not files_packed:
             return
@@ -110,12 +108,11 @@ class RemoteDispatcher(BaseDispatcher):
             local=True,
         )
 
-        archive_name = f"dispatcher-collect-{self.config.get('job_name')}.tar.gz"
+        archive_name = self.__archive_name()
         remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
 
-        do_collection = pack_results(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
-
-        if not do_collection:
+        files_packed = pack_results(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
+        if not files_packed:
             return
 
         # Copy remote archive to local
@@ -128,8 +125,11 @@ class RemoteDispatcher(BaseDispatcher):
 
         # Unpack local archive into local sampling directory
         os.makedirs(self.sampling_directory, exist_ok=True)
-        safe_extract_tar(local_cmd, archive_name, os.path.abspath(self.sampling_directory))
-        self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
+        res = safe_extract_tar(local_cmd, archive_name, os.path.abspath(self.sampling_directory))
+        if not res.ok:
+            self.logger.log(f"Results failed to extract.", local=True)
+        else:
+            self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
 
     # ------------------------------------------------------------------
     # Utility methods

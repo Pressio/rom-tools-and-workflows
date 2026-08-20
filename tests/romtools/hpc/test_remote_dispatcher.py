@@ -91,8 +91,8 @@ def test_dispatch_collects_results_and_extracts_them_locally(monkeypatch, make_c
 
     dispatcher.dispatch("./my_app")
 
-    archive_name = "dispatcher-collect-myjob.tar.gz"
-    remote_archive_path = "campaigns/dispatcher-collect-myjob.tar.gz"
+    archive_name = "dispatcher-transfer-myjob.tar.gz"
+    remote_archive_path = "campaigns/dispatcher-transfer-myjob.tar.gz"
     assert conn.get_calls == [(remote_archive_path, archive_name)]
     assert f"rm -f {remote_archive_path}" in conn.calls
     assert not (tmp_path / archive_name).exists()
@@ -276,7 +276,7 @@ def test_upload_packs_local_files_and_transfers_them(monkeypatch, make_config, t
 
     dispatcher.upload("run_00")
 
-    tar_name = "dispatcher-upload-myjob.tar.gz"
+    tar_name = "dispatcher-transfer-myjob.tar.gz"
     assert not (tmp_path / tar_name).exists()  # cleaned up locally after put
     assert conn.put_calls == [(tar_name, f"campaigns/run_00/{tar_name}")]
 

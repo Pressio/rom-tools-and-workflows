@@ -5,7 +5,6 @@ import pytest
 
 from romtools.hpc.connection import Result
 from romtools.hpc.util.file_transfer import pack_results, safe_extract_tar, local_cmd, validate
-from subprocess import CalledProcessError
 
 from conftest import ArchiveFakeConnection, FakeConnection
 
@@ -15,44 +14,44 @@ from conftest import ArchiveFakeConnection, FakeConnection
 # ----------------------------------------------------------------------------
 
 
-def test_collect_none_yields_no_patterns():
+def test_none_yields_no_patterns():
     patterns = validate(None)
 
     assert patterns is None
 
 
-def test_collect_valid_patterns_are_kept():
+def test_valid_patterns_are_kept():
     patterns = validate(["*.log", "results/"])
 
     assert patterns == ["*.log", "results/"]
 
 
-def test_collect_pattern_starting_with_dash_is_rejected():
+def test_pattern_starting_with_dash_is_rejected():
     with pytest.raises(ValueError, match="may not begin with '-'"):
         validate(["-bad"])
 
 
-def test_collect_pattern_with_newline_is_rejected():
+def test_pattern_with_newline_is_rejected():
     with pytest.raises(ValueError, match="forbidden characters"):
         validate(["bad\npattern"])
 
 
-def test_collect_pattern_with_unsupported_characters_is_rejected():
+def test_pattern_with_unsupported_characters_is_rejected():
     with pytest.raises(ValueError, match="unsupported characters"):
         validate(["bad; rm -rf /"])
 
 
-def test_collect_all_blank_patterns_raises():
+def test_all_blank_patterns_raises():
     with pytest.raises(ValueError, match="no valid patterns"):
         validate(["   ", ""])
 
 
 # ----------------------------------------------------------------------------
-# collect_results orchestration
+# pack_results
 # ----------------------------------------------------------------------------
 
 
-def test_collect_results_skips_collection_when_collect_is_none(tmp_path, monkeypatch, make_config):
+def test_pack_results_skips_collection_when_collect_is_none(tmp_path, monkeypatch):
     """
     Note: despite the collect_results/__pack_remote_results docstrings claiming
     collect=None retrieves the entire run directory, the implementation does
@@ -70,7 +69,7 @@ def test_collect_results_skips_collection_when_collect_is_none(tmp_path, monkeyp
     assert not (tmp_path / "hpctools").exists()
 
 
-def test_collect_results_with_all_keyword_packs_entire_directory(tmp_path, monkeypatch, make_config):
+def test_pack_results_with_all_keyword_packs_entire_directory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     conn = ArchiveFakeConnection(
         responses=[
@@ -84,7 +83,7 @@ def test_collect_results_with_all_keyword_packs_entire_directory(tmp_path, monke
     assert pack_cmd.endswith(" .")
 
 
-def test_collect_results_with_specific_patterns(tmp_path, monkeypatch, make_config):
+def test_pack_results_with_specific_patterns(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     conn = ArchiveFakeConnection(
         responses=[
@@ -101,7 +100,7 @@ def test_collect_results_with_specific_patterns(tmp_path, monkeypatch, make_conf
     assert "results.txt" in pack_cmd
 
 
-def test_collect_results_raises_if_no_patterns_matched(tmp_path, monkeypatch, make_config):
+def test_pack_results_raises_if_no_patterns_matched(tmp_path, monkeypatch, make_config):
     monkeypatch.chdir(tmp_path)
     conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
 
@@ -109,7 +108,7 @@ def test_collect_results_raises_if_no_patterns_matched(tmp_path, monkeypatch, ma
         pack_results(lambda _: None, lambda cmd: conn.run(cmd), "campaigns", "myjob.tar.gz", ["results.txt"])
 
 
-def test_collect_results_raises_when_pack_command_fails(tmp_path, monkeypatch, make_config):
+def test_pack_results_raises_when_pack_command_fails(tmp_path, monkeypatch, make_config):
     monkeypatch.chdir(tmp_path)
     conn = FakeConnection(responses=[("tar -czf", Result("", "disk full", 1))])
 
@@ -135,3 +134,49 @@ def test_safe_extract_tar_rejects_path_traversal(tmp_path):
 
     res = safe_extract_tar(local_cmd, str(archive_path), str(target_dir))
     assert not res.ok
+
+def test_safe_extract_tar_extracts_files_and_removes_archive(tmp_path):
+    archive_path = tmp_path / "archive.tar.gz"
+    target_dir = tmp_path / "target"
+
+    try:
+        with tarfile.open(archive_path, "w:gz") as tar:
+            data = b"hello world"
+
+            dir_info = tarfile.TarInfo(name="subdir/")
+            dir_info.type = tarfile.DIRTYPE
+            dir_info.mode = 0o755
+            tar.addfile(dir_info)
+
+            file_info = tarfile.TarInfo(name="subdir/hello.txt")
+            file_info.size = len(data)
+            file_info.mode = 0o644
+            tar.addfile(file_info, io.BytesIO(data))
+
+        res = safe_extract_tar(local_cmd, str(archive_path), str(target_dir))
+
+        assert res.ok
+        assert (target_dir / "subdir" / "hello.txt").read_bytes() == data
+        assert not archive_path.exists()
+
+    finally:
+        extracted_subdir = target_dir / "subdir"
+        if extracted_subdir.exists():
+            extracted_subdir.chmod(0o755)
+
+def test_safe_extract_tar_rejects_nested_path_traversal(tmp_path):
+    archive_path = tmp_path / "evil.tar.gz"
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+
+    with tarfile.open(archive_path, "w:gz") as tar:
+        data = b"pwned"
+        info = tarfile.TarInfo(name="safe/../evil.txt")
+        info.size = len(data)
+        tar.addfile(info, io.BytesIO(data))
+
+    res = safe_extract_tar(local_cmd, str(archive_path), str(target_dir))
+
+    assert not res.ok
+    assert not (tmp_path / "evil.txt").exists()
+    assert archive_path.exists()
