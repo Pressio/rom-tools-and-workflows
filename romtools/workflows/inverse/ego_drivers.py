@@ -28,6 +28,7 @@ def run_ego(model: QoiModel,
                  absolute_ego_directory: str = os.getcwd() + "/work/",
                  number_initial_samples: int=4,
                  random_seed: int = None,
+                 evaluation_concurrency: int=1,
                  use_relative_error: bool = True,
                  restart_file: str=None,
                  expected_improvement_epsilon: float=0.0):
@@ -49,6 +50,8 @@ def run_ego(model: QoiModel,
         number_initial_samples: Optional number of model samples to train the 
             initial Gaussian process. Default is 4. 
         random_seed: Optional seed to fix random sampling. Default is None.
+        evaluation_concurrency: Number of concurrent model evaluations used for
+            initial samples. Default is 1
         use_relative_error: Optional boolean to use relative error with respect
             to observations as the objective runtion. Default is None.
         restart_file: Optional ``.npz`` restart file produced by a prior EGO
@@ -63,6 +66,8 @@ def run_ego(model: QoiModel,
     """
 
     start_time = time.time()
+    mp_cntxt = multiprocessing.get_context("fork")
+    
     # check that relative error is well-posed:
     if use_relative_error:
         assert(np.linalg.norm(observations) > 0)
@@ -79,16 +84,29 @@ def run_ego(model: QoiModel,
         # run model at samples
         iteration = 0
         run_directory_base = f'{absolute_ego_directory}/iteration_{0}/run_'
-        for initial_sample in range(number_initial_samples):
-            run_directory = f'{run_directory_base}{initial_sample}'
-            qoi, error, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[initial_sample])
-            obj = objective_function(qoi,observations,relative=use_relative_error)
-            qois.append(qoi)
-            errors.append(error)
-            objs.append(obj)
+        if evaluation_concurrency == 1:
+            for initial_sample in range(number_initial_samples):
+                run_directory = f'{run_directory_base}{initial_sample}'
+                qoi, error, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[initial_sample])
+                obj = objective_function(qoi,observations,relative=use_relative_error)
+                qois.append(qoi)
+                errors.append(error)
+                objs.append(obj)
+        else:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
+                these_futures = [executor.submit(prepare_and_run, model, observations, f'{run_directory_base}{initial_sample}', parameter_names, parameter_samples[initial_sample]) for initial_sample in range(number_initial_samples)]
+                concurrent.futures.wait(these_futures)
+            for future in these_futures:
+                qoi, error, _ = future.result()
+                obj = objective_function(qoi,observations,relative=use_relative_error)
+                qois.append(qoi)
+                errors.append(error)
+                objs.append(obj)
+
         qois = np.array(qois)
         errors = np.array(errors)
         objs = np.array(objs)
+        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
     else:
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
@@ -243,6 +261,7 @@ def run_batch_ego(model: QoiModel,
         qois = np.array(qois)
         errors = np.array(errors)
         objs = np.array(objs)
+        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
     else:
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
