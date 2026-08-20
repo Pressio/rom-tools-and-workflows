@@ -73,6 +73,12 @@ Capabilities
       Access parameter sampling workflows and related workflow interfaces for
       model evaluation studies.
 
+   .. grid-item-card:: Remote Execution
+      :link: remote_execution
+      :link-type: doc
+
+      Run ROM workflows on HPC clusters from your local environment.
+
 .. toctree::
    :hidden:
 
@@ -80,3 +86,4 @@ Capabilities
    formatting
    demos/index
    rom_tools_at_scale
+   remote_execution

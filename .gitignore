@@ -1,6 +1,16 @@
-*__pycache__/
-*.egg-info/
+# Build/test artifacts
 build
+*__pycache__/
+.pytest_cache
+*.egg-info/
 
+# Misc
+.vscode
+
+# Ignore custom HPC configurations (but track the example file)
 romtools/hpc/config/*
 !romtools/hpc/config/example.yaml
+
+# Docs builds
+docs/build/
+docs/source/generated/
