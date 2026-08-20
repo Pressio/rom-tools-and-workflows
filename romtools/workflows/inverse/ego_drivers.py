@@ -276,6 +276,7 @@ def run_batch_ego(model: QoiModel,
     wall_time = time.time() - start_time
     obj_min = np.min(objs)
     parameter_sample_min = parameter_samples[np.argmin(objs)]
+    n_qois = qois.shape[1]
     print(f'Iteration: {iteration}, Minimum Normalized L2 Error: {obj_min:.5f}, Wall time: {wall_time:.5f}')
 
     iteration += 1
@@ -298,8 +299,8 @@ def run_batch_ego(model: QoiModel,
                                                                             liar_type=constant_liar_type)
 
         objs_new = np.zeros((batch_size))
-        qois_new = np.zeros((batch_size,1))
-        errors_new = np.zeros((batch_size,1))
+        qois_new = np.zeros((batch_size,n_qois))
+        errors_new = np.zeros((batch_size,n_qois))
         run_directory_base = f'{absolute_ego_directory}/iteration_{iteration}/run_'
         if evaluation_concurrency == 1:
             # evaluate function at new design point
