@@ -8,17 +8,7 @@ from collections.abc import Callable
 
 from ..connection import Result
 
-# Helper local cmd function to be passed into the ones below
-def local_cmd(cmd: str):
-    res = subprocess.run(
-        ["bash", "-c", cmd],
-        cwd=".",
-        capture_output=True,
-        text=True
-    )
-    return Result(res.stdout, res.stderr, res.returncode)
-
-def validate(collect_patterns: List[str]) -> Optional[List[str]]:
+def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
     """
     Validate and normalize file & directory patterns.
 
@@ -64,7 +54,7 @@ def validate(collect_patterns: List[str]) -> Optional[List[str]]:
 
     return cleaned_patterns
 
-def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> bool:
+def create_tarball(log: Callable[[str], None], run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> None:
     """
     Create a tar.gz archive of results. Intended to work on either
     remote or local machine, depending on run_cmd.
@@ -75,14 +65,16 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
     Wildcard patterns are expanded relative to working_dir.
     Unmatched wildcard patterns are ignored with a warning.
 
-    Returns True if compression was performed, False if it was skipped.
+    Raises:
+        ValueError: If the source_dir or input arguments are empty/invalid.
+        FileNotFoundError: If the validated paths do not exist.
+        RuntimeError: If the tarball creation or compression fails.
     """
     # Collect nothing
     if patterns is None or len(patterns) == 0:
-        log(
+        raise ValueError(
             "SKIPPING TARRING: "
             "No files, directories, or glob patterns to bundle have been specified.")
-        return False
 
     # Collect everything
     collect_all = ["*", "all", "everything", "any"]
@@ -95,8 +87,7 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
         if not pack_result.ok:
             raise RuntimeError(f"Archive failed: {pack_result.stderr}")
 
-        log(f"Packed results into archive: {archive_path}")
-        return True
+        return
 
     # Collect the specified files/directories/patterns
     resolved_paths = []
@@ -144,7 +135,7 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
         log(f"Warning while packing selected results: {warning}")
 
     if not resolved_paths:
-        raise RuntimeError("No files matched the requested collect patterns.")
+        raise FileNotFoundError("No files matched the requested collect patterns.")
 
     path_args = " ".join(shlex.quote(p) for p in resolved_paths)
     pack_cmd = (
@@ -155,10 +146,6 @@ def pack_results(log: Callable[[str], None], run_cmd: Callable[[str], Result], w
     pack_result = run_cmd(pack_cmd)
     if not pack_result.ok:
         raise RuntimeError(f"Archive failed: {pack_result.stderr}")
-
-    log(f"Packed results into archive: {archive_path}")
-
-    return True
 
 
 def safe_extract_tar(run_cmd: Callable[[str], Result], archive_path: str, target_dir: str) -> Result:
