@@ -256,13 +256,14 @@ class RemoteDispatcher(BaseDispatcher):
         self.logger.log(f"Submitted SLURM job {job_id}")
         return job_id
 
-    def __run(self, cmd: str, run_directory: str = None) -> None:
+    def __run(self, cmd: str, run_directory: str = None) -> Result:
         resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
         remote_cmd = f"cd {shlex.quote(resolved_run_dir)} && {cmd}"
         res = self.conn.run(remote_cmd)
         if not res.ok:
             raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
         self.logger.debug(f"Executed command on remote host: {cmd}")
+        return res
 
     # ------------------------------------------------------------------
     # Job monitoring
@@ -496,11 +497,10 @@ class RemoteDispatcher(BaseDispatcher):
             with_slurm: If True, the command will be run as a SLURM job.
                  If False, the command will be executed directly without SLURM.
 
-        Returns the SLURM job exit code in sacct format of 0:0, or "No SLURM JOB submitted.".
+        Returns a Result object (with stdout, stderr, exitcode, ok)
         """
         if not with_slurm:
-            self.__run(cmd, run_directory=run_directory)
-            return "No SLURM job submitted."
+            return self.__run(cmd, run_directory=run_directory)
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = self.__wait_for_job(job_id)
         self.__collect_results()
