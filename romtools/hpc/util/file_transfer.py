@@ -1,10 +1,8 @@
 
 import shlex
-import subprocess
 import re
 
-from typing import Optional, List
-from collections.abc import Callable
+from typing import Optional, List, Callable
 
 from ..connection import Result
 
