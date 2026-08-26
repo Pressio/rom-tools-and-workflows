@@ -58,7 +58,7 @@ class CompositeVectorSpace:
         '''
         Inputs: list_of_vector_spaces: list[VectorSpace] containing the list of vector spaces to combine
         '''
-        # Computed dimensions and ensure vector spaces are compatable
+        # Compute dimensions and ensure vector spaces are compatible
         self.__get_extent_and_check_compatability(list_of_vector_spaces)
 
         # Construct basis as a list of local bases

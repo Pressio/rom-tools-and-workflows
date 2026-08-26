@@ -25,7 +25,7 @@ class Model(Protocol):
 
         Args:
           run_directory (str): Absolute path to run_directory.
-          parameter_sample: Dictionary contatining parameter names and sample values
+          parameter_sample: Dictionary containing parameter names and sample values
 
         '''
         pass
@@ -37,7 +37,7 @@ class Model(Protocol):
 
         Args:
           run_directory (str): Absolute path to run_directory.
-          parameter_sample: Dictionary contatining parameter names and sample values
+          parameter_sample: Dictionary containing parameter names and sample values
 
         '''
         pass

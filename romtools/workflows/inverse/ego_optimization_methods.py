@@ -11,11 +11,11 @@ import copy
 def objective_function(qoi: np.ndarray, observations: np.ndarray, relative=True):
     scale = 1.0
     if relative:
-        scale = 1 / np.sum((observations.flatten())**2) 
+        scale = 1 / np.sum((observations.flatten())**2)
     return np.sum((qoi.flatten() - observations.flatten())**2) * scale
 
-def _expected_improvement(gp_regressor: GaussianProcessQoiModel, 
-                          obj_min: float, 
+def _expected_improvement(gp_regressor: GaussianProcessQoiModel,
+                          obj_min: float,
                           parameter_sample: np.ndarray,
                           epsilon: float=0.0):
 
@@ -29,7 +29,7 @@ def _expected_improvement(gp_regressor: GaussianProcessQoiModel,
     EI[mask] = 0.0
     return EI
 
-def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel, 
+def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
                                  obj_min: float,
                                  parameter_space: ParameterSpace,
                                  parameter_mins: np.ndarray = None,
@@ -37,7 +37,7 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
                                  num_restarts: int=25,
                                  random_seed: int = None,
                                  epsilon: float=0.0):
-    
+
     # determine bounds (if any)
     if parameter_mins is not None:
         parameter_bounds = ()
@@ -65,7 +65,7 @@ def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,
 
     return best_parameter_sample
 
-def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiModel, 
+def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiModel,
                                                 obj_min: float,
                                                 parameter_samples: np.ndarray,
                                                 objective_function_samples: np.ndarray,
@@ -77,15 +77,15 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
                                                 random_seed: int = None,
                                                 epsilon: float=0.0,
                                                 liar_type: str='pessimistic'):
-    
+
     number_of_samples = parameter_samples.shape[0]
     my_parameter_samples = parameter_samples.copy()
     my_objective_function_samples = objective_function_samples.copy()
     my_gp_regressor = copy.deepcopy(gp_regressor)
     my_kernel = copy.deepcopy(my_gp_regressor.kernel)
-    
-    # generate objective function evaluation "Lie". 
-    # Since we are minimizing the objective function, using the maximum objective 
+
+    # generate objective function evaluation "Lie".
+    # Since we are minimizing the objective function, using the maximum objective
     # function is the pessimistic case in which exploration is weighed over exploitation.
     # Using the minimum objective function is the optimistic case which emphasizes exploitation.
     # Using the mean objective function is a compromise between the two former choices
@@ -96,7 +96,7 @@ def q_point_expected_improvement_constant_liar(gp_regressor: GaussianProcessQoiM
         L[0] = np.min(my_objective_function_samples)
     elif liar_type == 'average':
         L[0] = np.min(my_objective_function_samples)
-    
+
 
     for i in range(batch_size):
         best_parameter_sample = argmax_expected_improvement(my_gp_regressor,

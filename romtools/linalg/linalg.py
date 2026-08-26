@@ -1102,7 +1102,7 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
     Note that returning the transpose(A^+) is because of convenience.
     In fact, when A is row-distributed and comm is not None,
     then the result has the same distribution of A.
-    If the matrix A is too large, this is the only feasble way
+    If the matrix A is too large, this is the only feasible way
     to store the pseudoinverse since no single rank can fully store it.
 
     Parameters:
@@ -1224,7 +1224,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     my_rank = comm.Get_rank()
 
     # need to copy into C order because this is needed below when we
-    # serialize to send/recv with mpi wihout additional copies and also
+    # serialize to send/recv with MPI without additional copies and also
     # working correctly to store the data when received
     A = np.copy(A_in, order='C') if np.isfortran(A_in) else A_in
     b = np.copy(b_in, order='C') if np.isfortran(b_in) else b_in

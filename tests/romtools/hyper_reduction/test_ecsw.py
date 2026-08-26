@@ -17,7 +17,7 @@ def test_ecsw_nnls():
     # test weights from NNLS
     assert np.allclose(full_mesh_lhs@full_mesh_weights, full_mesh_rhs)
 
-    # test sample mesh inices indices from NNLS
+    # test sample mesh indices from NNLS
     sample_mesh_lhs = full_mesh_lhs[:, sample_mesh_indices]
 
     assert np.allclose(full_mesh_lhs@full_mesh_weights, sample_mesh_lhs@sample_mesh_weights)
@@ -105,7 +105,7 @@ def test_full_ecsw_varying_test_basis():
     sample_mesh_test_basis_tensor = test_basis_tensor[:,:,sample_mesh_indices, :]
     sample_mesh_residual_snapshots_tensor = residual_snapshots_tensor[:,sample_mesh_indices, :]
     sample_mesh_residual_snapshots = _tensor_to_matrix(sample_mesh_residual_snapshots_tensor)
-    
+
     for i in range(n_snap):
         # Check that the full approximation of the residual snapshots is correct
         exact = (test_basis[i].T)@residual_snapshots[:,i]
@@ -145,7 +145,7 @@ def test_full_ecsw_lspg_zero_residual():
 
 
     sample_mesh_test_basis_tensor = test_basis_tensor[:,:,sample_mesh_indices, :]
-    
+
     for i in range(n_snap):
         # Check that the full approximation of the residual snapshots is correct
         exact = (test_basis[i].T)@test_basis[i]

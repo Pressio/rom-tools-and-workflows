@@ -3,7 +3,7 @@ output_path: offline_results
 basis_file_name: reduced-basis
 rom_file_name: rb-precomputed-rom
 sample_size: 100
-Nx: 127 
+Nx: 127
 b_min: 0.2
 b_max: 1.0
 theta_min: 0.7853981633974483

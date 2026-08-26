@@ -15,7 +15,7 @@ class adrRom:
         self.x_ = np.linspace(0,1,nx)
 
     def assemble_system(self,c,nu):
-        self.A_r_ = c*self.Ac_r_ - nu*self.Ad_r_ 
+        self.A_r_ = c*self.Ac_r_ - nu*self.Ad_r_
 
     def solve(self,c,nu):
         self.assemble_system(c,nu)
@@ -30,4 +30,4 @@ if __name__ == "__main__":
     adr_problem = adrRom(args.offline_data_dir)
     params = np.genfromtxt('params.dat')
     u = adr_problem.solve(params[0],params[1])
-    np.savez('solution',u=u,x=adr_problem.x_) 
+    np.savez('solution',u=u,x=adr_problem.x_)

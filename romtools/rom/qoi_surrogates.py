@@ -48,7 +48,7 @@ class GaussianProcessRegressorLite:
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
         return y_mean.ravel()
-    
+
     def predict_mean_and_std(self, x_query: np.ndarray) -> tuple[np.ndarray,np.ndarray]:
         if self._x_train is None or self._alpha is None:
             raise RuntimeError("GaussianProcessRegressorLite has not been fit yet.")
@@ -144,7 +144,7 @@ class GaussianProcessQoiModel:
             return np.asarray([coeffs[0]])
         qoi = self._mean_qoi + self._pod_modes @ coeffs
         return np.asarray(qoi).ravel()
-    
+
     def compute_qoi_and_var(self, run_directory: str, parameter_sample: dict) -> np.ndarray:
         x = self._parameter_sample_to_array(parameter_sample)
 

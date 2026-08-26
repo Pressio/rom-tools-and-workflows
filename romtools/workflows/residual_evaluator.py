@@ -46,7 +46,7 @@ class ResidualEvaluator(Protocol):
             full_model_directory (str): Absolute path to directory in which the full model data was computed.
             reduced_state (np.ndarray): 2-dimensional reduced state vector. 1st dimension: reduced state,
             2nd dimension: sample index
-            parameter_sample: Dictionary contatining parameter names and sample values
+            parameter_sample: Dictionary containing parameter names and sample values
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single sample
@@ -69,7 +69,7 @@ class ResidualEvaluator(Protocol):
             full_model_directory (str): Absolute path to directory in which the full model data was computed.
             reduced_state (np.ndarray): 2-dimensional reduced state vector. 1st dimension: reduced state,
             2nd dimension: sample index
-            parameter_sample: Dictionary contatining parameter names and sample values
+            parameter_sample: Dictionary containing parameter names and sample values
 
         Returns:
             `np.ndarray`: The full-order residual in tensor form, should be 3-dimensional, even for a single sample
@@ -135,8 +135,8 @@ class TransientResidualEvaluator(Protocol):
             reduced_state (np.ndarray): 2- or 3-dimensional reduced state vector. 1st dimension: reduced state,
             2nd dimension: time, 3rd dimension: other states in time stencil. If the array is 2-dimensional, it
             is assumed that the states are sequential in time.
-            parameter_sample: Dictionary contatining parameter names and sample values
-            times (np.ndarray): 1-dimensional or 2-dimesional vector of time stamps. The optional
+            parameter_sample: Dictionary containing parameter names and sample values
+            times (np.ndarray): 1-dimensional or 2-dimensional vector of time stamps. The optional
             2nd dimension is only needed if the reduced state array is 3-dimensional; the 2nd dimension
             contains the time stamps of the other states in the time-stencil for a given time stamp.
 
@@ -163,8 +163,8 @@ class TransientResidualEvaluator(Protocol):
             reduced_state (np.ndarray): 2- or 3-dimensional reduced state vector. 1st dimension: reduced state,
             2nd dimension: time, 3rd dimension: other states in time stencil. If the array is 2-dimensional, it
             is assumed that the states are sequential in time.
-            parameter_sample: Dictionary contatining parameter names and sample values
-            times (np.ndarray): 1-dimensional or 2-dimesional vector of time stamps. The optional
+            parameter_sample: Dictionary containing parameter names and sample values
+            times (np.ndarray): 1-dimensional or 2-dimensional vector of time stamps. The optional
             2nd dimension is only needed if the reduced state array is 3-dimensional; the 2nd dimension
             contains the time stamps of the other states in the time-stencil for a given time stamp.
 
