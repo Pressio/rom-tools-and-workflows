@@ -59,7 +59,7 @@ import time
 from typing import Optional
 from romtools.workflows.inverse._inverse_utils import *
 from romtools.workflows.models import QoiModel
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
 from romtools.rom.qoi_surrogates import GaussianProcessKernel, GaussianProcessQoiModel
 import copy
@@ -80,8 +80,7 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
                  length_scale_grid: Optional[list] = None,
                  signal_variance_grid: Optional[list] = None,
                  normalize_parameters: bool = False,
-                 normalize_targets: bool = False,
-                 dispatcher: Optional[BaseDispatcher] = None) -> None:
+                 normalize_targets: bool = False) -> None:
         self.parameter_names = list(parameter_names) if parameter_names is not None else None
         self.pod_energy_fraction = pod_energy_fraction
         self.max_pod_modes = max_pod_modes
@@ -94,32 +93,28 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
         self.signal_variance_grid = signal_variance_grid
         self.normalize_parameters = normalize_parameters
         self.normalize_targets = normalize_targets
-        self.dispatcher = dispatcher
 
     def build_from_training_dirs(self,
                                  offline_data_dir: str,
                                  training_data_dirs,
                                  training_parameters: np.ndarray,
                                  training_qois: np.ndarray) -> QoiModel:
-        if self.dispatcher is None:
-            return GaussianProcessQoiModel(
-                parameters=training_parameters,
-                qois=training_qois,
-                parameter_names=self.parameter_names,
-                pod_energy_fraction=self.pod_energy_fraction,
-                max_pod_modes=self.max_pod_modes,
-                kernel=self.kernel,
-                noise_variance=self.noise_variance,
-                auto_noise_variance=self.auto_noise_variance,
-                noise_variance_fraction=self.noise_variance_fraction,
-                tune_hyperparameters=self.tune_hyperparameters,
-                length_scale_grid=self.length_scale_grid,
-                signal_variance_grid=self.signal_variance_grid,
-                normalize_parameters=self.normalize_parameters,
-                normalize_targets=self.normalize_targets,
-            )
-        else:
-           print("Dispatcher was provided, but not supported yet in GausianProcessQoiModel")
+        return GaussianProcessQoiModel(
+            parameters=training_parameters,
+            qois=training_qois,
+            parameter_names=self.parameter_names,
+            pod_energy_fraction=self.pod_energy_fraction,
+            max_pod_modes=self.max_pod_modes,
+            kernel=self.kernel,
+            noise_variance=self.noise_variance,
+            auto_noise_variance=self.auto_noise_variance,
+            noise_variance_fraction=self.noise_variance_fraction,
+            tune_hyperparameters=self.tune_hyperparameters,
+            length_scale_grid=self.length_scale_grid,
+            signal_variance_grid=self.signal_variance_grid,
+            normalize_parameters=self.normalize_parameters,
+            normalize_targets=self.normalize_targets,
+        )
 
 def run_mf_eki(model: QoiModel,
             rom_model_builder: QoiModelBuilderWithTrainingData,
@@ -211,21 +206,24 @@ def run_mf_eki(model: QoiModel,
             MF-EKI run. When set, the saved FOM/ROM sample sets, surrogate
             training history, and step size are restored.
         dispatcher: Optional (defaults to None, which instantiates a
-            LocalDispatcher). Pass a RemoteDispatcher to send work to
-            the configured remote host (e.g. an HPC cluster)
+            LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
+            to the configured remote host (e.g. an HPC cluster). ROM
+            evaluations always run locally.
 
     Returns:
         Tuple ``(fom_parameter_samples, fom_qois)`` for the final accepted
         high-fidelity sample set.
     """
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
-
+    dispatcher = resolve_dispatcher(dispatcher)
+    rom_dispatcher = resolve_local_dispatcher(dispatcher)
 
     max_rom_training_dirs = int(max_rom_training_history*(fom_ensemble_size+1))
     start_time = time.time()
 
     ## Error checking======
-    assert os.path.isabs(absolute_eki_directory), f"eki_directory is not an absolute path ({absolute_eki_directory})"
+    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
+    if isinstance(dispatcher, LocalDispatcher):
+        assert os.path.isabs(absolute_eki_directory), f"eki_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
@@ -278,13 +276,13 @@ def run_mf_eki(model: QoiModel,
         )
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_rom_sample_set_0_'
-        sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], rom_evaluation_concurrency, dispatcher)
+        sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[0], rom_evaluation_concurrency, rom_dispatcher)
 
         rom_errors = np.linalg.norm(sample_one_rom_results['qois'] - sample_one_fom_results['qois'])/ np.linalg.norm(sample_one_fom_results['qois'])
         print(f'  ROM error = {rom_errors}')
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_rom_sample_set_1_'
-        sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[1], rom_evaluation_concurrency, dispatcher)
+        sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, parameter_sample_sets[1], rom_evaluation_concurrency, rom_dispatcher)
 
         error_norm = np.mean(np.linalg.norm(sample_one_fom_results['errors'], axis=0))
         print(f'Initial error: {error_norm}')
@@ -329,7 +327,6 @@ def run_mf_eki(model: QoiModel,
 
         offline_dir = f'{absolute_eki_directory}/iteration_{iteration}/'
         print("==================Building ROM=============")
-        ## CWS TODO: This model won't have a dispatcher in it...
         rom_model = rom_model_builder.build_from_training_dirs(
             offline_dir,
             rom_training_dirs,
@@ -366,7 +363,7 @@ def run_mf_eki(model: QoiModel,
         test_training_dirs.append(run_directory_base + "mean")
 
         # Run the EKI iteration with test parameters
-        test_sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], fom_evaluation_concurrency)
+        test_sample_one_fom_results = run_eki_iteration(model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], fom_evaluation_concurrency, dispatcher)
         test_error_norm = np.mean(np.linalg.norm(test_sample_one_fom_results['errors'], axis=0))
         test_training_parameters = np.vstack([
             training_parameters,
@@ -380,11 +377,11 @@ def run_mf_eki(model: QoiModel,
         ])
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_0_'
-        test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency)
+        test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency, rom_dispatcher)
         rom_errors = np.linalg.norm(test_sample_one_rom_results['qois'] - test_sample_one_fom_results['qois'])/ np.linalg.norm(test_sample_one_fom_results['qois'])
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_1_'
-        old_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], rom_evaluation_concurrency)
+        old_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], rom_evaluation_concurrency, rom_dispatcher)
         old_sample_one_rom_results = test_sample_one_rom_results
 
         test_rom_training_dirs = copy.deepcopy(rom_training_dirs)
@@ -406,11 +403,11 @@ def run_mf_eki(model: QoiModel,
           )
           rom_rebuilt_this_iteration = True
           run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_0_'
-          test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency)
+          test_sample_one_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[0], rom_evaluation_concurrency, rom_dispatcher)
           rom_errors = np.linalg.norm(test_sample_one_rom_results['qois'] - test_sample_one_fom_results['qois'])/ np.linalg.norm(test_sample_one_fom_results['qois'])
           print(f'  Updated ROM error = {rom_errors}')
           run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_rom_sample_set_1_'
-          test_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], rom_evaluation_concurrency)
+          test_sample_two_rom_results = run_eki_iteration(rom_model, observations, run_directory_base, parameter_names, test_parameter_sample_sets[1], rom_evaluation_concurrency, rom_dispatcher)
         else:
           print(f'  ROM error = {rom_errors} below tolerance, re-using ROM')
           test_sample_two_rom_results = old_sample_two_rom_results
@@ -442,7 +439,7 @@ def run_mf_eki(model: QoiModel,
             rom_training_qois = test_rom_training_qois.copy()
             print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
             # Save the current state to the restart file
-            np.savez(
+            dispatcher.np_savez(
                 f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
                 sample_one_rom_results=sample_one_rom_results,
                 sample_two_rom_results=sample_two_rom_results,
@@ -509,7 +506,6 @@ def mf_eki_with_auto_rom(model: QoiModel,
     """
     Wrapper around run_mf_eki that selects a default ROM surrogate by rom_type.
     """
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
     rom_args = {} if rom_args is None else dict(rom_args)
     rom_type_normalized = rom_type.strip().lower()
     if rom_type_normalized == "gp":
@@ -526,7 +522,6 @@ def mf_eki_with_auto_rom(model: QoiModel,
             signal_variance_grid=rom_args.get("signal_variance_grid"),
             normalize_parameters=rom_args.get("normalize_parameters", False),
             normalize_targets=rom_args.get("normalize_targets", False),
-            dispatcher=dispatcher
         )
     else:
         raise ValueError(f"Unsupported rom_type '{rom_type}'.")

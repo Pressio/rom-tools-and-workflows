@@ -90,7 +90,7 @@ from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse._inverse_utils import *
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher
 
 def run_eki(model: QoiModel,
                  parameter_space: ParameterSpace,
@@ -134,7 +134,9 @@ def run_eki(model: QoiModel,
             parameters.
         absolute_eki_directory: Absolute path to the working directory. Each
             accepted or tested iteration writes into
-            ``iteration_<k>/run_*`` subdirectories under this path.
+            ``iteration_<k>/run_*`` subdirectories under this path. When a
+            RemoteDispatcher is supplied, a relative path is also accepted and
+            is resolved against the dispatcher's configured remote root.
         ensemble_size: Number of ensemble members used in the EKI update.
         initial_step_size: Initial multiplier applied to the computed Kalman
             update directions.
@@ -168,12 +170,13 @@ def run_eki(model: QoiModel,
         the corresponding QoI matrix from the last accepted iteration.
     """
     # Fall back to LocalDispatcher if none is provided
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
-
+    dispatcher = resolve_dispatcher(dispatcher)
 
     start_time = time.time()
     ## Error checking======
-    # assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
+    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
+    if isinstance(dispatcher, LocalDispatcher):
+        assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:

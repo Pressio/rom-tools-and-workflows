@@ -5,14 +5,14 @@ import time
 
 from typing import Optional
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
 def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample, dispatcher: Optional[BaseDispatcher] = None):
     """Prepare the model run and compute the QoI and error."""
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(run_directory)
     parameter_dict = _create_parameter_dict(parameter_names, parameter_sample)
     model.populate_run_directory(run_directory, parameter_dict)
@@ -35,7 +35,7 @@ def bound_samples(samples,samples_min,samples_max):
 
 def run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
     """Run the EKI iteration for the specified parameters."""
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     mp_cntxt = multiprocessing.get_context("fork")
     ensemble_size = np.shape(parameter_samples)[0]
 
@@ -96,7 +96,7 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
 
 def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
     """Run a VI iteration for sampled parameters only (no explicit mean run)."""
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     mp_cntxt = multiprocessing.get_context("spawn")
     ensemble_size = np.shape(parameter_samples)[0]
     assert ensemble_size > 0, "parameter_samples must contain at least one sample"
@@ -109,6 +109,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
             first_run_directory,
             parameter_names,
             parameter_samples[0],
+            dispatcher,
         )
         qois = np.zeros((first_qoi.size, ensemble_size))
         errors = np.zeros((first_qoi.size, ensemble_size))
@@ -122,6 +123,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
                 run_directory,
                 parameter_names,
                 parameter_samples[ensemble_member],
+                dispatcher,
             )
     else:
         samples_to_run = list(range(ensemble_size))
@@ -137,6 +139,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
                     f'{run_directory_base}{ensemble_member}',
                     parameter_names,
                     parameter_samples[ensemble_member],
+                    dispatcher,
                 )
                 for ensemble_member in samples_to_run
             ]

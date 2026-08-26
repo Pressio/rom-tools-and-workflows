@@ -482,6 +482,23 @@ class RemoteDispatcher(BaseDispatcher):
     def create_empty_dir(self, dir_name: str):
         self.__create_remote_directory(dir_name)
 
+    def list_dir(self, path: str) -> list:
+        remote_path = self.__resolve_remote_path(path)
+        res = self.conn.run(f"ls -1 {shlex.quote(remote_path)}")
+        if not res.ok:
+            return []
+        return [entry for entry in res.stdout.splitlines() if entry]
+
+    def remove(self, path: str) -> None:
+        remote_path = self.__resolve_remote_path(path)
+        res = self.conn.run(f"rm -f {shlex.quote(remote_path)}")
+        if not res.ok:
+            raise RuntimeError(f"Failed to remove remote file {remote_path}: {res.stderr}")
+        self.logger.debug(f"Removed remote file: {remote_path}")
+
+    def write_text(self, path: str, content: str) -> None:
+        self.__write_text(path, content)
+
     def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
         """
         Main method of the Dispatcher. Dispatches provided work to the
