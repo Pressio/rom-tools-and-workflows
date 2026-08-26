@@ -1768,15 +1768,40 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
     uniform_r_shapes = len(set(local_r_row_counts)) == 1
     column_count = local_a.shape[1]
     r_element_counts = [rows*column_count for rows in local_r_row_counts]
-    r_displacements = np.concatenate(
-        ([0], np.cumsum(r_element_counts[:-1], dtype=np.int64))
-    )
-    mpi_dtype = MPI._typedict[local_a.dtype.char]
+    maximum_mpi_count = np.iinfo(np.int32).max
+    if uniform_r_shapes:
+        communication_size_is_supported = (
+            not r_element_counts
+            or r_element_counts[0] <= maximum_mpi_count
+        )
+    else:
+        communication_size_is_supported = (
+            sum(r_element_counts) <= maximum_mpi_count
+        )
+    if not communication_size_is_supported:
+        raise ValueError(
+            "distributed SVD buffer collective exceeds the MPI signed-int "
+            "element-count limit"
+        )
 
-    stacked_r = (
-        np.empty((sum(local_r_row_counts), column_count), dtype=local_a.dtype)
-        if rank == root else None
-    )
+    factor_dtype = local_r.dtype
+    mpi_dtype = MPI._typedict[factor_dtype.char]
+    stacked_r = None
+    root_allocation_error = None
+    if rank == root:
+        try:
+            stacked_r = np.empty(
+                (sum(local_r_row_counts), column_count), dtype=factor_dtype
+            )
+        except (MemoryError, ValueError) as exception:
+            root_allocation_error = str(exception)
+    root_allocation_error = comm.bcast(root_allocation_error, root=root)
+    if root_allocation_error is not None:
+        raise MemoryError(
+            "could not allocate the distributed SVD root buffer: "
+            + root_allocation_error
+        )
+
     if uniform_r_shapes:
         comm.Gather(
             [local_r, mpi_dtype],
@@ -1784,6 +1809,9 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
             root=root,
         )
     else:
+        r_displacements = np.concatenate(
+            ([0], np.cumsum(r_element_counts[:-1], dtype=np.int64))
+        )
         comm.Gatherv(
             [local_r, mpi_dtype],
             [stacked_r, r_element_counts, r_displacements, mpi_dtype]
@@ -1845,7 +1873,7 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
         sum(metadata["shape"][0] for metadata in all_metadata), column_count
     )
     local_left_transform = np.empty(
-        (local_r.shape[0], global_thin_rank), dtype=local_a.dtype
+        (local_r.shape[0], global_thin_rank), dtype=factor_dtype
     )
     if uniform_r_shapes:
         comm.Scatter(
