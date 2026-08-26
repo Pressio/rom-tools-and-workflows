@@ -493,17 +493,17 @@ def test_distributed_svd_preserves_communicator():
 
 
 class _GatherRecordingCommunicator:
-    """MPI communicator proxy that records the shapes passed to ``gather``.
+    """MPI communicator proxy that records direct-buffer gathers.
 
     ``DistributedSvd`` only relies on a small subset of the communicator API.
     This test double forwards those operations to a real communicator while
-    intercepting ``gather`` to record what each rank sends. Communication still
+    intercepting ``Gather`` to record what each rank sends. Communication still
     occurs normally, but the test can verify that the algorithm gathers reduced
     R factors instead of the original local input matrices.
 
     Attributes:
         gathered_shapes: Shapes of all values supplied by this rank to
-            ``gather``, in call order.
+            ``Gather`` or ``Gatherv``, in call order.
     """
 
     def __init__(self, comm):
@@ -514,15 +514,27 @@ class _GatherRecordingCommunicator:
         return self._comm.allgather(value)
 
     def gather(self, value, root=0):
-        """Record the outgoing shape, then perform the real gather."""
-        self.gathered_shapes.append(value.shape)
-        return self._comm.gather(value, root=root)
+        raise AssertionError("DistributedSvd must not use object gather")
+
+    def Gather(self, sendbuf, recvbuf, root=0):
+        self.gathered_shapes.append(sendbuf[0].shape)
+        return self._comm.Gather(sendbuf, recvbuf, root=root)
+
+    def Gatherv(self, sendbuf, recvbuf, root=0):
+        self.gathered_shapes.append(sendbuf[0].shape)
+        return self._comm.Gatherv(sendbuf, recvbuf, root=root)
 
     def bcast(self, value, root=0):
         return self._comm.bcast(value, root=root)
 
     def scatter(self, value, root=0):
-        return self._comm.scatter(value, root=root)
+        raise AssertionError("DistributedSvd must not use object scatter")
+
+    def Scatter(self, sendbuf, recvbuf, root=0):
+        return self._comm.Scatter(sendbuf, recvbuf, root=root)
+
+    def Scatterv(self, sendbuf, recvbuf, root=0):
+        return self._comm.Scatterv(sendbuf, recvbuf, root=root)
 
     def Get_rank(self):
         return self._comm.Get_rank()
