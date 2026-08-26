@@ -10,6 +10,12 @@ Everything goes through the `Dispatcher` class, which defines public methods lik
 - `put(local_path, remote_path)`: Copy a local file to the remote host
 - `get(remote_path, local_path)`: Copy a remote file to the local host
 - `dispatch(cmd, remote_run_directory)`: Executes `cmd` from the remote host's `run_directory`
+- `path_exists(path)`: Whether `path` exists on the execution host
+- `create_empty_dir(dir_name)`: Create `dir_name` (and any missing parents) on the execution host
+- `list_dir(path)`: Names of the entries in `path` on the execution host
+- `remove(path)`: Delete the file at `path` on the execution host
+- `write_text(path, content)`: Write `content` to a text file on the execution host
+- `np_savetxt(path, arr, fmt)` / `np_savez(path, **arrays)`: Write numpy data to the execution host
 - `get_config(param = None)`: Returns the value of the specified param, or the whole config dict if no argument is given
 
 You'll need to wire the Dispatcher into your model class and your workflow file. Here's how:
@@ -137,9 +143,32 @@ the dispatcher in your workflow. The safest way is to scope it, as seen in `hpc/
 
 Note that we pass the Dispatcher to both the model and the sampling workflow:
 
+The following workflows accept a `dispatcher` argument:
+
+- `run_sampling()`
+- `run_eki()`, `run_mf_eki()`, `mf_eki_with_auto_rom()`
+- `run_vi()`, `run_mf_vi()`, `mf_vi_with_auto_rom()`
+
+Every one of them defaults to a `LocalDispatcher` when you pass nothing, so
+existing workflows keep running unchanged.
+
+> [!NOTE]
+> In the multifidelity workflows, only the high-fidelity (FOM) evaluations are
+> dispatched. Surrogate (ROM) models are fit and evaluated in-process, so their
+> run directories always stay on the local machine.
+
 > [!WARNING]
-> For now, only the `run_sampling()` workflow supports the Dispatcher.
-> Support in other workflows is coming soon.
+> `evaluation_concurrency` greater than 1 is not supported with a
+> `RemoteDispatcher`. Concurrent evaluation runs each sample in a separate
+> process, which a remote connection is not set up to share. Use
+> `evaluation_concurrency = 1` for remote runs and let SLURM provide the
+> parallelism, or keep concurrency with a `LocalDispatcher`.
+
+> [!WARNING]
+> Restart files written through a `RemoteDispatcher` land on the remote host,
+> but the drivers read `restart_file` from the local filesystem. To restart a
+> remote run, retrieve the restart file first (e.g. with the `collect`
+> configuration option or `dispatcher.get()`).
 
 When instantiating the dispatcher, you need to pass it a `sampling_directory`.
 This will be created both locally and remotely as a subdirectory
@@ -174,7 +203,7 @@ An example configuration YAML can be found in `hpc/config/example.yaml`.
 
 You can also set these params via the command-line. For example,
 set the `remote_root` (the remote directory where all commands
-are executed) by passing `-r /path/to/remote/root` when you
+are executed) by passing `-R /path/to/remote/root` when you
 execute your workflow.
 
 3. **Combination**
@@ -189,7 +218,7 @@ the remote host, but keep the rest of the configuration the same.
 You could run:
 
 ```sh
-python my_workflow.py -i path/to/input.yaml -c *.log
+python my_workflow.py -i path/to/input.yaml -o '*.log'
 ```
 
 ### Core configuration arguments
@@ -226,14 +255,16 @@ ssh:
 These workflow arguments define file management with the dispatcher.
 
 - `remote_root` (`-R`): Directory on the remote host where commands are executed, absolute or relative to the home directory.
-- `collect` (`-c`): Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
+- `collect` (`-o`): Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
+- `upload` (`-U`): Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded
 
 In the YAML, these are grouped under `workflow`:
 
 ```yaml
 workflow:
     remote_root: my_sampling_directory
-    collect: *.log, passed.txt
+    collect: "*.log, passed.txt"
+    upload: "input.yaml, mesh/"
 ```
 
 #### `slurm`
@@ -258,6 +289,7 @@ The final SLURM argument specifies how often the dispatcher should
 poll the submitted job:
 
 - `poll_interval` (`-P`): Seconds between `squeue` polls
+- `timeout` (`-T`): Seconds to keep retrying the `sacct` query for a finished job's exit code before giving up
 
 In YAML, all of these arguments are grouped under `slurm`:
 

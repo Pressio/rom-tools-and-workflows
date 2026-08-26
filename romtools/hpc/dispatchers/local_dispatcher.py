@@ -52,6 +52,24 @@ class LocalDispatcher(BaseDispatcher):
     def create_empty_dir(self, dir_name: str):
         os.makedirs(dir_name, exist_ok=True)
 
+    def list_dir(self, path: str) -> list:
+        if not os.path.isdir(path):
+            return []
+        return os.listdir(path)
+
+    def remove(self, path: str) -> None:
+        if os.path.exists(path):
+            os.remove(path)
+            self.logger.debug(f"Removed {path}", local=True)
+
+    def write_text(self, path: str, content: str) -> None:
+        parent_dir = os.path.dirname(path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as text_file:
+            text_file.write(content)
+        self.logger.debug(f"Wrote file {path}", local=True)
+
     def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         """
         Returns:

@@ -45,6 +45,15 @@ class BaseDispatcher:
     def create_empty_dir(self, dir_name: str):
         pass
 
+    def list_dir(self, path: str) -> list:
+        pass
+
+    def remove(self, path: str) -> None:
+        pass
+
+    def write_text(self, path: str, content: str) -> None:
+        pass
+
     def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         pass
 
