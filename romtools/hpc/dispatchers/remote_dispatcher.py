@@ -408,7 +408,6 @@ class RemoteDispatcher(BaseDispatcher):
 
             return result.stdout
 
-        self.logger.log("Retrieving job output...")
         jid = shlex.quote(str(job_id))
 
         out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
@@ -416,7 +415,12 @@ class RemoteDispatcher(BaseDispatcher):
         stdout_filepath = os.path.join(out_dir, self.slurm_specified_out.replace("%j", jid))
         stderr_filepath = os.path.join(out_dir, self.slurm_specified_err.replace("%j", jid))
 
-        return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
+        stdout = get_file_contents(stdout_filepath)
+        stderr = get_file_contents(stderr_filepath)
+
+        self.logger.log("Retrieved job output.")
+
+        return stdout, stderr
 
     # ------------------------------------------------------------------
     # I/O methods
