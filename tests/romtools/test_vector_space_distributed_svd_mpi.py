@@ -54,7 +54,7 @@ def test_vector_space_from_pod_with_distributed_svd_matches_numpy(
     global_snapshots = rng.normal(
         size=(1, spatial_extent, snapshot_count)
     )
-    # Extract the spacial rows owned by this rank.
+    # Extract the spatial rows owned by this rank.
     local_snapshots, local_slice, counts = _uneven_snapshot_partition(
         global_snapshots, comm
     )

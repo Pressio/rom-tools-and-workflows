@@ -83,7 +83,7 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
 
 
     if weighting_matrix is None:
-        left_hand_side = basis.transpose() @  basis 
+        left_hand_side = basis.transpose() @  basis
         right_hand_side = basis.transpose() @ right_hand_side
 
     else:
@@ -92,9 +92,9 @@ def optimal_l2_projection(input_tensor : np.ndarray , vector_space : romtools.Ve
 
     reduced_state = np.linalg.solve(left_hand_side,right_hand_side)
     basis = np.reshape(basis,(nvars,nx,k),'C')
-  
+
     if return_full_state == False:
-        return reduced_state 
+        return reduced_state
 
     if len(input_tensor.shape) == 2:
         full_state = np.einsum('nik,k...->ni...',basis,reduced_state) + shift_vector

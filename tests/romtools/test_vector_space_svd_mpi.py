@@ -18,7 +18,7 @@ def construct_snapshots(comm):
     else:
         myData = np.random.normal(size=(3, 3, 5))
 
-    return myData 
+    return myData
 
 class MyFakeSvd:
     def __init__(self, comm):

@@ -2,7 +2,7 @@ vector_space
 =======================
 
 This set of tutorials will show you the basics of constructing a vector space.
-In practice, a vector space comprises a basis and, potentially, an affine offset. 
+In practice, a vector space comprises a basis and, potentially, an affine offset.
 
 .. toctree::
    :maxdepth: 2

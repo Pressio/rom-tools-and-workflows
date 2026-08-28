@@ -97,7 +97,7 @@ class BoundedParameterSpace(ParameterSpace):
         Inputs: a sample distribution that potentially exceeds
                 the bounds of the parameter space
         Outputs:
-                a bounded sample distribution 
+                a bounded sample distribution
         (number_of_samples, self.get_dimensionality())
         '''
 

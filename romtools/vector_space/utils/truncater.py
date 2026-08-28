@@ -53,7 +53,7 @@ and then selecting the first :math:`K` left singular vectors (i.e., the first :m
 columns of :math:`\\mathbf{U}`). Typically, :math:`K` is determined through the decay of
 the singular values.
 
-The truncater class is desined to truncate a basis.
+The truncater class is designed to truncate a basis.
 We provide concrete implementations that truncate based on a specified number
 of basis vectors and the decay of the singular values
 '''
@@ -131,7 +131,7 @@ class BasisSizeTruncater():
     def get_energy(self):
         '''
         Returns:
-            float: The energy criteria corresponding to the truncated basis 
+            float: The energy criteria corresponding to the truncated basis
         '''
 
         if self.__singular_values is None:
@@ -178,7 +178,7 @@ class EnergyBasedTruncater():
     def get_energy(self):
         '''
         Returns:
-            float: The energy criteria corresponding to the truncated basis 
+            float: The energy criteria corresponding to the truncated basis
         '''
 
         if self.__energy is None:

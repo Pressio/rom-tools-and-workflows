@@ -183,7 +183,7 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
        \\boldsymbol \\Phi_{\\*}^T \\mathbf{M}\\boldsymbol \\Phi_{\\*} = \\mathbf{I},
 
     where :math:`\\mathbf{M}` is the SPD weighting matrix. Typically, this inner product
-    is used for orthogonalizing with respect to a mass matrix 
+    is used for orthogonalizing with respect to a mass matrix
 
     This class conforms to `Orthogonalizer` protocol.
     '''
@@ -219,7 +219,7 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
             np.ndarray: The orthogonalized matrix.
         '''
         assert my_array.shape[0] == self.__weighting_matrix.shape[0], "Weighting vector does not match basis size"
-        
+
         tmp = self.__weighting_matrix_sqrt @ my_array
         my_array, _ = self.__qr_picked(tmp, mode='reduced')
         my_array = np.linalg.solve(self.__weighting_matrix_sqrt, my_array)

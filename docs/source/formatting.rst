@@ -12,7 +12,7 @@ Single file with params file and explicit output:
 
 .. code-block:: bash
 
-   romtools-format --parmams params.in --i input.txt --o output.txt
+   romtools-format --params params.in --i input.txt --o output.txt
 
 If ``params.in`` exists in the current directory, it is loaded automatically.
 You can also pass ``--params`` explicitly. Command line ``--var`` values
