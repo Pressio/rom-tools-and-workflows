@@ -1837,6 +1837,7 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
                 reduced_q, final_r = np.linalg.qr(
                     stacked_r, mode="reduced"
                 )
+                del stacked_r
                 # A: Compute the SVD only of the final reduced factor, then fold
                 # its left vectors into the second-level TSQR Q.
                 final_u, singular_values, right_singular_vectors = np.linalg.svd(
@@ -1845,19 +1846,23 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
                     compute_uv=True,
                     hermitian=False,
                 )
+                del final_r
                 stacked_left_transform = reduced_q @ final_u
+                del reduced_q, final_u
 
             else:
                 # B: NumPy returns only singular values when left and right
                 # singular vectors were not requested. The second-level Q is
                 # not needed in this path either.
                 final_r = np.linalg.qr(stacked_r, mode="r")
+                del stacked_r
                 singular_values = np.linalg.svd(
                     final_r,
                     full_matrices=full_matrices,
                     compute_uv=False,
                     hermitian=False,
                 )
+                del final_r
         except Exception as exception:
             reduction_error = str(exception)
 
@@ -1903,6 +1908,10 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
             [local_left_transform, mpi_dtype],
             root=root,
         )
+    if rank == root:
+        # The scatter is blocking, so its send buffer is no longer needed.
+        # Release it before allocating this rank's local U matrix.
+        del stacked_left_transform
     local_left_singular_vectors = local_q @ local_left_transform
 
     return local_left_singular_vectors, singular_values, right_singular_vectors

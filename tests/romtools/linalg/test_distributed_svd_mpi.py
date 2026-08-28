@@ -1,3 +1,5 @@
+import weakref
+
 import numpy as np
 import pytest
 
@@ -500,6 +502,66 @@ def test_distributed_compute_uv_false_uses_r_only_qr(monkeypatch):
 
     expected_modes = ["r", "r"] if comm.Get_rank() == 0 else ["r"]
     assert qr_modes == expected_modes
+
+
+@pytest.mark.mpi(min_size=1)
+def test_root_temporaries_are_released_before_local_u_multiply(monkeypatch):
+    references = {}
+    local_u_multiply_was_checked = []
+    original_qr = np.linalg.qr
+    original_svd = np.linalg.svd
+    qr_call_count = 0
+
+    class LocalQ(np.ndarray):
+        def __matmul__(self, other):
+            for name in (
+                "stacked_r",
+                "reduced_q",
+                "final_r",
+                "final_u",
+                "stacked_left_transform",
+            ):
+                assert references[name]() is None
+            local_u_multiply_was_checked.append(True)
+            return np.asarray(self) @ other
+
+    class ReducedQ(np.ndarray):
+        def __matmul__(self, other):
+            result = np.asarray(self) @ other
+            references["stacked_left_transform"] = weakref.ref(result)
+            return result
+
+    def recording_qr(matrix, mode="reduced"):
+        nonlocal qr_call_count
+        qr_call_count += 1
+        q_matrix, r_matrix = original_qr(matrix, mode=mode)
+        if qr_call_count == 1:
+            return q_matrix.view(LocalQ), r_matrix
+
+        references["stacked_r"] = weakref.ref(matrix)
+        reduced_q = q_matrix.view(ReducedQ)
+        references["reduced_q"] = weakref.ref(reduced_q)
+        return reduced_q, r_matrix
+
+    def recording_svd(matrix, **kwargs):
+        references["final_r"] = weakref.ref(matrix)
+        result = original_svd(matrix, **kwargs)
+        references["final_u"] = weakref.ref(result[0])
+        return result
+
+    monkeypatch.setattr(np.linalg, "qr", recording_qr)
+    monkeypatch.setattr(np.linalg, "svd", recording_svd)
+
+    # COMM_SELF makes every pytest MPI process independently exercise the
+    # rank-zero allocation and cleanup path.
+    DistributedSvd(MPI.COMM_SELF)(
+        np.arange(28.0).reshape(7, 4),
+        full_matrices=False,
+        compute_uv=True,
+        hermitian=False,
+    )
+
+    assert local_u_multiply_was_checked == [True]
 
 
 @pytest.mark.mpi(min_size=1)
