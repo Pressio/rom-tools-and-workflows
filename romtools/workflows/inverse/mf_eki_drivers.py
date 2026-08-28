@@ -59,7 +59,7 @@ import time
 from typing import Optional
 from romtools.workflows.inverse._inverse_utils import *
 from romtools.workflows.models import QoiModel
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher, resolve_local_dispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
 from romtools.rom.qoi_surrogates import GaussianProcessKernel, GaussianProcessQoiModel
 import copy
@@ -221,9 +221,7 @@ def run_mf_eki(model: QoiModel,
     start_time = time.time()
 
     ## Error checking======
-    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
-    if isinstance(dispatcher, LocalDispatcher):
-        assert os.path.isabs(absolute_eki_directory), f"eki_directory is not an absolute path ({absolute_eki_directory})"
+    dispatcher.require_absolute_path(absolute_eki_directory)
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
