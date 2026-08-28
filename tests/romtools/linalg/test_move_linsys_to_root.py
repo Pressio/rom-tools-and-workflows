@@ -18,10 +18,10 @@ def test_move_linsys_to_rank_zero():
     comm = MPI.COMM_WORLD
     myRank = comm.Get_rank()
 
-    if comm.Get_size() != 3: 
-        return 
+    if comm.Get_size() != 3:
+        return
     else:
-        scenarios = ['every_rank_has_rows', 'rank_0_empty', 'rank_1_empty', 
+        scenarios = ['every_rank_has_rows', 'rank_0_empty', 'rank_1_empty',
             'rank_2_empty', 'rank_01_empty', 'rank_02_empty']
 
         for num_rows in [5, 11]:

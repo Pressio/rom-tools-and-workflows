@@ -169,9 +169,9 @@ def run_eki(model: QoiModel,
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
-      assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+      assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}"
     if parameter_maxes is not None:
-      assert np.size(parameter_maxes) == parameter_space.get_dimensionality(), f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}" 
+      assert np.size(parameter_maxes) == parameter_space.get_dimensionality(), f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}"
     ##====================
     np.random.seed(random_seed)
 
@@ -188,7 +188,7 @@ def run_eki(model: QoiModel,
         qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
         np.savez(f'{absolute_eki_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
-        step_size = initial_step_size 
+        step_size = initial_step_size
 
     else:
         restart_file = np.load(restart_file)
@@ -201,8 +201,8 @@ def run_eki(model: QoiModel,
         mean_qoi = restart_file['mean_qoi']
         errors = restart_file['errors']
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
-        
-    #Compute ENKF update 
+
+    #Compute ENKF update
     dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)
     dp_norm = np.linalg.norm(dp)
     wall_time = time.time() - start_time
@@ -211,7 +211,7 @@ def run_eki(model: QoiModel,
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance and dp_norm > delta_params_tolerance:
         # Test the parameter update for the step size
-        test_parameter_samples = parameter_samples + step_size*dp 
+        test_parameter_samples = parameter_samples + step_size*dp
         test_parameter_samples = bound_samples(test_parameter_samples,parameter_mins,parameter_maxes)
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
         test_results = run_eki_iteration(model,observations,run_directory_base,parameter_names,test_parameter_samples,evaluation_concurrency)
@@ -234,13 +234,13 @@ def run_eki(model: QoiModel,
           np.savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
           iteration += 1
         else:
-          # Else, drop the step size 
+          # Else, drop the step size
           step_failed_counter += 1
-          step_size /= step_size_decay_factor 
+          step_size /= step_size_decay_factor
           print(f'  Warning, lowering step size, Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}')
           if step_failed_counter > max_step_size_decrease_trys:
             print(f'  Failed to advance after {max_step_size_decrease_trys}, exiting')
-            break 
+            break
 
     if iteration >= max_iterations:
         print(f'Max iterations reached, terminating')
@@ -263,13 +263,13 @@ def compute_eki_update2(parameter_samples,qois,mean_qoi,errors,observations_cova
     Pxy = 0.0
     for i in range(0,ensemble_size):
         Pxy += ( parameter_samples[i] - np.mean(parameter_samples,axis=0))[:,None] @ ((qois[:,i] - mean_qoi)[:,None]).transpose()
-    Pxy =  1./(ensemble_size - 1)*Pxy 
+    Pxy =  1./(ensemble_size - 1)*Pxy
 
     I = np.eye(mean_qoi.size)
     LHS = Pyy + observations_covariance + regularization_parameter*I
     RHS = errors
     dp = np.linalg.solve(LHS,RHS)
-    dp = Pxy @ dp 
+    dp = Pxy @ dp
     return dp.transpose()
 
 
@@ -277,7 +277,7 @@ def compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covar
     #Compute update matrices
     ensemble_size = parameter_samples.shape[0]
     dw = ( parameter_samples - np.mean(parameter_samples,axis=0)[None] ).transpose()
-    Sw = 1./np.sqrt(ensemble_size - 1)*dw 
+    Sw = 1./np.sqrt(ensemble_size - 1)*dw
     dy =  qois - mean_qoi[:,None]
     Sy = 1./np.sqrt(ensemble_size - 1)*dy
     # Compute Kalmann gain

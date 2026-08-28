@@ -18,6 +18,7 @@ API Reference
    :caption: Utilities
 
    formatting
+   Distributed SVD <distributed_svd>
 
 .. toctree::
    :maxdepth: 1

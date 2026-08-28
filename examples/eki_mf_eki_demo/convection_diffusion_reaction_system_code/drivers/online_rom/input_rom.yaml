@@ -1,6 +1,6 @@
 rom_construction_type: load-from-file  #other option is compute-from-fom
 rom_file_name: ../offline/offline_results/rb-precomputed-rom
-basis_file_name: ../offline/offline_results/reduced-basis 
+basis_file_name: ../offline/offline_results/reduced-basis
 rom_dimension: 10 #only relevant if we use rom_construction_type = compute-from-fom
 Nx: 127 #only relevant if we use rom_construction_type = compute-from-fom
 b: 0.5

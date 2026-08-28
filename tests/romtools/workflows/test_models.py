@@ -7,7 +7,7 @@ class MockModel:
         pass
 
     def populate_run_directory(self, run_dir,parameter_sample):
-        pass 
+        pass
 
     def run_model(self, run_dir, parameter_sample):
         return 0
@@ -18,7 +18,7 @@ class MockQoiModel:
         pass
 
     def populate_run_directory(self, run_dir,parameter_sample):
-        pass 
+        pass
 
     def run_model(self, run_dir, parameter_sample):
         return 0
@@ -32,7 +32,7 @@ class MockQoiModelWithErrorEstimate:
         pass
 
     def populate_run_directory(self, run_dir,parameter_sample):
-        pass 
+        pass
 
     def run_model(self, run_dir, parameter_sample):
         return 0

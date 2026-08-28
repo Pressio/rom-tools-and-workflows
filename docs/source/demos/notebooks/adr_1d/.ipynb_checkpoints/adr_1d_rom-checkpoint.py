@@ -30,4 +30,4 @@ if __name__ == "__main__":
     adr_problem = adrRom(args.offline_data_dir)
     params = np.genfromtxt('params.dat')
     u = adr_problem.solve(params[0],params[1])
-    np.savez('solution',u=u,x=adr_problem.x_) 
+    np.savez('solution',u=u,x=adr_problem.x_)

@@ -6,11 +6,11 @@ class Result:
     """
     Simple class to encapsulate the result of a command execution.
     """
-    def __init__(self, stdout, stderr, exited):
+    def __init__(self, stdout, stderr, exit_code):
         self.stdout = stdout
         self.stderr = stderr
-        self.exited = exited
-        self.ok = exited == 0
+        self.exit_code = exit_code
+        self.ok = exit_code == 0
 
 class Connection:
     """

@@ -1101,7 +1101,7 @@ def _transposed_pseudoinverse_via_python(A, comm=None):
     Note that returning the transpose(A^+) is because of convenience.
     In fact, when A is row-distributed and comm is not None,
     then the result has the same distribution of A.
-    If the matrix A is too large, this is the only feasble way
+    If the matrix A is too large, this is the only feasible way
     to store the pseudoinverse since no single rank can fully store it.
 
     Parameters:
@@ -1223,7 +1223,7 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
     my_rank = comm.Get_rank()
 
     # need to copy into C order because this is needed below when we
-    # serialize to send/recv with mpi wihout additional copies and also
+    # serialize to send/recv with MPI without additional copies and also
     # working correctly to store the data when received
     A = np.copy(A_in, order='C') if np.isfortran(A_in) else A_in
     b = np.copy(b_in, order='C') if np.isfortran(b_in) else b_in
@@ -1518,6 +1518,235 @@ def _local_column_range(rank, size, M):
     return start, end
 
 # ----------------------------------------------------
+def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
+                     hermitian=False):
+    '''Compute the thin SVD of a matrix distributed by rows.
+
+    This is a two-level Tall-Skinny QR (TSQR) algorithm. Each MPI rank
+    factors its local rows, rank zero factors the vertically stacked local
+    ``R`` factors, and only the resulting small factors are communicated.
+    The global input matrix is never assembled on any rank.
+
+    Parameters:
+        a (np.ndarray): Local rows of a globally row-distributed 2-D matrix.
+        comm (MPI_Comm): MPI communicator. If ``None``, NumPy is used directly.
+        full_matrices (bool): ``False`` is supported when singular vectors are
+            requested. As in NumPy, this option is ignored when
+            ``compute_uv=False``.
+        compute_uv (bool): If ``True``, return ``(U_local, s, Vh)``. Otherwise,
+            return only ``s``.
+        hermitian (bool): Only ``False`` is supported.
+
+    Returns:
+        - If ``compute_uv=True``, ``(U_local, s, Vh)``. ``U_local`` has the same
+            row distribution as ``a`` while ``s`` and ``Vh`` are replicated.
+        - If ``compute_uv=False``, only the replicated singular values are
+            returned.
+    '''
+    # Convert the local input without copying it when it is already an ndarray,
+    # and record validation failures instead of raising immediately. Delaying
+    # the error lets every MPI rank participate in the same collective.
+    local_error = None
+    try:
+        local_a = np.asarray(a)
+        if local_a.ndim != 2:
+            local_error = "a must be a two-dimensional array"
+        elif not np.issubdtype(local_a.dtype, np.number):
+            local_error = "a must have a real or complex numeric dtype"
+    except Exception as exception:
+        local_a = None
+        local_error = f"a could not be converted to an array: {exception}"
+
+    local_metadata = {
+        "error": local_error,
+        "shape": None if local_a is None or local_a.ndim != 2 else local_a.shape,
+        "dtype": None if local_a is None else local_a.dtype.str,
+        "options": (bool(full_matrices), bool(compute_uv), bool(hermitian)),
+    }
+
+    # Exchange only error, shape, dtype, and options metadata. This collectively
+    # validates the row distribution before any rank enters QR.
+    if comm is None:
+        all_metadata = [local_metadata]
+    else:
+        all_metadata = comm.allgather(local_metadata)
+
+    errors = [metadata["error"] for metadata in all_metadata
+              if metadata["error"] is not None]
+    if errors:
+        raise ValueError("invalid distributed SVD input: " + "; ".join(errors))
+
+    option_sets = {metadata["options"] for metadata in all_metadata}
+    if len(option_sets) != 1:
+        raise ValueError("all ranks must use the same SVD options")
+
+    column_counts = {metadata["shape"][1] for metadata in all_metadata}
+    if len(column_counts) != 1:
+        raise ValueError(
+            "all ranks must have the same number of matrix columns"
+        )
+
+    dtypes = {metadata["dtype"] for metadata in all_metadata}
+    if len(dtypes) != 1:
+        raise ValueError("all ranks must use the same matrix dtype")
+
+    # Reject NumPy options for which this distributed implementation cannot
+    # provide the documented NumPy result shape or algorithm semantics.
+    if hermitian:
+        raise NotImplementedError(
+            "DistributedSvd does not support hermitian=True"
+        )
+    if compute_uv and full_matrices:
+        raise NotImplementedError(
+            "DistributedSvd supports only full_matrices=False when "
+            "compute_uv=True"
+        )
+
+    # For a serial call, use NumPy directly after applying the same option
+    # validation as the distributed path.
+    if comm is None:
+        return np.linalg.svd(
+            local_a,
+            full_matrices=full_matrices,
+            compute_uv=compute_uv,
+            hermitian=False,
+        )
+
+    rank = comm.Get_rank()
+    root = 0
+
+    # Compute a reduced QR factorization of the local rows. Empty local
+    # partitions and partitions with fewer rows than columns are valid inputs.
+    local_qr_error = None
+    try:
+        local_q, local_r = np.linalg.qr(local_a, mode="reduced")
+    except Exception as exception:
+        local_q = None
+        local_r = None
+        local_qr_error = str(exception)
+
+    qr_errors = comm.allgather(local_qr_error)
+    qr_errors = [error for error in qr_errors if error is not None]
+    if qr_errors:
+        raise np.linalg.LinAlgError(
+            "local QR factorization failed: " + "; ".join(qr_errors)
+        )
+
+    # Gather only the reduced R factors on rank zero.
+    gathered_r = comm.gather(local_r, root=root)
+
+    singular_values = None
+    right_singular_vectors = None
+    local_left_transforms = None
+    reduction_error = None
+
+    if rank == root:
+        try:
+            # Finish the two-level TSQR factorization on rank zero by factoring
+            # the vertical stack of local R factors.
+            stacked_r = np.vstack(gathered_r)
+            reduced_q, final_r = np.linalg.qr(stacked_r, mode="reduced")
+
+            if compute_uv:
+                # A: Compute the SVD only of the final reduced factor, then fold
+                # its left vectors into the second-level TSQR Q.
+                final_u, singular_values, right_singular_vectors = np.linalg.svd(
+                    final_r,
+                    full_matrices=False,
+                    compute_uv=True,
+                    hermitian=False,
+                )
+                stacked_left_transform = reduced_q @ final_u
+
+                # Split the reduced left transformation according to each rank's
+                # local R row count so it can be scattered below.
+                local_left_transforms = []
+                row_offset = 0
+                for local_r_factor in gathered_r:
+                    next_offset = row_offset + local_r_factor.shape[0]
+                    local_left_transforms.append(
+                        stacked_left_transform[row_offset:next_offset, :]
+                    )
+                    row_offset = next_offset
+            else:
+                # B: NumPy returns only singular values when left and right
+                # singular vectors were not requested.
+                singular_values = np.linalg.svd(
+                    final_r,
+                    full_matrices=full_matrices,
+                    compute_uv=False,
+                    hermitian=False,
+                )
+        except Exception as exception:
+            reduction_error = str(exception)
+
+    # Broadcast a root-side failure before entering any later collectives,
+    # preventing other ranks from waiting indefinitely.
+    reduction_error = comm.bcast(reduction_error, root=root)
+    if reduction_error is not None:
+        raise np.linalg.LinAlgError(
+            "reduced QR or SVD factorization failed: " + reduction_error
+        )
+
+    # Replicate the singular values, matching NumPy's single-array return
+    # convention when compute_uv=False.
+    singular_values = comm.bcast(singular_values, root=root)
+    if not compute_uv:
+        return singular_values
+
+    # Replicate Vh, scatter the reduced left transformations, and multiply by
+    # the local first-level Q to recover each rank's rows of U.
+    right_singular_vectors = comm.bcast(right_singular_vectors, root=root)
+    local_left_transform = comm.scatter(local_left_transforms, root=root)
+    local_left_singular_vectors = local_q @ local_left_transform
+
+    return local_left_singular_vectors, singular_values, right_singular_vectors
+
+class DistributedSvd:
+    '''NumPy-compatible thin SVD callable for a row-distributed matrix.
+
+    Bind an MPI communicator once, then pass this object anywhere a callable
+    compatible with :func:`numpy.linalg.svd` is expected, including
+    :class:`romtools.vector_space.VectorSpaceFromPOD`.
+
+    Args:
+        comm (MPI_Comm): Communicator over which matrix rows are distributed.
+            If ``None``, supported calls delegate to NumPy in serial.
+
+    Example:
+        >>> distributed_svd = DistributedSvd(comm)
+        >>> U_local, s, Vh = distributed_svd(
+        ...     A_local, full_matrices=False, compute_uv=True, hermitian=False
+        ... )
+    '''
+
+    def __init__(self, comm=None) -> None:
+        self._comm = comm
+
+    def __call__(self, a, full_matrices=True, compute_uv=True,
+                 hermitian=False):
+        '''Compute a thin SVD collectively over the bound communicator.
+
+        Args:
+            a (np.ndarray): The calling rank's local matrix rows.
+            full_matrices (bool): Must be ``False`` when ``compute_uv=True``.
+            compute_uv (bool): Return singular vectors when ``True``; otherwise
+                return only singular values.
+            hermitian (bool): Must be ``False``.
+
+        Returns:
+            ``(U_local, s, Vh)`` when ``compute_uv=True``; otherwise ``s``.
+        '''
+        # Use the internal implementation.
+        return _distributed_svd(
+            a,
+            comm=self._comm,
+            full_matrices=full_matrices,
+            compute_uv=compute_uv,
+            hermitian=hermitian,
+        )
+
+# ----------------------------------------------------
 # ----------------------------------------------------
 
 # pylint: disable=redefined-builtin
@@ -1532,3 +1761,4 @@ pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
 streaming_pod = _streaming_pod
 local_column_range = _local_column_range
+distributed_svd = _distributed_svd

@@ -132,7 +132,7 @@ class VectorSpace(Protocol):
         Retrieves the dimension of the vector space
 
         Returns:
-            A Tuple with the the dimensions of the vector space (n_var,nx,K).
+            A Tuple with the dimensions of the vector space (n_var,nx,K).
         '''
         ...
 
@@ -141,7 +141,7 @@ class VectorSpace(Protocol):
         Retrieves the shift vector of the vector space.
 
         Returns:
-            `np.ndarray`: The shift vector in tensorm form.
+            `np.ndarray`: The shift vector in tensor form.
         '''
         ...
 

@@ -143,7 +143,7 @@ class BasisSizeTruncater():
     def get_energy(self):
         '''
         Returns:
-            float: The energy criteria corresponding to the truncated basis 
+            float: The energy criteria corresponding to the truncated basis
         '''
 
         if self.__singular_values is None:
@@ -205,7 +205,7 @@ class EnergyBasedTruncater():
     def get_energy(self):
         '''
         Returns:
-            float: The energy criteria corresponding to the truncated basis 
+            float: The energy criteria corresponding to the truncated basis
         '''
 
         if self.__energy is None:

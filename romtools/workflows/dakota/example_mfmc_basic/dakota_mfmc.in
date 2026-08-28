@@ -9,8 +9,8 @@ method,
         pilot_samples = 10
         seed = 8674132
     output debug
-    
-model, 
+
+model,
     variables_pointer = 'HF_VARS'
     surrogate ensemble
         truth_model = 'HF'
@@ -35,7 +35,7 @@ model,
     variables_pointer = 'HF_VARS'
     interface_pointer = 'HF_INT'
         simulation
-            cost_recovery_metadata = 'core_time'       
+            cost_recovery_metadata = 'core_time'
 
 variables
     id_variables = 'LF1_VARS'
