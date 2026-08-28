@@ -63,6 +63,9 @@ class BaseDispatcher:
     def np_savez(self, path: str, **arrays) -> None:
         pass
 
+    def require_absolute_path(self, path: str) -> None:
+        pass
+
     def get_config(self, param: str = None) -> dict:
         if param is None:
             return self.config

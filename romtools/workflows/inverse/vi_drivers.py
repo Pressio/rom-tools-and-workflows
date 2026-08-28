@@ -119,7 +119,7 @@ import re
 import time
 from scipy.stats import norm, qmc
 from typing import Optional, Tuple
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
@@ -1775,11 +1775,8 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             parameter_maxes: np.ndarray,
                             bounded_parameter_handling: str,
                             dispatcher: Optional[BaseDispatcher] = None) -> None:
-    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
-    if isinstance(resolve_dispatcher(dispatcher), LocalDispatcher):
-        assert os.path.isabs(absolute_vi_directory), (
-            f"absolute_vi_directory is not an absolute path ({absolute_vi_directory})"
-        )
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_absolute_path(absolute_vi_directory)
     assert sample_size > 1, "sample_size must be greater than 1"
     assert max_step_size > 0.0, "max_step_size must be positive"
     assert step_size_growth_factor >= 1.0, "step_size_growth_factor must be greater than 1.0"

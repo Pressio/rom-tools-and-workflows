@@ -49,6 +49,10 @@ class LocalDispatcher(BaseDispatcher):
     def path_exists(self, path: str) -> bool:
         return os.path.exists(path)
 
+    def require_absolute_path(self, path: str) -> None:
+        # Only LocalDispatcher needs absolute paths (for now)
+        assert os.path.isabs(path), f"You must provide an absolute path (received: {path})"
+
     def create_empty_dir(self, dir_name: str):
         os.makedirs(dir_name, exist_ok=True)
 

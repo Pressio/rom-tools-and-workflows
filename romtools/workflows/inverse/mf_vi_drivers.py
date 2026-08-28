@@ -121,7 +121,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher, resolve_local_dispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
@@ -1447,11 +1447,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_file is not None:
         assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
-    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
-    if isinstance(resolve_dispatcher(dispatcher), LocalDispatcher):
-        assert os.path.isabs(absolute_vi_directory), (
-            f"absolute_vi_directory is not an absolute path ({absolute_vi_directory})"
-        )
+    resolve_dispatcher(dispatcher).require_absolute_path(absolute_vi_directory)
     assert fom_sample_size > 1, "fom_sample_size must be greater than 1"
     assert rom_extra_sample_size >= 0, "rom_extra_sample_size must be non-negative"
     assert max_step_size > 0.0, "max_step_size must be positive"

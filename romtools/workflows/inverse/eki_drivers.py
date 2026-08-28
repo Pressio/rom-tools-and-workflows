@@ -90,7 +90,7 @@ from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse._inverse_utils import *
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher, resolve_dispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 def run_eki(model: QoiModel,
                  parameter_space: ParameterSpace,
@@ -174,9 +174,7 @@ def run_eki(model: QoiModel,
 
     start_time = time.time()
     ## Error checking======
-    # Remote run directories are resolved against the dispatcher's remote root, so only local runs require an absolute path
-    if isinstance(dispatcher, LocalDispatcher):
-        assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
+    dispatcher.require_absolute_path(absolute_eki_directory)
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
