@@ -479,6 +479,30 @@ def test_distributed_compute_uv_false_matches_numpy(full_matrices,
 
 
 @pytest.mark.mpi(min_size=1)
+def test_distributed_compute_uv_false_uses_r_only_qr(monkeypatch):
+    comm = MPI.COMM_WORLD
+    local_matrix = np.arange(28.0).reshape(7, 4)
+    original_qr = np.linalg.qr
+    qr_modes = []
+
+    def recording_qr(matrix, mode="reduced"):
+        qr_modes.append(mode)
+        return original_qr(matrix, mode=mode)
+
+    monkeypatch.setattr(np.linalg, "qr", recording_qr)
+
+    DistributedSvd(comm)(
+        local_matrix,
+        full_matrices=False,
+        compute_uv=False,
+        hermitian=False,
+    )
+
+    expected_modes = ["r", "r"] if comm.Get_rank() == 0 else ["r"]
+    assert qr_modes == expected_modes
+
+
+@pytest.mark.mpi(min_size=1)
 def test_distributed_svd_preserves_communicator():
     comm = MPI.COMM_WORLD
     global_matrix = _matrix_for_case("tall-real", comm.Get_size())

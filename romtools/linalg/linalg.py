@@ -1745,7 +1745,13 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
     # partitions and partitions with fewer rows than columns are valid inputs.
     local_qr_error = None
     try:
-        local_q, local_r = np.linalg.qr(local_a, mode="reduced")
+        if compute_uv:
+            local_q, local_r = np.linalg.qr(local_a, mode="reduced")
+        else:
+            # Singular values depend only on R. Avoid constructing the large
+            # local Q factor when no singular vectors were requested.
+            local_q = None
+            local_r = np.linalg.qr(local_a, mode="r")
     except Exception as exception:
         local_q = None
         local_r = None
@@ -1827,9 +1833,10 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
         try:
             # Finish the two-level TSQR factorization on rank zero by factoring
             # the vertical stack filled directly by Gather/Gatherv.
-            reduced_q, final_r = np.linalg.qr(stacked_r, mode="reduced")
-
             if compute_uv:
+                reduced_q, final_r = np.linalg.qr(
+                    stacked_r, mode="reduced"
+                )
                 # A: Compute the SVD only of the final reduced factor, then fold
                 # its left vectors into the second-level TSQR Q.
                 final_u, singular_values, right_singular_vectors = np.linalg.svd(
@@ -1842,7 +1849,9 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
 
             else:
                 # B: NumPy returns only singular values when left and right
-                # singular vectors were not requested.
+                # singular vectors were not requested. The second-level Q is
+                # not needed in this path either.
+                final_r = np.linalg.qr(stacked_r, mode="r")
                 singular_values = np.linalg.svd(
                     final_r,
                     full_matrices=full_matrices,
