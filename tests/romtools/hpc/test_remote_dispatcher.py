@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import numpy as np
+import shlex
 import pytest
 
 import romtools.hpc.dispatchers.base_dispatcher as base_dispatcher_module
@@ -73,6 +74,45 @@ def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config
     assert any(c.startswith("cd campaigns/hpctools && sbatch") for c in conn.calls)
     assert any(c == "squeue -j 123 -h" for c in conn.calls)
     assert any(c.startswith("rm -f") for c in conn.calls)
+
+
+def test_dispatch_collects_results_and_extracts_them_locally(monkeypatch, make_config, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    responses = [
+        ("sbatch", Result("Submitted batch job 123\n", "", 0)),
+        ("squeue -j 123 -h", Result("", "", 0)),
+        ("tar -czf", Result("", "", 0)),
+        ("rm -f", Result("", "", 0)),
+        ("sacct -j", Result("123|COMPLETED|0:0|0:0", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.dispatch("./my_app")
+
+    archive_name = "dispatcher-transfer-myjob.tar.gz"
+    remote_archive_path = "campaigns/dispatcher-transfer-myjob.tar.gz"
+    assert conn.get_calls == [(remote_archive_path, archive_name)]
+    assert f"rm -f {remote_archive_path}" in conn.calls
+    assert not (tmp_path / archive_name).exists()
+    assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
+
+
+def test_dispatch_skips_local_extraction_when_no_collect_patterns(monkeypatch, make_config, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    responses = [
+        ("sbatch", Result("Submitted batch job 9\n", "", 0)),
+        ("squeue -j 9 -h", Result("", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=None)
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.dispatch("./my_app")
+
+    assert conn.get_calls == []
+    assert not (tmp_path / "hpctools").exists()
 
 
 def test_dispatch_uses_run_directory_when_given(monkeypatch, make_config, tmp_path):
@@ -213,6 +253,56 @@ def test_get_resolves_relative_path_under_remote_root(monkeypatch, make_config):
     dispatcher.get("results/out.txt", "local.txt")
 
     assert conn.get_calls == [("campaigns/results/out.txt", "local.txt")]
+
+
+def test_upload_skips_when_no_upload_patterns(monkeypatch, make_config):
+    conn = FakeConnection()
+    config = make_config(remote_root="campaigns", upload=None)
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.upload("run_00")
+
+    assert conn.calls == []
+    assert conn.put_calls == []
+
+
+def test_upload_packs_local_files_and_transfers_them(monkeypatch, make_config, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data.txt").write_text("results")
+
+    conn = FakeConnection(responses=[("archive_path=", Result("", "", 0))])
+    config = make_config(remote_root="campaigns", job_name="myjob", upload=["data.txt"])
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.upload("run_00")
+
+    tar_name = "dispatcher-transfer-myjob.tar.gz"
+    assert not (tmp_path / tar_name).exists()  # cleaned up locally after put
+    assert conn.put_calls == [(tar_name, f"campaigns/run_00/{tar_name}")]
+
+
+def test_upload_extracts_the_same_archive_it_uploaded(monkeypatch, make_config, tmp_path):
+    """
+    Regression test: upload() previously built a fully-qualified remote tar path and
+    then handed it to self.put(), which re-resolves relative paths against
+    remote_root - prefixing it a second time and leaving the archive PUT at one
+    remote path but extracted from another.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data.txt").write_text("results")
+
+    conn = FakeConnection(responses=[("archive_path=", Result("", "", 0))])
+    config = make_config(remote_root="campaigns", job_name="myjob", upload=["data.txt"])
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.upload("run_00")
+
+    _, uploaded_path = conn.put_calls[0]
+    extract_cmd = conn.calls[-1]
+
+    parts = shlex.split(extract_cmd)
+
+    assert uploaded_path in parts
 
 
 def test_path_exists_true_and_false(monkeypatch, make_config):

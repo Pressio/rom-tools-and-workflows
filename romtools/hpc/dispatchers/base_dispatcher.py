@@ -30,6 +30,9 @@ class BaseDispatcher:
     # Public API
     # ------------------------------------------------------------------
 
+    def upload(self, run_directory) -> None:
+        pass
+
     def put(self, local_path: str, remote_path: str) -> None:
         pass
 

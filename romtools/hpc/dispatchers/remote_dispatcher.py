@@ -4,6 +4,7 @@ import re
 import time
 import shlex
 import tempfile
+import subprocess
 
 import numpy as np
 import posixpath as ppath
@@ -11,11 +12,20 @@ from typing import Optional, Tuple
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
-from romtools.hpc.collector import Collector
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatchers import BaseDispatcher
+from romtools.hpc.util.file_transfer import create_tarball, safe_extract_tar, validate_file_patterns
 
 from romtools.hpc.util.slurm import create_slurm_script
+
+def run_local_bash(cmd: str) -> Result:
+    res = subprocess.run(
+        ["bash", "-c", cmd],
+        cwd=".",
+        capture_output=True,
+        text=True
+    )
+    return Result(res.stdout, res.stderr, res.returncode)
 
 ## ----------------------------------------------------------------------------
 
@@ -37,7 +47,6 @@ class RemoteDispatcher(BaseDispatcher):
 
         # Core members
         self.conn : Optional[Connection] = None
-        self.collector : Optional[Collector] = None
         self.sampling_directory = os.path.basename(sampling_directory)
 
         # If slurm script specifies out and/or error file, use those instead of our default
@@ -54,13 +63,9 @@ class RemoteDispatcher(BaseDispatcher):
         else:
             self.__connect_to_remote()
 
-        # Initialize and validate the Collector
-        self.collector = Collector(
-            self.conn,
-            self.config,
-            sampling_directory=self.sampling_directory,
-            logger=self.logger,
-        )
+        # validate collect and upload patterns
+        self.collect_patterns = validate_file_patterns(self.config.get("collect"))
+        self.upload_patterns = validate_file_patterns(self.config.get("upload"))
 
     # ------------------------------------------------------------------
     # Initialization and setup
@@ -79,10 +84,43 @@ class RemoteDispatcher(BaseDispatcher):
         except Exception as e:
             raise RuntimeError(f"Failed to establish SSH connection: {e}")
 
-    def upload(self, run_directory) -> None:
-        if upload := self.config.get("upload"):
-            for f in upload:
-                self.put(f, f"{run_directory}/{os.path.basename(f)}")
+    def __archive_name(self) -> str:
+        return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
+
+    def __collect_results(self) -> None:
+        """
+        Collect results from remote HPC runs.
+        """
+        remote_sampling_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
+        self.logger.log(
+            f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}",
+            local=True,
+        )
+
+        archive_name = self.__archive_name()
+        remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
+
+        try:
+            create_tarball(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
+        except Exception as e:
+            self.logger.log(f"Failed to create tarball on {self.conn.host}: {e}")
+            return
+
+        # Copy remote archive to local
+        self.conn.get(remote_archive_path, archive_name)
+        self.logger.log(f"Copied remote archive to local: {archive_name}")
+
+        # Clean up remote archive
+        self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
+        self.logger.debug("Cleaned up remote archive.")
+
+        # Unpack local archive into local sampling directory
+        os.makedirs(self.sampling_directory, exist_ok=True)
+        res = safe_extract_tar(run_local_bash, archive_name, os.path.abspath(self.sampling_directory))
+        if not res.ok:
+            self.logger.log(f"Results failed to extract.", local=True)
+        else:
+            self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
 
     # ------------------------------------------------------------------
     # Utility methods
@@ -217,6 +255,14 @@ class RemoteDispatcher(BaseDispatcher):
 
         self.logger.log(f"Submitted SLURM job {job_id}")
         return job_id
+
+    def __run(self, cmd: str, run_directory: str = None) -> None:
+        resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
+        remote_cmd = f"cd {shlex.quote(resolved_run_dir)} && {cmd}"
+        res = self.conn.run(remote_cmd)
+        if not res.ok:
+            raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
+        self.logger.debug(f"Executed command on remote host: {cmd}")
 
     # ------------------------------------------------------------------
     # Job monitoring
@@ -398,6 +444,25 @@ class RemoteDispatcher(BaseDispatcher):
     # Public API
     # ------------------------------------------------------------------
 
+    def upload(self, run_directory) -> None:
+        if not self.upload_patterns:
+            return
+
+        remote_root = self.config.get("remote_root")
+        tar_name = self.__archive_name()
+        create_tarball(lambda msg: self.logger.log(msg, local=True), run_local_bash, ".", tar_name, self.upload_patterns)
+        tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
+        try:
+            self.conn.put(tar_name, tar_path)
+            self.logger.log(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
+        except Exception as e:
+            raise RuntimeError(f"File transfer failed on upload: {e}")
+        finally:
+            os.remove(tar_name)
+        res = safe_extract_tar(lambda cmd: self.conn.run(cmd), tar_path, f"{ppath.join(remote_root, run_directory)}")
+        if not res.ok:
+            raise RuntimeError(f"Extraction failed on remote! {res.stderr}")
+
     def put(self, local_path: str, remote_path: str) -> None:
         remote_path = self.__resolve_remote_path(remote_path)
         self.conn.put(local_path, remote_path)
@@ -415,14 +480,6 @@ class RemoteDispatcher(BaseDispatcher):
 
     def create_empty_dir(self, dir_name: str):
         self.__create_remote_directory(dir_name)
-
-    def __run(self, cmd: str, run_directory: str = None) -> None:
-        resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
-        remote_cmd = f"cd {shlex.quote(resolved_run_dir)} && {cmd}"
-        res = self.conn.run(remote_cmd)
-        if not res.ok:
-            raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
-        self.logger.debug(f"Executed command on remote host: {cmd}")
 
     def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
         """
@@ -446,7 +503,7 @@ class RemoteDispatcher(BaseDispatcher):
             return "No SLURM job submitted."
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = self.__wait_for_job(job_id)
-        self.collector.collect_results()
+        self.__collect_results()
         job_stdout, job_stderr = self.__get_job_output(job_id, run_directory)
         return Result(job_stdout, job_stderr, status)
 
