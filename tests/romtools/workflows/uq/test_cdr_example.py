@@ -28,3 +28,4 @@ def test_cdr_uq_example_runs(tmp_path):
     with np.load(tmp_path / "multifidelity" / "uq_stats.npz") as mfmc_stats:
         assert mfmc_stats["pilot_sample_count"][0] == 4
         assert mfmc_stats["high_fidelity_equivalent_cost"][0] <= 12.0
+        assert mfmc_stats["used_multifidelity_estimator"][0]

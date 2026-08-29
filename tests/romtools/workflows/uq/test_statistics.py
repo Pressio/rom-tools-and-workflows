@@ -41,3 +41,9 @@ def test_constant_low_fidelity_has_zero_coefficient():
     np.testing.assert_allclose(statistics.control_variate_coefficients, 0.0)
     np.testing.assert_allclose(statistics.paired_correlations, 0.0)
     np.testing.assert_allclose(statistics.mean, np.mean(high, axis=0))
+
+
+@pytest.mark.mpi_skip
+def test_statistics_reject_nonfinite_qois():
+    with pytest.raises(ValueError, match="only finite values"):
+        compute_monte_carlo_statistics(np.array([1.0, np.inf]))

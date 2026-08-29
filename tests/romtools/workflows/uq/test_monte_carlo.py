@@ -50,6 +50,11 @@ class FailingQoiModel(AnalyticQoiModel):
         raise RuntimeError("cannot compute QoI")
 
 
+class NonfiniteQoiModel(AnalyticQoiModel):
+    def compute_qoi(self, run_directory, parameter_sample):
+        return np.array([np.nan])
+
+
 @pytest.mark.mpi_skip
 def test_monte_carlo_workflow_and_persistence(tmp_path):
     result = run_monte_carlo(
@@ -99,6 +104,19 @@ def test_qoi_failure_does_not_write_passed_marker(tmp_path):
     with pytest.raises(RuntimeError, match="cannot compute QoI"):
         run_monte_carlo(
             FailingQoiModel(),
+            DeterministicParameterSpace(),
+            str(tmp_path),
+            number_of_samples=2,
+        )
+
+    assert not os.path.exists(tmp_path / "run_0" / "passed.txt")
+
+
+@pytest.mark.mpi_skip
+def test_nonfinite_qoi_does_not_write_passed_marker(tmp_path):
+    with pytest.raises(ValueError, match="nonfinite QoI"):
+        run_monte_carlo(
+            NonfiniteQoiModel(),
             DeterministicParameterSpace(),
             str(tmp_path),
             number_of_samples=2,
@@ -185,5 +203,26 @@ def test_allocation_modes_are_mutually_exclusive(tmp_path):
             number_of_high_fidelity_samples=2,
             number_of_low_fidelity_samples=4,
             pilot_sample_count=2,
+            high_fidelity_equivalent_budget=10.0,
+        )
+
+
+@pytest.mark.mpi_skip
+def test_sample_counts_must_be_integers(tmp_path):
+    with pytest.raises(ValueError, match="number_of_samples must be an integer"):
+        run_monte_carlo(
+            AnalyticQoiModel(),
+            DeterministicParameterSpace(),
+            str(tmp_path),
+            number_of_samples=2.5,
+        )
+
+    with pytest.raises(ValueError, match="pilot_sample_count must be an integer"):
+        run_multifidelity_monte_carlo(
+            AnalyticQoiModel(),
+            AnalyticQoiModel(),
+            DeterministicParameterSpace(),
+            str(tmp_path),
+            pilot_sample_count=2.5,
             high_fidelity_equivalent_budget=10.0,
         )

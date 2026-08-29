@@ -35,6 +35,10 @@ def _as_qoi_matrix(qoi_values: np.ndarray, name: str) -> np.ndarray:
         raise ValueError(f"{name} must be a one- or two-dimensional array")
     if values.shape[0] < 2:
         raise ValueError(f"{name} must contain at least two samples")
+    if values.shape[1] == 0:
+        raise ValueError(f"{name} must contain at least one QoI component")
+    if not np.all(np.isfinite(values)):
+        raise ValueError(f"{name} must contain only finite values")
     return values
 
 

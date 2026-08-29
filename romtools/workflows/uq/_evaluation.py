@@ -2,6 +2,7 @@
 
 import concurrent.futures
 import multiprocessing
+from numbers import Integral
 import os
 import time
 from typing import Optional, Sequence
@@ -17,10 +18,17 @@ def _parameter_dictionary(parameter_names: Sequence[str], values: np.ndarray) ->
 
 
 def _flatten_qoi(model: QoiModel, run_directory: str, parameter_sample: dict) -> np.ndarray:
-    qoi = np.asarray(model.compute_qoi(run_directory, parameter_sample))
-    if qoi.ndim == 0:
-        return qoi.reshape(1)
-    return qoi.reshape(-1)
+    try:
+        qoi = np.asarray(
+            model.compute_qoi(run_directory, parameter_sample), dtype=float
+        ).reshape(-1)
+    except (TypeError, ValueError) as error:
+        raise ValueError("model returned a nonnumeric QoI") from error
+    if qoi.size == 0:
+        raise ValueError("model returned an empty QoI")
+    if not np.all(np.isfinite(qoi)):
+        raise ValueError("model returned a nonfinite QoI")
+    return qoi
 
 
 def _run_qoi_sample(
@@ -52,8 +60,12 @@ def evaluate_qoi_model(
     starting_sample_index: int = 0,
 ):
     """Evaluate a QoI model while preserving the input sample ordering."""
-    if evaluation_concurrency < 1:
-        raise ValueError("evaluation_concurrency must be at least one")
+    if (
+        isinstance(evaluation_concurrency, bool)
+        or not isinstance(evaluation_concurrency, Integral)
+        or evaluation_concurrency < 1
+    ):
+        raise ValueError("evaluation_concurrency must be a positive integer")
     samples = np.asarray(parameter_samples)
     if samples.ndim != 2:
         raise ValueError("parameter_samples must be two-dimensional")

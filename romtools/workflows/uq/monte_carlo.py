@@ -1,6 +1,7 @@
 """Monte Carlo and two-level multifidelity Monte Carlo workflows."""
 
 from dataclasses import dataclass
+from numbers import Integral
 import os
 from typing import Optional
 
@@ -68,6 +69,15 @@ class MultifidelityMonteCarloResult:
 def _require_absolute_directory(directory: str) -> None:
     if not os.path.isabs(directory):
         raise ValueError("absolute_uq_directory must be an absolute path")
+
+
+def _require_sample_count(name: str, value: int, minimum: int = 2) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, Integral)
+        or value < minimum
+    ):
+        raise ValueError(f"{name} must be an integer of at least {minimum}")
 
 
 def _save_monte_carlo_result(
@@ -184,8 +194,7 @@ def run_monte_carlo(
         because their original timings are not reconstructed.
     """
     _require_absolute_directory(absolute_uq_directory)
-    if number_of_samples < 2:
-        raise ValueError("number_of_samples must be at least two")
+    _require_sample_count("number_of_samples", number_of_samples)
     dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
     dispatcher.create_empty_dir(absolute_uq_directory)
     samples = parameter_space.generate_samples(number_of_samples, seed=random_seed)
@@ -225,15 +234,16 @@ def _validate_multifidelity_modes(
     if fixed_requested:
         if number_high is None or number_low is None:
             raise ValueError("fixed allocation requires both sample counts")
-        if number_high < 2 or number_low < number_high:
+        _require_sample_count("number_of_high_fidelity_samples", number_high)
+        _require_sample_count("number_of_low_fidelity_samples", number_low)
+        if number_low < number_high:
             raise ValueError(
                 "fixed allocation requires low count >= high count >= 2"
             )
         return "fixed"
     if pilot_count is None or budget is None:
         raise ValueError("pilot allocation requires pilot_sample_count and budget")
-    if pilot_count < 2:
-        raise ValueError("pilot_sample_count must be at least two")
+    _require_sample_count("pilot_sample_count", pilot_count)
     return "pilot"
 
 

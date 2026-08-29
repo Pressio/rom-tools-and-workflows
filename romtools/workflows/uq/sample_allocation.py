@@ -1,6 +1,7 @@
 """Pilot-based sample allocation for two-level MFMC."""
 
 from dataclasses import dataclass
+from numbers import Integral
 
 import numpy as np
 
@@ -70,7 +71,12 @@ def allocate_samples_from_pilot(
         raise ValueError("high_fidelity_equivalent_budget must be positive")
     if not np.isfinite(low_to_high_fidelity_cost_ratio) or low_to_high_fidelity_cost_ratio <= 0:
         raise ValueError("low_to_high_fidelity_cost_ratio must be positive")
-    if allocation_qoi_index < 0 or allocation_qoi_index >= high.shape[1]:
+    if (
+        isinstance(allocation_qoi_index, bool)
+        or not isinstance(allocation_qoi_index, Integral)
+        or allocation_qoi_index < 0
+        or allocation_qoi_index >= high.shape[1]
+    ):
         raise ValueError("allocation_qoi_index is outside the QoI range")
 
     pilot_count = high.shape[0]
