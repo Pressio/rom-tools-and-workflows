@@ -61,9 +61,9 @@ POD computes the basis by solving the minimization problem (assuming no affine o
 
 .. math::
 
-   \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}
-   \\times K} | \\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
-   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S} - \\mathbf{S} \\|_2.
+   \\boldsymbol \\Phi = \\underset{ \\boldsymbol \\Phi_{\\ast} \\in \\mathbb{R}^{ N_{\\mathrm{vars}} N_{\\mathrm{x}}
+   \\times K} | \\boldsymbol \\Phi_{\\ast}^T \\boldsymbol \\Phi_{\\ast} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
+   \\| \\Phi_{\\ast} \\Phi_{\\ast}^T \\mathbf{S} - \\mathbf{S} \\|_2.
 
 In this minimization problem, errors are measured in a standard :math:`\\ell^2` norm.
 For most practical applications, where our snapshot matrix involves variables of different scales,
@@ -72,15 +72,15 @@ As a practical example, consider fluid dynamics where the total energy is orders
 
 One of the most common approaches for mitigating this issue is to perform scaled POD.
 In scaled POD, we solve a minimization problem on a scaled snapshot matrix.
-Defining :math:`\\mathbf{S}_{\\*} = \\mathbf{W}^{-1} \\mathbf{S}`, where :math:`\\mathbf{W}` is a weighting matrix
+Defining :math:`\\mathbf{S}_{\\ast} = \\mathbf{W}^{-1} \\mathbf{S}`, where :math:`\\mathbf{W}` is a weighting matrix
 (e.g., a diagonal matrix containing the max absolute value of each state variable),
 we compute the basis as the solution to the minimization problem
 
 .. math::
 
-   \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\*} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}
-   \\times K} |\\boldsymbol \\Phi_{\\*}^T \\boldsymbol \\Phi_{\\*} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
-   \\| \\Phi_{\\*} \\Phi_{\\*}^T \\mathbf{S}_{\\*} - \\mathbf{S}_{\\*} \\|_2.
+   \\boldsymbol \\Phi = \\mathbf{W} \\underset{ \\boldsymbol \\Phi_{\\ast} \\in \\mathbb{R}^{N_{\\mathrm{vars}} N_{\\mathrm{x}}
+   \\times K} |\\boldsymbol \\Phi_{\\ast}^T \\boldsymbol \\Phi_{\\ast} = \\mathbf{I}}{ \\mathrm{arg \\; min} }
+   \\| \\Phi_{\\ast} \\Phi_{\\ast}^T \\mathbf{S}_{\\ast} - \\mathbf{S}_{\\ast} \\|_2.
 
 The Scaler encapsulates this information.
 
@@ -91,6 +91,7 @@ API
 from typing import Protocol
 import numpy as np
 import romtools.linalg.linalg as la
+from romtools.vector_space.utils.snapshot_loader import SnapshotLoader
 
 
 class Scaler(Protocol):
@@ -111,15 +112,44 @@ class Scaler(Protocol):
         ...
 
 
+class StreamingScaler(Scaler, Protocol):
+    '''
+    Scaler interface required by streaming POD vector spaces.
+    '''
+
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        '''
+        Initialize scaling data from snapshot blocks.
+
+        This method is only required for streaming POD. Fixed scalers may
+        implement it as a no-op.
+        '''
+        ...
+
+
 class NoOpScaler:
     '''
     No op implementation
 
-    This class conforms to `Scaler` protocol.
+    This class conforms to the :class:`Scaler` protocol.
     '''
 
     def __init__(self) -> None:
         pass
+
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        # This method is only required for streaming POD.
+        _ = snapshot_loader, block_size, n_snapshots, comm
 
     def pre_scale(self, data_tensor: np.ndarray):
         '''Does not alter the input data matrix.'''
@@ -148,9 +178,9 @@ class VectorScaler:
        \\boldsymbol \\Phi = \\mathrm{diag}(\\mathbf{v}) \\mathbf{U}
 
     **Note that scaling can cause bases to not be orthonormal; we do not
-    recommend using scalers with the NoOpOrthonormalizer**
+    recommend using scalers with the NoOpOrthogonalizer.**
 
-    This class conforms to `Scaler` protocol.
+    This class conforms to the :class:`Scaler` protocol.
     '''
 
     def __init__(self, scaling_vector) -> None:
@@ -166,6 +196,15 @@ class VectorScaler:
         '''
         self.__scaling_vector_matrix = scaling_vector
         self.__scaling_vector_matrix_inv = 1.0 / scaling_vector
+
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        # This method is only required for streaming POD.
+        _ = snapshot_loader, block_size, n_snapshots, comm
 
     def pre_scale(self, data_tensor: np.ndarray) -> None:
         '''
@@ -190,11 +229,20 @@ class ScalarScaler:
     '''
     Applies a scalar scale factor
 
-    This class conforms to `Scaler` protocol.
+    This class conforms to the :class:`Scaler` protocol.
     '''
 
     def __init__(self, factor: float = 1.0) -> None:
         self._factor = factor
+
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        # This method is only required for streaming POD.
+        _ = snapshot_loader, block_size, n_snapshots, comm
 
     def pre_scale(self, data_tensor: np.ndarray) -> np.ndarray:
         '''
@@ -223,17 +271,19 @@ class VariableScaler:
     This class is designed to scale a data matrix comprising multiple states
     (e.g., for the Navier--Stokes, rho, rho u, rhoE)
 
-    This scaler will scale each variable based on
-      - max-abs scaling: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
-        :math:`s_i = \\mathrm{max}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the
-        :math:`i`th variable.
-      - mean abs: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
-        :math:`s_i = \\mathrm{mean}( \\mathrm{abs}( S_i ) )`, where :math:`S_i` denotes the snapshot matrix of the
-        :math:`i`th variable.
-      - variance: for the :math:`i`th state variable :math:`u_i`, we will compute the scaling as
-        :math:`s_i = \\mathrm{std}( S_i )`, where :math:`S_i` denotes the snapshot matrix of the :math:`i`th variable.
+    The available scaling options are:
 
-    This class conforms to `Scaler` protocol.
+    - ``"max_abs"``: for state variable :math:`u_i`, compute
+      :math:`s_i = \\max\\left(\\lvert S_i \\rvert\\right)`.
+    - ``"mean_abs"``: for state variable :math:`u_i`, compute
+      :math:`s_i = \\operatorname{mean}\\left(\\lvert S_i \\rvert\\right)`.
+    - ``"variance"``: for state variable :math:`u_i`, compute
+      :math:`s_i = \\operatorname{std}\\left(S_i\\right)`.
+
+    Here, :math:`S_i` denotes the snapshot matrix for state variable
+    :math:`u_i`.
+
+    This class conforms to the :class:`Scaler` protocol.
     '''
 
     def __init__(self, scaling_type) -> None:
@@ -276,6 +326,123 @@ class VariableScaler:
             self.var_scales_[i] = var_scale
         self.have_scales_been_initialized = True
 
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        '''
+        Initialize variable scales from all snapshot blocks.
+
+        This method is only required for streaming POD.
+        '''
+        if block_size <= 0:
+            raise ValueError("block_size must be positive")
+        if n_snapshots <= 0:
+            raise ValueError("n_snapshots must be positive")
+
+        state_shape = None
+        running_count = 0
+        running_max = None
+        running_abs_sum = None
+        running_mean = None
+        running_m2 = None
+
+        for start in range(0, n_snapshots, block_size):
+            end = min(start + block_size, n_snapshots)
+            block = np.asarray(snapshot_loader(start, end))
+            if block.ndim != 3:
+                raise ValueError("snapshot loader must return three-dimensional blocks")
+            if block.shape[-1] != end - start:
+                raise ValueError("snapshot loader returned an incorrect number of snapshots")
+            if state_shape is None:
+                state_shape = block.shape[:-1]
+                n_var = state_shape[0]
+                running_max = np.zeros(n_var)
+                running_abs_sum = np.zeros(n_var)
+                running_mean = np.zeros(n_var)
+                running_m2 = np.zeros(n_var)
+                if comm is not None and comm.Get_size() > 1:
+                    from mpi4py import MPI
+                    variable_counts = comm.allgather(n_var)
+                    if any(count != variable_counts[0]
+                           for count in variable_counts):
+                        raise ValueError(
+                            "variable count must match across MPI ranks"
+                        )
+                    minimum_local_dofs = comm.allreduce(
+                        state_shape[1], op=MPI.MIN
+                    )
+                    if minimum_local_dofs <= 0:
+                        raise ValueError(
+                            "each MPI rank must own at least one spatial DOF"
+                        )
+            elif block.shape[:-1] != state_shape:
+                raise ValueError("snapshot loader returned inconsistent state dimensions")
+
+            flattened_block = block.reshape(block.shape[0], -1)
+            block_count = flattened_block.shape[1]
+            running_max = np.maximum(
+                running_max, np.max(np.abs(flattened_block), axis=1)
+            )
+            running_abs_sum += np.sum(np.abs(flattened_block), axis=1)
+
+            block_mean = np.mean(flattened_block, axis=1)
+            block_m2 = np.sum(
+                (flattened_block - block_mean[:, None])**2, axis=1
+            )
+            combined_count = running_count + block_count
+            delta = block_mean - running_mean
+            running_m2 += (
+                block_m2
+                + delta**2 * running_count * block_count / combined_count
+            )
+            running_mean += delta * block_count / combined_count
+            running_count = combined_count
+
+        if comm is not None and comm.Get_size() > 1:
+            gathered_statistics = comm.allgather(
+                (running_count, running_max, running_abs_sum,
+                 running_mean, running_m2)
+            )
+            global_count = 0
+            global_max = np.zeros_like(running_max)
+            global_abs_sum = np.zeros_like(running_abs_sum)
+            global_mean = np.zeros_like(running_mean)
+            global_m2 = np.zeros_like(running_m2)
+            for (local_count, local_max, local_abs_sum,
+                 local_mean, local_m2) in gathered_statistics:
+                global_max = np.maximum(global_max, local_max)
+                global_abs_sum += local_abs_sum
+                combined_count = global_count + local_count
+                delta = local_mean - global_mean
+                global_m2 += (
+                    local_m2
+                    + delta**2 * global_count * local_count / combined_count
+                )
+                global_mean += delta * local_count / combined_count
+                global_count = combined_count
+            running_count = global_count
+            running_max = global_max
+            running_abs_sum = global_abs_sum
+            running_mean = global_mean
+            running_m2 = global_m2
+
+        if self.__scaling_type == "max_abs":
+            scales = running_max
+        elif self.__scaling_type == "mean_abs":
+            scales = running_abs_sum / running_count
+        elif self.__scaling_type == "variance":
+            scales = np.sqrt(running_m2 / running_count)
+        else:
+            raise ValueError(
+                f"Unknown variable scaling type: {self.__scaling_type}"
+            )
+
+        self.var_scales_ = np.where(scales < 1e-10, 1.0, scales)
+        self.have_scales_been_initialized = True
+
     # These are all inplace operations
     def pre_scale(self, data_tensor: np.ndarray) -> None:
         '''
@@ -316,7 +483,7 @@ class VariableAndVectorScaler:
     well as the variable magnitudes. This implementation combines the
     VectorScaler and VariableScaler classes.
 
-    This class conforms to `Scaler` protocol.
+    This class conforms to the :class:`Scaler` protocol.
     '''
 
     def __init__(self, scaling_vector, scaling_type) -> None:
@@ -329,16 +496,27 @@ class VariableAndVectorScaler:
             scaling_type: Scaling method ('max_abs',
             'mean_abs', or 'variance') for variable magnitudes.
 
-        This constructor initializes the `VariableAndVectorScaler` with the
+        This constructor initializes the :class:`VariableAndVectorScaler` with the
         specified parameters.
         '''
         self.__my_variable_scaler = VariableScaler(scaling_type)
         self.__my_vector_scaler = VectorScaler(scaling_vector)
 
+    def initialize_scalings_from_loader(
+            self,
+            snapshot_loader: SnapshotLoader,
+            block_size: int,
+            n_snapshots: int,
+            comm=None) -> None:
+        # This method is only required for streaming POD.
+        self.__my_variable_scaler.initialize_scalings_from_loader(
+            snapshot_loader, block_size, n_snapshots, comm
+        )
+
     def pre_scale(self, data_tensor: np.ndarray) -> None:
         '''
         Scales the input data matrix in place before processing, first using the
-        `VariableScaler` and then the `VectorScaler`.
+        :class:`VariableScaler` and then the :class:`VectorScaler`.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.
@@ -349,7 +527,7 @@ class VariableAndVectorScaler:
     def post_scale(self, data_tensor: np.ndarray) -> None:
         '''
         Scales the input data matrix in place after processing, first using the
-        `VectorScaler` and then the `VariableScaler`.
+        :class:`VectorScaler` and then the :class:`VariableScaler`.
 
         Args:
             data_tensor (np.ndarray): The input data matrix to be scaled.

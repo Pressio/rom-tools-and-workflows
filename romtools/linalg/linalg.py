@@ -4,12 +4,11 @@ see this for why this file exists and is done this way
 https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1
 '''
 
-from pathlib import Path
-
 import builtins
 import warnings
 import numpy as np
 from romtools.linalg.parallel_utils import assert_axis_is_none_or_within_rank
+from romtools.vector_space.utils.snapshot_loader import SnapshotLoader
 
 # ----------------------------------------------------
 
@@ -1297,168 +1296,167 @@ def move_distributed_linear_system_to_rank_zero(A_in: np.ndarray, b_in: np.ndarr
 
     return A_g, b_g
 
-# ----------------------------------------------------
-def load_snapshot(dataset_dir: str, i: int):
-    '''
-    Load snapshot i from disk.
+def _streaming_pod(snapshot_loader: SnapshotLoader,
+                   block_size: int, n_snapshots: int,
+                   max_basis_dimension: int, svdFnc=None, comm=None):
+    """
+    Compute a randomized streaming POD from indexed snapshot blocks.
+
+    The loader returns snapshot blocks whose last axis is the snapshot axis.
+    With a multi-rank communicator, each rank must load its local spatial rows
+    for the same snapshot ranges. In that case, svdFnc must implement a
+    distributed SVD of the row-distributed range sketch.
 
     Parameters:
-        dataset_dir (str): directory containing snapshot files.
-        i (int): snapshot index.
+        snapshot_loader: Snapshot loader called as snapshot_loader(start, end).
+        block_size (int): Maximum number of snapshots loaded at once.
+        n_snapshots (int): Total number of snapshots.
+        max_basis_dimension (int): Number of randomized candidate modes to
+            compute. A caller may subsequently truncate these modes further.
+        svdFnc: NumPy-compatible SVD callable used for the range sketch. NumPy
+            is used by default in serial. A callable is required with MPI.
+        comm: Optional MPI communicator enabling row-distributed execution.
 
     Returns:
-        - ndarray(shape=(N,)) - snapshot vector.
-    '''
-    path = Path(dataset_dir)
-    return np.loadtxt(path / f"snapshot_{i}.txt")
+        - U, ndarray(shape=(*local_state_shape, max_basis_dimension)):
+          candidate POD modes.
+        - S, ndarray(shape=(max_basis_dimension,)): approximate singular values.
+        - Vt, ndarray(shape=(max_basis_dimension, n_snapshots)): right singular
+          vectors.
+        - total_energy (float): Squared Frobenius norm of the complete snapshot
+          matrix.
+    """
+    if block_size <= 0:
+        raise ValueError("block_size must be positive")
+    if n_snapshots <= 0:
+        raise ValueError("n_snapshots must be positive")
+    if max_basis_dimension <= 0:
+        raise ValueError("max_basis_dimension must be positive")
 
-def _snapshot_loader(dataset_dir: str, start: int, end: int):
-    '''
-    Load a contiguous range of snapshots from a dataset directory and stack them
-    as columns in a single matrix.
+    distributed = comm is not None and comm.Get_size() > 1
+    if distributed and svdFnc is None:
+        raise ValueError("svdFnc is required for distributed streaming POD")
 
-    Parameters:
-        dataset_dir (str): directory containing snapshot files.
-        start (int): first snapshot index (inclusive).
-        end (int): last snapshot index (exclusive).
+    if distributed:
+        from mpi4py import MPI
+        rank = comm.Get_rank()
+    else:
+        MPI = None
+        rank = 0
 
-    Return:
-        - Xb, ndarray(shape=(N, end-start)) - block of snapshots stacked as columns.
+    range_svd = np.linalg.svd if svdFnc is None else svdFnc
+    sketch_dimension = max_basis_dimension
+    state_shape = None
+    range_sketch = None
+    local_total_energy = 0.0
 
-    Exemple 1
-    ^^^^^^^^^
+    # Pass one: form the local rows of Y = X Omega.
+    for start in range(0, n_snapshots, block_size):
+        end = builtins.min(start + block_size, n_snapshots)
+        snapshot_block = np.asarray(snapshot_loader(start, end))
+        if snapshot_block.ndim < 2:
+            raise ValueError("snapshot blocks must have at least two dimensions")
+        if snapshot_block.shape[-1] != end - start:
+            raise ValueError("snapshot loader returned an incorrect number of snapshots")
 
-    Load snapshots 0 through 9:
+        if state_shape is None:
+            state_shape = snapshot_block.shape[:-1]
+            local_rows = int(np.prod(state_shape))
+            if distributed:
+                tensor_metadata = comm.allgather(
+                    (snapshot_block.ndim,
+                     snapshot_block.shape[0] if snapshot_block.ndim == 3 else None)
+                )
+                if any(metadata != tensor_metadata[0]
+                       for metadata in tensor_metadata):
+                    raise ValueError(
+                        "snapshot tensor rank and variable count must match across ranks"
+                    )
+                minimum_local_rows = comm.allreduce(local_rows, op=MPI.MIN)
+                if minimum_local_rows <= 0:
+                    raise ValueError(
+                        "each MPI rank must own at least one state row"
+                    )
+                global_rows = comm.allreduce(local_rows, op=MPI.SUM)
+            else:
+                global_rows = local_rows
 
-    .. code-block:: text
+            if sketch_dimension > global_rows or sketch_dimension > n_snapshots:
+                raise ValueError(
+                    "max_basis_dimension cannot exceed either global snapshot "
+                    "matrix dimension"
+                )
+            range_sketch = np.zeros((local_rows, sketch_dimension))
+        elif snapshot_block.shape[:-1] != state_shape:
+            raise ValueError("snapshot loader returned inconsistent state dimensions")
 
-        >>> Xb = _snapshot_loader("data/snapshots", 0, 10)
-        >>> Xb.shape
-        (N, 10)
+        snapshot_matrix = snapshot_block.reshape((-1, end - start))
+        local_total_energy += float(np.vdot(snapshot_matrix, snapshot_matrix).real)
+        if distributed:
+            if rank == 0:
+                omega_block = np.random.randn(end - start, sketch_dimension)
+            else:
+                omega_block = None
+            omega_block = comm.bcast(omega_block, root=0)
+        else:
+            omega_block = np.random.randn(end - start, sketch_dimension)
+        range_sketch += snapshot_matrix @ omega_block
 
-    Exemple 2
-    ^^^^^^^^^
+    if distributed:
+        total_energy = comm.allreduce(local_total_energy, op=MPI.SUM)
+    else:
+        total_energy = local_total_energy
 
-    Load a subset of snapshots for a training block:
+    left_vectors, _, _ = range_svd(
+        range_sketch,
+        full_matrices=False,
+        compute_uv=True,
+        hermitian=False,
+    )
+    if left_vectors.shape[1] < sketch_dimension:
+        raise ValueError("svdFnc returned too few range vectors")
+    Q = left_vectors[:, :sketch_dimension]
 
-    .. code-block:: text
+    # Pass two: reduce small core blocks instead of assembling the range sketch.
+    core_matrix = np.zeros((sketch_dimension, n_snapshots))
+    for start in range(0, n_snapshots, block_size):
+        end = builtins.min(start + block_size, n_snapshots)
+        snapshot_block = np.asarray(snapshot_loader(start, end))
+        if snapshot_block.ndim < 2 or snapshot_block.shape[:-1] != state_shape:
+            raise ValueError("snapshot loader returned inconsistent state dimensions")
+        if snapshot_block.shape[-1] != end - start:
+            raise ValueError("snapshot loader returned an incorrect number of snapshots")
 
-        >>> Xb = _snapshot_loader("data/snapshots", 20, 25)
-        >>> Xb.shape
-        (N, 5)
-    '''
-    snapshots = []
-    for i in range(start, end):
-        Xbi = load_snapshot(dataset_dir, i)
-        snapshots.append(Xbi)
-    Xb = np.column_stack(snapshots)
-    return Xb
+        snapshot_matrix = snapshot_block.reshape((-1, end - start))
+        local_core_block = Q.T @ snapshot_matrix
+        if distributed:
+            core_block = np.zeros_like(local_core_block)
+            comm.Allreduce(local_core_block, core_block, op=MPI.SUM)
+        else:
+            core_block = local_core_block
+        core_matrix[:, start:end] = core_block
 
-def _streaming_pod(snapshot_loader, block_size: int, N: int, M: int, k: int, p: int):
-    '''
-    Compute an approximate POD/SVD decomposition of a snapshot matrix using a
-    two-pass randomized streaming algorithm that processes snapshots in blocks.
-
-    Parameters:
-        snapshot_loader: capable of loading blocks of columns (of X).
-        block_size (int): number of snapshots loaded at once.
-        N (int): number of rows (of X).
-        M (int): number of columns/snapshots (of X).
-        k (int): target rank.
-        p (int): oversampling parameter.
-
-    Returns:
-        - Uk, ndarray(shape=(N, k)) - approximate POD modes.
-        - Sk, ndarray(shape=(k,)) - approximate POD singular values.
-        - Vk, ndarray(shape=(k, M)) - approximate right singular vectors.
-
-    Example 1
-    ^^^^^^^^^
-
-    Compute the first 3 POD modes from 8 snapshots loaded in blocks of 2:
-
-    .. code-block:: text
-
-        >>> path = "data/snapshots/rank3_5x8"
-        >>> loader = lambda s, e: _snapshot_loader(path, s, e)
-        >>> U, S, Vt = _streaming_pod(
-                snapshot_loader=loader,
-                block_size=2,
-                N=5, M=8,
-                k=3, p=1,
+    if distributed:
+        if rank == 0:
+            core_left_vectors, singular_values, right_vectors = np.linalg.svd(
+                core_matrix, full_matrices=False
             )
+        else:
+            core_left_vectors = None
+            singular_values = None
+            right_vectors = None
+        core_left_vectors = comm.bcast(core_left_vectors, root=0)
+        singular_values = comm.bcast(singular_values, root=0)
+        right_vectors = comm.bcast(right_vectors, root=0)
+    else:
+        core_left_vectors, singular_values, right_vectors = np.linalg.svd(
+            core_matrix, full_matrices=False
+        )
 
-        >>> U.shape
-        (5, 3)
+    modes = Q @ core_left_vectors
+    local_modes = modes.reshape((*state_shape, max_basis_dimension))
+    return local_modes, singular_values, right_vectors, total_energy
 
-        >>> S.shape
-        (3,)
-
-        >>> Vt.shape
-        (3, 8)
-
-    Example 2
-    ^^^^^^^^^
-
-    Compute a rank-10 approximation of a larger dataset while limiting memory
-    usage by loading snapshots in blocks of 50:
-
-    .. code-block:: text
-
-        >>> U, S, Vt = _streaming_pod(
-                snapshot_loader=loader,
-                block_size=50,
-                N=1000, M=500,
-                k=10, p=5,
-            )
-
-        >>> U.shape
-        (1000, 10)
-
-        >>> S.shape
-        (10,)
-
-        >>> Vt.shape
-        (10, 500)
-    '''
-
-    assert block_size < M
-    # NOTE: block_size = M -> no more streaming...
-    # NOTE: block_size = 1 -> minimum memory, lot of I/O.
-
-    assert k <= N and k <= M
-
-    # sketch dimension
-    l = k + p
-    assert l <= N and l <= M
-
-    # pass 1
-    omega = np.random.randn(M, l)
-    Y = np.zeros(shape=(N, l))
-    for start in range(0, M, block_size):
-        end = builtins.min(start + block_size, M)
-        Xb = snapshot_loader(start, end)
-        Ob = omega[start:end, :]
-        Y += Xb @ Ob
-
-    # compute orthonormal basis
-    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
-    Q = Uy[:, :l]
-
-    # pass 2
-    B = np.zeros(shape=(l, M))
-    for start in range(0, M, block_size):
-        end = builtins.min(start + block_size, M)
-        Xb = snapshot_loader(start, end)
-        Bb = Q.T @ Xb
-        B[:, start:end] = Bb
-
-    # compute approximate SVD
-    U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
-    U = Q @ U_tilde
-
-    # results
-    return (U[:, :k], S[:k], Vt[:k, :])
 
 def _local_column_range(rank, size, M):
     '''
@@ -1518,130 +1516,6 @@ def _local_column_range(rank, size, M):
     end = start + q + (1 if rank < r else 0)
 
     return start, end
-
-def _streaming_pod_mpi(snapshot_loader, N: int, M: int, k: int, p: int, comm=None):
-    '''
-    Distributed randomized streaming POD using MPI by partitioning snapshot
-    columns across processes and combining local computations through collective
-    communication.
-
-    Parameters:
-        snapshot_loader: callable(start, end) returning locally assigned
-            snapshot columns with shape (N, end-start).
-        N (int): number of rows of the snapshot matrix X.
-        M (int): number of columns (snapshots) of X.
-        k (int): target rank.
-        p (int): oversampling parameter.
-        comm: MPI communicator (defaults to MPI.COMM_WORLD).
-
-    Returns:
-        - Uk, ndarray(shape=(N, k)) - approximate POD modes.
-        - Sk, ndarray(shape=(k,)) - approximate POD singular values.
-        - Vk, ndarray(shape=(k, M)) - approximate right singular vectors transposed.
-
-    Example 1
-    ^^^^^^^^^
-
-    Compute a rank-3 POD approximation using 4 MPI processes.
-
-    .. code-block:: bash
-
-        mpirun -n 4 python pod_mpi.py
-
-    .. code-block:: text
-
-        >>> comm = MPI.COMM_WORLD
-        >>> loader = lambda s, e: _snapshot_loader("snapshots/rank3_5x8", s, e)
-        >>> U, S, Vt = _streaming_pod_mpi(
-                snapshot_loader=loader,
-                N=5, M=8,
-                k=1, p=1,
-                comm=comm
-            )
-
-        >>> U.shape
-        (5, 1)
-
-        >>> S.shape
-        (1,)
-
-        >>> Vt.shape
-        (1, 8)
-
-    Example 2
-    ^^^^^^^^^
-
-    Compute a rank-10 POD approximation of a large snapshot matrix distributed
-    across 8 MPI processes.
-
-    .. code-block:: bash
-
-        mpirun -n 8 python pod_mpi.py
-
-    .. code-block:: text
-
-        >>> U, S, Vt = _streaming_pod_mpi(
-            snapshot_loader=loader,
-            N=5000, M=1000,
-            k=10, p=5,
-            comm=comm
-        )
-
-        >>> U.shape
-        (5000, 10)
-    '''
-    from mpi4py import MPI
-    if comm is None:
-        comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    l = k + p
-    assert l <= N and l <= M
-
-    # pass 1: distribute
-    if rank == 0:
-        omega = np.random.randn(M, l)
-    else:
-        omega = None
-
-    omega = comm.bcast(omega, root=0)
-
-    start, end = _local_column_range(rank, size, M)
-    X_local = snapshot_loader(start, end)
-    omega_local = omega[start:end, :]
-    Y_local = X_local @ omega_local # shape=(N,l)
-    Y = np.zeros(shape=(N,l))
-    comm.Allreduce(Y_local, Y, op=MPI.SUM)
-
-    # compute orthonormal basis: no distribute
-    Uy, _, _ = np.linalg.svd(Y, full_matrices=False)
-    Q = Uy[:, :l]
-
-    # pass 2: distribute
-    B_local = Q.T @ X_local # shape=(l, M_local)
-
-    # gather
-    B_parts = comm.gather(B_local, root=0)
-
-    if rank == 0:
-        B = np.hstack(B_parts)
-        U_tilde, S, Vt = np.linalg.svd(B, full_matrices=False)
-    else:
-        U_tilde = None
-        S = None
-        Vt = None
-
-    # broadcast
-    U_tilde = comm.bcast(U_tilde, root=0)
-    S = comm.bcast(S, root=0)
-    Vt = comm.bcast(Vt, root=0)
-
-    # compute approximate SVD
-    U = Q @ U_tilde
-
-    # results
-    return (U[:, :k], S[:k], Vt[:k, :])
 
 # ----------------------------------------------------
 def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
@@ -1885,8 +1759,6 @@ std = _basic_std_via_python
 product = _basic_product_via_python
 pinv = _transposed_pseudoinverse_via_python
 thin_svd = _thin_svd
-snapshot_loader = _snapshot_loader
 streaming_pod = _streaming_pod
 local_column_range = _local_column_range
-streaming_pod_mpi = _streaming_pod_mpi
 distributed_svd = _distributed_svd

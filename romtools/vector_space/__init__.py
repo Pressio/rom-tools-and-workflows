@@ -100,6 +100,8 @@ We currently provide the following concrete classes:
 
 - `VectorSpaceFromPOD`: construct a vector subspace computed via SVD.
 
+- `VectorSpaceFromStreamingPOD`: construct a POD vector space from snapshot blocks.
+
 which derive from the abstract class `VectorSpace`.
 
 API
@@ -109,9 +111,13 @@ API
 from typing import Tuple, Protocol, Callable
 import numpy as np
 from romtools.vector_space.utils.truncater import LeftSingularVectorTruncater, NoOpTruncater
-from romtools.vector_space.utils.shifter import Shifter, create_noop_shifter
-from romtools.vector_space.utils.scaler import Scaler, NoOpScaler
+from romtools.vector_space.utils.shifter import (
+    Shifter, StreamingShifter, create_noop_shifter
+)
+from romtools.vector_space.utils.scaler import Scaler, StreamingScaler, NoOpScaler
 from romtools.vector_space.utils.orthogonalizer import Orthogonalizer, NoOpOrthogonalizer
+from romtools.vector_space.utils.snapshot_loader import SnapshotLoader
+import romtools.linalg.linalg as la
 
 
 class VectorSpace(Protocol):
@@ -298,6 +304,113 @@ class VectorSpaceFromPOD():
         '''
         Concrete implementation of `VectorSpace.get_basis()`
         '''
+        return self.__basis
+
+    def extents(self) -> Tuple[int, int, int]:
+        return self.__basis.shape
+
+
+class VectorSpaceFromStreamingPOD():
+    '''
+    POD vector space constructed from snapshot blocks loaded on demand.
+
+    This class conforms to the VectorSpace protocol. Snapshot data is loaded
+    twice by the streaming POD algorithm, and only one block is held at a time.
+    Data-derived shifters and scalers perform initialization before those two
+    passes. The randomized algorithm first computes up to
+    ``max_basis_dimension`` candidate modes, after which the supplied truncater
+    selects the retained basis. Energy truncation is measured against the
+    complete shifted and pre-scaled snapshot matrix.
+    '''
+
+    def __init__(self,
+                 snapshot_loader: SnapshotLoader,
+                 block_size: int,
+                 n_snapshots: int,
+                 max_basis_dimension: int,
+                 truncater: LeftSingularVectorTruncater = NoOpTruncater(),
+                 shifter: StreamingShifter = None,
+                 orthogonalizer: Orthogonalizer = NoOpOrthogonalizer(),
+                 scaler: StreamingScaler = NoOpScaler(),
+                 svdFnc: Callable = None,
+                 comm=None) -> None:
+        '''
+        Constructor.
+
+        Args:
+            snapshot_loader: Snapshot loader returning a
+                tensor of shape (n_var, n_dofs, end-start).
+            block_size: Maximum number of snapshots loaded at once.
+            n_snapshots: Total number of snapshots available to the loader.
+            max_basis_dimension: Number of randomized candidate POD modes.
+            truncater: Truncater selecting the final basis from the candidate
+                modes.
+            shifter: Optional shifter supporting loader-based initialization.
+            orthogonalizer: Optional final basis orthogonalizer.
+            scaler: Scaler supporting streaming initialization.
+            svdFnc: NumPy-compatible range-sketch SVD callable.
+            comm: Optional communicator for row-distributed streaming POD.
+        '''
+        if shifter is not None:
+            shifter.initialize_shift_vector_from_loader(
+                snapshot_loader, block_size, n_snapshots, comm
+            )
+
+        def shifted_snapshot_loader(start: int, end: int) -> np.ndarray:
+            snapshot_block = np.array(snapshot_loader(start, end), copy=True)
+            if shifter is not None:
+                shifter.apply_shift(snapshot_block)
+            return snapshot_block
+
+        scaler.initialize_scalings_from_loader(
+            shifted_snapshot_loader, block_size, n_snapshots, comm
+        )
+
+        def shifted_and_scaled_snapshot_loader(
+                start: int, end: int) -> np.ndarray:
+            snapshot_block = shifted_snapshot_loader(start, end)
+            scaler.pre_scale(snapshot_block)
+            return snapshot_block
+
+        basis, svals, _, total_energy = la.streaming_pod(
+            snapshot_loader=shifted_and_scaled_snapshot_loader,
+            block_size=block_size,
+            n_snapshots=n_snapshots,
+            max_basis_dimension=max_basis_dimension,
+            svdFnc=svdFnc,
+            comm=comm,
+        )
+        if basis.ndim != 3:
+            raise ValueError(
+                "VectorSpaceFromStreamingPOD requires three-dimensional snapshot blocks"
+            )
+
+        self.__svals = svals
+        n_var = basis.shape[0]
+        basis_matrix = _tensor_to_matrix(basis)
+        basis_matrix = truncater.truncate(
+            basis_matrix, svals, total_energy=total_energy
+        )
+        basis = _matrix_to_tensor(n_var, basis_matrix)
+        scaler.post_scale(basis)
+        basis_matrix = _tensor_to_matrix(basis)
+        basis_matrix = orthogonalizer.orthogonalize(basis_matrix)
+        self.__basis = _matrix_to_tensor(n_var, basis_matrix)
+        if shifter is None:
+            self.__shift_vector = np.zeros(self.__basis.shape[:2])
+        else:
+            self.__shift_vector = shifter.get_shift_vector()
+
+    def get_singular_values(self) -> np.ndarray:
+        '''Returns the approximate singular values of the candidate basis.'''
+        return self.__svals
+
+    def get_shift_vector(self) -> np.ndarray:
+        '''Concrete implementation of VectorSpace.get_shift_vector().'''
+        return self.__shift_vector
+
+    def get_basis(self) -> np.ndarray:
+        '''Concrete implementation of VectorSpace.get_basis().'''
         return self.__basis
 
     def extents(self) -> Tuple[int, int, int]:

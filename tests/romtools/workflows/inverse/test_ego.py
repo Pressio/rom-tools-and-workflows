@@ -84,7 +84,7 @@ def test_quadratic(tmp_path):
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
                  number_initial_samples = 20,
-                 random_seed=None,
+                 random_seed=0,
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))
     assert( qoi_min < 0.1 )
@@ -109,7 +109,7 @@ def test_quadratic_batch(tmp_path):
                  parameter_maxes = my_parameter_space.parameter_maxes,
                  absolute_ego_directory=tmp_path,
                  number_initial_samples = 20,
-                 random_seed=None,
+                 random_seed=0,
                  evaluation_concurrency=4,
                  use_relative_error=False)
     print(parameter_sample_min,qoi_min,np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])))

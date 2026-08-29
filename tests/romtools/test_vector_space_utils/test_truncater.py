@@ -42,6 +42,23 @@ def test_basis_size_truncater():
     assert my_truncated_basis.shape[1] == 4
 
 
+@pytest.mark.mpi_skip
+def test_basis_size_truncater_uses_supplied_total_energy():
+    truncater = BasisSizeTruncater(1)
+    basis = np.eye(2)
+    truncater.truncate(basis, np.array([3.0, 2.0]), total_energy=14.0)
+
+    assert np.isclose(truncater.get_energy(), 9.0 / 14.0)
+
+
+@pytest.mark.mpi_skip
+def test_basis_size_truncater_rejects_dimension_above_candidate_basis():
+    truncater = BasisSizeTruncater(3)
+
+    with pytest.raises(ValueError, match="greater than size of basis array"):
+        truncater.truncate(np.eye(2), np.ones(2), total_energy=2.0)
+
+
 @pytest.mark.mpi(min_size=3)
 def test_basis_size_truncater_mpi():
     comm = MPI.COMM_WORLD
@@ -76,6 +93,16 @@ def test_energy_truncater():
     assert(np.allclose(energy,energy_gold[K-1]))
     assert np.allclose(my_truncated_basis, my_basis[:, 0:K])
     assert my_truncated_basis.shape[1] == K
+
+
+@pytest.mark.mpi_skip
+def test_energy_truncater_rejects_incomplete_energy_target():
+    truncater = EnergyBasedTruncater(0.8)
+
+    with pytest.raises(ValueError, match="increase max_basis_dimension"):
+        truncater.truncate(
+            np.ones((3, 1)), np.array([3.0]), total_energy=14.0
+        )
 
 
 @pytest.mark.mpi(min_size=3)

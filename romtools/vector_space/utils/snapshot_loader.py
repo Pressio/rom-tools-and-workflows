@@ -41,15 +41,23 @@
 # Questions? Contact Eric Parish (ejparis@sandia.gov)
 #
 # ************************************************************************
-#
 
-'''
-There are a number of ways to construct a vector space, including affine offsets, scaling, etc.
-The vector_space.utils module provides these functionalities
-'''
-from romtools.vector_space.utils.shifter import *
-from romtools.vector_space.utils.scaler import *
-from romtools.vector_space.utils.orthogonalizer import *
-from romtools.vector_space.utils.truncater import *
-from romtools.vector_space.utils.svd_method_of_snapshots import *
-from romtools.vector_space.utils.snapshot_loader import *
+'''Interfaces for loading snapshot blocks on demand.'''
+
+from typing import Protocol
+
+import numpy as np
+
+
+class SnapshotLoader(Protocol):
+    '''Interface for loading a contiguous range of snapshots.
+
+    The final axis of the returned array is the snapshot axis and must contain
+    exactly ``end - start`` snapshots. ``start`` is inclusive and ``end`` is
+    exclusive. The dimensions preceding the snapshot axis represent the local
+    state shape and must remain consistent between calls.
+    '''
+
+    def __call__(self, start: int, end: int) -> np.ndarray:
+        '''Load snapshots in the half-open range ``[start, end)``.'''
+        ...

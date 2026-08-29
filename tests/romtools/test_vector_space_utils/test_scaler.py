@@ -198,6 +198,56 @@ def test_variable_and_vector_scaler_mpi():
     run_test("variance")
 
 
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize("scaling_type", ["max_abs", "mean_abs", "variance"])
+def test_variable_scaler_initializes_from_snapshot_loader(scaling_type):
+    snapshots = np.array(
+        [
+            np.zeros((3, 5)),
+            [
+                [1.0, 2.0, 3.0, 40.0, 50.0],
+                [-2.0, 4.0, 6.0, 80.0, 100.0],
+                [3.0, 6.0, 9.0, 120.0, 150.0],
+            ],
+        ]
+    )
+    loader = lambda start, end: snapshots[..., start:end]
+    scaler = VariableScaler(scaling_type)
+
+    scaler.initialize_scalings_from_loader(
+        snapshot_loader=loader,
+        block_size=2,
+        n_snapshots=5,
+    )
+
+    if scaling_type == "max_abs":
+        expected = np.max(np.abs(snapshots), axis=(1, 2))
+    elif scaling_type == "mean_abs":
+        expected = np.mean(np.abs(snapshots), axis=(1, 2))
+    else:
+        expected = np.std(snapshots, axis=(1, 2))
+    expected = np.where(expected < 1e-10, 1.0, expected)
+
+    assert np.allclose(scaler.var_scales_, expected)
+
+
+@pytest.mark.mpi_skip
+def test_variable_scaler_streaming_rejects_inconsistent_shapes():
+    snapshots = np.ones((2, 3, 4))
+    call_count = 0
+
+    def loader(start, end):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return snapshots[..., start:end]
+        return np.ones((2, 4, end - start))
+
+    scaler = VariableScaler("max_abs")
+    with pytest.raises(ValueError, match="inconsistent state dimensions"):
+        scaler.initialize_scalings_from_loader(loader, block_size=2, n_snapshots=4)
+
+
 if __name__ == "__main__":
     test_noop_scaler()
     test_noop_scaler_mpi()
