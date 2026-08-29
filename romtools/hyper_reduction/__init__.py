@@ -55,3 +55,4 @@ problem-dependent. Implementations of these aspects, including the generation of
 of a sample mesh, are left to the user.
 '''
 from romtools.hyper_reduction.ecsw import *
+from romtools.hyper_reduction.deim import DEIM

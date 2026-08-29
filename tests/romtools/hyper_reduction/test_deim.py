@@ -2,6 +2,94 @@
 import numpy as np
 import pytest
 from romtools.hyper_reduction import deim
+from romtools.hyper_reduction import DEIM
+from romtools.vector_space.utils.truncater import BasisSizeTruncater
+
+
+@pytest.mark.mpi_skip
+def test_deim_class_from_basis():
+    function_basis = np.array([
+        [1.0, 0.0],
+        [0.0, 1.0],
+        [0.5, 0.25],
+        [0.25, 0.5],
+    ])
+
+    reducer = DEIM.from_basis(function_basis)
+
+    assert np.array_equal(reducer.sample_indices, np.array([0, 1]))
+    assert np.allclose(reducer.function_basis, function_basis)
+    assert np.allclose(
+        reducer.reconstruction_matrix(),
+        function_basis @ np.linalg.pinv(function_basis[[0, 1], :]),
+    )
+
+
+@pytest.mark.mpi_skip
+def test_deim_class_from_snapshots():
+    function_snapshots = np.array([
+        [3.0, 0.0, 0.0],
+        [0.0, 2.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0],
+    ])
+
+    reducer = DEIM.from_snapshots(
+        function_snapshots,
+        truncater=BasisSizeTruncater(2),
+    )
+
+    assert reducer.function_basis.shape == (4, 2)
+    assert np.array_equal(reducer.sample_indices, np.array([0, 1]))
+
+
+@pytest.mark.mpi_skip
+def test_deim_class_reconstructs_basis_vectors_and_projects_test_basis():
+    function_basis = np.array([
+        [1.0, 0.0],
+        [0.0, 1.0],
+        [0.5, 0.25],
+        [0.25, 0.5],
+    ])
+    sample_indices = np.array([0, 1, 2])
+    reducer = DEIM.from_basis(function_basis, sample_indices=sample_indices)
+
+    coefficients = np.array([2.0, -3.0])
+    function = function_basis @ coefficients
+    assert np.allclose(
+        reducer.reconstruct(function[sample_indices]),
+        function,
+    )
+
+    test_basis = np.array([
+        [1.0, 0.0],
+        [0.0, 1.0],
+        [1.0, 1.0],
+        [2.0, -1.0],
+    ])
+    expected = (
+        test_basis.transpose() @ reducer.reconstruction_matrix()
+    ).transpose()
+    assert np.allclose(reducer.project_test_basis(test_basis), expected)
+
+
+@pytest.mark.mpi_skip
+def test_deim_class_validates_inputs():
+    with pytest.raises(ValueError, match="rank-2"):
+        DEIM.from_basis(np.ones(3))
+
+    with pytest.raises(ValueError, match="linearly independent"):
+        DEIM.from_basis(np.ones((3, 2)))
+
+    function_basis = np.eye(3, 2)
+    with pytest.raises(TypeError, match="integers"):
+        DEIM.from_basis(function_basis, sample_indices=np.array([0.0, 1.0]))
+    with pytest.raises(ValueError, match="duplicates"):
+        DEIM.from_basis(function_basis, sample_indices=np.array([0, 0]))
+    with pytest.raises(ValueError, match="out-of-bounds"):
+        DEIM.from_basis(function_basis, sample_indices=np.array([0, 3]))
+    with pytest.raises(ValueError, match="first extent"):
+        DEIM.from_basis(function_basis).reconstruct(np.ones(3))
 
 
 @pytest.mark.mpi_skip
@@ -76,4 +164,3 @@ if __name__ == "__main__":
     test_deim_approximation()
     test_multi_state_deim_samples()
     test_multi_state_deim_basis()
-
