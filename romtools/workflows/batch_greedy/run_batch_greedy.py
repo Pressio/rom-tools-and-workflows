@@ -1,6 +1,10 @@
 """Batch greedy workflow for QoI models with error estimates."""
 
+import concurrent.futures
+import multiprocessing
+from numbers import Integral
 import time
+
 import numpy as np
 
 from romtools.workflows.models import QoiModel
@@ -12,6 +16,67 @@ from romtools.workflows.batch_greedy.selection import select_batch
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
+
+
+def _run_fom_sample(fom_model, sample_index, run_directory, parameter_dict):
+    """Run one FOM sample and return its index and QoI.
+
+    This helper is defined at module scope so it can be used by a spawned
+    ``ProcessPoolExecutor`` worker.
+    """
+    flag = fom_model.run_model(run_directory, parameter_dict)
+    if flag != 0:
+        raise RuntimeError(
+            f"FOM evaluation failed for sample {sample_index} with flag {flag}"
+        )
+    qoi = fom_model.compute_qoi(run_directory, parameter_dict)
+    return int(sample_index), qoi
+
+
+def _run_fom_samples(
+    fom_model,
+    parameter_names,
+    parameter_samples,
+    sample_indices,
+    greedy_directory,
+    run_directory_prefix,
+    fom_evaluation_concurrency,
+):
+    """Run FOM samples concurrently while preserving sample association."""
+    jobs = []
+    for sample_index in sample_indices:
+        parameter_dict = _create_parameter_dict(
+            parameter_names, parameter_samples[sample_index]
+        )
+        run_directory = (
+            f"{greedy_directory}/fom/{run_directory_prefix}{sample_index}"
+        )
+        jobs.append((int(sample_index), run_directory, parameter_dict))
+
+    if fom_evaluation_concurrency == 1:
+        results = [
+            _run_fom_sample(fom_model, sample_index, run_directory, parameter_dict)
+            for sample_index, run_directory, parameter_dict in jobs
+        ]
+    else:
+        mp_context = multiprocessing.get_context("spawn")
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=fom_evaluation_concurrency,
+            mp_context=mp_context,
+        ) as executor:
+            futures = [
+                executor.submit(
+                    _run_fom_sample,
+                    fom_model,
+                    sample_index,
+                    run_directory,
+                    parameter_dict,
+                )
+                for sample_index, run_directory, parameter_dict in jobs
+            ]
+            results = [future.result() for future in futures]
+
+    return {sample_index: qoi for sample_index, qoi in results}
 
 
 class QoIvsErrorIndicatorRegressor:
@@ -45,6 +110,7 @@ def run_batch_greedy(
     random_seed: int = 1,
     calibrated_error: bool = True,
     distance_exponent: float = 1.0,
+    fom_evaluation_concurrency: int = 1,
 ):
     """Construct a ROM using batches of error-greedy FOM samples.
 
@@ -54,10 +120,11 @@ def run_batch_greedy(
     model's error estimate; subsequent points use within-batch distance
     penalization through :func:`select_batch`.
 
-    The QoI model is responsible for defining ``compute_error_estimate``. The
-    workflow is therefore agnostic to whether the indicator comes from a
-    residual, learned error model, predictive variance, ensemble, or another
-    source.
+    FOM evaluations in each selected batch are executed concurrently using
+    spawned worker processes. The QoI model is responsible for defining
+    ``compute_error_estimate``; the workflow is agnostic to whether the
+    indicator comes from a residual, learned error model, predictive variance,
+    ensemble, or another source.
 
     Parameters
     ----------
@@ -82,9 +149,18 @@ def run_batch_greedy(
         Whether to calibrate the ROM error indicator against observed QoI error.
     distance_exponent : float, default=1.0
         Strength of within-batch diversity. Zero gives top-k error selection.
+    fom_evaluation_concurrency : int, default=1
+        Maximum number of FOM evaluations run concurrently. A value of one
+        preserves serial execution.
     """
     if not isinstance(batch_size, (int, np.integer)) or batch_size <= 0:
         raise ValueError("batch_size must be a positive integer")
+    if (
+        isinstance(fom_evaluation_concurrency, bool)
+        or not isinstance(fom_evaluation_concurrency, Integral)
+        or fom_evaluation_concurrency < 1
+    ):
+        raise ValueError("fom_evaluation_concurrency must be a positive integer")
     if testing_sample_size < 3:
         raise ValueError("testing_sample_size must be at least 3")
     if tolerance < 0.0:
@@ -116,25 +192,24 @@ def run_batch_greedy(
     training_samples = np.array([0, 1], dtype=int)
     samples_left = np.arange(2, testing_sample_size, dtype=int)
 
-    # Initial FOM training cases, matching the existing greedy workflow.
+    # Initial FOM training cases use the same concurrency mechanism as later
+    # batches. With the default concurrency of one this matches run_greedy.
     t0 = time.time()
-    training_dirs = []
-    fom_qois_by_sample = {}
     for sample_index in training_samples:
         greedy_file.write(f"Running initial FOM sample {sample_index}\n")
-        parameter_dict = _create_parameter_dict(
-            parameter_names, parameter_samples[sample_index]
-        )
-        fom_run_directory = (
-            f"{greedy_directory}/fom/{run_directory_prefix}{sample_index}"
-        )
-        create_empty_dir(fom_run_directory)
-        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-        fom_model.run_model(fom_run_directory, parameter_dict)
-        fom_qois_by_sample[int(sample_index)] = fom_model.compute_qoi(
-            fom_run_directory, parameter_dict
-        )
-        training_dirs.append(fom_run_directory)
+    fom_qois_by_sample = _run_fom_samples(
+        fom_model,
+        parameter_names,
+        parameter_samples,
+        training_samples,
+        greedy_directory,
+        run_directory_prefix,
+        fom_evaluation_concurrency,
+    )
+    training_dirs = [
+        f"{greedy_directory}/fom/{run_directory_prefix}{sample_index}"
+        for sample_index in training_samples
+    ]
     fom_time += time.time() - t0
 
     t0 = time.time()
@@ -185,8 +260,6 @@ def run_batch_greedy(
             f"{predicted_max_qoi_error}\n"
         )
 
-        # With no calibration history, calibrated mode follows the existing
-        # greedy workflow and gathers data before using the tolerance to stop.
         have_calibration_history = len(qoi_errors) > 0 or not calibrated_error
         if have_calibration_history and predicted_max_qoi_error < tolerance:
             greedy_file.write("Converged before launching a new batch.\n")
@@ -208,21 +281,26 @@ def run_batch_greedy(
         )
         greedy_file.flush()
 
-        # Run all selected FOM cases before rebuilding the ROM. These are kept
-        # as a simple loop in the initial implementation; execution concurrency
-        # can be layered on using the shared dispatcher infrastructure.
+        # Run the selected FOM cases concurrently, then rebuild the ROM once
+        # after every member of the batch has completed successfully.
         t0 = time.time()
+        batch_fom_qois = _run_fom_samples(
+            fom_model,
+            parameter_names,
+            parameter_samples,
+            batch_sample_indices,
+            greedy_directory,
+            run_directory_prefix,
+            fom_evaluation_concurrency,
+        )
+        fom_time += time.time() - t0
+        fom_qois_by_sample.update(batch_fom_qois)
+
         for sample_index in batch_sample_indices:
             parameter_dict = _create_parameter_dict(
                 parameter_names, parameter_samples[sample_index]
             )
-            fom_run_directory = (
-                f"{greedy_directory}/fom/{run_directory_prefix}{sample_index}"
-            )
-            fom_model.run_model(fom_run_directory, parameter_dict)
-            fom_qoi = fom_model.compute_qoi(fom_run_directory, parameter_dict)
-            fom_qois_by_sample[int(sample_index)] = fom_qoi
-
+            fom_qoi = batch_fom_qois[int(sample_index)]
             rom_run_directory = (
                 f"{greedy_directory}/rom_iteration_{outer_loop_counter}/"
                 f"{run_directory_prefix}{sample_index}"
@@ -239,7 +317,6 @@ def run_batch_greedy(
             greedy_file.write(
                 f"Sample {sample_index} had relative QoI error {qoi_error}\n"
             )
-        fom_time += time.time() - t0
 
         reg.fit(selected_error_indicators, qoi_errors)
 
@@ -266,8 +343,6 @@ def run_batch_greedy(
         )
         basis_time += time.time() - t0
 
-        # Replenish one candidate for each selected point, matching the rolling
-        # candidate-set behavior of run_greedy while maintaining batch size.
         number_of_new_samples = len(batch_sample_indices)
         new_parameter_samples = parameter_space.generate_samples(number_of_new_samples)
         first_new_sample = parameter_samples.shape[0]
@@ -300,6 +375,7 @@ def run_batch_greedy(
             training_samples=training_samples,
             batch_indices=padded_batches,
             batch_sizes=np.asarray([len(batch) for batch in batch_history], dtype=int),
+            fom_evaluation_concurrency=np.asarray([fom_evaluation_concurrency], dtype=int),
             fom_time=fom_time,
             rom_time=rom_time,
             basis_time=basis_time,
