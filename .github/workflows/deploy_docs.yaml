@@ -1,13 +1,13 @@
 name: deploy-docs
 
-# build the documentation whenever there are new commits on main
+# Build documentation for pull requests and deploy it after commits land on develop.
 on:
   push:
     branches:
       - develop
-    # Alternative: only build for tags.
-    # tags:
-    #   - '*'
+  pull_request:
+    branches:
+      - develop
 
 # security: restrict permissions for CI jobs.
 permissions:
@@ -34,9 +34,9 @@ jobs:
         with:
           path: docs/build/html
 
-  # Deploy the artifact to GitHub pages.
-  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
+  # Deploy only after a successful build on a push to develop.
   deploy:
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
