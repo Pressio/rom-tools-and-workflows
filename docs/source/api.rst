@@ -35,6 +35,12 @@ API Reference
    api_inverse_eki
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Uncertainty Quantification
+
+   api_uq
+
+.. toctree::
    :hidden:
 
    Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_eki>

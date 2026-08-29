@@ -56,3 +56,4 @@ from romtools.workflows.greedy import *
 from romtools.workflows.sampling import *
 from romtools.workflows.inverse import *
 from romtools.workflows.formatting import *
+from romtools.workflows.uq import *

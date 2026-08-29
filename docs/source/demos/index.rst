@@ -61,6 +61,12 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     eki_mf_eki_demo
 
 .. toctree::
+    :caption: Uncertainty quantification
+    :maxdepth: 1
+
+    uq_cdr_demo
+
+.. toctree::
     :caption: Miscellanea
     :maxdepth: 1
 

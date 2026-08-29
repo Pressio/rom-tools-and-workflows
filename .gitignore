@@ -14,3 +14,6 @@ romtools/hpc/config/*
 # Docs builds
 docs/build/
 docs/source/generated/
+
+# Example outputs
+examples/uq_cdr_demo/uq_cdr_output/
