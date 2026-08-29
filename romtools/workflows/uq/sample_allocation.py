@@ -27,7 +27,35 @@ def allocate_samples_from_pilot(
     low_to_high_fidelity_cost_ratio: float,
     allocation_qoi_index: int = 0,
 ) -> PilotSampleAllocation:
-    """Select an integer two-level allocation under an equivalent-cost budget."""
+    """Select integer high- and low-fidelity counts from paired pilot data.
+
+    The search minimizes the standard two-level MFMC variance approximation
+    for the component selected by ``allocation_qoi_index`` subject to
+    ``N_H + cost_ratio * N_L <= budget`` and ``N_L >= N_H``. Pilot evaluations
+    are included in the returned counts and cost. The result switches to an
+    HF-only estimator when spending the remaining budget on high-fidelity
+    samples has no larger predicted variance.
+
+    Args:
+        high_fidelity_qois: Paired pilot QoIs with shape ``(N_p, N_qoi)`` or
+            ``(N_p,)``.
+        low_fidelity_qois: Low-fidelity pilot QoIs with the same shape and
+            ordering as ``high_fidelity_qois``.
+        high_fidelity_equivalent_budget: Total budget in high-fidelity cost
+            units.
+        low_to_high_fidelity_cost_ratio: Positive cost ratio ``c_L / c_H``.
+        allocation_qoi_index: QoI component used by the allocation objective.
+
+    Returns:
+        PilotSampleAllocation: Selected counts, frozen componentwise
+        coefficients, pilot correlations, predicted variance and cost, and an
+        indicator selecting MFMC or the HF-only fallback.
+
+    Raises:
+        ValueError: If the pilot arrays are incompatible, contain fewer than
+            two samples, the selected component is invalid, or the pilot does
+            not fit in the budget.
+    """
     high = np.asarray(high_fidelity_qois, dtype=float)
     low = np.asarray(low_fidelity_qois, dtype=float)
     if high.ndim == 1:

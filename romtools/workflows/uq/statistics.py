@@ -39,7 +39,16 @@ def _as_qoi_matrix(qoi_values: np.ndarray, name: str) -> np.ndarray:
 
 
 def compute_monte_carlo_statistics(qoi_values: np.ndarray) -> MonteCarloStatistics:
-    """Compute the sample moments and standard error of the sample mean."""
+    """Compute componentwise Monte Carlo sample statistics.
+
+    Args:
+        qoi_values: Scalar samples with shape ``(N,)`` or flattened vector-QoI
+            samples with shape ``(N, N_qoi)``. At least two are required.
+
+    Returns:
+        MonteCarloStatistics: Sample mean, unbiased sample variance
+        (``ddof=1``), sample standard deviation, and standard error of the mean.
+    """
     values = _as_qoi_matrix(qoi_values, "qoi_values")
     variance = np.var(values, axis=0, ddof=1)
     standard_deviation = np.sqrt(variance)
@@ -52,7 +61,13 @@ def compute_monte_carlo_statistics(qoi_values: np.ndarray) -> MonteCarloStatisti
 
 
 def compute_paired_statistics(high_qois: np.ndarray, low_qois: np.ndarray):
-    """Return componentwise variance, covariance, coefficient, and correlation."""
+    """Compute statistics from identically ordered high/low QoI pairs.
+
+    Returns the high and low unbiased sample variances, covariance,
+    control-variate coefficient ``covariance / low_variance``, and Pearson
+    correlation. Components with numerically constant low-fidelity data receive
+    zero coefficient and correlation.
+    """
     high = _as_qoi_matrix(high_qois, "high_qois")
     low = _as_qoi_matrix(low_qois, "low_qois")
     if high.shape != low.shape:
@@ -89,7 +104,21 @@ def compute_multifidelity_statistics(
     low_fidelity_qois: np.ndarray,
     control_variate_coefficients: Optional[np.ndarray] = None,
 ) -> MultifidelityStatistics:
-    """Compute a two-level multifidelity Monte Carlo estimate."""
+    """Compute a componentwise two-level control-variate estimate.
+
+    Args:
+        high_fidelity_qois: High-fidelity samples with shape ``(N_H, N_qoi)``
+            or ``(N_H,)``.
+        low_fidelity_qois: Low-fidelity samples with shape ``(N_L, N_qoi)`` or
+            ``(N_L,)``. Its first ``N_H`` rows must be paired with the
+            high-fidelity samples and ``N_L`` must be at least ``N_H``.
+        control_variate_coefficients: Optional scalar or length-``N_qoi``
+            coefficient array. Paired samples estimate coefficients if omitted.
+
+    Returns:
+        MultifidelityStatistics: Mean estimate, estimated variance and standard
+        error of that mean estimator, coefficients, and paired correlations.
+    """
     high = _as_qoi_matrix(high_fidelity_qois, "high_fidelity_qois")
     low = _as_qoi_matrix(low_fidelity_qois, "low_fidelity_qois")
     if low.shape[0] < high.shape[0]:

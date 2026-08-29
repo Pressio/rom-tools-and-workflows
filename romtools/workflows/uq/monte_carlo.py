@@ -20,7 +20,13 @@ from romtools.workflows.uq.statistics import (
 
 @dataclass
 class MonteCarloResult:
-    """Results from a Monte Carlo mean estimator."""
+    """Outputs from a Monte Carlo QoI-mean estimate.
+
+    ``variance`` and ``standard_deviation`` describe the sampled QoI
+    distribution. ``standard_error`` describes uncertainty in the estimated
+    mean and equals ``standard_deviation / sqrt(number_of_samples)``. Each
+    array has one entry per flattened QoI component.
+    """
 
     parameter_samples: np.ndarray
     qoi_values: np.ndarray
@@ -33,7 +39,13 @@ class MonteCarloResult:
 
 @dataclass
 class MultifidelityMonteCarloResult:
-    """Results from fixed or pilot-allocated two-level MFMC."""
+    """Outputs from a fixed or pilot-allocated two-level MFMC estimate.
+
+    ``variance`` is the estimated variance of the multifidelity *mean
+    estimator*, rather than the variance of the underlying QoI distribution.
+    The first ``high_fidelity_sample_count`` rows of
+    ``low_fidelity_qoi_values`` are paired with the high-fidelity values.
+    """
 
     parameter_samples: np.ndarray
     high_fidelity_qoi_values: np.ndarray
@@ -133,7 +145,44 @@ def run_monte_carlo(
     overwrite: bool = False,
     dispatcher: Optional[BaseDispatcher] = None,
 ) -> MonteCarloResult:
-    """Estimate a QoI mean and its standard error by Monte Carlo."""
+    """Estimate the mean of a model QoI by Monte Carlo sampling.
+
+    For every generated parameter sample, the workflow calls the three
+    :class:`~romtools.workflows.models.QoiModel` methods in order:
+    ``populate_run_directory``, ``run_model``, and ``compute_qoi``. Scalar and
+    array-valued QoIs are accepted; array-valued outputs are flattened and
+    statistics are computed componentwise.
+
+    Args:
+        model: Model implementing the ``QoiModel`` protocol.
+        parameter_space: Distribution used to generate independent parameter
+            samples. Its parameter names define the dictionary passed to the
+            model methods.
+        absolute_uq_directory: Absolute output path. Sample ``i`` is evaluated
+            in ``run_i`` and aggregate results are saved to ``uq_stats.npz``.
+        number_of_samples: Number of model evaluations. Must be at least two.
+        random_seed: Seed forwarded to ``parameter_space.generate_samples``.
+        evaluation_concurrency: Maximum simultaneous model evaluations. A
+            spawn-based process pool is used above one, so the model and
+            dispatcher must be pickleable.
+        overwrite: If ``False``, reuse run directories containing
+            ``passed.txt``. If ``True``, populate and evaluate every sample.
+        dispatcher: Filesystem/dispatch implementation. Defaults to
+            :class:`~romtools.hpc.dispatchers.LocalDispatcher`.
+
+    Returns:
+        MonteCarloResult: Samples, flattened QoI values, sample moments,
+        standard errors, and measured model run times.
+
+    Raises:
+        ValueError: If inputs or returned QoI dimensions are invalid.
+        RuntimeError: If a model evaluation returns a nonzero status.
+
+    Note:
+        A successful marker is written only after both ``run_model`` and
+        ``compute_qoi`` complete. Reused evaluations have ``NaN`` run times
+        because their original timings are not reconstructed.
+    """
     _require_absolute_directory(absolute_uq_directory)
     if number_of_samples < 2:
         raise ValueError("number_of_samples must be at least two")
@@ -270,7 +319,75 @@ def run_multifidelity_monte_carlo(
     overwrite: bool = False,
     dispatcher: Optional[BaseDispatcher] = None,
 ) -> MultifidelityMonteCarloResult:
-    """Estimate a QoI mean with fixed or pilot-allocated two-level MFMC."""
+    r"""Estimate a QoI mean using two-level multifidelity Monte Carlo.
+
+    The first ``N_H`` low-fidelity evaluations are paired with the
+    high-fidelity evaluations at identical parameter samples. For each QoI
+    component, the estimator is
+
+    .. math::
+
+       \widehat{\mu}_{MF} = \overline{Q}_H^{N_H}
+       + \alpha\left(\overline{Q}_L^{N_L}
+       - \overline{Q}_L^{N_H}\right).
+
+    Exactly one allocation mode must be selected. Fixed mode accepts explicit
+    high- and low-fidelity sample counts. Pilot mode accepts a paired pilot
+    count and high-fidelity-equivalent budget, then estimates correlation and
+    coefficients and performs an integer search under
+    ``N_H + cost_ratio * N_L <= budget``. Pilot evaluations count toward the
+    final allocation and budget. The workflow falls back to high-fidelity
+    Monte Carlo when the pilot predicts no benefit from additional
+    low-fidelity samples.
+
+    Args:
+        high_fidelity_model: High-fidelity ``QoiModel`` implementation.
+        low_fidelity_model: Low-fidelity ``QoiModel`` implementation. It must
+            return the same flattened QoI dimension as the high-fidelity model.
+        parameter_space: Distribution used to generate shared samples.
+        absolute_uq_directory: Absolute output path. Evaluations are stored in
+            ``high_fidelity`` and ``low_fidelity`` subdirectories and aggregate
+            results are written to ``uq_stats.npz``.
+        number_of_high_fidelity_samples: Final high-fidelity count in fixed
+            mode. Must be at least two.
+        number_of_low_fidelity_samples: Final low-fidelity count in fixed mode.
+            Must be no smaller than the high-fidelity count.
+        pilot_sample_count: Initial paired count in pilot mode. Must be at
+            least two and fit within the budget.
+        high_fidelity_equivalent_budget: Pilot-mode budget in high-fidelity
+            evaluation units.
+        low_to_high_fidelity_cost_ratio: Positive ratio ``c_L / c_H``. If
+            omitted in pilot mode, paired pilot run times estimate it.
+        allocation_qoi_index: Flattened QoI component used to select sample
+            counts. Statistics and coefficients are computed for every
+            component.
+        random_seed: Seed used to generate the paired samples.
+        high_fidelity_evaluation_concurrency: Maximum simultaneous
+            high-fidelity evaluations.
+        low_fidelity_evaluation_concurrency: Maximum simultaneous
+            low-fidelity evaluations.
+        control_variate_coefficients: Optional scalar or componentwise values
+            for fixed mode. If omitted, paired samples estimate them. Pilot
+            mode always estimates and freezes its coefficients.
+        overwrite: If ``False``, reuse successful evaluations marked by
+            ``passed.txt``; otherwise rerun them.
+        dispatcher: Filesystem/dispatch implementation. Defaults to
+            :class:`~romtools.hpc.dispatchers.LocalDispatcher`.
+
+    Returns:
+        MultifidelityMonteCarloResult: Ordered samples and QoIs, mean estimate,
+        estimator variance and standard error, allocation metadata,
+        correlations, coefficients, and run times.
+
+    Raises:
+        ValueError: If allocation inputs, costs, or QoI dimensions are invalid.
+        RuntimeError: If either model returns a nonzero status.
+
+    Note:
+        Confidence intervals are intentionally not constructed. Callers can
+        use the returned mean and standard error with assumptions appropriate
+        to their application.
+    """
     _require_absolute_directory(absolute_uq_directory)
     mode = _validate_multifidelity_modes(
         number_of_high_fidelity_samples,

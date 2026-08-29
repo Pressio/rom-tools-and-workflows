@@ -77,6 +77,10 @@ statistics and control-variate coefficients are still returned for every
 component. If ``low_to_high_fidelity_cost_ratio`` is omitted, pilot mode
 estimates it from measured model run times.
 
+A complete single- and multifidelity example using the existing steady
+convection-diffusion-reaction model is available in
+:doc:`demos/uq_cdr_demo`.
+
 Results and restart behavior
 ----------------------------
 
