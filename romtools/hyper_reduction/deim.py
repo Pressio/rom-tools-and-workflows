@@ -47,6 +47,176 @@
 
 import numpy as np
 import romtools.linalg.linalg as la
+from romtools.vector_space import VectorSpaceFromPOD
+from romtools.vector_space.utils.truncater import NoOpTruncater
+
+
+def _validate_basis(function_basis):
+    basis = np.asarray(function_basis, dtype=float)
+    if basis.ndim != 2:
+        raise ValueError("function_basis must be a rank-2 array")
+    if basis.shape[0] == 0 or basis.shape[1] == 0:
+        raise ValueError("function_basis must have at least one row and one column")
+    if basis.shape[0] < basis.shape[1]:
+        raise ValueError(
+            "function_basis must have at least as many rows as columns"
+        )
+    if not np.all(np.isfinite(basis)):
+        raise ValueError("function_basis must contain only finite values")
+    if np.linalg.matrix_rank(basis) != basis.shape[1]:
+        raise ValueError("function_basis must have linearly independent columns")
+    return np.array(basis, copy=True)
+
+
+def _validate_sample_indices(sample_indices, function_basis):
+    indices = np.asarray(sample_indices)
+    if indices.ndim != 1:
+        raise ValueError("sample_indices must be a rank-1 array")
+    if not np.issubdtype(indices.dtype, np.integer):
+        raise TypeError("sample_indices must contain integers")
+    indices = np.array(indices, dtype=int, copy=True)
+    if indices.size < function_basis.shape[1]:
+        raise ValueError(
+            "sample_indices must contain at least one index per basis vector"
+        )
+    if np.unique(indices).size != indices.size:
+        raise ValueError("sample_indices must not contain duplicates")
+    if np.any(indices < 0) or np.any(indices >= function_basis.shape[0]):
+        raise ValueError("sample_indices contains an out-of-bounds index")
+    sampled_basis = function_basis[indices, :]
+    if np.linalg.matrix_rank(sampled_basis) != function_basis.shape[1]:
+        raise ValueError(
+            "the sampled function basis must have linearly independent columns"
+        )
+    return indices
+
+
+class DEIM:
+    '''Serial discrete empirical interpolation operator.
+
+    Use :meth:`from_snapshots` for the common workflow in which a POD basis
+    must first be constructed from function snapshots. Use :meth:`from_basis`
+    when the function basis is already available.
+
+    Notes:
+        Function snapshots are snapshots of the quantity being approximated,
+        such as a nonlinear term or residual. They are not necessarily the
+        state snapshots used to construct a ROM trial basis.
+    '''
+
+    def __init__(self, function_basis, sample_indices, rcond=None):
+        self.__function_basis = _validate_basis(function_basis)
+        self.__sample_indices = _validate_sample_indices(
+            sample_indices, self.__function_basis
+        )
+        if rcond is not None and (not np.isfinite(rcond) or rcond < 0):
+            raise ValueError("rcond must be finite and nonnegative")
+        self.__rcond = rcond
+        sampled_basis = self.__function_basis[self.__sample_indices, :]
+        if self.__rcond is None:
+            sampled_basis_pinv = np.linalg.pinv(sampled_basis)
+        else:
+            sampled_basis_pinv = np.linalg.pinv(
+                sampled_basis, rcond=self.__rcond
+            )
+        self.__reconstruction_matrix = (
+            self.__function_basis @ sampled_basis_pinv
+        )
+
+    @classmethod
+    def from_basis(cls, function_basis, sample_indices=None, rcond=None):
+        '''Construct a serial DEIM operator from a function basis.
+
+        Args:
+            function_basis: ``(n_dofs, n_basis)`` function basis.
+            sample_indices: Optional rank-1 integer array of sampling points.
+                If omitted, classical DEIM point selection is used.
+            rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
+
+        Returns:
+            DEIM: Constructed DEIM operator.
+        '''
+        basis = _validate_basis(function_basis)
+        if sample_indices is None:
+            sample_indices = _deim_get_indices_sharedmem(basis)
+        return cls(basis, sample_indices, rcond)
+
+    @classmethod
+    def from_snapshots(cls, function_snapshots, truncater=None,
+                       sample_indices=None, rcond=None):
+        '''Construct a serial DEIM operator from function snapshots.
+
+        Args:
+            function_snapshots: ``(n_dofs, n_snapshots)`` snapshot matrix for
+                the function to be approximated.
+            truncater: Optional implementation of the
+                ``LeftSingularVectorTruncater`` protocol. If omitted, all
+                available POD modes are retained.
+            sample_indices: Optional rank-1 integer array of sampling points.
+                If omitted, classical DEIM point selection is used.
+            rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
+
+        Returns:
+            DEIM: Constructed DEIM operator.
+        '''
+        snapshots = np.asarray(function_snapshots, dtype=float)
+        if snapshots.ndim != 2:
+            raise ValueError("function_snapshots must be a rank-2 array")
+        if snapshots.shape[0] == 0 or snapshots.shape[1] == 0:
+            raise ValueError(
+                "function_snapshots must have at least one row and one column"
+            )
+        if not np.all(np.isfinite(snapshots)):
+            raise ValueError("function_snapshots must contain only finite values")
+        if truncater is None:
+            truncater = NoOpTruncater()
+        snapshot_tensor = np.array(snapshots[None, :, :], copy=True)
+        function_space = VectorSpaceFromPOD(
+            snapshot_tensor, truncater=truncater
+        )
+        function_basis = function_space.get_basis()[0]
+        return cls.from_basis(
+            function_basis,
+            sample_indices=sample_indices,
+            rcond=rcond,
+        )
+
+    @property
+    def function_basis(self):
+        '''Return a copy of the function basis.'''
+        return self.__function_basis.copy()
+
+    @property
+    def sample_indices(self):
+        '''Return a copy of the sample indices.'''
+        return self.__sample_indices.copy()
+
+    def reconstruction_matrix(self):
+        '''Return ``U @ pinv(U[sample_indices, :])``.'''
+        return self.__reconstruction_matrix.copy()
+
+    def reconstruct(self, sampled_values):
+        '''Reconstruct full-order values from values at the sample points.'''
+        values = np.asarray(sampled_values)
+        if values.ndim not in (1, 2):
+            raise ValueError("sampled_values must be a rank-1 or rank-2 array")
+        if values.shape[0] != self.__sample_indices.size:
+            raise ValueError(
+                "the first extent of sampled_values must equal the number "
+                "of sample indices"
+            )
+        return self.__reconstruction_matrix @ values
+
+    def project_test_basis(self, test_basis):
+        '''Construct the sampled test basis used for hyper-reduction.'''
+        basis = np.asarray(test_basis)
+        if basis.ndim != 2:
+            raise ValueError("test_basis must be a rank-2 array")
+        if basis.shape[0] != self.__function_basis.shape[0]:
+            raise ValueError(
+                "test_basis and function_basis must have the same row extent"
+            )
+        return (basis.transpose() @ self.__reconstruction_matrix).transpose()
 
 
 
