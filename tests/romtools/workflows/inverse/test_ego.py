@@ -5,7 +5,9 @@ import os
 import numpy as np
 import pytest
 import romtools.workflows
-
+from romtools.rom.qoi_surrogates import GaussianProcessQoiModel
+from romtools.workflows.inverse._inverse_utils import *
+from romtools.workflows.inverse.ego_optimization_methods import *
 
 
 
@@ -91,6 +93,46 @@ def test_quadratic(tmp_path):
     assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.25 )
 
 @pytest.mark.mpi_skip
+def test_quadratic_gp(tmp_path):
+    # Construct the fom model
+    model = QuadraticModel(a=1,b=4)
+
+    my_parameter_space = QuadraticParameterSpace()
+    parameter_samples = my_parameter_space.generate_samples(20, seed=0)
+    parameter_names = my_parameter_space.get_names()
+    obs = np.array([0.0])
+
+    # run samples
+    qois = []
+    errors = []
+    objs = []
+    for sample in range(20):
+        run_directory = f'{tmp_path}/run_{sample}'
+        qoi, error, _ = prepare_and_run(model, obs, run_directory, parameter_names, parameter_samples[sample])
+        obj = objective_function(qoi,obs,relative=False)
+        qois.append(qoi)
+        errors.append(error)
+        objs.append(obj)
+
+    gp_regressor = GaussianProcessQoiModel(parameter_samples,objs,tune_hyperparameters=True)
+
+    # check variance against truth
+    test_parameter_samples = my_parameter_space.generate_samples(4, seed=1)
+
+    qoi_means_truth = [0.25223383,4.45371342,10.69529884,2.4877645]
+    qoi_stds_truth  = [0.18561455,2.91041433,1.43428366,2.99915945]
+
+    qoi_means = []
+    qoi_stds = []
+    for sample,qoi_mean_true,qoi_std_true in zip(test_parameter_samples,qoi_means_truth,qoi_stds_truth):
+        qoi_mean,qoi_std = gp_regressor.compute_qoi_and_var("",sample)
+
+        assert(np.isclose(qoi_mean,qoi_mean_true))
+        assert(np.isclose(qoi_std,qoi_std_true))
+
+
+
+@pytest.mark.mpi_skip
 def test_quadratic_batch(tmp_path):
     # Construct the fom model
     model = QuadraticModel(a=1,b=4)
@@ -118,4 +160,5 @@ def test_quadratic_batch(tmp_path):
 
 if __name__=='__main__':
     test_quadratic(os.getcwd() + "/work")
+    test_quadratic_gp(os.getcwd() + "/work_gp")
     test_quadratic_batch(os.getcwd() + "/work_batch")
