@@ -56,7 +56,8 @@ class GaussianProcessRegressorLite:
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
 
-        y_var = self.kernel(x_query,x_query) - kx @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx.T))
+        cov = self.kernel(x_query,x_query) - kx @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx.T))
+        y_var = np.clip(np.diag(cov), 0.0, None)
         y_std = np.sqrt(y_var)
         return y_mean.ravel(),y_std.ravel()
 
@@ -150,7 +151,7 @@ class GaussianProcessQoiModel:
 
         predictions = [gp.predict_mean_and_std(x[None, :]) for gp in self._gps]
         mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
-        std_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
+        std_coeffs = np.array([prediction[1] for prediction in predictions], dtype=float)
         mean_coeffs = self._unscale_targets(mean_coeffs)
         std_coeffs = self._unscale_targets(std_coeffs)
         if self._pod_modes is None:
