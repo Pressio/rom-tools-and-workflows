@@ -1619,7 +1619,13 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
     # partitions and partitions with fewer rows than columns are valid inputs.
     local_qr_error = None
     try:
-        local_q, local_r = np.linalg.qr(local_a, mode="reduced")
+        if compute_uv:
+            local_q, local_r = np.linalg.qr(local_a, mode="reduced")
+        else:
+            # Singular values depend only on R. Avoid constructing the large
+            # local Q factor when no singular vectors were requested.
+            local_q = None
+            local_r = np.linalg.qr(local_a, mode="r")
     except Exception as exception:
         local_q = None
         local_r = None
@@ -1632,22 +1638,80 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
             "local QR factorization failed: " + "; ".join(qr_errors)
         )
 
-    # Gather only the reduced R factors on rank zero.
-    gathered_r = comm.gather(local_r, root=root)
+    # Gather the reduced R factors as NumPy buffers. Lowercase ``gather``
+    # pickles them into a byte stream, which can overflow a 32-bit byte count.
+    from mpi4py import MPI
+
+    local_r_row_counts = [
+        builtins.min(metadata["shape"]) for metadata in all_metadata
+    ]
+    uniform_r_shapes = len(set(local_r_row_counts)) == 1
+    column_count = local_a.shape[1]
+    r_element_counts = [rows*column_count for rows in local_r_row_counts]
+    maximum_mpi_count = np.iinfo(np.int32).max
+    if uniform_r_shapes:
+        communication_size_is_supported = (
+            not r_element_counts
+            or r_element_counts[0] <= maximum_mpi_count
+        )
+    else:
+        communication_size_is_supported = (
+            sum(r_element_counts) <= maximum_mpi_count
+        )
+    if not communication_size_is_supported:
+        raise ValueError(
+            "distributed SVD buffer collective exceeds the MPI signed-int "
+            "element-count limit"
+        )
+
+    factor_dtype = local_r.dtype
+    mpi_dtype = MPI._typedict[factor_dtype.char]
+    stacked_r = None
+    root_allocation_error = None
+    if rank == root:
+        try:
+            stacked_r = np.empty(
+                (sum(local_r_row_counts), column_count), dtype=factor_dtype
+            )
+        except (MemoryError, ValueError) as exception:
+            root_allocation_error = str(exception)
+    root_allocation_error = comm.bcast(root_allocation_error, root=root)
+    if root_allocation_error is not None:
+        raise MemoryError(
+            "could not allocate the distributed SVD root buffer: "
+            + root_allocation_error
+        )
+
+    if uniform_r_shapes:
+        comm.Gather(
+            [local_r, mpi_dtype],
+            [stacked_r, mpi_dtype] if rank == root else None,
+            root=root,
+        )
+    else:
+        r_displacements = np.concatenate(
+            ([0], np.cumsum(r_element_counts[:-1], dtype=np.int64))
+        )
+        comm.Gatherv(
+            [local_r, mpi_dtype],
+            [stacked_r, r_element_counts, r_displacements, mpi_dtype]
+            if rank == root else None,
+            root=root,
+        )
 
     singular_values = None
     right_singular_vectors = None
-    local_left_transforms = None
     reduction_error = None
 
     if rank == root:
         try:
             # Finish the two-level TSQR factorization on rank zero by factoring
-            # the vertical stack of local R factors.
-            stacked_r = np.vstack(gathered_r)
-            reduced_q, final_r = np.linalg.qr(stacked_r, mode="reduced")
-
+            # the vertical stack filled directly by Gather/Gatherv.
             if compute_uv:
+                reduced_q, final_r = np.linalg.qr(
+                    stacked_r, mode="reduced"
+                )
+                del stacked_r
                 # A: Compute the SVD only of the final reduced factor, then fold
                 # its left vectors into the second-level TSQR Q.
                 final_u, singular_values, right_singular_vectors = np.linalg.svd(
@@ -1656,27 +1720,23 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
                     compute_uv=True,
                     hermitian=False,
                 )
+                del final_r
                 stacked_left_transform = reduced_q @ final_u
+                del reduced_q, final_u
 
-                # Split the reduced left transformation according to each rank's
-                # local R row count so it can be scattered below.
-                local_left_transforms = []
-                row_offset = 0
-                for local_r_factor in gathered_r:
-                    next_offset = row_offset + local_r_factor.shape[0]
-                    local_left_transforms.append(
-                        stacked_left_transform[row_offset:next_offset, :]
-                    )
-                    row_offset = next_offset
             else:
                 # B: NumPy returns only singular values when left and right
-                # singular vectors were not requested.
+                # singular vectors were not requested. The second-level Q is
+                # not needed in this path either.
+                final_r = np.linalg.qr(stacked_r, mode="r")
+                del stacked_r
                 singular_values = np.linalg.svd(
                     final_r,
                     full_matrices=full_matrices,
                     compute_uv=False,
                     hermitian=False,
                 )
+                del final_r
         except Exception as exception:
             reduction_error = str(exception)
 
@@ -1697,7 +1757,35 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
     # Replicate Vh, scatter the reduced left transformations, and multiply by
     # the local first-level Q to recover each rank's rows of U.
     right_singular_vectors = comm.bcast(right_singular_vectors, root=root)
-    local_left_transform = comm.scatter(local_left_transforms, root=root)
+    global_thin_rank = builtins.min(
+        sum(metadata["shape"][0] for metadata in all_metadata), column_count
+    )
+    local_left_transform = np.empty(
+        (local_r.shape[0], global_thin_rank), dtype=factor_dtype
+    )
+    if uniform_r_shapes:
+        comm.Scatter(
+            [stacked_left_transform, mpi_dtype] if rank == root else None,
+            [local_left_transform, mpi_dtype],
+            root=root,
+        )
+    else:
+        left_element_counts = [
+            rows*global_thin_rank for rows in local_r_row_counts
+        ]
+        left_displacements = np.concatenate(
+            ([0], np.cumsum(left_element_counts[:-1], dtype=np.int64))
+        )
+        comm.Scatterv(
+            [stacked_left_transform, left_element_counts,
+             left_displacements, mpi_dtype] if rank == root else None,
+            [local_left_transform, mpi_dtype],
+            root=root,
+        )
+    if rank == root:
+        # The scatter is blocking, so its send buffer is no longer needed.
+        # Release it before allocating this rank's local U matrix.
+        del stacked_left_transform
     local_left_singular_vectors = local_q @ local_left_transform
 
     return local_left_singular_vectors, singular_values, right_singular_vectors
