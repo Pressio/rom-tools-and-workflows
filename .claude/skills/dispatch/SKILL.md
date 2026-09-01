@@ -1,5 +1,5 @@
 ---
-name: hpc
+name: dispatch
 description: Generate and/or run a sampling workflow, locally via LocalDispatcher or remotely via RemoteDispatcher against an HPC cluster. Use this whenever the user asks to create, run, kick off, or launch a sampling workflow — whether a workflow python file already exists on disk, or the user describes one in plain language that doesn't exist yet. Remote runs require the user to already have a config YAML; this skill does not generate one.
 ---
 
@@ -15,6 +15,9 @@ successfully.
   "Running a workflow" below.
 - If no workflow file exists yet and the user describes what they want,
   follow "Generating a workflow" below first, then run it.
+- If the user supplies an existing model instead of describing one from
+  scratch, reuse it as-is — only the parameter space and workflow script
+  need to be drafted. See step 2 of "Generating a workflow" below.
 - **Local**: works with `LocalDispatcher`, or no dispatcher at all (which
   defaults to `LocalDispatcher` — see README.md's "Updating your model"
   section). No config file needed.
@@ -28,7 +31,12 @@ successfully.
 
 1. From the user's description, work out:
    - What `populate_run_directory()` and `run_model()` should actually do —
-     what files get written, what gets computed.
+     what files get written, what gets computed. If the user points to an
+     existing model instead, use it as-is: confirm it implements
+     `populate_run_directory(run_directory, parameter_sample)` and
+     `run_model(run_directory, parameter_sample) -> int` (and, if the
+     workflow needs it, `compute_qoi(run_directory, parameter_sample)`),
+     and skip drafting model code in step 2 below.
    - The parameter names and their space (e.g. bounds for a uniform
      distribution).
    - Number of samples, evaluation concurrency, and an output directory
@@ -37,41 +45,48 @@ successfully.
      config YAML, and whether they have an existing SLURM script to point
      the dispatcher at (README's "SLURM" approach) or want the dispatcher
      to generate one from a command (README's "Manual Commands" approach).
-     This changes the generated model code, so don't guess.
+     This changes the generated workflow (and model, if drafting one)
+     code, so don't guess.
 
    If any of this is ambiguous or unstated, ask rather than guessing — same
    rule as the "ask for the path" precondition above.
 
-2. Draft three files, following the matching example set in
-   `romtools/hpc/example/`:
+2. Draft the necessary files, following the matching example set in
+   `romtools/hpc/example/`. Skip the model file entirely if the user
+   supplied an existing model — import it into the workflow script as-is
+   instead of drafting one.
 
-   - **Local** — model, parameter space, and workflow script mirror
-     `ExampleModelNoConn.py`, `ExampleParameterSpace.py`, and
-     `workflow_noconn.py`: model constructor takes an optional dispatcher
-     and defaults to `LocalDispatcher`; `populate_run_directory` and
-     `run_model` are plain local file I/O; the workflow script takes no
-     `dispatcher=` argument and does no CLI parsing.
-   - **Remote** — model, parameter space, and workflow script mirror
-     `ExampleModel.py` and `workflow.py`: model constructor takes a
-     required dispatcher (no default); `populate_run_directory` uses
-     `self.dispatcher.put(...)` for any files that need to land on the
-     remote host; `run_model` uses `self.dispatcher.dispatch(...)` per
-     whichever approach was chosen in step 1 (bare `dispatch()` against a
-     pre-supplied SLURM script, or a `cmd` string for the dispatcher to
-     wrap into a generated script). The workflow script scopes the
-     dispatcher with `with RemoteDispatcher(sampling_dir) as dispatcher:`,
-     constructs the model with it, and passes `dispatcher=dispatcher` into
+   - **Local** — parameter space and workflow script mirror
+     `ExampleParameterSpace.py` and `workflow_noconn.py`; if drafting a
+     model too, mirror `ExampleModelNoConn.py`: model constructor takes an
+     optional dispatcher and defaults to `LocalDispatcher`;
+     `populate_run_directory` and `run_model` are plain local file I/O; the
+     workflow script takes no `dispatcher=` argument and does no CLI
+     parsing.
+   - **Remote** — parameter space and workflow script mirror
+     `workflow.py`; if drafting a model too, mirror `ExampleModel.py`:
+     model constructor takes a required dispatcher (no default);
+     `populate_run_directory` uses `self.dispatcher.put(...)` for any
+     files that need to land on the remote host; `run_model` uses
+     `self.dispatcher.dispatch(...)` per whichever approach was chosen in
+     step 1 (bare `dispatch()` against a pre-supplied SLURM script, or a
+     `cmd` string for the dispatcher to wrap into a generated script). The
+     workflow script scopes the dispatcher with
+     `with RemoteDispatcher(sampling_dir) as dispatcher:`, constructs the
+     model with it, and passes `dispatcher=dispatcher` into
      `run_sampling(...)`. No config-parsing code is needed in the script
      itself — it's read from `sys.argv` at runtime via `-i <config file>`.
-   - **Parameter space class** (both targets): subclasses
+     A user-supplied model must accept and use the dispatcher the same way
+     to run remotely — flag it to the user if it doesn't.
+   - **Parameter space class** (always drafted, both targets): subclasses
      `romtools.workflows.parameter_spaces.ParameterSpace` and implements
      `get_names()`, `get_dimensionality()`, and
      `generate_samples(number_of_samples)`.
 
 3. Show the drafted files to the user and get explicit confirmation before
-   writing anything to disk. The model's actual logic is a guess at the
-   user's intent from a plain-language description — confirm it matches
-   before it becomes code that runs.
+   writing anything to disk. The parameter space (and model logic, when
+   drafting one) is a guess at the user's intent from a plain-language
+   description — confirm it matches before it becomes code that runs.
 
 4. Once confirmed, write the files, then continue to "Running a workflow"
    below.
