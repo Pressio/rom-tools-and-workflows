@@ -6,7 +6,7 @@ import numpy as np
 
 from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "docs", "source", "demos", "notebooks", "adr_1d"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "docs", "source", "demos", "notebooks", "adr_1d"))
 from adr_1d import advectionDiffusionProblem
 
 
