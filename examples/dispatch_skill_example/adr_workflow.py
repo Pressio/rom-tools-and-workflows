@@ -1,7 +1,7 @@
 import romtools.workflows
 
-from AdrModel import Adr1dModel
-from AdrParameterSpace import AdrParameterSpace
+from examples.dispatch_skill_example.AdrModel import Adr1dModel
+from examples.dispatch_skill_example.AdrParameterSpace import AdrParameterSpace
 
 if __name__ == '__main__':
 
