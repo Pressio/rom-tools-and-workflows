@@ -2,8 +2,9 @@
 
 import os
 import shlex
-import subprocess
 import shutil
+import importlib
+import subprocess
 import numpy as np
 
 from romtools.hpc.util.logger import Logger
@@ -37,6 +38,19 @@ class LocalDispatcher(BaseDispatcher):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def call(self, target: str, *args, _, **kwargs):
+        """Import and run the Python function locally."""
+        module_name, qualname = target.split(":", 1)
+        try:
+            obj = importlib.import_module(module_name)
+        except:
+            raise ImportError(f"Could not import module {module_name}")
+
+        for attr in qualname.split("."):
+            obj = getattr(obj, attr)
+
+        return obj(*args, **kwargs)
 
     def get(self, remote_path: str, local_path: str) -> None:
         """Local 'get' is just a copy from remote_path to local_path."""

@@ -1,6 +1,7 @@
 
 import numpy as np
-import os
+
+from typing import Optional, Callable
 
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.configuration import Configuration
@@ -29,6 +30,9 @@ class BaseDispatcher:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def call(self, target: str, *args, run_directory: str = None, **kwargs):
+        pass
 
     def upload(self, run_directory) -> None:
         pass
