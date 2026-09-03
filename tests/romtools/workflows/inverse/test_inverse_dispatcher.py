@@ -60,6 +60,21 @@ class RecordingDispatcher(BaseDispatcher):
         np.savez(path, **arrays)
 
 
+class RemoteLikeDispatcher(RecordingDispatcher):
+    """
+    Records like RecordingDispatcher, but enforces the same path and concurrency
+    contracts as a RemoteDispatcher, without needing an ssh connection.
+    """
+
+    def require_relative_path(self, path: str) -> None:
+        if os.path.isabs(path):
+            raise ValueError(f"You must provide a path relative to the remote root (received: {path}).")
+
+    def require_supported_concurrency(self, concurrency: int) -> None:
+        if concurrency != 1:
+            raise ValueError(f"Concurrency > 1 is not supported with a RemoteDispatcher (received: {concurrency}).")
+
+
 class LinearQoiModel:
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
         return None
@@ -143,6 +158,25 @@ def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
         bounded_parameter_handling="clip",
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(max_iterations=1),
         random_seed=5,
+        dispatcher=dispatcher,
+    )
+
+
+def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1):
+    return mf_vi_drivers.mf_vi_with_auto_rom(
+        model=LinearQoiModel(),
+        prior_parameter_space=_gaussian_parameter_space(),
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        absolute_vi_directory=directory,
+        fom_sample_size=4,
+        rom_extra_sample_size=2,
+        rom_tolerance=0.0,
+        bounded_parameter_handling="clip",
+        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(max_iterations=1),
+        random_seed=5,
+        fom_evaluation_concurrency=fom_evaluation_concurrency,
+        rom_evaluation_concurrency=1,
         dispatcher=dispatcher,
     )
 
@@ -295,23 +329,62 @@ def test_run_vi_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path)
 def test_mf_vi_dispatches_fom_runs_but_keeps_rom_runs_local(tmp_path):
     dispatcher = RecordingDispatcher()
 
-    mf_vi_drivers.mf_vi_with_auto_rom(
-        model=LinearQoiModel(),
-        prior_parameter_space=_gaussian_parameter_space(),
-        observations=np.array([0.0]),
-        observations_covariance=np.eye(1),
-        absolute_vi_directory=str(tmp_path),
-        fom_sample_size=4,
-        rom_extra_sample_size=2,
-        rom_tolerance=0.0,
-        bounded_parameter_handling="clip",
-        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(max_iterations=1),
-        random_seed=5,
-        fom_evaluation_concurrency=1,
-        rom_evaluation_concurrency=1,
-        dispatcher=dispatcher,
-    )
+    _run_mf_vi(str(tmp_path), dispatcher=dispatcher)
 
     assert any("run_fom_sample_set" in name for name in dispatcher.created_dirs)
     assert not any("run_rom_sample_set" in name for name in dispatcher.created_dirs)
     assert (tmp_path / "iteration_0" / "run_rom_sample_set_0_0").is_dir()
+
+
+# ----------------------------------------------------------------------
+# A remote dispatcher cannot run concurrent evaluations (PR #313 review)
+# ----------------------------------------------------------------------
+
+@pytest.mark.mpi_skip
+def test_run_eki_rejects_concurrent_evaluation_for_a_remote_dispatcher(tmp_path):
+    with pytest.raises(ValueError, match="Concurrency > 1 is not supported"):
+        _run_eki(str(tmp_path), dispatcher=RemoteLikeDispatcher(), evaluation_concurrency=2)
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_rejects_concurrent_evaluation_for_a_remote_dispatcher(tmp_path):
+    with pytest.raises(ValueError, match="Concurrency > 1 is not supported"):
+        _run_vi(str(tmp_path), dispatcher=RemoteLikeDispatcher(), evaluation_concurrency=2)
+
+
+@pytest.mark.mpi_skip
+def test_mf_vi_rejects_the_default_fom_concurrency_for_a_remote_dispatcher(monkeypatch, tmp_path):
+    """run_mf_vi defaults fom_evaluation_concurrency to 10, which a remote run cannot use."""
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(ValueError, match="Concurrency > 1 is not supported"):
+        _run_mf_vi("relative_work", dispatcher=RemoteLikeDispatcher(), fom_evaluation_concurrency=10)
+
+
+# ----------------------------------------------------------------------
+# Multifidelity runs create ROM directories locally, so a remote dispatcher
+# needs a relative working directory (PR #313 review)
+# ----------------------------------------------------------------------
+
+@pytest.mark.mpi_skip
+def test_mf_eki_rejects_an_absolute_directory_for_a_remote_dispatcher(tmp_path):
+    with pytest.raises(ValueError, match="relative to the remote root"):
+        _run_mf_eki(str(tmp_path), dispatcher=RemoteLikeDispatcher())
+
+
+@pytest.mark.mpi_skip
+def test_mf_vi_rejects_an_absolute_directory_for_a_remote_dispatcher(tmp_path):
+    with pytest.raises(ValueError, match="relative to the remote root"):
+        _run_mf_vi(str(tmp_path), dispatcher=RemoteLikeDispatcher())
+
+
+@pytest.mark.mpi_skip
+def test_mf_eki_with_a_relative_directory_keeps_rom_directories_local(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    dispatcher = RemoteLikeDispatcher()
+
+    _run_mf_eki("relative_work", dispatcher=dispatcher)
+
+    assert any("run_fom_sample_set" in name for name in dispatcher.created_dirs)
+    assert not any("run_rom_sample_set" in name for name in dispatcher.created_dirs)
+    assert (tmp_path / "relative_work" / "iteration_0" / "run_rom_sample_set_0_mean").is_dir()

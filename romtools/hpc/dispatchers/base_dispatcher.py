@@ -66,6 +66,13 @@ class BaseDispatcher:
     def require_absolute_path(self, path: str) -> None:
         pass
 
+    def require_relative_path(self, path: str) -> None:
+        pass
+
+    def require_supported_concurrency(self, concurrency: int) -> None:
+        # Overridden by dispatchers that cannot run concurrent model evaluations
+        pass
+
     def get_config(self, param: str = None) -> dict:
         if param is None:
             return self.config

@@ -404,3 +404,29 @@ def test_np_savez_uploads_via_put(monkeypatch, make_config):
     local_path, remote_path = conn.put_calls[0]
     assert remote_path == "campaigns/results/data.npz"
     assert local_path.endswith("data.npz")
+
+
+def test_require_relative_path_rejects_an_absolute_path(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    with pytest.raises(ValueError, match="relative to the remote root"):
+        dispatcher.require_relative_path("/scratch/work")
+
+
+def test_require_relative_path_accepts_a_relative_path(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    dispatcher.require_relative_path("campaigns/work")
+
+
+def test_require_supported_concurrency_rejects_concurrent_evaluation(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    with pytest.raises(ValueError, match="Concurrency > 1 is not supported"):
+        dispatcher.require_supported_concurrency(2)
+
+
+def test_require_supported_concurrency_accepts_serial_evaluation(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    dispatcher.require_supported_concurrency(1)

@@ -1962,6 +1962,7 @@ def run_vi(model: QoiModel,
         Tuple of (variational_mean, variational_std, parameter_samples, qois).
     '''
     dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
 
     start_time = time.time()
     start_cpu_time = time.process_time()

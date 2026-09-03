@@ -155,14 +155,21 @@ existing workflows keep running unchanged.
 > [!NOTE]
 > In the multifidelity workflows, only the high-fidelity (FOM) evaluations are
 > dispatched. Surrogate (ROM) models are fit and evaluated in-process, so their
-> run directories always stay on the local machine.
+> run directories always stay on the local machine. Because the FOM and ROM run
+> directories are built from the same working directory, a multifidelity run
+> with a `RemoteDispatcher` requires a *relative* working directory: FOM
+> directories are resolved against the remote root, and the matching ROM
+> directories against your local working directory. Passing an absolute path
+> raises an error.
 
 > [!WARNING]
 > `evaluation_concurrency` greater than 1 is not supported with a
-> `RemoteDispatcher`. Concurrent evaluation runs each sample in a separate
-> process, which a remote connection is not set up to share. Use
-> `evaluation_concurrency = 1` for remote runs and let SLURM provide the
-> parallelism, or keep concurrency with a `LocalDispatcher`.
+> `RemoteDispatcher`, and the workflows raise an error if you ask for it.
+> Concurrent evaluation runs each sample in a separate process, which a remote
+> connection is not set up to share. Use `evaluation_concurrency = 1` for remote
+> runs and let SLURM provide the parallelism, or keep concurrency with a
+> `LocalDispatcher`. Note that `run_mf_vi()` defaults
+> `fom_evaluation_concurrency` to 10, so remote MF-VI runs have to set it to 1.
 
 > [!WARNING]
 > Restart files written through a `RemoteDispatcher` land on the remote host,

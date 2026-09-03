@@ -483,6 +483,20 @@ class RemoteDispatcher(BaseDispatcher):
         result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
         return result.ok
 
+    def require_relative_path(self, path: str) -> None:
+        if ppath.isabs(path):
+            raise ValueError(
+                f"You must provide a path relative to the remote root (received: {path}). "
+                "This workflow also creates the same directory on the local machine."
+            )
+
+    def require_supported_concurrency(self, concurrency: int) -> None:
+        if concurrency != 1:
+            raise ValueError(
+                f"Concurrency > 1 is not supported with a RemoteDispatcher (received: {concurrency}). "
+                "Use a concurrency of 1 and let SLURM provide the parallelism."
+            )
+
     def create_empty_dir(self, dir_name: str):
         self.__create_remote_directory(dir_name)
 

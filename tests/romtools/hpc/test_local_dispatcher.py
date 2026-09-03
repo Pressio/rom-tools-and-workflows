@@ -156,3 +156,17 @@ def test_dispatch_runs_relative_to_run_directory(tmp_path, dispatcher):
 
     assert result.ok
     assert result.stdout.strip() == "present"
+
+
+def test_require_absolute_path_rejects_a_relative_path(dispatcher):
+    with pytest.raises(AssertionError, match="must provide an absolute path"):
+        dispatcher.require_absolute_path("work")
+
+
+def test_require_relative_path_is_a_no_op(tmp_path, dispatcher):
+    """Local runs create directories on this machine, so absolute paths are fine."""
+    dispatcher.require_relative_path(str(tmp_path))
+
+
+def test_require_supported_concurrency_allows_concurrent_evaluation(dispatcher):
+    dispatcher.require_supported_concurrency(4)

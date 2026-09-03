@@ -10,6 +10,15 @@ from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
+def require_relative_or_absolute_path(dispatcher: BaseDispatcher, directory: str):
+    """Check that a working directory is usable by both the FOM and ROM dispatcher.
+
+    Multifidelity workflows always create their ROM run directories locally, so the
+    directory must be absolute for a LocalDispatcher and relative for a RemoteDispatcher.
+    """
+    dispatcher.require_absolute_path(directory)
+    dispatcher.require_relative_path(directory)
+
 def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample, dispatcher: Optional[BaseDispatcher] = None):
     """Prepare the model run and compute the QoI and error."""
     dispatcher = resolve_dispatcher(dispatcher)
@@ -36,6 +45,7 @@ def bound_samples(samples,samples_min,samples_max):
 def run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
     """Run the EKI iteration for the specified parameters."""
     dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
     mp_cntxt = multiprocessing.get_context("fork")
     ensemble_size = np.shape(parameter_samples)[0]
 
@@ -97,6 +107,7 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
 def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
     """Run a VI iteration for sampled parameters only (no explicit mean run)."""
     dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
     mp_cntxt = multiprocessing.get_context("spawn")
     ensemble_size = np.shape(parameter_samples)[0]
     assert ensemble_size > 0, "parameter_samples must contain at least one sample"

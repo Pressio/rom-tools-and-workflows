@@ -122,7 +122,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
-from romtools.workflows.inverse._inverse_utils import run_vi_iteration
+from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
     SteepestDescentSolver,
@@ -1447,7 +1447,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_file is not None:
         assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
-    resolve_dispatcher(dispatcher).require_absolute_path(absolute_vi_directory)
+    require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_vi_directory)
     assert fom_sample_size > 1, "fom_sample_size must be greater than 1"
     assert rom_extra_sample_size >= 0, "rom_extra_sample_size must be non-negative"
     assert max_step_size > 0.0, "max_step_size must be positive"
@@ -1618,12 +1618,15 @@ def run_mf_vi(model: QoiModel,
         dispatcher: Optional (defaults to None, which instantiates a
             LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
             to the configured remote host (e.g. an HPC cluster). ROM
-            evaluations always run locally.
+            evaluations always run locally, so a RemoteDispatcher requires a
+            relative `absolute_vi_directory` and
+            `fom_evaluation_concurrency=1`.
 
     Returns:
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
     """
     dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     start_time = time.time()
     start_cpu_time = time.process_time()
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
