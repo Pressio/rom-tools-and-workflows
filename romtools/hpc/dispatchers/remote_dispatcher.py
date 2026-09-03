@@ -2,6 +2,8 @@ import io
 import os
 import re
 import time
+import uuid
+import json
 import shlex
 import tempfile
 import subprocess
@@ -10,6 +12,7 @@ import numpy as np
 import posixpath as ppath
 from typing import Optional, Tuple
 
+from .call_helpers import _pack, _unpack, _CALL_RUNNER
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.connection import Connection, Result
@@ -17,6 +20,8 @@ from romtools.hpc.dispatchers import BaseDispatcher
 from romtools.hpc.util.file_transfer import create_tarball, safe_extract_tar, validate_file_patterns
 
 from romtools.hpc.util.slurm import create_slurm_script
+
+## Helpers
 
 def run_local_bash(cmd: str) -> Result:
     res = subprocess.run(
@@ -448,6 +453,79 @@ class RemoteDispatcher(BaseDispatcher):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def call(self, target: str, *args, run_directory: str = None, **kwargs):
+        call_id = f".dispatcher_call_{uuid.uuid4().hex}"
+
+        remote_run_dir = self.__resolve_remote_path(run_directory)
+        remote_call_dir = f"{remote_run_dir}/{call_id}"
+        self.__create_remote_directory(remote_call_dir)
+
+        remote_runner = f"{remote_call_dir}/runner.py"
+        remote_input_json = f"{remote_call_dir}/input.json"
+        remote_input_npz = f"{remote_call_dir}/input_arrays.npz"
+        remote_output_json = f"{remote_call_dir}/output.json"
+        remote_output_npz = f"{remote_call_dir}/output_arrays.npz"
+
+        py_setup = self.config.get("python_setup") or ""
+        py_cmd   = self.config.get("python_command") or "python3"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            local_runner = os.path.join(tmp, "runner.py")
+            local_input_json = os.path.join(tmp, "input.json")
+            local_input_npz = os.path.join(tmp, "input_arrays.npz")
+            local_output_json = os.path.join(tmp, "output.json")
+            local_output_npz = os.path.join(tmp, "output_arrays.npz")
+
+            with open(local_runner, "w") as f:
+                f.write(_CALL_RUNNER)
+
+            arrays = {}
+            payload = {
+                "args": _pack(args, arrays),
+                "kwargs": _pack(kwargs, arrays),
+            }
+
+            with open(local_input_json, "w") as f:
+                json.dump(payload, f)
+
+            np.savez(local_input_npz, **arrays)
+
+            self.put(local_runner, remote_runner)
+            self.put(local_input_json, remote_input_json)
+            self.put(local_input_npz, remote_input_npz)
+
+            cmd = (
+                "set -e\n"
+                f"{py_setup}\n"
+                f"{shlex.quote(py_cmd)} {shlex.quote(remote_runner)} "
+                f"{shlex.quote(target)} "
+                f"{shlex.quote(remote_input_json)} "
+                f"{shlex.quote(remote_input_npz)} "
+                f"{shlex.quote(remote_output_json)} "
+                f"{shlex.quote(remote_output_npz)}"
+            )
+
+            res = self.dispatch(cmd, run_directory, with_slurm=False)
+
+            if not res.ok:
+                raise RuntimeError(
+                    "Remote dispatcher.call() failed.\n"
+                    f"STDOUT:\n{res.stdout}\n"
+                    f"STDERR:\n{res.stderr}"
+                )
+
+            self.get(remote_output_json, local_output_json)
+            self.get(remote_output_npz, local_output_npz)
+
+            with open(local_output_json, "r") as f:
+                output_payload = json.load(f)
+
+            with np.load(local_output_npz, allow_pickle=False) as output_arrays:
+                result = _unpack(output_payload["result"], output_arrays)
+
+        self.remove(remote_call_dir)
+        return result
 
     def upload(self, run_directory) -> None:
         if not self.upload_patterns:
