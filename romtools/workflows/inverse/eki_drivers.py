@@ -158,7 +158,7 @@ def run_eki(model: QoiModel,
         max_iterations: Maximum number of EKI iterations.
         random_seed: RNG seed used for the initial ensemble draw.
         evaluation_concurrency: Number of concurrent model evaluations used by
-            each EKI iteration.
+            each EKI iteration. Must be 1 when a RemoteDispatcher is supplied.
         restart_file: Optional ``.npz`` restart file produced by a prior EKI
             run. When set, the saved ensemble, QoIs, error state, and step
             size are restored instead of drawing a new ensemble.
@@ -175,6 +175,7 @@ def run_eki(model: QoiModel,
     start_time = time.time()
     ## Error checking======
     dispatcher.require_absolute_path(absolute_eki_directory)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:

@@ -168,7 +168,10 @@ def run_mf_eki(model: QoiModel,
             parameters.
         absolute_eki_directory: Absolute path to the working directory. Each
             iteration stores FOM and ROM evaluations in iteration-specific
-            subdirectories below this path.
+            subdirectories below this path. When a RemoteDispatcher is
+            supplied, this must instead be a relative path: FOM directories are
+            resolved against the dispatcher's remote root, and the matching ROM
+            directories against the local working directory.
         fom_ensemble_size: Number of ensemble members evaluated with the
             high-fidelity model on each iteration.
         rom_extra_ensemble_size: Number of additional ROM-only ensemble
@@ -208,7 +211,9 @@ def run_mf_eki(model: QoiModel,
         dispatcher: Optional (defaults to None, which instantiates a
             LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
             to the configured remote host (e.g. an HPC cluster). ROM
-            evaluations always run locally.
+            evaluations always run locally, so a RemoteDispatcher requires a
+            relative `absolute_eki_directory` and
+            `fom_evaluation_concurrency=1`.
 
     Returns:
         Tuple ``(fom_parameter_samples, fom_qois)`` for the final accepted
@@ -221,7 +226,8 @@ def run_mf_eki(model: QoiModel,
     start_time = time.time()
 
     ## Error checking======
-    dispatcher.require_absolute_path(absolute_eki_directory)
+    require_relative_or_absolute_path(dispatcher, absolute_eki_directory)
+    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
