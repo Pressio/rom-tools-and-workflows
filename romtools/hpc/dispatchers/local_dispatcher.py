@@ -3,10 +3,10 @@
 import os
 import shlex
 import shutil
-import importlib
 import subprocess
 import numpy as np
 
+from .caller import LocalCaller
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatchers import BaseDispatcher
 from romtools.hpc.connection import Result
@@ -23,6 +23,8 @@ class LocalDispatcher(BaseDispatcher):
         # embedding process was started with (e.g. pytest's own flags).
         super().__init__(sampling_directory=sampling_directory, logger=logger, argv=[])
 
+        self.caller = LocalCaller(config=self.config, logger=self.logger)
+
     def __copy(self, src, dst):
         dst_dir = os.path.dirname(dst)
         if dst_dir:
@@ -38,19 +40,6 @@ class LocalDispatcher(BaseDispatcher):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-
-    def call(self, target: str, *args, _, **kwargs):
-        """Import and run the Python function locally."""
-        module_name, qualname = target.split(":", 1)
-        try:
-            obj = importlib.import_module(module_name)
-        except:
-            raise ImportError(f"Could not import module {module_name}")
-
-        for attr in qualname.split("."):
-            obj = getattr(obj, attr)
-
-        return obj(*args, **kwargs)
 
     def get(self, remote_path: str, local_path: str) -> None:
         """Local 'get' is just a copy from remote_path to local_path."""
