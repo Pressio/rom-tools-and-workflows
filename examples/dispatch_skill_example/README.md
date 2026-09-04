@@ -56,10 +56,23 @@ to follow those instructions.
 
 ## This example
 
-`prompt.txt` is the exact prompt given to the skill for this example. It
-reused the already-existing `AdrModel.py` (a wrapper around a 1D
-advection-diffusion solver, created with this skill using the demo as an example) as-is, and drafted `AdrParameterSpace.py` and
-`adr_workflow.py` around it.
+The prompt below is the exact prompt given to the skill for the
+parameter-space/workflow-drafting step of this example — it presupposes
+`AdrModel.py` already exists. `AdrModel.py` itself (a wrapper around a 1D
+advection-diffusion solver) was created with this skill in an earlier,
+unrecorded invocation, using the `adr_1d` demo notebook as a reference; its
+prompt isn't preserved here. Given `AdrModel.py`, this prompt reused it
+as-is and drafted `AdrParameterSpace.py` and `adr_workflow.py` around it.
 
-To reproduce: paste `prompt.txt` into a `/dispatch` invocation, or run the
-workflow directly with `python3 adr_workflow.py` from this directory.
+> /dispatch Use the existing model Adr1dModel in
+> examples/dispatch_skill_example/AdrModel.py - don't rewrite
+> populate_run_directory/run_model/compute_qoi. Build a parameter space for
+> its two parameters: c uniform in [0.5, 5.0], nu log-uniform in [1e-3,
+> 1e-1] (it spans two orders of magnitude, so sample it in log space). Run
+> locally with 16 samples, evaluation_concurrency=8, output directory
+> adr_sampling.
+
+To reproduce the parameter-space/workflow step: paste the prompt above into
+a `/dispatch` invocation from a checkout where `AdrModel.py` already exists
+(as it does in this repo), or run the workflow directly with
+`python3 adr_workflow.py` from this directory.
