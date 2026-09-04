@@ -14,9 +14,11 @@ SCHEMA = {
         "port":   {"cli": "-p", "type": int, "help": "The port to use for the connection."},
     },
     "workflow": {
-        "remote_root": {"cli": "-R", "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
-        "collect":     {"cli": "-o", "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
-        "upload":      {"cli": "-U", "type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
+        "remote_root":    {"cli": "-R",   "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
+        "collect":        {"cli": "-o",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
+        "upload":         {"cli": "-U",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
+        "python_setup":   {"cli": "-e",   "type": str, "help": "Shell commands that set up the remote environment before invoking Python (e.g. loading modules or activating a virtual environment)."},
+        "python_command": {"cli": "-c",   "type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
     },
     "slurm": {
         "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
@@ -25,7 +27,7 @@ SCHEMA = {
         "tasks_per_node": {"cli": "-t", "type": int, "help": "Number of tasks to run on each node for the SLURM job."},
         "wall_time":      {"cli": "-w", "type": str, "help": "Maximum wall time for the SLURM job (format: HH:MM:SS)."},
         "partition":      {"cli": "-q", "type": str, "help": "The partition to submit the SLURM job to (e.g., batch, short)."},
-        "poll_interval":  {"cli": "-P", "type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
+        "poll_interval":  {"cli": "-I", "type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
         "account":        {"cli": "-a", "type": str, "help": "The account WCID to charge for the SLURM job."},
         "timeout":        {"cli": "-T", "type": float, "help": "Time until giving up retrieving job's sacct exit code."},
     },
@@ -120,6 +122,10 @@ class Configuration:
         self.remote = None
         self.user = None
         self.port = 22
+
+        # Remote Python configuration
+        self.python_setup = None
+        self.python_command = "python3"
 
         # SLURM configuration
         self.script = None

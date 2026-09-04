@@ -15,6 +15,9 @@ The ``Dispatcher`` exposes a small public interface:
 - ``get(remote_path, local_path)``: Copy a remote file to the local host.
 - ``dispatch(cmd, remote_run_directory)``: Execute ``cmd`` from the remote
   host's ``run_directory``.
+- ``call(target, *args, run_directory, **kwargs)``: Run the Python callable
+  named by ``target`` (as ``"module:qualname"``) on the execution host and
+  return its result.
 - ``path_exists(path)``: Whether ``path`` exists on the execution host.
 - ``create_empty_dir(dir_name)``: Create ``dir_name``, and any missing parents,
   on the execution host.
@@ -269,6 +272,11 @@ Core configuration arguments
 - ``upload`` (``-U``): Comma-separated list of files, directories, or glob
   patterns to upload to the remote run directory. If omitted, nothing is
   uploaded.
+- ``python_setup`` (``-e``): Shell commands that set up the remote environment
+  before invoking Python, such as loading modules or activating a virtual
+  environment. Used by ``call()``.
+- ``python_command`` (``-c``): Command that invokes the remote Python with the
+  necessary libraries installed (default: ``python3``). Used by ``call()``.
 
 .. code-block:: yaml
 
@@ -276,6 +284,8 @@ Core configuration arguments
        remote_root: my_sampling_directory
        collect: "*.log, passed.txt"
        upload: "input.yaml, mesh/"
+       python_setup: "module load python/3.11"
+       python_command: python3
 
 **slurm** — schedule jobs with the dispatcher:
 
@@ -287,7 +297,7 @@ Core configuration arguments
 - ``tasks_per_node`` (``-t``)
 - ``wall_time`` (``-w``)
 - ``partition`` (``-q``)
-- ``poll_interval`` (``-P``): Seconds between ``squeue`` polls.
+- ``poll_interval`` (``-I``): Seconds between ``squeue`` polls.
 - ``timeout`` (``-T``): Seconds to keep retrying the ``sacct`` query for a
   finished job's exit code before giving up.
 

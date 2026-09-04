@@ -1,7 +1,7 @@
 
 import numpy as np
-import os
 
+from .caller import BaseCaller
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.configuration import Configuration
 from romtools.hpc.connection import Result
@@ -12,6 +12,7 @@ class BaseDispatcher:
         self.config = Configuration(argv=argv).to_dict()
         self.logger = logger if logger is not None else Logger(self.config["debug"])
         self.sampling_directory = sampling_directory
+        self.caller = BaseCaller(config=self.config, logger=self.logger)
 
     # ------------------------------------------------------------------
     # Resource management
@@ -29,6 +30,19 @@ class BaseDispatcher:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def call(self, target: str, *args, run_directory: str = None, **kwargs):
+        """
+        Run a Python callable, given as "module:qualname", and return its result.
+
+        Args:
+            target: The callable to run, e.g. "my_model:evaluate".
+            run_directory: The directory to run from. Modules staged there are
+                importable. Defaults to the dispatcher's own default directory.
+
+        Positional and keyword arguments are forwarded to the callable.
+        """
+        return self.caller.call(target, *args, run_directory=run_directory, **kwargs)
 
     def upload(self, run_directory) -> None:
         pass
