@@ -19,13 +19,13 @@ successfully.
   scratch, reuse it as-is — only the parameter space and workflow script
   need to be drafted. See step 2 of "Generating a workflow" below.
 - **Local**: works with `LocalDispatcher`, or no dispatcher at all (which
-  defaults to `LocalDispatcher` — see README.md's "Updating your model"
-  section). No config file needed.
+  defaults to `LocalDispatcher` — see `romtools/hpc/README.md`'s "Updating
+  your model" section). No config file needed.
 - **Remote**: works with `RemoteDispatcher`, which requires the user to
-  already have a config YAML (see `hpc/config/example.yaml` and README.md's
-  "Configuring the dispatcher" section). If they don't have one, point them
-  at those references and stop — generating or editing that YAML is out of
-  scope for this skill.
+  already have a config YAML (see `romtools/hpc/config/example.yaml` and
+  `romtools/hpc/README.md`'s "Configuring the dispatcher" section). If they
+  don't have one, point them at those references and stop — generating or
+  editing that YAML is out of scope for this skill.
 
 ## Generating a workflow
 
