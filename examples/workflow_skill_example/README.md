@@ -1,7 +1,7 @@
 # Dispatch Skill Example
 
-This directory is a worked example of the `dispatch` skill
-(`.claude/skills/dispatch/SKILL.md`), which generates and/or runs
+This directory is a worked example of the `workflow` skill
+(`.claude/skills/workflow/SKILL.md`), which generates and/or runs
 `romtools` sampling workflows — locally, or remotely against a real HPC
 cluster.
 
@@ -48,10 +48,10 @@ cluster.
 carries no Claude Code-specific mechanics itself. Claude Code (and other
 tools built on the same Agent Skills convention, like the Claude Agent
 SDK) auto-discovers it under `.claude/skills/` and lets you invoke it
-explicitly with `/dispatch`, or invokes it automatically when a request
+explicitly with `/workflow`, or invokes it automatically when a request
 matches its description. An agent without that discovery mechanism can
 still use it — just point the agent at
-`.claude/skills/dispatch/SKILL.md` (or paste its contents in) and ask it
+`.claude/skills/workflow/SKILL.md` (or paste its contents in) and ask it
 to follow those instructions.
 
 ## This example
@@ -64,8 +64,8 @@ unrecorded invocation, using the `adr_1d` demo notebook as a reference; its
 prompt isn't preserved here. Given `AdrModel.py`, this prompt reused it
 as-is and drafted `AdrParameterSpace.py` and `adr_workflow.py` around it.
 
-> /dispatch Use the existing model Adr1dModel in
-> examples/dispatch_skill_example/AdrModel.py - don't rewrite
+> /workflow Use the existing model Adr1dModel in
+> examples/workflow_skill_example/AdrModel.py - don't rewrite
 > populate_run_directory/run_model/compute_qoi. Build a parameter space for
 > its two parameters: c uniform in [0.5, 5.0], nu log-uniform in [1e-3,
 > 1e-1] (it spans two orders of magnitude, so sample it in log space). Run
@@ -73,6 +73,6 @@ as-is and drafted `AdrParameterSpace.py` and `adr_workflow.py` around it.
 > adr_sampling.
 
 To reproduce the parameter-space/workflow step: paste the prompt above into
-a `/dispatch` invocation from a checkout where `AdrModel.py` already exists
+a `/workflow` invocation from a checkout where `AdrModel.py` already exists
 (as it does in this repo), or run the workflow directly with
 `python3 adr_workflow.py` from this directory.

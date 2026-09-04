@@ -1,5 +1,5 @@
 ---
-name: dispatch
+name: workflow
 description: Generate and/or run a sampling workflow, locally via LocalDispatcher or remotely via RemoteDispatcher against an HPC cluster. Use this whenever the user asks to create, run, kick off, or launch a sampling workflow — whether a workflow python file already exists on disk, or the user describes one in plain language that doesn't exist yet. Remote runs require the user to already have a config YAML; this skill does not generate one.
 ---
 
