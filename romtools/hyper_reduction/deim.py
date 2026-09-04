@@ -46,6 +46,7 @@
 '''Implementation of DEIM technique for hyper-reduction'''
 
 import numpy as np
+import scipy.linalg as scipy_linalg
 import romtools.linalg.linalg as la
 from romtools.vector_space import VectorSpaceFromPOD
 from romtools.vector_space.utils.truncater import NoOpTruncater
@@ -91,6 +92,26 @@ def _validate_sample_indices(sample_indices, function_basis):
     return indices
 
 
+def qdeim_get_indices(function_basis):
+    '''Select interpolation indices using QDEIM.
+
+    QDEIM applies a column-pivoted QR factorization to the transpose of the
+    function basis. The first ``n_basis`` pivot indices define the
+    interpolation points.
+
+    Args:
+        function_basis: ``(n_dofs, n_basis)`` function basis.
+
+    Returns:
+        numpy.ndarray: Rank-1 integer array of interpolation indices.
+    '''
+    basis = _validate_basis(function_basis)
+    _, _, pivots = scipy_linalg.qr(
+        basis.transpose(), mode="economic", pivoting=True
+    )
+    return np.asarray(pivots[:basis.shape[1]], dtype=int)
+
+
 class DEIM:
     '''Serial discrete empirical interpolation operator.
 
@@ -123,6 +144,10 @@ class DEIM:
             self.__function_basis @ sampled_basis_pinv
         )
 
+    @staticmethod
+    def _select_sample_indices(function_basis):
+        return _deim_get_indices_sharedmem(function_basis)
+
     @classmethod
     def from_basis(cls, function_basis, sample_indices=None, rcond=None):
         '''Construct a serial DEIM operator from a function basis.
@@ -130,15 +155,16 @@ class DEIM:
         Args:
             function_basis: ``(n_dofs, n_basis)`` function basis.
             sample_indices: Optional rank-1 integer array of sampling points.
-                If omitted, classical DEIM point selection is used.
+                If omitted, the operator's default point-selection algorithm
+                is used.
             rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
 
         Returns:
-            DEIM: Constructed DEIM operator.
+            DEIM: Constructed interpolation operator.
         '''
         basis = _validate_basis(function_basis)
         if sample_indices is None:
-            sample_indices = _deim_get_indices_sharedmem(basis)
+            sample_indices = cls._select_sample_indices(basis)
         return cls(basis, sample_indices, rcond)
 
     @classmethod
@@ -153,11 +179,12 @@ class DEIM:
                 ``LeftSingularVectorTruncater`` protocol. If omitted, all
                 available POD modes are retained.
             sample_indices: Optional rank-1 integer array of sampling points.
-                If omitted, classical DEIM point selection is used.
+                If omitted, the operator's default point-selection algorithm
+                is used.
             rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
 
         Returns:
-            DEIM: Constructed DEIM operator.
+            DEIM: Constructed interpolation operator.
         '''
         snapshots = np.asarray(function_snapshots, dtype=float)
         if snapshots.ndim != 2:
@@ -218,6 +245,18 @@ class DEIM:
             )
         return (basis.transpose() @ self.__reconstruction_matrix).transpose()
 
+
+class QDEIM(DEIM):
+    '''Serial QDEIM operator using pivoted-QR point selection.
+
+    Reconstruction and projection use the same operations as :class:`DEIM`;
+    only the default interpolation-point selection differs. User-provided
+    ``sample_indices`` continue to take precedence.
+    '''
+
+    @staticmethod
+    def _select_sample_indices(function_basis):
+        return qdeim_get_indices(function_basis)
 
 
 def _deim_get_indices_sharedmem(U):
