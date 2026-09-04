@@ -25,6 +25,14 @@ cluster.
 - **Reports plainly.** A successful run's exit code and stdout are
   reported back; a failed run's exit code and stderr/stdout are surfaced
   verbatim, with no automatic retry or "fix" attempted on your behalf.
+- **Leaves an audit trail.** Every run writes `AUDIT.md` into the sampling
+  output directory: when it ran, local or remote (and against which
+  host/config for remote), whether the model was drafted or reused,
+  the parameter space and the reasoning behind any non-obvious choices,
+  sample count/concurrency/seed, confirmation that drafted files and
+  (for remote) the SLURM go-ahead were approved before running, and the
+  exit code and outcome. It's written every time, even for a plain rerun
+  of an existing workflow file.
 
 ## What it won't do
 

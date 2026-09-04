@@ -129,7 +129,28 @@ successfully.
      stop — do not retry automatically or modify the workflow to "fix" the
      error on the user's behalf.
 
-5. Report back concisely: workflow file used, exit code, and (on success)
+5. Write an audit record to `<sampling directory>/AUDIT.md` (overwrite if
+   one already exists from a prior run of the same directory). This is
+   the durable "how and why" for the run — write it every time, whether
+   or not this session did any generation. It must cover:
+   - When the run happened, and whether it targeted `LocalDispatcher` or
+     `RemoteDispatcher` (and if remote, the host and config file used).
+   - Whether the model was drafted or reused from an existing file (and
+     which file), and the parameter space's names, bounds, and
+     distribution, together with the reasoning behind any non-obvious
+     choice (e.g. why a bound was picked, or why a parameter was sampled
+     log-uniformly instead of uniformly). If that reasoning isn't in
+     hand — e.g. this session only ran a workflow file generated earlier
+     or by someone else — say so rather than inventing it.
+   - Sample count, evaluation concurrency, and random seed.
+   - Confirmation that drafted files were shown to and confirmed by the
+     user before being written (or that an existing workflow file was
+     used as-is, if generation was skipped), and, for remote runs, that
+     the SSH/SLURM go-ahead from step 2 above was given.
+   - The exact command run, its exit code, and a one-line outcome
+     summary.
+
+6. Report back concisely: workflow file used, exit code, and (on success)
    any output the tool printed.
 
 ## Explicitly out of scope for this skill
