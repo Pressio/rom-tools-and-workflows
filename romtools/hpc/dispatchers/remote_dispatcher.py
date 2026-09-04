@@ -525,6 +525,7 @@ class RemoteDispatcher(BaseDispatcher):
                 result = _unpack(output_payload["result"], output_arrays)
 
         self.remove(remote_call_dir)
+        self.logger.log(f"Executed {target} on remote host.")
         return result
 
     def upload(self, run_directory) -> None:
@@ -537,7 +538,7 @@ class RemoteDispatcher(BaseDispatcher):
         tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
         try:
             self.conn.put(tar_name, tar_path)
-            self.logger.log(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
+            self.logger.debug(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
         except Exception as e:
             raise RuntimeError(f"File transfer failed on upload: {e}")
         finally:
@@ -549,12 +550,12 @@ class RemoteDispatcher(BaseDispatcher):
     def put(self, local_path: str, remote_path: str) -> None:
         remote_path = self.__resolve_remote_path(remote_path)
         self.conn.put(local_path, remote_path)
-        self.logger.log(f"Uploaded local file {local_path} to {self.conn.host}:{remote_path}")
+        self.logger.debug(f"Uploaded local file {local_path} to {self.conn.host}:{remote_path}")
 
     def get(self, remote_path: str, local_path: str) -> None:
         remote_path = self.__resolve_remote_path(remote_path)
         self.conn.get(remote_path, local_path)
-        self.logger.log(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
+        self.logger.debug(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
 
     def path_exists(self, path: str) -> bool:
         remote_path = self.__resolve_remote_path(path)
@@ -587,7 +588,7 @@ class RemoteDispatcher(BaseDispatcher):
 
     def remove(self, path: str) -> None:
         remote_path = self.__resolve_remote_path(path)
-        res = self.conn.run(f"rm -f {shlex.quote(remote_path)}")
+        res = self.conn.run(f"rm -rf {shlex.quote(remote_path)}")
         if not res.ok:
             raise RuntimeError(f"Failed to remove remote file {remote_path}: {res.stderr}")
         self.logger.debug(f"Removed remote file: {remote_path}")
