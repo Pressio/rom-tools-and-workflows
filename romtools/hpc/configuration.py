@@ -17,8 +17,8 @@ SCHEMA = {
         "remote_root":    {"cli": "-R",   "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
         "collect":        {"cli": "-o",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
         "upload":         {"cli": "-U",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
-        "python_setup":   {"cli": "-pys", "type": str, "help": "Set-up to access remote Python with necessary library."},
-        "python_command": {"cli": "-pyc", "type": str, "help": "Command to access remote Python with necessary libraries installed."}
+        "python_setup":   {"cli": "-e",   "type": str, "help": "Shell commands that set up the remote environment before invoking Python (e.g. loading modules or activating a virtual environment)."},
+        "python_command": {"cli": "-c",   "type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
     },
     "slurm": {
         "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
