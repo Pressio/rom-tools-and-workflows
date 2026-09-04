@@ -1,8 +1,9 @@
 
 import numpy as np
 import pytest
+import scipy.linalg as scipy_linalg
 from romtools.hyper_reduction import deim
-from romtools.hyper_reduction import DEIM
+from romtools.hyper_reduction import DEIM, QDEIM
 from romtools.vector_space.utils.truncater import BasisSizeTruncater
 
 
@@ -41,6 +42,63 @@ def test_deim_class_from_snapshots():
 
     assert reducer.function_basis.shape == (4, 2)
     assert np.array_equal(reducer.sample_indices, np.array([0, 1]))
+
+
+@pytest.mark.mpi_skip
+def test_qdeim_get_indices_matches_pivoted_qr():
+    function_basis = np.array([
+        [0.1, 0.2, 0.0],
+        [1.2, 0.1, 0.3],
+        [0.0, 1.5, 0.2],
+        [0.3, 0.1, 1.7],
+        [0.6, 0.4, 0.5],
+    ])
+    _, _, pivots = scipy_linalg.qr(
+        function_basis.transpose(), mode="economic", pivoting=True
+    )
+
+    indices = deim.qdeim_get_indices(function_basis)
+
+    assert np.array_equal(indices, pivots[:function_basis.shape[1]])
+
+
+@pytest.mark.mpi_skip
+def test_qdeim_class_from_basis_reconstructs_basis_vectors():
+    function_basis = np.array([
+        [0.1, 0.2, 0.0],
+        [1.2, 0.1, 0.3],
+        [0.0, 1.5, 0.2],
+        [0.3, 0.1, 1.7],
+        [0.6, 0.4, 0.5],
+    ])
+    reducer = QDEIM.from_basis(function_basis)
+    coefficients = np.array([0.5, -1.0, 2.0])
+    function = function_basis @ coefficients
+
+    assert np.array_equal(
+        reducer.sample_indices,
+        deim.qdeim_get_indices(function_basis),
+    )
+    assert np.allclose(
+        reducer.reconstruct(function[reducer.sample_indices]),
+        function,
+    )
+
+
+@pytest.mark.mpi_skip
+def test_qdeim_class_from_snapshots():
+    function_snapshots = np.diag([4.0, 3.0, 2.0, 1.0])
+
+    reducer = QDEIM.from_snapshots(
+        function_snapshots,
+        truncater=BasisSizeTruncater(3),
+    )
+
+    assert reducer.function_basis.shape == (4, 3)
+    assert np.array_equal(
+        reducer.sample_indices,
+        deim.qdeim_get_indices(reducer.function_basis),
+    )
 
 
 @pytest.mark.mpi_skip
