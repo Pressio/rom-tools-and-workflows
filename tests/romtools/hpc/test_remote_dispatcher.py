@@ -50,7 +50,7 @@ def test_dispatch_without_slurm_runs_command_directly(monkeypatch, make_config):
 
     result = dispatcher.dispatch("./my_app", with_slurm=False)
 
-    assert result == "No SLURM job submitted."
+    assert result.ok
     assert conn.calls == ["cd campaigns && ./my_app"]
 
 
@@ -332,6 +332,54 @@ def test_create_empty_dir_issues_mkdir(monkeypatch, make_config):
     assert conn.calls == ["mkdir -p campaigns/newdir"]
 
 
+def test_list_dir_lists_remote_entries(monkeypatch, make_config):
+    conn = FakeConnection(responses=[("ls -1", Result("iteration_0\niteration_1\n", "", 0))])
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    assert dispatcher.list_dir("work") == ["iteration_0", "iteration_1"]
+    assert conn.calls == ["ls -1 campaigns/work"]
+
+
+def test_list_dir_is_empty_when_command_fails(monkeypatch, make_config):
+    conn = FakeConnection(responses=[("ls -1", Result("", "No such file", 1))])
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    assert dispatcher.list_dir("missing") == []
+
+
+def test_remove_deletes_remote_file(monkeypatch, make_config):
+    conn = FakeConnection()
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.remove("work/restart.npz")
+
+    assert conn.calls == ["rm -f campaigns/work/restart.npz"]
+
+
+def test_remove_raises_when_command_fails(monkeypatch, make_config):
+    conn = FakeConnection(responses=[("rm -f", Result("", "permission denied", 1))])
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    with pytest.raises(RuntimeError, match="permission denied"):
+        dispatcher.remove("work/restart.npz")
+
+
+def test_write_text_writes_via_remote_heredoc(monkeypatch, make_config):
+    conn = FakeConnection()
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.write_text("work/stats.txt", "elbo: 1.0\n")
+
+    assert len(conn.calls) == 1
+    assert "campaigns/work/stats.txt" in conn.calls[0]
+    assert "elbo: 1.0" in conn.calls[0]
+
+
 def test_np_savetxt_writes_via_remote_heredoc(monkeypatch, make_config):
     conn = FakeConnection()
     config = make_config(remote_root="campaigns")
@@ -356,3 +404,29 @@ def test_np_savez_uploads_via_put(monkeypatch, make_config):
     local_path, remote_path = conn.put_calls[0]
     assert remote_path == "campaigns/results/data.npz"
     assert local_path.endswith("data.npz")
+
+
+def test_require_relative_path_rejects_an_absolute_path(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    with pytest.raises(ValueError, match="relative to the remote root"):
+        dispatcher.require_relative_path("/scratch/work")
+
+
+def test_require_relative_path_accepts_a_relative_path(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    dispatcher.require_relative_path("campaigns/work")
+
+
+def test_require_supported_concurrency_rejects_concurrent_evaluation(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    with pytest.raises(ValueError, match="Concurrency > 1 is not supported"):
+        dispatcher.require_supported_concurrency(2)
+
+
+def test_require_supported_concurrency_accepts_serial_evaluation(monkeypatch, make_config):
+    dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
+
+    dispatcher.require_supported_concurrency(1)

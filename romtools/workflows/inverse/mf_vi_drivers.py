@@ -121,7 +121,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from romtools.workflows.inverse._inverse_utils import run_vi_iteration
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
+from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
     SteepestDescentSolver,
@@ -823,7 +824,8 @@ def _save_mf_vi_restart(restart_path: str,
                         parameter_maxes: np.ndarray = None,
                         transform_interior_margin: float = 0.0,
                         vi_history=None,
-                        sampling_method: str = None):
+                        sampling_method: str = None,
+                        dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
         bounded_parameter_handling,
@@ -867,7 +869,7 @@ def _save_mf_vi_restart(restart_path: str,
         save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
         save_data['variational_correlation_cholesky'] = variational_correlation_cholesky
-    np.savez(restart_path, **save_data)
+    resolve_dispatcher(dispatcher).np_savez(restart_path, **save_data)
 
 
 def _restart_has_full_state(restart_data) -> bool:
@@ -948,7 +950,10 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           rom_training_parameters: np.ndarray,
                           rom_training_qois: np.ndarray,
                           log_likelihood_precision_operator: np.ndarray = None,
-                          sampling_method: str = 'mc'):
+                          sampling_method: str = 'mc',
+                          dispatcher: Optional[BaseDispatcher] = None):
+    dispatcher = resolve_dispatcher(dispatcher)
+    rom_dispatcher = resolve_local_dispatcher(dispatcher)
     run_directory_base = f'{iteration_directory}/run_fom_sample_set_0_'
     optimizer_samples_fom, parameter_samples_fom = _draw_parameter_samples(
         variational_mean,
@@ -1012,6 +1017,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         parameter_names,
         parameter_samples_fom,
         fom_evaluation_concurrency,
+        dispatcher,
     )
     iteration_training_dirs, iteration_training_parameters, iteration_training_qois = _build_iteration_training_data(
         run_directory_base,
@@ -1054,6 +1060,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         parameter_names,
         parameter_samples_rom_base,
         rom_evaluation_concurrency,
+        rom_dispatcher,
     )
     rom_error = _compute_rom_relative_error(
         rom_results_base['mean-qoi'][:, None],
@@ -1087,6 +1094,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_names,
             parameter_samples_rom_base,
             rom_evaluation_concurrency,
+            rom_dispatcher,
         )
         rom_error = _compute_rom_relative_error(
             rom_results_base['mean-qoi'][:, None],
@@ -1102,6 +1110,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             parameter_names,
             parameter_samples_rom_extra,
             rom_evaluation_concurrency,
+            rom_dispatcher,
         )
     else:
         rom_results_extra = {
@@ -1166,6 +1175,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
                     parameter_names,
                     parameter_samples_rom_base[heldout_indices, :],
                     rom_evaluation_concurrency,
+                    rom_dispatcher,
                 )
                 rom_errors_base[:, heldout_indices] = fold_results['errors']
             rom_log_likelihoods_base, _ = _compute_log_likelihoods(
@@ -1433,12 +1443,11 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                transform_interior_margin: float,
                                transform_map: str,
                                min_physical_variational_std_fraction: float,
-                               bounded_parameter_handling: str) -> None:
+                               bounded_parameter_handling: str,
+                               dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_file is not None:
         assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
-    assert os.path.isabs(absolute_vi_directory), (
-        f"absolute_vi_directory is not an absolute path ({absolute_vi_directory})"
-    )
+    require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_vi_directory)
     assert fom_sample_size > 1, "fom_sample_size must be greater than 1"
     assert rom_extra_sample_size >= 0, "rom_extra_sample_size must be non-negative"
     assert max_step_size > 0.0, "max_step_size must be positive"
@@ -1561,7 +1570,8 @@ def run_mf_vi(model: QoiModel,
               bounded_parameter_handling: str = 'transform',
               transform_interior_margin: float = 1e-8,
               transform_map: str = 'sigmoid',
-              min_physical_variational_std_fraction: float = 1e-8):
+              min_physical_variational_std_fraction: float = 1e-8,
+              dispatcher: Optional[BaseDispatcher] = None):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
@@ -1605,9 +1615,18 @@ def run_mf_vi(model: QoiModel,
             variational standard deviation as a fraction of each parameter range
             when bounded_parameter_handling='transform'.
 
+        dispatcher: Optional (defaults to None, which instantiates a
+            LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
+            to the configured remote host (e.g. an HPC cluster). ROM
+            evaluations always run locally, so a RemoteDispatcher requires a
+            relative `absolute_vi_directory` and
+            `fom_evaluation_concurrency=1`.
+
     Returns:
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
     """
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     start_time = time.time()
     start_cpu_time = time.process_time()
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
@@ -1735,6 +1754,7 @@ def run_mf_vi(model: QoiModel,
         transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         bounded_parameter_handling=bounded_parameter_handling,
+        dispatcher=dispatcher,
     )
     log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
         observations_covariance,
@@ -1830,6 +1850,7 @@ def run_mf_vi(model: QoiModel,
             rom_training_qois=None,
             log_likelihood_precision_operator=log_likelihood_precision_operator,
             sampling_method=sampling_method,
+            dispatcher=dispatcher,
         )
         initial_elbo_reference = float(state['elbo'])
     else:
@@ -2082,6 +2103,7 @@ def run_mf_vi(model: QoiModel,
                 rom_training_qois=rom_training_qois,
                 log_likelihood_precision_operator=log_likelihood_precision_operator,
                 sampling_method=sampling_method,
+                dispatcher=dispatcher,
             )
         if 'initial_elbo_reference' in restart_data:
             initial_elbo_reference = float(restart_data['initial_elbo_reference'])
@@ -2111,8 +2133,9 @@ def run_mf_vi(model: QoiModel,
         transform_interior_margin=transform_interior_margin,
         vi_history=vi_history,
         sampling_method=sampling_method,
+        dispatcher=dispatcher,
     )
-    _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
+    _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
 
     gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
@@ -2169,6 +2192,7 @@ def run_mf_vi(model: QoiModel,
         parameter_maxes,
         transform_interior_margin,
         transform_map,
+        dispatcher=dispatcher,
     )
 
     iteration += 1
@@ -2317,6 +2341,7 @@ def run_mf_vi(model: QoiModel,
             rom_training_qois=state['rom_training_qois'],
             log_likelihood_precision_operator=log_likelihood_precision_operator,
             sampling_method=sampling_method,
+            dispatcher=dispatcher,
         )
 
         if line_search_method == 'legacy':
@@ -2409,6 +2434,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 transform_map,
+                dispatcher=dispatcher,
             )
             _save_mf_vi_restart(
                 f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
@@ -2433,8 +2459,9 @@ def run_mf_vi(model: QoiModel,
                 transform_interior_margin=transform_interior_margin,
                 vi_history=vi_history,
                 sampling_method=sampling_method,
+                dispatcher=dispatcher,
             )
-            _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
+            _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
             iteration += 1
             if elbo_converged:
                 print(
@@ -2474,7 +2501,7 @@ def run_mf_vi(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
-    _save_vi_history(absolute_vi_directory, vi_history)
+    _save_vi_history(absolute_vi_directory, vi_history, dispatcher)
     return variational_mean, variational_std, state['parameter_samples_fom'], state['qois_fom']
 
 
@@ -2514,7 +2541,8 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         transform_map: str = 'sigmoid',
                         min_physical_variational_std_fraction: float = 1e-8,
                         rom_type: str = "gp",
-                        rom_args: Optional[dict] = None):
+                        rom_args: Optional[dict] = None,
+                        dispatcher: Optional[BaseDispatcher] = None):
     """
     Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
     Accepts the same rom_base_sampling_strategy options as run_mf_vi.
@@ -2605,4 +2633,5 @@ def mf_vi_with_auto_rom(model: QoiModel,
         transform_interior_margin=transform_interior_margin,
         transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
+        dispatcher=dispatcher,
     )

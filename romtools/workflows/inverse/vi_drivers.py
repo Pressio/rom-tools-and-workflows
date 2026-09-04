@@ -118,7 +118,8 @@ import os
 import re
 import time
 from scipy.stats import norm, qmc
-from typing import Tuple
+from typing import Optional, Tuple
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
@@ -157,28 +158,28 @@ def _resolve_restart_file(restart_file: str) -> str:
 
 
 def _prune_old_restart_files(absolute_vi_directory: str,
-                             restart_files_to_keep: int) -> None:
+                             restart_files_to_keep: int,
+                             dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_files_to_keep is None:
         return
     if restart_files_to_keep < 1:
         return
 
+    dispatcher = resolve_dispatcher(dispatcher)
     restart_entries = []
-    for entry in os.scandir(absolute_vi_directory):
-        if not entry.is_dir():
-            continue
-        match = re.match(r"iteration_(\d+)$", entry.name)
+    for entry_name in dispatcher.list_dir(absolute_vi_directory):
+        match = re.match(r"iteration_(\d+)$", entry_name)
         if match is None:
             continue
-        restart_path = os.path.join(entry.path, "restart.npz")
-        if os.path.isfile(restart_path):
+        restart_path = f"{absolute_vi_directory}/{entry_name}/restart.npz"
+        if dispatcher.path_exists(restart_path):
             restart_entries.append((int(match.group(1)), restart_path))
 
     restart_entries.sort(key=lambda pair: pair[0])
     if len(restart_entries) <= restart_files_to_keep:
         return
     for _, restart_path in restart_entries[:-restart_files_to_keep]:
-        os.remove(restart_path)
+        dispatcher.remove(restart_path)
 
 
 def _compute_log_likelihood_precision_operator(observations_covariance: np.ndarray,
@@ -534,8 +535,10 @@ def _write_iteration_stats_file(iteration_directory: str,
                                 parameter_mins: np.ndarray = None,
                                 parameter_maxes: np.ndarray = None,
                                 transform_interior_margin: float = 0.0,
-                                transform_map: str = 'sigmoid') -> None:
-    os.makedirs(iteration_directory, exist_ok=True)
+                                transform_map: str = 'sigmoid',
+                                dispatcher: Optional[BaseDispatcher] = None) -> None:
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.create_empty_dir(iteration_directory)
     variational_std, _ = _compute_variational_std(
         variational_log_std,
         min_variational_std,
@@ -555,21 +558,19 @@ def _write_iteration_stats_file(iteration_directory: str,
         transform_interior_margin,
         transform_map,
     )
-    with open(f"{iteration_directory}/stats.txt", "w", encoding="utf-8") as stats_file:
-        stats_file.write(f"elbo: {float(elbo):.16e}\n")
-        stats_file.write(f"mean_relative_mse: {float(mean_relative_mse):.16e}\n")
-        stats_file.write(f"mean_log_likelihood: {mean_log_likelihood:.16e}\n")
-        stats_file.write(f"mean_log_prior: {mean_log_prior:.16e}\n")
-        stats_file.write(f"wall_time_seconds: {float(wall_time):.16e}\n")
-        stats_file.write(f"cpu_time_seconds: {float(cpu_time):.16e}\n")
-        stats_file.write(
-            "variational_mean: "
-            f"{np.array2string(persisted_variational_mean, precision=16, separator=', ')}\n"
-        )
-        stats_file.write(
-            "variational_covariance: "
-            f"{np.array2string(variational_covariance, precision=16, separator=', ')}\n"
-        )
+    stats_lines = [
+        f"elbo: {float(elbo):.16e}",
+        f"mean_relative_mse: {float(mean_relative_mse):.16e}",
+        f"mean_log_likelihood: {mean_log_likelihood:.16e}",
+        f"mean_log_prior: {mean_log_prior:.16e}",
+        f"wall_time_seconds: {float(wall_time):.16e}",
+        f"cpu_time_seconds: {float(cpu_time):.16e}",
+        "variational_mean: "
+        f"{np.array2string(persisted_variational_mean, precision=16, separator=', ')}",
+        "variational_covariance: "
+        f"{np.array2string(variational_covariance, precision=16, separator=', ')}",
+    ]
+    dispatcher.write_text(f"{iteration_directory}/stats.txt", "\n".join(stats_lines) + "\n")
 
 
 def _get_persisted_variational_mean(variational_mean: np.ndarray,
@@ -709,9 +710,12 @@ def _pack_vi_history(vi_history):
     }
 
 
-def _save_vi_history(absolute_vi_directory: str, vi_history) -> None:
-    os.makedirs(absolute_vi_directory, exist_ok=True)
-    np.savez(
+def _save_vi_history(absolute_vi_directory: str,
+                     vi_history,
+                     dispatcher: Optional[BaseDispatcher] = None) -> None:
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.create_empty_dir(absolute_vi_directory)
+    dispatcher.np_savez(
         f'{absolute_vi_directory}/history.npz',
         **_pack_vi_history(vi_history),
     )
@@ -1356,7 +1360,8 @@ def _run_vi_iteration_samples(model: QoiModel,
                               run_directory_base: str,
                               parameter_names,
                               parameter_samples: np.ndarray,
-                              evaluation_concurrency: int):
+                              evaluation_concurrency: int,
+                              dispatcher: Optional[BaseDispatcher] = None):
     return run_vi_iteration(
         model,
         observations,
@@ -1364,6 +1369,7 @@ def _run_vi_iteration_samples(model: QoiModel,
         parameter_names,
         parameter_samples,
         evaluation_concurrency,
+        dispatcher,
     )
 
 
@@ -1520,7 +1526,8 @@ def _evaluate_vi_state(model: QoiModel,
                        variational_correlation_cholesky: np.ndarray = None,
                        elbo_scaling_factor: float = 1.0,
                        log_likelihood_precision_operator: np.ndarray = None,
-                       sampling_method: str = 'mc'):
+                       sampling_method: str = 'mc',
+                       dispatcher: Optional[BaseDispatcher] = None):
     optimizer_samples, parameter_samples = _draw_parameter_samples(
         variational_mean,
         variational_log_std,
@@ -1542,6 +1549,7 @@ def _evaluate_vi_state(model: QoiModel,
         parameter_names,
         parameter_samples,
         evaluation_concurrency,
+        dispatcher,
     )
     return _build_vi_state_from_results(
         optimizer_samples=optimizer_samples,
@@ -1595,7 +1603,8 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
                                            standard_normal_samples: np.ndarray = None,
                                            variational_correlation_cholesky: np.ndarray = None,
                                            elbo_scaling_factor: float = 1.0,
-                                           log_likelihood_precision_operator: np.ndarray = None):
+                                           log_likelihood_precision_operator: np.ndarray = None,
+                                           dispatcher: Optional[BaseDispatcher] = None):
     optimizer_samples, parameter_samples = _draw_parameter_samples(
         variational_mean,
         variational_log_std,
@@ -1617,6 +1626,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
         parameter_names,
         parameter_samples,
         evaluation_concurrency,
+        dispatcher,
     )
     mean_relative_mse = np.mean(_compute_relative_mse(iteration_results['errors'], observations))
     candidate = {
@@ -1682,7 +1692,8 @@ def _save_vi_restart(restart_path: str,
                      parameter_maxes: np.ndarray = None,
                      transform_interior_margin: float = 0.0,
                      vi_history=None,
-                     sampling_method: str = None):
+                     sampling_method: str = None,
+                     dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
         bounded_parameter_handling,
@@ -1727,7 +1738,7 @@ def _save_vi_restart(restart_path: str,
         save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
         save_data['variational_correlation_cholesky'] = variational_correlation_cholesky
-    np.savez(restart_path, **save_data)
+    resolve_dispatcher(dispatcher).np_savez(restart_path, **save_data)
 
 
 def _validate_run_vi_inputs(absolute_vi_directory: str,
@@ -1762,10 +1773,10 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             restart_file: str,
                             parameter_mins: np.ndarray,
                             parameter_maxes: np.ndarray,
-                            bounded_parameter_handling: str) -> None:
-    assert os.path.isabs(absolute_vi_directory), (
-        f"absolute_vi_directory is not an absolute path ({absolute_vi_directory})"
-    )
+                            bounded_parameter_handling: str,
+                            dispatcher: Optional[BaseDispatcher] = None) -> None:
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_absolute_path(absolute_vi_directory)
     assert sample_size > 1, "sample_size must be greater than 1"
     assert max_step_size > 0.0, "max_step_size must be positive"
     assert step_size_growth_factor >= 1.0, "step_size_growth_factor must be greater than 1.0"
@@ -1878,7 +1889,8 @@ def run_vi(model: QoiModel,
            bounded_parameter_handling: str = 'transform',
            transform_interior_margin: float = 1e-6,
            transform_map: str = 'sigmoid',
-           min_physical_variational_std_fraction: float = 1e-6):
+           min_physical_variational_std_fraction: float = 1e-6,
+           dispatcher: Optional[BaseDispatcher] = None):
     '''
     Run Gaussian variational inference with score-function gradients.
 
@@ -1942,10 +1954,15 @@ def run_vi(model: QoiModel,
         min_physical_variational_std_fraction: Minimum physical-space
             variational standard deviation as a fraction of each parameter range
             when bounded_parameter_handling='transform'.
+        dispatcher: Optional (defaults to None, which instantiates a
+            LocalDispatcher). Pass a RemoteDispatcher to send model evaluations
+            to the configured remote host (e.g. an HPC cluster).
 
     Returns:
         Tuple of (variational_mean, variational_std, parameter_samples, qois).
     '''
+    dispatcher = resolve_dispatcher(dispatcher)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
 
     start_time = time.time()
     start_cpu_time = time.process_time()
@@ -2062,6 +2079,7 @@ def run_vi(model: QoiModel,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         bounded_parameter_handling=bounded_parameter_handling,
+        dispatcher=dispatcher,
     )
     log_likelihood_precision_operator = _compute_log_likelihood_precision_operator(
         observations_covariance,
@@ -2141,6 +2159,7 @@ def run_vi(model: QoiModel,
             elbo_scaling_factor,
             log_likelihood_precision_operator,
             sampling_method,
+            dispatcher,
         )
         initial_elbo_reference = float(state['elbo'])
     else:
@@ -2316,6 +2335,7 @@ def run_vi(model: QoiModel,
             elbo_scaling_factor,
             log_likelihood_precision_operator,
             sampling_method,
+            dispatcher,
         )
         if 'initial_elbo_reference' in restart_data:
             initial_elbo_reference = float(restart_data['initial_elbo_reference'])
@@ -2352,8 +2372,9 @@ def run_vi(model: QoiModel,
             transform_interior_margin=transform_interior_margin,
             vi_history=vi_history,
             sampling_method=sampling_method,
+            dispatcher=dispatcher,
         )
-        _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
+        _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
 
     gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
@@ -2402,6 +2423,7 @@ def run_vi(model: QoiModel,
         state['mean_relative_mse'],
         wall_time,
         cpu_time,
+        dispatcher=dispatcher,
     )
 
     iteration += 1
@@ -2510,6 +2532,7 @@ def run_vi(model: QoiModel,
                 variational_correlation_cholesky,
                 elbo_scaling_factor,
                 log_likelihood_precision_operator,
+                dispatcher,
             )
 
             if line_search_objective == 'elbo':
@@ -2633,6 +2656,7 @@ def run_vi(model: QoiModel,
                     parameter_maxes,
                     transform_interior_margin,
                     transform_map,
+                    dispatcher=dispatcher,
                 )
 
                 _save_vi_restart(
@@ -2665,8 +2689,9 @@ def run_vi(model: QoiModel,
                     transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
+                    dispatcher=dispatcher,
                 )
-                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
+                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
                 iteration += 1
                 if elbo_converged:
                     print(
@@ -2768,6 +2793,7 @@ def run_vi(model: QoiModel,
                 variational_correlation_cholesky,
                 elbo_scaling_factor,
                 log_likelihood_precision_operator,
+                dispatcher,
             )
 
             if line_search_objective == 'elbo':
@@ -2891,6 +2917,7 @@ def run_vi(model: QoiModel,
                     parameter_maxes,
                     transform_interior_margin,
                     transform_map,
+                    dispatcher=dispatcher,
                 )
 
                 _save_vi_restart(
@@ -2923,8 +2950,9 @@ def run_vi(model: QoiModel,
                     transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
+                    dispatcher=dispatcher,
                 )
-                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep)
+                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
                 iteration += 1
                 if elbo_converged:
                     print(
@@ -2976,5 +3004,5 @@ def run_vi(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
-    _save_vi_history(absolute_vi_directory, vi_history)
+    _save_vi_history(absolute_vi_directory, vi_history, dispatcher)
     return variational_mean, variational_std, state['parameter_samples'], state['qois']

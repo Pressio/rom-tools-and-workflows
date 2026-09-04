@@ -84,9 +84,13 @@ high-fidelity correction and step-acceptance logic remain closely related.
 import numpy as np
 import os
 import time
+from typing import Optional
+
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.inverse._inverse_utils import *
+
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 def run_eki(model: QoiModel,
                  parameter_space: ParameterSpace,
@@ -107,7 +111,8 @@ def run_eki(model: QoiModel,
                  max_iterations: int = 50,
                  random_seed: int = 1,
                  evaluation_concurrency = 1,
-                 restart_file = None):
+                 restart_file = None,
+                 dispatcher: Optional[BaseDispatcher] = None):
     """
     Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
 
@@ -129,7 +134,9 @@ def run_eki(model: QoiModel,
             parameters.
         absolute_eki_directory: Absolute path to the working directory. Each
             accepted or tested iteration writes into
-            ``iteration_<k>/run_*`` subdirectories under this path.
+            ``iteration_<k>/run_*`` subdirectories under this path. When a
+            RemoteDispatcher is supplied, a relative path is also accepted and
+            is resolved against the dispatcher's configured remote root.
         ensemble_size: Number of ensemble members used in the EKI update.
         initial_step_size: Initial multiplier applied to the computed Kalman
             update directions.
@@ -151,21 +158,24 @@ def run_eki(model: QoiModel,
         max_iterations: Maximum number of EKI iterations.
         random_seed: RNG seed used for the initial ensemble draw.
         evaluation_concurrency: Number of concurrent model evaluations used by
-            each EKI iteration.
+            each EKI iteration. Must be 1 when a RemoteDispatcher is supplied.
         restart_file: Optional ``.npz`` restart file produced by a prior EKI
             run. When set, the saved ensemble, QoIs, error state, and step
             size are restored instead of drawing a new ensemble.
+        dispatcher: Optional (defaults to None, which instantiates a LocalDispatcher).
+            Provide a RemoteDispatcher to send work to a remote HPC cluster.
 
     Returns:
         Tuple ``(parameter_samples, qois)`` containing the final ensemble and
         the corresponding QoI matrix from the last accepted iteration.
     """
-
-
+    # Fall back to LocalDispatcher if none is provided
+    dispatcher = resolve_dispatcher(dispatcher)
 
     start_time = time.time()
     ## Error checking======
-    assert os.path.isabs(absolute_eki_directory), f"enkf_directory is not an absolute path ({absolute_eki_directory})"
+    dispatcher.require_absolute_path(absolute_eki_directory)
+    dispatcher.require_supported_concurrency(evaluation_concurrency)
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
     if parameter_mins is not None:
@@ -175,6 +185,8 @@ def run_eki(model: QoiModel,
     ##====================
     np.random.seed(random_seed)
 
+    # Create folder if it doesn't exist
+    dispatcher.create_empty_dir(absolute_eki_directory)
 
     # create initial samples
     if restart_file is None:
@@ -184,9 +196,9 @@ def run_eki(model: QoiModel,
         parameter_names = parameter_space.get_names()
         #Run initial step and compute update
         run_directory_base = f'{absolute_eki_directory}/iteration_{0}/run_'
-        results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency)
+        results = run_eki_iteration(model,observations,run_directory_base,parameter_names,parameter_samples,evaluation_concurrency,dispatcher)
         qois,mean_qoi,errors = results['qois'],results['mean-qoi'],results['errors']
-        np.savez(f'{absolute_eki_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
+        dispatcher.np_savez(f'{absolute_eki_directory}/iteration_{0}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=initial_step_size)
         error_norm = np.mean(np.linalg.norm(errors,axis=0))
         step_size = initial_step_size
 
@@ -214,7 +226,7 @@ def run_eki(model: QoiModel,
         test_parameter_samples = parameter_samples + step_size*dp
         test_parameter_samples = bound_samples(test_parameter_samples,parameter_mins,parameter_maxes)
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
-        test_results = run_eki_iteration(model,observations,run_directory_base,parameter_names,test_parameter_samples,evaluation_concurrency)
+        test_results = run_eki_iteration(model,observations,run_directory_base,parameter_names,test_parameter_samples,evaluation_concurrency, dispatcher)
         test_qois,test_mean_qoi,test_errors = test_results['qois'],test_results['mean-qoi'],test_results['errors']
         test_error_norm = np.mean(np.linalg.norm(test_errors,axis=0))
         if test_error_norm < relaxation_parameter*error_norm:
@@ -231,7 +243,7 @@ def run_eki(model: QoiModel,
           dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)
           dp_norm = np.linalg.norm(dp)
           print(f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, Wall time: {wall_time:.5f}')
-          np.savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
+          dispatcher.np_savez(f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',qois=qois,mean_qoi=mean_qoi,errors=errors,parameter_samples=parameter_samples,iteration=iteration,step_size=step_size)
           iteration += 1
         else:
           # Else, drop the step size
