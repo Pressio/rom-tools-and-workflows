@@ -1,3 +1,5 @@
+import weakref
+
 import numpy as np
 import pytest
 
@@ -479,6 +481,90 @@ def test_distributed_compute_uv_false_matches_numpy(full_matrices,
 
 
 @pytest.mark.mpi(min_size=1)
+def test_distributed_compute_uv_false_uses_r_only_qr(monkeypatch):
+    comm = MPI.COMM_WORLD
+    local_matrix = np.arange(28.0).reshape(7, 4)
+    original_qr = np.linalg.qr
+    qr_modes = []
+
+    def recording_qr(matrix, mode="reduced"):
+        qr_modes.append(mode)
+        return original_qr(matrix, mode=mode)
+
+    monkeypatch.setattr(np.linalg, "qr", recording_qr)
+
+    DistributedSvd(comm)(
+        local_matrix,
+        full_matrices=False,
+        compute_uv=False,
+        hermitian=False,
+    )
+
+    expected_modes = ["r", "r"] if comm.Get_rank() == 0 else ["r"]
+    assert qr_modes == expected_modes
+
+
+@pytest.mark.mpi(min_size=1)
+def test_root_temporaries_are_released_before_local_u_multiply(monkeypatch):
+    references = {}
+    local_u_multiply_was_checked = []
+    original_qr = np.linalg.qr
+    original_svd = np.linalg.svd
+    qr_call_count = 0
+
+    class LocalQ(np.ndarray):
+        def __matmul__(self, other):
+            for name in (
+                "stacked_r",
+                "reduced_q",
+                "final_r",
+                "final_u",
+                "stacked_left_transform",
+            ):
+                assert references[name]() is None
+            local_u_multiply_was_checked.append(True)
+            return np.asarray(self) @ other
+
+    class ReducedQ(np.ndarray):
+        def __matmul__(self, other):
+            result = np.asarray(self) @ other
+            references["stacked_left_transform"] = weakref.ref(result)
+            return result
+
+    def recording_qr(matrix, mode="reduced"):
+        nonlocal qr_call_count
+        qr_call_count += 1
+        q_matrix, r_matrix = original_qr(matrix, mode=mode)
+        if qr_call_count == 1:
+            return q_matrix.view(LocalQ), r_matrix
+
+        references["stacked_r"] = weakref.ref(matrix)
+        reduced_q = q_matrix.view(ReducedQ)
+        references["reduced_q"] = weakref.ref(reduced_q)
+        return reduced_q, r_matrix
+
+    def recording_svd(matrix, **kwargs):
+        references["final_r"] = weakref.ref(matrix)
+        result = original_svd(matrix, **kwargs)
+        references["final_u"] = weakref.ref(result[0])
+        return result
+
+    monkeypatch.setattr(np.linalg, "qr", recording_qr)
+    monkeypatch.setattr(np.linalg, "svd", recording_svd)
+
+    # COMM_SELF makes every pytest MPI process independently exercise the
+    # rank-zero allocation and cleanup path.
+    DistributedSvd(MPI.COMM_SELF)(
+        np.arange(28.0).reshape(7, 4),
+        full_matrices=False,
+        compute_uv=True,
+        hermitian=False,
+    )
+
+    assert local_u_multiply_was_checked == [True]
+
+
+@pytest.mark.mpi(min_size=1)
 def test_distributed_svd_preserves_communicator():
     comm = MPI.COMM_WORLD
     global_matrix = _matrix_for_case("tall-real", comm.Get_size())
@@ -493,17 +579,17 @@ def test_distributed_svd_preserves_communicator():
 
 
 class _GatherRecordingCommunicator:
-    """MPI communicator proxy that records the shapes passed to ``gather``.
+    """MPI communicator proxy that records direct-buffer gathers.
 
     ``DistributedSvd`` only relies on a small subset of the communicator API.
     This test double forwards those operations to a real communicator while
-    intercepting ``gather`` to record what each rank sends. Communication still
+    intercepting ``Gather`` to record what each rank sends. Communication still
     occurs normally, but the test can verify that the algorithm gathers reduced
     R factors instead of the original local input matrices.
 
     Attributes:
         gathered_shapes: Shapes of all values supplied by this rank to
-            ``gather``, in call order.
+            ``Gather`` or ``Gatherv``, in call order.
     """
 
     def __init__(self, comm):
@@ -514,15 +600,27 @@ class _GatherRecordingCommunicator:
         return self._comm.allgather(value)
 
     def gather(self, value, root=0):
-        """Record the outgoing shape, then perform the real gather."""
-        self.gathered_shapes.append(value.shape)
-        return self._comm.gather(value, root=root)
+        raise AssertionError("DistributedSvd must not use object gather")
+
+    def Gather(self, sendbuf, recvbuf, root=0):
+        self.gathered_shapes.append(sendbuf[0].shape)
+        return self._comm.Gather(sendbuf, recvbuf, root=root)
+
+    def Gatherv(self, sendbuf, recvbuf, root=0):
+        self.gathered_shapes.append(sendbuf[0].shape)
+        return self._comm.Gatherv(sendbuf, recvbuf, root=root)
 
     def bcast(self, value, root=0):
         return self._comm.bcast(value, root=root)
 
     def scatter(self, value, root=0):
-        return self._comm.scatter(value, root=root)
+        raise AssertionError("DistributedSvd must not use object scatter")
+
+    def Scatter(self, sendbuf, recvbuf, root=0):
+        return self._comm.Scatter(sendbuf, recvbuf, root=root)
+
+    def Scatterv(self, sendbuf, recvbuf, root=0):
+        return self._comm.Scatterv(sendbuf, recvbuf, root=root)
 
     def Get_rank(self):
         return self._comm.Get_rank()
