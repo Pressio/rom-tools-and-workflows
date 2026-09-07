@@ -216,8 +216,29 @@ class NewtonSolver:
              gradient: np.ndarray,
              hessian) -> np.ndarray:
         gradient = np.nan_to_num(gradient, nan=0.0, posinf=0.0, neginf=0.0)
+        hessian = np.asarray(hessian)
+        if self.hessian_type == 'diagonal':
+            if hessian.ndim == 2:
+                if hessian.shape[0] != hessian.shape[1]:
+                    raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
+                hessian = np.diag(hessian)
+            elif hessian.ndim != 1:
+                raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
+            projected_diagonal = np.maximum(
+                np.abs(np.nan_to_num(hessian, nan=0.0, posinf=0.0, neginf=0.0)),
+                self.regularization,
+            )
+            print(
+                'Gradient and hessian norms:',
+                np.linalg.norm(gradient),
+                np.linalg.norm(projected_diagonal),
+            )
+            return gradient / projected_diagonal
+
         projected_hessian = self._project_hessian(hessian)
-        print('Gradient and hessian norms:', np.linalg.norm(gradient),np.linalg.norm(projected_hessian))
-        if self.hessian_type == 'full':
-            return np.linalg.solve(projected_hessian, gradient)
-        return np.linalg.solve(np.diag(np.diag(projected_hessian)), gradient)
+        print(
+            'Gradient and hessian norms:',
+            np.linalg.norm(gradient),
+            np.linalg.norm(projected_hessian),
+        )
+        return np.linalg.solve(projected_hessian, gradient)
