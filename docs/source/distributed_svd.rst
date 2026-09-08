@@ -51,17 +51,51 @@ The following behavior is intentional:
 Algorithm
 ---------
 
-The implementation uses a two-level Tall-Skinny QR (TSQR) factorization:
+The implementation uses an adaptive Tall-Skinny QR (TSQR) factorization. Every
+rank first computes ``A_local = Q_local @ R_local``. The communicator size then
+selects one of two exact reduction strategies:
 
-1. Each rank computes ``A_local = Q_local @ R_local``.
-2. Rank zero gathers only the local ``R_local`` factors and performs a second
-   reduced QR factorization of their vertical stack.
-3. Rank zero computes the SVD of the final reduced factor.
-4. The singular values and right singular vectors are broadcast, while the
-   reduced left transformations are scattered and multiplied by each
-   ``Q_local``.
+* Below ``tree_threshold``, rank zero gathers the local ``R_local`` factors and
+  factors their vertical stack. This has low communication overhead for small
+  MPI jobs.
+* At or above ``tree_threshold``, neighboring ranks combine their ``R`` factors
+  through a binary tree. The critical reduction path has
+  :math:`O(\log P)` stages instead of placing all reduction work on rank zero.
 
-This avoids forming :math:`A^H A`, which would square the condition number.
+After the final reduced factor is formed, rank zero computes its SVD. When
+singular vectors are requested, the binary-tree path traverses the tree in
+reverse and propagates the left transformations back to the leaf ranks. Each
+rank then multiplies its first-level ``Q_local`` by its final transformation.
+
+Both paths are mathematically equivalent TSQR factorizations and avoid forming
+:math:`A^H A`, which would square the condition number.
+
+Configuring the reduction threshold
+-----------------------------------
+
+The default is available as ``romtools.linalg.DEFAULT_TSQR_TREE_THRESHOLD`` and
+is currently 8 MPI ranks. It can be overridden for a particular callable:
+
+.. code-block:: python
+
+   from romtools.linalg import DistributedSvd
+
+   # Use the tree for jobs with 16 or more MPI ranks.
+   distributed_svd = DistributedSvd(comm, tree_threshold=16)
+
+The selection is:
+
+.. code-block:: python
+
+   if comm.Get_size() >= tree_threshold:
+       # Binary-tree TSQR reduction
+   else:
+       # Rank-zero gather TSQR reduction
+
+Set ``tree_threshold=1`` to force the tree for testing or benchmarking. Set it
+above the MPI job size to force the rank-zero path. The best crossover depends
+on the matrix column count, MPI implementation, network, and node layout, so
+production clusters should benchmark both paths.
 
 MPI example
 -----------

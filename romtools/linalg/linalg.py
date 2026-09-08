@@ -1517,15 +1517,244 @@ def _local_column_range(rank, size, M):
 
     return start, end
 
+# Use the low-overhead gather reduction for small communicators and switch to
+# the scalable binary-tree reduction at this size. Applications can override
+# this through DistributedSvd or the functional API.
+DEFAULT_TSQR_TREE_THRESHOLD = 8
+
+
+def _tree_tsqr_svd(local_q, local_r, all_metadata, comm, compute_uv):
+    '''Finish a distributed SVD with a binary-tree TSQR reduction.'''
+    from mpi4py import MPI
+
+    mpi_rank = comm.Get_rank()
+    comm_size = len(all_metadata)
+    column_count = local_r.shape[1]
+    factor_dtype = local_r.dtype
+    mpi_dtype = MPI._typedict[factor_dtype.char]
+    global_thin_rank = builtins.min(
+        sum(metadata["shape"][0] for metadata in all_metadata),
+        column_count,
+    )
+    if column_count*global_thin_rank > np.iinfo(np.int32).max:
+        raise ValueError(
+            "tree TSQR point-to-point buffer exceeds the MPI signed-int "
+            "element-count limit"
+        )
+    global_row_counts = [
+        metadata["shape"][0] for metadata in all_metadata
+    ]
+    row_offsets = np.concatenate(
+        ([0], np.cumsum(global_row_counts, dtype=np.int64))
+    )
+
+    def _subtree_factor_rows(first_rank, rank_count):
+        last_rank = builtins.min(first_rank + rank_count, comm_size)
+        subtree_rows = row_offsets[last_rank] - row_offsets[first_rank]
+        return builtins.min(int(subtree_rows), column_count)
+
+    def _collect_errors(local_error, error_type, message):
+        errors = comm.allgather(local_error)
+        errors = [error for error in errors if error is not None]
+        if errors:
+            raise error_type(message + "; ".join(errors))
+
+    # Forward pass: at level s, the first rank in each 2s-rank group receives
+    # the R factor from the neighboring s-rank group and refactors the stack.
+    # Ranks that send become inactive, but still join error collectives so a
+    # failure is reported consistently instead of deadlocking another rank.
+    current_r = local_r
+    active = True
+    merge_records = {}
+    sent_factor_rows = {}
+    reduction_steps = []
+    step = 1
+    forward_tag = 1701
+    while step < comm_size:
+        reduction_steps.append(step)
+        partner = None
+        receive_partner = False
+        send_to_partner = False
+        if active:
+            position = mpi_rank % (2*step)
+            if position == 0 and mpi_rank + step < comm_size:
+                partner = mpi_rank + step
+                receive_partner = True
+            elif position == step:
+                partner = mpi_rank - step
+                send_to_partner = True
+
+        stacked_r = None
+        allocation_error = None
+        if receive_partner:
+            own_factor_rows = current_r.shape[0]
+            partner_factor_rows = _subtree_factor_rows(partner, step)
+            try:
+                stacked_r = np.empty(
+                    (own_factor_rows + partner_factor_rows, column_count),
+                    dtype=factor_dtype,
+                )
+                stacked_r[:own_factor_rows, :] = current_r
+            except (MemoryError, ValueError) as exception:
+                allocation_error = (
+                    f"rank {mpi_rank}, tree step {step}: {exception}"
+                )
+        _collect_errors(
+            allocation_error,
+            MemoryError,
+            "could not allocate a tree TSQR reduction buffer: ",
+        )
+
+        if receive_partner:
+            comm.Recv(
+                [stacked_r[own_factor_rows:, :], mpi_dtype],
+                source=partner,
+                tag=forward_tag,
+            )
+        elif send_to_partner:
+            comm.Send(
+                [current_r, mpi_dtype], dest=partner, tag=forward_tag
+            )
+            sent_factor_rows[step] = current_r.shape[0]
+            current_r = None
+            active = False
+
+        factor_error = None
+        if receive_partner:
+            try:
+                if compute_uv:
+                    merge_q, current_r = np.linalg.qr(
+                        stacked_r, mode="reduced"
+                    )
+                    merge_records[step] = (
+                        partner,
+                        own_factor_rows,
+                        partner_factor_rows,
+                        merge_q,
+                    )
+                else:
+                    current_r = np.linalg.qr(stacked_r, mode="r")
+            except Exception as exception:
+                factor_error = (
+                    f"rank {mpi_rank}, tree step {step}: {exception}"
+                )
+            finally:
+                stacked_r = None
+        _collect_errors(
+            factor_error,
+            np.linalg.LinAlgError,
+            "tree TSQR reduction failed: ",
+        )
+        step *= 2
+
+    singular_values = None
+    right_singular_vectors = None
+    final_u = None
+    reduction_error = None
+    if mpi_rank == 0:
+        try:
+            if compute_uv:
+                final_u, singular_values, right_singular_vectors = np.linalg.svd(
+                    current_r,
+                    full_matrices=False,
+                    compute_uv=True,
+                    hermitian=False,
+                )
+            else:
+                singular_values = np.linalg.svd(
+                    current_r,
+                    full_matrices=False,
+                    compute_uv=False,
+                    hermitian=False,
+                )
+        except Exception as exception:
+            reduction_error = str(exception)
+    reduction_error = comm.bcast(reduction_error, root=0)
+    if reduction_error is not None:
+        raise np.linalg.LinAlgError(
+            "tree TSQR final SVD failed: " + reduction_error
+        )
+
+    singular_values = comm.bcast(singular_values, root=0)
+    if not compute_uv:
+        return singular_values
+    right_singular_vectors = comm.bcast(
+        right_singular_vectors, root=0
+    )
+
+    # Reverse pass: propagate the final SVD's left transform back down the same
+    # tree. Every merge Q expands its incoming transform and sends the lower
+    # block to the partner subtree. Each leaf finishes with the transform that
+    # maps its first-level local Q into its rows of the global U.
+    local_left_transform = final_u if mpi_rank == 0 else None
+    reverse_tag = 1702
+    for step in reversed(reduction_steps):
+        send_transform = None
+        receive_transform = None
+        reverse_error = None
+        if step in merge_records:
+            partner, own_rows, partner_rows, merge_q = merge_records.pop(step)
+            try:
+                expanded_transform = merge_q @ local_left_transform
+                local_left_transform = np.array(
+                    expanded_transform[:own_rows, :], copy=True, order="C"
+                )
+                send_transform = np.ascontiguousarray(
+                    expanded_transform[own_rows:own_rows + partner_rows, :]
+                )
+            except Exception as exception:
+                reverse_error = (
+                    f"rank {mpi_rank}, tree step {step}: {exception}"
+                )
+        elif step in sent_factor_rows:
+            partner = mpi_rank - step
+            try:
+                receive_transform = np.empty(
+                    (sent_factor_rows[step], global_thin_rank),
+                    dtype=factor_dtype,
+                )
+            except (MemoryError, ValueError) as exception:
+                reverse_error = (
+                    f"rank {mpi_rank}, tree step {step}: {exception}"
+                )
+        _collect_errors(
+            reverse_error,
+            np.linalg.LinAlgError,
+            "could not construct a tree TSQR left transform: ",
+        )
+
+        if send_transform is not None:
+            comm.Send(
+                [send_transform, mpi_dtype],
+                dest=partner,
+                tag=reverse_tag,
+            )
+        elif receive_transform is not None:
+            comm.Recv(
+                [receive_transform, mpi_dtype],
+                source=partner,
+                tag=reverse_tag,
+            )
+            local_left_transform = receive_transform
+
+    local_left_singular_vectors = local_q @ local_left_transform
+    return (
+        local_left_singular_vectors,
+        singular_values,
+        right_singular_vectors,
+    )
+
+
 # ----------------------------------------------------
 def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
-                     hermitian=False):
+                     hermitian=False,
+                     tree_threshold=DEFAULT_TSQR_TREE_THRESHOLD):
     '''Compute the thin SVD of a matrix distributed by rows.
 
-    This is a two-level Tall-Skinny QR (TSQR) algorithm. Each MPI rank
-    factors its local rows, rank zero factors the vertically stacked local
-    ``R`` factors, and only the resulting small factors are communicated.
-    The global input matrix is never assembled on any rank.
+    This is an adaptive Tall-Skinny QR (TSQR) algorithm. Each MPI rank factors
+    its local rows. Small communicators gather the local ``R`` factors for a
+    rank-zero reduction, while larger communicators use a binary-tree
+    reduction. The global input matrix is never assembled on any rank.
 
     Parameters:
         a (np.ndarray): Local rows of a globally row-distributed 2-D matrix.
@@ -1536,6 +1765,8 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
         compute_uv (bool): If ``True``, return ``(U_local, s, Vh)``. Otherwise,
             return only ``s``.
         hermitian (bool): Only ``False`` is supported.
+        tree_threshold (int): Minimum communicator size that selects the
+            binary-tree TSQR reduction instead of the rank-zero gather.
 
     Returns:
         - If ``compute_uv=True``, ``(U_local, s, Vh)``. ``U_local`` has the same
@@ -1557,11 +1788,19 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
         local_a = None
         local_error = f"a could not be converted to an array: {exception}"
 
+    if (not isinstance(tree_threshold, (int, np.integer))
+            or isinstance(tree_threshold, (bool, np.bool_))
+            or tree_threshold < 1):
+        local_error = "tree_threshold must be a positive integer"
+
     local_metadata = {
         "error": local_error,
         "shape": None if local_a is None or local_a.ndim != 2 else local_a.shape,
         "dtype": None if local_a is None else local_a.dtype.str,
-        "options": (bool(full_matrices), bool(compute_uv), bool(hermitian)),
+        "options": (
+            bool(full_matrices), bool(compute_uv), bool(hermitian),
+            tree_threshold,
+        ),
     }
 
     # Exchange only error, shape, dtype, and options metadata. This collectively
@@ -1636,6 +1875,15 @@ def _distributed_svd(a, comm=None, full_matrices=True, compute_uv=True,
     if qr_errors:
         raise np.linalg.LinAlgError(
             "local QR factorization failed: " + "; ".join(qr_errors)
+        )
+
+    if len(all_metadata) >= tree_threshold:
+        return _tree_tsqr_svd(
+            local_q,
+            local_r,
+            all_metadata,
+            comm,
+            compute_uv,
         )
 
     # Gather the reduced R factors as NumPy buffers. Lowercase ``gather``
@@ -1800,6 +2048,9 @@ class DistributedSvd:
     Args:
         comm (MPI_Comm): Communicator over which matrix rows are distributed.
             If ``None``, supported calls delegate to NumPy in serial.
+        tree_threshold (int): Minimum communicator size that selects the
+            binary-tree TSQR reduction. Defaults to
+            :data:`DEFAULT_TSQR_TREE_THRESHOLD`.
 
     Example:
         >>> distributed_svd = DistributedSvd(comm)
@@ -1808,8 +2059,11 @@ class DistributedSvd:
         ... )
     '''
 
-    def __init__(self, comm=None) -> None:
+    def __init__(
+            self, comm=None,
+            tree_threshold=DEFAULT_TSQR_TREE_THRESHOLD) -> None:
         self._comm = comm
+        self._tree_threshold = tree_threshold
 
     def __call__(self, a, full_matrices=True, compute_uv=True,
                  hermitian=False):
@@ -1832,6 +2086,7 @@ class DistributedSvd:
             full_matrices=full_matrices,
             compute_uv=compute_uv,
             hermitian=hermitian,
+            tree_threshold=self._tree_threshold,
         )
 
 # ----------------------------------------------------
