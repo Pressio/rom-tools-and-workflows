@@ -215,7 +215,7 @@ def test_keyboard_interrupt_during_poll_cancels_job(monkeypatch, make_config):
     config = make_config(remote_root="campaigns", poll_interval=1)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
     monkeypatch.setattr(
-        "romtools.hpc.dispatchers.remote_dispatcher.time.sleep",
+        "romtools.hpc.components.slurm_job_manager.time.sleep",
         MagicMock(side_effect=KeyboardInterrupt),
     )
 

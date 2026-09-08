@@ -1,4 +1,4 @@
-from romtools.hpc.util.logger import Logger
+from romtools.hpc.logger import Logger
 
 
 def test_log_without_hostname_prints_plain_message(capsys):

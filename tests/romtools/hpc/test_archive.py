@@ -5,7 +5,7 @@ import subprocess
 import pytest
 
 from romtools.hpc.connection import Result
-from romtools.hpc.util.file_transfer import create_tarball, safe_extract_tar, validate_file_patterns
+from romtools.hpc.archive import create_tarball, safe_extract_tar, validate_file_patterns
 
 from conftest import ArchiveFakeConnection, FakeConnection
 

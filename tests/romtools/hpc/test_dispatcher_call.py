@@ -11,13 +11,13 @@ import pytest
 import romtools.hpc.dispatchers.base_dispatcher as base_dispatcher_module
 from romtools.hpc.connection import Result
 from romtools.hpc.dispatchers import LocalDispatcher, RemoteDispatcher
-from romtools.hpc.dispatchers.call_runner import (
+from romtools.hpc.components.call_runner import (
     build_call_runner,
     pack,
     resolve_target,
     unpack,
 )
-from romtools.hpc.dispatchers.caller import BaseCaller, build_call_command
+from romtools.hpc.components.caller import BaseCaller, build_call_command
 
 from conftest import FakeConnection
 
