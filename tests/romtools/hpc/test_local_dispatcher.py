@@ -76,6 +76,38 @@ def test_create_empty_dir_is_idempotent(tmp_path, dispatcher):
     assert target.is_dir()
 
 
+def test_list_dir_returns_entries(tmp_path, dispatcher):
+    (tmp_path / "iteration_0").mkdir()
+    (tmp_path / "file.txt").write_text("x")
+
+    assert sorted(dispatcher.list_dir(str(tmp_path))) == ["file.txt", "iteration_0"]
+
+
+def test_list_dir_of_missing_path_is_empty(tmp_path, dispatcher):
+    assert dispatcher.list_dir(str(tmp_path / "missing")) == []
+
+
+def test_remove_deletes_a_file(tmp_path, dispatcher):
+    target = tmp_path / "restart.npz"
+    target.write_text("x")
+
+    dispatcher.remove(str(target))
+
+    assert not target.exists()
+
+
+def test_remove_of_missing_file_does_not_raise(tmp_path, dispatcher):
+    dispatcher.remove(str(tmp_path / "missing.npz"))
+
+
+def test_write_text_creates_parent_directories(tmp_path, dispatcher):
+    target = tmp_path / "iteration_0" / "stats.txt"
+
+    dispatcher.write_text(str(target), "elbo: 1.0\n")
+
+    assert target.read_text() == "elbo: 1.0\n"
+
+
 def test_np_savetxt_round_trip(tmp_path, dispatcher):
     path = tmp_path / "array.txt"
     arr = np.array([1, 2, 3])
@@ -124,3 +156,17 @@ def test_dispatch_runs_relative_to_run_directory(tmp_path, dispatcher):
 
     assert result.ok
     assert result.stdout.strip() == "present"
+
+
+def test_require_absolute_path_rejects_a_relative_path(dispatcher):
+    with pytest.raises(AssertionError, match="must provide an absolute path"):
+        dispatcher.require_absolute_path("work")
+
+
+def test_require_relative_path_is_a_no_op(tmp_path, dispatcher):
+    """Local runs create directories on this machine, so absolute paths are fine."""
+    dispatcher.require_relative_path(str(tmp_path))
+
+
+def test_require_supported_concurrency_allows_concurrent_evaluation(dispatcher):
+    dispatcher.require_supported_concurrency(4)

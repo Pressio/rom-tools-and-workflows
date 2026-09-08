@@ -256,13 +256,14 @@ class RemoteDispatcher(BaseDispatcher):
         self.logger.log(f"Submitted SLURM job {job_id}")
         return job_id
 
-    def __run(self, cmd: str, run_directory: str = None) -> None:
+    def __run(self, cmd: str, run_directory: str = None) -> Result:
         resolved_run_dir = ppath.join(self.config.get("remote_root"), run_directory) if run_directory else self.config.get("remote_root")
         remote_cmd = f"cd {shlex.quote(resolved_run_dir)} && {cmd}"
         res = self.conn.run(remote_cmd)
         if not res.ok:
             raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
         self.logger.debug(f"Executed command on remote host: {cmd}")
+        return res
 
     # ------------------------------------------------------------------
     # Job monitoring
@@ -407,7 +408,6 @@ class RemoteDispatcher(BaseDispatcher):
 
             return result.stdout
 
-        self.logger.log("Retrieving job output...")
         jid = shlex.quote(str(job_id))
 
         out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
@@ -415,7 +415,12 @@ class RemoteDispatcher(BaseDispatcher):
         stdout_filepath = os.path.join(out_dir, self.slurm_specified_out.replace("%j", jid))
         stderr_filepath = os.path.join(out_dir, self.slurm_specified_err.replace("%j", jid))
 
-        return get_file_contents(stdout_filepath), get_file_contents(stderr_filepath)
+        stdout = get_file_contents(stdout_filepath)
+        stderr = get_file_contents(stderr_filepath)
+
+        self.logger.log("Retrieved job output.")
+
+        return stdout, stderr
 
     # ------------------------------------------------------------------
     # I/O methods
@@ -478,8 +483,39 @@ class RemoteDispatcher(BaseDispatcher):
         result = self.conn.run(f"test -e {shlex.quote(remote_path)}")
         return result.ok
 
+    def require_relative_path(self, path: str) -> None:
+        if ppath.isabs(path):
+            raise ValueError(
+                f"You must provide a path relative to the remote root (received: {path}). "
+                "This workflow also creates the same directory on the local machine."
+            )
+
+    def require_supported_concurrency(self, concurrency: int) -> None:
+        if concurrency != 1:
+            raise ValueError(
+                f"Concurrency > 1 is not supported with a RemoteDispatcher (received: {concurrency}). "
+                "Use a concurrency of 1 and let SLURM provide the parallelism."
+            )
+
     def create_empty_dir(self, dir_name: str):
         self.__create_remote_directory(dir_name)
+
+    def list_dir(self, path: str) -> list:
+        remote_path = self.__resolve_remote_path(path)
+        res = self.conn.run(f"ls -1 {shlex.quote(remote_path)}")
+        if not res.ok:
+            return []
+        return [entry for entry in res.stdout.splitlines() if entry]
+
+    def remove(self, path: str) -> None:
+        remote_path = self.__resolve_remote_path(path)
+        res = self.conn.run(f"rm -f {shlex.quote(remote_path)}")
+        if not res.ok:
+            raise RuntimeError(f"Failed to remove remote file {remote_path}: {res.stderr}")
+        self.logger.debug(f"Removed remote file: {remote_path}")
+
+    def write_text(self, path: str, content: str) -> None:
+        self.__write_text(path, content)
 
     def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
         """
@@ -496,11 +532,10 @@ class RemoteDispatcher(BaseDispatcher):
             with_slurm: If True, the command will be run as a SLURM job.
                  If False, the command will be executed directly without SLURM.
 
-        Returns the SLURM job exit code in sacct format of 0:0, or "No SLURM JOB submitted.".
+        Returns a Result object (with stdout, stderr, exitcode, ok)
         """
         if not with_slurm:
-            self.__run(cmd, run_directory=run_directory)
-            return "No SLURM job submitted."
+            return self.__run(cmd, run_directory=run_directory)
         job_id = self.__submit_slurm_job(cmd, run_directory)
         status = self.__wait_for_job(job_id)
         self.__collect_results()

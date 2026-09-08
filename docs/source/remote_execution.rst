@@ -15,6 +15,15 @@ The ``Dispatcher`` exposes a small public interface:
 - ``get(remote_path, local_path)``: Copy a remote file to the local host.
 - ``dispatch(cmd, remote_run_directory)``: Execute ``cmd`` from the remote
   host's ``run_directory``.
+- ``path_exists(path)``: Whether ``path`` exists on the execution host.
+- ``create_empty_dir(dir_name)``: Create ``dir_name``, and any missing parents,
+  on the execution host.
+- ``list_dir(path)``: Names of the entries in ``path`` on the execution host.
+- ``remove(path)``: Delete the file at ``path`` on the execution host.
+- ``write_text(path, content)``: Write ``content`` to a text file on the
+  execution host.
+- ``np_savetxt(path, arr, fmt)`` and ``np_savez(path, **arrays)``: Write numpy
+  data to the execution host.
 - ``get_config(param=None)``: Return the value of the specified param, or the
   whole config dict if no argument is given.
 
@@ -142,9 +151,67 @@ and remotely, as a subdirectory of your local current directory and your remote
 ``remote_root``. This mirrored directory structure simplifies sending files
 back and forth between hosts, and gives each run its own subdirectory.
 
+Supported workflows
+-------------------
+
+Each of these workflows accepts a ``dispatcher`` argument:
+
+- ``run_sampling()``
+- ``run_eki()``, ``run_mf_eki()``, ``mf_eki_with_auto_rom()``
+- ``run_vi()``, ``run_mf_vi()``, ``mf_vi_with_auto_rom()``
+
+Every one of them falls back to a ``LocalDispatcher`` when you pass nothing, so
+existing workflows and models keep running unchanged.
+
+Inverse workflows
+~~~~~~~~~~~~~~~~~
+
+Inverse workflows evaluate the model many times per iteration, under
+``<work_directory>/iteration_<k>/run_*``. Pass the dispatcher to the model and
+to the driver just as you would for sampling:
+
+.. code-block:: python
+
+   with RemoteDispatcher("eki_00") as dispatcher:
+       model = MyModel(dispatcher)
+       parameter_samples, qois = romtools.workflows.run_eki(
+           model=model,
+           parameter_space=my_parameter_space,
+           observations=obs,
+           observations_covariance=obs_cov,
+           absolute_eki_directory="eki_00",
+           dispatcher=dispatcher,
+       )
+
+The driver uses the dispatcher to create each run directory and to write its
+restart, history, and per-iteration statistics files. Your model still decides
+how a single evaluation runs, through the ``self.dispatcher`` calls you added
+above.
+
+.. note::
+   The working directory argument (``absolute_eki_directory`` or
+   ``absolute_vi_directory``) must be an absolute path for local runs. When you
+   pass a ``RemoteDispatcher``, a relative path is also accepted and is
+   resolved against ``remote_root``.
+
+.. note::
+   In the multifidelity workflows (``run_mf_eki()``, ``run_mf_vi()``, and their
+   ``*_with_auto_rom()`` wrappers), only the high-fidelity (FOM) evaluations
+   are dispatched. Surrogate (ROM) models are fit and evaluated in-process, so
+   their run directories always stay on the local machine.
+
 .. warning::
-   For now, only the ``run_sampling()`` workflow supports the dispatcher.
-   Support in other workflows is coming soon.
+   ``evaluation_concurrency`` greater than 1 is not supported with a
+   ``RemoteDispatcher``. Concurrent evaluation runs each sample in a separate
+   process, which a remote connection is not set up to share. Use
+   ``evaluation_concurrency=1`` for remote runs and let SLURM provide the
+   parallelism, or keep concurrency with a ``LocalDispatcher``.
+
+.. warning::
+   Restart files written through a ``RemoteDispatcher`` land on the remote host,
+   but the drivers read ``restart_file`` from the local filesystem. To restart a
+   remote run, retrieve the restart file first, either with the ``collect``
+   configuration option or with ``dispatcher.get()``.
 
 Configuring the dispatcher
 --------------------------
@@ -168,7 +235,7 @@ There are three ways to configure:
 
    .. code-block:: bash
 
-      python my_workflow.py -i path/to/input.yaml -c *.log
+      python my_workflow.py -i path/to/input.yaml -o '*.log'
 
 .. tip::
    Pass ``-h`` to your workflow, or refer to the ``SCHEMA`` in
@@ -196,15 +263,19 @@ Core configuration arguments
 
 - ``remote_root`` (``-R``): Directory on the remote host where commands are
   executed, absolute or relative to the home directory.
-- ``collect`` (``-c``): Comma-separated list of files, directories, or glob
+- ``collect`` (``-o``): Comma-separated list of files, directories, or glob
   patterns to retrieve from the remote run directory. If omitted, nothing is
   retrieved.
+- ``upload`` (``-U``): Comma-separated list of files, directories, or glob
+  patterns to upload to the remote run directory. If omitted, nothing is
+  uploaded.
 
 .. code-block:: yaml
 
    workflow:
        remote_root: my_sampling_directory
-       collect: *.log, passed.txt
+       collect: "*.log, passed.txt"
+       upload: "input.yaml, mesh/"
 
 **slurm** — schedule jobs with the dispatcher:
 
@@ -217,6 +288,8 @@ Core configuration arguments
 - ``wall_time`` (``-w``)
 - ``partition`` (``-q``)
 - ``poll_interval`` (``-P``): Seconds between ``squeue`` polls.
+- ``timeout`` (``-T``): Seconds to keep retrying the ``sacct`` query for a
+  finished job's exit code before giving up.
 
 All arguments other than ``script`` are used when the dispatcher creates the
 SLURM script for you from a command.
