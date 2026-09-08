@@ -140,8 +140,8 @@ The safest approach is to scope it with a context manager:
 
 .. code-block:: python
 
-   sampling_dir = "sample_00"
-   with RemoteDispatcher(sampling_dir) as dispatcher:
+   campaign_dir = "sample_00"
+   with RemoteDispatcher(campaign_dir) as dispatcher:
        model = ExampleModel(dispatcher)
        romtools.workflows.run_sampling(
            model=model,
@@ -149,7 +149,7 @@ The safest approach is to scope it with a context manager:
        )
 
 Note that the dispatcher is passed to both the model and the sampling workflow.
-The ``sampling_directory`` you pass to the dispatcher is created both locally
+The ``campaign_directory`` you pass to the dispatcher is created both locally
 and remotely, as a subdirectory of your local current directory and your remote
 ``remote_root``. This mirrored directory structure simplifies sending files
 back and forth between hosts, and gives each run its own subdirectory.
@@ -281,7 +281,7 @@ Core configuration arguments
 .. code-block:: yaml
 
    workflow:
-       remote_root: my_sampling_directory
+       remote_root: my_campaigns
        collect: "*.log, passed.txt"
        upload: "input.yaml, mesh/"
        python_setup: "module load python/3.11"

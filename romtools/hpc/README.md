@@ -131,8 +131,8 @@ After you have updated your model class to use a dispatcher, you must instantiat
 the dispatcher in your workflow. The safest way is to scope it, as seen in `hpc/example/workflow.py`:
 
 ```py
-    sampling_dir = "sample_00"
-    with RemoteDispatcher(sampling_dir) as dispatcher:
+    campaign_dir = "sample_00"
+    with RemoteDispatcher(campaign_dir) as dispatcher:
         model = ExampleModel(dispatcher)
         ###
         romtools.workflows.run_sampling(
@@ -178,7 +178,7 @@ existing workflows keep running unchanged.
 > remote run, retrieve the restart file first (e.g. with the `collect`
 > configuration option or `dispatcher.get()`).
 
-When instantiating the dispatcher, you need to pass it a `sampling_directory`.
+When instantiating the dispatcher, you need to pass it a `campaign_directory`.
 This will be created both locally and remotely as a subdirectory
 of your local current directory and your remote `remote_root`.
 
@@ -275,7 +275,7 @@ In the YAML, these are grouped under `workflow`:
 
 ```yaml
 workflow:
-    remote_root: my_sampling_directory
+    remote_root: my_campaigns
     collect: "*.log, passed.txt"
     upload: "input.yaml, mesh/"
     python_setup: "module load python/3.11"
