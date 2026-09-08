@@ -1,21 +1,22 @@
 
 
 import os
-import shlex
-import shutil
-import subprocess
+
 import numpy as np
 
-from .caller import LocalCaller
-from romtools.hpc.util.logger import Logger
-from romtools.hpc.dispatchers import BaseDispatcher
+from romtools.hpc.logger import Logger
+from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
 from romtools.hpc.connection import Result
+from romtools.hpc.components.caller import LocalCaller
+from romtools.hpc.components.command_runner import LocalCommandRunner
+from romtools.hpc.components.file_manager import LocalFileManager
+
 
 class LocalDispatcher(BaseDispatcher):
     """
     LocalDispatcher is a subclass of BaseDispatcher that implements the core functionality
-    for dispatching ROM workflows on the local machine. It overrides methods to set up
-    directories and execute commands without SSH, making it suitable for local execution.
+    for dispatching ROM workflows on the local machine. It composes local implementations
+    of the file, command, and call helpers, making it suitable for local execution.
     """
     def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None):
         # Local execution has no use for remote/SLURM CLI flags, and reading
@@ -24,58 +25,37 @@ class LocalDispatcher(BaseDispatcher):
         super().__init__(campaign_directory=campaign_directory, logger=logger, argv=[])
 
         self.caller = LocalCaller(config=self.config, logger=self.logger)
-
-    def __copy(self, src, dst):
-        dst_dir = os.path.dirname(dst)
-        if dst_dir:
-            os.makedirs(dst_dir, exist_ok=True)
-
-        if os.path.isdir(src):
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src, dst)
-
-        self.logger.debug(f"Copied {src} to {dst}", local=True)
+        self.files = LocalFileManager(config=self.config, logger=self.logger)
+        self.runner = LocalCommandRunner(config=self.config, logger=self.logger)
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
     def get(self, remote_path: str, local_path: str) -> None:
-        """Local 'get' is just a copy from remote_path to local_path."""
-        self.__copy(remote_path, local_path)
+        self.files.get(remote_path, local_path)
 
     def put(self, local_path: str, remote_path: str) -> None:
-        """Local 'put' is just a copy from local_path to remote_path."""
-        self.__copy(local_path, remote_path)
+        self.files.put(local_path, remote_path)
 
     def path_exists(self, path: str) -> bool:
-        return os.path.exists(path)
+        return self.files.path_exists(path)
 
     def require_absolute_path(self, path: str) -> None:
         # Only LocalDispatcher needs absolute paths (for now)
         assert os.path.isabs(path), f"You must provide an absolute path (received: {path})"
 
     def create_empty_dir(self, dir_name: str):
-        os.makedirs(dir_name, exist_ok=True)
+        self.files.create_empty_dir(dir_name)
 
     def list_dir(self, path: str) -> list:
-        if not os.path.isdir(path):
-            return []
-        return os.listdir(path)
+        return self.files.list_dir(path)
 
     def remove(self, path: str) -> None:
-        if os.path.exists(path):
-            os.remove(path)
-            self.logger.debug(f"Removed {path}", local=True)
+        self.files.remove(path)
 
     def write_text(self, path: str, content: str) -> None:
-        parent_dir = os.path.dirname(path)
-        if parent_dir:
-            os.makedirs(parent_dir, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as text_file:
-            text_file.write(content)
-        self.logger.debug(f"Wrote file {path}", local=True)
+        self.files.write_text(path, content)
 
     def dispatch(self, cmd: str, run_directory: str = None) -> Result:
         """
@@ -83,28 +63,10 @@ class LocalDispatcher(BaseDispatcher):
             sacct format string of job exit code + linux signal number (always 0 in local)
             example: '0:0'
         """
-        full_cmd = f"cd {shlex.quote(run_directory)} && {cmd}" if run_directory else cmd
-        result = subprocess.run(
-            full_cmd,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-
-        return Result(result.stdout, result.stderr, result.returncode)
+        return self.runner.run(cmd, run_directory=run_directory)
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
-        np.savetxt(path, arr, fmt=fmt)
-        self.logger.debug(f"Saved array to path {path}", local=True)
+        self.files.np_savetxt(path, arr, fmt)
 
     def np_savez(self, path: str, **arrays) -> None:
-        """
-        Write multiple arrays to a .npz file.
-        The .npz file is written directly to the specified path.
-        """
-        local_path = os.path.normpath(path)
-        if not local_path.endswith(".npz"):
-            local_path += ".npz"
-
-        np.savez(local_path, **arrays)
-        self.logger.debug(f"Saved arrays to path {local_path}", local=True)
+        self.files.np_savez(path, **arrays)

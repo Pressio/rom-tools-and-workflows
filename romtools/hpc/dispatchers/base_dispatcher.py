@@ -1,8 +1,8 @@
 
 import numpy as np
 
-from .caller import BaseCaller
-from romtools.hpc.util.logger import Logger
+from romtools.hpc.components.caller import BaseCaller
+from romtools.hpc.logger import Logger
 from romtools.hpc.configuration import Configuration
 from romtools.hpc.connection import Result
 

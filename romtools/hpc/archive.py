@@ -4,7 +4,7 @@ import re
 
 from typing import Optional, List, Callable
 
-from ..connection import Result
+from romtools.hpc.connection import Result
 
 def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
     """
