@@ -8,9 +8,9 @@ from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
 if __name__ == '__main__':
 
     # This will be created both locally and off of remote_root
-    sampling_dir = "sample_00"
+    campaign_dir = "sample_00"
 
-    with RemoteDispatcher(sampling_dir) as dispatcher:
+    with RemoteDispatcher(campaign_dir) as dispatcher:
 
         model = ExampleModel(dispatcher)
         params = ExampleParameterSpace()

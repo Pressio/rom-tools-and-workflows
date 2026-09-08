@@ -8,10 +8,10 @@ from romtools.hpc.connection import Result
 
 
 class BaseDispatcher:
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None, argv: list = None):
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None, argv: list = None):
         self.config = Configuration(argv=argv).to_dict()
         self.logger = logger if logger is not None else Logger(self.config["debug"])
-        self.sampling_directory = sampling_directory
+        self.campaign_directory = campaign_directory
         self.caller = BaseCaller(config=self.config, logger=self.logger)
 
     # ------------------------------------------------------------------
