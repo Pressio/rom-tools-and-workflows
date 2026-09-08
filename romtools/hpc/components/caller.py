@@ -20,7 +20,7 @@ from .call_runner import (
     working_directory,
 )
 from romtools.hpc.connection import Connection
-from romtools.hpc.util.logger import Logger
+from romtools.hpc.logger import Logger
 
 
 def build_call_command(python_setup: str, python_command: str, call_id: str, target: str) -> str:
