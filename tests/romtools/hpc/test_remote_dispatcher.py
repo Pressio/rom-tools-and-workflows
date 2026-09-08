@@ -11,7 +11,7 @@ from romtools.hpc.dispatchers import RemoteDispatcher
 from conftest import ArchiveFakeConnection, FakeConnection
 
 
-def _make_dispatcher(monkeypatch, config, connection, sampling_directory="hpctools"):
+def _make_dispatcher(monkeypatch, config, connection, campaign_directory="hpctools"):
     """
     Build a RemoteDispatcher against an injected fake Connection, bypassing
     Configuration's real argv/YAML parsing by stubbing it out entirely.
@@ -19,7 +19,7 @@ def _make_dispatcher(monkeypatch, config, connection, sampling_directory="hpctoo
     stub_config = MagicMock()
     stub_config.to_dict.return_value = dict(config)
     monkeypatch.setattr(base_dispatcher_module, "Configuration", MagicMock(return_value=stub_config))
-    return RemoteDispatcher(sampling_directory=sampling_directory, connection=connection)
+    return RemoteDispatcher(campaign_directory=campaign_directory, connection=connection)
 
 
 def test_missing_remote_raises(monkeypatch, make_config):
@@ -160,7 +160,7 @@ def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_pa
 def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_config, tmp_path):
     """
     Regression test: __generate_slurm_script's custom-script branch uploaded to
-    remote_root/sampling_directory even when a run_directory was given, while
+    remote_root/campaign_directory even when a run_directory was given, while
     __submit_slurm_job cd's into remote_root/run_directory - a directory mismatch
     that left the uploaded script outside the directory sbatch is run from.
     """

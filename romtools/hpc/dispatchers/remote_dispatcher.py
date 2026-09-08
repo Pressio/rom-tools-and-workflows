@@ -39,18 +39,19 @@ class RemoteDispatcher(BaseDispatcher):
 
     Arguments:
         logger: An instance of the Logger class for logging
-        sampling_directory: An optional string for your local output directory
+        campaign_directory: An optional string naming the directory this campaign
+            runs in. It is mirrored locally and under the remote root.
 
     The basic command is therefore:
         ssh user@remote -p port
     """
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
         # Initialize the base Dispatcher class (sets up config and logger)
-        super().__init__(sampling_directory, logger)
+        super().__init__(campaign_directory, logger)
 
         # Core members
         self.conn : Optional[Connection] = None
-        self.sampling_directory = os.path.basename(sampling_directory)
+        self.campaign_directory = os.path.basename(campaign_directory)
 
         # If slurm script specifies out and/or error file, use those instead of our default
         self.slurm_specified_out = None
@@ -96,9 +97,9 @@ class RemoteDispatcher(BaseDispatcher):
         """
         Collect results from remote HPC runs.
         """
-        remote_sampling_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
+        remote_campaign_dir = ppath.join(self.config.get("remote_root"), self.campaign_directory)
         self.logger.debug(
-            f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}",
+            f"Transferring results from {self.conn.host}:{remote_campaign_dir} -> {self.campaign_directory}",
             local=True,
         )
 
@@ -106,7 +107,7 @@ class RemoteDispatcher(BaseDispatcher):
         remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
 
         try:
-            create_tarball(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
+            create_tarball(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_campaign_dir, remote_archive_path, self.collect_patterns)
         except Exception as e:
             self.logger.log(f"Failed to create tarball on {self.conn.host}: {e}")
             return
@@ -118,13 +119,13 @@ class RemoteDispatcher(BaseDispatcher):
         # Clean up remote archive
         self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
 
-        # Unpack local archive into local sampling directory
-        os.makedirs(self.sampling_directory, exist_ok=True)
-        res = safe_extract_tar(run_local_bash, archive_name, os.path.abspath(self.sampling_directory))
+        # Unpack local archive into local campaign directory
+        os.makedirs(self.campaign_directory, exist_ok=True)
+        res = safe_extract_tar(run_local_bash, archive_name, os.path.abspath(self.campaign_directory))
         if not res.ok:
             self.logger.log("Results failed to extract.", local=True)
         else:
-            self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
+            self.logger.log(f"Results collected in {self.campaign_directory}", local=True)
 
     # ------------------------------------------------------------------
     # Utility methods
@@ -174,7 +175,7 @@ class RemoteDispatcher(BaseDispatcher):
             script_base = (
                 ppath.join(remote_root, run_directory)
                 if run_directory
-                else ppath.join(remote_root, self.sampling_directory)
+                else ppath.join(remote_root, self.campaign_directory)
             )
             remote_script_path = ppath.join(script_base, script_name)
             self.conn.put(script, remote_script_path)
@@ -196,7 +197,7 @@ class RemoteDispatcher(BaseDispatcher):
         script_base = (
             ppath.join(remote_root, run_directory)
             if run_directory
-            else ppath.join(remote_root, self.sampling_directory)
+            else ppath.join(remote_root, self.campaign_directory)
         )
         remote_script_path = ppath.join(script_base, remote_script_name)
 
@@ -241,7 +242,7 @@ class RemoteDispatcher(BaseDispatcher):
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
         else:
-            full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
+            full_run_dir = ppath.join(self.config.get("remote_root"), self.campaign_directory)
 
         script_name = ppath.basename(remote_script_path)
         result = self.conn.run(
@@ -419,7 +420,7 @@ class RemoteDispatcher(BaseDispatcher):
 
         jid = shlex.quote(str(job_id))
 
-        out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
+        out_dir = os.path.join(self.config.get("remote_root"), self.campaign_directory if run_directory is None else run_directory)
 
         stdout_filepath = os.path.join(out_dir, self.slurm_specified_out.replace("%j", jid))
         stderr_filepath = os.path.join(out_dir, self.slurm_specified_err.replace("%j", jid))
