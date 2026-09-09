@@ -21,6 +21,7 @@ class VINewtonOptimizerConfig:
     gradient_norm_tolerance: float = 5e-5
     max_iterations: int = 1000
     max_log_std_update: float = 0.5
+    max_mean_update_std: float = None
     min_variational_std: float = 1e-8
     max_variational_std: float = 1e6
     newton_metric: str = 'standard'
