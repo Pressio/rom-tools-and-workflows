@@ -102,6 +102,72 @@ def test_arctan_transform_round_trip():
     assert np.allclose(recovered, optimizer_values, atol=1e-10, rtol=1e-10)
 
 
+def test_limit_mean_update_uses_current_variational_standard_deviations():
+    update = vi_drivers._limit_mean_update(
+        direction_mean=np.array([20.0, -20.0, 0.5]),
+        step_size=0.1,
+        variational_std=np.array([0.2, 2.0, 1.0]),
+        max_mean_update_std=0.5,
+    )
+
+    np.testing.assert_allclose(update, np.array([0.1, -1.0, 0.05]))
+
+
+def test_limit_mean_update_can_be_disabled():
+    direction = np.array([2.0, -3.0])
+
+    update = vi_drivers._limit_mean_update(
+        direction,
+        step_size=0.25,
+        variational_std=np.array([0.1, 10.0]),
+        max_mean_update_std=None,
+    )
+
+    np.testing.assert_allclose(update, 0.25 * direction)
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_limits_newton_mean_update(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        vi_drivers,
+        "_compute_newton_step",
+        lambda *args, **kwargs: (np.array([100.0]), np.array([0.0])),
+    )
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    means, _, _, _ = romtools.workflows.run_vi(
+        model=LinearQoiModel(slope=1.0),
+        prior_parameter_space=variational_parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=6,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+            max_mean_update_std=0.25,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1.0,
+            max_step_size=1.0,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=1e12,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=2,
+        evaluation_concurrency=1,
+    )
+
+    np.testing.assert_allclose(means, np.array([0.25]))
+
+
 def test_run_vi_rejects_removed_legacy_kwargs():
     model = LinearQoiModel(slope=2.0)
     variational_parameter_space = GaussianParameterSpace(
