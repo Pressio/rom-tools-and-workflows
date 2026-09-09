@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from romtools.workflows.inverse.vi_optimization_methods import NewtonSolver
+from romtools.workflows.inverse.vi_optimization_methods import (
+    NewtonSolver,
+    _normalize_newton_curvature_strategy,
+)
+from romtools.workflows.inverse.vi_drivers import _average_hessians
 
 
 def test_diagonal_newton_step_uses_raw_diagonal_for_matrix_input():
@@ -31,3 +35,18 @@ def test_diagonal_newton_step_rejects_invalid_hessian_shape(hessian):
 
     with pytest.raises(ValueError, match='Hessian must be'):
         solver.step(np.ones(2), hessian)
+
+
+def test_newton_curvature_strategy_validation():
+    assert _normalize_newton_curvature_strategy(' Independent ') == 'independent'
+    with pytest.raises(ValueError, match='newton_curvature_strategy'):
+        _normalize_newton_curvature_strategy('unknown')
+
+
+def test_exponential_hessian_average():
+    previous = np.array([2.0, 4.0])
+    current = np.array([10.0, -2.0])
+    np.testing.assert_allclose(
+        _average_hessians(previous, current, 0.75),
+        np.array([4.0, 2.5]),
+    )

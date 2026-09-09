@@ -132,6 +132,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     VIStochasticNonmonotoneLineSearchConfig,
     _normalize_line_search_method as _normalize_line_search_method_shared,
     _normalize_newton_hessian_type,
+    _normalize_newton_curvature_strategy,
     _normalize_newton_metric,
     _resolve_line_search_config,
     _resolve_optimizer_config,
@@ -154,6 +155,8 @@ from romtools.workflows.inverse.vi_drivers import (
     _convert_physical_moments_to_optimizer_moments,
     _compute_newton_metric_scale,
     _compute_newton_step,
+    _get_state_hessian,
+    _average_hessians,
     _limit_mean_update,
     _compute_update_directions,
     _compute_variational_std,
@@ -827,6 +830,11 @@ def _save_mf_vi_restart(restart_path: str,
                         vi_history=None,
                         sampling_method: str = None,
                         max_mean_update_std: float = None,
+                        newton_curvature_strategy: str = 'same_sample',
+                        newton_hessian_num_samples: int = None,
+                        newton_hessian_averaging_factor: float = 0.9,
+                        running_hessian: np.ndarray = None,
+                        accepted_elbo_history=None,
                         dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
@@ -861,6 +869,11 @@ def _save_mf_vi_restart(restart_path: str,
         max_mean_update_std=(
             np.nan if max_mean_update_std is None else float(max_mean_update_std)
         ),
+        newton_curvature_strategy=newton_curvature_strategy,
+        newton_hessian_num_samples=(
+            -1 if newton_hessian_num_samples is None else int(newton_hessian_num_samples)
+        ),
+        newton_hessian_averaging_factor=float(newton_hessian_averaging_factor),
         training_directories=np.array(state['training_dirs']),
         rom_training_directories=np.array(state['rom_training_dirs']),
         training_parameters=state['training_parameters'],
@@ -870,6 +883,48 @@ def _save_mf_vi_restart(restart_path: str,
         gradient_signal_to_noise_ratio=float(state.get('gradient_signal_to_noise_ratio', np.nan)),
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
+    if running_hessian is not None:
+        save_data['running_hessian'] = running_hessian
+    if accepted_elbo_history is not None:
+        save_data['accepted_elbo_history'] = np.asarray(accepted_elbo_history)
+    restart_state_mapping = {
+        'optimizer_samples': 'optimizer_samples',
+        'parameter_samples': 'parameter_samples',
+        'parameter_samples_fom': 'parameter_samples_fom',
+        'parameter_samples_rom_base': 'parameter_samples_rom_base',
+        'parameter_samples_rom_only': 'parameter_samples_rom_only',
+        'qois': 'qois_fom',
+        'mean_qoi': 'mean_qoi_fom',
+        'errors': 'errors_fom',
+        'qois_rom_base': 'qois_rom_base',
+        'qois_rom_only': 'qois_rom_only',
+        'log_likelihoods': 'log_likelihoods_fom',
+        'log_priors': 'log_priors_fom',
+        'log_joint_terms': 'log_joint_terms_fom',
+        'log_likelihoods_rom_base': 'log_likelihoods_rom_base',
+        'log_joint_terms_rom_base': 'log_joint_terms_rom_base',
+        'log_likelihoods_rom_only': 'log_likelihoods_rom_only',
+        'log_joint_terms_rom_only': 'log_joint_terms_rom_only',
+        'gradient_mean': 'gradient_mean',
+        'gradient_log_std': 'gradient_log_std',
+        'hessian_diagonal_mean': 'hessian_diagonal_mean',
+        'hessian_diagonal_log_std': 'hessian_diagonal_log_std',
+        'hessian_full': 'hessian_full',
+        'update_direction_mean': 'update_direction_mean',
+        'update_direction_log_std': 'update_direction_log_std',
+        'baseline_mean': 'baseline_mean',
+        'baseline_log_std': 'baseline_log_std',
+        'entropy': 'entropy',
+        'elbo': 'elbo',
+        'mean_misfit': 'mean_misfit',
+        'mfmc_alpha_mean': 'mfmc_alpha_mean',
+        'mfmc_alpha_log_std': 'mfmc_alpha_log_std',
+        'rom_error': 'rom_error',
+        'rom_rebuilt_this_iteration': 'rom_rebuilt_this_iteration',
+    }
+    for restart_key, state_key in restart_state_mapping.items():
+        if state_key in state and state[state_key] is not None:
+            save_data[restart_key] = state[state_key]
     if vi_history is not None:
         save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
@@ -1675,12 +1730,35 @@ def run_mf_vi(model: QoiModel,
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
     newton_regularization = newton_defaults.newton_regularization
     newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
+    newton_curvature_strategy = _normalize_newton_curvature_strategy(
+        newton_defaults.newton_curvature_strategy
+    )
+    newton_hessian_num_samples = newton_defaults.newton_hessian_num_samples
+    newton_hessian_averaging_factor = newton_defaults.newton_hessian_averaging_factor
     if optimization_method == 'newton':
         max_mean_update_std = resolved_optimizer_config.max_mean_update_std
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
         newton_hessian_type = _normalize_newton_hessian_type(
             resolved_optimizer_config.newton_hessian_type
+        )
+        newton_curvature_strategy = _normalize_newton_curvature_strategy(
+            resolved_optimizer_config.newton_curvature_strategy
+        )
+        newton_hessian_num_samples = resolved_optimizer_config.newton_hessian_num_samples
+        newton_hessian_averaging_factor = resolved_optimizer_config.newton_hessian_averaging_factor
+        if newton_hessian_num_samples is not None:
+            assert isinstance(newton_hessian_num_samples, (int, np.integer)), (
+                "newton_hessian_num_samples must be an integer"
+            )
+            assert newton_hessian_num_samples > 1, (
+                "newton_hessian_num_samples must be greater than 1"
+            )
+        assert np.isfinite(newton_hessian_averaging_factor), (
+            "newton_hessian_averaging_factor must be finite"
+        )
+        assert 0.0 <= newton_hessian_averaging_factor < 1.0, (
+            "newton_hessian_averaging_factor must be in [0, 1)"
         )
 
     initial_step_size = resolved_line_search_config.initial_step_size
@@ -2126,6 +2204,49 @@ def run_mf_vi(model: QoiModel,
         else:
             initial_elbo_reference = float(state['elbo'])
 
+    running_hessian = None
+    if optimization_method == 'newton':
+        if restart_file is not None and 'newton_curvature_strategy' in restart_data:
+            restart_strategy = _normalize_newton_curvature_strategy(
+                str(restart_data['newton_curvature_strategy'].item())
+            )
+            if restart_strategy != newton_curvature_strategy:
+                raise ValueError(
+                    "restart_file newton_curvature_strategy does not match current run."
+                )
+        elif restart_file is not None and newton_curvature_strategy != 'same_sample':
+            raise ValueError(
+                "restart_file is missing state required by the selected Newton curvature strategy."
+            )
+        if restart_file is not None and 'newton_hessian_num_samples' in restart_data:
+            restart_count = int(restart_data['newton_hessian_num_samples'])
+            restart_count = None if restart_count < 0 else restart_count
+            if restart_count != newton_hessian_num_samples:
+                raise ValueError(
+                    "restart_file newton_hessian_num_samples does not match current run."
+                )
+        if restart_file is not None and 'newton_hessian_averaging_factor' in restart_data:
+            if not np.isclose(
+                float(restart_data['newton_hessian_averaging_factor']),
+                newton_hessian_averaging_factor,
+            ):
+                raise ValueError(
+                    "restart_file newton_hessian_averaging_factor does not match current run."
+                )
+        if newton_curvature_strategy == 'lagged':
+            if restart_file is None:
+                running_hessian = _get_state_hessian(state, newton_hessian_type)
+            elif 'running_hessian' in restart_data:
+                running_hessian = np.asarray(restart_data['running_hessian']).copy()
+            else:
+                raise ValueError("restart_file is missing the lagged running Hessian.")
+
+    accepted_elbo_history = (
+        restart_data['accepted_elbo_history'].tolist()
+        if restart_file is not None and 'accepted_elbo_history' in restart_data
+        else [float(state['elbo'])]
+    )
+
     _save_mf_vi_restart(
         f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
         state,
@@ -2150,6 +2271,11 @@ def run_mf_vi(model: QoiModel,
         vi_history=vi_history,
         sampling_method=sampling_method,
         max_mean_update_std=max_mean_update_std,
+        newton_curvature_strategy=newton_curvature_strategy,
+        newton_hessian_num_samples=newton_hessian_num_samples,
+        newton_hessian_averaging_factor=newton_hessian_averaging_factor,
+        running_hessian=running_hessian,
+        accepted_elbo_history=accepted_elbo_history,
         dispatcher=dispatcher,
     )
     _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
@@ -2215,8 +2341,8 @@ def run_mf_vi(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     steepest_descent_solver = SteepestDescentSolver()
-    accepted_elbo_history = [state['elbo']]
     elbo_converged = False
+    independent_hessian_cache = None
 
     while iteration < max_iterations and gradient_norm > gradient_norm_tolerance:
         current_fom_sample_size = int(np.ceil(
@@ -2232,6 +2358,8 @@ def run_mf_vi(model: QoiModel,
             current_rom_extra_sample_size = 0
 
         newton_metric_scale = None
+        curvature_hessian = None
+        pending_running_hessian = running_hessian
         if optimization_method == 'newton':
             variational_std_for_metric, _ = _compute_variational_std(
                 variational_log_std,
@@ -2242,6 +2370,78 @@ def run_mf_vi(model: QoiModel,
                 newton_metric,
                 variational_std_for_metric,
             )
+            if newton_curvature_strategy == 'independent':
+                if independent_hessian_cache is None:
+                    hessian_fom_sample_size = (
+                        fom_sample_size if newton_hessian_num_samples is None
+                        else newton_hessian_num_samples
+                    )
+                    hessian_rom_extra_sample_size = int(round(
+                        rom_extra_sample_size * hessian_fom_sample_size / fom_sample_size
+                    ))
+                    if rom_extra_sample_size > 0:
+                        hessian_rom_extra_sample_size = max(
+                            hessian_rom_extra_sample_size, 1
+                        )
+                    hessian_state = _evaluate_mf_vi_state(
+                        model=model,
+                        rom_model=None,
+                        rom_model_builder=rom_model_builder,
+                        observations=observations,
+                        observations_covariance=observations_covariance,
+                        iteration_directory=(
+                            f'{absolute_vi_directory}/iteration_{iteration}/hessian'
+                        ),
+                        parameter_names=parameter_names,
+                        variational_mean=variational_mean,
+                        variational_log_std=variational_log_std,
+                        prior_mean=prior_mean,
+                        prior_precision_operator=prior_precision_operator,
+                        prior_covariance_log_det=prior_covariance_log_det,
+                        fom_sample_size=hessian_fom_sample_size,
+                        rom_extra_sample_size=hessian_rom_extra_sample_size,
+                        fom_evaluation_concurrency=fom_evaluation_concurrency,
+                        rom_evaluation_concurrency=rom_evaluation_concurrency,
+                        covariance_regularization=covariance_regularization,
+                        baseline_method=baseline_method,
+                        use_mfmc_control_variate=use_mfmc_control_variate,
+                        mfmc_control_variate_mode=mfmc_control_variate_mode,
+                        variational_correlation_cholesky=variational_correlation_cholesky,
+                        elbo_scaling_factor=elbo_scaling_factor,
+                        gradient_method=gradient_method,
+                        bounded_parameter_handling=bounded_parameter_handling,
+                        min_variational_std=min_variational_std,
+                        max_variational_std=max_variational_std,
+                        rom_base_sampling_strategy=rom_base_sampling_strategy,
+                        parameter_mins=parameter_mins,
+                        parameter_maxes=parameter_maxes,
+                        transform_interior_margin=transform_interior_margin,
+                        transform_map=transform_map,
+                        rom_tolerance=rom_tolerance,
+                        max_rom_training_dirs=max_rom_training_dirs,
+                        correlation_estimator=correlation_estimator,
+                        correlation_k_folds=correlation_k_folds,
+                        training_dirs=[],
+                        training_parameters=None,
+                        training_qois=None,
+                        rom_training_dirs=[],
+                        rom_training_parameters=None,
+                        rom_training_qois=None,
+                        log_likelihood_precision_operator=log_likelihood_precision_operator,
+                        sampling_method=sampling_method,
+                        dispatcher=dispatcher,
+                    )
+                    independent_hessian_cache = _get_state_hessian(
+                        hessian_state, newton_hessian_type
+                    )
+                curvature_hessian = independent_hessian_cache
+            elif newton_curvature_strategy == 'lagged':
+                curvature_hessian = running_hessian
+                pending_running_hessian = _average_hessians(
+                    running_hessian,
+                    _get_state_hessian(state, newton_hessian_type),
+                    newton_hessian_averaging_factor,
+                )
 
         line_search_predicted_slope = 0.0
         if optimization_method == 'gradient':
@@ -2284,6 +2484,7 @@ def run_mf_vi(model: QoiModel,
                 newton_regularization,
                 newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
+                hessian=curvature_hessian,
             )
             mean_update = _limit_mean_update(
                 direction_mean,
@@ -2401,6 +2602,9 @@ def run_mf_vi(model: QoiModel,
             variational_mean = test_variational_mean*1.0
             variational_log_std = test_variational_log_std*1.0
             state = test_state
+            if newton_curvature_strategy == 'lagged':
+                running_hessian = pending_running_hessian
+            independent_hessian_cache = None
             accepted_elbo_history.append(state['elbo'])
             relative_elbo_improvement = (
                 float(state['elbo']) / (initial_elbo_reference + 1e-16)
@@ -2494,6 +2698,11 @@ def run_mf_vi(model: QoiModel,
                 vi_history=vi_history,
                 sampling_method=sampling_method,
                 max_mean_update_std=max_mean_update_std,
+                newton_curvature_strategy=newton_curvature_strategy,
+                newton_hessian_num_samples=newton_hessian_num_samples,
+                newton_hessian_averaging_factor=newton_hessian_averaging_factor,
+                running_hessian=running_hessian,
+                accepted_elbo_history=accepted_elbo_history,
                 dispatcher=dispatcher,
             )
             _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)

@@ -27,6 +27,9 @@ class VINewtonOptimizerConfig:
     newton_metric: str = 'standard'
     newton_regularization: float = 1e-2
     newton_hessian_type: str = 'diagonal'
+    newton_curvature_strategy: str = 'same_sample'
+    newton_hessian_num_samples: int = None
+    newton_hessian_averaging_factor: float = 0.9
 
 
 @dataclass
@@ -111,6 +114,17 @@ def _normalize_newton_hessian_type(newton_hessian_type: str):
     raise ValueError(
         f"Unsupported newton_hessian_type '{newton_hessian_type}'. "
         "Supported options are 'diagonal' and 'full'."
+    )
+
+
+def _normalize_newton_curvature_strategy(strategy: str) -> str:
+    """Normalize the stochastic Newton curvature sampling strategy."""
+    normalized = strategy.strip().lower()
+    if normalized in ('same_sample', 'independent', 'lagged'):
+        return normalized
+    raise ValueError(
+        f"Unsupported newton_curvature_strategy '{strategy}'. "
+        "Supported options are 'same_sample', 'independent', and 'lagged'."
     )
 
 
