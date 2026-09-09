@@ -212,6 +212,46 @@ def test_run_mf_vi_accepts_full_newton_hessian_option(tmp_path):
 
 
 @pytest.mark.mpi_skip
+def test_run_mf_vi_persists_mean_update_limit(tmp_path):
+    model = LinearQoiModel(slope=2.0)
+    rom_builder = LinearQoiRomBuilderWithTrainingData(slope=2.0)
+    variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    romtools.workflows.run_mf_vi(
+        model=model,
+        rom_model_builder=rom_builder,
+        prior_parameter_space=variational_parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.array([[0.2**2]]),
+        parameter_mins=np.array([-2.0]),
+        parameter_maxes=np.array([2.0]),
+        absolute_vi_directory=str(tmp_path),
+        fom_sample_size=6,
+        rom_extra_sample_size=0,
+        rom_tolerance=0.0,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+            max_mean_update_std=0.25,
+        ),
+        line_search_method="legacy",
+        bounded_parameter_handling="clip",
+        random_seed=7,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+    )
+
+    restart_data = np.load(tmp_path / "iteration_0" / "restart.npz")
+    assert float(restart_data["max_mean_update_std"]) == 0.25
+
+
+@pytest.mark.mpi_skip
 def test_run_mf_vi_restart_continues_optimization_with_minimal_restart(tmp_path):
     model = LinearQoiModel(slope=2.0)
     rom_builder = LinearQoiRomBuilderWithTrainingData(slope=2.0)
