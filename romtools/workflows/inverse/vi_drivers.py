@@ -1283,6 +1283,18 @@ def _compute_newton_metric_scale(newton_metric: str,
     return None
 
 
+def _limit_mean_update(direction_mean: np.ndarray,
+                       step_size: float,
+                       variational_std: np.ndarray,
+                       max_mean_update_std: float = None) -> np.ndarray:
+    """Return a mean update limited in current standard-deviation units."""
+    mean_update = step_size * direction_mean
+    if max_mean_update_std is None:
+        return mean_update
+    maximum_update = max_mean_update_std * variational_std
+    return np.clip(mean_update, -maximum_update, maximum_update)
+
+
 def _draw_standard_normal_samples(sample_size: int,
                                   dimensionality: int,
                                   sampling_method: str) -> np.ndarray:
@@ -1693,6 +1705,7 @@ def _save_vi_restart(restart_path: str,
                      transform_interior_margin: float = 0.0,
                      vi_history=None,
                      sampling_method: str = None,
+                     max_mean_update_std: float = None,
                      dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
@@ -1728,6 +1741,9 @@ def _save_vi_restart(restart_path: str,
         line_search_sample_growth_factor=line_search_sample_growth_factor,
         log_std_learning_rate_factor=log_std_learning_rate_factor,
         sampling_method=sampling_method,
+        max_mean_update_std=(
+            np.nan if max_mean_update_std is None else float(max_mean_update_std)
+        ),
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
     if line_search_method == 'stochastic_nonmonotone':
@@ -1756,6 +1772,7 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             min_variational_std: float,
                             max_variational_std: float,
                             max_log_std_update: float,
+                            max_mean_update_std: float,
                             newton_regularization: float,
                             newton_hessian_type: str,
                             covariance_regularization: float,
@@ -1802,6 +1819,8 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
         "min_physical_variational_std_fraction must be non-negative"
     )
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
+    if max_mean_update_std is not None:
+        assert max_mean_update_std > 0.0, "max_mean_update_std must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
     _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
@@ -1990,6 +2009,7 @@ def run_vi(model: QoiModel,
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
     max_log_std_update = resolved_optimizer_config.max_log_std_update
+    max_mean_update_std = None
     min_variational_std = resolved_optimizer_config.min_variational_std
     max_variational_std = resolved_optimizer_config.max_variational_std
 
@@ -1998,6 +2018,7 @@ def run_vi(model: QoiModel,
     newton_regularization = newton_defaults.newton_regularization
     newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     if optimization_method == 'newton':
+        max_mean_update_std = resolved_optimizer_config.max_mean_update_std
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
         newton_hessian_type = _normalize_newton_hessian_type(
@@ -2061,6 +2082,7 @@ def run_vi(model: QoiModel,
         min_variational_std=min_variational_std,
         max_variational_std=max_variational_std,
         max_log_std_update=max_log_std_update,
+        max_mean_update_std=max_mean_update_std,
         newton_regularization=newton_regularization,
         newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
@@ -2227,6 +2249,11 @@ def run_vi(model: QoiModel,
             )
             if restart_optimization_method != optimization_method:
                 raise ValueError("Restart file optimization_method does not match current run.")
+        if 'max_mean_update_std' in restart_data:
+            restart_limit = float(restart_data['max_mean_update_std'])
+            restart_limit = None if np.isnan(restart_limit) else restart_limit
+            if restart_limit != max_mean_update_std:
+                raise ValueError("Restart file max_mean_update_std does not match current run.")
         if 'line_search_objective' in restart_data:
             restart_line_search_objective = str(restart_data['line_search_objective'].item())
             if restart_line_search_objective != line_search_objective:
@@ -2372,6 +2399,7 @@ def run_vi(model: QoiModel,
             transform_interior_margin=transform_interior_margin,
             vi_history=vi_history,
             sampling_method=sampling_method,
+            max_mean_update_std=max_mean_update_std,
             dispatcher=dispatcher,
         )
         _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
@@ -2689,6 +2717,7 @@ def run_vi(model: QoiModel,
                     transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
+                    max_mean_update_std=max_mean_update_std,
                     dispatcher=dispatcher,
                 )
                 _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
@@ -2735,11 +2764,13 @@ def run_vi(model: QoiModel,
                 newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
             )
-            line_search_predicted_slope = float(
-                np.dot(state['gradient_mean'], direction_mean)
-                + log_std_learning_rate_factor * np.dot(state['gradient_log_std'], direction_log_std)
+            mean_update = _limit_mean_update(
+                direction_mean,
+                step_size,
+                variational_std_for_metric,
+                max_mean_update_std,
             )
-            test_variational_mean = variational_mean + step_size * direction_mean
+            test_variational_mean = variational_mean + mean_update
             log_std_update = np.clip(
                 step_size * log_std_learning_rate_factor * direction_log_std,
                 -max_log_std_update,
@@ -2763,6 +2794,22 @@ def run_vi(model: QoiModel,
                 min_physical_variational_std_fraction,
                 transform_map,
             )
+            if max_mean_update_std is not None:
+                line_search_predicted_slope = float(
+                    (
+                        np.dot(state['gradient_mean'], mean_update)
+                        + np.dot(
+                            state['gradient_log_std'],
+                            test_variational_log_std - variational_log_std,
+                        )
+                    ) / step_size
+                )
+            else:
+                line_search_predicted_slope = float(
+                    np.dot(state['gradient_mean'], direction_mean)
+                    + log_std_learning_rate_factor
+                    * np.dot(state['gradient_log_std'], direction_log_std)
+                )
 
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
             test_candidate = _evaluate_vi_candidate_for_line_search(
@@ -2950,6 +2997,7 @@ def run_vi(model: QoiModel,
                     transform_interior_margin=transform_interior_margin,
                     vi_history=vi_history,
                     sampling_method=sampling_method,
+                    max_mean_update_std=max_mean_update_std,
                     dispatcher=dispatcher,
                 )
                 _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
