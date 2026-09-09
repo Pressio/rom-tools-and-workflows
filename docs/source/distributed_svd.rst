@@ -70,6 +70,35 @@ rank then multiplies its first-level ``Q_local`` by its final transformation.
 Both paths are mathematically equivalent TSQR factorizations and avoid forming
 :math:`A^H A`, which would square the condition number.
 
+Why the tree scales better: a high-level explanation
+---------------------------------------------------
+
+Both approaches start with each process producing a compact representation of
+its local data. The difference is how those representations are combined.
+
+With the rank-zero reduction, every process sends its representation to one
+process (rank zero), which combines them all. As the number of processes grows,
+rank zero has more data to hold and more combining work to do, becoming a
+bottleneck.
+
+The tree reduction combines representations in pairs, then combines those
+results in pairs, and continues until one remains. Several pairs can work at
+the same time. For example, eight processes combine their results in three
+rounds. Each merge handles only two compact representations, avoiding one
+large stack of all processes' representations on rank zero.
+
+This shares the combining work and reduces the memory pressure on rank zero,
+making the tree better suited to larger parallel jobs. Rank zero still performs
+the final SVD, but only on the final compact representation. The original
+matrix stays distributed in both approaches.
+
+The benefit is scalability, rather than a more accurate approximation: both
+paths compute the same mathematical decomposition, subject to floating-point
+differences. The tree is not always faster, because its extra communication
+rounds add overhead. Small jobs can therefore benefit from the simpler
+rank-zero reduction, which is why the implementation switches between the two
+using a configurable threshold.
+
 Configuring the reduction threshold
 -----------------------------------
 
