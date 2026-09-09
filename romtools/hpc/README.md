@@ -10,6 +10,7 @@ Everything goes through the `Dispatcher` class, which defines public methods lik
 - `put(local_path, remote_path)`: Copy a local file to the remote host
 - `get(remote_path, local_path)`: Copy a remote file to the local host
 - `dispatch(cmd, remote_run_directory)`: Executes `cmd` from the remote host's `run_directory`
+- `call(target, *args, run_directory, **kwargs)`: Runs the Python callable named by `target` (as `"module:qualname"`) on the execution host and returns its result
 - `path_exists(path)`: Whether `path` exists on the execution host
 - `create_empty_dir(dir_name)`: Create `dir_name` (and any missing parents) on the execution host
 - `list_dir(path)`: Names of the entries in `path` on the execution host
@@ -265,6 +266,11 @@ These workflow arguments define file management with the dispatcher.
 - `collect` (`-o`): Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
 - `upload` (`-U`): Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded
 
+Two more workflow arguments describe the remote Python used by `call()`:
+
+- `python_setup` (`-e`): Shell commands that set up the remote environment before invoking Python, such as loading modules or activating a virtual environment
+- `python_command` (`-c`): Command that invokes the remote Python with the necessary libraries installed (default: `python3`)
+
 In the YAML, these are grouped under `workflow`:
 
 ```yaml
@@ -272,6 +278,8 @@ workflow:
     remote_root: my_sampling_directory
     collect: "*.log, passed.txt"
     upload: "input.yaml, mesh/"
+    python_setup: "module load python/3.11"
+    python_command: python3
 ```
 
 #### `slurm`
@@ -295,7 +303,7 @@ create the SLURM script for you based on some command.
 The final SLURM argument specifies how often the dispatcher should
 poll the submitted job:
 
-- `poll_interval` (`-P`): Seconds between `squeue` polls
+- `poll_interval` (`-I`): Seconds between `squeue` polls
 - `timeout` (`-T`): Seconds to keep retrying the `sacct` query for a finished job's exit code before giving up
 
 In YAML, all of these arguments are grouped under `slurm`:

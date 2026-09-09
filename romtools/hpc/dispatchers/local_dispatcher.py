@@ -2,10 +2,11 @@
 
 import os
 import shlex
-import subprocess
 import shutil
+import subprocess
 import numpy as np
 
+from .caller import LocalCaller
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.dispatchers import BaseDispatcher
 from romtools.hpc.connection import Result
@@ -21,6 +22,8 @@ class LocalDispatcher(BaseDispatcher):
         # the real process argv here would pick up whatever CLI args the
         # embedding process was started with (e.g. pytest's own flags).
         super().__init__(sampling_directory=sampling_directory, logger=logger, argv=[])
+
+        self.caller = LocalCaller(config=self.config, logger=self.logger)
 
     def __copy(self, src, dst):
         dst_dir = os.path.dirname(dst)

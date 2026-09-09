@@ -10,6 +10,7 @@ import numpy as np
 import posixpath as ppath
 from typing import Optional, Tuple
 
+from .caller import RemoteCaller
 from romtools.hpc.util.logger import Logger
 from romtools.hpc.util.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.connection import Connection, Result
@@ -17,6 +18,8 @@ from romtools.hpc.dispatchers import BaseDispatcher
 from romtools.hpc.util.file_transfer import create_tarball, safe_extract_tar, validate_file_patterns
 
 from romtools.hpc.util.slurm import create_slurm_script
+
+## Helpers
 
 def run_local_bash(cmd: str) -> Result:
     res = subprocess.run(
@@ -66,6 +69,8 @@ class RemoteDispatcher(BaseDispatcher):
         # validate collect and upload patterns
         self.collect_patterns = validate_file_patterns(self.config.get("collect"))
         self.upload_patterns = validate_file_patterns(self.config.get("upload"))
+
+        self.caller = RemoteCaller(connection=self.conn, config=self.config, logger=self.logger)
 
     # ------------------------------------------------------------------
     # Initialization and setup
@@ -459,7 +464,7 @@ class RemoteDispatcher(BaseDispatcher):
         tar_path = f"{ppath.join(remote_root, run_directory)}/{tar_name}"
         try:
             self.conn.put(tar_name, tar_path)
-            self.logger.log(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
+            self.logger.debug(f"Uploaded local file {tar_name} to {self.conn.host}:{tar_path}")
         except Exception as e:
             raise RuntimeError(f"File transfer failed on upload: {e}")
         finally:
@@ -471,12 +476,12 @@ class RemoteDispatcher(BaseDispatcher):
     def put(self, local_path: str, remote_path: str) -> None:
         remote_path = self.__resolve_remote_path(remote_path)
         self.conn.put(local_path, remote_path)
-        self.logger.log(f"Uploaded local file {local_path} to {self.conn.host}:{remote_path}")
+        self.logger.debug(f"Uploaded local file {local_path} to {self.conn.host}:{remote_path}")
 
     def get(self, remote_path: str, local_path: str) -> None:
         remote_path = self.__resolve_remote_path(remote_path)
         self.conn.get(remote_path, local_path)
-        self.logger.log(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
+        self.logger.debug(f"Downloaded remote file {self.conn.host}:{remote_path} to local path {local_path}")
 
     def path_exists(self, path: str) -> bool:
         remote_path = self.__resolve_remote_path(path)

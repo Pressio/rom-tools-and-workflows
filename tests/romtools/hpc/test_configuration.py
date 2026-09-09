@@ -1,8 +1,9 @@
+import re
 import sys
 
 import pytest
 
-from romtools.hpc.configuration import Configuration, _normalize_collect
+from romtools.hpc.configuration import SCHEMA, Configuration, _normalize_collect
 
 
 def test_defaults_with_no_args_or_yaml(monkeypatch):
@@ -28,6 +29,38 @@ def test_cli_args_override_defaults(monkeypatch):
     assert config.remote == "myhost"
     assert config.user == "alice"
     assert config.port == 2222
+
+
+def test_schema_flags_are_unique_single_character_switches():
+    """
+    Regression test: multi-character single-dash flags such as "-pys" are
+    prefix-ambiguous with "-p", so "-py x" aborted with "ambiguous option"
+    while "-pyszz" silently parsed as "-p yszz".
+    """
+    flags = [arg["cli"] for section in SCHEMA.values() for arg in section.values()]
+
+    assert len(set(flags)) == len(flags)
+    assert "-i" not in flags  # reserved for --input
+    for flag in flags:
+        assert re.fullmatch(r"-[A-Za-z]", flag), f"{flag} is not a single-character switch"
+
+
+def test_remote_python_args_parse_from_cli(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "-e", "module load python", "-c", "srun python3"])
+
+    config = Configuration()
+
+    assert config.python_setup == "module load python"
+    assert config.python_command == "srun python3"
+
+
+def test_remote_python_defaults(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog"])
+
+    config = Configuration()
+
+    assert config.python_setup is None
+    assert config.python_command == "python3"
 
 
 def test_debug_flag_is_a_store_true_switch(monkeypatch):
