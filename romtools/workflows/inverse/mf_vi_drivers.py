@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 33726)
-Total output lines: 2881
-
 r"""
 Multifidelity variational inference drivers.
 
@@ -1364,7 +1361,296 @@ def _evaluate_mf_vi_state(model: QoiModel,
         baseline_method,
         use_mfmc_control_variate,
         mfmc_control_variate_mode,
-        variational_correla…3726 tokens truncated…ptions are 'gradient' and 'newton'.
+        variational_correlation_cholesky,
+        elbo_scaling_factor,
+    )
+    hessian_full = _compute_mfmc_reinforce_hessian_full(
+        optimizer_samples_fom,
+        optimizer_samples_rom_base,
+        optimizer_samples_rom_extra,
+        variational_mean,
+        variational_std,
+        fom_log_joint_terms,
+        rom_log_joint_terms_base,
+        rom_log_joint_terms_extra,
+        baseline_method,
+        use_mfmc_control_variate,
+        mfmc_control_variate_mode,
+        variational_correlation_cholesky,
+        elbo_scaling_factor,
+    )
+    update_direction_mean, update_direction_log_std, normalized_gradient_method = _compute_update_directions(
+        gradient_mean,
+        gradient_log_std,
+        variational_std,
+        gradient_method,
+    )
+
+    dimensionality = variational_mean.size
+    entropy = np.sum(variational_log_std) + 0.5 * dimensionality * (1.0 + np.log(2.0 * np.pi))
+    if variational_correlation_cholesky is not None:
+        entropy += np.sum(np.log(np.diag(variational_correlation_cholesky)))
+    entropy *= elbo_scaling_factor
+    if rom_extra_sample_size > 0:
+        low_fidelity_full_log_joint_terms = np.concatenate(
+            [rom_log_joint_terms_base, rom_log_joint_terms_extra]
+        )
+        mfmc_mean_log_joint = (
+            np.mean(fom_log_joint_terms)
+            + np.mean(low_fidelity_full_log_joint_terms)
+            - np.mean(rom_log_joint_terms_base)
+        )
+    else:
+        mfmc_mean_log_joint = np.mean(fom_log_joint_terms)
+    elbo = elbo_scaling_factor * mfmc_mean_log_joint + entropy
+
+    optimizer_samples = np.vstack([
+        optimizer_samples_fom,
+        optimizer_samples_rom_base,
+        optimizer_samples_rom_extra,
+    ])
+    parameter_samples = np.vstack([
+        parameter_samples_fom,
+        parameter_samples_rom_base,
+        parameter_samples_rom_extra,
+    ])
+    state = {
+        'optimizer_samples': optimizer_samples,
+        'parameter_samples': parameter_samples,
+        'parameter_samples_fom': parameter_samples_fom,
+        'parameter_samples_rom_base': parameter_samples_rom_base,
+        'parameter_samples_rom_only': parameter_samples_rom_extra,
+        'qois_fom': fom_results['qois'],
+        'mean_qoi_fom': fom_results['mean-qoi'],
+        'errors_fom': fom_results['errors'],
+        'qois_rom_base': rom_results_base['qois'],
+        'qois_rom_coupled': rom_results_base['qois'],
+        'qois_rom_only': rom_results_extra['qois'],
+        'log_likelihoods_fom': fom_log_likelihoods,
+        'log_priors_fom': fom_log_priors,
+        'log_joint_terms_fom': fom_log_joint_terms,
+        'log_transform_jacobian_fom': fom_log_transform_jacobian,
+        'log_likelihoods_rom_base': rom_log_likelihoods_base,
+        'log_priors_rom_base': rom_log_priors_base,
+        'log_joint_terms_rom_base': rom_log_joint_terms_base,
+        'log_transform_jacobian_rom_base': rom_log_transform_jacobian_base,
+        'log_likelihoods_rom_coupled': rom_log_likelihoods_base,
+        'log_likelihoods_rom_only': rom_log_likelihoods_extra,
+        'log_priors_rom_only': rom_log_priors_extra,
+        'log_joint_terms_rom_only': rom_log_joint_terms_extra,
+        'log_transform_jacobian_rom_only': rom_log_transform_jacobian_extra,
+        'mean_misfit': np.mean(fom_misfits),
+        'mean_relative_mse': np.mean(_compute_relative_mse(fom_results['errors'], observations)),
+        'entropy': entropy,
+        'elbo': elbo,
+        'gradient_mean': gradient_mean,
+        'gradient_log_std': gradient_log_std,
+        'hessian_diagonal_mean': hessian_diagonal_mean,
+        'hessian_diagonal_log_std': hessian_diagonal_log_std,
+        'hessian_full': hessian_full,
+        'update_direction_mean': update_direction_mean,
+        'update_direction_log_std': update_direction_log_std,
+        'gradient_method': normalized_gradient_method,
+        'baseline_mean': baseline_mean,
+        'baseline_log_std': baseline_log_std,
+        'gradient_signal_to_noise_ratio': gradient_signal_to_noise_ratio,
+        'mfmc_alpha_mean': alpha_mean,
+        'mfmc_alpha_log_std': alpha_log_std,
+        'rom_error': rom_error,
+        'rom_rebuilt_this_iteration': rom_rebuilt_this_iteration,
+        'rom_model': rom_model_candidate,
+        'training_dirs': candidate_training_dirs,
+        'training_parameters': candidate_training_parameters,
+        'training_qois': candidate_training_qois,
+        'rom_training_dirs': candidate_rom_training_dirs,
+        'rom_training_parameters': candidate_rom_training_parameters,
+        'rom_training_qois': candidate_rom_training_qois,
+    }
+    return state
+
+
+def _validate_run_mf_vi_inputs(restart_file: str,
+                               absolute_vi_directory: str,
+                               fom_sample_size: int,
+                               rom_extra_sample_size: int,
+                               max_step_size: float,
+                               step_size_growth_factor: float,
+                               step_size_decay_factor: float,
+                               line_search_sample_growth_factor: float,
+                               relaxation_parameter: float,
+                               line_search_method: str,
+                               line_search_nonmonotone_window: int,
+                               line_search_armijo_coefficient: float,
+                               line_search_uncertainty_sigma: float,
+                               min_variational_std: float,
+                               max_variational_std: float,
+                               max_log_std_update: float,
+                               max_mean_update_std: float,
+                               newton_regularization: float,
+                               newton_hessian_type: str,
+                               covariance_regularization: float,
+                               restart_files_to_keep: int,
+                               correlation_k_folds: int,
+                               observations_covariance: np.ndarray,
+                               observations: np.ndarray,
+                               elbo_scaling_factor: float,
+                               elbo_relative_tolerance: float,
+                               sampling_method: str,
+                               max_rom_training_history: int,
+                               prior_parameter_space,
+                               initial_variational_parameter_space,
+                               parameter_mins: np.ndarray,
+                               parameter_maxes: np.ndarray,
+                               transform_interior_margin: float,
+                               transform_map: str,
+                               min_physical_variational_std_fraction: float,
+                               bounded_parameter_handling: str,
+                               dispatcher: Optional[BaseDispatcher] = None) -> None:
+    if restart_file is not None:
+        assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
+    require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_vi_directory)
+    assert fom_sample_size > 1, "fom_sample_size must be greater than 1"
+    assert rom_extra_sample_size >= 0, "rom_extra_sample_size must be non-negative"
+    assert max_step_size > 0.0, "max_step_size must be positive"
+    assert step_size_growth_factor >= 1.0, "step_size_growth_factor must be greater than 1.0"
+    assert step_size_decay_factor >= 1.0, "step_size_decay_factor must be greater than 1.0"
+    assert line_search_sample_growth_factor >= 1.0, (
+        "line_search_sample_growth_factor must be greater than or equal to 1.0"
+    )
+    assert relaxation_parameter >= 1.0, "relaxation_parameter must be >= 1.0"
+    if line_search_method == 'stochastic_nonmonotone':
+        assert line_search_nonmonotone_window >= 1, "line_search_nonmonotone_window must be >= 1"
+        assert 0.0 <= line_search_armijo_coefficient <= 1.0, (
+            "line_search_armijo_coefficient must be in [0,1]"
+        )
+        assert line_search_uncertainty_sigma >= 0.0, "line_search_uncertainty_sigma must be non-negative"
+    assert min_variational_std > 0.0, "min_variational_std must be positive"
+    assert max_variational_std > min_variational_std, (
+        "max_variational_std must be greater than min_variational_std"
+    )
+    assert min_physical_variational_std_fraction >= 0.0, (
+        "min_physical_variational_std_fraction must be non-negative"
+    )
+    assert max_log_std_update > 0.0, "max_log_std_update must be positive"
+    if max_mean_update_std is not None:
+        assert max_mean_update_std > 0.0, "max_mean_update_std must be positive"
+    assert newton_regularization > 0.0, "newton_regularization must be positive"
+    _normalize_newton_hessian_type(newton_hessian_type)
+    assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
+    assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
+    assert correlation_k_folds >= 2, "correlation_k_folds must be >= 2"
+    assert observations_covariance.shape[0] == observations_covariance.shape[1], (
+        "observations_covariance must be square"
+    )
+    assert observations_covariance.shape[0] == observations.size, (
+        "observations_covariance shape must match observations size"
+    )
+    assert elbo_scaling_factor > 0.0, "elbo_scaling_factor must be positive"
+    if elbo_relative_tolerance is not None:
+        assert elbo_relative_tolerance >= 0.0, "elbo_relative_tolerance must be non-negative"
+    _normalize_sampling_method(sampling_method)
+    _normalize_transform_map(transform_map)
+    assert max_rom_training_history >= 1, "max_rom_training_history must be >= 1"
+
+    parameter_names, _, _, _, initial_variational_mean, initial_variational_covariance, _ = (
+        _validate_gaussian_parameter_spaces(
+            prior_parameter_space,
+            initial_variational_parameter_space,
+        )
+    )
+    parameter_dimensionality = np.asarray(initial_variational_mean).size
+    assert len(parameter_names) > 0, "prior_parameter_space must define at least one parameter"
+    covariance = np.asarray(initial_variational_covariance)
+    assert covariance.ndim == 2, "initial variational covariance must be a 2D array"
+    assert covariance.shape[0] == covariance.shape[1], (
+        "initial variational covariance must be square"
+    )
+    assert covariance.shape[0] == parameter_dimensionality, (
+        "initial variational covariance shape must match initial variational mean size"
+    )
+    if parameter_mins is not None:
+        assert np.size(parameter_mins) == parameter_dimensionality, (
+            f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with "
+            f"the variational dimensionality of size {parameter_dimensionality}"
+        )
+    if parameter_maxes is not None:
+        assert np.size(parameter_maxes) == parameter_dimensionality, (
+            f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with "
+            f"the variational dimensionality of size {parameter_dimensionality}"
+        )
+    if bounded_parameter_handling == 'transform':
+        assert 0.0 <= transform_interior_margin < 0.5, (
+            "transform_interior_margin must be in [0.0, 0.5)"
+        )
+        assert parameter_mins is not None, "parameter_mins must be provided for bounded_parameter_handling='transform'"
+        assert parameter_maxes is not None, "parameter_maxes must be provided for bounded_parameter_handling='transform'"
+        assert np.size(parameter_mins) == parameter_dimensionality, (
+            f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with "
+            f"the variational dimensionality of size {parameter_dimensionality}"
+        )
+        assert np.size(parameter_maxes) == parameter_dimensionality, (
+            f"parameter_maxes of size {np.size(parameter_maxes)} is inconsistent with "
+            f"the variational dimensionality of size {parameter_dimensionality}"
+        )
+        assert np.all(parameter_maxes > parameter_mins), (
+            "All parameter_maxes entries must be greater than parameter_mins entries "
+            "for bounded_parameter_handling='transform'"
+        )
+
+
+def run_mf_vi(model: QoiModel,
+              rom_model_builder: QoiModelBuilderWithTrainingData,
+              prior_parameter_space,
+              observations: np.ndarray,
+              observations_covariance: np.ndarray,
+              parameter_mins: np.ndarray = None,
+              parameter_maxes: np.ndarray = None,
+              initial_variational_parameter_space=None,
+              restart_file: str = None,
+              optimizer_method: str = 'gradient',
+              optimizer_config=None,
+              line_search_method: str = 'stochastic_nonmonotone',
+              line_search_config=None,
+              absolute_vi_directory: str = os.getcwd() + "/work/",
+              fom_sample_size: int = 10,
+              rom_extra_sample_size: int = 30,
+              rom_tolerance: float = 0.005,
+              max_rom_training_history: int = 1,
+              random_seed: int = 1,
+              sampling_method: str = 'mc',
+              fom_evaluation_concurrency=10,
+              rom_evaluation_concurrency=1,
+              covariance_regularization: float = 1e-7,
+              restart_files_to_keep: int = 10,
+              correlation_estimator: str = 'in_sample',
+              correlation_k_folds: int = 5,
+              elbo_scaling_factor='diag_mean',
+              elbo_relative_tolerance: float = None,
+              baseline_method: str = None,
+              use_mfmc_control_variate: bool = True,
+              mfmc_control_variate_mode: str = 'componentwise',
+              rom_base_sampling_strategy: str = 'coupled',
+              bounded_parameter_handling: str = 'transform',
+              transform_interior_margin: float = 1e-8,
+              transform_map: str = 'sigmoid',
+              min_physical_variational_std_fraction: float = 1e-8,
+              dispatcher: Optional[BaseDispatcher] = None):
+    """
+    Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
+
+    Args:
+        prior_parameter_space: Either GaussianParameterSpace (diagonal VI)
+            or MultivariateGaussianParameterSpace (multivariate VI). Defines
+            the Bayesian prior in physical parameter space.
+        parameter_mins: Optional lower bounds on parameters.
+        parameter_maxes: Optional upper bounds on parameters.
+        initial_variational_parameter_space: Optional Gaussian initializer for
+            the variational state in physical parameter space. Defaults to the
+            prior moments.
+        restart_file: Optional restart file path. Restart files written by this
+            routine store `variational_mean` in physical coordinates.
+        optimizer_method: Optimizer used for variational updates. Supported
+            options are 'gradient' and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
