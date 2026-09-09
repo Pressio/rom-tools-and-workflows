@@ -28,7 +28,7 @@ class RecordingDispatcher(BaseDispatcher):
     """
 
     def __init__(self):
-        super().__init__(argv=[])
+        super().__init__()
         self.created_dirs = []
         self.saved_npz = []
         self.written_text = []

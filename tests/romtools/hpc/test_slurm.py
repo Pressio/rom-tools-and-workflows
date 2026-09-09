@@ -1,4 +1,4 @@
-from romtools.hpc.slurm import create_slurm_script, parse_sbatch_out_args
+from romtools.hpc.components.slurm import create_slurm_script, parse_sbatch_out_args
 
 
 def test_create_slurm_script_renders_all_fields():

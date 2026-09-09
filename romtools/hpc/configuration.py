@@ -36,6 +36,23 @@ SCHEMA = {
     },
 }
 
+class _UnparsableArguments(Exception):
+    """Raised in place of argparse's exit-on-error."""
+
+
+class _TolerantParser(argparse.ArgumentParser):
+    """
+    An ArgumentParser that reports a bad value instead of exiting.
+
+    A dispatcher may be constructed anywhere, including deep inside a process
+    whose own arguments were never meant for this schema, so an argument it
+    cannot parse must not take that process down with it.
+    """
+
+    def error(self, message):
+        raise _UnparsableArguments(message)
+
+
 def _normalize_collect(value):
     """
     Normalize collect specifications into a list of strings.
@@ -107,17 +124,8 @@ class Configuration:
       1. CLI args (overwrite YAML)
       2. YAML file values (if provided)
       3. class defaults
-
-    Args:
-        argv: Argument list to parse instead of the real process argv
-            (sys.argv[1:]). Pass an explicit list (e.g. []) to build a
-            Configuration without reading the host process's CLI args --
-            useful for embedding (e.g. LocalDispatcher) where those args
-            aren't meant to apply.
     """
-    def __init__(self, argv: list = None):
-        self._argv = argv
-
+    def __init__(self):
         # SSH configuration
         self.remote = None
         self.user = None
@@ -171,7 +179,7 @@ class Configuration:
         as-is in self.user_defined. Its contents are not interpreted as individual
         configuration attributes.
         """
-        pre = argparse.ArgumentParser(add_help=False)
+        pre = _TolerantParser(add_help=False)
         pre.add_argument(
             "-i", "--input",
             dest="input",
@@ -179,7 +187,10 @@ class Configuration:
             default=None,
             help="Path to a YAML configuration file."
         )
-        ns, _ = pre.parse_known_args(self._argv)
+        try:
+            ns, _ = pre.parse_known_args()
+        except _UnparsableArguments:
+            return
         config_path = ns.input
 
         if not config_path:
@@ -258,7 +269,7 @@ class Configuration:
                     apply_kv(k, v)
 
     def __parse_args(self) -> None:
-        parser = argparse.ArgumentParser(
+        parser = _TolerantParser(
             description="Configure the HPC dispatcher.",
             argument_default=argparse.SUPPRESS,
         )
@@ -274,7 +285,17 @@ class Configuration:
             for arg in items.items():
                 _add_schema_arg(new_grp, arg)
 
-        args, _ = parser.parse_known_args(self._argv)
+        try:
+            args, _ = parser.parse_known_args()
+        except _UnparsableArguments as e:
+            warnings.warn(
+                f"Ignoring the command line ({e}). "
+                "Configure the dispatcher with a YAML file instead if these arguments "
+                "belong to the surrounding program.",
+                UserWarning
+            )
+            return
+
         for name, value in vars(args).items():
             if name == "input":
                 continue

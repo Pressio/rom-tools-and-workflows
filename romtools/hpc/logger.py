@@ -1,4 +1,10 @@
 class Logger:
+    """
+    Prints dispatcher output, tagging remote messages with the hostname.
+
+    Messages logged through debug() appear only when debug logging is enabled.
+    """
+
     def __init__(self, debug: bool = False):
         self.hostname = None
         self.debug_enabled = debug

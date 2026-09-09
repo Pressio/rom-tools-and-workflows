@@ -88,41 +88,39 @@ class RemoteCaller(BaseCaller):
         logger: An instance of the Logger class for logging
     """
 
-    def __init__(self, connection: Connection, config: dict = None, logger: Logger = None):
+    def __init__(self, connection: Connection, config: dict = None, logger: Logger = None, files=None):
         super().__init__(config=config, logger=logger)
         self.conn = connection
-        self.remote_root = self.config.get("remote_root")
+        self.files = files
         self.python_setup = self.config.get("python_setup")
         self.python_command = self.config.get("python_command") or "python3"
 
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         call_id = f".dispatcher_call_{uuid.uuid4().hex}"
-        run_dir = ppath.join(self.remote_root, run_directory) if run_directory else self.remote_root
-        call_dir = ppath.join(run_dir, call_id)
+        call_dir = ppath.join(run_directory, call_id) if run_directory else call_id
 
-        self.__create_call_directory(call_dir)
+        self._create_call_directory(call_dir)
         try:
             with tempfile.TemporaryDirectory() as staging_dir:
-                self.__upload_inputs(staging_dir, call_dir, args, kwargs)
-                self.__run_target(run_dir, call_id, target)
-                result = self.__download_result(staging_dir, call_dir)
+                self._upload_inputs(staging_dir, call_dir, args, kwargs)
+                self._run_target(run_directory, call_id, target)
+                result = self._download_result(staging_dir, call_dir)
         finally:
-            self.__remove_call_directory(call_dir)
+            self._remove_call_directory(call_dir)
 
         self.logger.log(f"Executed {target} on remote host.")
         return result
 
-    def __create_call_directory(self, call_dir: str) -> None:
-        res = self.conn.run(f"mkdir -p {shlex.quote(call_dir)}")
-        if not res.ok:
-            raise RuntimeError(f"Failed to create remote call directory {call_dir}: {res.stderr}")
+    def _create_call_directory(self, call_dir: str) -> None:
+        self.files.create_empty_dir(call_dir)
 
-    def __remove_call_directory(self, call_dir: str) -> None:
-        res = self.conn.run(f"rm -rf {shlex.quote(call_dir)}")
-        if not res.ok:
-            self.logger.log(f"Failed to clean up remote call directory {call_dir}: {res.stderr}")
+    def _remove_call_directory(self, call_dir: str) -> None:
+        try:
+            self.files.remove_dir(call_dir)
+        except RuntimeError as e:
+            self.logger.log(f"Failed to clean up remote call directory {call_dir}: {e}")
 
-    def __upload_inputs(self, staging_dir: str, call_dir: str, args: tuple, kwargs: dict) -> None:
+    def _upload_inputs(self, staging_dir: str, call_dir: str, args: tuple, kwargs: dict) -> None:
         arrays = {}
         payload = {"args": pack(args, arrays), "kwargs": pack(kwargs, arrays)}
 
@@ -140,13 +138,13 @@ class RemoteCaller(BaseCaller):
         for local_path, name in ((runner_path, CALL_RUNNER),
                                  (input_json_path, CALL_INPUT_JSON),
                                  (input_npz_path, CALL_INPUT_NPZ)):
-            self.conn.put(local_path, ppath.join(call_dir, name))
+            self.files.put(local_path, ppath.join(call_dir, name))
 
         self.logger.debug(f"Staged call inputs in {self.conn.host}:{call_dir}")
 
-    def __run_target(self, run_dir: str, call_id: str, target: str) -> None:
+    def _run_target(self, run_directory: str, call_id: str, target: str) -> None:
         cmd = build_call_command(self.python_setup, self.python_command, call_id, target)
-        res = self.conn.run(f"cd {shlex.quote(run_dir)} && {cmd}")
+        res = self.conn.run(f"cd {shlex.quote(self.files.resolve_path(run_directory))} && {cmd}")
         if not res.ok:
             raise RuntimeError(
                 f"Remote call of {target} failed (exit code {res.exit_code}).\n"
@@ -154,12 +152,12 @@ class RemoteCaller(BaseCaller):
                 f"STDERR:\n{res.stderr}"
             )
 
-    def __download_result(self, staging_dir: str, call_dir: str):
+    def _download_result(self, staging_dir: str, call_dir: str):
         output_json_path = os.path.join(staging_dir, CALL_OUTPUT_JSON)
         output_npz_path = os.path.join(staging_dir, CALL_OUTPUT_NPZ)
 
-        self.conn.get(ppath.join(call_dir, CALL_OUTPUT_JSON), output_json_path)
-        self.conn.get(ppath.join(call_dir, CALL_OUTPUT_NPZ), output_npz_path)
+        self.files.get(ppath.join(call_dir, CALL_OUTPUT_JSON), output_json_path)
+        self.files.get(ppath.join(call_dir, CALL_OUTPUT_NPZ), output_npz_path)
 
         with open(output_json_path, "r", encoding="utf-8") as f:
             payload = json.load(f)

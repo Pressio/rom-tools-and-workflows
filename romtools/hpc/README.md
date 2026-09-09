@@ -9,7 +9,8 @@ Everything goes through the `Dispatcher` class, which defines public methods lik
 
 - `put(local_path, remote_path)`: Copy a local file to the remote host
 - `get(remote_path, local_path)`: Copy a remote file to the local host
-- `dispatch(cmd, remote_run_directory)`: Executes `cmd` from the remote host's `run_directory`
+- `run(cmd, run_directory)`: Executes `cmd` directly from `run_directory` on the execution host
+- `submit_job(cmd, run_directory)`: Submits `cmd` to SLURM, waits for it, and collects results
 - `call(target, *args, run_directory, **kwargs)`: Runs the Python callable named by `target` (as `"module:qualname"`) on the execution host and returns its result
 - `path_exists(path)`: Whether `path` exists on the execution host
 - `create_empty_dir(dir_name)`: Create `dir_name` (and any missing parents) on the execution host
@@ -51,6 +52,8 @@ class MyModel:
 > function with no remote capability if needed. `LocalDispatcher` overloads
 > all public methods of the `Dispatcher` without actually sending any
 > work to a remote host. For example, both `put()` and `get()` become a local `cp`.
+> That host may itself be a cluster node, in which case `submit_job()` issues
+> `sbatch` where the workflow already runs and the results need no transferring back.
 
 ### Step 2: Set up the run directory
 
@@ -69,13 +72,13 @@ modules, use:
 
 ```py
     cmd = "load my_module && my_input_validator -i input_file.yaml"
-    self.dispatcher.dispatch(cmd, with_slurm = False)
+    self.dispatcher.run(cmd)
 ```
 
 > [!NOTE]
-> The `with_slurm` flag determines whether or not your command will be
-> submitted to the scheduler. For simple validation commands, you will
-> probably want to set this to `False`. The default is `True`.
+> `run()` executes the command directly, so it is the right choice for quick
+> work like validation. Anything long or parallel belongs in `submit_job()`, so
+> that it lands on compute nodes rather than the login node.
 
 ### Step 3: Define `run_model()`
 
@@ -92,7 +95,7 @@ Then you `run_model()` method can be as simple as:
 
 ```py
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
-        self.dispatcher.dispatch()
+        self.dispatcher.submit_job()
         return 0
 ```
 
@@ -112,7 +115,7 @@ called, and use the dispatcher to wrap it in a SLURM script and submit it:
 ```py
     def run_model(self, run_directory: str, parameter_sample: dict) -> int
         cmd = "srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"
-        self.dispatcher.dispatch( cmd, run_directory )
+        self.dispatcher.submit_job( cmd, run_directory )
         return 0
 ```
 
@@ -288,7 +291,7 @@ These arguments are used to schedule jobs with the dispatcher.
 
 The primary argument simply points to an existing SLURM script:
 
-- `script` (`-s`): Path to a local SLURM script. This will be uploaded to the remote host and submitted on calls to `dispatch()`.
+- `script` (`-s`): Path to a local SLURM script. This will be uploaded to the remote host and submitted on calls to `submit_job()`.
 
 All other arguments are used when you use the dispatcher to
 create the SLURM script for you based on some command.

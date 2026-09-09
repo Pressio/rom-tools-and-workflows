@@ -13,8 +13,10 @@ The ``Dispatcher`` exposes a small public interface:
 
 - ``put(local_path, remote_path)``: Copy a local file to the remote host.
 - ``get(remote_path, local_path)``: Copy a remote file to the local host.
-- ``dispatch(cmd, remote_run_directory)``: Execute ``cmd`` from the remote
-  host's ``run_directory``.
+- ``run(cmd, run_directory)``: Execute ``cmd`` directly from ``run_directory``
+  on the execution host.
+- ``submit_job(cmd, run_directory)``: Submit ``cmd`` to SLURM, wait for it, and
+  collect the results.
 - ``call(target, *args, run_directory, **kwargs)``: Run the Python callable
   named by ``target`` (as ``"module:qualname"``) on the execution host and
   return its result.
@@ -40,6 +42,11 @@ touch directly.
    without sending any work to a remote host. This lets a workflow run with no
    remote capability when needed; for example, both ``put()`` and ``get()``
    become a local ``cp``.
+
+   That host may itself be a cluster node, in which case ``submit_job()``
+   issues ``sbatch`` where the workflow already runs and the results need no
+   transferring back. Both dispatchers read the same configuration, so the
+   SLURM settings below describe the job either way.
 
 Updating your model
 -------------------
@@ -87,12 +94,12 @@ To run shell commands, e.g. to validate input decks or load modules:
 .. code-block:: python
 
    cmd = "load my_module && my_input_validator -i input_file.yaml"
-   self.dispatcher.dispatch(cmd, with_slurm=False)
+   self.dispatcher.run(cmd)
 
 .. note::
-   The ``with_slurm`` flag determines whether your command is submitted to the
-   scheduler. For simple validation commands you will probably want ``False``.
-   The default is ``True``.
+   ``run()`` executes the command directly, so it is the right choice for quick
+   work such as validation. Anything long or parallel belongs in ``submit_job()``,
+   so that it lands on compute nodes rather than the login node.
 
 Step 3: Define ``run_model()``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,7 +113,7 @@ configure the dispatcher with that script (using ``-s``, see
 .. code-block:: python
 
    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
-       self.dispatcher.dispatch()
+       self.dispatcher.submit_job()
        return 0
 
 This copies your local SLURM script onto the remote host, submits it, and polls
@@ -120,7 +127,7 @@ in a SLURM script and submit it:
 
    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
        cmd = "srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"
-       self.dispatcher.dispatch(cmd, run_directory)
+       self.dispatcher.submit_job(cmd, run_directory)
        return 0
 
 The dispatcher creates a SLURM script that executes this command (configured at
@@ -290,7 +297,7 @@ Core configuration arguments
 **slurm** — schedule jobs with the dispatcher:
 
 - ``script`` (``-s``): Path to a local SLURM script, uploaded to the remote
-  host and submitted on calls to ``dispatch()``.
+  host and submitted on calls to ``submit_job()``.
 - ``account`` (``-a``): Account WCID to charge for the job.
 - ``job_name`` (``-j``)
 - ``num_nodes`` (``-n``)
