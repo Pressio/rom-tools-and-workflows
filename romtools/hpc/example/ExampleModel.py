@@ -1,13 +1,11 @@
 import textwrap
 from typing import Optional
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher
 
 class ExampleModel:
 
-    def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-        if dispatcher is None:
-            dispatcher = LocalDispatcher()
+    def __init__(self, dispatcher: BaseDispatcher = None):
         self.dispatcher = dispatcher
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
@@ -24,6 +22,6 @@ class ExampleModel:
             EOF
             '
         """)
-        self.dispatcher.dispatch(cmd, run_directory=run_directory)
+        self.dispatcher.submit_job(cmd, run_directory=run_directory)
 
         return 0
