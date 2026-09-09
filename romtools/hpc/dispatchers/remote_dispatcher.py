@@ -1,15 +1,12 @@
 import os
-
-import numpy as np
 import posixpath as ppath
+import shlex
 from typing import Optional
 
 from romtools.hpc.logger import Logger
 from romtools.hpc.connection import Connection, Result
 from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
-from romtools.hpc.archive import validate_file_patterns
 from romtools.hpc.components.caller import RemoteCaller
-from romtools.hpc.components.command_runner import RemoteCommandRunner
 from romtools.hpc.components.file_manager import RemoteFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
 from romtools.hpc.components.transfer_manager import TransferManager
@@ -21,8 +18,9 @@ class RemoteDispatcher(BaseDispatcher):
     desired workflows, and transfers results back to the local machine.
 
     Coordinates composed helpers rather than doing the work itself: files go through
-    RemoteFileManager, plain commands through RemoteCommandRunner, batch jobs through
-    SlurmJobManager, and archives through TransferManager.
+    RemoteFileManager, Python calls through RemoteCaller, batch jobs through
+    SlurmJobManager, and archives through TransferManager. Paths are taken relative
+    to the configured remote root.
 
     Arguments:
         logger: An instance of the Logger class for logging
@@ -40,6 +38,7 @@ class RemoteDispatcher(BaseDispatcher):
         self.conn : Optional[Connection] = None
         self.campaign_directory = os.path.basename(campaign_directory)
 
+        # Confirm that connection is possible
         if not self.config.get("remote") or not self.config.get("user"):
             raise ValueError("Remote host and user must be specified in the configuration to use RemoteDispatcher.")
 
@@ -48,35 +47,39 @@ class RemoteDispatcher(BaseDispatcher):
             self.conn = connection
             self.logger.set_hostname(self.conn.host)
         else:
-            self.__connect_to_remote()
+            self._connect_to_remote()
 
-        # validate collect and upload patterns
-        self.collect_patterns = validate_file_patterns(self.config.get("collect"))
-        self.upload_patterns = validate_file_patterns(self.config.get("upload"))
+        # Composed sub-classes
+        self.files = RemoteFileManager(
+            connection=self.conn,
+            config=self.config,
+            logger=self.logger)
 
-        self.caller = RemoteCaller(connection=self.conn, config=self.config, logger=self.logger)
-        self.files = RemoteFileManager(connection=self.conn, config=self.config, logger=self.logger)
-        self.runner = RemoteCommandRunner(connection=self.conn, config=self.config, logger=self.logger)
-        self.slurm = SlurmJobManager(
+        self.caller = RemoteCaller(
             connection=self.conn,
             config=self.config,
             logger=self.logger,
+            files=self.files)
+
+        self.slurm = SlurmJobManager(
+            run_cmd=self.conn.run,
+            config=self.config,
+            logger=self.logger,
             campaign_directory=self.campaign_directory,
-        )
+            files=self.files)
+
         self.transfer = TransferManager(
             connection=self.conn,
             config=self.config,
             logger=self.logger,
             campaign_directory=self.campaign_directory,
-            collect_patterns=self.collect_patterns,
-            upload_patterns=self.upload_patterns,
-        )
+            files=self.files)
 
     # ------------------------------------------------------------------
     # Initialization and setup
     # ------------------------------------------------------------------
 
-    def __connect_to_remote(self) -> None:
+    def _connect_to_remote(self) -> None:
         """
         Attempts to establish an SSH connection to the remote host using the provided configuration.
         Exits if the connection fails.
@@ -101,18 +104,6 @@ class RemoteDispatcher(BaseDispatcher):
     # Public API
     # ------------------------------------------------------------------
 
-    def upload(self, run_directory) -> None:
-        self.transfer.upload(run_directory)
-
-    def put(self, local_path: str, remote_path: str) -> None:
-        self.files.put(local_path, remote_path)
-
-    def get(self, remote_path: str, local_path: str) -> None:
-        self.files.get(remote_path, local_path)
-
-    def path_exists(self, path: str) -> bool:
-        return self.files.path_exists(path)
-
     def require_relative_path(self, path: str) -> None:
         if ppath.isabs(path):
             raise ValueError(
@@ -127,45 +118,32 @@ class RemoteDispatcher(BaseDispatcher):
                 "Use a concurrency of 1 and let SLURM provide the parallelism."
             )
 
-    def create_empty_dir(self, dir_name: str):
-        self.files.create_empty_dir(dir_name)
+    def upload(self, run_directory) -> None:
+        self.transfer.upload(run_directory)
 
-    def list_dir(self, path: str) -> list:
-        return self.files.list_dir(path)
+    def collect_results(self) -> None:
+        """Bring the finished job's output files back from the remote host."""
+        self.transfer.collect_results()
 
-    def remove(self, path: str) -> None:
-        self.files.remove(path)
-
-    def write_text(self, path: str, content: str) -> None:
-        self.files.write_text(path, content)
-
-    def dispatch(self, cmd: str = None, run_directory: str = None, with_slurm : bool = True) -> Result:
+    def run(self, cmd: str, run_directory: str = None) -> Result:
         """
-        Main method of the Dispatcher. Dispatches provided work to the
-        remote host, polls the job, and collects results.
+        Run a command directly on the remote host, without SLURM.
+
+        This executes wherever the SSH session lands, which on a cluster is the
+        login node. Use it for quick work such as staging or preprocessing;
+        anything long or parallel belongs in submit_job(), so that it runs on
+        compute nodes instead.
 
         Args:
-            cmd: The command to run in the SLURM job.
-                 Should be executable from self.config.get("remote_root") or the specified run_directory.
-                 If not provided, dispatcher must be configured with
-                 a SLURM script that includes the command to run.
-            run_directory: The directory in which to execute the command or SLURM job
-                 on the remote host. If not provided, defaults to self.config.get("remote_root").
-            with_slurm: If True, the command will be run as a SLURM job.
-                 If False, the command will be executed directly without SLURM.
+            cmd: The command to run.
+            run_directory: The directory to run it from, relative to the remote
+                root. Defaults to the remote root itself.
 
-        Returns a Result object (with stdout, stderr, exitcode, ok)
+        Returns a Result object (with stdout, stderr, exit_code, ok)
         """
-        if not with_slurm:
-            return self.runner.run(cmd, run_directory=run_directory)
-        job_id = self.slurm.submit(cmd, run_directory)
-        status = self.slurm.wait(job_id)
-        self.transfer.collect_results()
-        job_stdout, job_stderr = self.slurm.get_output(job_id, run_directory)
-        return Result(job_stdout, job_stderr, status)
-
-    def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
-        self.files.np_savetxt(path, arr, fmt)
-
-    def np_savez(self, path: str, **arrays) -> None:
-        self.files.np_savez(path, **arrays)
+        remote_cmd = f"cd {shlex.quote(self.files.resolve_path(run_directory))} && {cmd}"
+        res = self.conn.run(remote_cmd)
+        if not res.ok:
+            raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
+        self.logger.debug(f"Executed command on remote host: {cmd}")
+        return res

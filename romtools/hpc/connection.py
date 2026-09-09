@@ -12,6 +12,22 @@ class Result:
         self.exit_code = exit_code
         self.ok = exit_code == 0
 
+def run_local_bash(cmd: str) -> Result:
+    """
+    Run a shell command on this machine.
+
+    Components that only need to issue shell commands take a run_cmd callable
+    rather than a Connection, so the same logic serves either machine. This is
+    the local half; Connection.run is the remote one.
+    """
+    res = subprocess.run(
+        ["bash", "-c", cmd],
+        cwd=".",
+        capture_output=True,
+        text=True
+    )
+    return Result(res.stdout, res.stderr, res.returncode)
+
 class Connection:
     """
     A simple SSH connection class that uses subprocess to execute SSH and SCP commands.
