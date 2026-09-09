@@ -46,6 +46,10 @@ class CountingLinearQoiModel(LinearQoiModel):
     def __init__(self, slope: float):
         super().__init__(slope=slope)
         self.run_model_calls = 0
+        self.run_directories = []
+
+    def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
+        self.run_directories.append(run_directory)
 
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
         self.run_model_calls += 1
@@ -166,6 +170,137 @@ def test_run_vi_limits_newton_mean_update(monkeypatch, tmp_path):
     )
 
     np.testing.assert_allclose(means, np.array([0.25]))
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_independent_curvature_uses_separate_samples(tmp_path):
+    model = CountingLinearQoiModel(slope=1.0)
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    romtools.workflows.run_vi(
+        model=model,
+        prior_parameter_space=parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=6,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+            newton_curvature_strategy="independent",
+            newton_hessian_num_samples=4,
+        ),
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-3,
+            max_step_size=1e-3,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=1e12,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=3,
+        evaluation_concurrency=1,
+    )
+
+    hessian_runs = [path for path in model.run_directories if "hessian_run_" in path]
+    assert len(hessian_runs) == 4
+    with np.load(tmp_path / "iteration_1" / "restart.npz", allow_pickle=True) as restart:
+        assert str(restart["newton_curvature_strategy"].item()) == "independent"
+        assert int(restart["newton_hessian_num_samples"]) == 4
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_lagged_curvature_is_saved(tmp_path):
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+    romtools.workflows.run_vi(
+        model=LinearQoiModel(slope=1.0),
+        prior_parameter_space=parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        absolute_vi_directory=str(tmp_path),
+        sample_size=6,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+            newton_curvature_strategy="lagged",
+            newton_hessian_averaging_factor=0.6,
+        ),
+        bounded_parameter_handling="clip",
+        evaluation_concurrency=1,
+    )
+    with np.load(tmp_path / "iteration_0" / "restart.npz", allow_pickle=True) as restart:
+        assert "running_hessian" in restart
+        assert np.isclose(float(restart["newton_hessian_averaging_factor"]), 0.6)
+
+
+@pytest.mark.mpi_skip
+def test_run_vi_lagged_restart_matches_uninterrupted_run(tmp_path):
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([0.7]),
+        sampler=MonteCarloSampler,
+    )
+    common = dict(
+        model=LinearQoiModel(slope=1.5),
+        prior_parameter_space=parameter_space,
+        observations=np.array([0.4]),
+        observations_covariance=np.array([[0.2 ** 2]]),
+        sample_size=8,
+        optimizer_method="newton",
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-3,
+            max_step_size=1e-3,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=1e12,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=11,
+        evaluation_concurrency=1,
+    )
+    final_config = romtools.workflows.VINewtonOptimizerConfig(
+        gradient_norm_tolerance=0.0,
+        max_iterations=4,
+        newton_curvature_strategy="lagged",
+        newton_hessian_averaging_factor=0.7,
+    )
+    uninterrupted = romtools.workflows.run_vi(
+        absolute_vi_directory=str(tmp_path / "uninterrupted"),
+        optimizer_config=final_config,
+        **common,
+    )
+    romtools.workflows.run_vi(
+        absolute_vi_directory=str(tmp_path / "split"),
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+            newton_curvature_strategy="lagged",
+            newton_hessian_averaging_factor=0.7,
+        ),
+        **common,
+    )
+    restarted = romtools.workflows.run_vi(
+        absolute_vi_directory=str(tmp_path / "split"),
+        restart_file=str(tmp_path / "split" / "iteration_1" / "restart.npz"),
+        optimizer_config=final_config,
+        **common,
+    )
+
+    for uninterrupted_value, restarted_value in zip(uninterrupted, restarted):
+        np.testing.assert_allclose(uninterrupted_value, restarted_value)
 
 
 def test_run_vi_rejects_removed_legacy_kwargs():

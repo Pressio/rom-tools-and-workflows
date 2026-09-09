@@ -212,6 +212,125 @@ def test_run_mf_vi_accepts_full_newton_hessian_option(tmp_path):
 
 
 @pytest.mark.mpi_skip
+@pytest.mark.parametrize("strategy", ["independent", "lagged"])
+def test_run_mf_vi_supports_newton_curvature_strategies(tmp_path, strategy):
+    model = LinearQoiModel(slope=2.0)
+    rom_builder = LinearQoiRomBuilderWithTrainingData(slope=2.0)
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+    config = romtools.workflows.VINewtonOptimizerConfig(
+        gradient_norm_tolerance=0.0,
+        max_iterations=2,
+        newton_hessian_type="full",
+        newton_curvature_strategy=strategy,
+        newton_hessian_num_samples=4,
+        newton_hessian_averaging_factor=0.5,
+    )
+
+    romtools.workflows.run_mf_vi(
+        model=model,
+        rom_model_builder=rom_builder,
+        prior_parameter_space=parameter_space,
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        parameter_mins=np.array([-3.0]),
+        parameter_maxes=np.array([3.0]),
+        absolute_vi_directory=str(tmp_path),
+        fom_sample_size=6,
+        rom_extra_sample_size=0,
+        rom_tolerance=0.0,
+        optimizer_method="newton",
+        optimizer_config=config,
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-3,
+            max_step_size=1e-3,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=1e12,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=5,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+    )
+
+    with np.load(tmp_path / "iteration_1" / "restart.npz", allow_pickle=True) as restart:
+        assert str(restart["newton_curvature_strategy"].item()) == strategy
+        if strategy == "lagged":
+            assert "running_hessian" in restart
+        else:
+            assert (tmp_path / "iteration_1" / "hessian").is_dir()
+
+
+@pytest.mark.mpi_skip
+def test_run_mf_vi_lagged_restart_matches_uninterrupted_run(tmp_path):
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([0.7]),
+        sampler=MonteCarloSampler,
+    )
+    common = dict(
+        model=LinearQoiModel(slope=1.5),
+        rom_model_builder=LinearQoiRomBuilderWithTrainingData(slope=1.5),
+        prior_parameter_space=parameter_space,
+        observations=np.array([0.4]),
+        observations_covariance=np.array([[0.2 ** 2]]),
+        parameter_mins=np.array([-3.0]),
+        parameter_maxes=np.array([3.0]),
+        fom_sample_size=6,
+        rom_extra_sample_size=0,
+        rom_tolerance=0.0,
+        optimizer_method="newton",
+        line_search_method="legacy",
+        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+            initial_step_size=1e-3,
+            max_step_size=1e-3,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=1e12,
+        ),
+        bounded_parameter_handling="clip",
+        random_seed=13,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+    )
+    final_config = romtools.workflows.VINewtonOptimizerConfig(
+        gradient_norm_tolerance=0.0,
+        max_iterations=4,
+        newton_curvature_strategy="lagged",
+        newton_hessian_averaging_factor=0.7,
+    )
+    uninterrupted = romtools.workflows.run_mf_vi(
+        absolute_vi_directory=str(tmp_path / "uninterrupted"),
+        optimizer_config=final_config,
+        **common,
+    )
+    romtools.workflows.run_mf_vi(
+        absolute_vi_directory=str(tmp_path / "split"),
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            gradient_norm_tolerance=0.0,
+            max_iterations=2,
+            newton_curvature_strategy="lagged",
+            newton_hessian_averaging_factor=0.7,
+        ),
+        **common,
+    )
+    restarted = romtools.workflows.run_mf_vi(
+        absolute_vi_directory=str(tmp_path / "split"),
+        restart_file=str(tmp_path / "split" / "iteration_1" / "restart.npz"),
+        optimizer_config=final_config,
+        **common,
+    )
+
+    for uninterrupted_value, restarted_value in zip(uninterrupted, restarted):
+        np.testing.assert_allclose(uninterrupted_value, restarted_value)
+
+
+@pytest.mark.mpi_skip
 def test_run_mf_vi_persists_mean_update_limit(tmp_path):
     model = LinearQoiModel(slope=2.0)
     rom_builder = LinearQoiRomBuilderWithTrainingData(slope=2.0)
