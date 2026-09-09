@@ -1553,11 +1553,23 @@ def _tree_tsqr_svd(local_q, local_r, all_metadata, comm, compute_uv):
         subtree_rows = row_offsets[last_rank] - row_offsets[first_rank]
         return builtins.min(int(subtree_rows), column_count)
 
+    local_error_flag = np.zeros(1, dtype=np.intc)
+    global_error_flag = np.zeros(1, dtype=np.intc)
+
     def _collect_errors(local_error, error_type, message):
-        errors = comm.allgather(local_error)
-        errors = [error for error in errors if error is not None]
-        if errors:
-            raise error_type(message + "; ".join(errors))
+        local_error_flag[0] = 0 if local_error is None else 1
+        comm.Allreduce(
+            [local_error_flag, MPI.INT],
+            [global_error_flag, MPI.INT],
+            op=MPI.MAX,
+        )
+        if not global_error_flag[0]:
+            return
+        errors = [
+            error for error in comm.allgather(local_error) if error is not None
+        ]
+        raise error_type(message + "; ".join(errors))
+
 
     # Forward pass: at level s, the first rank in each 2s-rank group receives
     # the R factor from the neighboring s-rank group and refactors the stack.
