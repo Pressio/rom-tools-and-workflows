@@ -11,11 +11,10 @@ except ImportError:
 # Core configuration schema (defaults specified in the Configuration class)
 # -----------------------------------------------------------------------------
 
-# Only a few args that are likely to change frequently have shortened "cli" aliases
 SCHEMA = {
     "ssh": {
-        "remote": {"cli": "-r", "type": str, "help": "The remote host to connect to."},
-        "user":   {"cli": "-u", "type": str, "help": "The username to use for the connection."},
+        "remote": {"type": str, "help": "The remote host to connect to."},
+        "user":   {"type": str, "help": "The username to use for the connection."},
         "port":   {"type": int, "help": "The port to use for the connection."},
     },
     "workflow": {
@@ -26,8 +25,8 @@ SCHEMA = {
         "python_command": {"type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
     },
     "slurm": {
-        "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
-        "account":        {"cli": "-a", "type": str, "help": "The account WCID to charge for the SLURM job."},
+        "script":         {"type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
+        "account":        {"type": str, "help": "The account WCID to charge for the SLURM job."},
         "job_name":       {"type": str, "help": "Name of the SLURM job."},
         "num_nodes":      {"type": int, "help": "Number of nodes to request for the SLURM job."},
         "tasks_per_node": {"type": int, "help": "Number of tasks to run on each node for the SLURM job."},
@@ -53,9 +52,10 @@ class _RaisingParser(argparse.ArgumentParser):
     """
     An ArgumentParser that raises instead of exiting the process.
 
-    parse_known_args() already returns the surrounding program's own arguments
-    as extras, so anything reaching error() is a genuine mistake in an argument
-    this schema owns.
+    parse_known_args() returns the surrounding program's own arguments as
+    extras, and the schema claims no single-letter switches, so error() is
+    reached only for a long option this schema owns. A program that must not
+    have its command line read at all builds its Configuration with argv=[].
     """
 
     def error(self, message):
@@ -104,14 +104,9 @@ def _normalize_collect(value):
         f"Invalid collect value {value!r}; expected a string or list of strings."
     )
 
-def _switches(arg_name, arg):
-    """Return the switches for a schema entry: its long option, plus a short alias if it has one."""
-    short = arg.get("cli")
-    return ([short] if short else []) + [f"--{arg_name}"]
-
 def _add_value_param(grp, arg_name, arg):
     grp.add_argument(
-        *_switches(arg_name, arg),
+        f"--{arg_name}",
         dest=arg_name,
         type=arg["type"],
         default=argparse.SUPPRESS,
@@ -120,7 +115,7 @@ def _add_value_param(grp, arg_name, arg):
 
 def _add_flag_param(grp, arg_name, arg):
     grp.add_argument(
-        *_switches(arg_name, arg),
+        f"--{arg_name}",
         dest=arg_name,
         action="store_true",
         default=argparse.SUPPRESS,
@@ -174,8 +169,17 @@ class Configuration:
       1. CLI args (overwrite YAML)
       2. YAML file values (if provided)
       3. Class defaults
+
+    Arguments:
+        argv: Argument list to parse instead of the real process argv
+            (sys.argv[1:]). Pass an explicit list (e.g. []) to build a
+            Configuration without reading the host process's CLI args --
+            useful for embedding a dispatcher in a program whose own
+            command line is not meant to configure it.
     """
-    def __init__(self):
+    def __init__(self, argv: list = None):
+        self._argv = argv
+
         # SSH configuration
         self.remote = None
         self.user = None
@@ -237,7 +241,7 @@ class Configuration:
             default=None,
             help="Path to a YAML configuration file."
         )
-        ns, _ = pre.parse_known_args()
+        ns, _ = pre.parse_known_args(self._argv)
         config_path = ns.input
 
         if not config_path:
@@ -316,7 +320,7 @@ class Configuration:
                     apply_kv(k, v)
 
     def __parse_args(self) -> None:
-        args, _ = _build_parser().parse_known_args()
+        args, _ = _build_parser().parse_known_args(self._argv)
 
         for name, value in vars(args).items():
             if name == "input":
@@ -332,4 +336,4 @@ class Configuration:
                 )
 
     def to_dict(self):
-        return self.__dict__.copy()
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

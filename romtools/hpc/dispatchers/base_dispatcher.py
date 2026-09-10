@@ -20,8 +20,9 @@ class BaseDispatcher:
     behavior genuinely differs.
     """
 
-    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None):
-        self.config = Configuration().to_dict()
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
+                 argv: list = None):
+        self.config = Configuration(argv=argv).to_dict()
         self.logger = logger if logger is not None else Logger(self.config["debug"])
         self.campaign_directory = campaign_directory
 

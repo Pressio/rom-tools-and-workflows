@@ -72,6 +72,10 @@ class LocalFileManager(BaseFileManager):
         return path if path else os.curdir
 
     def _copy(self, src, dst):
+        if os.path.exists(dst) and os.path.samefile(src, dst):
+            self.logger.debug(f"{src} is already in place; skipping copy", local=True)
+            return
+
         dst_dir = os.path.dirname(dst)
         if dst_dir:
             os.makedirs(dst_dir, exist_ok=True)
