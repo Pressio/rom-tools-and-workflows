@@ -1,5 +1,6 @@
 import pytest
 import os
+import sys
 import numpy as np
 import time
 
@@ -145,6 +146,7 @@ def test_sampler_qoi_stats(tmp_path):
     np.testing.assert_allclose(stats["qoi_min"], np.array([3.0]))
     np.testing.assert_allclose(stats["qoi_max"], np.array([3.0]))
     np.testing.assert_array_equal(stats["qoi_num_samples"], np.array([4]))
+
 
 if __name__ == "__main__":
     test_sampler()

@@ -6,13 +6,9 @@ from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
 from romtools.hpc.dispatchers.local_dispatcher import LocalDispatcher
 
 
+# argv=[] because nobody asked for this dispatcher: reading the host program's
+# command line would take its own switches as configuration.
 def _default_dispatcher() -> LocalDispatcher:
-    """
-    Build the dispatcher used when the caller supplied none.
-
-    argv=[] because nobody asked for this dispatcher: reading the host
-    program's command line would take its own switches as configuration.
-    """
     return LocalDispatcher(argv=[])
 
 
@@ -25,8 +21,8 @@ def resolve_local_dispatcher(dispatcher: Optional[BaseDispatcher] = None) -> Loc
     """
     Return a local dispatcher, reusing the supplied one when it is already local.
 
-    Use this for work that always runs in-process, so that it stays on the local
-    machine even when the rest of the workflow is dispatched to a remote host.
+    Keeps in-process work on this machine even when the rest of the workflow is
+    dispatched to a remote host.
     """
     if isinstance(dispatcher, LocalDispatcher):
         return dispatcher
