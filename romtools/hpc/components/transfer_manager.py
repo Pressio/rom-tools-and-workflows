@@ -32,7 +32,7 @@ class TransferManager:
                  logger: Logger = None, campaign_directory: str = None):
         self.conn = connection
         self.config = config if config is not None else {}
-        self.logger = logger
+        self.logger = logger if logger is not None else Logger()
         self.campaign_directory = campaign_directory
         self.files = files
 

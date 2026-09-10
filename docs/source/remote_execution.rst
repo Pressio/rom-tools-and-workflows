@@ -63,18 +63,17 @@ Construct your model with the dispatcher as a member variable:
 .. code-block:: python
 
    from typing import Optional
-   from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+   from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
    class MyModel:
 
       def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-         if dispatcher is None:
-            dispatcher = LocalDispatcher()
-         self.dispatcher = dispatcher
+         self.dispatcher = resolve_dispatcher(dispatcher)
 
 .. tip::
-   Defaulting to ``LocalDispatcher`` lets the workflow function with no
-   remote capability if needed.
+   ``resolve_dispatcher()`` falls back to a ``LocalDispatcher``, so the model
+   works with no remote capability if needed. Prefer it over building one
+   yourself: the fallback it returns ignores your program's command line.
 
 Step 2: Set up the run directory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -182,7 +181,9 @@ Each of these workflows accepts a ``dispatcher`` argument:
 - ``run_vi()``, ``run_mf_vi()``, ``mf_vi_with_auto_rom()``
 
 Every one of them falls back to a ``LocalDispatcher`` when you pass nothing, so
-existing workflows and models keep running unchanged.
+existing workflows and models keep running unchanged. That fallback is built
+with ``argv=[]``, so a workflow you never handed a dispatcher does not have its
+own command line read as dispatcher configuration.
 
 Inverse workflows
 ~~~~~~~~~~~~~~~~~
@@ -255,7 +256,7 @@ configure the dispatcher:
 There are three ways to configure:
 
 1. **YAML.** Define a YAML file with all configurable params and pass it with
-   ``-i path/to/your/input.yaml``.
+   ``-c path/to/your/config.yaml``.
 2. **CLI.** Set params on the command line. For example, set the
    ``remote_root`` by passing ``--remote_root /path/to/remote/root``.
 3. **Combination.** CLI arguments override YAML parameters, so you can use a
@@ -264,7 +265,7 @@ There are three ways to configure:
 
    .. code-block:: bash
 
-      python my_workflow.py -i path/to/input.yaml --collect '*.log'
+      python my_workflow.py -c path/to/config.yaml --collect '*.log'
 
 .. tip::
    Run ``python -m romtools.hpc``, or refer to the ``SCHEMA`` in
@@ -284,21 +285,23 @@ Every argument is available as a long option named after it, such as
    * - Short
      - Long
      - Meaning
-   * - ``-i``
-     - ``--input``
+   * - ``-c``
+     - ``--config``
      - Path to the YAML configuration file
 
 .. note::
    Your workflow's own command line is what the dispatcher parses, so any
    switch the schema claims is one your workflow can no longer use for itself.
-   That is why ``-i`` is the only single-letter switch claimed; ``-h`` is never
+   That is why ``-c`` is the only single-letter switch claimed; ``-h`` is never
    claimed either, so your workflow keeps its own ``--help``.
 
 .. note::
    To keep the dispatcher away from your command line entirely, construct it
    with an explicit argument list: ``LocalDispatcher(argv=[])`` configures
    itself from YAML and defaults alone. This matters when a workflow's own
-   flags would otherwise be read as configuration.
+   flags would otherwise be read as configuration. A workflow you call without
+   a dispatcher at all gets exactly that: the local dispatcher it falls back
+   to never reads your command line.
 
 **ssh** — establish the connection with the remote host:
 

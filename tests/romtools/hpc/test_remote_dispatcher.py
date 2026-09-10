@@ -446,6 +446,21 @@ def test_np_savez_uploads_via_put(monkeypatch, make_config):
     assert local_path.endswith("data.npz")
 
 
+def test_np_savez_reports_a_missing_remote_directory(monkeypatch, make_config):
+    """
+    Regression test: this was a bare `assert`, which `python -O` strips, so an
+    optimized run uploaded into a directory that did not exist and scp failed
+    with a message that named neither the array nor the directory.
+    """
+    conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
+    dispatcher = _make_dispatcher(monkeypatch, make_config(remote_root="campaigns"), conn)
+
+    with pytest.raises(FileNotFoundError, match="results"):
+        dispatcher.np_savez("results/data", a=np.array([1, 2]))
+
+    assert conn.put_calls == []
+
+
 def test_require_relative_path_rejects_an_absolute_path(monkeypatch, make_config):
     dispatcher = _make_dispatcher(monkeypatch, make_config(), FakeConnection())
 

@@ -2,7 +2,6 @@
 
 import os
 import shlex
-import subprocess
 
 from romtools.hpc.logger import Logger
 from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
@@ -17,7 +16,7 @@ class LocalDispatcher(BaseDispatcher):
     Runs ROM workflows on the machine this process runs on.
 
     Composes the local file and call helpers, so paths address the local
-    filesystem and commands run in a subshell rather than over SSH. That
+    filesystem and commands run in a local bash shell rather than over SSH. That
     machine may itself be a cluster node, in which case submit_job() reaches
     the scheduler directly and results need no transferring.
 
@@ -59,11 +58,4 @@ class LocalDispatcher(BaseDispatcher):
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """
         full_cmd = f"cd {shlex.quote(run_directory)} && {cmd}" if run_directory else cmd
-        result = subprocess.run(
-            full_cmd,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-
-        return Result(result.stdout, result.stderr, result.returncode)
+        return run_local_bash(full_cmd)

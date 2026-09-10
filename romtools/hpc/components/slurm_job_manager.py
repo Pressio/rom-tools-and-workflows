@@ -36,17 +36,31 @@ class SlurmJobManager:
                  logger: Logger = None, campaign_directory: str = None):
         self.run_cmd = run_cmd
         self.config = config if config is not None else {}
-        self.logger = logger
+        self.logger = logger if logger is not None else Logger()
         self.campaign_directory = campaign_directory
         self.files = files
+        self._script_outputs = None
 
     def _job_directory(self, run_directory: str = None) -> str:
         """Where a job runs: the directory given, otherwise this campaign's."""
         return run_directory or self.campaign_directory
 
+    def _script_outputs_from_config(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        What the configured script names for stdout and stderr, or (None, None).
+
+        The script is fixed for this manager's lifetime, so it is read once.
+        Only the raw parse is remembered; the defaults standing in for what the
+        script leaves unnamed are derived fresh, so one submission cannot fix
+        the file names used by the next.
+        """
+        if self._script_outputs is None:
+            self._script_outputs = parse_sbatch_out_args(self.config.get("script"))
+        return self._script_outputs
+
     def _output_files(self) -> Tuple[str, str]:
         """Where the job's stdout and stderr land: what the script names, else the defaults."""
-        out, err = parse_sbatch_out_args(self.config.get("script"))
+        out, err = self._script_outputs_from_config()
         if out is None:
             return DEFAULT_SLURM_OUTFILE, err or DEFAULT_SLURM_ERRFILE
         # A script naming only an output file gets its stderr merged into it, as SLURM does
@@ -54,7 +68,7 @@ class SlurmJobManager:
 
     def _sbatch_output_args(self) -> str:
         """The --output/--error flags sbatch needs for the files the script does not name."""
-        out, err = parse_sbatch_out_args(self.config.get("script"))
+        out, err = self._script_outputs_from_config()
         if out is not None:
             return ""
 
@@ -299,7 +313,7 @@ class SlurmJobManager:
                 self.logger.log(f"Could not read file {filepath}: {e}")
                 return ""
 
-        jid = shlex.quote(str(job_id))
+        jid = str(job_id)
 
         out_dir = self._job_directory(run_directory)
 

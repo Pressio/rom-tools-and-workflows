@@ -62,7 +62,7 @@ class BaseCaller:
 
     def __init__(self, config: dict = None, logger: Logger = None):
         self.config = config if config is not None else {}
-        self.logger = logger
+        self.logger = logger if logger is not None else Logger()
 
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         raise NotImplementedError

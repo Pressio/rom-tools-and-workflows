@@ -53,9 +53,9 @@ class _RaisingParser(argparse.ArgumentParser):
     An ArgumentParser that raises instead of exiting the process.
 
     parse_known_args() returns the surrounding program's own arguments as
-    extras, and the schema claims no single-letter switches, so error() is
-    reached only for a long option this schema owns. A program that must not
-    have its command line read at all builds its Configuration with argv=[].
+    extras, so error() is reached only for an option this schema owns: a long
+    option, or the single short switch -c. A program that must not have its
+    command line read at all builds its Configuration with argv=[].
     """
 
     def error(self, message):
@@ -68,7 +68,7 @@ class _RaisingParser(argparse.ArgumentParser):
 # Helpers
 # -----------------------------------------------------------------------------
 
-def _normalize_collect(value):
+def _normalize_file_patterns(value):
     """
     Normalize collect specifications into a list of strings.
 
@@ -102,6 +102,16 @@ def _normalize_collect(value):
 
     raise ValueError(
         f"Invalid collect value {value!r}; expected a string or list of strings."
+    )
+
+def _add_config_file_arg(parser, default=argparse.SUPPRESS):
+    """The config file, and the one short switch this schema claims."""
+    parser.add_argument(
+        "-c", "--config",
+        dest="config",
+        type=str,
+        default=default,
+        help="Path to a YAML configuration file.",
     )
 
 def _add_value_param(grp, arg_name, arg):
@@ -141,7 +151,7 @@ def _build_parser() -> _RaisingParser:
     )
 
     # Config file (parsed earlier via parse_known_args; added here so it shows up in help)
-    parser.add_argument("-i", "--input", type=str, help="Path to a YAML configuration file.")
+    _add_config_file_arg(parser)
 
     for group, items in SCHEMA.items():
         if not items:
@@ -223,7 +233,7 @@ class Configuration:
         Loads configuration from a YAML file if one is specified on the command line.
 
         Accepted ways to specify YAML:
-          - --input / -i PATH
+          - --config / -c PATH
 
         YAML may be either:
           - a flat mapping (keys match attribute names), or
@@ -234,15 +244,9 @@ class Configuration:
         configuration attributes.
         """
         pre = _RaisingParser(add_help=False, allow_abbrev=False)
-        pre.add_argument(
-            "-i", "--input",
-            dest="input",
-            type=str,
-            default=None,
-            help="Path to a YAML configuration file."
-        )
+        _add_config_file_arg(pre, default=None)
         ns, _ = pre.parse_known_args(self._argv)
-        config_path = ns.input
+        config_path = ns.config
 
         if not config_path:
             return
@@ -265,8 +269,8 @@ class Configuration:
         is_nested = any(k in data for k in section_names)
 
         def apply_kv(key: str, value):
-            if key == "collect":
-                self.collect = _normalize_collect(value)
+            if key in ["collect", "upload"]:
+                setattr(self, name, _normalize_file_patterns(value))
             elif hasattr(self, key):
                 setattr(self, key, value)
             else:
@@ -323,10 +327,10 @@ class Configuration:
         args, _ = _build_parser().parse_known_args(self._argv)
 
         for name, value in vars(args).items():
-            if name == "input":
+            if name == "config":
                 continue
-            if name == "collect" or name == "upload":
-                setattr(self, name, _normalize_collect(value))
+            if name in ["collect", "upload"]:
+                setattr(self, name, _normalize_file_patterns(value))
             elif hasattr(self, name):
                 setattr(self, name, value)
             else:
