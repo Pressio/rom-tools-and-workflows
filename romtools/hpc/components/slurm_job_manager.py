@@ -11,7 +11,7 @@ from typing import Callable, Optional, Tuple
 from romtools.hpc.connection import Result
 from romtools.hpc.logger import Logger
 from romtools.hpc.components.file_manager import BaseFileManager
-from romtools.hpc.components.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, slurm_exitcode_to_python_style, parse_sbatch_out_args
+from romtools.hpc.components.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, FAILED_EXIT_CODE, slurm_exitcode_to_python_style, parse_sbatch_out_args
 from romtools.hpc.components.slurm import create_slurm_script
 
 
@@ -32,21 +32,36 @@ class SlurmJobManager:
         files: The file manager for the machine the job runs on
     """
 
-    def __init__(self, run_cmd: Callable[[str], Result], *, config: dict = None, logger: Logger = None,
-                 campaign_directory: str = None, files: BaseFileManager = None):
+    def __init__(self, run_cmd: Callable[[str], Result], *, files: BaseFileManager, config: dict = None,
+                 logger: Logger = None, campaign_directory: str = None):
         self.run_cmd = run_cmd
         self.config = config if config is not None else {}
         self.logger = logger
         self.campaign_directory = campaign_directory
         self.files = files
 
-        # If slurm script specifies out and/or error file, use those instead of our default
-        self.slurm_specified_out = None
-        self.slurm_specified_err = None
-
     def _job_directory(self, run_directory: str = None) -> str:
         """Where a job runs: the directory given, otherwise this campaign's."""
         return run_directory or self.campaign_directory
+
+    def _output_files(self) -> Tuple[str, str]:
+        """Where the job's stdout and stderr land: what the script names, else the defaults."""
+        out, err = parse_sbatch_out_args(self.config.get("script"))
+        if out is None:
+            return DEFAULT_SLURM_OUTFILE, err or DEFAULT_SLURM_ERRFILE
+        # A script naming only an output file gets its stderr merged into it, as SLURM does
+        return out, err or out
+
+    def _sbatch_output_args(self) -> str:
+        """The --output/--error flags sbatch needs for the files the script does not name."""
+        out, err = parse_sbatch_out_args(self.config.get("script"))
+        if out is not None:
+            return ""
+
+        args = [f"--output={DEFAULT_SLURM_OUTFILE}"]
+        if err is None:
+            args.append(f"--error={DEFAULT_SLURM_ERRFILE}")
+        return " ".join(args)
 
     # ------------------------------------------------------------------
     # Job submission
@@ -72,8 +87,6 @@ class SlurmJobManager:
             raise ValueError("Either a base command or a SLURM script must be provided to the Dispatcher.")
 
         if script:
-            self.slurm_specified_out, self.slurm_specified_err = parse_sbatch_out_args(script)
-
             script_name = os.path.basename(script)
             remote_script_path = ppath.join(self._job_directory(run_directory), script_name)
             self.files.put(script, remote_script_path)
@@ -113,16 +126,7 @@ class SlurmJobManager:
         """
         remote_script_path = self._generate_slurm_script(cmd, run_directory=run_directory)
 
-        output_args = []
-        if self.slurm_specified_out is None:
-            self.slurm_specified_out = DEFAULT_SLURM_OUTFILE
-            output_args.append(f"--output={self.slurm_specified_out}")
-            # If user only specified out file, they probably expect stderr to go there
-            if self.slurm_specified_err is None:
-                self.slurm_specified_err = DEFAULT_SLURM_ERRFILE
-                output_args.append(f"--error={self.slurm_specified_err}")
-
-        output_cmd = " ".join(output_args)
+        output_cmd = self._sbatch_output_args()
         if output_cmd:
             output_cmd += " "
 
@@ -246,11 +250,13 @@ class SlurmJobManager:
                 time.sleep(sacct_poll_interval)
                 continue
 
-            if not (state == "COMPLETED" and exit_code == "0:0"):
-                self.logger.log(
-                    f"Job {job_id} failed: state={state}, exit_code={exit_code}"
-                )
-            return exit_code
+            if state == "COMPLETED" and exit_code == "0:0":
+                return exit_code
+
+            self.logger.log(
+                f"Job {job_id} failed: state={state}, exit_code={exit_code}"
+            )
+            return FAILED_EXIT_CODE if exit_code == "0:0" else exit_code
 
     def wait(self, job_id: str) -> str:
         """
@@ -297,11 +303,13 @@ class SlurmJobManager:
 
         out_dir = self._job_directory(run_directory)
 
-        stdout_filepath = ppath.join(out_dir, self.slurm_specified_out.replace("%j", jid))
-        stderr_filepath = ppath.join(out_dir, self.slurm_specified_err.replace("%j", jid))
+        out_name, err_name = self._output_files()
+
+        stdout_filepath = ppath.join(out_dir, out_name.replace("%j", jid))
+        stderr_filepath = ppath.join(out_dir, err_name.replace("%j", jid))
 
         stdout = get_file_contents(stdout_filepath)
-        stderr = get_file_contents(stderr_filepath)
+        stderr = "" if stderr_filepath == stdout_filepath else get_file_contents(stderr_filepath)
 
         self.logger.debug("Retrieved job output.")
 

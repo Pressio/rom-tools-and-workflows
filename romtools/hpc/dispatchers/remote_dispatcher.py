@@ -139,11 +139,15 @@ class RemoteDispatcher(BaseDispatcher):
             run_directory: The directory to run it from, relative to the remote
                 root. Defaults to the remote root itself.
 
+        A failing command is reported through the Result, not raised, so that a
+        model works the same way whichever dispatcher it is handed.
+
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """
         remote_cmd = f"cd {shlex.quote(self.files.resolve_path(run_directory))} && {cmd}"
         res = self.conn.run(remote_cmd)
-        if not res.ok:
-            raise RuntimeError(f"Command failed ({cmd}): {res.stderr}")
-        self.logger.debug(f"Executed command on remote host: {cmd}")
+        if res.ok:
+            self.logger.debug(f"Executed command on remote host: {cmd}")
+        else:
+            self.logger.log(f"Command failed ({cmd}), exit code {res.exit_code}: {res.stderr}")
         return res

@@ -48,6 +48,7 @@ class BaseFileManager:
         raise NotImplementedError
 
     def remove_dir(self, path: str) -> None:
+        """Remove a directory and its contents. A missing directory is not an error."""
         raise NotImplementedError
 
     def write_text(self, path: str, content: str) -> None:
@@ -108,7 +109,12 @@ class LocalFileManager(BaseFileManager):
 
     def remove_dir(self, path: str) -> None:
         """Remove a directory and everything under it, if it exists."""
-        shutil.rmtree(path, ignore_errors=True)
+        try:
+            shutil.rmtree(path)
+        except FileNotFoundError:
+            return
+        except OSError as e:
+            raise RuntimeError(f"Failed to remove directory {path}: {e}") from e
         self.logger.debug(f"Removed directory {path}", local=True)
 
     def write_text(self, path: str, content: str) -> None:
