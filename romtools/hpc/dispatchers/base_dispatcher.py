@@ -66,6 +66,10 @@ class BaseDispatcher:
         """
         Run a command directly on the execution host.
 
+        A command that exits non-zero is reported, not raised: check
+        ``result.ok`` or ``result.exit_code``. Every dispatcher behaves this
+        way, so a model can be moved between them unchanged.
+
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """
         raise NotImplementedError
@@ -145,7 +149,7 @@ class BaseDispatcher:
         pass
 
     # ------------------------------------------------------------------
-    # Checks
+    # Contracts the workflows check before running
     # ------------------------------------------------------------------
 
     def require_absolute_path(self, path: str) -> None:

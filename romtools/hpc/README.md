@@ -72,13 +72,21 @@ modules, use:
 
 ```py
     cmd = "load my_module && my_input_validator -i input_file.yaml"
-    self.dispatcher.run(cmd)
+    result = self.dispatcher.run(cmd)
+    if not result.ok:
+        raise RuntimeError(result.stderr)
 ```
 
 > [!NOTE]
 > `run()` executes the command directly, so it is the right choice for quick
 > work like validation. Anything long or parallel belongs in `submit_job()`, so
 > that it lands on compute nodes rather than the login node.
+
+> [!NOTE]
+> A command that exits non-zero is reported through the returned `Result`, not
+> raised. Every dispatcher behaves this way, so a model can move between them
+> unchanged. Check `result.ok` or `result.exit_code` and decide what a failure
+> means for your model.
 
 ### Step 3: Define `run_model()`
 
@@ -95,14 +103,20 @@ Then you `run_model()` method can be as simple as:
 
 ```py
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
-        self.dispatcher.submit_job()
-        return 0
+        return self.dispatcher.submit_job().exit_code
 ```
 
 This will copy your local SLURM script onto the remote host, submit it, and poll
 it until it completes.
 
-The SLURM script is called with `--output` and `--error` flags to split and return job output.
+> [!NOTE]
+> `submit_job()` returns a `Result` carrying the job's exit code and its
+> captured output. The workflows treat a non-zero `run_model()` return as a
+> failed sample, so pass the exit code through rather than returning 0.
+
+Unless your script names its own output files, sbatch is called with `--output`
+and `--error` flags so that the two streams come back separately. A script that
+sets only `--output` keeps SLURM's own behavior, where stderr is merged into it.
 
 2. **Manual Commands**
 
@@ -113,10 +127,9 @@ In short, you define the command (`cmd`) you wish to execute whenever `run_model
 called, and use the dispatcher to wrap it in a SLURM script and submit it:
 
 ```py
-    def run_model(self, run_directory: str, parameter_sample: dict) -> int
+    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
         cmd = "srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"
-        self.dispatcher.submit_job( cmd, run_directory )
-        return 0
+        return self.dispatcher.submit_job(cmd, run_directory).exit_code
 ```
 
 The dispatcher will create a SLURM script that executes this command (configured
@@ -175,6 +188,14 @@ existing workflows keep running unchanged.
 > `LocalDispatcher`. Note that `run_mf_vi()` defaults
 > `fom_evaluation_concurrency` to 10, so remote MF-VI runs have to set it to 1.
 
+> [!NOTE]
+> Concurrency does work with a `LocalDispatcher`, including one running on a
+> cluster node. Each worker process holds its own copy of the dispatcher and
+> each sample gets its own run directory, so the samples submit, poll, and read
+> back their jobs independently. Bear in mind that `evaluation_concurrency = N`
+> then puts N jobs in the queue at once, which your site's submission limits
+> may cap.
+
 > [!WARNING]
 > Restart files written through a `RemoteDispatcher` land on the remote host,
 > but the drivers read `restart_file` from the local filesystem. To restart a
@@ -214,7 +235,7 @@ An example configuration YAML can be found in `hpc/config/example.yaml`.
 
 You can also set these params via the command-line. For example,
 set the `remote_root` (the remote directory where all commands
-are executed) by passing `-R /path/to/remote/root` when you
+are executed) by passing `--remote_root /path/to/remote/root` when you
 execute your workflow.
 
 3. **Combination**
@@ -229,14 +250,35 @@ the remote host, but keep the rest of the configuration the same.
 You could run:
 
 ```sh
-python my_workflow.py -i path/to/input.yaml -o '*.log'
+python my_workflow.py -i path/to/input.yaml --collect '*.log'
 ```
 
 ### Core configuration arguments
 
 As mentioned, the full configuration `SCHEMA` is defined in
-`hpc/configuration.py`. You can also pass `-h` to your
-workflow to see the full schema.
+`hpc/configuration.py`. To see it as a list of arguments, run:
+
+```sh
+python -m romtools.hpc
+```
+
+Every argument is available as a long option named after it, such as
+`--num_nodes`. Five arguments also have a short alias, because they are the
+ones typically varied from job to job:
+
+| Short | Long | Meaning |
+| --- | --- | --- |
+| `-i` | `--input` | Path to the YAML configuration file |
+| `-r` | `--remote` | Remote host to connect to |
+| `-u` | `--user` | Username for the connection |
+| `-s` | `--script` | Path to a local SLURM script |
+| `-a` | `--account` | Account WCID to charge |
+
+> [!NOTE]
+> Short aliases are deliberately scarce. Your workflow's own command line is
+> what the dispatcher parses, so every single-letter switch the schema claims
+> is one your workflow can no longer use for itself. `-h` is never claimed,
+> so your workflow keeps its own `--help`.
 
 > [!NOTE]
 > You do not need to specify every argument. Check out the
@@ -250,7 +292,7 @@ These arguments establish your connection with the remote host. They are:
 
 - `remote` (`-r`): The name of the remote host you are connecting to
 - `user` (`-u`): The username to use for the connection
-- `port` (`-p`): The port to use for the connection
+- `port`: The port to use for the connection
 
 In the YAML, group these all under `ssh`:
 
@@ -265,14 +307,14 @@ ssh:
 
 These workflow arguments define file management with the dispatcher.
 
-- `remote_root` (`-R`): Directory on the remote host where commands are executed, absolute or relative to the home directory.
-- `collect` (`-o`): Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
-- `upload` (`-U`): Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded
+- `remote_root`: Directory on the remote host where commands are executed, absolute or relative to the home directory.
+- `collect`: Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
+- `upload`: Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded
 
 Two more workflow arguments describe the remote Python used by `call()`:
 
-- `python_setup` (`-e`): Shell commands that set up the remote environment before invoking Python, such as loading modules or activating a virtual environment
-- `python_command` (`-c`): Command that invokes the remote Python with the necessary libraries installed (default: `python3`)
+- `python_setup`: Shell commands that set up the remote environment before invoking Python, such as loading modules or activating a virtual environment
+- `python_command`: Command that invokes the remote Python with the necessary libraries installed (default: `python3`)
 
 In the YAML, these are grouped under `workflow`:
 
@@ -297,17 +339,17 @@ All other arguments are used when you use the dispatcher to
 create the SLURM script for you based on some command.
 
 - `account` (`-a`): The account WCID to charge for the job
-- `job_name` (`-j`)
-- `num_nodes` (`-n`)
-- `tasks_per_node` (`-t`)
-- `wall_time` (`-w`)
-- `partition` (`-q`)
+- `job_name`
+- `num_nodes`
+- `tasks_per_node`
+- `wall_time`
+- `partition`
 
 The final SLURM argument specifies how often the dispatcher should
 poll the submitted job:
 
-- `poll_interval` (`-I`): Seconds between `squeue` polls
-- `timeout` (`-T`): Seconds to keep retrying the `sacct` query for a finished job's exit code before giving up
+- `poll_interval`: Seconds between `squeue` polls
+- `timeout`: Seconds to keep retrying the `sacct` query for a finished job's exit code before giving up
 
 In YAML, all of these arguments are grouped under `slurm`:
 
@@ -322,7 +364,7 @@ slurm:
 The output group only contains one argument that toggles debug logging
 for the dispatcher:
 
-- `debug` (`-d`)
+- `debug`
 
 In the YAML, it goes under the `output` group:
 
@@ -360,7 +402,7 @@ python romtools/hpc/example/workflow.py -r <remote-host> -u <username> -a <accou
 See all available arguments with:
 
 ```sh
-python romtools/hpc/example/workflow.py -h
+python -m romtools.hpc
 ```
 
 ## Dispatcher and Connection Classes

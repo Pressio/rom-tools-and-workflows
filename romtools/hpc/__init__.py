@@ -7,7 +7,7 @@ over SSH and brings the results back.
 
 from romtools.hpc.logger import Logger
 from romtools.hpc.connection import Connection, Result
-from romtools.hpc.configuration import Configuration
+from romtools.hpc.configuration import Configuration, ConfigurationError
 from romtools.hpc.dispatchers import (
     BaseDispatcher,
     LocalDispatcher,
@@ -23,6 +23,7 @@ __all__ = [
     "resolve_dispatcher",
     "resolve_local_dispatcher",
     "Configuration",
+    "ConfigurationError",
     "Connection",
     "Result",
     "Logger",

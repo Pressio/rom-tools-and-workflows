@@ -28,8 +28,8 @@ class TransferManager:
         ValueError: if the configured collect or upload patterns are invalid.
     """
 
-    def __init__(self, connection: Connection, *, config: dict = None, logger: Logger = None,
-                 campaign_directory: str = None, files: RemoteFileManager = None):
+    def __init__(self, connection: Connection, *, files: RemoteFileManager, config: dict = None,
+                 logger: Logger = None, campaign_directory: str = None):
         self.conn = connection
         self.config = config if config is not None else {}
         self.logger = logger
@@ -66,8 +66,12 @@ class TransferManager:
         self.files.get(archive_name, archive_name)
         self.logger.debug(f"Copied remote archive to local: {archive_name}")
 
-        # Clean up remote archive
-        self.files.remove(archive_name)
+        # Clean up remote archive. A stale archive is untidy, not fatal, so a
+        # failure here must not stop us from unpacking what we already have.
+        try:
+            self.files.remove(archive_name)
+        except RuntimeError as e:
+            self.logger.log(f"Could not remove remote archive {archive_name}: {e}")
 
         # Unpack local archive into local campaign directory
         os.makedirs(self.campaign_directory, exist_ok=True)
