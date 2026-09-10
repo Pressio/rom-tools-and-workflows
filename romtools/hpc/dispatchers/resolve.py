@@ -6,9 +6,19 @@ from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
 from romtools.hpc.dispatchers.local_dispatcher import LocalDispatcher
 
 
+def _default_dispatcher() -> LocalDispatcher:
+    """
+    Build the dispatcher used when the caller supplied none.
+
+    argv=[] because nobody asked for this dispatcher: reading the host
+    program's command line would take its own switches as configuration.
+    """
+    return LocalDispatcher(argv=[])
+
+
 def resolve_dispatcher(dispatcher: Optional[BaseDispatcher] = None) -> BaseDispatcher:
     """Fall back to local execution when the caller supplies no dispatcher."""
-    return dispatcher if dispatcher is not None else LocalDispatcher()
+    return dispatcher if dispatcher is not None else _default_dispatcher()
 
 
 def resolve_local_dispatcher(dispatcher: Optional[BaseDispatcher] = None) -> LocalDispatcher:
@@ -20,4 +30,4 @@ def resolve_local_dispatcher(dispatcher: Optional[BaseDispatcher] = None) -> Loc
     """
     if isinstance(dispatcher, LocalDispatcher):
         return dispatcher
-    return LocalDispatcher()
+    return _default_dispatcher()

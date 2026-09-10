@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import pytest
 
+import romtools.hpc.components.slurm_job_manager as slurm_job_manager
 from romtools.hpc.dispatchers import LocalDispatcher
 
 
@@ -77,7 +78,7 @@ def test_configuration_comes_from_the_command_line(monkeypatch):
 def test_configuration_comes_from_a_yaml_file(tmp_path, monkeypatch):
     config = tmp_path / "cluster.yaml"
     config.write_text("slurm:\n  job_name: from_yaml\n  num_nodes: 2\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(config)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(config)])
 
     dispatcher = LocalDispatcher()
 
@@ -114,6 +115,15 @@ def test_put_copies_a_directory(tmp_path, dispatcher):
     dispatcher.put(str(src_dir), str(dst_dir))
 
     assert (dst_dir / "file.txt").read_text() == "payload"
+
+
+def test_put_of_a_missing_source_reports_the_missing_file(tmp_path, dispatcher):
+    """A copy from a source that is not there names the source, not the copy."""
+    dst = tmp_path / "dst.txt"
+    dst.write_text("existing")
+
+    with pytest.raises(FileNotFoundError, match="missing.txt"):
+        dispatcher.put(str(tmp_path / "missing.txt"), str(dst))
 
 
 def test_path_exists(tmp_path, dispatcher):
@@ -203,6 +213,18 @@ def test_run_reports_failure_without_raising(dispatcher):
 
     assert not result.ok
     assert result.exit_code == 1
+
+
+def test_run_uses_bash_like_submitted_jobs_do(dispatcher):
+    """
+    Regression test: run() shelled out with shell=True, which is /bin/sh on
+    most systems, while submit_job() used bash. A bashism such as [[ ... ]]
+    worked through one and failed through the other.
+    """
+    result = dispatcher.run('[[ "a" == "a" ]] && echo bashism')
+
+    assert result.ok
+    assert result.stdout.strip() == "bashism"
 
 
 def test_run_runs_relative_to_run_directory(tmp_path, dispatcher):
@@ -471,6 +493,32 @@ def test_submit_job_with_a_script_keeps_its_own_output_files_on_every_submission
     assert second.stderr == ""
     assert "--output=" not in sbatch_log.read_text()
     assert "--error=" not in sbatch_log.read_text()
+
+
+def test_a_configured_script_is_parsed_once_per_dispatcher(tmp_path, monkeypatch, fake_scheduler):
+    """
+    Submitting used to re-read and re-parse the script from disk twice per job,
+    once to build the sbatch flags and once to name the files to read back.
+    """
+    script = tmp_path / "job.sh"
+    script.write_text("#!/bin/bash\n#SBATCH --output=custom-%j.out\nsrun ./my_app\n")
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    fake_scheduler()
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+
+    parses = []
+    real_parse = slurm_job_manager.parse_sbatch_out_args
+    monkeypatch.setattr(
+        slurm_job_manager, "parse_sbatch_out_args",
+        lambda path: (parses.append(path), real_parse(path))[1],
+    )
+
+    dispatcher.submit_job()
+    dispatcher.submit_job()
+
+    assert len(parses) == 1
 
 
 def test_submit_job_raises_when_given_neither_a_command_nor_a_script(dispatcher):

@@ -24,7 +24,7 @@ class BaseFileManager:
 
     def __init__(self, *, config: dict = None, logger: Logger = None):
         self.config = config if config is not None else {}
-        self.logger = logger
+        self.logger = logger if logger is not None else Logger()
 
     def resolve_path(self, path: str = None) -> str:
         raise NotImplementedError
@@ -72,7 +72,7 @@ class LocalFileManager(BaseFileManager):
         return path if path else os.curdir
 
     def _copy(self, src, dst):
-        if os.path.exists(dst) and os.path.samefile(src, dst):
+        if os.path.exists(src) and os.path.exists(dst) and os.path.samefile(src, dst):
             self.logger.debug(f"{src} is already in place; skipping copy", local=True)
             return
 
@@ -256,21 +256,20 @@ class RemoteFileManager(BaseFileManager):
         self.logger.debug(f"Saved array to path {path}", local=False)
 
     def np_savez(self, path: str, **arrays) -> None:
-        """
-        Write multiple arrays to a .npz file.
-            - If a connection exists, the .npz file is first written to a local temp directory and then uploaded to the remote host.
-            - If no connection exists, the .npz file is written directly to the specified path.
-        """
+        """Write multiple arrays to a .npz file, staged locally then uploaded."""
         remote_path = ppath.normpath(path)
         if not remote_path.endswith(".npz"):
             remote_path += ".npz"
 
         remote_dir = ppath.dirname(remote_path) or "."
-        assert self.path_exists(remote_dir)
+        if not self.path_exists(remote_dir):
+            raise FileNotFoundError(
+                f"Cannot write {remote_path}: remote directory {remote_dir} does not exist."
+            )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             local_path = os.path.join(tmpdir, ppath.basename(remote_path))
             np.savez(local_path, **arrays)
             self.put(local_path, remote_path)
 
-        self.logger.debug(f"Saved arrays to path {remote_path}", local=(not self.conn))
+        self.logger.debug(f"Saved arrays to path {remote_path}")

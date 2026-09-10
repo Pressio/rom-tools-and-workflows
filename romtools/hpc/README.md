@@ -37,21 +37,21 @@ Add a basic `__init__` method that takes the dispatcher as input:
 
 ```py
 from typing import Optional
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 class MyModel:
 
     def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-        if dispatcher is None:
-            dispatcher = LocalDispatcher()
-        self.dispatcher = dispatcher
+        self.dispatcher = resolve_dispatcher(dispatcher)
 ```
 
 > [!TIP]
-> We default here to the `LocalDispatcher` so that the workflow can
-> function with no remote capability if needed. `LocalDispatcher` overloads
-> all public methods of the `Dispatcher` without actually sending any
-> work to a remote host. For example, both `put()` and `get()` become a local `cp`.
+> `resolve_dispatcher()` falls back to a `LocalDispatcher` so that the workflow
+> can function with no remote capability if needed. Prefer it over building one
+> yourself: the fallback it returns ignores your program's command line.
+> `LocalDispatcher` overloads all public methods of the `Dispatcher` without
+> actually sending any work to a remote host. For example, both `put()` and
+> `get()` become a local `cp`.
 > That host may itself be a cluster node, in which case `submit_job()` issues
 > `sbatch` where the workflow already runs and the results need no transferring back.
 
@@ -227,7 +227,7 @@ There are three ways to configure:
 1. **YAML**
 
 Define a YAML file that contains all configurable params, and
-pass it to your workflow with `-i path/to/your/input.yaml`.
+pass it to your workflow with `-c path/to/your/input.yaml`.
 
 An example configuration YAML can be found in `hpc/config/example.yaml`.
 
@@ -250,7 +250,7 @@ the remote host, but keep the rest of the configuration the same.
 You could run:
 
 ```sh
-python my_workflow.py -i path/to/input.yaml --collect '*.log'
+python my_workflow.py -c path/to/input.yaml --collect '*.log'
 ```
 
 ### Core configuration arguments
@@ -267,19 +267,21 @@ Every argument is available as a long option named after it, such as
 
 | Short | Long | Meaning |
 | --- | --- | --- |
-| `-i` | `--input` | Path to the YAML configuration file |
+| `-c` | `--config` | Path to the YAML configuration file |
 
 > [!NOTE]
 > Your workflow's own command line is what the dispatcher parses, so any
 > switch the schema claims is one your workflow can no longer use for itself.
-> That is why `-i` is the only single-letter switch claimed; `-h` is never
+> That is why `-c` is the only single-letter switch claimed; `-h` is never
 > claimed either, so your workflow keeps its own `--help`.
 
 > [!NOTE]
 > To keep the dispatcher away from your command line entirely, construct it
 > with an explicit argument list: `LocalDispatcher(argv=[])` configures itself
 > from YAML and defaults alone. This matters when a workflow's own flags would
-> otherwise be read as configuration.
+> otherwise be read as configuration. A workflow you call without a dispatcher
+> at all gets exactly that: the local dispatcher it falls back to never reads
+> your command line.
 
 > [!NOTE]
 > You do not need to specify every argument. Check out the
