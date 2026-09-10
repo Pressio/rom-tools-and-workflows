@@ -6,7 +6,7 @@ from romtools.hpc.configuration import (
     SCHEMA,
     Configuration,
     ConfigurationError,
-    _normalize_collect,
+    _normalize_file_patterns,
 )
 
 
@@ -95,11 +95,21 @@ def test_missing_value_for_a_schema_argument_raises(monkeypatch):
         Configuration()
 
 
-def test_missing_value_for_input_raises(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-i"])
+def test_missing_value_for_config_raises(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "-c"])
 
-    with pytest.raises(ConfigurationError, match="input"):
+    with pytest.raises(ConfigurationError, match="config"):
         Configuration()
+
+
+def test_config_file_is_the_only_short_switch_claimed(monkeypatch):
+    """
+    A host program's short switches stay its own. Only -c is claimed, and even
+    -i, which it used to be, is now left to the surrounding command line.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", "-i", "/nonexistent/my_deck.yaml", "-o", "out"])
+
+    assert Configuration().remote is None
 
 
 def test_host_process_arguments_do_not_raise(monkeypatch):
@@ -149,7 +159,7 @@ def test_collect_normalized_from_cli(monkeypatch):
 def test_yaml_flat_mapping(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\nuser: yamluser\njob_name: yamljob\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     config = Configuration()
 
@@ -169,7 +179,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
         "user-defined:\n"
         "  custom_field: 42\n"
     )
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     config = Configuration()
 
@@ -182,7 +192,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
 def test_cli_overrides_yaml(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path), "--remote", "clihost"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path), "--remote", "clihost"])
 
     config = Configuration()
 
@@ -192,14 +202,14 @@ def test_cli_overrides_yaml(tmp_path, monkeypatch):
 def test_unrecognized_yaml_key_warns_but_does_not_raise(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("not_a_real_field: 5\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     with pytest.warns(UserWarning, match="not_a_real_field"):
         Configuration()
 
 
 def test_missing_yaml_file_raises(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", "/nonexistent/config.yaml"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", "/nonexistent/config.yaml"])
 
     with pytest.raises(FileNotFoundError):
         Configuration()
@@ -226,15 +236,15 @@ def test_to_dict_returns_independent_copy(monkeypatch):
         ([], None),
     ],
 )
-def test_normalize_collect_valid_inputs(value, expected):
-    assert _normalize_collect(value) == expected
+def test_normalize_file_patterns_valid_inputs(value, expected):
+    assert _normalize_file_patterns(value) == expected
 
 
-def test_normalize_collect_rejects_non_string_list_entries():
+def test_normalize_file_patterns_rejects_non_string_list_entries():
     with pytest.raises(ValueError):
-        _normalize_collect([1, 2])
+        _normalize_file_patterns([1, 2])
 
 
-def test_normalize_collect_rejects_unsupported_type():
+def test_normalize_file_patterns_rejects_unsupported_type():
     with pytest.raises(ValueError):
-        _normalize_collect(123)
+        _normalize_file_patterns(123)
