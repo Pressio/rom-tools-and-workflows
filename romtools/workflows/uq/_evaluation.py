@@ -9,7 +9,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 
 
@@ -72,7 +72,7 @@ def evaluate_qoi_model(
     if samples.shape[1] != len(parameter_names):
         raise ValueError("parameter sample dimension does not match parameter names")
 
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     qoi_values = [None] * samples.shape[0]
     run_times = np.full(samples.shape[0], np.nan)
     samples_to_run = []

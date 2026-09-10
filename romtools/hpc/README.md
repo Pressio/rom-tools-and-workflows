@@ -277,11 +277,11 @@ Every argument is available as a long option named after it, such as
 
 > [!NOTE]
 > To keep the dispatcher away from your command line entirely, construct it
-> with an explicit argument list: `LocalDispatcher(argv=[])` configures itself
-> from YAML and defaults alone. This matters when a workflow's own flags would
-> otherwise be read as configuration. A workflow you call without a dispatcher
-> at all gets exactly that: the local dispatcher it falls back to never reads
-> your command line.
+> with an explicit argument list: `LocalDispatcher(argv=[])` reads no switches
+> at all, so it takes the schema defaults. Since `-c` is among the switches it
+> no longer sees, no YAML is loaded either; pass the settings you need to the
+> constructor. A workflow you call without a dispatcher at all gets exactly
+> that fallback.
 
 > [!NOTE]
 > You do not need to specify every argument. Check out the

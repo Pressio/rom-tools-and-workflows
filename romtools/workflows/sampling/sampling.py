@@ -54,7 +54,7 @@ from typing import Optional
 
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 
 def _get_run_id_from_run_dir(run_dir):
@@ -101,8 +101,7 @@ def run_sampling(model: Model,
     '''
     Core algorithm
     '''
-    # Default to LocalDispatcher if none is provided
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
 
     # we use here spawn because the default fork causes issues with mpich,
     # see here: https://github.com/Pressio/rom-tools-and-workflows/pull/206
@@ -239,7 +238,7 @@ def run_sampling(model: Model,
 
 
 def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Optional[BaseDispatcher] = None):
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     run_id = _get_run_id_from_run_dir(run_directory)
     ts = time.time()
     flag = model.run_model(run_directory, parameter_sample)

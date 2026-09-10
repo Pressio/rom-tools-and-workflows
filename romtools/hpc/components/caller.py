@@ -19,6 +19,7 @@ from .call_runner import (
     unpack,
     working_directory,
 )
+from romtools.hpc.components.component import Component
 from romtools.hpc.components.file_manager import BaseFileManager
 from romtools.hpc.connection import Connection
 from romtools.hpc.logger import Logger
@@ -48,21 +49,13 @@ def build_call_command(python_setup: str, python_command: str, call_id: str, tar
     return "\n".join(lines)
 
 
-class BaseCaller:
+class BaseCaller(Component):
     """
     Executes a Python callable named by a "module:qualname" target string.
 
     Arguments and return values may contain numpy arrays, tuples, lists, and
     dictionaries thereof.
-
-    Arguments:
-        config: The dispatcher's configuration dictionary
-        logger: An instance of the Logger class for logging
     """
-
-    def __init__(self, config: dict = None, logger: Logger = None):
-        self.config = config if config is not None else {}
-        self.logger = logger if logger is not None else Logger()
 
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         raise NotImplementedError
@@ -86,8 +79,6 @@ class RemoteCaller(BaseCaller):
     Arguments:
         connection: An established Connection to the remote host
         files: The remote file manager used to stage inputs and read results back
-        config: The dispatcher's configuration dictionary
-        logger: An instance of the Logger class for logging
     """
 
     def __init__(self, connection: Connection, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
@@ -101,7 +92,7 @@ class RemoteCaller(BaseCaller):
         call_id = f".dispatcher_call_{uuid.uuid4().hex}"
         call_dir = ppath.join(run_directory, call_id) if run_directory else call_id
 
-        self._create_call_directory(call_dir)
+        self.files.create_empty_dir(call_dir)
         try:
             with tempfile.TemporaryDirectory() as staging_dir:
                 self._upload_inputs(staging_dir, call_dir, args, kwargs)
@@ -112,9 +103,6 @@ class RemoteCaller(BaseCaller):
 
         self.logger.log(f"Executed {target} on remote host.")
         return result
-
-    def _create_call_directory(self, call_dir: str) -> None:
-        self.files.create_empty_dir(call_dir)
 
     def _remove_call_directory(self, call_dir: str) -> None:
         try:

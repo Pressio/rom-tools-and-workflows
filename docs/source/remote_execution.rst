@@ -182,8 +182,8 @@ Each of these workflows accepts a ``dispatcher`` argument:
 
 Every one of them falls back to a ``LocalDispatcher`` when you pass nothing, so
 existing workflows and models keep running unchanged. That fallback is built
-with ``argv=[]``, so a workflow you never handed a dispatcher does not have its
-own command line read as dispatcher configuration.
+with ``argv=[]``: a workflow you never handed a dispatcher keeps its own
+command line, and the dispatcher takes the schema defaults.
 
 Inverse workflows
 ~~~~~~~~~~~~~~~~~
@@ -297,11 +297,11 @@ Every argument is available as a long option named after it, such as
 
 .. note::
    To keep the dispatcher away from your command line entirely, construct it
-   with an explicit argument list: ``LocalDispatcher(argv=[])`` configures
-   itself from YAML and defaults alone. This matters when a workflow's own
-   flags would otherwise be read as configuration. A workflow you call without
-   a dispatcher at all gets exactly that: the local dispatcher it falls back
-   to never reads your command line.
+   with an explicit argument list: ``LocalDispatcher(argv=[])`` reads no
+   switches at all, so it takes the schema defaults. Since ``-c`` is among the
+   switches it no longer sees, no YAML is loaded either; pass the settings you
+   need to the constructor. A workflow you call without a dispatcher at all
+   gets exactly that fallback.
 
 **ssh** — establish the connection with the remote host:
 

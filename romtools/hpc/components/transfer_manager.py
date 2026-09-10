@@ -5,22 +5,19 @@ import os
 import posixpath as ppath
 
 from romtools.hpc.components.archive import create_tarball, safe_extract_tar, validate_file_patterns
+from romtools.hpc.components.component import Component
+from romtools.hpc.components.file_manager import RemoteFileManager
 from romtools.hpc.connection import Connection, run_local_bash
 from romtools.hpc.logger import Logger
-from romtools.hpc.components.file_manager import RemoteFileManager
 
 
-class TransferManager:
+class TransferManager(Component):
     """
-    Moves the files a campaign needs onto the remote host, and its results back.
-
-    Both directions go through a single tar.gz archive, built from the
-    configured upload and collect patterns.
+    Moves the files a campaign needs onto the remote host, and its results back,
+    in both directions through a single tar.gz archive.
 
     Arguments:
         connection: An established Connection to the remote host
-        config: The dispatcher's configuration dictionary
-        logger: An instance of the Logger class for logging
         campaign_directory: The campaign directory, mirrored locally and remotely
         files: The remote file manager, whose resolve_path decides what paths mean
 
@@ -30,9 +27,8 @@ class TransferManager:
 
     def __init__(self, connection: Connection, *, files: RemoteFileManager, config: dict = None,
                  logger: Logger = None, campaign_directory: str = None):
+        super().__init__(config=config, logger=logger)
         self.conn = connection
-        self.config = config if config is not None else {}
-        self.logger = logger if logger is not None else Logger()
         self.campaign_directory = campaign_directory
         self.files = files
 
@@ -44,9 +40,7 @@ class TransferManager:
         return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
 
     def collect_results(self) -> None:
-        """
-        Collect results from remote HPC runs.
-        """
+        """Collect results from remote HPC runs."""
         remote_campaign_dir = self.files.resolve_path(self.campaign_directory)
         self.logger.debug(
             f"Transferring results from {self.conn.host}:{remote_campaign_dir} -> {self.campaign_directory}",

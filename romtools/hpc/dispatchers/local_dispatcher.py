@@ -15,10 +15,10 @@ class LocalDispatcher(BaseDispatcher):
     """
     Runs ROM workflows on the machine this process runs on.
 
-    Composes the local file and call helpers, so paths address the local
-    filesystem and commands run in a local bash shell rather than over SSH. That
-    machine may itself be a cluster node, in which case submit_job() reaches
-    the scheduler directly and results need no transferring.
+    Paths address the local filesystem and commands run in a local bash shell
+    rather than over SSH. That machine may itself be a cluster node, in which
+    case submit_job() reaches the scheduler directly and results need no
+    transferring.
 
     Arguments:
         campaign_directory: The directory jobs run in when given no run_directory
@@ -48,12 +48,8 @@ class LocalDispatcher(BaseDispatcher):
 
     def run(self, cmd: str, run_directory: str = None) -> Result:
         """
-        Run a command on the local machine.
-
-        Args:
-            cmd: The command to run.
-            run_directory: The directory to run it from. Defaults to the
-                current working directory.
+        Run a command on the local machine, from run_directory if given and the
+        current working directory otherwise.
 
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """

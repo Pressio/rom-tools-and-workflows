@@ -156,6 +156,22 @@ def test_collect_normalized_from_cli(monkeypatch):
     assert config.collect == ["a.txt", "b.log"]
 
 
+@pytest.mark.parametrize("body", [
+    "collect: a.txt,b.log\nupload: in.dat\n",
+    "workflow:\n  collect: a.txt,b.log\n  upload: in.dat\n",
+])
+def test_collect_and_upload_normalized_from_yaml(tmp_path, monkeypatch, body):
+    """Regression test: the YAML path normalized these into an undefined name."""
+    yaml_path = tmp_path / "config.yaml"
+    yaml_path.write_text(body)
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
+
+    config = Configuration()
+
+    assert config.collect == ["a.txt", "b.log"]
+    assert config.upload == ["in.dat"]
+
+
 def test_yaml_flat_mapping(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\nuser: yamluser\njob_name: yamljob\n")

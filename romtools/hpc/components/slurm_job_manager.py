@@ -10,33 +10,32 @@ from typing import Callable, Optional, Tuple
 
 from romtools.hpc.connection import Result
 from romtools.hpc.logger import Logger
+from romtools.hpc.components.component import Component
 from romtools.hpc.components.file_manager import BaseFileManager
-from romtools.hpc.components.slurm import SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE, DEFAULT_SLURM_OUTFILE, FAILED_EXIT_CODE, slurm_exitcode_to_python_style, parse_sbatch_out_args
-from romtools.hpc.components.slurm import create_slurm_script
+from romtools.hpc.components.slurm import (SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE,
+                                           DEFAULT_SLURM_OUTFILE, FAILED_EXIT_CODE,
+                                           create_slurm_script, parse_sbatch_out_args,
+                                           slurm_exitcode_to_python_style)
 
 
-class SlurmJobManager:
+class SlurmJobManager(Component):
     """
     Generates and submits SLURM scripts, then polls the job until it finishes.
 
-    The sbatch/squeue/sacct commands are the same wherever they are issued, so
-    this serves both dispatchers: it takes a callable that runs a shell command
-    rather than a connection, and a file manager that decides what paths mean.
+    Serves both dispatchers, since sbatch/squeue/sacct are the same wherever
+    they are issued.
 
     Arguments:
         run_cmd: Runs a shell command where the scheduler lives and returns a
             Result. Connection.run for a remote host, run_local_bash for this one.
-        config: The dispatcher's configuration dictionary
-        logger: An instance of the Logger class for logging
         campaign_directory: The directory jobs run in when no run_directory is given
         files: The file manager for the machine the job runs on
     """
 
     def __init__(self, run_cmd: Callable[[str], Result], *, files: BaseFileManager, config: dict = None,
                  logger: Logger = None, campaign_directory: str = None):
+        super().__init__(config=config, logger=logger)
         self.run_cmd = run_cmd
-        self.config = config if config is not None else {}
-        self.logger = logger if logger is not None else Logger()
         self.campaign_directory = campaign_directory
         self.files = files
         self._script_outputs = None
@@ -46,14 +45,9 @@ class SlurmJobManager:
         return run_directory or self.campaign_directory
 
     def _script_outputs_from_config(self) -> Tuple[Optional[str], Optional[str]]:
-        """
-        What the configured script names for stdout and stderr, or (None, None).
-
-        The script is fixed for this manager's lifetime, so it is read once.
-        Only the raw parse is remembered; the defaults standing in for what the
-        script leaves unnamed are derived fresh, so one submission cannot fix
-        the file names used by the next.
-        """
+        """What the configured script names for stdout and stderr, or (None, None)."""
+        # Only the raw parse is cached; the defaults standing in for what the script
+        # leaves unnamed are derived fresh, so one submission cannot fix the next's names.
         if self._script_outputs is None:
             self._script_outputs = parse_sbatch_out_args(self.config.get("script"))
         return self._script_outputs
@@ -83,17 +77,10 @@ class SlurmJobManager:
 
     def _generate_slurm_script(self, base_command: str = None, run_directory: str = None) -> str:
         """
-        Render a SLURM job script, write it to a local temp file, upload it to the
-        remote host, and return the remote path.
+        Stage a SLURM job script on the execution host and return its path.
 
-        Args:
-            base_command: The command to run in the SLURM job (executed from self.config.get("remote_root")).
-
-        If a local SLURM script is provided (via configuration), it will be uploaded directly without modification
-        and base_command will be ignored.
-
-        Returns:
-            The remote path of the uploaded SLURM script.
+        A configured script is staged unmodified and base_command is ignored;
+        otherwise one is generated to run base_command.
         """
         script = self.config.get("script")
 
@@ -128,16 +115,7 @@ class SlurmJobManager:
         return remote_script_path
 
     def submit(self,  cmd: str = None, run_directory: str = None) -> str:
-        """
-        Generate, upload, and submit a SLURM script.
-
-        Args:
-            cmd:  The command to run in the SLURM job.
-            run_directory: The directory in which to execute the command on the remote host.
-
-        Returns:
-            The SLURM job ID as a string
-        """
+        """Generate, stage, and submit a SLURM script, returning the job ID."""
         remote_script_path = self._generate_slurm_script(cmd, run_directory=run_directory)
 
         output_cmd = self._sbatch_output_args()
@@ -170,11 +148,7 @@ class SlurmJobManager:
     # ------------------------------------------------------------------
 
     def _cancel_job(self, job_id: str) -> None:
-        """
-        Cancel the specified SLURM job.
-
-        Args: job_id (the SLURM job ID)
-        """
+        """Cancel the specified SLURM job."""
         try:
             res = self.run_cmd(f"scancel {shlex.quote(str(job_id))}")
             if res.ok:
@@ -186,11 +160,8 @@ class SlurmJobManager:
 
     def _get_sacct_status(self, job_id: str) -> Tuple[Optional[str], Optional[str]]:
         """
-        Return the SLURM accounting state and exit code for a completed/disappeared job.
-
-        Returns:
-            tuple[str, str] | tuple[None, None]:
-                (state, exit_code), or (None, None) if sacct does not have the record yet.
+        The SLURM accounting state and exit code for a finished job, or
+        (None, None) if sacct does not have the record yet.
         """
         jid = shlex.quote(str(job_id))
 
@@ -274,16 +245,8 @@ class SlurmJobManager:
 
     def wait(self, job_id: str) -> str:
         """
-        Block until the SLURM job is no longer in the queue (RUNNING or PENDING).
-
-        Args:
-            job_id:        The SLURM job ID to monitor.
-
-        Returns:
-            Job exit code + linux signal number (the result from sacct)
-            Example: '0:0'
-
-            'None' otherwise
+        Block until the SLURM job leaves the queue, then return its exit code in
+        Python style (negative for a signal), or None if sacct never reported.
         """
         poll_interval = self.config.get("poll_interval")
         try:
