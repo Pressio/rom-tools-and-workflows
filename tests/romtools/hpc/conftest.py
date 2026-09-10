@@ -85,10 +85,10 @@ def make_config():
 @pytest.fixture(autouse=True)
 def _isolate_argv(request, monkeypatch):
     """
-    Configuration() unconditionally parses real sys.argv, and the short
-    aliases it keeps (-r, -s) collide with pytest's own flags of the same
-    name. Pin argv to a minimal value for every test in this directory
-    except test_configuration.py, which manages argv explicitly.
+    Configuration() reads real sys.argv unless given an explicit list, so
+    pytest's own command line would otherwise leak into these tests. Pin argv
+    to a minimal value for every test in this directory except
+    test_configuration.py, which manages argv explicitly.
     """
     if "test_configuration" in request.node.nodeid:
         return
