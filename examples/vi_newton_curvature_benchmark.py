@@ -27,7 +27,7 @@ from romtools.workflows.inverse.vi_optimization_methods import NewtonSolver
 def _estimate(rng, sample_count):
     samples = rng.standard_normal((sample_count, 1))
     log_joint = -0.5 * samples[:, 0] ** 2
-    gradient_mean, gradient_log_std, _, _, _ = _compute_reinforce_gradients(
+    gradient_mean, gradient_log_std, _, _, _, _ = _compute_reinforce_gradients(
         samples,
         np.zeros(1),
         np.ones(1),

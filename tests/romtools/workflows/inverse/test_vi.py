@@ -85,6 +85,92 @@ class TwoParameterSpace(romtools.workflows.ParameterSpace):
         return rng.uniform(self._lower, self._upper, size=(number_of_samples, 2))
 
 
+def test_joint_score_gradient_is_zero_at_exact_diagonal_gaussian_optimum():
+    rng = np.random.default_rng(350)
+    mean = np.array([0.3, -0.7])
+    std = np.array([1.2, 0.6])
+    samples = rng.normal(size=(32, 2)) * std + mean
+    log_q = vi_drivers._compute_variational_log_densities(samples, mean, std)
+
+    joint = vi_drivers._compute_reinforce_gradients(
+        samples,
+        mean,
+        std,
+        log_q + 3.5,
+        baseline_method="loo",
+        score_function_entropy_strategy="joint",
+    )
+    analytic = vi_drivers._compute_reinforce_gradients(
+        samples,
+        mean,
+        std,
+        log_q + 3.5,
+        baseline_method="loo",
+        score_function_entropy_strategy="analytic",
+    )
+    default = vi_drivers._compute_reinforce_gradients(
+        samples, mean, std, log_q + 3.5, baseline_method="loo"
+    )
+
+    assert np.linalg.norm(np.concatenate(joint[:2])) < 1e-14
+    assert np.linalg.norm(np.concatenate(analytic[:2])) > 1e-3
+    assert np.allclose(np.concatenate(default[:2]), np.concatenate(analytic[:2]))
+
+
+def test_joint_score_gradient_is_zero_for_scaled_correlated_gaussian():
+    rng = np.random.default_rng(351)
+    mean = np.array([-0.2, 0.4])
+    std = np.array([0.8, 1.4])
+    correlation_cholesky = np.linalg.cholesky(np.array([[1.0, 0.45], [0.45, 1.0]]))
+    samples = mean + (rng.normal(size=(48, 2)) @ correlation_cholesky.T) * std
+    log_q = vi_drivers._compute_variational_log_densities(
+        samples, mean, std, correlation_cholesky
+    )
+
+    gradient = vi_drivers._compute_reinforce_gradients(
+        samples,
+        mean,
+        std,
+        2.7 * (log_q - 1.25),
+        baseline_method="loo",
+        variational_correlation_cholesky=correlation_cholesky,
+        elbo_scaling_factor=2.7,
+        score_function_entropy_strategy="joint",
+    )
+
+    assert np.linalg.norm(np.concatenate(gradient[:2])) < 1e-13
+
+
+def test_score_function_entropy_strategy_validation():
+    assert vi_drivers._normalize_score_function_entropy_strategy("JOINT") == "joint"
+    with pytest.raises(ValueError, match="score_function_entropy_strategy"):
+        vi_drivers._normalize_score_function_entropy_strategy("pathwise")
+
+
+def test_analytic_optimum_gradient_variance_scales_with_inverse_sample_count():
+    variances = []
+    for sample_count in (16, 64):
+        estimates = []
+        for seed in range(300):
+            samples = np.random.default_rng(seed).standard_normal((sample_count, 1))
+            log_q = vi_drivers._compute_variational_log_densities(
+                samples, np.zeros(1), np.ones(1)
+            )
+            gradient = vi_drivers._compute_reinforce_gradients(
+                samples,
+                np.zeros(1),
+                np.ones(1),
+                log_q,
+                baseline_method="loo",
+                score_function_entropy_strategy="analytic",
+            )
+            estimates.append(np.concatenate(gradient[:2]))
+        variances.append(np.mean(np.var(estimates, axis=0, ddof=1)))
+
+    variance_ratio = variances[0] / variances[1]
+    assert 2.0 < variance_ratio < 8.0
+
+
 def test_arctan_transform_round_trip():
     parameter_mins = np.array([-2.0, -1.0])
     parameter_maxes = np.array([3.0, 2.0])
@@ -454,6 +540,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert "variational_log_std" in restart
         assert "iteration" in restart
         assert "step_size" in restart
+        assert str(restart["score_function_entropy_strategy"].item()) == "analytic"
         assert "rng_state" in restart
         physical_variational_mean = restart["variational_mean"].copy()
     assert np.all(np.isfinite(physical_variational_mean))
@@ -468,12 +555,18 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert "vi_history_relative_mse" in history
         assert "vi_history_loglikelihood" in history
         assert "vi_history_cpu_time_seconds" in history
+        assert "vi_history_accepted_step_size" in history
+        assert "vi_history_gradient" in history
+        assert "vi_history_gradient_standard_error" in history
         num_entries = history["vi_history_cpu_time_seconds"].shape[0]
         assert num_entries >= 1
         assert history["vi_history_variational_mean"].shape[0] == num_entries
         assert history["vi_history_variational_covariance"].shape[0] == num_entries
         assert history["vi_history_relative_mse"].shape[0] == num_entries
         assert history["vi_history_loglikelihood"].shape[0] == num_entries
+        assert history["vi_history_accepted_step_size"].shape[0] == num_entries
+        assert history["vi_history_gradient"].shape == (num_entries, 2)
+        assert history["vi_history_gradient_standard_error"].shape == (num_entries, 2)
 
 
 @pytest.mark.mpi_skip

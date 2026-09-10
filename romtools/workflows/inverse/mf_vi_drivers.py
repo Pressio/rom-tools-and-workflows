@@ -96,6 +96,11 @@ correlated with the FOM.
 This is the role of the ``use_mfmc_control_variate`` and
 ``mfmc_control_variate_mode`` options. The implementation supports scalar,
 componentwise, and matrix-valued control-variate coefficients.
+For ``score_function_entropy_strategy="joint"``, fitted gradient coefficients
+are set to zero when the measured high-fidelity variance is at roundoff. This
+avoids amplifying ROM noise at an exact high-fidelity fixed point. Explicitly
+fixed coefficients requested through ``use_mfmc_control_variate=False`` are
+preserved.
 
 .. rubric:: Adaptive ROM Use
 
@@ -142,6 +147,7 @@ from romtools.workflows.inverse.vi_drivers import (
     _compute_component_standard_error,
     _compute_correlation_cholesky_from_samples,
     _compute_gaussian_log_density_data,
+    _compute_variational_log_densities,
     _compute_gradient_signal_to_noise_ratio,
     _clip_variational_log_std,
     _enforce_variational_log_std_bounds,
@@ -167,6 +173,7 @@ from romtools.workflows.inverse.vi_drivers import (
     _normalize_bounded_parameter_handling,
     _normalize_transform_map,
     _normalize_sampling_method,
+    _normalize_score_function_entropy_strategy,
     _print_gradient_signal_to_noise_ratio,
     _print_vi_parameters,
     _initialize_vi_history,
@@ -283,7 +290,9 @@ def _mfmc_gradient_estimator(high_terms: np.ndarray,
                              low_terms_base: np.ndarray,
                              low_terms_extra: np.ndarray,
                              use_control_variate: bool,
-                             control_variate_mode: str) -> Tuple[np.ndarray, np.ndarray]:
+                             control_variate_mode: str,
+                             high_variance_reference_terms: np.ndarray = None
+                             ) -> Tuple[np.ndarray, np.ndarray]:
     trailing_shape = high_terms.shape[1:]
     high_flat = high_terms.reshape(high_terms.shape[0], -1)
     low_base_flat = low_terms_base.reshape(low_terms_base.shape[0], -1)
@@ -300,6 +309,24 @@ def _mfmc_gradient_estimator(high_terms: np.ndarray,
             low_terms_base,
             mode=control_variate_mode,
         )
+        if high_variance_reference_terms is not None:
+            high_reference_flat = high_variance_reference_terms.reshape(
+                high_variance_reference_terms.shape[0], -1
+            )
+            high_standard_deviation = np.std(high_flat, axis=0)
+            reference_rms = np.sqrt(np.mean(high_reference_flat ** 2, axis=0))
+            negligible = high_standard_deviation <= (
+                64.0 * np.finfo(float).eps
+                * np.maximum(reference_rms, np.finfo(float).tiny)
+            )
+            if control_variate_mode == "matrix":
+                alpha[:, negligible] = 0.0
+            elif control_variate_mode == "scalar":
+                if np.all(negligible):
+                    alpha = np.array(0.0)
+            else:
+                alpha = np.asarray(alpha).copy()
+                alpha.reshape(-1)[negligible] = 0.0
     else:
         if control_variate_mode == "matrix":
             dimensionality = high_flat.shape[1]
@@ -340,7 +367,8 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
                                       use_mfmc_control_variate: bool,
                                       mfmc_control_variate_mode: str = "componentwise",
                                       variational_correlation_cholesky: np.ndarray = None,
-                                      elbo_scaling_factor: float = 1.0):
+                                      elbo_scaling_factor: float = 1.0,
+                                      score_function_entropy_strategy: str = 'analytic'):
     def _compute_mfmc_estimator_standard_error(high_terms: np.ndarray,
                                                low_terms_base: np.ndarray,
                                                low_terms_extra: np.ndarray,
@@ -410,35 +438,68 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
     scaled_rom_log_likelihoods_base = elbo_scaling_factor * rom_log_likelihoods_base
     scaled_rom_log_likelihoods_extra = elbo_scaling_factor * rom_log_likelihoods_extra
 
+    entropy_strategy = _normalize_score_function_entropy_strategy(
+        score_function_entropy_strategy
+    )
+    fom_weights = scaled_fom_log_likelihoods
+    rom_base_weights = scaled_rom_log_likelihoods_base
+    rom_extra_weights = scaled_rom_log_likelihoods_extra
+    fom_log_q = None
+    if entropy_strategy == 'joint':
+        fom_log_q = _compute_variational_log_densities(
+            optimizer_samples_fom,
+            variational_mean,
+            variational_std,
+            variational_correlation_cholesky,
+        )
+        fom_weights = fom_weights - elbo_scaling_factor * fom_log_q
+        rom_base_weights = (
+            rom_base_weights
+            - elbo_scaling_factor * _compute_variational_log_densities(
+                optimizer_samples_rom_base,
+                variational_mean,
+                variational_std,
+                variational_correlation_cholesky,
+            )
+        )
+        if optimizer_samples_rom_extra is not None and optimizer_samples_rom_extra.shape[0] > 0:
+            rom_extra_weights = (
+                rom_extra_weights
+                - elbo_scaling_factor * _compute_variational_log_densities(
+                    optimizer_samples_rom_extra,
+                    variational_mean,
+                    variational_std,
+                    variational_correlation_cholesky,
+                )
+            )
+
     # Compute shared baselines and centered likelihood weights.
     # Baselines are estimated from FOM statistics and reused for ROM terms.
     baseline_method = _normalize_baseline_method(baseline_method)
     if baseline_method == 'optimal':
-        baseline_mean = _compute_optimal_baseline(scaled_fom_log_likelihoods, score_mean_fom)
-        baseline_log_std = _compute_optimal_baseline(scaled_fom_log_likelihoods, score_log_std_fom)
-        centered_fom_log_likelihoods = scaled_fom_log_likelihoods
-        centered_rom_log_likelihoods_base = scaled_rom_log_likelihoods_base
-        centered_rom_log_likelihoods_extra = scaled_rom_log_likelihoods_extra
+        baseline_mean = _compute_optimal_baseline(fom_weights, score_mean_fom)
+        baseline_log_std = _compute_optimal_baseline(fom_weights, score_log_std_fom)
+        centered_fom_log_likelihoods = fom_weights
+        centered_rom_log_likelihoods_base = rom_base_weights
+        centered_rom_log_likelihoods_extra = rom_extra_weights
     elif baseline_method == 'loo':
         baseline_mean = np.zeros_like(variational_mean)
         baseline_log_std = np.zeros_like(variational_mean)
         centered_fom_log_likelihoods = (
-            scaled_fom_log_likelihoods - _compute_leave_one_out_baseline(scaled_fom_log_likelihoods)
+            fom_weights - _compute_leave_one_out_baseline(fom_weights)
         )
         centered_rom_log_likelihoods_base = (
-            scaled_rom_log_likelihoods_base
-            - _compute_leave_one_out_baseline(scaled_rom_log_likelihoods_base)
+            rom_base_weights - _compute_leave_one_out_baseline(rom_base_weights)
         )
         centered_rom_log_likelihoods_extra = (
-            scaled_rom_log_likelihoods_extra
-            - _compute_leave_one_out_baseline(scaled_rom_log_likelihoods_extra)
+            rom_extra_weights - _compute_leave_one_out_baseline(rom_extra_weights)
         )
     else:
         baseline_mean = np.zeros_like(variational_mean)
         baseline_log_std = np.zeros_like(variational_mean)
-        centered_fom_log_likelihoods = scaled_fom_log_likelihoods
-        centered_rom_log_likelihoods_base = scaled_rom_log_likelihoods_base
-        centered_rom_log_likelihoods_extra = scaled_rom_log_likelihoods_extra
+        centered_fom_log_likelihoods = fom_weights
+        centered_rom_log_likelihoods_base = rom_base_weights
+        centered_rom_log_likelihoods_extra = rom_extra_weights
 
     # High terms use FOM samples; low base terms use an independent low-fidelity sample set.
     high_mean_terms = (centered_fom_log_likelihoods[:, None] - baseline_mean[None, :]) * score_mean_fom
@@ -471,6 +532,12 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         low_mean_terms_extra,
         use_mfmc_control_variate,
         mfmc_control_variate_mode,
+        (
+            (np.abs(scaled_fom_log_likelihoods)[:, None]
+             + np.abs(elbo_scaling_factor * fom_log_q)[:, None])
+            * np.abs(score_mean_fom)
+            if entropy_strategy == 'joint' else None
+        ),
     )
     gradient_log_std, alpha_log_std = _mfmc_gradient_estimator(
         high_log_std_terms,
@@ -478,6 +545,12 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         low_log_std_terms_extra,
         use_mfmc_control_variate,
         mfmc_control_variate_mode,
+        (
+            (np.abs(scaled_fom_log_likelihoods)[:, None]
+             + np.abs(elbo_scaling_factor * fom_log_q)[:, None])
+            * np.abs(score_log_std_fom)
+            if entropy_strategy == 'joint' else None
+        ),
     )
     gradient_standard_error_mean = _compute_mfmc_estimator_standard_error(
         high_mean_terms,
@@ -494,7 +567,8 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         mfmc_control_variate_mode,
     )
     # Entropy gradient contribution for log-std parameters.
-    gradient_log_std += elbo_scaling_factor
+    if entropy_strategy == 'analytic':
+        gradient_log_std += elbo_scaling_factor
     gradient_signal_to_noise_ratio = _compute_gradient_signal_to_noise_ratio(
         np.concatenate([gradient_mean, gradient_log_std]),
         np.concatenate([
@@ -510,6 +584,10 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         alpha_mean,
         alpha_log_std,
         gradient_signal_to_noise_ratio,
+        np.concatenate([
+            gradient_standard_error_mean.reshape(-1),
+            gradient_standard_error_log_std.reshape(-1),
+        ]),
     )
 
 
@@ -824,6 +902,7 @@ def _save_mf_vi_restart(restart_path: str,
                         transform_map: str,
                         optimization_method: str,
                         mfmc_control_variate_mode: str,
+                        score_function_entropy_strategy: str,
                         parameter_mins: np.ndarray = None,
                         parameter_maxes: np.ndarray = None,
                         transform_interior_margin: float = 0.0,
@@ -865,6 +944,7 @@ def _save_mf_vi_restart(restart_path: str,
         transform_map=transform_map,
         optimization_method=optimization_method,
         mfmc_control_variate_mode=mfmc_control_variate_mode,
+        score_function_entropy_strategy=score_function_entropy_strategy,
         sampling_method=sampling_method,
         max_mean_update_std=(
             np.nan if max_mean_update_std is None else float(max_mean_update_std)
@@ -907,6 +987,7 @@ def _save_mf_vi_restart(restart_path: str,
         'log_joint_terms_rom_only': 'log_joint_terms_rom_only',
         'gradient_mean': 'gradient_mean',
         'gradient_log_std': 'gradient_log_std',
+        'gradient_standard_error': 'gradient_standard_error',
         'hessian_diagonal_mean': 'hessian_diagonal_mean',
         'hessian_diagonal_log_std': 'hessian_diagonal_log_std',
         'hessian_full': 'hessian_full',
@@ -1011,7 +1092,8 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           rom_training_qois: np.ndarray,
                           log_likelihood_precision_operator: np.ndarray = None,
                           sampling_method: str = 'mc',
-                          dispatcher: Optional[BaseDispatcher] = None):
+                          dispatcher: Optional[BaseDispatcher] = None,
+                          score_function_entropy_strategy: str = 'analytic'):
     dispatcher = resolve_dispatcher(dispatcher)
     rom_dispatcher = resolve_local_dispatcher(dispatcher)
     run_directory_base = f'{iteration_directory}/run_fom_sample_set_0_'
@@ -1332,6 +1414,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         alpha_mean,
         alpha_log_std,
         gradient_signal_to_noise_ratio,
+        gradient_standard_error,
     ) = (
         _compute_mfmc_reinforce_gradients(
             optimizer_samples_fom,
@@ -1347,6 +1430,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
             mfmc_control_variate_mode,
             variational_correlation_cholesky,
             elbo_scaling_factor,
+            score_function_entropy_strategy,
         )
     )
     hessian_diagonal_mean, hessian_diagonal_log_std = _compute_mfmc_reinforce_hessian_diagonal(
@@ -1454,6 +1538,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'baseline_mean': baseline_mean,
         'baseline_log_std': baseline_log_std,
         'gradient_signal_to_noise_ratio': gradient_signal_to_noise_ratio,
+        'gradient_standard_error': gradient_standard_error,
         'mfmc_alpha_mean': alpha_mean,
         'mfmc_alpha_log_std': alpha_log_std,
         'rom_error': rom_error,
@@ -1634,7 +1719,8 @@ def run_mf_vi(model: QoiModel,
               transform_interior_margin: float = 1e-8,
               transform_map: str = 'sigmoid',
               min_physical_variational_std_fraction: float = 1e-8,
-              dispatcher: Optional[BaseDispatcher] = None):
+              dispatcher: Optional[BaseDispatcher] = None,
+              score_function_entropy_strategy: str = 'analytic'):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
@@ -1677,6 +1763,10 @@ def run_mf_vi(model: QoiModel,
         min_physical_variational_std_fraction: Minimum physical-space
             variational standard deviation as a fraction of each parameter range
             when bounded_parameter_handling='transform'.
+        score_function_entropy_strategy: Entropy treatment in the score-function
+            gradient. ``'analytic'`` retains the analytic Gaussian entropy
+            gradient; ``'joint'`` estimates the full ``log_joint - log_q``
+            integrand. The joint strategy is not a pathwise estimator.
 
         dispatcher: Optional (defaults to None, which instantiates a
             LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
@@ -1802,6 +1892,9 @@ def run_mf_vi(model: QoiModel,
     if baseline_method is None:
         baseline_method = 'loo'
     baseline_method = _normalize_baseline_method(baseline_method)
+    score_function_entropy_strategy = _normalize_score_function_entropy_strategy(
+        score_function_entropy_strategy
+    )
     mfmc_control_variate_mode = _normalize_mfmc_control_variate_mode(
         mfmc_control_variate_mode
     )
@@ -1940,6 +2033,7 @@ def run_mf_vi(model: QoiModel,
             log_likelihood_precision_operator=log_likelihood_precision_operator,
             sampling_method=sampling_method,
             dispatcher=dispatcher,
+            score_function_entropy_strategy=score_function_entropy_strategy,
         )
         initial_elbo_reference = float(state['elbo'])
     else:
@@ -2012,6 +2106,15 @@ def run_mf_vi(model: QoiModel,
             )
             if restart_control_variate_mode != mfmc_control_variate_mode:
                 raise ValueError("restart_file mfmc_control_variate_mode does not match current run.")
+        restart_entropy_strategy = (
+            str(restart_data['score_function_entropy_strategy'].item())
+            if 'score_function_entropy_strategy' in restart_data
+            else 'analytic'
+        )
+        if restart_entropy_strategy != score_function_entropy_strategy:
+            raise ValueError(
+                "restart_file score_function_entropy_strategy does not match current run."
+            )
         if 'sampling_method' in restart_data:
             restart_sampling_method = _normalize_sampling_method(
                 str(restart_data['sampling_method'].item())
@@ -2138,6 +2241,11 @@ def run_mf_vi(model: QoiModel,
                 'baseline_log_std': restart_data['baseline_log_std'],
                 'gradient_signal_to_noise_ratio': float(restart_data['gradient_signal_to_noise_ratio'])
                 if 'gradient_signal_to_noise_ratio' in restart_data else np.nan,
+                'gradient_standard_error': (
+                    restart_data['gradient_standard_error']
+                    if 'gradient_standard_error' in restart_data
+                    else np.full(2 * variational_mean.size, np.nan)
+                ),
                 'mfmc_alpha_mean': restart_data['mfmc_alpha_mean'],
                 'mfmc_alpha_log_std': restart_data['mfmc_alpha_log_std'],
                 'rom_error': float(restart_data['rom_error']),
@@ -2198,6 +2306,7 @@ def run_mf_vi(model: QoiModel,
                 log_likelihood_precision_operator=log_likelihood_precision_operator,
                 sampling_method=sampling_method,
                 dispatcher=dispatcher,
+                score_function_entropy_strategy=score_function_entropy_strategy,
             )
         if 'initial_elbo_reference' in restart_data:
             initial_elbo_reference = float(restart_data['initial_elbo_reference'])
@@ -2265,6 +2374,7 @@ def run_mf_vi(model: QoiModel,
         transform_map,
         optimization_method,
         mfmc_control_variate_mode,
+        score_function_entropy_strategy,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         transform_interior_margin=transform_interior_margin,
@@ -2299,6 +2409,11 @@ def run_mf_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             transform_map,
+            gradient_mean=state['gradient_mean'],
+            gradient_log_std=state['gradient_log_std'],
+            gradient_standard_error=state['gradient_standard_error'],
+            mfmc_alpha_mean=state['mfmc_alpha_mean'],
+            mfmc_alpha_log_std=state['mfmc_alpha_log_std'],
         )
     alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
     alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
@@ -2430,6 +2545,7 @@ def run_mf_vi(model: QoiModel,
                         log_likelihood_precision_operator=log_likelihood_precision_operator,
                         sampling_method=sampling_method,
                         dispatcher=dispatcher,
+                        score_function_entropy_strategy=score_function_entropy_strategy,
                     )
                     independent_hessian_cache = _get_state_hessian(
                         hessian_state, newton_hessian_type
@@ -2577,6 +2693,7 @@ def run_mf_vi(model: QoiModel,
             log_likelihood_precision_operator=log_likelihood_precision_operator,
             sampling_method=sampling_method,
             dispatcher=dispatcher,
+            score_function_entropy_strategy=score_function_entropy_strategy,
         )
 
         if line_search_method == 'legacy':
@@ -2615,6 +2732,7 @@ def run_mf_vi(model: QoiModel,
             ):
                 elbo_converged = True
 
+            accepted_step_size = step_size
             step_size = min(step_size * step_size_growth_factor, max_step_size)
 
             gradient_norm = _compute_gradient_norm(state, optimization_method)
@@ -2635,6 +2753,12 @@ def run_mf_vi(model: QoiModel,
                 parameter_maxes,
                 transform_interior_margin,
                 transform_map,
+                accepted_step_size=accepted_step_size,
+                gradient_mean=state['gradient_mean'],
+                gradient_log_std=state['gradient_log_std'],
+                gradient_standard_error=state['gradient_standard_error'],
+                mfmc_alpha_mean=state['mfmc_alpha_mean'],
+                mfmc_alpha_log_std=state['mfmc_alpha_log_std'],
             )
             alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
             alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
@@ -2642,7 +2766,7 @@ def run_mf_vi(model: QoiModel,
                 f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, ELBO: {state["elbo"]:.5f}, '
                 f'Relative ELBO (initial ref): {relative_elbo_improvement:.5e}, '
                 f'ROM err: {state["rom_error"]:.5f}, alpha_mean: {alpha_mean_scalar:.5f}, '
-                f'alpha_logstd: {alpha_log_scalar:.5f}, Step size: {step_size:.5e}, '
+                f'alpha_logstd: {alpha_log_scalar:.5f}, Step size: {accepted_step_size:.5e}, '
                 f'Gradient norm: {gradient_norm:.5f}, Wall time: {wall_time:.5f}'
             )
             _print_gradient_signal_to_noise_ratio(state)
@@ -2692,6 +2816,7 @@ def run_mf_vi(model: QoiModel,
                 transform_map,
                 optimization_method,
                 mfmc_control_variate_mode,
+                score_function_entropy_strategy,
                 parameter_mins=parameter_mins,
                 parameter_maxes=parameter_maxes,
                 transform_interior_margin=transform_interior_margin,
@@ -2786,7 +2911,8 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         min_physical_variational_std_fraction: float = 1e-8,
                         rom_type: str = "gp",
                         rom_args: Optional[dict] = None,
-                        dispatcher: Optional[BaseDispatcher] = None):
+                        dispatcher: Optional[BaseDispatcher] = None,
+                        score_function_entropy_strategy: str = 'analytic'):
     """
     Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
     Accepts the same rom_base_sampling_strategy options as run_mf_vi.
@@ -2878,4 +3004,5 @@ def mf_vi_with_auto_rom(model: QoiModel,
         transform_map=transform_map,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         dispatcher=dispatcher,
+        score_function_entropy_strategy=score_function_entropy_strategy,
     )

@@ -82,6 +82,14 @@ The lagged averaging weight is set by ``newton_hessian_averaging_factor``.
 
 .. rubric:: Variance Reduction
 
+``score_function_entropy_strategy="analytic"`` (the default) estimates the
+log-joint score contribution and adds the Gaussian entropy gradient exactly.
+The ``"joint"`` strategy instead keeps :math:`-\log q` inside the sampled ELBO
+integrand. The analytic strategy can have lower variance far from the optimum;
+with a suitable baseline, the joint strategy has zero per-sample contribution
+when the posterior belongs to the variational family. Both choices are
+score-function estimators, not pathwise estimators.
+
 The gradient estimator optionally supports a baseline through
 ``baseline_method``. In particular, the leave-one-out option subtracts a
 sample mean baseline that is independent of the current score term,
@@ -325,6 +333,34 @@ def _compute_gaussian_log_densities(samples: np.ndarray,
         quadratic_terms = np.sum(centered_samples * weighted_samples, axis=1)
     dimensionality = mean.size
     normalizer = dimensionality * np.log(2.0 * np.pi) + covariance_log_det
+    return -0.5 * (quadratic_terms + normalizer)
+
+
+def _compute_variational_log_densities(
+        optimizer_samples: np.ndarray,
+        variational_mean: np.ndarray,
+        variational_std: np.ndarray,
+        variational_correlation_cholesky: np.ndarray = None) -> np.ndarray:
+    """Evaluate the Gaussian variational density in optimizer coordinates."""
+    normalized = (
+        optimizer_samples - variational_mean[None, :]
+    ) / variational_std[None, :]
+    log_det_correlation = 0.0
+    if variational_correlation_cholesky is None:
+        quadratic_terms = np.sum(normalized ** 2, axis=1)
+    else:
+        whitened = np.linalg.solve(
+            variational_correlation_cholesky,
+            normalized.transpose(),
+        ).transpose()
+        quadratic_terms = np.sum(whitened ** 2, axis=1)
+        log_det_correlation = 2.0 * np.sum(
+            np.log(np.diag(variational_correlation_cholesky))
+        )
+    log_det_covariance = (
+        2.0 * np.sum(np.log(variational_std)) + log_det_correlation
+    )
+    normalizer = variational_mean.size * np.log(2.0 * np.pi) + log_det_covariance
     return -0.5 * (quadratic_terms + normalizer)
 
 
@@ -630,6 +666,11 @@ def _initialize_vi_history():
         'relative_mse': [],
         'loglikelihood': [],
         'cpu_time_seconds': [],
+        'accepted_step_size': [],
+        'gradient': [],
+        'gradient_standard_error': [],
+        'mfmc_alpha_mean': [],
+        'mfmc_alpha_log_std': [],
     }
 
 
@@ -651,6 +692,35 @@ def _load_vi_history_from_restart(restart_data):
     vi_history['relative_mse'] = [float(entry) for entry in restart_data['vi_history_relative_mse']]
     vi_history['loglikelihood'] = [float(entry) for entry in restart_data['vi_history_loglikelihood']]
     vi_history['cpu_time_seconds'] = [float(entry) for entry in restart_data['vi_history_cpu_time_seconds']]
+    if 'vi_history_accepted_step_size' in restart_data:
+        vi_history['accepted_step_size'] = [
+            float(entry) for entry in restart_data['vi_history_accepted_step_size']
+        ]
+    else:
+        vi_history['accepted_step_size'] = [
+            np.nan for _ in vi_history['cpu_time_seconds']
+        ]
+    dimensionality = vi_history['variational_mean'][0].size if vi_history['variational_mean'] else 0
+    alpha_shape = (dimensionality,)
+    if (
+        'mfmc_control_variate_mode' in restart_data
+        and str(restart_data['mfmc_control_variate_mode'].item()) == 'matrix'
+    ):
+        alpha_shape = (dimensionality, dimensionality)
+    diagnostic_shapes = {
+        'gradient': (2 * dimensionality,),
+        'gradient_standard_error': (2 * dimensionality,),
+        'mfmc_alpha_mean': alpha_shape,
+        'mfmc_alpha_log_std': alpha_shape,
+    }
+    for name, shape in diagnostic_shapes.items():
+        restart_key = f'vi_history_{name}'
+        if restart_key in restart_data:
+            vi_history[name] = [np.asarray(entry).copy() for entry in restart_data[restart_key]]
+        else:
+            vi_history[name] = [
+                np.full(shape, np.nan) for _ in vi_history['cpu_time_seconds']
+            ]
     return vi_history
 
 
@@ -667,7 +737,13 @@ def _append_vi_history(vi_history,
                        parameter_mins: np.ndarray = None,
                        parameter_maxes: np.ndarray = None,
                        transform_interior_margin: float = 0.0,
-                       transform_map: str = 'sigmoid') -> None:
+                       transform_map: str = 'sigmoid',
+                       accepted_step_size: float = np.nan,
+                       gradient_mean: np.ndarray = None,
+                       gradient_log_std: np.ndarray = None,
+                       gradient_standard_error: np.ndarray = None,
+                       mfmc_alpha_mean: np.ndarray = None,
+                       mfmc_alpha_log_std: np.ndarray = None) -> None:
     variational_std, _ = _compute_variational_std(
         variational_log_std,
         min_variational_std,
@@ -690,6 +766,26 @@ def _append_vi_history(vi_history,
     vi_history['relative_mse'].append(float(mean_relative_mse))
     vi_history['loglikelihood'].append(float(np.mean(log_likelihoods)))
     vi_history['cpu_time_seconds'].append(float(cpu_time_seconds))
+    vi_history['accepted_step_size'].append(float(accepted_step_size))
+    gradient = (
+        np.full(2 * variational_mean.size, np.nan)
+        if gradient_mean is None or gradient_log_std is None
+        else np.concatenate([gradient_mean, gradient_log_std]).copy()
+    )
+    vi_history['gradient'].append(gradient)
+    vi_history['gradient_standard_error'].append(
+        np.full(2 * variational_mean.size, np.nan)
+        if gradient_standard_error is None
+        else np.asarray(gradient_standard_error).copy()
+    )
+    for key, value in (
+        ('mfmc_alpha_mean', mfmc_alpha_mean),
+        ('mfmc_alpha_log_std', mfmc_alpha_log_std),
+    ):
+        vi_history[key].append(
+            np.full(variational_mean.size, np.nan)
+            if value is None else np.asarray(value).copy()
+        )
 
 
 def _pack_vi_history(vi_history):
@@ -713,6 +809,15 @@ def _pack_vi_history(vi_history):
         'vi_history_relative_mse': np.asarray(vi_history['relative_mse'], dtype=float),
         'vi_history_loglikelihood': np.asarray(vi_history['loglikelihood'], dtype=float),
         'vi_history_cpu_time_seconds': np.asarray(vi_history['cpu_time_seconds'], dtype=float),
+        'vi_history_accepted_step_size': np.asarray(
+            vi_history['accepted_step_size'], dtype=float
+        ),
+        'vi_history_gradient': np.asarray(vi_history['gradient']),
+        'vi_history_gradient_standard_error': np.asarray(
+            vi_history['gradient_standard_error']
+        ),
+        'vi_history_mfmc_alpha_mean': np.asarray(vi_history['mfmc_alpha_mean']),
+        'vi_history_mfmc_alpha_log_std': np.asarray(vi_history['mfmc_alpha_log_std']),
     }
 
 
@@ -745,6 +850,16 @@ def _normalize_baseline_method(baseline_method: str):
             "Supported options are 'none', 'loo', and 'optimal'."
         )
     return method
+
+
+def _normalize_score_function_entropy_strategy(strategy: str) -> str:
+    normalized = strategy.strip().lower()
+    if normalized not in ('analytic', 'joint'):
+        raise ValueError(
+            f"Unsupported score_function_entropy_strategy '{strategy}'. "
+            "Supported options are 'analytic' and 'joint'."
+        )
+    return normalized
 
 
 def _normalize_variational_distribution(variational_distribution: str):
@@ -1029,7 +1144,8 @@ def _compute_reinforce_gradients(parameter_samples: np.ndarray,
                                  log_likelihoods: np.ndarray,
                                  baseline_method: str,
                                  variational_correlation_cholesky: np.ndarray = None,
-                                 elbo_scaling_factor: float = 1.0):
+                                 elbo_scaling_factor: float = 1.0,
+                                 score_function_entropy_strategy: str = 'analytic'):
     centered_parameters = parameter_samples - variational_mean[None, :]
     normalized_parameters = centered_parameters / variational_std[None, :]
     if variational_correlation_cholesky is None:
@@ -1047,28 +1163,44 @@ def _compute_reinforce_gradients(parameter_samples: np.ndarray,
         score_mean = correlation_inverse_times_normalized / variational_std[None, :]
         score_log_std = normalized_parameters * correlation_inverse_times_normalized - 1.0
 
+    entropy_strategy = _normalize_score_function_entropy_strategy(
+        score_function_entropy_strategy
+    )
+    gradient_weights = log_likelihoods
+    if entropy_strategy == 'joint':
+        gradient_weights = log_likelihoods - elbo_scaling_factor * (
+            _compute_variational_log_densities(
+                parameter_samples,
+                variational_mean,
+                variational_std,
+                variational_correlation_cholesky,
+            )
+        )
+
     baseline_method = _normalize_baseline_method(baseline_method)
     if baseline_method == 'optimal':
-        baseline_mean = _compute_optimal_baseline(log_likelihoods, score_mean)
-        baseline_log_std = _compute_optimal_baseline(log_likelihoods, score_log_std)
-        centered_weights_mean = log_likelihoods[:, None] - baseline_mean[None, :]
-        centered_weights_log_std = log_likelihoods[:, None] - baseline_log_std[None, :]
+        baseline_mean = _compute_optimal_baseline(gradient_weights, score_mean)
+        baseline_log_std = _compute_optimal_baseline(gradient_weights, score_log_std)
+        centered_weights_mean = gradient_weights[:, None] - baseline_mean[None, :]
+        centered_weights_log_std = gradient_weights[:, None] - baseline_log_std[None, :]
     elif baseline_method == 'loo':
-        baseline_loo = _compute_leave_one_out_baseline(log_likelihoods)
+        baseline_loo = _compute_leave_one_out_baseline(gradient_weights)
         baseline_mean = np.zeros_like(variational_mean)
         baseline_log_std = np.zeros_like(variational_mean)
-        centered_weights_mean = (log_likelihoods - baseline_loo)[:, None]
-        centered_weights_log_std = (log_likelihoods - baseline_loo)[:, None]
+        centered_weights_mean = (gradient_weights - baseline_loo)[:, None]
+        centered_weights_log_std = (gradient_weights - baseline_loo)[:, None]
     else:
         baseline_mean = np.zeros_like(variational_mean)
         baseline_log_std = np.zeros_like(variational_mean)
-        centered_weights_mean = log_likelihoods[:, None]
-        centered_weights_log_std = log_likelihoods[:, None]
+        centered_weights_mean = gradient_weights[:, None]
+        centered_weights_log_std = gradient_weights[:, None]
 
     gradient_terms_mean = centered_weights_mean * score_mean
     gradient_terms_log_std = centered_weights_log_std * score_log_std
     gradient_mean = np.mean(gradient_terms_mean, axis=0)
-    gradient_log_std = np.mean(gradient_terms_log_std, axis=0) + elbo_scaling_factor
+    gradient_log_std = np.mean(gradient_terms_log_std, axis=0)
+    if entropy_strategy == 'analytic':
+        gradient_log_std += elbo_scaling_factor
     gradient_standard_error = np.concatenate([
         _compute_component_standard_error(gradient_terms_mean),
         _compute_component_standard_error(gradient_terms_log_std),
@@ -1077,7 +1209,14 @@ def _compute_reinforce_gradients(parameter_samples: np.ndarray,
         np.concatenate([gradient_mean, gradient_log_std]),
         gradient_standard_error,
     )
-    return gradient_mean, gradient_log_std, baseline_mean, baseline_log_std, gradient_signal_to_noise_ratio
+    return (
+        gradient_mean,
+        gradient_log_std,
+        baseline_mean,
+        baseline_log_std,
+        gradient_signal_to_noise_ratio,
+        gradient_standard_error,
+    )
 
 
 def _compute_reinforce_hessian_diagonal(parameter_samples: np.ndarray,
@@ -1429,7 +1568,8 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
                                  transform_map: str = 'sigmoid',
                                  variational_correlation_cholesky: np.ndarray = None,
                                  elbo_scaling_factor: float = 1.0,
-                                 log_likelihood_precision_operator: np.ndarray = None):
+                                 log_likelihood_precision_operator: np.ndarray = None,
+                                 score_function_entropy_strategy: str = 'analytic'):
     qois = iteration_results['qois']
     mean_qoi = iteration_results['mean-qoi']
     errors = iteration_results['errors']
@@ -1467,6 +1607,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         baseline_mean,
         baseline_log_std,
         gradient_signal_to_noise_ratio,
+        gradient_standard_error,
     ) = _compute_reinforce_gradients(
         optimizer_samples,
         variational_mean,
@@ -1475,6 +1616,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         baseline_method,
         variational_correlation_cholesky,
         elbo_scaling_factor,
+        score_function_entropy_strategy,
     )
     hessian_diagonal_mean, hessian_diagonal_log_std = _compute_reinforce_hessian_diagonal(
         optimizer_samples,
@@ -1531,6 +1673,7 @@ def _build_vi_state_from_results(optimizer_samples: np.ndarray,
         'baseline_mean': baseline_mean,
         'baseline_log_std': baseline_log_std,
         'gradient_signal_to_noise_ratio': gradient_signal_to_noise_ratio,
+        'gradient_standard_error': gradient_standard_error,
     }
     return state
 
@@ -1561,7 +1704,8 @@ def _evaluate_vi_state(model: QoiModel,
                        elbo_scaling_factor: float = 1.0,
                        log_likelihood_precision_operator: np.ndarray = None,
                        sampling_method: str = 'mc',
-                       dispatcher: Optional[BaseDispatcher] = None):
+                       dispatcher: Optional[BaseDispatcher] = None,
+                       score_function_entropy_strategy: str = 'analytic'):
     optimizer_samples, parameter_samples = _draw_parameter_samples(
         variational_mean,
         variational_log_std,
@@ -1609,6 +1753,7 @@ def _evaluate_vi_state(model: QoiModel,
         variational_correlation_cholesky=variational_correlation_cholesky,
         elbo_scaling_factor=elbo_scaling_factor,
         log_likelihood_precision_operator=log_likelihood_precision_operator,
+        score_function_entropy_strategy=score_function_entropy_strategy,
     )
 
 def _evaluate_vi_candidate_for_line_search(model: QoiModel,
@@ -1638,7 +1783,8 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
                                            variational_correlation_cholesky: np.ndarray = None,
                                            elbo_scaling_factor: float = 1.0,
                                            log_likelihood_precision_operator: np.ndarray = None,
-                                           dispatcher: Optional[BaseDispatcher] = None):
+                                           dispatcher: Optional[BaseDispatcher] = None,
+                                           score_function_entropy_strategy: str = 'analytic'):
     optimizer_samples, parameter_samples = _draw_parameter_samples(
         variational_mean,
         variational_log_std,
@@ -1694,6 +1840,7 @@ def _evaluate_vi_candidate_for_line_search(model: QoiModel,
             variational_correlation_cholesky=variational_correlation_cholesky,
             elbo_scaling_factor=elbo_scaling_factor,
             log_likelihood_precision_operator=log_likelihood_precision_operator,
+            score_function_entropy_strategy=score_function_entropy_strategy,
         )
     return candidate
 
@@ -1714,6 +1861,7 @@ def _save_vi_restart(restart_path: str,
                      bounded_parameter_handling: str,
                      transform_map: str,
                      baseline_method: str,
+                     score_function_entropy_strategy: str,
                      optimization_method: str,
                      line_search_objective: str,
                      line_search_method: str,
@@ -1762,6 +1910,7 @@ def _save_vi_restart(restart_path: str,
         bounded_parameter_handling=bounded_parameter_handling,
         transform_map=transform_map,
         baseline_method=baseline_method,
+        score_function_entropy_strategy=score_function_entropy_strategy,
         optimization_method=optimization_method,
         line_search_objective=line_search_objective,
         line_search_method=line_search_method,
@@ -1788,7 +1937,7 @@ def _save_vi_restart(restart_path: str,
         'gradient_mean', 'gradient_log_std', 'hessian_diagonal_mean',
         'hessian_diagonal_log_std', 'hessian_full', 'update_direction_mean',
         'update_direction_log_std', 'baseline_mean', 'baseline_log_std',
-        'gradient_signal_to_noise_ratio',
+        'gradient_signal_to_noise_ratio', 'gradient_standard_error',
     )
     for key in restart_state_keys:
         if key in state and state[key] is not None:
@@ -1956,7 +2105,8 @@ def run_vi(model: QoiModel,
            transform_interior_margin: float = 1e-6,
            transform_map: str = 'sigmoid',
            min_physical_variational_std_fraction: float = 1e-6,
-           dispatcher: Optional[BaseDispatcher] = None):
+           dispatcher: Optional[BaseDispatcher] = None,
+           score_function_entropy_strategy: str = 'analytic'):
     '''
     Run Gaussian variational inference with score-function gradients.
 
@@ -2011,6 +2161,10 @@ def run_vi(model: QoiModel,
             this tolerance.
         baseline_method: Baseline used in REINFORCE gradient estimation.
             Supported options are 'none', 'loo', and 'optimal'.
+        score_function_entropy_strategy: Entropy treatment in the score-function
+            gradient. ``'analytic'`` retains the analytic Gaussian entropy
+            gradient; ``'joint'`` estimates the full ``log_joint - log_q``
+            integrand. The joint strategy is not a pathwise estimator.
         bounded_parameter_handling: Parameter bounds handling. Supported options
             are 'clip' and 'transform'.
         transform_interior_margin: Margin used by bounded_parameter_handling='transform'
@@ -2121,6 +2275,9 @@ def run_vi(model: QoiModel,
     if baseline_method is None:
         baseline_method = 'loo'
     baseline_method = _normalize_baseline_method(baseline_method)
+    score_function_entropy_strategy = _normalize_score_function_entropy_strategy(
+        score_function_entropy_strategy
+    )
     sampling_method = _normalize_sampling_method(sampling_method)
     (
         parameter_names,
@@ -2252,6 +2409,7 @@ def run_vi(model: QoiModel,
             log_likelihood_precision_operator,
             sampling_method,
             dispatcher,
+            score_function_entropy_strategy,
         )
         initial_elbo_reference = float(state['elbo'])
     else:
@@ -2304,6 +2462,15 @@ def run_vi(model: QoiModel,
             restart_baseline_method = str(restart_data['baseline_method'].item())
             if restart_baseline_method != baseline_method:
                 raise ValueError("Restart file baseline_method does not match current run.")
+        restart_entropy_strategy = (
+            str(restart_data['score_function_entropy_strategy'].item())
+            if 'score_function_entropy_strategy' in restart_data
+            else 'analytic'
+        )
+        if restart_entropy_strategy != score_function_entropy_strategy:
+            raise ValueError(
+                "Restart file score_function_entropy_strategy does not match current run."
+            )
         if 'variational_distribution' in restart_data:
             restart_variational_distribution = str(restart_data['variational_distribution'].item())
             if restart_variational_distribution != variational_distribution:
@@ -2424,6 +2591,11 @@ def run_vi(model: QoiModel,
             state['gradient_signal_to_noise_ratio'] = float(
                 restart_data['gradient_signal_to_noise_ratio']
             ) if 'gradient_signal_to_noise_ratio' in restart_data else np.nan
+            state['gradient_standard_error'] = (
+                restart_data['gradient_standard_error']
+                if 'gradient_standard_error' in restart_data
+                else np.full(2 * variational_mean.size, np.nan)
+            )
             state['gradient_method'] = gradient_method
         else:
             run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
@@ -2455,6 +2627,7 @@ def run_vi(model: QoiModel,
                 log_likelihood_precision_operator,
                 sampling_method,
                 dispatcher,
+                score_function_entropy_strategy,
             )
         if 'initial_elbo_reference' in restart_data:
             initial_elbo_reference = float(restart_data['initial_elbo_reference'])
@@ -2522,6 +2695,7 @@ def run_vi(model: QoiModel,
             bounded_parameter_handling,
             transform_map,
             baseline_method,
+            score_function_entropy_strategy,
             optimization_method,
             line_search_objective,
             line_search_method,
@@ -2564,6 +2738,9 @@ def run_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             transform_map,
+            gradient_mean=state['gradient_mean'],
+            gradient_log_std=state['gradient_log_std'],
+            gradient_standard_error=state['gradient_standard_error'],
         )
     print(
         f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -2673,6 +2850,7 @@ def run_vi(model: QoiModel,
                         log_likelihood_precision_operator=log_likelihood_precision_operator,
                         sampling_method=sampling_method,
                         dispatcher=dispatcher,
+                        score_function_entropy_strategy=score_function_entropy_strategy,
                     )
                     independent_hessian_cache = _get_state_hessian(
                         hessian_state, newton_hessian_type
@@ -2752,6 +2930,7 @@ def run_vi(model: QoiModel,
                 elbo_scaling_factor,
                 log_likelihood_precision_operator,
                 dispatcher,
+                score_function_entropy_strategy,
             )
 
             if line_search_objective == 'elbo':
@@ -2808,9 +2987,11 @@ def run_vi(model: QoiModel,
                     variational_correlation_cholesky=variational_correlation_cholesky,
                     elbo_scaling_factor=elbo_scaling_factor,
                     log_likelihood_precision_operator=log_likelihood_precision_operator,
+                    score_function_entropy_strategy=score_function_entropy_strategy,
                     )
                 state = test_state
                 accepted_elbo_history.append(state['elbo'])
+                accepted_step_size = step_size
                 step_size = min(step_size * step_size_growth_factor, max_step_size)
                 line_search_standard_normal_cache = None
                 relative_elbo_improvement = (
@@ -2840,6 +3021,10 @@ def run_vi(model: QoiModel,
                     parameter_maxes,
                     transform_interior_margin,
                     transform_map,
+                    accepted_step_size=accepted_step_size,
+                    gradient_mean=state['gradient_mean'],
+                    gradient_log_std=state['gradient_log_std'],
+                    gradient_standard_error=state['gradient_standard_error'],
                 )
                 print(
                     f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -2895,6 +3080,7 @@ def run_vi(model: QoiModel,
                     bounded_parameter_handling,
                     transform_map,
                     baseline_method,
+                    score_function_entropy_strategy,
                     optimization_method,
                     line_search_objective,
                     line_search_method,
@@ -3033,6 +3219,7 @@ def run_vi(model: QoiModel,
                 elbo_scaling_factor,
                 log_likelihood_precision_operator,
                 dispatcher,
+                score_function_entropy_strategy,
             )
 
             if line_search_objective == 'elbo':
@@ -3089,11 +3276,13 @@ def run_vi(model: QoiModel,
                     variational_correlation_cholesky=variational_correlation_cholesky,
                     elbo_scaling_factor=elbo_scaling_factor,
                     log_likelihood_precision_operator=log_likelihood_precision_operator,
+                    score_function_entropy_strategy=score_function_entropy_strategy,
                     )
                 state = test_state
                 if newton_curvature_strategy == 'lagged':
                     running_hessian = pending_running_hessian
                 independent_hessian_cache = None
+                accepted_step_size = step_size
                 step_size = min(step_size * step_size_growth_factor, max_step_size)
                 line_search_standard_normal_cache = None
 
@@ -3124,6 +3313,10 @@ def run_vi(model: QoiModel,
                     parameter_maxes,
                     transform_interior_margin,
                     transform_map,
+                    accepted_step_size=accepted_step_size,
+                    gradient_mean=state['gradient_mean'],
+                    gradient_log_std=state['gradient_log_std'],
+                    gradient_standard_error=state['gradient_standard_error'],
                 )
                 print(
                     f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
@@ -3179,6 +3372,7 @@ def run_vi(model: QoiModel,
                     bounded_parameter_handling,
                     transform_map,
                     baseline_method,
+                    score_function_entropy_strategy,
                     optimization_method,
                     line_search_objective,
                     line_search_method,
