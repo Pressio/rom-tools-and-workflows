@@ -1,4 +1,3 @@
-import re
 import sys
 
 import pytest
@@ -27,7 +26,7 @@ def test_defaults_with_no_args_or_yaml(monkeypatch):
 
 
 def test_cli_args_override_defaults(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-r", "myhost", "-u", "alice", "--port", "2222"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--user", "alice", "--port", "2222"])
 
     config = Configuration()
 
@@ -45,63 +44,30 @@ def test_every_schema_argument_has_a_long_option(monkeypatch):
     assert config.partition == "batch"
 
 
-def test_short_aliases_are_limited_to_per_job_overrides():
+def test_host_process_valueless_short_flag_does_not_raise(monkeypatch):
     """
-    Short aliases are claimed from the host process's command line, so the
-    schema keeps only the ones users vary between jobs. "-i" is reserved for
-    --input and is registered separately.
+    Regression test: "pytest -s tests/foo.py" reached the schema's "-s"
+    (--script) and aborted construction with a ConfigurationError.
     """
-    aliases = {
-        name: arg["cli"]
-        for section in SCHEMA.values()
-        for name, arg in section.items()
-        if "cli" in arg
-    }
+    monkeypatch.setattr(sys, "argv", ["prog", "-s", "-r", "-u"])
 
-    assert aliases == {
-        "remote": "-r",
-        "user": "-u",
-        "script": "-s",
-        "account": "-a",
-    }
+    assert Configuration().script is None
 
 
-def test_schema_flags_are_unique_single_character_switches():
-    """
-    Regression test: multi-character single-dash flags such as "-pys" are
-    prefix-ambiguous with "-p", so "-py x" aborted with "ambiguous option"
-    while "-pyszz" silently parsed as "-p yszz".
-    """
-    flags = [
-        arg["cli"]
-        for section in SCHEMA.values()
-        for arg in section.values()
-        if "cli" in arg
-    ]
+def test_explicit_argv_ignores_the_host_process_command_line(monkeypatch):
+    """An embedder configures a dispatcher from its own list, not from sys.argv."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value", "--port", "not-a-port"])
 
-    assert len(set(flags)) == len(flags)
-    assert "-i" not in flags  # reserved for --input
-    for flag in flags:
-        assert re.fullmatch(r"-[A-Za-z]", flag), f"{flag} is not a single-character switch"
+    config = Configuration(argv=["--remote", "explicit"])
 
-
-def test_host_process_short_flags_are_not_captured(monkeypatch):
-    """
-    Regression test: the dispatcher parses the host process's argv, so a
-    workflow's own "-n 8" used to be read as SLURM num_nodes=8.
-    """
-    monkeypatch.setattr(
-        sys, "argv",
-        ["prog", "-n", "8", "-p", "4444", "-o", "host.log", "-d", "-q", "quiet"],
-    )
-
-    config = Configuration()
-
-    assert config.num_nodes == 1
+    assert config.remote == "explicit"
     assert config.port == 22
-    assert config.collect is None
-    assert config.debug is False
-    assert config.partition == "short"
+
+
+def test_empty_argv_reads_nothing(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value"])
+
+    assert Configuration(argv=[]).remote is None
 
 
 def test_long_options_are_not_abbreviated(monkeypatch):
@@ -114,9 +80,9 @@ def test_long_options_are_not_abbreviated(monkeypatch):
 def test_bad_value_for_a_schema_argument_raises(monkeypatch):
     """
     Regression test: a value that fails type conversion used to warn and drop
-    the whole command line, so "-r myhost" was silently lost along with it.
+    the whole command line, so "--remote myhost" was silently lost with it.
     """
-    monkeypatch.setattr(sys, "argv", ["prog", "-r", "myhost", "--port", "not-a-port"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--port", "not-a-port"])
 
     with pytest.raises(ConfigurationError, match="--port"):
         Configuration()
@@ -216,7 +182,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
 def test_cli_overrides_yaml(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path), "-r", "clihost"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path), "--remote", "clihost"])
 
     config = Configuration()
 
@@ -247,6 +213,7 @@ def test_to_dict_returns_independent_copy(monkeypatch):
     as_dict["job_name"] = "mutated"
 
     assert config.job_name == "hpctools_job"
+    assert "_argv" not in as_dict  # private parsing state is not configuration
 
 
 @pytest.mark.parametrize(

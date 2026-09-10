@@ -26,13 +26,16 @@ class RemoteDispatcher(BaseDispatcher):
         logger: An instance of the Logger class for logging
         campaign_directory: An optional string naming the directory this campaign
             runs in. It is mirrored locally and under the remote root.
+        argv: Argument list to configure from instead of the real process argv.
+            Pass [] to ignore the surrounding program's command line.
 
     The basic command is therefore:
         ssh user@remote -p port
     """
-    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
+                 connection: Optional[Connection] = None, argv: list = None):
         # Initialize the base Dispatcher class (sets up config and logger)
-        super().__init__(campaign_directory, logger)
+        super().__init__(campaign_directory, logger, argv=argv)
 
         # Core members
         self.conn : Optional[Connection] = None

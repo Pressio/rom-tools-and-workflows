@@ -115,7 +115,7 @@ Step 3: Define ``run_model()``
 There are two primary ways to run the model through the dispatcher.
 
 **SLURM script.** Create a SLURM script locally that executes your model and
-configure the dispatcher with that script (using ``-s``, see
+configure the dispatcher with that script (using ``--script``, see
 `Configuring the dispatcher`_). Then ``run_model()`` can be as simple as:
 
 .. code-block:: python
@@ -276,8 +276,7 @@ Core configuration arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Every argument is available as a long option named after it, such as
-``--num_nodes``. Five arguments also have a short alias, because they are the
-ones typically varied from job to job:
+``--num_nodes``. One argument also has a short alias:
 
 .. list-table::
    :header-rows: 1
@@ -288,29 +287,23 @@ ones typically varied from job to job:
    * - ``-i``
      - ``--input``
      - Path to the YAML configuration file
-   * - ``-r``
-     - ``--remote``
-     - Remote host to connect to
-   * - ``-u``
-     - ``--user``
-     - Username for the connection
-   * - ``-s``
-     - ``--script``
-     - Path to a local SLURM script
-   * - ``-a``
-     - ``--account``
-     - Account WCID to charge
 
 .. note::
-   Short aliases are deliberately scarce. Your workflow's own command line is
-   what the dispatcher parses, so every single-letter switch the schema claims
-   is one your workflow can no longer use for itself. ``-h`` is never claimed,
-   so your workflow keeps its own ``--help``.
+   Your workflow's own command line is what the dispatcher parses, so any
+   switch the schema claims is one your workflow can no longer use for itself.
+   That is why ``-i`` is the only single-letter switch claimed; ``-h`` is never
+   claimed either, so your workflow keeps its own ``--help``.
+
+.. note::
+   To keep the dispatcher away from your command line entirely, construct it
+   with an explicit argument list: ``LocalDispatcher(argv=[])`` configures
+   itself from YAML and defaults alone. This matters when a workflow's own
+   flags would otherwise be read as configuration.
 
 **ssh** — establish the connection with the remote host:
 
-- ``remote`` (``-r``): Name of the remote host.
-- ``user`` (``-u``): Username for the connection.
+- ``remote``: Name of the remote host.
+- ``user``: Username for the connection.
 - ``port``: Port for the connection.
 
 .. code-block:: yaml
@@ -347,9 +340,9 @@ ones typically varied from job to job:
 
 **slurm** — schedule jobs with the dispatcher:
 
-- ``script`` (``-s``): Path to a local SLURM script, uploaded to the remote
+- ``script``: Path to a local SLURM script, uploaded to the remote
   host and submitted on calls to ``submit_job()``.
-- ``account`` (``-a``): Account WCID to charge for the job.
+- ``account``: Account WCID to charge for the job.
 - ``job_name``
 - ``num_nodes``
 - ``tasks_per_node``
@@ -397,7 +390,7 @@ Run the example workflow with:
 
 .. code-block:: bash
 
-   python romtools/hpc/example/workflow.py -r <remote-host> -u <username> -a <account/wcid>
+   python romtools/hpc/example/workflow.py --remote <remote-host> --user <username> --account <account/wcid>
 
 See all available arguments with:
 

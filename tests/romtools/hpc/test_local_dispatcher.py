@@ -261,7 +261,7 @@ def test_submit_job_uses_a_configured_slurm_script_unmodified(tmp_path, monkeypa
     (campaign / "custom-123.out").write_text("from the custom outfile\n")
     (campaign / "custom-123.err").write_text("")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "-s", str(script)])
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
     dispatcher = LocalDispatcher(campaign_directory=str(campaign))
 
     result = dispatcher.submit_job()
@@ -270,6 +270,44 @@ def test_submit_job_uses_a_configured_slurm_script_unmodified(tmp_path, monkeypa
     assert result.stdout == "from the custom outfile\n"
     # The script names its own output files, so sbatch is not told where to write
     assert "--output=" not in sbatch_log.read_text()
+
+
+def test_submit_job_accepts_a_slurm_script_already_in_the_job_directory(tmp_path, monkeypatch, fake_scheduler):
+    """
+    Regression test: staging a script that already sits in the job directory
+    copied it onto itself, and the resulting SameFileError aborted the
+    submission before sbatch. That is the normal case on a cluster node.
+    """
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    script = campaign / "job.sh"
+    script.write_text("#!/bin/bash\nsrun ./my_app\n")
+    sbatch_log = fake_scheduler()
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+
+    dispatcher.submit_job()
+
+    assert script.read_text() == "#!/bin/bash\nsrun ./my_app\n"
+    submission = sbatch_log.read_text().rstrip()
+    assert f"cwd={campaign}" in submission
+    assert submission.endswith("job.sh")
+
+
+def test_construction_is_immune_to_host_process_argv(tmp_path, monkeypatch):
+    """
+    A dispatcher given an explicit argv ignores the surrounding program's
+    command line, so a workflow keeps its own switches whatever they mean here.
+    """
+    monkeypatch.setattr(
+        sys, "argv",
+        ["prog", "--script", "host.sh", "--job_name", "host-job", "--port", "not-a-port"],
+    )
+
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path), argv=[])
+
+    assert dispatcher.config["script"] is None
+    assert dispatcher.config["job_name"] == "hpctools_job"
 
 
 def test_submit_job_leaves_results_in_place_without_archiving_them(tmp_path, monkeypatch, fake_scheduler):
@@ -349,7 +387,7 @@ def test_submit_job_with_a_script_naming_only_an_output_file(tmp_path, monkeypat
     campaign.mkdir()
     (campaign / "custom-123.out").write_text("both streams\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "-s", str(script)])
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
     dispatcher = LocalDispatcher(campaign_directory=str(campaign))
 
     result = dispatcher.submit_job()
@@ -369,7 +407,7 @@ def test_submit_job_with_a_script_naming_only_an_error_file(tmp_path, monkeypatc
     (campaign / "slurm.out").write_text("job stdout\n")
     (campaign / "custom-123.err").write_text("job stderr\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "-s", str(script)])
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
     dispatcher = LocalDispatcher(campaign_directory=str(campaign))
 
     result = dispatcher.submit_job()
@@ -423,7 +461,7 @@ def test_submit_job_with_a_script_keeps_its_own_output_files_on_every_submission
     campaign.mkdir()
     (campaign / "custom-123.out").write_text("both streams\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "-s", str(script)])
+    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
     dispatcher = LocalDispatcher(campaign_directory=str(campaign))
 
     dispatcher.submit_job()

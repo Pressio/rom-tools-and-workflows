@@ -96,7 +96,7 @@ ways to do this:
 1. **SLURM**
 
 The simplest approach is to create a SLURM script locally that executes your model.
-Then you just configure the dispatcher with that script (using the `-s`
+Then you just configure the dispatcher with that script (using the `--script`
 command--see [Configurating the dispatcher](#configuring-the-dispatcher) below).
 
 Then you `run_model()` method can be as simple as:
@@ -263,22 +263,23 @@ python -m romtools.hpc
 ```
 
 Every argument is available as a long option named after it, such as
-`--num_nodes`. Five arguments also have a short alias, because they are the
-ones typically varied from job to job:
+`--num_nodes`. One argument also has a short alias:
 
 | Short | Long | Meaning |
 | --- | --- | --- |
 | `-i` | `--input` | Path to the YAML configuration file |
-| `-r` | `--remote` | Remote host to connect to |
-| `-u` | `--user` | Username for the connection |
-| `-s` | `--script` | Path to a local SLURM script |
-| `-a` | `--account` | Account WCID to charge |
 
 > [!NOTE]
-> Short aliases are deliberately scarce. Your workflow's own command line is
-> what the dispatcher parses, so every single-letter switch the schema claims
-> is one your workflow can no longer use for itself. `-h` is never claimed,
-> so your workflow keeps its own `--help`.
+> Your workflow's own command line is what the dispatcher parses, so any
+> switch the schema claims is one your workflow can no longer use for itself.
+> That is why `-i` is the only single-letter switch claimed; `-h` is never
+> claimed either, so your workflow keeps its own `--help`.
+
+> [!NOTE]
+> To keep the dispatcher away from your command line entirely, construct it
+> with an explicit argument list: `LocalDispatcher(argv=[])` configures itself
+> from YAML and defaults alone. This matters when a workflow's own flags would
+> otherwise be read as configuration.
 
 > [!NOTE]
 > You do not need to specify every argument. Check out the
@@ -290,8 +291,8 @@ ones typically varied from job to job:
 
 These arguments establish your connection with the remote host. They are:
 
-- `remote` (`-r`): The name of the remote host you are connecting to
-- `user` (`-u`): The username to use for the connection
+- `remote`: The name of the remote host you are connecting to
+- `user`: The username to use for the connection
 - `port`: The port to use for the connection
 
 In the YAML, group these all under `ssh`:
@@ -333,12 +334,12 @@ These arguments are used to schedule jobs with the dispatcher.
 
 The primary argument simply points to an existing SLURM script:
 
-- `script` (`-s`): Path to a local SLURM script. This will be uploaded to the remote host and submitted on calls to `submit_job()`.
+- `script`: Path to a local SLURM script. This will be uploaded to the remote host and submitted on calls to `submit_job()`.
 
 All other arguments are used when you use the dispatcher to
 create the SLURM script for you based on some command.
 
-- `account` (`-a`): The account WCID to charge for the job
+- `account`: The account WCID to charge for the job
 - `job_name`
 - `num_nodes`
 - `tasks_per_node`
@@ -396,7 +397,7 @@ You can then use them in your model class by calling:
 Run the example workflow with:
 
 ```sh
-python romtools/hpc/example/workflow.py -r <remote-host> -u <username> -a <account/wcid>
+python romtools/hpc/example/workflow.py --remote <remote-host> --user <username> --account <account/wcid>
 ```
 
 See all available arguments with:

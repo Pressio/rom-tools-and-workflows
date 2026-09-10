@@ -24,9 +24,12 @@ class LocalDispatcher(BaseDispatcher):
     Arguments:
         campaign_directory: The directory jobs run in when given no run_directory
         logger: An instance of the Logger class for logging
+        argv: Argument list to configure from instead of the real process argv.
+            Pass [] to ignore the surrounding program's command line.
     """
-    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None):
-        super().__init__(campaign_directory=campaign_directory, logger=logger)
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
+                 argv: list = None):
+        super().__init__(campaign_directory=campaign_directory, logger=logger, argv=argv)
 
         self.caller = LocalCaller(config=self.config, logger=self.logger)
         self.files = LocalFileManager(config=self.config, logger=self.logger)

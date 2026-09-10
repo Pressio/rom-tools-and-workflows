@@ -28,7 +28,7 @@ class RecordingDispatcher(BaseDispatcher):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(argv=[])
         self.created_dirs = []
         self.saved_npz = []
         self.written_text = []
@@ -230,7 +230,7 @@ def test_mf_eki_with_auto_rom_without_dispatcher_builds_a_gp_rom(tmp_path):
 # ----------------------------------------------------------------------
 
 @pytest.mark.mpi_skip
-@pytest.mark.parametrize("dispatcher", [None, LocalDispatcher(), RecordingDispatcher()])
+@pytest.mark.parametrize("dispatcher", [None, LocalDispatcher(argv=[]), RecordingDispatcher()])
 def test_mf_eki_with_auto_rom_builds_a_rom_for_every_dispatcher(tmp_path, dispatcher):
     """
     Regression test: the GP builder used to return None whenever a dispatcher was
@@ -312,7 +312,7 @@ def test_run_eki_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path
     run_eki_iteration submits prepare_and_run to a ProcessPoolExecutor, so the
     dispatcher has to survive being pickled into the workers.
     """
-    _run_eki(str(tmp_path), dispatcher=LocalDispatcher(), evaluation_concurrency=2)
+    _run_eki(str(tmp_path), dispatcher=LocalDispatcher(argv=[]), evaluation_concurrency=2)
 
     assert (tmp_path / "iteration_0" / "run_mean").is_dir()
 
@@ -320,7 +320,7 @@ def test_run_eki_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path
 @pytest.mark.mpi_skip
 def test_run_vi_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path):
     """Same as above, but run_vi_iteration uses a 'spawn' context rather than 'fork'."""
-    _run_vi(str(tmp_path), dispatcher=LocalDispatcher(), evaluation_concurrency=2)
+    _run_vi(str(tmp_path), dispatcher=LocalDispatcher(argv=[]), evaluation_concurrency=2)
 
     assert (tmp_path / "iteration_0" / "run_0").is_dir()
 
