@@ -3,14 +3,12 @@ import time
 import socket
 from typing import Optional
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 
 class ExampleModelNoConn:
 
     def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-        if dispatcher is None:
-            dispatcher = LocalDispatcher
-        self.dispatcher = dispatcher
+        self.dispatcher = resolve_dispatcher(dispatcher)
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
         pass

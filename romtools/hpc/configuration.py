@@ -7,51 +7,66 @@ try:
 except ImportError:
     yaml = None
 
+# -----------------------------------------------------------------------------
+# Core configuration schema (defaults specified in the Configuration class)
+# -----------------------------------------------------------------------------
+
+# Only a few args that are likely to change frequently have shortened "cli" aliases
 SCHEMA = {
     "ssh": {
         "remote": {"cli": "-r", "type": str, "help": "The remote host to connect to."},
         "user":   {"cli": "-u", "type": str, "help": "The username to use for the connection."},
-        "port":   {"cli": "-p", "type": int, "help": "The port to use for the connection."},
+        "port":   {"type": int, "help": "The port to use for the connection."},
     },
     "workflow": {
-        "remote_root":    {"cli": "-R",   "type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
-        "collect":        {"cli": "-o",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
-        "upload":         {"cli": "-U",   "type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
-        "python_setup":   {"cli": "-e",   "type": str, "help": "Shell commands that set up the remote environment before invoking Python (e.g. loading modules or activating a virtual environment)."},
-        "python_command": {"cli": "-c",   "type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
+        "remote_root":    {"type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
+        "collect":        {"type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
+        "upload":         {"type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
+        "python_setup":   {"type": str, "help": "Shell commands that set up the remote environment before invoking Python (e.g. loading modules or activating a virtual environment)."},
+        "python_command": {"type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
     },
     "slurm": {
         "script":         {"cli": "-s", "type": str, "help": "Path to a local SLURM batch script that will be used for the job."},
-        "job_name":       {"cli": "-j", "type": str, "help": "Name of the SLURM job."},
-        "num_nodes":      {"cli": "-n", "type": int, "help": "Number of nodes to request for the SLURM job."},
-        "tasks_per_node": {"cli": "-t", "type": int, "help": "Number of tasks to run on each node for the SLURM job."},
-        "wall_time":      {"cli": "-w", "type": str, "help": "Maximum wall time for the SLURM job (format: HH:MM:SS)."},
-        "partition":      {"cli": "-q", "type": str, "help": "The partition to submit the SLURM job to (e.g., batch, short)."},
-        "poll_interval":  {"cli": "-I", "type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
         "account":        {"cli": "-a", "type": str, "help": "The account WCID to charge for the SLURM job."},
-        "timeout":        {"cli": "-T", "type": float, "help": "Time until giving up retrieving job's sacct exit code."},
+        "job_name":       {"type": str, "help": "Name of the SLURM job."},
+        "num_nodes":      {"type": int, "help": "Number of nodes to request for the SLURM job."},
+        "tasks_per_node": {"type": int, "help": "Number of tasks to run on each node for the SLURM job."},
+        "wall_time":      {"type": str, "help": "Maximum wall time for the SLURM job (format: HH:MM:SS)."},
+        "partition":      {"type": str, "help": "The partition to submit the SLURM job to (e.g., batch, short)."},
+        "poll_interval":  {"type": int, "help": "Seconds between squeue polls when waiting for job completion (default: 30)."},
+        "timeout":        {"type": float, "help": "Time until giving up retrieving job's sacct exit code."},
     },
     "output": {
-        "debug": {"cli": "-d", "type": bool, "help": "Whether to enable debug logging."},
+        "debug": {"type": bool, "help": "Whether to enable debug logging."},
     },
 }
 
-class _UnparsableArguments(Exception):
-    """Raised in place of argparse's exit-on-error."""
+# -----------------------------------------------------------------------------
+# Error handling for parser
+# -----------------------------------------------------------------------------
+
+class ConfigurationError(Exception):
+    """Raised when the command line cannot be parsed against SCHEMA."""
 
 
-class _TolerantParser(argparse.ArgumentParser):
+class _RaisingParser(argparse.ArgumentParser):
     """
-    An ArgumentParser that reports a bad value instead of exiting.
+    An ArgumentParser that raises instead of exiting the process.
 
-    A dispatcher may be constructed anywhere, including deep inside a process
-    whose own arguments were never meant for this schema, so an argument it
-    cannot parse must not take that process down with it.
+    parse_known_args() already returns the surrounding program's own arguments
+    as extras, so anything reaching error() is a genuine mistake in an argument
+    this schema owns.
     """
 
     def error(self, message):
-        raise _UnparsableArguments(message)
+        raise ConfigurationError(
+            f"{message}. Run 'python -m romtools.hpc' to see the "
+            "dispatcher's configuration arguments."
+        )
 
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
 
 def _normalize_collect(value):
     """
@@ -89,10 +104,14 @@ def _normalize_collect(value):
         f"Invalid collect value {value!r}; expected a string or list of strings."
     )
 
+def _switches(arg_name, arg):
+    """Return the switches for a schema entry: its long option, plus a short alias if it has one."""
+    short = arg.get("cli")
+    return ([short] if short else []) + [f"--{arg_name}"]
+
 def _add_value_param(grp, arg_name, arg):
     grp.add_argument(
-        arg["cli"],
-        f"--{arg_name}",
+        *_switches(arg_name, arg),
         dest=arg_name,
         type=arg["type"],
         default=argparse.SUPPRESS,
@@ -101,8 +120,7 @@ def _add_value_param(grp, arg_name, arg):
 
 def _add_flag_param(grp, arg_name, arg):
     grp.add_argument(
-        arg["cli"],
-        f"--{arg_name}",
+        *_switches(arg_name, arg),
         dest=arg_name,
         action="store_true",
         default=argparse.SUPPRESS,
@@ -116,6 +134,38 @@ def _add_schema_arg(grp, item):
     else:
         _add_value_param(grp, name, arg)
 
+def _build_parser() -> _RaisingParser:
+    """The parser for SCHEMA, used both to read the command line and to print help."""
+    # add_help=False: building a dispatcher must not claim -h from the surrounding program
+    # allow_abbrev=False: its "--part" must not be read as this schema's "--partition"
+    parser = _RaisingParser(
+        description="Configure the HPC dispatcher.",
+        argument_default=argparse.SUPPRESS,
+        allow_abbrev=False,
+        add_help=False,
+    )
+
+    # Config file (parsed earlier via parse_known_args; added here so it shows up in help)
+    parser.add_argument("-i", "--input", type=str, help="Path to a YAML configuration file.")
+
+    for group, items in SCHEMA.items():
+        if not items:
+            continue
+
+        new_grp = parser.add_argument_group(group)
+        for arg in items.items():
+            _add_schema_arg(new_grp, arg)
+
+    return parser
+
+def print_help() -> None:
+    """Print the dispatcher's configuration arguments."""
+    _build_parser().print_help()
+
+# -----------------------------------------------------------------------------
+# Main class holding configuration for dispatchers
+# -----------------------------------------------------------------------------
+
 class Configuration:
     """
     Handles parsing a yaml file and any supplied command-line args.
@@ -123,7 +173,7 @@ class Configuration:
     Precedence:
       1. CLI args (overwrite YAML)
       2. YAML file values (if provided)
-      3. class defaults
+      3. Class defaults
     """
     def __init__(self):
         # SSH configuration
@@ -179,7 +229,7 @@ class Configuration:
         as-is in self.user_defined. Its contents are not interpreted as individual
         configuration attributes.
         """
-        pre = _TolerantParser(add_help=False)
+        pre = _RaisingParser(add_help=False, allow_abbrev=False)
         pre.add_argument(
             "-i", "--input",
             dest="input",
@@ -187,10 +237,7 @@ class Configuration:
             default=None,
             help="Path to a YAML configuration file."
         )
-        try:
-            ns, _ = pre.parse_known_args()
-        except _UnparsableArguments:
-            return
+        ns, _ = pre.parse_known_args()
         config_path = ns.input
 
         if not config_path:
@@ -269,32 +316,7 @@ class Configuration:
                     apply_kv(k, v)
 
     def __parse_args(self) -> None:
-        parser = _TolerantParser(
-            description="Configure the HPC dispatcher.",
-            argument_default=argparse.SUPPRESS,
-        )
-
-        # Config file (so it shows up in --help; it is parsed earlier via parse_known_args)
-        parser.add_argument("-i", "--input", type=str, help="Path to a YAML configuration file.")
-
-        for group, items in SCHEMA.items():
-            if not items:
-                continue
-
-            new_grp = parser.add_argument_group(group)
-            for arg in items.items():
-                _add_schema_arg(new_grp, arg)
-
-        try:
-            args, _ = parser.parse_known_args()
-        except _UnparsableArguments as e:
-            warnings.warn(
-                f"Ignoring the command line ({e}). "
-                "Configure the dispatcher with a YAML file instead if these arguments "
-                "belong to the surrounding program.",
-                UserWarning
-            )
-            return
+        args, _ = _build_parser().parse_known_args()
 
         for name, value in vars(args).items():
             if name == "input":

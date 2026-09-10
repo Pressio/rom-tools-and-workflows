@@ -54,6 +54,23 @@ def test_run_executes_command_directly_without_slurm(monkeypatch, make_config):
     assert conn.calls == ["cd campaigns && ./my_app"]
 
 
+def test_run_reports_a_failed_command_without_raising(monkeypatch, make_config):
+    """
+    Both dispatchers report a failing command through the Result, so a model
+    written against one behaves the same when handed the other. This used to
+    raise RuntimeError while LocalDispatcher.run returned the failing Result.
+    """
+    conn = FakeConnection(responses=[("./my_app", Result("", "segfault", 139))])
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    result = dispatcher.run("./my_app")
+
+    assert not result.ok
+    assert result.exit_code == 139
+    assert result.stderr == "segfault"
+
+
 def test_submit_job_submits_polls_and_collects(monkeypatch, make_config, tmp_path):
     monkeypatch.chdir(tmp_path)
     responses = [
@@ -96,6 +113,29 @@ def test_submit_job_collects_results_and_extracts_them_locally(monkeypatch, make
     assert conn.get_calls == [(remote_archive_path, archive_name)]
     assert f"rm -f {remote_archive_path}" in conn.calls
     assert not (tmp_path / archive_name).exists()
+    assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
+
+
+def test_results_are_extracted_even_when_the_remote_cleanup_fails(monkeypatch, make_config, tmp_path):
+    """
+    Regression test: removing the remote archive raises, which aborted
+    collection after the download but before extraction, so the results were
+    never unpacked. A stale remote archive is untidy, not fatal.
+    """
+    monkeypatch.chdir(tmp_path)
+    responses = [
+        ("sbatch", Result("Submitted batch job 123\n", "", 0)),
+        ("squeue -j 123 -h", Result("", "", 0)),
+        ("tar -czf", Result("", "", 0)),
+        ("rm -f", Result("", "read-only file system", 1)),
+        ("sacct -j", Result("123|COMPLETED|0:0|0:0", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.submit_job("./my_app")
+
     assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
 
 

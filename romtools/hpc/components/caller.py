@@ -19,6 +19,7 @@ from .call_runner import (
     unpack,
     working_directory,
 )
+from romtools.hpc.components.file_manager import BaseFileManager
 from romtools.hpc.connection import Connection
 from romtools.hpc.logger import Logger
 
@@ -84,11 +85,12 @@ class RemoteCaller(BaseCaller):
 
     Arguments:
         connection: An established Connection to the remote host
+        files: The remote file manager used to stage inputs and read results back
         config: The dispatcher's configuration dictionary
         logger: An instance of the Logger class for logging
     """
 
-    def __init__(self, connection: Connection, config: dict = None, logger: Logger = None, files=None):
+    def __init__(self, connection: Connection, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
         super().__init__(config=config, logger=logger)
         self.conn = connection
         self.files = files

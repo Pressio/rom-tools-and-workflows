@@ -213,7 +213,7 @@ def test_run_eki_without_dispatcher_writes_local_run_directories(tmp_path):
 def test_run_eki_without_dispatcher_still_requires_an_absolute_directory(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(AssertionError, match="must provide an absolute path"):
+    with pytest.raises(ValueError, match="must provide an absolute path"):
         _run_eki("relative_work")
 
 

@@ -94,12 +94,20 @@ To run shell commands, e.g. to validate input decks or load modules:
 .. code-block:: python
 
    cmd = "load my_module && my_input_validator -i input_file.yaml"
-   self.dispatcher.run(cmd)
+   result = self.dispatcher.run(cmd)
+   if not result.ok:
+       raise RuntimeError(result.stderr)
 
 .. note::
    ``run()`` executes the command directly, so it is the right choice for quick
    work such as validation. Anything long or parallel belongs in ``submit_job()``,
    so that it lands on compute nodes rather than the login node.
+
+.. note::
+   A command that exits non-zero is reported through the returned ``Result``,
+   not raised. Every dispatcher behaves this way, so a model can move between
+   them unchanged. Check ``result.ok`` or ``result.exit_code`` and decide what
+   a failure means for your model.
 
 Step 3: Define ``run_model()``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,11 +121,15 @@ configure the dispatcher with that script (using ``-s``, see
 .. code-block:: python
 
    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
-       self.dispatcher.submit_job()
-       return 0
+       return self.dispatcher.submit_job().exit_code
 
 This copies your local SLURM script onto the remote host, submits it, and polls
 it until it completes.
+
+.. note::
+   ``submit_job()`` returns a ``Result`` carrying the job's exit code and its
+   captured output. The workflows treat a non-zero ``run_model()`` return as a
+   failed sample, so pass the exit code through rather than returning 0.
 
 **Manual commands.** Alternatively, have the dispatcher create the SLURM script
 for you. Define the command you wish to execute and let the dispatcher wrap it
@@ -127,8 +139,7 @@ in a SLURM script and submit it:
 
    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
        cmd = "srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"
-       self.dispatcher.submit_job(cmd, run_directory)
-       return 0
+       return self.dispatcher.submit_job(cmd, run_directory).exit_code
 
 The dispatcher creates a SLURM script that executes this command (configured at
 runtime), submits it, and polls the job until it completes.
@@ -217,6 +228,14 @@ above.
    ``evaluation_concurrency=1`` for remote runs and let SLURM provide the
    parallelism, or keep concurrency with a ``LocalDispatcher``.
 
+.. note::
+   Concurrency does work with a ``LocalDispatcher``, including one running on
+   a cluster node. Each worker process holds its own copy of the dispatcher
+   and each sample gets its own run directory, so the samples submit, poll,
+   and read back their jobs independently. Bear in mind that
+   ``evaluation_concurrency=N`` then puts N jobs in the queue at once, which
+   your site's submission limits may cap.
+
 .. warning::
    Restart files written through a ``RemoteDispatcher`` land on the remote host,
    but the drivers read ``restart_file`` from the local filesystem. To restart a
@@ -238,17 +257,17 @@ There are three ways to configure:
 1. **YAML.** Define a YAML file with all configurable params and pass it with
    ``-i path/to/your/input.yaml``.
 2. **CLI.** Set params on the command line. For example, set the
-   ``remote_root`` by passing ``-R /path/to/remote/root``.
+   ``remote_root`` by passing ``--remote_root /path/to/remote/root``.
 3. **Combination.** CLI arguments override YAML parameters, so you can use a
    YAML file for the bulk of configuration and CLI args to vary settings from
    run to run:
 
    .. code-block:: bash
 
-      python my_workflow.py -i path/to/input.yaml -o '*.log'
+      python my_workflow.py -i path/to/input.yaml --collect '*.log'
 
 .. tip::
-   Pass ``-h`` to your workflow, or refer to the ``SCHEMA`` in
+   Run ``python -m romtools.hpc``, or refer to the ``SCHEMA`` in
    ``hpc/configuration.py``, to see the full schema of configuration arguments.
    You do not need to specify every argument; the ``Configuration`` class
    defines a default value for each parameter.
@@ -256,11 +275,43 @@ There are three ways to configure:
 Core configuration arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Every argument is available as a long option named after it, such as
+``--num_nodes``. Five arguments also have a short alias, because they are the
+ones typically varied from job to job:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Short
+     - Long
+     - Meaning
+   * - ``-i``
+     - ``--input``
+     - Path to the YAML configuration file
+   * - ``-r``
+     - ``--remote``
+     - Remote host to connect to
+   * - ``-u``
+     - ``--user``
+     - Username for the connection
+   * - ``-s``
+     - ``--script``
+     - Path to a local SLURM script
+   * - ``-a``
+     - ``--account``
+     - Account WCID to charge
+
+.. note::
+   Short aliases are deliberately scarce. Your workflow's own command line is
+   what the dispatcher parses, so every single-letter switch the schema claims
+   is one your workflow can no longer use for itself. ``-h`` is never claimed,
+   so your workflow keeps its own ``--help``.
+
 **ssh** — establish the connection with the remote host:
 
 - ``remote`` (``-r``): Name of the remote host.
 - ``user`` (``-u``): Username for the connection.
-- ``port`` (``-p``): Port for the connection.
+- ``port``: Port for the connection.
 
 .. code-block:: yaml
 
@@ -271,18 +322,18 @@ Core configuration arguments
 
 **workflow** — file management with the dispatcher:
 
-- ``remote_root`` (``-R``): Directory on the remote host where commands are
+- ``remote_root``: Directory on the remote host where commands are
   executed, absolute or relative to the home directory.
-- ``collect`` (``-o``): Comma-separated list of files, directories, or glob
+- ``collect``: Comma-separated list of files, directories, or glob
   patterns to retrieve from the remote run directory. If omitted, nothing is
   retrieved.
-- ``upload`` (``-U``): Comma-separated list of files, directories, or glob
+- ``upload``: Comma-separated list of files, directories, or glob
   patterns to upload to the remote run directory. If omitted, nothing is
   uploaded.
-- ``python_setup`` (``-e``): Shell commands that set up the remote environment
+- ``python_setup``: Shell commands that set up the remote environment
   before invoking Python, such as loading modules or activating a virtual
   environment. Used by ``call()``.
-- ``python_command`` (``-c``): Command that invokes the remote Python with the
+- ``python_command``: Command that invokes the remote Python with the
   necessary libraries installed (default: ``python3``). Used by ``call()``.
 
 .. code-block:: yaml
@@ -299,13 +350,13 @@ Core configuration arguments
 - ``script`` (``-s``): Path to a local SLURM script, uploaded to the remote
   host and submitted on calls to ``submit_job()``.
 - ``account`` (``-a``): Account WCID to charge for the job.
-- ``job_name`` (``-j``)
-- ``num_nodes`` (``-n``)
-- ``tasks_per_node`` (``-t``)
-- ``wall_time`` (``-w``)
-- ``partition`` (``-q``)
-- ``poll_interval`` (``-I``): Seconds between ``squeue`` polls.
-- ``timeout`` (``-T``): Seconds to keep retrying the ``sacct`` query for a
+- ``job_name``
+- ``num_nodes``
+- ``tasks_per_node``
+- ``wall_time``
+- ``partition``
+- ``poll_interval``: Seconds between ``squeue`` polls.
+- ``timeout``: Seconds to keep retrying the ``sacct`` query for a
   finished job's exit code before giving up.
 
 All arguments other than ``script`` are used when the dispatcher creates the
@@ -319,7 +370,7 @@ SLURM script for you from a command.
 
 **output** — toggle debug logging for the dispatcher:
 
-- ``debug`` (``-d``)
+- ``debug``
 
 .. code-block:: yaml
 
@@ -352,4 +403,4 @@ See all available arguments with:
 
 .. code-block:: bash
 
-   python romtools/hpc/example/workflow.py -h
+   python -m romtools.hpc

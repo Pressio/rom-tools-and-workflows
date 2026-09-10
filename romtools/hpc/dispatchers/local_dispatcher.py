@@ -39,8 +39,10 @@ class LocalDispatcher(BaseDispatcher):
             files=self.files)
 
     def require_absolute_path(self, path: str) -> None:
-        # Only LocalDispatcher needs absolute paths (for now)
-        assert os.path.isabs(path), f"You must provide an absolute path (received: {path})"
+        # Local run directories are addressed as given, and concurrent
+        # evaluations run in worker processes that may change directory.
+        if not os.path.isabs(path):
+            raise ValueError(f"You must provide an absolute path (received: {path})")
 
     def run(self, cmd: str, run_directory: str = None) -> Result:
         """
