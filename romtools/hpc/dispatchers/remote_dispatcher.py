@@ -14,8 +14,7 @@ from romtools.hpc.components.transfer_manager import TransferManager
 
 class RemoteDispatcher(BaseDispatcher):
     """
-    Main class of ROM's HPC tools. Establishes SSH connection to remote host, dispatches
-    desired workflows, and transfers results back to the local machine.
+    Runs ROM workflows on a remote host over SSH, connecting as user@remote:port.
 
     Coordinates composed helpers rather than doing the work itself: files go through
     RemoteFileManager, Python calls through RemoteCaller, batch jobs through
@@ -28,9 +27,6 @@ class RemoteDispatcher(BaseDispatcher):
             runs in. It is mirrored locally and under the remote root.
         argv: Argument list to configure from instead of the real process argv.
             Pass [] to ignore the surrounding program's command line.
-
-    The basic command is therefore:
-        ssh user@remote -p port
     """
     def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
                  connection: Optional[Connection] = None, argv: list = None):
@@ -83,17 +79,13 @@ class RemoteDispatcher(BaseDispatcher):
     # ------------------------------------------------------------------
 
     def _connect_to_remote(self) -> None:
-        """
-        Attempts to establish an SSH connection to the remote host using the provided configuration.
-        Exits if the connection fails.
-        """
+        """Establish the SSH connection described by the configuration."""
         try:
             self.conn = Connection(host=self.config.get("remote"), user=self.config.get("user"), port=self.config.get("port"))
-            self.logger.set_hostname(self.conn.host)
-            self.logger.log(f"Connection established with {self.conn.host}.", local=True)
-            return
         except Exception as e:
-            raise RuntimeError(f"Failed to establish SSH connection: {e}")
+            raise RuntimeError(f"Failed to establish SSH connection: {e}") from e
+        self.logger.set_hostname(self.conn.host)
+        self.logger.log(f"Connection established with {self.conn.host}.", local=True)
 
     # ------------------------------------------------------------------
     # Resource management
@@ -132,18 +124,10 @@ class RemoteDispatcher(BaseDispatcher):
         """
         Run a command directly on the remote host, without SLURM.
 
-        This executes wherever the SSH session lands, which on a cluster is the
-        login node. Use it for quick work such as staging or preprocessing;
-        anything long or parallel belongs in submit_job(), so that it runs on
-        compute nodes instead.
-
-        Args:
-            cmd: The command to run.
-            run_directory: The directory to run it from, relative to the remote
-                root. Defaults to the remote root itself.
-
-        A failing command is reported through the Result, not raised, so that a
-        model works the same way whichever dispatcher it is handed.
+        This lands wherever the SSH session does, which on a cluster is the login
+        node, so it suits quick staging or preprocessing; anything long or
+        parallel belongs in submit_job(). run_directory is relative to the remote
+        root, and defaults to the root itself.
 
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """

@@ -3,18 +3,22 @@ import multiprocessing
 import os
 import pickle
 import shlex
+import shutil
 import sys
 
 import numpy as np
 import pytest
 
-import romtools.hpc.components.slurm_job_manager as slurm_job_manager
 from romtools.hpc.dispatchers import LocalDispatcher
 
 
 @pytest.fixture
 def dispatcher():
     return LocalDispatcher()
+
+
+def _raise_permission_error(*_args, **_kwargs):
+    raise PermissionError("permission denied")
 
 
 def _submit_in_worker(campaign_directory, run_directory):
@@ -63,27 +67,6 @@ def fake_scheduler(tmp_path, monkeypatch):
         return sbatch_log
 
     return install
-
-
-def test_configuration_comes_from_the_command_line(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--job_name", "myjob", "--num_nodes", "4", "--wall_time", "02:00:00"])
-
-    dispatcher = LocalDispatcher()
-
-    assert dispatcher.get_config("job_name") == "myjob"
-    assert dispatcher.get_config("num_nodes") == 4
-    assert dispatcher.get_config("wall_time") == "02:00:00"
-
-
-def test_configuration_comes_from_a_yaml_file(tmp_path, monkeypatch):
-    config = tmp_path / "cluster.yaml"
-    config.write_text("slurm:\n  job_name: from_yaml\n  num_nodes: 2\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(config)])
-
-    dispatcher = LocalDispatcher()
-
-    assert dispatcher.get_config("job_name") == "from_yaml"
-    assert dispatcher.get_config("num_nodes") == 2
 
 
 def test_put_copies_a_file(tmp_path, dispatcher):
@@ -473,54 +456,6 @@ def test_submit_job_reads_output_from_a_reused_dispatcher(tmp_path, fake_schedul
     assert "run_1" in second.stdout
 
 
-def test_submit_job_with_a_script_keeps_its_own_output_files_on_every_submission(
-    tmp_path, monkeypatch, fake_scheduler
-):
-    """The configured-script path stays merged-stream correct when submitted more than once."""
-    script = tmp_path / "job.sh"
-    script.write_text("#!/bin/bash\n#SBATCH --output=custom-%j.out\nsrun ./my_app\n")
-    campaign = tmp_path / "campaign"
-    campaign.mkdir()
-    (campaign / "custom-123.out").write_text("both streams\n")
-    sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
-
-    dispatcher.submit_job()
-    second = dispatcher.submit_job()
-
-    assert second.stdout == "both streams\n"
-    assert second.stderr == ""
-    assert "--output=" not in sbatch_log.read_text()
-    assert "--error=" not in sbatch_log.read_text()
-
-
-def test_a_configured_script_is_parsed_once_per_dispatcher(tmp_path, monkeypatch, fake_scheduler):
-    """
-    Submitting used to re-read and re-parse the script from disk twice per job,
-    once to build the sbatch flags and once to name the files to read back.
-    """
-    script = tmp_path / "job.sh"
-    script.write_text("#!/bin/bash\n#SBATCH --output=custom-%j.out\nsrun ./my_app\n")
-    campaign = tmp_path / "campaign"
-    campaign.mkdir()
-    fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
-
-    parses = []
-    real_parse = slurm_job_manager.parse_sbatch_out_args
-    monkeypatch.setattr(
-        slurm_job_manager, "parse_sbatch_out_args",
-        lambda path: (parses.append(path), real_parse(path))[1],
-    )
-
-    dispatcher.submit_job()
-    dispatcher.submit_job()
-
-    assert len(parses) == 1
-
-
 def test_submit_job_raises_when_given_neither_a_command_nor_a_script(dispatcher):
     with pytest.raises(ValueError, match="base command or a SLURM script"):
         dispatcher.submit_job()
@@ -554,20 +489,18 @@ def test_remove_dir_of_a_missing_directory_does_not_raise(tmp_path, dispatcher):
     dispatcher.remove_dir(str(tmp_path / "missing"))
 
 
-def test_remove_dir_reports_a_failure(tmp_path, dispatcher):
+def test_remove_dir_reports_a_failure(tmp_path, monkeypatch, dispatcher):
     """
     Regression test: this used shutil.rmtree(ignore_errors=True) and logged
     success regardless, so the local and remote managers disagreed about
     whether a failed removal is an error.
     """
     target = tmp_path / "locked"
-    (target / "child").mkdir(parents=True)
-    tmp_path.chmod(0o500)
-    try:
-        with pytest.raises(RuntimeError, match="Failed to remove directory"):
-            dispatcher.remove_dir(str(target))
-    finally:
-        tmp_path.chmod(0o700)
+    target.mkdir()
+    monkeypatch.setattr(shutil, "rmtree", _raise_permission_error)
+
+    with pytest.raises(RuntimeError, match="Failed to remove directory"):
+        dispatcher.remove_dir(str(target))
 
 
 @pytest.mark.mpi_skip

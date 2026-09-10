@@ -268,17 +268,6 @@ class Configuration:
         section_names = set(SCHEMA.keys()) | {"user-defined"}
         is_nested = any(k in data for k in section_names)
 
-        def apply_kv(key: str, value):
-            if key in ["collect", "upload"]:
-                setattr(self, name, _normalize_file_patterns(value))
-            elif hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                warnings.warn(
-                    f"Warning: Unrecognized YAML key '{key}' will be ignored.",
-                    UserWarning
-                )
-
         if is_nested:
             for section in SCHEMA.keys():
                 sec = data.get(section, {})
@@ -291,7 +280,7 @@ class Configuration:
                     )
                     continue
                 for k, v in sec.items():
-                    apply_kv(k, v)
+                    self._apply_setting(k, v, f"YAML key '{k}'")
 
             user_defined_section = data.get("user-defined", {})
             if user_defined_section is None:
@@ -309,7 +298,7 @@ class Configuration:
             for k, v in data.items():
                 if k in section_names:
                     continue
-                apply_kv(k, v)
+                self._apply_setting(k, v, f"YAML key '{k}'")
         else:
             for k, v in data.items():
                 if k == "user-defined":
@@ -321,23 +310,23 @@ class Configuration:
                     else:
                         self.user_defined.update(v)
                 else:
-                    apply_kv(k, v)
+                    self._apply_setting(k, v, f"YAML key '{k}'")
 
     def __parse_args(self) -> None:
         args, _ = _build_parser().parse_known_args(self._argv)
 
         for name, value in vars(args).items():
-            if name == "config":
-                continue
-            if name in ["collect", "upload"]:
-                setattr(self, name, _normalize_file_patterns(value))
-            elif hasattr(self, name):
-                setattr(self, name, value)
-            else:
-                warnings.warn(
-                    f"Warning: Unrecognized argument '{name}' will be ignored.",
-                    UserWarning
-                )
+            if name != "config":
+                self._apply_setting(name, value, f"argument '{name}'")
+
+    def _apply_setting(self, key: str, value, source: str) -> None:
+        """Store one setting, normalizing the pattern lists and warning on unknown keys."""
+        if key in ("collect", "upload"):
+            setattr(self, key, _normalize_file_patterns(value))
+        elif hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            warnings.warn(f"Warning: Unrecognized {source} will be ignored.", UserWarning)
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

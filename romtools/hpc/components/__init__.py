@@ -1,11 +1,13 @@
 """Focused helpers that the dispatchers compose."""
 
+from .component import Component
 from .caller import BaseCaller, LocalCaller, RemoteCaller
 from .file_manager import BaseFileManager, LocalFileManager, RemoteFileManager
 from .slurm_job_manager import SlurmJobManager
 from .transfer_manager import TransferManager
 
 __all__ = [
+    "Component",
     "BaseCaller",
     "LocalCaller",
     "RemoteCaller",

@@ -9,22 +9,13 @@ import tempfile
 
 import numpy as np
 
+from romtools.hpc.components.component import Component
 from romtools.hpc.connection import Connection
 from romtools.hpc.logger import Logger
 
 
-class BaseFileManager:
-    """
-    Reads and writes files on whichever machine a dispatcher runs work on.
-
-    Arguments:
-        config: The dispatcher's configuration dictionary
-        logger: An instance of the Logger class for logging
-    """
-
-    def __init__(self, *, config: dict = None, logger: Logger = None):
-        self.config = config if config is not None else {}
-        self.logger = logger if logger is not None else Logger()
+class BaseFileManager(Component):
+    """Reads and writes files on whichever machine a dispatcher runs work on."""
 
     def resolve_path(self, path: str = None) -> str:
         raise NotImplementedError
@@ -179,10 +170,7 @@ class RemoteFileManager(BaseFileManager):
             return path
         return ppath.join(remote_root, path)
 
-    def _write_text(self, remote_path: str, content: str) -> None:
-        """
-        Write text content to a file on the remote host.
-        """
+    def write_text(self, remote_path: str, content: str) -> None:
         remote_path = self.resolve_path(remote_path)
         outer = "__HPCTOOLS_FILE_EOF__"
         cmd = f"cat > {shlex.quote(remote_path)} << '{outer}'\n{content}\n{outer}\n"
@@ -190,13 +178,6 @@ class RemoteFileManager(BaseFileManager):
         if not res.ok:
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
         self.logger.debug(f"Wrote remote file: {remote_path}")
-
-    def _create_remote_directory(self, remote_dir: str) -> None:
-        remote_dir = self.resolve_path(remote_dir)
-        result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
-        if not result.ok:
-            raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
-        self.logger.debug(f"Created remote directory: {remote_dir}")
 
     def put(self, local_path: str, remote_path: str) -> None:
         remote_path = self.resolve_path(remote_path)
@@ -214,7 +195,11 @@ class RemoteFileManager(BaseFileManager):
         return result.ok
 
     def create_empty_dir(self, dir_name: str):
-        self._create_remote_directory(dir_name)
+        remote_dir = self.resolve_path(dir_name)
+        result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
+        if not result.ok:
+            raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
+        self.logger.debug(f"Created remote directory: {remote_dir}")
 
     def list_dir(self, path: str) -> list:
         remote_path = self.resolve_path(path)
@@ -238,9 +223,6 @@ class RemoteFileManager(BaseFileManager):
             raise RuntimeError(f"Failed to remove remote directory {remote_path}: {res.stderr}")
         self.logger.debug(f"Removed remote directory: {remote_path}")
 
-    def write_text(self, path: str, content: str) -> None:
-        self._write_text(path, content)
-
     def read_text(self, path: str) -> str:
         """Return the contents of a remote text file."""
         remote_path = self.resolve_path(path)
@@ -252,7 +234,7 @@ class RemoteFileManager(BaseFileManager):
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         buffer = io.StringIO()
         np.savetxt(buffer, arr, fmt=fmt)
-        self._write_text(path, buffer.getvalue())
+        self.write_text(path, buffer.getvalue())
         self.logger.debug(f"Saved array to path {path}", local=False)
 
     def np_savez(self, path: str, **arrays) -> None:

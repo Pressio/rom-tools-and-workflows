@@ -52,14 +52,11 @@ class BaseDispatcher:
 
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         """
-        Run a Python callable, given as "module:qualname", and return its result.
+        Run a Python callable named as "module:qualname" (e.g. "my_model:evaluate")
+        and return its result, forwarding the remaining arguments to it.
 
-        Args:
-            target: The callable to run, e.g. "my_model:evaluate".
-            run_directory: The directory to run from. Modules staged there are
-                importable. Defaults to the dispatcher's own default directory.
-
-        Positional and keyword arguments are forwarded to the callable.
+        Modules staged in run_directory are importable; it defaults to the
+        dispatcher's own default directory.
         """
         return self.caller.call(target, *args, run_directory=run_directory, **kwargs)
 
@@ -79,12 +76,8 @@ class BaseDispatcher:
         """
         Submit work to SLURM, wait for it to finish, and read back its output.
 
-        Args:
-            cmd: The command to run in the SLURM job, executable from
-                run_directory. If omitted, the dispatcher must be configured
-                with a SLURM script that includes the command to run.
-            run_directory: The directory to run the job in on the execution
-                host. Defaults to the campaign directory.
+        cmd runs from run_directory, which defaults to the campaign directory;
+        omit cmd only when a configured SLURM script carries the command itself.
 
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """
@@ -101,12 +94,9 @@ class BaseDispatcher:
 
     def collect_results(self) -> None:
         """
-        Bring a finished job's output back to the local machine.
-
-        Work that runs on this machine leaves its results in place, so only
-        dispatchers that run work elsewhere have anything to do here.
+        Bring a finished job's output back to the local machine. Work that ran
+        here leaves its results in place, so only remote dispatchers act.
         """
-        pass
 
     # ------------------------------------------------------------------
     # File operations
@@ -147,7 +137,6 @@ class BaseDispatcher:
 
     def upload(self, run_directory) -> None:
         """Send the configured upload patterns to the run directory."""
-        pass
 
     # ------------------------------------------------------------------
     # Contracts the workflows check before running
