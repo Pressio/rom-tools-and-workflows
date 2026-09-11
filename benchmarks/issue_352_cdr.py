@@ -5,10 +5,13 @@ import tempfile
 import time
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import romtools.workflows
 from tests.romtools.workflows.regression.inverse.cdr_regression_fixture import (
+    PARAMETER_NAMES,
+    TRUTH_PARAMETERS,
     build_mf_eki_kwargs,
 )
 
@@ -29,6 +32,33 @@ class CountingModel:
         return self.model.compute_qoi(run_directory, parameter_sample)
 
 
+def _truth_parameter_vector():
+    return np.array([TRUTH_PARAMETERS[name] for name in PARAMETER_NAMES], dtype=float)
+
+
+def _load_parameter_history(case_dir):
+    truth = _truth_parameter_vector()
+    history = []
+    restart_files = sorted(
+        case_dir.glob("iteration_*/restart.npz"),
+        key=lambda path: int(path.parent.name.split("_")[-1]),
+    )
+    for restart_path in restart_files:
+        iteration = int(restart_path.parent.name.split("_")[-1])
+        with np.load(restart_path, allow_pickle=True) as restart:
+            parameter_samples = np.asarray(restart["parameter_samples_one"], dtype=float)
+        parameter_mean = np.mean(parameter_samples, axis=0)
+        relative_error = float(np.linalg.norm(parameter_mean - truth) / np.linalg.norm(truth))
+        history.append(
+            {
+                "iteration": iteration,
+                "parameter_mean": parameter_mean.tolist(),
+                "relative_parameter_error": relative_error,
+            }
+        )
+    return history
+
+
 def run_case(root, name, num_substeps, start, end, max_iterations=10,
              error_norm_tolerance=0.0):
     case_dir = root / name
@@ -40,7 +70,6 @@ def run_case(root, name, num_substeps, start, end, max_iterations=10,
     kwargs["rom_substep_start_iteration"] = start
     kwargs["rom_substep_end_iteration"] = end
     kwargs["num_rom_substeps"] = num_substeps
-    # Explicitly retain the requested auto-ROM GP normalization.
     kwargs["rom_type"] = "gp"
     kwargs["rom_args"] = dict(kwargs["rom_args"])
     kwargs["rom_args"]["normalize_parameters"] = True
@@ -51,6 +80,7 @@ def run_case(root, name, num_substeps, start, end, max_iterations=10,
     wall_time = time.perf_counter() - t0
     observations = kwargs["observations"]
     residual = float(np.mean(np.linalg.norm(observations[:, None] - qois, axis=0)))
+    parameter_history = _load_parameter_history(case_dir)
     return {
         "name": name,
         "num_rom_substeps": num_substeps,
@@ -60,7 +90,36 @@ def run_case(root, name, num_substeps, start, end, max_iterations=10,
         "final_fom_residual": residual,
         "wall_time_seconds": wall_time,
         "parameter_mean": np.mean(parameter_samples, axis=0).tolist(),
+        "parameter_history": parameter_history,
     }
+
+
+def _plot_parameter_error(results, output):
+    by_name = {case["name"]: case for case in results}
+    selected = [
+        ("baseline", "Baseline"),
+        ("s1_w0_4", "1 ROM substep, [0,4)"),
+        ("s4_w0_4", "4 ROM substeps, [0,4)"),
+        ("s4_w2_6", "4 ROM substeps, [2,6)"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(8.5, 5.5))
+    for name, label in selected:
+        history = by_name[name]["parameter_history"]
+        iterations = [entry["iteration"] for entry in history]
+        errors = [entry["relative_parameter_error"] for entry in history]
+        ax.plot(iterations, errors, marker="o", linewidth=2, label=label)
+
+    ax.set_xlabel("Outer MF-EKI iteration")
+    ax.set_ylabel(r"Relative parameter error  $\|\bar{p}_k-p^*\|_2 / \|p^*\|_2$")
+    ax.set_title("CDR auto-ROM benchmark: parameter convergence")
+    ax.set_xticks(range(10))
+    ax.grid(True, alpha=0.25)
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, dpi=200, bbox_inches="tight")
+    plt.close(fig)
 
 
 def main():
@@ -85,7 +144,6 @@ def main():
         ]
 
         baseline = fixed_budget[0]
-        # Use the baseline's 10-outer-iteration residual as a common quality target.
         target = baseline["final_fom_residual"] * (1.0 + 1.0e-12)
         time_to_quality = [
             run_case(
@@ -102,6 +160,10 @@ def main():
 
         results = {
             "benchmark": "romtools CDR MF-EKI auto-ROM",
+            "truth_parameters": {
+                name: TRUTH_PARAMETERS[name] for name in PARAMETER_NAMES
+            },
+            "parameter_error_definition": "||mean(p_k)-p_truth||_2 / ||p_truth||_2",
             "gp": {
                 "normalize_parameters": True,
                 "normalize_targets": True,
@@ -112,7 +174,13 @@ def main():
             "time_to_quality": time_to_quality,
         }
 
-    output = Path("/tmp/issue_352_cdr_benchmark.json")
+        _plot_parameter_error(
+            fixed_budget,
+            Path("benchmarks/results/issue_352_parameter_error_vs_iteration.png"),
+        )
+
+    output = Path("benchmarks/results/issue_352_cdr_benchmark.json")
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(results, indent=2))
     print(json.dumps(results, indent=2))
 
