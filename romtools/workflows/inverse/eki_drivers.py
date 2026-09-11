@@ -100,7 +100,7 @@ def run_eki(model: QoiModel,
                  parameter_maxes: np.ndarray = None,
                  absolute_eki_directory: str = os.getcwd() + "/work/",
                  ensemble_size: int = 30,
-                 initial_step_size: float = 1e-1,
+                 initial_step_size: float = 0.05,
                  regularization_parameter: float = 1e-4,
                  step_size_growth_factor: float = 1.25,
                  step_size_decay_factor: float = 2.0,
@@ -237,7 +237,7 @@ def run_eki(model: QoiModel,
           mean_qoi = test_mean_qoi*1.0
           errors = test_errors*1.0
           error_norm = test_error_norm*1.0
-          step_size = step_size*step_size_growth_factor
+          step_size = min(step_size*step_size_growth_factor,1.0)
           wall_time = time.time() - start_time
           # Compute Kalman update
           dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)

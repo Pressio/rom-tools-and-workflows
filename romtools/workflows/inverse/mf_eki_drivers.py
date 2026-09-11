@@ -558,6 +558,7 @@ def run_mf_eki(model: QoiModel,
             sample_two_rom_results = test_sample_two_rom_results.copy()
             error_norm = test_error_norm
             step_size *= step_size_growth_factor
+            step_size = min(step_size,1.0)             
             wall_time = time.time() - start_time
 
             # Compute Kalman update
@@ -626,7 +627,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          rom_extra_ensemble_size = 30,
                          rom_tolerance: float = 0.005,
                          use_updated_rom_in_update_on_rebuild: bool = False,
-                         initial_step_size: float = 1e-1,
+                         initial_step_size: float = 0.05,
                          regularization_parameter: float = 1e-4,
                          step_size_growth_factor: float = 1.25,
                          step_size_decay_factor: float = 2.0,
