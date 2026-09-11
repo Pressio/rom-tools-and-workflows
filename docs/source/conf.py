@@ -4,10 +4,9 @@ import sys
 repository_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.insert(0, repository_root)
 
-# Notebook cells execute in a separate Python process, so changes made only to
-# this process's sys.path are not visible to them. Put the checkout first on
-# PYTHONPATH as well to prevent an older installed romtools package from being
-# imported while building the documentation.
+# Keep the checkout first on PYTHONPATH so autodoc and any explicitly invoked
+# documentation helpers import the source tree rather than an older installed
+# romtools package.
 existing_pythonpath = os.environ.get("PYTHONPATH")
 os.environ["PYTHONPATH"] = os.pathsep.join(
     path for path in (repository_root, existing_pythonpath) if path
@@ -47,6 +46,11 @@ autodoc_typehints = "description"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 
+# Notebook execution is validated explicitly in docs/validate_examples.py.
+# Sphinx is intentionally a rendering-only step so the site build does not
+# depend on whether a notebook happened to be saved with outputs.
+nb_execution_mode = "off"
+
 # Enable dollar-delimited math ($...$ inline, $$...$$ display) in MyST/myst_nb
 # markdown cells. Without this, MyST escapes the dollar signs and MathJax never
 # processes the equations.
@@ -55,7 +59,10 @@ myst_enable_extensions = ["dollarmath", "amsmath"]
 templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
-exclude_patterns = ["_build"]
+exclude_patterns = [
+    "_build",
+    "**/.ipynb_checkpoints/**",
+]
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
