@@ -132,12 +132,16 @@ def test_remote_python_args_parse_from_cli(monkeypatch):
 
 
 def test_remote_python_defaults(monkeypatch):
+    """
+    Both are unset by default, so a local call() can tell "use this interpreter"
+    apart from an explicit request for python3.
+    """
     monkeypatch.setattr(sys, "argv", ["prog"])
 
     config = Configuration()
 
     assert config.python_setup is None
-    assert config.python_command == "python3"
+    assert config.python_command is None
 
 
 def test_debug_flag_is_a_store_true_switch(monkeypatch):

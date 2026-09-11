@@ -327,11 +327,18 @@ Every argument is available as a long option named after it, such as
   patterns to place in the run directory before work starts. A
   ``RemoteDispatcher`` sends them to the remote host; a ``LocalDispatcher``
   copies them from the current directory. If omitted, nothing is uploaded.
-- ``python_setup``: Shell commands that set up the remote environment
-  before invoking Python, such as loading modules or activating a virtual
+- ``python_setup``: Shell commands that set up the environment before
+  invoking Python, such as loading modules or activating a virtual
   environment. Used by ``call()``.
-- ``python_command``: Command that invokes the remote Python with the
-  necessary libraries installed (default: ``python3``). Used by ``call()``.
+- ``python_command``: Command that invokes the Python with the necessary
+  libraries installed (``python3`` when a remote call needs one and none is
+  given). Used by ``call()``.
+
+A ``RemoteDispatcher`` always runs ``call()`` under a separate interpreter,
+so it uses these whenever they are set. A ``LocalDispatcher`` imports the
+target into the current process by default; setting either one makes it stage
+the call out to a subprocess instead, which is what you want on a cluster node
+whose Python comes from a module or a wrapper such as ``srun``.
 
 .. code-block:: yaml
 

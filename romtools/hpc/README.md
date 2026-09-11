@@ -316,8 +316,10 @@ These workflow arguments define file management with the dispatcher.
 
 Two more workflow arguments describe the remote Python used by `call()`:
 
-- `python_setup`: Shell commands that set up the remote environment before invoking Python, such as loading modules or activating a virtual environment
-- `python_command`: Command that invokes the remote Python with the necessary libraries installed (default: `python3`)
+- `python_setup`: Shell commands that set up the environment before invoking Python, such as loading modules or activating a virtual environment
+- `python_command`: Command that invokes the Python with the necessary libraries installed (`python3` when a remote call needs one and none is given)
+
+A `RemoteDispatcher` always runs `call()` under a separate interpreter, so it uses these whenever they are set. A `LocalDispatcher` imports the target into the current process by default; setting either one makes it stage the call out to a subprocess instead, which is what you want on a cluster node whose Python comes from a module or a wrapper such as `srun`.
 
 In the YAML, these are grouped under `workflow`:
 

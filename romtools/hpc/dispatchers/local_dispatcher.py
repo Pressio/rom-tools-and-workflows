@@ -32,8 +32,8 @@ class LocalDispatcher(BaseDispatcher):
                  argv: list = None):
         super().__init__(campaign_directory=campaign_directory, logger=logger, argv=argv)
 
-        self.caller = LocalCaller(config=self.config, logger=self.logger)
         self.files = LocalFileManager(config=self.config, logger=self.logger)
+        self.caller = LocalCaller(files=self.files, config=self.config, logger=self.logger)
 
         self.transfer = LocalTransferManager(
             files=self.files,
