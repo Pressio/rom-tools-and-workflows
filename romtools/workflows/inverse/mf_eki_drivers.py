@@ -58,6 +58,7 @@ import os
 import time
 from typing import Optional
 from romtools.workflows.inverse._inverse_utils import *
+from romtools.workflows.inverse.eki_drivers import compute_eki_update
 from romtools.workflows.models import QoiModel
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
@@ -116,6 +117,90 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
             normalize_targets=self.normalize_targets,
         )
 
+
+def _validate_rom_substep_settings(rom_substep_start_iteration,
+                                   rom_substep_end_iteration,
+                                   num_rom_substeps):
+    if num_rom_substeps < 0:
+        raise ValueError("num_rom_substeps must be nonnegative")
+    if rom_substep_start_iteration < 0:
+        raise ValueError("rom_substep_start_iteration must be nonnegative")
+    if (rom_substep_end_iteration is not None
+            and rom_substep_end_iteration < rom_substep_start_iteration):
+        raise ValueError(
+            "rom_substep_end_iteration must be greater than or equal to "
+            "rom_substep_start_iteration"
+        )
+
+
+def _rom_substeps_are_enabled(outer_iteration,
+                              rom_substep_start_iteration,
+                              rom_substep_end_iteration,
+                              num_rom_substeps):
+    if num_rom_substeps == 0:
+        return False
+    if outer_iteration < rom_substep_start_iteration:
+        return False
+    return (rom_substep_end_iteration is None
+            or outer_iteration < rom_substep_end_iteration)
+
+
+def _apply_rom_only_substeps(rom_model,
+                             observations,
+                             observations_covariance,
+                             parameter_sample_sets,
+                             parameter_names,
+                             step_size,
+                             regularization_parameter,
+                             parameter_mins,
+                             parameter_maxes,
+                             absolute_eki_directory,
+                             outer_iteration,
+                             num_rom_substeps,
+                             rom_evaluation_concurrency,
+                             rom_dispatcher):
+    """Advance both MF-EKI sample sets with ROM-only single-fidelity EKI steps."""
+    first_set_size = parameter_sample_sets[0].shape[0]
+    combined_parameter_samples = np.vstack(parameter_sample_sets).copy()
+
+    for substep in range(num_rom_substeps):
+        run_directory_base = (
+            f'{absolute_eki_directory}/iteration_{outer_iteration}/'
+            f'rom_substep_{substep}/run_rom_'
+        )
+        rom_results = run_eki_iteration(
+            rom_model,
+            observations,
+            run_directory_base,
+            parameter_names,
+            combined_parameter_samples,
+            rom_evaluation_concurrency,
+            rom_dispatcher,
+        )
+        dp = compute_eki_update(
+            combined_parameter_samples,
+            rom_results['qois'],
+            rom_results['mean-qoi'],
+            rom_results['errors'],
+            observations_covariance,
+            regularization_parameter,
+        )
+        combined_parameter_samples = bound_samples(
+            combined_parameter_samples + step_size * dp,
+            parameter_mins,
+            parameter_maxes,
+        )
+        print(
+            f'  ROM-only substep {substep + 1}/{num_rom_substeps} after outer '
+            f'iteration {outer_iteration}, Delta p: {np.linalg.norm(dp):.5f}'
+        )
+
+    return [
+        combined_parameter_samples[:first_set_size].copy(),
+        combined_parameter_samples[first_set_size:].copy(),
+    ]
+
+
 def run_mf_eki(model: QoiModel,
             rom_model_builder: QoiModelBuilderWithTrainingData,
             parameter_space: ParameterSpace,
@@ -137,6 +222,9 @@ def run_mf_eki(model: QoiModel,
             error_norm_tolerance: float = 1e-5,
             delta_params_tolerance: float = 1e-4,
             max_rom_training_history: int = 1,
+            rom_substep_start_iteration: int = 0,
+            rom_substep_end_iteration: Optional[int] = None,
+            num_rom_substeps: int = 0,
             max_iterations: int = 50,
             random_seed: int = 1,
             fom_evaluation_concurrency: int = 1,
@@ -199,6 +287,14 @@ def run_mf_eki(model: QoiModel,
             high-fidelity ensemble update falls below this value.
         max_rom_training_history: Maximum number of accepted iterations whose
             training data are retained for ROM rebuilding.
+        rom_substep_start_iteration: First outer MF-EKI iteration after which
+            ROM-only substeps may be applied.
+        rom_substep_end_iteration: Optional exclusive upper bound on outer
+            MF-EKI iterations that receive ROM-only substeps. ``None`` means
+            there is no upper bound.
+        num_rom_substeps: Number of ROM-only single-fidelity EKI updates to
+            apply after each enabled outer iteration. ``0`` preserves the
+            existing MF-EKI algorithm.
         max_iterations: Maximum number of EKI iterations.
         random_seed: RNG seed used for the initial ensemble draw.
         fom_evaluation_concurrency: Number of concurrent FOM evaluations used
@@ -230,6 +326,9 @@ def run_mf_eki(model: QoiModel,
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
+    _validate_rom_substep_settings(
+        rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps
+    )
     if parameter_mins is not None:
       assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}"
     if parameter_maxes is not None:
@@ -306,7 +405,10 @@ def run_mf_eki(model: QoiModel,
             training_parameters=training_parameters,
             training_qois=training_qois,
             rom_training_parameters=rom_training_parameters,
-            rom_training_qois=rom_training_qois
+            rom_training_qois=rom_training_qois,
+            rom_substep_start_iteration=rom_substep_start_iteration,
+            rom_substep_end_iteration=(-1 if rom_substep_end_iteration is None else rom_substep_end_iteration),
+            num_rom_substeps=num_rom_substeps
         )
     else:
         restart_file = np.load(restart_file,allow_pickle=True)
@@ -315,6 +417,14 @@ def run_mf_eki(model: QoiModel,
         parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
         iteration = restart_file['iteration']
         step_size = restart_file['step_size']
+        if 'num_rom_substeps' in restart_file:
+            rom_substep_start_iteration = int(restart_file['rom_substep_start_iteration'])
+            saved_end_iteration = int(restart_file['rom_substep_end_iteration'])
+            rom_substep_end_iteration = None if saved_end_iteration < 0 else saved_end_iteration
+            num_rom_substeps = int(restart_file['num_rom_substeps'])
+            _validate_rom_substep_settings(
+                rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps
+            )
         training_dirs = restart_file['training_directories'].tolist()
         rom_training_dirs = restart_file['rom_training_directories'].tolist()
         if 'training_parameters' not in restart_file or 'training_qois' not in restart_file:
@@ -359,6 +469,29 @@ def run_mf_eki(model: QoiModel,
         for i in range(len(dps)):
           test_parameter_sample_sets[i] = parameter_sample_sets[i] + step_size * dps[i]
           test_parameter_sample_sets[i] = bound_samples(test_parameter_sample_sets[i],parameter_mins,parameter_maxes)
+
+        outer_iteration = iteration - 1
+        if _rom_substeps_are_enabled(
+                outer_iteration,
+                rom_substep_start_iteration,
+                rom_substep_end_iteration,
+                num_rom_substeps):
+            test_parameter_sample_sets = _apply_rom_only_substeps(
+                rom_model=rom_model,
+                observations=observations,
+                observations_covariance=observations_covariance,
+                parameter_sample_sets=test_parameter_sample_sets,
+                parameter_names=parameter_names,
+                step_size=step_size,
+                regularization_parameter=regularization_parameter,
+                parameter_mins=parameter_mins,
+                parameter_maxes=parameter_maxes,
+                absolute_eki_directory=absolute_eki_directory,
+                outer_iteration=outer_iteration,
+                num_rom_substeps=num_rom_substeps,
+                rom_evaluation_concurrency=rom_evaluation_concurrency,
+                rom_dispatcher=rom_dispatcher,
+            )
 
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_fom_sample_set_0_'
         test_training_dirs = copy.deepcopy(training_dirs)
@@ -457,7 +590,10 @@ def run_mf_eki(model: QoiModel,
                 training_parameters=training_parameters,
                 training_qois=training_qois,
                 rom_training_parameters=rom_training_parameters,
-                rom_training_qois=rom_training_qois
+                rom_training_qois=rom_training_qois,
+                rom_substep_start_iteration=rom_substep_start_iteration,
+                rom_substep_end_iteration=(-1 if rom_substep_end_iteration is None else rom_substep_end_iteration),
+                num_rom_substeps=num_rom_substeps
             )
             iteration += 1
 
@@ -499,6 +635,9 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          error_norm_tolerance: float = 1e-5,
                          delta_params_tolerance: float = 1e-4,
                          max_rom_training_history: int = 1,
+                         rom_substep_start_iteration: int = 0,
+                         rom_substep_end_iteration: Optional[int] = None,
+                         num_rom_substeps: int = 0,
                          max_iterations: int = 50,
                          random_seed: int = 1,
                          fom_evaluation_concurrency: int = 1,
@@ -551,6 +690,9 @@ def mf_eki_with_auto_rom(model: QoiModel,
         error_norm_tolerance=error_norm_tolerance,
         delta_params_tolerance=delta_params_tolerance,
         max_rom_training_history=max_rom_training_history,
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
         max_iterations=max_iterations,
         random_seed=random_seed,
         fom_evaluation_concurrency=fom_evaluation_concurrency,
