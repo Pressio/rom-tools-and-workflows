@@ -9,7 +9,7 @@ from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
 from romtools.hpc.components.caller import RemoteCaller
 from romtools.hpc.components.file_manager import RemoteFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
-from romtools.hpc.components.transfer_manager import TransferManager
+from romtools.hpc.components.transfer_manager import RemoteTransferManager
 
 
 class RemoteDispatcher(BaseDispatcher):
@@ -18,7 +18,7 @@ class RemoteDispatcher(BaseDispatcher):
 
     Coordinates composed helpers rather than doing the work itself: files go through
     RemoteFileManager, Python calls through RemoteCaller, batch jobs through
-    SlurmJobManager, and archives through TransferManager. Paths are taken relative
+    SlurmJobManager, and archives through RemoteTransferManager. Paths are taken relative
     to the configured remote root.
 
     Arguments:
@@ -67,7 +67,7 @@ class RemoteDispatcher(BaseDispatcher):
             campaign_directory=self.campaign_directory,
             files=self.files)
 
-        self.transfer = TransferManager(
+        self.transfer = RemoteTransferManager(
             connection=self.conn,
             config=self.config,
             logger=self.logger,
@@ -112,13 +112,6 @@ class RemoteDispatcher(BaseDispatcher):
                 f"Concurrency > 1 is not supported with a RemoteDispatcher (received: {concurrency}). "
                 "Use a concurrency of 1 and let SLURM provide the parallelism."
             )
-
-    def upload(self, run_directory) -> None:
-        self.transfer.upload(run_directory)
-
-    def collect_results(self) -> None:
-        """Bring the finished job's output files back from the remote host."""
-        self.transfer.collect_results()
 
     def run(self, cmd: str, run_directory: str = None) -> Result:
         """

@@ -324,8 +324,9 @@ Every argument is available as a long option named after it, such as
   patterns to retrieve from the remote run directory. If omitted, nothing is
   retrieved.
 - ``upload``: Comma-separated list of files, directories, or glob
-  patterns to upload to the remote run directory. If omitted, nothing is
-  uploaded.
+  patterns to place in the run directory before work starts. A
+  ``RemoteDispatcher`` sends them to the remote host; a ``LocalDispatcher``
+  copies them from the current directory. If omitted, nothing is uploaded.
 - ``python_setup``: Shell commands that set up the remote environment
   before invoking Python, such as loading modules or activating a virtual
   environment. Used by ``call()``.

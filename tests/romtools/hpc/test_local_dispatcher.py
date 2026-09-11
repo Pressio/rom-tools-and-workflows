@@ -559,3 +559,76 @@ def test_require_relative_path_is_a_no_op(tmp_path, dispatcher):
 
 def test_require_supported_concurrency_allows_concurrent_evaluation(dispatcher):
     dispatcher.require_supported_concurrency(4)
+
+
+def _upload_dispatcher(tmp_path, monkeypatch, patterns):
+    """A LocalDispatcher configured with upload patterns, running from tmp_path."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["prog", "--upload", patterns])
+    return LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+
+
+def test_upload_copies_named_files_into_the_run_directory(tmp_path, monkeypatch):
+    """
+    Regression test: LocalDispatcher inherited a do-nothing upload(), so a
+    workflow that relied on it ran against an empty run directory.
+    """
+    (tmp_path / "input.yaml").write_text("mesh: 10")
+    run_directory = tmp_path / "campaign" / "run_0"
+    dispatcher = _upload_dispatcher(tmp_path, monkeypatch, "input.yaml")
+
+    dispatcher.upload(str(run_directory))
+
+    assert (run_directory / "input.yaml").read_text() == "mesh: 10"
+
+
+def test_upload_copies_directories_and_glob_matches(tmp_path, monkeypatch):
+    (tmp_path / "mesh").mkdir()
+    (tmp_path / "mesh" / "nodes.dat").write_text("nodes")
+    (tmp_path / "a.txt").write_text("a")
+    (tmp_path / "b.txt").write_text("b")
+    (tmp_path / "skip.log").write_text("skip")
+    run_directory = tmp_path / "campaign" / "run_0"
+    dispatcher = _upload_dispatcher(tmp_path, monkeypatch, "mesh, *.txt")
+
+    dispatcher.upload(str(run_directory))
+
+    assert (run_directory / "mesh" / "nodes.dat").read_text() == "nodes"
+    assert sorted(p.name for p in run_directory.glob("*.txt")) == ["a.txt", "b.txt"]
+    assert not (run_directory / "skip.log").exists()
+
+
+def test_upload_of_everything_skips_the_run_directory_itself(tmp_path, monkeypatch):
+    """
+    An upload pattern of "all" matches the campaign directory the run directory
+    lives in, which would otherwise be copied into itself.
+    """
+    (tmp_path / "input.yaml").write_text("mesh: 10")
+    run_directory = tmp_path / "campaign" / "run_0"
+    run_directory.mkdir(parents=True)
+    dispatcher = _upload_dispatcher(tmp_path, monkeypatch, "all")
+
+    dispatcher.upload(str(run_directory))
+
+    assert (run_directory / "input.yaml").read_text() == "mesh: 10"
+    assert not (run_directory / "campaign").exists()
+
+
+def test_upload_does_nothing_without_upload_patterns(tmp_path, monkeypatch):
+    (tmp_path / "input.yaml").write_text("mesh: 10")
+    run_directory = tmp_path / "campaign" / "run_0"
+    monkeypatch.chdir(tmp_path)
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+
+    dispatcher.upload(str(run_directory))
+
+    assert not run_directory.exists()
+
+
+def test_upload_warns_but_does_not_raise_when_a_pattern_matches_nothing(tmp_path, monkeypatch):
+    run_directory = tmp_path / "campaign" / "run_0"
+    dispatcher = _upload_dispatcher(tmp_path, monkeypatch, "missing.yaml")
+
+    dispatcher.upload(str(run_directory))
+
+    assert not run_directory.exists()

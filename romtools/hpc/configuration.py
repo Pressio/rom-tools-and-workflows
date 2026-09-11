@@ -20,7 +20,7 @@ SCHEMA = {
     "workflow": {
         "remote_root":    {"type": str, "help": "Directory on the remote host where campaigns are staged, absolute or relative to the home directory."},
         "collect":        {"type": str, "help": "Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved."},
-        "upload":         {"type": str, "help": "Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded."},
+        "upload":         {"type": str, "help": "Comma-separated list of files, directories, or glob patterns to place in the run directory before work starts, uploaded to the remote host or copied from the current directory. If omitted, nothing is uploaded."},
         "python_setup":   {"type": str, "help": "Shell commands that set up the remote environment before invoking Python (e.g. loading modules or activating a virtual environment)."},
         "python_command": {"type": str, "help": "Command that invokes the remote Python with the necessary libraries installed (default: python3)."}
     },
