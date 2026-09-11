@@ -1,0 +1,36 @@
+name: Issue 352 parameter-error rerun
+
+on:
+  push:
+    branches:
+      - fix-352-mf-eki-rom-substeps
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Run CDR parameter-error benchmark
+        run: |
+          mkdir -p benchmarks/results
+          python benchmarks/issue_352_cdr.py | tee benchmarks/results/issue_352_cdr_benchmark.log
+
+      - name: Commit benchmark figure and results
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/issue-352-rerun.yml
+          git add benchmarks/results/issue_352_parameter_error_vs_iteration.png \
+                  benchmarks/results/issue_352_cdr_benchmark.json \
+                  benchmarks/results/issue_352_cdr_benchmark.log
+          git commit -m "Add issue 352 CDR parameter-error benchmark"
+          git push origin HEAD:fix-352-mf-eki-rom-substeps
