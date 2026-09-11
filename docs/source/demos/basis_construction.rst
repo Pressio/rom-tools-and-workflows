@@ -7,4 +7,4 @@ This tutorial will show you how to construct a basis.
    :maxdepth: 2
    :caption: Contents:
 
-   test2.ipynb
+   notebooks/pod_vector_space.ipynb

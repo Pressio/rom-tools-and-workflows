@@ -20,3 +20,6 @@ docs/source/generated/
 examples/uq_cdr_demo/uq_cdr_output/
 examples/eki_mf_eki_demo/eki_mf_eki_work/
 examples/eki_mf_eki_demo/eki_mf_eki_demo.png
+examples/vi_mf_vi_demo/vi_mf_vi_work/
+examples/vi_mf_vi_demo/vi_mf_vi_elbo_convergence.png
+examples/vi_mf_vi_demo/vi_mf_vi_parameter_convergence.png

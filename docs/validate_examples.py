@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -36,6 +37,25 @@ LIGHTWEIGHT_NOTEBOOKS = [
     "docs/source/demos/notebooks/greedy_training.ipynb",
     "docs/source/demos/notebooks/parameter_space.ipynb",
 ]
+
+
+def _validate_notebook_coverage() -> None:
+    """Ensure every notebook linked from an RST page is executed in CI."""
+    documented_notebooks = set()
+    docs_source = REPOSITORY_ROOT / "docs" / "source"
+    for rst_path in docs_source.rglob("*.rst"):
+        contents = rst_path.read_text(encoding="utf-8")
+        for match in re.findall(r"(?m)^\s+([^\s]+\.ipynb)\s*$", contents):
+            notebook_path = (rst_path.parent / match).resolve()
+            documented_notebooks.add(str(notebook_path.relative_to(REPOSITORY_ROOT)))
+
+    validated_notebooks = set(LIGHTWEIGHT_NOTEBOOKS)
+    missing = sorted(documented_notebooks - validated_notebooks)
+    if missing:
+        missing_list = "\n".join(f"  - {path}" for path in missing)
+        raise RuntimeError(
+            "Documentation notebooks missing from CI validation:\n" + missing_list
+        )
 
 
 def _execute_notebook(relative_path: str) -> None:
@@ -79,13 +99,39 @@ def _run_eki_smoke_test() -> None:
         )
 
 
+def _run_mf_vi_smoke_test() -> None:
+    example = REPOSITORY_ROOT / "examples/vi_mf_vi_demo/example.py"
+    print("Running reduced VI/MF-VI documentation smoke test", flush=True)
+
+    with tempfile.TemporaryDirectory(prefix="romtools-docs-mf-vi-") as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        env = os.environ.copy()
+        env.setdefault("MPLBACKEND", "Agg")
+        subprocess.run(
+            [
+                sys.executable,
+                str(example),
+                "--smoke",
+                "--work-dir",
+                str(tmp_path / "work"),
+                "--output-dir",
+                str(tmp_path / "figures"),
+            ],
+            cwd=REPOSITORY_ROOT,
+            env=env,
+            check=True,
+        )
+
+
 def main() -> None:
     os.environ.setdefault("MPLBACKEND", "Agg")
 
+    _validate_notebook_coverage()
     for notebook in LIGHTWEIGHT_NOTEBOOKS:
         _execute_notebook(notebook)
 
     _run_eki_smoke_test()
+    _run_mf_vi_smoke_test()
     print("Documentation example validation passed.", flush=True)
 
 
