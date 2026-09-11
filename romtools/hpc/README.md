@@ -312,7 +312,7 @@ These workflow arguments define file management with the dispatcher.
 
 - `remote_root`: Directory on the remote host where commands are executed, absolute or relative to the home directory.
 - `collect`: Comma-separated list of files, directories, or glob patterns to retrieve from the remote run directory. If omitted, nothing is retrieved
-- `upload`: Comma-separated list of files, directories, or glob patterns to upload to the remote run directory. If omitted, nothing is uploaded
+- `upload`: Comma-separated list of files, directories, or glob patterns to place in the run directory before work starts. A `RemoteDispatcher` sends them to the remote host; a `LocalDispatcher` copies them from the current directory. If omitted, nothing is uploaded
 
 Two more workflow arguments describe the remote Python used by `call()`:
 

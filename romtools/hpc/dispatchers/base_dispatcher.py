@@ -4,6 +4,7 @@ import numpy as np
 from romtools.hpc.components.caller import BaseCaller
 from romtools.hpc.components.file_manager import BaseFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
+from romtools.hpc.components.transfer_manager import BaseTransferManager
 from romtools.hpc.logger import Logger
 from romtools.hpc.configuration import Configuration
 from romtools.hpc.connection import Result
@@ -29,6 +30,11 @@ class BaseDispatcher:
         # Subclasses replace these with local or remote implementations
         self.caller: BaseCaller = BaseCaller(config=self.config, logger=self.logger)
         self.files: BaseFileManager = BaseFileManager(config=self.config, logger=self.logger)
+        self.transfer: BaseTransferManager = BaseTransferManager(
+            files=self.files,
+            config=self.config,
+            logger=self.logger,
+            campaign_directory=self.campaign_directory)
 
         # Installed by subclasses that can reach a batch scheduler
         self.slurm: SlurmJobManager = None
@@ -97,6 +103,7 @@ class BaseDispatcher:
         Bring a finished job's output back to the local machine. Work that ran
         here leaves its results in place, so only remote dispatchers act.
         """
+        self.transfer.collect_results()
 
     # ------------------------------------------------------------------
     # File operations
@@ -136,7 +143,8 @@ class BaseDispatcher:
         self.files.np_savez(path, **arrays)
 
     def upload(self, run_directory) -> None:
-        """Send the configured upload patterns to the run directory."""
+        """Put the configured upload patterns into the run directory."""
+        self.transfer.upload(run_directory)
 
     # ------------------------------------------------------------------
     # Contracts the workflows check before running
