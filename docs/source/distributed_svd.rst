@@ -51,17 +51,80 @@ The following behavior is intentional:
 Algorithm
 ---------
 
-The implementation uses a two-level Tall-Skinny QR (TSQR) factorization:
+The implementation uses an adaptive Tall-Skinny QR (TSQR) factorization. Every
+rank first computes ``A_local = Q_local @ R_local``. The communicator size then
+selects one of two exact reduction strategies:
 
-1. Each rank computes ``A_local = Q_local @ R_local``.
-2. Rank zero gathers only the local ``R_local`` factors and performs a second
-   reduced QR factorization of their vertical stack.
-3. Rank zero computes the SVD of the final reduced factor.
-4. The singular values and right singular vectors are broadcast, while the
-   reduced left transformations are scattered and multiplied by each
-   ``Q_local``.
+* Below ``tree_threshold``, rank zero gathers the local ``R_local`` factors and
+  factors their vertical stack. This has low communication overhead for small
+  MPI jobs.
+* At or above ``tree_threshold``, neighboring ranks combine their ``R`` factors
+  through a binary tree. The critical reduction path has
+  :math:`O(\log P)` stages instead of placing all reduction work on rank zero.
 
-This avoids forming :math:`A^H A`, which would square the condition number.
+After the final reduced factor is formed, rank zero computes its SVD. When
+singular vectors are requested, the binary-tree path traverses the tree in
+reverse and propagates the left transformations back to the leaf ranks. Each
+rank then multiplies its first-level ``Q_local`` by its final transformation.
+
+Both paths are mathematically equivalent TSQR factorizations and avoid forming
+:math:`A^H A`, which would square the condition number.
+
+Why the tree scales better: a high-level explanation
+---------------------------------------------------
+
+Both approaches start with each process producing a compact representation of
+its local data. The difference is how those representations are combined.
+
+With the rank-zero reduction, every process sends its representation to one
+process (rank zero), which combines them all. As the number of processes grows,
+rank zero has more data to hold and more combining work to do, becoming a
+bottleneck.
+
+The tree reduction combines representations in pairs, then combines those
+results in pairs, and continues until one remains. Several pairs can work at
+the same time. For example, eight processes combine their results in three
+rounds. Each merge handles only two compact representations, avoiding one
+large stack of all processes' representations on rank zero.
+
+This shares the combining work and reduces the memory pressure on rank zero,
+making the tree better suited to larger parallel jobs. Rank zero still performs
+the final SVD, but only on the final compact representation. The original
+matrix stays distributed in both approaches.
+
+The benefit is scalability, rather than a more accurate approximation: both
+paths compute the same mathematical decomposition, subject to floating-point
+differences. The tree is not always faster, because its extra communication
+rounds add overhead. Small jobs can therefore benefit from the simpler
+rank-zero reduction, which is why the implementation switches between the two
+using a configurable threshold.
+
+Configuring the reduction threshold
+-----------------------------------
+
+The default is available as ``romtools.linalg.DEFAULT_TSQR_TREE_THRESHOLD`` and
+is currently 8 MPI ranks. It can be overridden for a particular callable:
+
+.. code-block:: python
+
+   from romtools.linalg import DistributedSvd
+
+   # Use the tree for jobs with 16 or more MPI ranks.
+   distributed_svd = DistributedSvd(comm, tree_threshold=16)
+
+The selection is:
+
+.. code-block:: python
+
+   if comm.Get_size() >= tree_threshold:
+       # Binary-tree TSQR reduction
+   else:
+       # Rank-zero gather TSQR reduction
+
+Set ``tree_threshold=1`` to force the tree for testing or benchmarking. Set it
+above the MPI job size to force the rank-zero path. The best crossover depends
+on the matrix column count, MPI implementation, network, and node layout, so
+production clusters should benchmark both paths.
 
 MPI example
 -----------
