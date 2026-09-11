@@ -212,6 +212,77 @@ def test_local_call_rejects_a_malformed_target(tmp_path):
 
 
 # ----------------------------------------------------------------------
+# LocalDispatcher.call under a configured interpreter
+# ----------------------------------------------------------------------
+
+def _local_dispatcher_with_python(monkeypatch, tmp_path, *flags):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["prog", *flags])
+    return LocalDispatcher()
+
+
+def test_local_call_uses_a_configured_python_command(tmp_path, monkeypatch, staged_model):
+    """
+    Regression test: LocalCaller imported the target into this process, so a
+    configured interpreter was ignored on a cluster node that needs one.
+    """
+    dispatcher = _local_dispatcher_with_python(
+        monkeypatch, tmp_path, "--python_command", sys.executable)
+
+    result = dispatcher.call(f"{staged_model}:scale", np.array([1.0, 2.0]),
+                             factor=3.0, run_directory=str(tmp_path))
+
+    assert np.array_equal(result, np.array([3.0, 6.0]))
+
+
+def test_local_call_runs_the_python_setup_first(tmp_path, monkeypatch, staged_model):
+    dispatcher = _local_dispatcher_with_python(
+        monkeypatch, tmp_path,
+        "--python_command", "$CALL_PYTHON",
+        "--python_setup", f"export CALL_PYTHON={sys.executable}")
+
+    assert dispatcher.call(f"{staged_model}:Model.double", 3, run_directory=str(tmp_path)) == 6
+
+
+def test_a_python_setup_alone_stages_the_call_out_of_this_process(tmp_path, monkeypatch):
+    """A setup with no command is meaningless in-process, so it stages out too."""
+    dispatcher = _local_dispatcher_with_python(
+        monkeypatch, tmp_path, "--python_setup", "module load python/3.11")
+
+    assert dispatcher.caller.staged is not None
+    assert dispatcher.caller.staged.python_command == "python3"
+
+
+def test_local_call_in_a_subprocess_cleans_up_its_staging_directory(tmp_path, monkeypatch, staged_model):
+    dispatcher = _local_dispatcher_with_python(
+        monkeypatch, tmp_path, "--python_command", sys.executable)
+
+    dispatcher.call(f"{staged_model}:Model.double", 1, run_directory=str(tmp_path))
+
+    assert not [e for e in os.listdir(tmp_path) if e.startswith(".dispatcher_call_")]
+
+
+def test_local_call_in_a_subprocess_surfaces_the_traceback(tmp_path, monkeypatch, staged_model):
+    dispatcher = _local_dispatcher_with_python(
+        monkeypatch, tmp_path, "--python_command", sys.executable)
+
+    with pytest.raises(RuntimeError, match="model blew up"):
+        dispatcher.call(f"{staged_model}:explode", run_directory=str(tmp_path))
+
+    assert not [e for e in os.listdir(tmp_path) if e.startswith(".dispatcher_call_")]
+
+
+def test_local_call_without_python_config_runs_in_this_process(tmp_path, monkeypatch, staged_model):
+    """The default stays in-process, so no interpreter is spawned per evaluation."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    dispatcher = LocalDispatcher()
+
+    assert dispatcher.caller.staged is None
+    assert dispatcher.call(f"{staged_model}:Model.double", 4) == 8
+
+
+# ----------------------------------------------------------------------
 # Remote call command
 # ----------------------------------------------------------------------
 
