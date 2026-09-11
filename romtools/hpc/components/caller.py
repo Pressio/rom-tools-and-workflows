@@ -21,7 +21,7 @@ from .call_runner import (
 )
 from romtools.hpc.components.component import Component
 from romtools.hpc.components.file_manager import BaseFileManager
-from romtools.hpc.connection import Connection
+from romtools.hpc.connection import Connection, run_local_bash
 from romtools.hpc.logger import Logger
 
 
@@ -57,36 +57,34 @@ class BaseCaller(Component):
     dictionaries thereof.
     """
 
+    def __init__(self, *, config: dict = None, logger: Logger = None):
+        super().__init__(config=config, logger=logger)
+        self.python_setup = self.config.get("python_setup")
+        self.python_command = self.config.get("python_command")
+
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         raise NotImplementedError
 
 
-class LocalCaller(BaseCaller):
-    """Imports and runs the target in the current process."""
-
-    def call(self, target: str, *args, run_directory: str = None, **kwargs):
-        if run_directory is None:
-            return resolve_target(target)(*args, **kwargs)
-
-        with working_directory(run_directory):
-            return resolve_target(target)(*args, **kwargs)
-
-
-class RemoteCaller(BaseCaller):
+class StagedCaller(BaseCaller):
     """
-    Runs the target on a remote host over an SSH connection.
+    Runs the target under a separate interpreter, through a runner script
+    staged in a scratch directory beside the run directory.
+
+    Arguments and results travel as a JSON + .npz pair, so that interpreter
+    needs no access to romtools; run_cmd and files decide which machine it
+    lives on.
 
     Arguments:
-        connection: An established Connection to the remote host
-        files: The remote file manager used to stage inputs and read results back
+        run_cmd: Callable that issues a shell command on the execution host
+        files: The file manager used to stage inputs and read results back
     """
 
-    def __init__(self, connection: Connection, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
+    def __init__(self, run_cmd, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
         super().__init__(config=config, logger=logger)
-        self.conn = connection
+        self.run_cmd = run_cmd
         self.files = files
-        self.python_setup = self.config.get("python_setup")
-        self.python_command = self.config.get("python_command") or "python3"
+        self.python_command = self.python_command or "python3"
 
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
         call_id = f".dispatcher_call_{uuid.uuid4().hex}"
@@ -101,14 +99,14 @@ class RemoteCaller(BaseCaller):
         finally:
             self._remove_call_directory(call_dir)
 
-        self.logger.log(f"Executed {target} on remote host.")
+        self.logger.log(f"Executed {target}.")
         return result
 
     def _remove_call_directory(self, call_dir: str) -> None:
         try:
             self.files.remove_dir(call_dir)
         except RuntimeError as e:
-            self.logger.log(f"Failed to clean up remote call directory {call_dir}: {e}")
+            self.logger.log(f"Failed to clean up call directory {call_dir}: {e}")
 
     def _upload_inputs(self, staging_dir: str, call_dir: str, args: tuple, kwargs: dict) -> None:
         arrays = {}
@@ -130,14 +128,14 @@ class RemoteCaller(BaseCaller):
                                  (input_npz_path, CALL_INPUT_NPZ)):
             self.files.put(local_path, ppath.join(call_dir, name))
 
-        self.logger.debug(f"Staged call inputs in {self.conn.host}:{call_dir}")
+        self.logger.debug(f"Staged call inputs in {call_dir}")
 
     def _run_target(self, run_directory: str, call_id: str, target: str) -> None:
         cmd = build_call_command(self.python_setup, self.python_command, call_id, target)
-        res = self.conn.run(f"cd {shlex.quote(self.files.resolve_path(run_directory))} && {cmd}")
+        res = self.run_cmd(f"cd {shlex.quote(self.files.resolve_path(run_directory))} && {cmd}")
         if not res.ok:
             raise RuntimeError(
-                f"Remote call of {target} failed (exit code {res.exit_code}).\n"
+                f"Call of {target} failed (exit code {res.exit_code}).\n"
                 f"STDOUT:\n{res.stdout}\n"
                 f"STDERR:\n{res.stderr}"
             )
@@ -154,3 +152,47 @@ class RemoteCaller(BaseCaller):
 
         with np.load(output_npz_path, allow_pickle=False) as arrays:
             return unpack(payload["result"], arrays)
+
+
+class LocalCaller(BaseCaller):
+    """
+    Imports and runs the target in the current process.
+
+    A configured python_setup or python_command names an interpreter other than
+    this one - a Python provided by a module, or a wrapper such as srun - so the
+    call is staged out to a subprocess instead of imported here.
+
+    Arguments:
+        files: The local file manager used to stage inputs and read results back
+    """
+
+    def __init__(self, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
+        super().__init__(config=config, logger=logger)
+
+        self.staged = None
+        if self.python_setup or self.python_command:
+            self.staged = StagedCaller(run_local_bash, files=files, config=config, logger=logger)
+
+    def call(self, target: str, *args, run_directory: str = None, **kwargs):
+        if self.staged is not None:
+            return self.staged.call(target, *args, run_directory=run_directory, **kwargs)
+
+        if run_directory is None:
+            return resolve_target(target)(*args, **kwargs)
+
+        with working_directory(run_directory):
+            return resolve_target(target)(*args, **kwargs)
+
+
+class RemoteCaller(StagedCaller):
+    """
+    Runs the target on a remote host over an SSH connection.
+
+    Arguments:
+        connection: An established Connection to the remote host
+        files: The remote file manager used to stage inputs and read results back
+    """
+
+    def __init__(self, connection: Connection, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
+        super().__init__(connection.run, files=files, config=config, logger=logger)
+        self.conn = connection
