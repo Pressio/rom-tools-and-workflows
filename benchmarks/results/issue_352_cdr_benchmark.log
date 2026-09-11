@@ -1,0 +1,2389 @@
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01295
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03277
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05409
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_2/restart.npz
+  ROM error = 1.7034462783819706 above tolerance, re-building ROM
+  Updated ROM error = 0.00016739623796331783
+Iteration: 3, Error 2-norm: 4.19693, Step size: 0.01158, Delta p: 38.09108, Wall time: 0.07528
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_3/restart.npz
+  ROM error = 3.2427003570479074 above tolerance, re-building ROM
+  Updated ROM error = 0.0009127095607743262
+Iteration: 4, Error 2-norm: 4.47058, Step size: 0.01216, Delta p: 38.83155, Wall time: 0.09635
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_4/restart.npz
+  ROM error = 3.552720044642555 above tolerance, re-building ROM
+  Updated ROM error = 0.0006690043940713664
+Iteration: 5, Error 2-norm: 4.55035, Step size: 0.01276, Delta p: 105.61684, Wall time: 0.11624
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_5/restart.npz
+  ROM error = 3.3150710693933694 above tolerance, re-building ROM
+  Updated ROM error = 0.0008282635692406507
+Iteration: 6, Error 2-norm: 4.62107, Step size: 0.01340, Delta p: 75.66056, Wall time: 0.13600
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_6/restart.npz
+  ROM error = 0.2098170604914797 above tolerance, re-building ROM
+  Updated ROM error = 0.0005239333182819957
+Iteration: 7, Error 2-norm: 4.57801, Step size: 0.01407, Delta p: 31.16094, Wall time: 0.15723
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_7/restart.npz
+  ROM error = 1.388937443820063 above tolerance, re-building ROM
+  Updated ROM error = 0.000593098163254352
+Iteration: 8, Error 2-norm: 4.57281, Step size: 0.01477, Delta p: 65.99917, Wall time: 0.17712
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_8/restart.npz
+  ROM error = 0.30772027721499795 above tolerance, re-building ROM
+  Updated ROM error = 0.0005117276757413608
+Iteration: 9, Error 2-norm: 4.50258, Step size: 0.01551, Delta p: 87.05243, Wall time: 0.19716
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/baseline/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01487
+  ROM-only substep 1/1 after outer iteration 0, Delta p: 83.08425
+  ROM error = 0.5548358646668544 above tolerance, re-building ROM
+  Updated ROM error = 0.00011843191323790287
+Iteration: 1, Error 2-norm: 4.56051, Step size: 0.01050, Delta p: 107.44245, Wall time: 0.04012
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_1/restart.npz
+  ROM-only substep 1/1 after outer iteration 1, Delta p: 229.22235
+  ROM error = 0.8691862241382802 above tolerance, re-building ROM
+  Updated ROM error = 0.0003893313213733059
+Iteration: 2, Error 2-norm: 4.39485, Step size: 0.01103, Delta p: 4.94135, Wall time: 0.06812
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_2/restart.npz
+  ROM-only substep 1/1 after outer iteration 2, Delta p: 9.02007
+  ROM error = 0.9780238599121553 above tolerance, re-building ROM
+  Updated ROM error = 0.00023110728191024142
+Iteration: 3, Error 2-norm: 4.11853, Step size: 0.01158, Delta p: 36.37821, Wall time: 0.09556
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_3/restart.npz
+  ROM-only substep 1/1 after outer iteration 3, Delta p: 30.39439
+  ROM error = 12.412642197667578 above tolerance, re-building ROM
+  Updated ROM error = 0.0008882981534187529
+Iteration: 4, Error 2-norm: 4.47756, Step size: 0.01216, Delta p: 14.36448, Wall time: 0.12557
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_4/restart.npz
+  ROM error = 0.575452491228051 above tolerance, re-building ROM
+  Updated ROM error = 0.0006646244177722048
+Iteration: 5, Error 2-norm: 4.51485, Step size: 0.01276, Delta p: 62.09254, Wall time: 0.14681
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_5/restart.npz
+  ROM error = 1.7550750567794502 above tolerance, re-building ROM
+  Updated ROM error = 0.00021020159472544064
+Iteration: 6, Error 2-norm: 4.58102, Step size: 0.01340, Delta p: 118.19288, Wall time: 0.16793
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_6/restart.npz
+  ROM error = 2.0685940854053197 above tolerance, re-building ROM
+  Updated ROM error = 0.0002894488541034708
+Iteration: 7, Error 2-norm: 4.63425, Step size: 0.01407, Delta p: 42.14403, Wall time: 0.19013
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_7/restart.npz
+  ROM error = 0.6972792859150901 above tolerance, re-building ROM
+  Updated ROM error = 0.00046360697715860347
+Iteration: 8, Error 2-norm: 4.61944, Step size: 0.01477, Delta p: 78.16363, Wall time: 0.21116
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_8/restart.npz
+  ROM error = 0.2276861081077962 above tolerance, re-building ROM
+  Updated ROM error = 0.00014982625461704355
+Iteration: 9, Error 2-norm: 4.57315, Step size: 0.01551, Delta p: 88.52539, Wall time: 0.23241
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_4/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01494
+  ROM-only substep 1/2 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/2 after outer iteration 0, Delta p: 87.02997
+  ROM error = 0.621664357486462 above tolerance, re-building ROM
+  Updated ROM error = 0.00012927140172158252
+Iteration: 1, Error 2-norm: 4.55311, Step size: 0.01050, Delta p: 69.81917, Wall time: 0.04637
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_1/restart.npz
+  ROM-only substep 1/2 after outer iteration 1, Delta p: 164.68796
+  ROM-only substep 2/2 after outer iteration 1, Delta p: 172.50000
+  ROM error = 0.8481390120185198 above tolerance, re-building ROM
+  Updated ROM error = 0.00023346223105260037
+Iteration: 2, Error 2-norm: 4.25848, Step size: 0.01103, Delta p: 18.72252, Wall time: 0.08295
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_2/restart.npz
+  ROM-only substep 1/2 after outer iteration 2, Delta p: 18.32166
+  ROM-only substep 2/2 after outer iteration 2, Delta p: 18.46101
+  ROM error = 2.5212047482587376 above tolerance, re-building ROM
+  Updated ROM error = 0.0008708295142809104
+Iteration: 3, Error 2-norm: 4.38095, Step size: 0.01158, Delta p: 12.90521, Wall time: 0.11982
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_3/restart.npz
+  ROM-only substep 1/2 after outer iteration 3, Delta p: 25.07785
+  ROM-only substep 2/2 after outer iteration 3, Delta p: 25.92886
+  ROM error = 9.374568374353217 above tolerance, re-building ROM
+  Updated ROM error = 0.0005369441291287597
+Iteration: 4, Error 2-norm: 4.41017, Step size: 0.01216, Delta p: 31.80737, Wall time: 0.15617
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_4/restart.npz
+  ROM error = 0.4210160053474157 above tolerance, re-building ROM
+  Updated ROM error = 0.0004423280310818822
+Iteration: 5, Error 2-norm: 4.49587, Step size: 0.01276, Delta p: 45.56243, Wall time: 0.17840
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_5/restart.npz
+  ROM error = 0.6531465299412861 above tolerance, re-building ROM
+  Updated ROM error = 0.00025411835817727046
+Iteration: 6, Error 2-norm: 4.55622, Step size: 0.01340, Delta p: 140.40707, Wall time: 0.20153
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_6/restart.npz
+  ROM error = 2.071299880809071 above tolerance, re-building ROM
+  Updated ROM error = 0.00021885999564530452
+Iteration: 7, Error 2-norm: 4.63290, Step size: 0.01407, Delta p: 65.67896, Wall time: 0.22439
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_7/restart.npz
+  ROM error = 0.9893711376440083 above tolerance, re-building ROM
+  Updated ROM error = 0.0005031528454973386
+Iteration: 8, Error 2-norm: 4.65081, Step size: 0.01477, Delta p: 39.50547, Wall time: 0.24591
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_8/restart.npz
+  ROM error = 0.03554019735981274 above tolerance, re-building ROM
+  Updated ROM error = 0.00032032602984172627
+Iteration: 9, Error 2-norm: 4.65891, Step size: 0.01551, Delta p: 55.16967, Wall time: 0.26603
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_4/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01561
+  ROM-only substep 1/4 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/4 after outer iteration 0, Delta p: 87.02997
+  ROM-only substep 3/4 after outer iteration 0, Delta p: 89.69057
+  ROM-only substep 4/4 after outer iteration 0, Delta p: 92.03454
+  ROM error = 0.636949671117439 above tolerance, re-building ROM
+  Updated ROM error = 0.00016981650202440825
+Iteration: 1, Error 2-norm: 4.52162, Step size: 0.01050, Delta p: 25.42749, Wall time: 0.06193
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_1/restart.npz
+  ROM-only substep 1/4 after outer iteration 1, Delta p: 75.99638
+  ROM-only substep 2/4 after outer iteration 1, Delta p: 81.71950
+  ROM-only substep 3/4 after outer iteration 1, Delta p: 86.57632
+  ROM-only substep 4/4 after outer iteration 1, Delta p: 91.07090
+  ROM error = 0.7762012551418561 above tolerance, re-building ROM
+  Updated ROM error = 0.00027786846280714706
+Iteration: 2, Error 2-norm: 4.13455, Step size: 0.01103, Delta p: 21.46407, Wall time: 0.12545
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_2/restart.npz
+  ROM-only substep 1/4 after outer iteration 2, Delta p: 16.18404
+  ROM-only substep 2/4 after outer iteration 2, Delta p: 15.96358
+  ROM-only substep 3/4 after outer iteration 2, Delta p: 15.73168
+  ROM-only substep 4/4 after outer iteration 2, Delta p: 15.49236
+  ROM error = 2.1535887182150013 above tolerance, re-building ROM
+  Updated ROM error = 0.0009619606767862984
+Iteration: 3, Error 2-norm: 4.44456, Step size: 0.01158, Delta p: 25.40480, Wall time: 0.17709
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_3/restart.npz
+  ROM-only substep 1/4 after outer iteration 3, Delta p: 16.23788
+  ROM-only substep 2/4 after outer iteration 3, Delta p: 16.04631
+  ROM-only substep 3/4 after outer iteration 3, Delta p: 15.85186
+  ROM-only substep 4/4 after outer iteration 3, Delta p: 15.65659
+  ROM error = 1.5104108922892696 above tolerance, re-building ROM
+  Updated ROM error = 0.0005965504093554242
+Iteration: 4, Error 2-norm: 4.53070, Step size: 0.01216, Delta p: 48.49059, Wall time: 0.22773
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_4/restart.npz
+  ROM error = 0.42660692787498417 above tolerance, re-building ROM
+  Updated ROM error = 0.0002036056337405166
+Iteration: 5, Error 2-norm: 4.57638, Step size: 0.01276, Delta p: 117.67711, Wall time: 0.24992
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_5/restart.npz
+  ROM error = 0.41746259249872075 above tolerance, re-building ROM
+  Updated ROM error = 0.00014501366441234268
+Iteration: 6, Error 2-norm: 4.63125, Step size: 0.01340, Delta p: 74.08771, Wall time: 0.27263
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_6/restart.npz
+  ROM error = 0.764012977615861 above tolerance, re-building ROM
+  Updated ROM error = 0.0004193259060627513
+Iteration: 7, Error 2-norm: 4.64944, Step size: 0.01407, Delta p: 135.05575, Wall time: 0.29362
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_7/restart.npz
+  ROM error = 0.5253097318404206 above tolerance, re-building ROM
+  Updated ROM error = 0.000339171305162884
+Iteration: 8, Error 2-norm: 4.67405, Step size: 0.01477, Delta p: 75.54258, Wall time: 0.31447
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_8/restart.npz
+  ROM error = 0.2120836567703119 above tolerance, re-building ROM
+  Updated ROM error = 0.0002487613845529787
+Iteration: 9, Error 2-norm: 4.66170, Step size: 0.01551, Delta p: 227.97525, Wall time: 0.33461
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_4/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01513
+  ROM-only substep 1/1 after outer iteration 0, Delta p: 83.08425
+  ROM error = 0.5548358646668544 above tolerance, re-building ROM
+  Updated ROM error = 0.00011843191323790287
+Iteration: 1, Error 2-norm: 4.56051, Step size: 0.01050, Delta p: 107.44245, Wall time: 0.04076
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_1/restart.npz
+  ROM-only substep 1/1 after outer iteration 1, Delta p: 229.22235
+  ROM error = 0.8691862241382802 above tolerance, re-building ROM
+  Updated ROM error = 0.0003893313213733059
+Iteration: 2, Error 2-norm: 4.39485, Step size: 0.01103, Delta p: 4.94135, Wall time: 0.06873
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_2/restart.npz
+  ROM-only substep 1/1 after outer iteration 2, Delta p: 9.02007
+  ROM error = 0.9780238599121553 above tolerance, re-building ROM
+  Updated ROM error = 0.00023110728191024142
+Iteration: 3, Error 2-norm: 4.11853, Step size: 0.01158, Delta p: 36.37821, Wall time: 0.09587
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_3/restart.npz
+  ROM-only substep 1/1 after outer iteration 3, Delta p: 30.39439
+  ROM error = 12.412642197667578 above tolerance, re-building ROM
+  Updated ROM error = 0.0008882981534187529
+Iteration: 4, Error 2-norm: 4.47756, Step size: 0.01216, Delta p: 14.36448, Wall time: 0.12533
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_4/restart.npz
+  ROM-only substep 1/1 after outer iteration 4, Delta p: 33.97501
+  ROM error = 1.4989936361240737 above tolerance, re-building ROM
+  Updated ROM error = 0.0008677501294882564
+Iteration: 5, Error 2-norm: 4.54095, Step size: 0.01276, Delta p: 81.23938, Wall time: 0.15382
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_5/restart.npz
+  ROM-only substep 1/1 after outer iteration 5, Delta p: 69.12427
+  ROM error = 0.854966397526405 above tolerance, re-building ROM
+  Updated ROM error = 0.00023769674449665817
+Iteration: 6, Error 2-norm: 4.61723, Step size: 0.01340, Delta p: 60.49337, Wall time: 0.18125
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_6/restart.npz
+  ROM error = 0.6687517733856729 above tolerance, re-building ROM
+  Updated ROM error = 0.0005377619189743117
+Iteration: 7, Error 2-norm: 4.63651, Step size: 0.01407, Delta p: 186.61159, Wall time: 0.20244
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_7/restart.npz
+  ROM error = 0.538242867874814 above tolerance, re-building ROM
+  Updated ROM error = 0.00016070461026645088
+Iteration: 8, Error 2-norm: 4.49834, Step size: 0.01477, Delta p: 58.80851, Wall time: 0.22389
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_8/restart.npz
+  ROM error = 1.3174429907146852 above tolerance, re-building ROM
+  Updated ROM error = 0.00022583838827045142
+Iteration: 9, Error 2-norm: 4.57061, Step size: 0.01551, Delta p: 179.02476, Wall time: 0.24749
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w0_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01597
+  ROM-only substep 1/2 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/2 after outer iteration 0, Delta p: 87.02997
+  ROM error = 0.621664357486462 above tolerance, re-building ROM
+  Updated ROM error = 0.00012927140172158252
+Iteration: 1, Error 2-norm: 4.55311, Step size: 0.01050, Delta p: 69.81917, Wall time: 0.04922
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_1/restart.npz
+  ROM-only substep 1/2 after outer iteration 1, Delta p: 164.68796
+  ROM-only substep 2/2 after outer iteration 1, Delta p: 172.50000
+  ROM error = 0.8481390120185198 above tolerance, re-building ROM
+  Updated ROM error = 0.00023346223105260037
+Iteration: 2, Error 2-norm: 4.25848, Step size: 0.01103, Delta p: 18.72252, Wall time: 0.08781
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_2/restart.npz
+  ROM-only substep 1/2 after outer iteration 2, Delta p: 18.32166
+  ROM-only substep 2/2 after outer iteration 2, Delta p: 18.46101
+  ROM error = 2.5212047482587376 above tolerance, re-building ROM
+  Updated ROM error = 0.0008708295142809104
+Iteration: 3, Error 2-norm: 4.38095, Step size: 0.01158, Delta p: 12.90521, Wall time: 0.12523
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_3/restart.npz
+  ROM-only substep 1/2 after outer iteration 3, Delta p: 25.07785
+  ROM-only substep 2/2 after outer iteration 3, Delta p: 25.92886
+  ROM error = 9.374568374353217 above tolerance, re-building ROM
+  Updated ROM error = 0.0005369441291287597
+Iteration: 4, Error 2-norm: 4.41017, Step size: 0.01216, Delta p: 31.80737, Wall time: 0.16455
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_4/restart.npz
+  ROM-only substep 1/2 after outer iteration 4, Delta p: 73.50162
+  ROM-only substep 2/2 after outer iteration 4, Delta p: 75.68334
+  ROM error = 1.0466197699738613 above tolerance, re-building ROM
+  Updated ROM error = 0.0004382757377819434
+Iteration: 5, Error 2-norm: 4.57148, Step size: 0.01276, Delta p: 72.94430, Wall time: 0.21567
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_5/restart.npz
+  ROM-only substep 1/2 after outer iteration 5, Delta p: 74.37654
+  ROM-only substep 2/2 after outer iteration 5, Delta p: 68.03451
+  ROM error = 1.47223013426622 above tolerance, re-building ROM
+  Updated ROM error = 0.00018234921018276618
+Iteration: 6, Error 2-norm: 4.63564, Step size: 0.01340, Delta p: 49.81365, Wall time: 0.25263
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_6/restart.npz
+  ROM error = 0.6321812224697289 above tolerance, re-building ROM
+  Updated ROM error = 0.00040662632559430547
+Iteration: 7, Error 2-norm: 4.64495, Step size: 0.01407, Delta p: 43.18299, Wall time: 0.27411
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_7/restart.npz
+  ROM error = 0.18768797627419687 above tolerance, re-building ROM
+  Updated ROM error = 0.0004004881041282371
+Iteration: 8, Error 2-norm: 4.63409, Step size: 0.01477, Delta p: 31.82167, Wall time: 0.29422
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_8/restart.npz
+  ROM error = 0.07866612597550109 above tolerance, re-building ROM
+  Updated ROM error = 0.00038340354935858655
+Iteration: 9, Error 2-norm: 4.64369, Step size: 0.01551, Delta p: 34.76684, Wall time: 0.31461
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w0_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01537
+  ROM-only substep 1/4 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/4 after outer iteration 0, Delta p: 87.02997
+  ROM-only substep 3/4 after outer iteration 0, Delta p: 89.69057
+  ROM-only substep 4/4 after outer iteration 0, Delta p: 92.03454
+  ROM error = 0.636949671117439 above tolerance, re-building ROM
+  Updated ROM error = 0.00016981650202440825
+Iteration: 1, Error 2-norm: 4.52162, Step size: 0.01050, Delta p: 25.42749, Wall time: 0.05920
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_1/restart.npz
+  ROM-only substep 1/4 after outer iteration 1, Delta p: 75.99638
+  ROM-only substep 2/4 after outer iteration 1, Delta p: 81.71950
+  ROM-only substep 3/4 after outer iteration 1, Delta p: 86.57632
+  ROM-only substep 4/4 after outer iteration 1, Delta p: 91.07090
+  ROM error = 0.7762012551418561 above tolerance, re-building ROM
+  Updated ROM error = 0.00027786846280714706
+Iteration: 2, Error 2-norm: 4.13455, Step size: 0.01103, Delta p: 21.46407, Wall time: 0.10962
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_2/restart.npz
+  ROM-only substep 1/4 after outer iteration 2, Delta p: 16.18404
+  ROM-only substep 2/4 after outer iteration 2, Delta p: 15.96358
+  ROM-only substep 3/4 after outer iteration 2, Delta p: 15.73168
+  ROM-only substep 4/4 after outer iteration 2, Delta p: 15.49236
+  ROM error = 2.1535887182150013 above tolerance, re-building ROM
+  Updated ROM error = 0.0009619606767862984
+Iteration: 3, Error 2-norm: 4.44456, Step size: 0.01158, Delta p: 25.40480, Wall time: 0.16310
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_3/restart.npz
+  ROM-only substep 1/4 after outer iteration 3, Delta p: 16.23788
+  ROM-only substep 2/4 after outer iteration 3, Delta p: 16.04631
+  ROM-only substep 3/4 after outer iteration 3, Delta p: 15.85186
+  ROM-only substep 4/4 after outer iteration 3, Delta p: 15.65659
+  ROM error = 1.5104108922892696 above tolerance, re-building ROM
+  Updated ROM error = 0.0005965504093554242
+Iteration: 4, Error 2-norm: 4.53070, Step size: 0.01216, Delta p: 48.49059, Wall time: 0.21493
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_4/restart.npz
+  ROM-only substep 1/4 after outer iteration 4, Delta p: 90.77488
+  ROM-only substep 2/4 after outer iteration 4, Delta p: 87.51909
+  ROM-only substep 3/4 after outer iteration 4, Delta p: 84.18264
+  ROM-only substep 4/4 after outer iteration 4, Delta p: 80.80777
+  ROM error = 3.664963510409389 above tolerance, re-building ROM
+  Updated ROM error = 0.0002178640665002354
+Iteration: 5, Error 2-norm: 4.64106, Step size: 0.01276, Delta p: 88.43884, Wall time: 0.26767
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_5/restart.npz
+  ROM-only substep 1/4 after outer iteration 5, Delta p: 86.31837
+  ROM-only substep 2/4 after outer iteration 5, Delta p: 92.72372
+  ROM-only substep 3/4 after outer iteration 5, Delta p: 97.59571
+  ROM-only substep 4/4 after outer iteration 5, Delta p: 101.44423
+  ROM error = 2.8069939136828146 above tolerance, re-building ROM
+  Updated ROM error = 0.0005845792424555128
+Iteration: 6, Error 2-norm: 4.68378, Step size: 0.01340, Delta p: 118.94622, Wall time: 0.31803
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_6/restart.npz
+  ROM error = 0.35668055556693523 above tolerance, re-building ROM
+  Updated ROM error = 0.000197009167405681
+Iteration: 7, Error 2-norm: 4.69416, Step size: 0.01407, Delta p: 364.07386, Wall time: 0.33825
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_7/restart.npz
+  ROM error = 0.3261855122922355 above tolerance, re-building ROM
+  Updated ROM error = 0.0003688764946468257
+Iteration: 8, Error 2-norm: 4.63115, Step size: 0.01477, Delta p: 106.07845, Wall time: 0.35834
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_8/restart.npz
+  ROM error = 0.2050775333217965 above tolerance, re-building ROM
+  Updated ROM error = 9.090125168831108e-05
+Iteration: 9, Error 2-norm: 4.57918, Step size: 0.01551, Delta p: 191.76973, Wall time: 0.38040
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w0_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01501
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03396
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05520
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_2/restart.npz
+  ROM-only substep 1/1 after outer iteration 2, Delta p: 19.59822
+  ROM error = 3.0165820485262516 above tolerance, re-building ROM
+  Updated ROM error = 0.00019978084581091606
+Iteration: 3, Error 2-norm: 4.28760, Step size: 0.01158, Delta p: 36.67856, Wall time: 0.08230
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_3/restart.npz
+  ROM-only substep 1/1 after outer iteration 3, Delta p: 32.49270
+  ROM error = 3.831012367981674 above tolerance, re-building ROM
+  Updated ROM error = 0.0008386959787371429
+Iteration: 4, Error 2-norm: 4.51948, Step size: 0.01216, Delta p: 71.35644, Wall time: 0.11062
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_4/restart.npz
+  ROM-only substep 1/1 after outer iteration 4, Delta p: 145.77728
+  ROM error = 9.22303382105811 above tolerance, re-building ROM
+  Updated ROM error = 0.0009475547482135589
+Iteration: 5, Error 2-norm: 4.62537, Step size: 0.01276, Delta p: 35.44354, Wall time: 0.13824
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_5/restart.npz
+  ROM-only substep 1/1 after outer iteration 5, Delta p: 55.56907
+  ROM error = 3.183008384425036 above tolerance, re-building ROM
+  Updated ROM error = 0.0004790592381075666
+Iteration: 6, Error 2-norm: 4.62932, Step size: 0.01340, Delta p: 56.38337, Wall time: 0.16447
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_6/restart.npz
+  ROM error = 0.11561510400190401 above tolerance, re-building ROM
+  Updated ROM error = 0.0004922034200709666
+Iteration: 7, Error 2-norm: 4.60889, Step size: 0.01407, Delta p: 151.19006, Wall time: 0.18437
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_7/restart.npz
+  ROM error = 1.0989719984662871 above tolerance, re-building ROM
+  Updated ROM error = 0.0007369078878595903
+Iteration: 8, Error 2-norm: 4.65582, Step size: 0.01477, Delta p: 104.62864, Wall time: 0.20446
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_8/restart.npz
+  ROM error = 0.28278501858821364 above tolerance, re-building ROM
+  Updated ROM error = 0.00036933113198450083
+Iteration: 9, Error 2-norm: 4.62505, Step size: 0.01551, Delta p: 12.36573, Wall time: 0.22445
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s1_w2_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01496
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03377
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05468
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_2/restart.npz
+  ROM-only substep 1/2 after outer iteration 2, Delta p: 19.59822
+  ROM-only substep 2/2 after outer iteration 2, Delta p: 18.87599
+  ROM error = 4.49025569016801 above tolerance, re-building ROM
+  Updated ROM error = 0.00023052958374164152
+Iteration: 3, Error 2-norm: 4.34570, Step size: 0.01158, Delta p: 34.61402, Wall time: 0.08825
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_3/restart.npz
+  ROM-only substep 1/2 after outer iteration 3, Delta p: 30.15973
+  ROM-only substep 2/2 after outer iteration 3, Delta p: 31.53771
+  ROM error = 3.8083185744337666 above tolerance, re-building ROM
+  Updated ROM error = 0.0009149184581077279
+Iteration: 4, Error 2-norm: 4.54562, Step size: 0.01216, Delta p: 70.68666, Wall time: 0.12429
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_4/restart.npz
+  ROM-only substep 1/2 after outer iteration 4, Delta p: 135.47921
+  ROM-only substep 2/2 after outer iteration 4, Delta p: 135.46046
+  ROM error = 9.00164459274104 above tolerance, re-building ROM
+  Updated ROM error = 0.0009528401564038845
+Iteration: 5, Error 2-norm: 4.64509, Step size: 0.01276, Delta p: 69.33756, Wall time: 0.15673
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_5/restart.npz
+  ROM-only substep 1/2 after outer iteration 5, Delta p: 103.56275
+  ROM-only substep 2/2 after outer iteration 5, Delta p: 111.50898
+  ROM error = 1.6260228180398255 above tolerance, re-building ROM
+  Updated ROM error = 0.0005264780358219638
+Iteration: 6, Error 2-norm: 4.57984, Step size: 0.01340, Delta p: 33.06333, Wall time: 0.19014
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_6/restart.npz
+  ROM error = 0.15070657146002042 above tolerance, re-building ROM
+  Updated ROM error = 0.0005459797706950082
+Iteration: 7, Error 2-norm: 4.58095, Step size: 0.01407, Delta p: 97.98306, Wall time: 0.21164
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_7/restart.npz
+  ROM error = 0.6369283573468081 above tolerance, re-building ROM
+  Updated ROM error = 0.0005025246454927414
+Iteration: 8, Error 2-norm: 4.41133, Step size: 0.01477, Delta p: 102.20598, Wall time: 0.23153
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_8/restart.npz
+  ROM error = 2.267978408498693 above tolerance, re-building ROM
+  Updated ROM error = 0.001707206023447569
+Iteration: 9, Error 2-norm: 4.59091, Step size: 0.01551, Delta p: 71.72040, Wall time: 0.25202
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s2_w2_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01518
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03408
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05500
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_2/restart.npz
+  ROM-only substep 1/4 after outer iteration 2, Delta p: 19.59822
+  ROM-only substep 2/4 after outer iteration 2, Delta p: 18.87599
+  ROM-only substep 3/4 after outer iteration 2, Delta p: 18.35444
+  ROM-only substep 4/4 after outer iteration 2, Delta p: 18.03994
+  ROM error = 7.765175304913227 above tolerance, re-building ROM
+  Updated ROM error = 0.0002819442034454605
+Iteration: 3, Error 2-norm: 4.40914, Step size: 0.01158, Delta p: 33.10988, Wall time: 0.10162
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_3/restart.npz
+  ROM-only substep 1/4 after outer iteration 3, Delta p: 27.33833
+  ROM-only substep 2/4 after outer iteration 3, Delta p: 28.68167
+  ROM-only substep 3/4 after outer iteration 3, Delta p: 30.05634
+  ROM-only substep 4/4 after outer iteration 3, Delta p: 31.45684
+  ROM error = 3.761881965329949 above tolerance, re-building ROM
+  Updated ROM error = 0.0011721348684739772
+Iteration: 4, Error 2-norm: 4.57815, Step size: 0.01216, Delta p: 91.70450, Wall time: 0.15717
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_4/restart.npz
+  ROM-only substep 1/4 after outer iteration 4, Delta p: 136.53141
+  ROM-only substep 2/4 after outer iteration 4, Delta p: 138.69785
+  ROM-only substep 3/4 after outer iteration 4, Delta p: 144.05596
+  ROM-only substep 4/4 after outer iteration 4, Delta p: 151.52026
+  ROM error = 22.68526539462454 above tolerance, re-building ROM
+  Updated ROM error = 0.0008628071743954582
+Iteration: 5, Error 2-norm: 4.67779, Step size: 0.01276, Delta p: 40.31921, Wall time: 0.20103
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_5/restart.npz
+  ROM-only substep 1/4 after outer iteration 5, Delta p: 40.87957
+  ROM-only substep 2/4 after outer iteration 5, Delta p: 39.78733
+  ROM-only substep 3/4 after outer iteration 5, Delta p: 38.49204
+  ROM-only substep 4/4 after outer iteration 5, Delta p: 37.33139
+  ROM error = 0.6234835460018674 above tolerance, re-building ROM
+  Updated ROM error = 0.00040853149839654133
+Iteration: 6, Error 2-norm: 4.66697, Step size: 0.01340, Delta p: 339.87871, Wall time: 0.24527
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_6/restart.npz
+  ROM error = 0.7142542785599448 above tolerance, re-building ROM
+  Updated ROM error = 0.0006903986465157737
+Iteration: 7, Error 2-norm: 4.45658, Step size: 0.01407, Delta p: 35.22991, Wall time: 0.26559
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_7/restart.npz
+  ROM error = 0.7288616834353145 above tolerance, re-building ROM
+  Updated ROM error = 0.00031526667185324825
+Iteration: 8, Error 2-norm: 4.45991, Step size: 0.01477, Delta p: 27.80510, Wall time: 0.28933
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_8/restart.npz
+  ROM error = 0.2549661847830343 above tolerance, re-building ROM
+  Updated ROM error = 0.0006909227703878421
+Iteration: 9, Error 2-norm: 4.38701, Step size: 0.01551, Delta p: 22.80049, Wall time: 0.31108
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/fixed/s4_w2_6/iteration_9/restart.npz
+Max iterations reached, terminating
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/baseline_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01502
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03428
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/baseline_target/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05519
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/baseline_target/iteration_2/restart.npz
+  ROM error = 1.7034462783819706 above tolerance, re-building ROM
+  Updated ROM error = 0.00016739623796331783
+Iteration: 3, Error 2-norm: 4.19693, Step size: 0.01158, Delta p: 38.09108, Wall time: 0.07628
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/baseline_target/iteration_3/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_4_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01502
+  ROM-only substep 1/1 after outer iteration 0, Delta p: 83.08425
+  ROM error = 0.5548358646668544 above tolerance, re-building ROM
+  Updated ROM error = 0.00011843191323790287
+Iteration: 1, Error 2-norm: 4.56051, Step size: 0.01050, Delta p: 107.44245, Wall time: 0.04045
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_4_target/iteration_1/restart.npz
+  ROM-only substep 1/1 after outer iteration 1, Delta p: 229.22235
+  ROM error = 0.8691862241382802 above tolerance, re-building ROM
+  Updated ROM error = 0.0003893313213733059
+Iteration: 2, Error 2-norm: 4.39485, Step size: 0.01103, Delta p: 4.94135, Wall time: 0.06880
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_4_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_4_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.05782
+  ROM-only substep 1/2 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/2 after outer iteration 0, Delta p: 87.02997
+  ROM error = 0.621664357486462 above tolerance, re-building ROM
+  Updated ROM error = 0.00012927140172158252
+Iteration: 1, Error 2-norm: 4.55311, Step size: 0.01050, Delta p: 69.81917, Wall time: 0.08972
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_4_target/iteration_1/restart.npz
+  ROM-only substep 1/2 after outer iteration 1, Delta p: 164.68796
+  ROM-only substep 2/2 after outer iteration 1, Delta p: 172.50000
+  ROM error = 0.8481390120185198 above tolerance, re-building ROM
+  Updated ROM error = 0.00023346223105260037
+Iteration: 2, Error 2-norm: 4.25848, Step size: 0.01103, Delta p: 18.72252, Wall time: 0.12633
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_4_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_4_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01513
+  ROM-only substep 1/4 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/4 after outer iteration 0, Delta p: 87.02997
+  ROM-only substep 3/4 after outer iteration 0, Delta p: 89.69057
+  ROM-only substep 4/4 after outer iteration 0, Delta p: 92.03454
+  ROM error = 0.636949671117439 above tolerance, re-building ROM
+  Updated ROM error = 0.00016981650202440825
+Iteration: 1, Error 2-norm: 4.52162, Step size: 0.01050, Delta p: 25.42749, Wall time: 0.05883
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_4_target/iteration_1/restart.npz
+  ROM-only substep 1/4 after outer iteration 1, Delta p: 75.99638
+  ROM-only substep 2/4 after outer iteration 1, Delta p: 81.71950
+  ROM-only substep 3/4 after outer iteration 1, Delta p: 86.57632
+  ROM-only substep 4/4 after outer iteration 1, Delta p: 91.07090
+  ROM error = 0.7762012551418561 above tolerance, re-building ROM
+  Updated ROM error = 0.00027786846280714706
+Iteration: 2, Error 2-norm: 4.13455, Step size: 0.01103, Delta p: 21.46407, Wall time: 0.10975
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_4_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01500
+  ROM-only substep 1/1 after outer iteration 0, Delta p: 83.08425
+  ROM error = 0.5548358646668544 above tolerance, re-building ROM
+  Updated ROM error = 0.00011843191323790287
+Iteration: 1, Error 2-norm: 4.56051, Step size: 0.01050, Delta p: 107.44245, Wall time: 0.04023
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_6_target/iteration_1/restart.npz
+  ROM-only substep 1/1 after outer iteration 1, Delta p: 229.22235
+  ROM error = 0.8691862241382802 above tolerance, re-building ROM
+  Updated ROM error = 0.0003893313213733059
+Iteration: 2, Error 2-norm: 4.39485, Step size: 0.01103, Delta p: 4.94135, Wall time: 0.06949
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w0_6_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01539
+  ROM-only substep 1/2 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/2 after outer iteration 0, Delta p: 87.02997
+  ROM error = 0.621664357486462 above tolerance, re-building ROM
+  Updated ROM error = 0.00012927140172158252
+Iteration: 1, Error 2-norm: 4.55311, Step size: 0.01050, Delta p: 69.81917, Wall time: 0.04846
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_6_target/iteration_1/restart.npz
+  ROM-only substep 1/2 after outer iteration 1, Delta p: 164.68796
+  ROM-only substep 2/2 after outer iteration 1, Delta p: 172.50000
+  ROM error = 0.8481390120185198 above tolerance, re-building ROM
+  Updated ROM error = 0.00023346223105260037
+Iteration: 2, Error 2-norm: 4.25848, Step size: 0.01103, Delta p: 18.72252, Wall time: 0.08616
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w0_6_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01492
+  ROM-only substep 1/4 after outer iteration 0, Delta p: 83.08425
+  ROM-only substep 2/4 after outer iteration 0, Delta p: 87.02997
+  ROM-only substep 3/4 after outer iteration 0, Delta p: 89.69057
+  ROM-only substep 4/4 after outer iteration 0, Delta p: 92.03454
+  ROM error = 0.636949671117439 above tolerance, re-building ROM
+  Updated ROM error = 0.00016981650202440825
+Iteration: 1, Error 2-norm: 4.52162, Step size: 0.01050, Delta p: 25.42749, Wall time: 0.05813
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_6_target/iteration_1/restart.npz
+  ROM-only substep 1/4 after outer iteration 1, Delta p: 75.99638
+  ROM-only substep 2/4 after outer iteration 1, Delta p: 81.71950
+  ROM-only substep 3/4 after outer iteration 1, Delta p: 86.57632
+  ROM-only substep 4/4 after outer iteration 1, Delta p: 91.07090
+  ROM error = 0.7762012551418561 above tolerance, re-building ROM
+  Updated ROM error = 0.00027786846280714706
+Iteration: 2, Error 2-norm: 4.13455, Step size: 0.01103, Delta p: 21.46407, Wall time: 0.11137
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w0_6_target/iteration_2/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w2_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01490
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03443
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w2_6_target/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05576
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w2_6_target/iteration_2/restart.npz
+  ROM-only substep 1/1 after outer iteration 2, Delta p: 19.59822
+  ROM error = 3.0165820485262516 above tolerance, re-building ROM
+  Updated ROM error = 0.00019978084581091606
+Iteration: 3, Error 2-norm: 4.28760, Step size: 0.01158, Delta p: 36.67856, Wall time: 0.08311
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s1_w2_6_target/iteration_3/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w2_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01484
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03407
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w2_6_target/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05495
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w2_6_target/iteration_2/restart.npz
+  ROM-only substep 1/2 after outer iteration 2, Delta p: 19.59822
+  ROM-only substep 2/2 after outer iteration 2, Delta p: 18.87599
+  ROM error = 4.49025569016801 above tolerance, re-building ROM
+  Updated ROM error = 0.00023052958374164152
+Iteration: 3, Error 2-norm: 4.34570, Step size: 0.01158, Delta p: 34.61402, Wall time: 0.08790
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s2_w2_6_target/iteration_3/restart.npz
+Error norm dropped below tolerance!
+  ROM error = 0.0004800720191560718
+Initial error: 4.511264743998751
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w2_6_target/iteration_0/restart.npz
+Iteration: 0, Error 2-norm: 4.51126, Step size: 0.01000, Delta p: 87.91444, Wall time: 0.01487
+  ROM error = 0.4587121950700511 above tolerance, re-building ROM
+  Updated ROM error = 0.00011387844210412209
+Iteration: 1, Error 2-norm: 4.56358, Step size: 0.01050, Delta p: 158.49113, Wall time: 0.03367
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w2_6_target/iteration_1/restart.npz
+  ROM error = 0.8822014189874309 above tolerance, re-building ROM
+  Updated ROM error = 0.00027739214389671724
+Iteration: 2, Error 2-norm: 4.54469, Step size: 0.01103, Delta p: 15.05358, Wall time: 0.05478
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w2_6_target/iteration_2/restart.npz
+  ROM-only substep 1/4 after outer iteration 2, Delta p: 19.59822
+  ROM-only substep 2/4 after outer iteration 2, Delta p: 18.87599
+  ROM-only substep 3/4 after outer iteration 2, Delta p: 18.35444
+  ROM-only substep 4/4 after outer iteration 2, Delta p: 18.03994
+  ROM error = 7.765175304913227 above tolerance, re-building ROM
+  Updated ROM error = 0.0002819442034454605
+Iteration: 3, Error 2-norm: 4.40914, Step size: 0.01158, Delta p: 33.10988, Wall time: 0.10000
+Saved arrays to path /tmp/issue352-cdr-bg7_4rol/target/s4_w2_6_target/iteration_3/restart.npz
+Error norm dropped below tolerance!
+{
+  "benchmark": "romtools CDR MF-EKI auto-ROM",
+  "truth_parameters": {
+    "bmag": 0.65,
+    "theta": 0.95,
+    "nu": 0.03,
+    "sigma": 0.6
+  },
+  "parameter_error_definition": "||mean(p_k)-p_truth||_2 / ||p_truth||_2",
+  "gp": {
+    "normalize_parameters": true,
+    "normalize_targets": true
+  },
+  "fixed_budget_max_iterations": 10,
+  "baseline_quality_target": 4.5025759712463005,
+  "fixed_budget": [
+    {
+      "name": "baseline",
+      "num_rom_substeps": 0,
+      "start": 0,
+      "end": null,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.502575971241797,
+      "wall_time_seconds": 0.20042360100001133,
+      "parameter_mean": [
+        1.6361711532012326,
+        1.1427645651043037,
+        3.643916679892265,
+        0.38899835250308823
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.4148985476679763,
+            1.1882788790833034,
+            3.503440688458829,
+            0.6572308617047524
+          ],
+          "relative_parameter_error": 2.74571445379951
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.4101190132349797,
+            1.1837285044476005,
+            3.6585034061773154,
+            0.6622086069277525
+          ],
+          "relative_parameter_error": 2.86127822960925
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.446221844011526,
+            1.194815046174,
+            3.820141633233717,
+            0.6604497806819419
+          ],
+          "relative_parameter_error": 2.9890691391411397
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.536689018666265,
+            1.2166365772790981,
+            4.267300634818134,
+            0.579858144238224
+          ],
+          "relative_parameter_error": 3.340462487186395
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.415051330460216,
+            1.2040092314770756,
+            3.930355008378631,
+            0.5820543346382325
+          ],
+          "relative_parameter_error": 3.067436631280808
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.456739806153898,
+            1.1604736824581887,
+            3.9096089720000418,
+            0.46046570926976094
+          ],
+          "relative_parameter_error": 3.0580484249756656
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.6361711532012326,
+            1.1427645651043037,
+            3.643916679892265,
+            0.38899835250308823
+          ],
+          "relative_parameter_error": 2.8934667275898103
+        }
+      ]
+    },
+    {
+      "name": "s1_w0_4",
+      "num_rom_substeps": 1,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.57314849429241,
+      "wall_time_seconds": 0.23550148499998613,
+      "parameter_mean": [
+        1.6771102216270497,
+        1.0471358300802165,
+        3.7265308773961525,
+        0.49967923237778555
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.6159472284114471,
+            1.252694598337689,
+            3.9881499762903303,
+            0.6640313943419388
+          ],
+          "relative_parameter_error": 3.146927895983319
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.5187245978066242,
+            1.158934815146002,
+            3.2578269391342194,
+            0.5718813098366615
+          ],
+          "relative_parameter_error": 2.5795365656450557
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.5314677783537407,
+            1.1545121388047521,
+            3.269107605958294,
+            0.5635829558476373
+          ],
+          "relative_parameter_error": 2.590317072693541
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.4981949126300682,
+            1.1320630585409939,
+            3.4649346618793078,
+            0.5739889577637908
+          ],
+          "relative_parameter_error": 2.7286080299527855
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.50149885513743,
+            1.1355007927043093,
+            3.5245152050625164,
+            0.5708665579557886
+          ],
+          "relative_parameter_error": 2.773873571269983
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.4777588751222577,
+            1.1496697491966228,
+            3.8026120222663957,
+            0.5899550779127687
+          ],
+          "relative_parameter_error": 2.978635109997589
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.6889507987832666,
+            1.1540818476809223,
+            4.305339876154422,
+            0.6281075067493391
+          ],
+          "relative_parameter_error": 3.3922614462282263
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.731734412113708,
+            1.0882363709768899,
+            4.1199878683401465,
+            0.5744792540921029
+          ],
+          "relative_parameter_error": 3.260076405496325
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.6771102216270497,
+            1.0471358300802165,
+            3.7265308773961525,
+            0.49967923237778555
+          ],
+          "relative_parameter_error": 2.956753313029502
+        }
+      ]
+    },
+    {
+      "name": "s2_w0_4",
+      "num_rom_substeps": 2,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.658907335584409,
+      "wall_time_seconds": 0.2704590460000418,
+      "parameter_mean": [
+        1.8933583596699721,
+        1.0993304401447064,
+        4.668283439835993,
+        0.5030138599966563
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.7136163909276494,
+            1.2550069268981268,
+            3.940240356194597,
+            0.5979897895070192
+          ],
+          "relative_parameter_error": 3.129781967834372
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.6674221680207464,
+            1.1416079289602483,
+            3.1769339960309715,
+            0.47489719620065723
+          ],
+          "relative_parameter_error": 2.553270838861188
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.6713657907963044,
+            1.1276048646204382,
+            3.3024933412980477,
+            0.4944710916563826
+          ],
+          "relative_parameter_error": 2.6450540492535057
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.6009524644314763,
+            1.1034430622546616,
+            3.2391472718741587,
+            0.5679526302178621
+          ],
+          "relative_parameter_error": 2.5806303053078277
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.615082336611698,
+            1.1143621351741961,
+            3.3734031607814154,
+            0.5549956162043673
+          ],
+          "relative_parameter_error": 2.6833135063118374
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.6261364277165422,
+            1.1146120563026198,
+            3.578204356372855,
+            0.5457904728015895
+          ],
+          "relative_parameter_error": 2.8373710692303664
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.7244218137071363,
+            1.1423979463688414,
+            4.23546565990495,
+            0.5463593890655618
+          ],
+          "relative_parameter_error": 3.3464750868696886
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.8030660937696903,
+            1.1214874007243503,
+            4.512901783349797,
+            0.5063863291647741
+          ],
+          "relative_parameter_error": 3.5681315175710635
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.8933583596699721,
+            1.0993304401447064,
+            4.668283439835993,
+            0.5030138599966563
+          ],
+          "relative_parameter_error": 3.7009095130778196
+        }
+      ]
+    },
+    {
+      "name": "s4_w0_4",
+      "num_rom_substeps": 4,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.661695150875765,
+      "wall_time_seconds": 0.3379415910000034,
+      "parameter_mean": [
+        2.2521795629062504,
+        1.091210635572189,
+        4.690218195489461,
+        0.3482315986892949
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.9032035040991777,
+            1.2575353872417963,
+            3.8002010933402306,
+            0.4806339703904668
+          ],
+          "relative_parameter_error": 3.0704175624102676
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.9257041151586118,
+            1.1421536128409442,
+            3.2019660449885587,
+            0.3652774657813781
+          ],
+          "relative_parameter_error": 2.6434531636446583
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.8593977808784707,
+            1.120496499668298,
+            3.3452340177429356,
+            0.4260305967594724
+          ],
+          "relative_parameter_error": 2.7243352378081074
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.7482349995383566,
+            1.111955049405506,
+            3.4852483278556208,
+            0.44777004945736903
+          ],
+          "relative_parameter_error": 2.7975424672803744
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.7728838931827555,
+            1.1196307012485094,
+            3.6912301661219304,
+            0.46032139892805907
+          ],
+          "relative_parameter_error": 2.9542409758410457
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.8680113979378512,
+            1.1138715708741185,
+            4.2123797075040486,
+            0.4955583915708027
+          ],
+          "relative_parameter_error": 3.3582763265193374
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            2.015088492344228,
+            1.0674036832940497,
+            4.4885241678082295,
+            0.5474793418734696
+          ],
+          "relative_parameter_error": 3.5925104150243055
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            2.1924599848849766,
+            1.1505630032629486,
+            5.041936825847517,
+            0.4898172834372166
+          ],
+          "relative_parameter_error": 4.0425299432987325
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            2.2521795629062504,
+            1.091210635572189,
+            4.690218195489461,
+            0.3482315986892949
+          ],
+          "relative_parameter_error": 3.8018371463914407
+        }
+      ]
+    },
+    {
+      "name": "s1_w0_6",
+      "num_rom_substeps": 1,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.570607563859648,
+      "wall_time_seconds": 0.25078953600007026,
+      "parameter_mean": [
+        1.3925785495494236,
+        1.0674442996374747,
+        3.6902067606395716,
+        0.6068801160895549
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.6159472284114471,
+            1.252694598337689,
+            3.9881499762903303,
+            0.6640313943419388
+          ],
+          "relative_parameter_error": 3.146927895983319
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.5187245978066242,
+            1.158934815146002,
+            3.2578269391342194,
+            0.5718813098366615
+          ],
+          "relative_parameter_error": 2.5795365656450557
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.5314677783537407,
+            1.1545121388047521,
+            3.269107605958294,
+            0.5635829558476373
+          ],
+          "relative_parameter_error": 2.590317072693541
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.4981949126300682,
+            1.1320630585409939,
+            3.4649346618793078,
+            0.5739889577637908
+          ],
+          "relative_parameter_error": 2.7286080299527855
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.5096598035711422,
+            1.138515586419064,
+            3.5866674678267505,
+            0.5718047017752725
+          ],
+          "relative_parameter_error": 2.8219218819763188
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.552850046850954,
+            1.149976219554164,
+            4.088996731270583,
+            0.5514735693974131
+          ],
+          "relative_parameter_error": 3.2064183562255
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.675616422276889,
+            1.1515749662567971,
+            4.328367996781526,
+            0.5172553699734479
+          ],
+          "relative_parameter_error": 3.4075222717738756
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.470394365281019,
+            1.0793216983286913,
+            3.4277169234307454,
+            0.4681760027832913
+          ],
+          "relative_parameter_error": 2.6957586723470963
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.3925785495494236,
+            1.0674442996374747,
+            3.6902067606395716,
+            0.6068801160895549
+          ],
+          "relative_parameter_error": 2.8778209758859643
+        }
+      ]
+    },
+    {
+      "name": "s2_w0_6",
+      "num_rom_substeps": 2,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.643686651435875,
+      "wall_time_seconds": 0.3178944979999869,
+      "parameter_mean": [
+        1.8701204585807258,
+        1.0615289643245924,
+        4.359137001851721,
+        0.47085903127269746
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.7136163909276494,
+            1.2550069268981268,
+            3.940240356194597,
+            0.5979897895070192
+          ],
+          "relative_parameter_error": 3.129781967834372
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.6674221680207464,
+            1.1416079289602483,
+            3.1769339960309715,
+            0.47489719620065723
+          ],
+          "relative_parameter_error": 2.553270838861188
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.6713657907963044,
+            1.1276048646204382,
+            3.3024933412980477,
+            0.4944710916563826
+          ],
+          "relative_parameter_error": 2.6450540492535057
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.6009524644314763,
+            1.1034430622546616,
+            3.2391472718741587,
+            0.5679526302178621
+          ],
+          "relative_parameter_error": 2.5806303053078277
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.6583211654073253,
+            1.1332026205284067,
+            3.647460881382673,
+            0.5297132847614446
+          ],
+          "relative_parameter_error": 2.896195096467976
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.7353195966131132,
+            1.1342796861210058,
+            4.259252875838922,
+            0.49803002778997474
+          ],
+          "relative_parameter_error": 3.3666768416359534
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.8861601907626357,
+            1.1154632103045146,
+            4.401872284826007,
+            0.4730465188500428
+          ],
+          "relative_parameter_error": 3.5027595869716084
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.9288038075963712,
+            1.0857011499784786,
+            4.218543941084634,
+            0.41057590100920993
+          ],
+          "relative_parameter_error": 3.3776423392032235
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.8701204585807258,
+            1.0615289643245924,
+            4.359137001851721,
+            0.47085903127269746
+          ],
+          "relative_parameter_error": 3.466535399413611
+        }
+      ]
+    },
+    {
+      "name": "s4_w0_6",
+      "num_rom_substeps": 4,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.579181278878995,
+      "wall_time_seconds": 0.3852388280000696,
+      "parameter_mean": [
+        2.0014196913777624,
+        1.0096403552048228,
+        3.4225063122563215,
+        0.4725057427027273
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.9032035040991777,
+            1.2575353872417963,
+            3.8002010933402306,
+            0.4806339703904668
+          ],
+          "relative_parameter_error": 3.0704175624102676
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.9257041151586118,
+            1.1421536128409442,
+            3.2019660449885587,
+            0.3652774657813781
+          ],
+          "relative_parameter_error": 2.6434531636446583
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.8593977808784707,
+            1.120496499668298,
+            3.3452340177429356,
+            0.4260305967594724
+          ],
+          "relative_parameter_error": 2.7243352378081074
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.7482349995383566,
+            1.111955049405506,
+            3.4852483278556208,
+            0.44777004945736903
+          ],
+          "relative_parameter_error": 2.7975424672803744
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.8915855778358208,
+            1.155612025300349,
+            4.333142826325847,
+            0.508409610873181
+          ],
+          "relative_parameter_error": 3.4536784612643876
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            2.0178406589103326,
+            1.0522736298818312,
+            5.327773985116445,
+            0.6612458619418049
+          ],
+          "relative_parameter_error": 4.214966893590403
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            2.2270899993724744,
+            1.079840545656917,
+            5.764684419383904,
+            0.5591115068710897
+          ],
+          "relative_parameter_error": 4.5818280504759645
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.9979329666922752,
+            0.9727303211987346,
+            3.9714275351842634,
+            0.5359565130013014
+          ],
+          "relative_parameter_error": 3.2085870510163805
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            2.0014196913777624,
+            1.0096403552048228,
+            3.4225063122563215,
+            0.4725057427027273
+          ],
+          "relative_parameter_error": 2.8145569522166487
+        }
+      ]
+    },
+    {
+      "name": "s1_w2_6",
+      "num_rom_substeps": 1,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.6250476169529104,
+      "wall_time_seconds": 0.22774542899992412,
+      "parameter_mean": [
+        2.028928125018405,
+        1.1442580442958077,
+        4.209349895496579,
+        0.4255441836488377
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.43336016325079,
+            1.1848034828645027,
+            3.519084651559588,
+            0.6401957975085999
+          ],
+          "relative_parameter_error": 2.760172072855522
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.4007829493163362,
+            1.1812658107247072,
+            3.7198734259805533,
+            0.6408412927172442
+          ],
+          "relative_parameter_error": 2.9056778710979234
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.490070742915978,
+            1.2107209959948904,
+            4.28158743564701,
+            0.6560225742386162
+          ],
+          "relative_parameter_error": 3.3440468525510165
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.4780261448754395,
+            1.1326229634990397,
+            4.316038194462197,
+            0.5623194509079916
+          ],
+          "relative_parameter_error": 3.365061398831121
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.5899675678278846,
+            1.1684638662652627,
+            4.079733932476892,
+            0.6016223383547765
+          ],
+          "relative_parameter_error": 3.206295804632085
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.891567061701312,
+            1.2436628089420103,
+            4.701459127727748,
+            0.5375010411516352
+          ],
+          "relative_parameter_error": 3.729873177644951
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            2.028928125018405,
+            1.1442580442958077,
+            4.209349895496579,
+            0.4255441836488377
+          ],
+          "relative_parameter_error": 3.3954239871896323
+        }
+      ]
+    },
+    {
+      "name": "s2_w2_6",
+      "num_rom_substeps": 2,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.59091285375977,
+      "wall_time_seconds": 0.2552217610000298,
+      "parameter_mean": [
+        1.6820199692654976,
+        1.0490016817662655,
+        3.8800367676093117,
+        0.3479929655810904
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.4520581939488968,
+            1.1814138165851844,
+            3.53143179717037,
+            0.6224609411874281
+          ],
+          "relative_parameter_error": 2.7723156251697145
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.4009796308122038,
+            1.1810276289041566,
+            3.769646949715795,
+            0.6182681954616331
+          ],
+          "relative_parameter_error": 2.9430642444133235
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.5978008841917921,
+            1.2378279738586597,
+            4.518891179371394,
+            0.6248475773346838
+          ],
+          "relative_parameter_error": 3.540411200164229
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.3548687967329853,
+            1.1030336962326095,
+            3.849565647125927,
+            0.48849122927787597
+          ],
+          "relative_parameter_error": 2.9949217821295666
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.507999449034332,
+            1.0901386304673115,
+            3.844184028911806,
+            0.46523484822220484
+          ],
+          "relative_parameter_error": 3.0146805858726093
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.5133404714540843,
+            1.0238007975376273,
+            3.3810621804508627,
+            0.3797063814968552
+          ],
+          "relative_parameter_error": 2.6711480560286893
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.6820199692654976,
+            1.0490016817662655,
+            3.8800367676093117,
+            0.3479929655810904
+          ],
+          "relative_parameter_error": 3.076920549188014
+        }
+      ]
+    },
+    {
+      "name": "s4_w2_6",
+      "num_rom_substeps": 4,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 90,
+      "final_fom_residual": 4.387006868939261,
+      "wall_time_seconds": 0.3141650439999921,
+      "parameter_mean": [
+        1.4857900311998442,
+        1.0067747209633613,
+        3.1545831364453525,
+        0.8036164863048657
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.490477541425043,
+            1.1749212670438094,
+            3.5464783102422626,
+            0.584991229873695
+          ],
+          "relative_parameter_error": 2.789959908981933
+        },
+        {
+          "iteration": 4,
+          "parameter_mean": [
+            1.418900895485999,
+            1.1796555655860619,
+            3.8704447684074177,
+            0.5710840343766325
+          ],
+          "relative_parameter_error": 3.0217396878178353
+        },
+        {
+          "iteration": 5,
+          "parameter_mean": [
+            1.6067519427114336,
+            1.276881779360903,
+            5.194403777828809,
+            0.767664254544175
+          ],
+          "relative_parameter_error": 4.055007885279565
+        },
+        {
+          "iteration": 6,
+          "parameter_mean": [
+            1.3759263593103086,
+            1.079762026714732,
+            4.85304372063916,
+            0.959454286064871
+          ],
+          "relative_parameter_error": 3.767894047308708
+        },
+        {
+          "iteration": 7,
+          "parameter_mean": [
+            1.2436012948345896,
+            1.0665114292509144,
+            3.253133086178602,
+            0.8362376896362994
+          ],
+          "relative_parameter_error": 2.5322327518011294
+        },
+        {
+          "iteration": 8,
+          "parameter_mean": [
+            1.4087647071294453,
+            1.019017891858301,
+            3.2573033034739725,
+            0.8700253249174597
+          ],
+          "relative_parameter_error": 2.5623360342169472
+        },
+        {
+          "iteration": 9,
+          "parameter_mean": [
+            1.4857900311998442,
+            1.0067747209633613,
+            3.1545831364453525,
+            0.8036164863048657
+          ],
+          "relative_parameter_error": 2.4963640200556374
+        }
+      ]
+    }
+  ],
+  "time_to_quality": [
+    {
+      "name": "baseline_target",
+      "num_rom_substeps": 0,
+      "start": 0,
+      "end": null,
+      "fom_evaluations": 36,
+      "final_fom_residual": 4.196932817989477,
+      "wall_time_seconds": 0.07950170699996306,
+      "parameter_mean": [
+        1.4148985476679763,
+        1.1882788790833034,
+        3.503440688458829,
+        0.6572308617047524
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.4148985476679763,
+            1.1882788790833034,
+            3.503440688458829,
+            0.6572308617047524
+          ],
+          "relative_parameter_error": 2.74571445379951
+        }
+      ]
+    },
+    {
+      "name": "s1_w0_4_target",
+      "num_rom_substeps": 1,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.394854246395886,
+      "wall_time_seconds": 0.07182470700001886,
+      "parameter_mean": [
+        1.5187245978066242,
+        1.158934815146002,
+        3.2578269391342194,
+        0.5718813098366615
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.6159472284114471,
+            1.252694598337689,
+            3.9881499762903303,
+            0.6640313943419388
+          ],
+          "relative_parameter_error": 3.146927895983319
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.5187245978066242,
+            1.158934815146002,
+            3.2578269391342194,
+            0.5718813098366615
+          ],
+          "relative_parameter_error": 2.5795365656450557
+        }
+      ]
+    },
+    {
+      "name": "s2_w0_4_target",
+      "num_rom_substeps": 2,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.25848476458034,
+      "wall_time_seconds": 0.1294124550000788,
+      "parameter_mean": [
+        1.6674221680207464,
+        1.1416079289602483,
+        3.1769339960309715,
+        0.47489719620065723
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.7136163909276494,
+            1.2550069268981268,
+            3.940240356194597,
+            0.5979897895070192
+          ],
+          "relative_parameter_error": 3.129781967834372
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.6674221680207464,
+            1.1416079289602483,
+            3.1769339960309715,
+            0.47489719620065723
+          ],
+          "relative_parameter_error": 2.553270838861188
+        }
+      ]
+    },
+    {
+      "name": "s4_w0_4_target",
+      "num_rom_substeps": 4,
+      "start": 0,
+      "end": 4,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.134548798168309,
+      "wall_time_seconds": 0.11273278299995582,
+      "parameter_mean": [
+        1.9257041151586118,
+        1.1421536128409442,
+        3.2019660449885587,
+        0.3652774657813781
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.9032035040991777,
+            1.2575353872417963,
+            3.8002010933402306,
+            0.4806339703904668
+          ],
+          "relative_parameter_error": 3.0704175624102676
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.9257041151586118,
+            1.1421536128409442,
+            3.2019660449885587,
+            0.3652774657813781
+          ],
+          "relative_parameter_error": 2.6434531636446583
+        }
+      ]
+    },
+    {
+      "name": "s1_w0_6_target",
+      "num_rom_substeps": 1,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.394854246395886,
+      "wall_time_seconds": 0.07279748199994174,
+      "parameter_mean": [
+        1.5187245978066242,
+        1.158934815146002,
+        3.2578269391342194,
+        0.5718813098366615
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.6159472284114471,
+            1.252694598337689,
+            3.9881499762903303,
+            0.6640313943419388
+          ],
+          "relative_parameter_error": 3.146927895983319
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.5187245978066242,
+            1.158934815146002,
+            3.2578269391342194,
+            0.5718813098366615
+          ],
+          "relative_parameter_error": 2.5795365656450557
+        }
+      ]
+    },
+    {
+      "name": "s2_w0_6_target",
+      "num_rom_substeps": 2,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.25848476458034,
+      "wall_time_seconds": 0.08927507399994283,
+      "parameter_mean": [
+        1.6674221680207464,
+        1.1416079289602483,
+        3.1769339960309715,
+        0.47489719620065723
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.7136163909276494,
+            1.2550069268981268,
+            3.940240356194597,
+            0.5979897895070192
+          ],
+          "relative_parameter_error": 3.129781967834372
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.6674221680207464,
+            1.1416079289602483,
+            3.1769339960309715,
+            0.47489719620065723
+          ],
+          "relative_parameter_error": 2.553270838861188
+        }
+      ]
+    },
+    {
+      "name": "s4_w0_6_target",
+      "num_rom_substeps": 4,
+      "start": 0,
+      "end": 6,
+      "fom_evaluations": 27,
+      "final_fom_residual": 4.134548798168309,
+      "wall_time_seconds": 0.11435533000008036,
+      "parameter_mean": [
+        1.9257041151586118,
+        1.1421536128409442,
+        3.2019660449885587,
+        0.3652774657813781
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.9032035040991777,
+            1.2575353872417963,
+            3.8002010933402306,
+            0.4806339703904668
+          ],
+          "relative_parameter_error": 3.0704175624102676
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.9257041151586118,
+            1.1421536128409442,
+            3.2019660449885587,
+            0.3652774657813781
+          ],
+          "relative_parameter_error": 2.6434531636446583
+        }
+      ]
+    },
+    {
+      "name": "s1_w2_6_target",
+      "num_rom_substeps": 1,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 36,
+      "final_fom_residual": 4.287604782914744,
+      "wall_time_seconds": 0.08616241499998978,
+      "parameter_mean": [
+        1.43336016325079,
+        1.1848034828645027,
+        3.519084651559588,
+        0.6401957975085999
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.43336016325079,
+            1.1848034828645027,
+            3.519084651559588,
+            0.6401957975085999
+          ],
+          "relative_parameter_error": 2.760172072855522
+        }
+      ]
+    },
+    {
+      "name": "s2_w2_6_target",
+      "num_rom_substeps": 2,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 36,
+      "final_fom_residual": 4.345695686765657,
+      "wall_time_seconds": 0.09094197599995368,
+      "parameter_mean": [
+        1.4520581939488968,
+        1.1814138165851844,
+        3.53143179717037,
+        0.6224609411874281
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.4520581939488968,
+            1.1814138165851844,
+            3.53143179717037,
+            0.6224609411874281
+          ],
+          "relative_parameter_error": 2.7723156251697145
+        }
+      ]
+    },
+    {
+      "name": "s4_w2_6_target",
+      "num_rom_substeps": 4,
+      "start": 2,
+      "end": 6,
+      "fom_evaluations": 36,
+      "final_fom_residual": 4.409142975446974,
+      "wall_time_seconds": 0.10304829500000778,
+      "parameter_mean": [
+        1.490477541425043,
+        1.1749212670438094,
+        3.5464783102422626,
+        0.584991229873695
+      ],
+      "parameter_history": [
+        {
+          "iteration": 0,
+          "parameter_mean": [
+            1.2691870247359898,
+            1.2277089130473016,
+            3.8808578521396875,
+            0.8676182923632733
+          ],
+          "relative_parameter_error": 3.0185421170026006
+        },
+        {
+          "iteration": 1,
+          "parameter_mean": [
+            1.5089977515998567,
+            1.2504386218445882,
+            4.019590738231248,
+            0.7291067887008136
+          ],
+          "relative_parameter_error": 3.15313374309024
+        },
+        {
+          "iteration": 2,
+          "parameter_mean": [
+            1.3851123021913208,
+            1.190311476887922,
+            3.459792765383214,
+            0.6807130084409712
+          ],
+          "relative_parameter_error": 2.7085456704347295
+        },
+        {
+          "iteration": 3,
+          "parameter_mean": [
+            1.490477541425043,
+            1.1749212670438094,
+            3.5464783102422626,
+            0.584991229873695
+          ],
+          "relative_parameter_error": 2.789959908981933
+        }
+      ]
+    }
+  ]
+}
