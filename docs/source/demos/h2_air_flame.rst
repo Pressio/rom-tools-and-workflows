@@ -77,6 +77,26 @@ stored as ``theta = T / 300 K`` so that the four state components remain on a
 more useful scale for reduced-order modeling. Dimensional temperature is
 therefore ``300 * states[:, 3]``.
 
+Default solution plot
+---------------------
+
+The figure below shows the final temperature field for the default lightweight
+configuration and the representative parameter vector
+
+.. math::
+
+   (\kappa, E/1000, \beta_x, \beta_y) = (2, 8, 40, 7).
+
+This corresponds to ``nx = 25``, ``ny = 13``, ``dt = 1e-4``, and
+``t_end = 5e-3``.
+
+.. figure:: ../_static/h2_air_flame_default_temperature.svg
+   :alt: Final temperature field for the default H2-air flame configuration
+   :align: center
+   :width: 90%
+
+   Final temperature field at ``t = 0.005 s`` for the default configuration.
+
 QoI model for inverse workflows
 -------------------------------
 
