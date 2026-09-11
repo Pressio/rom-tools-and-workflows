@@ -8,8 +8,8 @@ from romtools.workflows.parameters import UniformParameter
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 from romtools.workflows.models import QoiModel
 from romtools.workflows.model_builders import QoiModelBuilder
-from romtools.workflows.inverse.run_eki import run_eki
-from romtools.workflows.inverse.run_mf_eki import run_mf_eki
+from romtools.workflows.inverse.eki_drivers import run_eki
+from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom, run_mf_eki
 
 CDR_PATH = os.path.abspath(
     os.path.join(
@@ -81,7 +81,7 @@ class CdrRomBuilder:
         self._b_vec = b_vec
         self._rom_dim = rom_dim
 
-    def build_from_training_dirs(self, offline_data_dir: str, training_data_dirs):
+    def build_from_training_dirs(self, offline_data_dir: str, training_data_dirs, null1,null2):
         snapshots = []
         for run_dir in training_data_dirs:
             solution_path = os.path.join(run_dir, "solution.npz")
@@ -136,20 +136,22 @@ def main():
     base_dir = os.path.abspath("docs/source/demos/notebooks/eki_mf_eki_work")
     eki_dir = os.path.join(base_dir, "eki")
     mf_dir = os.path.join(base_dir, "mf_eki")
+    mf_auto_rom_dir = os.path.join(base_dir, "mf_eki_auto_rom")
     shutil.rmtree(base_dir, ignore_errors=True)
     os.makedirs(base_dir, exist_ok=True)
 
     fom_model = CdrFomQoiModel(system, b_vec)
     rom_builder = CdrRomBuilder(system, b_vec, rom_dim=12)
 
+    fom_ensemble_size = 4
     run_eki(
         model=fom_model,
         parameter_space=parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_eki_directory=eki_dir,
-        ensemble_size=18,
-        max_iterations=8,
+        ensemble_size=fom_ensemble_size,
+        max_iterations=20,
         evaluation_concurrency=1,
     )
 
@@ -160,20 +162,50 @@ def main():
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_eki_directory=mf_dir,
-        fom_ensemble_size=8,
+        rom_substep_start_iteration = 1,
+        rom_substep_end_iteration = 15,
+        num_rom_substeps = 4,
+        fom_ensemble_size=fom_ensemble_size,
         rom_extra_ensemble_size=12,
-        rom_tolerance=0.1,
-        max_iterations=8,
+        rom_tolerance=0.001,
+        max_iterations=20,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
+        max_rom_training_history = 3,
     )
+
+    mf_eki_with_auto_rom(
+        model=fom_model,
+        parameter_space=parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        absolute_eki_directory=mf_auto_rom_dir,
+        rom_substep_start_iteration=1,
+        rom_substep_end_iteration=15,
+        num_rom_substeps=4,
+        fom_ensemble_size=fom_ensemble_size,
+        rom_extra_ensemble_size=12,
+        rom_tolerance=0.001,
+        max_iterations=20,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+        rom_type="gp",
+        rom_args={
+            "normalize_parameters": True,
+            "normalize_targets": True,
+        },
+        max_rom_training_history = 3,
+      )
 
     eki_history = _collect_error_history(eki_dir, mf=False)
     mf_history = _collect_error_history(mf_dir, mf=True)
+    mf_auto_rom_history = _collect_error_history(mf_auto_rom_dir, mf=True)
 
     plt.figure(figsize=(6.5, 4.0))
     plt.plot(eki_history, marker="o", label="EKI (FOM)")
     plt.plot(mf_history, marker="s", label="MF-EKI (FOM+ROM)")
+    plt.plot(mf_auto_rom_history, marker="^", label="MF-EKI (FOM+GP auto-ROM)")
+    plt.yscale('log')
     plt.xlabel("Iteration")
     plt.ylabel("Mean observation error")
     plt.title("EKI vs MF-EKI on a convection-diffusion-reaction model")
