@@ -39,18 +39,19 @@ class RemoteDispatcher(BaseDispatcher):
 
     Arguments:
         logger: An instance of the Logger class for logging
-        sampling_directory: An optional string for your local output directory
+        campaign_directory: An optional string naming the directory this campaign
+            runs in. It is mirrored locally and under the remote root.
 
     The basic command is therefore:
         ssh user@remote -p port
     """
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None, connection: Optional[Connection] = None):
         # Initialize the base Dispatcher class (sets up config and logger)
-        super().__init__(sampling_directory, logger)
+        super().__init__(campaign_directory, logger)
 
         # Core members
         self.conn : Optional[Connection] = None
-        self.sampling_directory = os.path.basename(sampling_directory)
+        self.campaign_directory = os.path.basename(campaign_directory)
 
         # If slurm script specifies out and/or error file, use those instead of our default
         self.slurm_specified_out = None
@@ -96,9 +97,9 @@ class RemoteDispatcher(BaseDispatcher):
         """
         Collect results from remote HPC runs.
         """
-        remote_sampling_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
-        self.logger.log(
-            f"Transferring results from {self.conn.host}:{remote_sampling_dir} -> {self.sampling_directory}",
+        remote_campaign_dir = ppath.join(self.config.get("remote_root"), self.campaign_directory)
+        self.logger.debug(
+            f"Transferring results from {self.conn.host}:{remote_campaign_dir} -> {self.campaign_directory}",
             local=True,
         )
 
@@ -106,26 +107,25 @@ class RemoteDispatcher(BaseDispatcher):
         remote_archive_path = ppath.join(self.config.get("remote_root"), archive_name)
 
         try:
-            create_tarball(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_sampling_dir, remote_archive_path, self.collect_patterns)
+            create_tarball(lambda msg: self.logger.log(msg), lambda cmd: self.conn.run(cmd), remote_campaign_dir, remote_archive_path, self.collect_patterns)
         except Exception as e:
             self.logger.log(f"Failed to create tarball on {self.conn.host}: {e}")
             return
 
         # Copy remote archive to local
         self.conn.get(remote_archive_path, archive_name)
-        self.logger.log(f"Copied remote archive to local: {archive_name}")
+        self.logger.debug(f"Copied remote archive to local: {archive_name}")
 
         # Clean up remote archive
         self.conn.run(f"rm -f {shlex.quote(remote_archive_path)}")
-        self.logger.debug("Cleaned up remote archive.")
 
-        # Unpack local archive into local sampling directory
-        os.makedirs(self.sampling_directory, exist_ok=True)
-        res = safe_extract_tar(run_local_bash, archive_name, os.path.abspath(self.sampling_directory))
+        # Unpack local archive into local campaign directory
+        os.makedirs(self.campaign_directory, exist_ok=True)
+        res = safe_extract_tar(run_local_bash, archive_name, os.path.abspath(self.campaign_directory))
         if not res.ok:
-            self.logger.log(f"Results failed to extract.", local=True)
+            self.logger.log("Results failed to extract.", local=True)
         else:
-            self.logger.log(f"Results collected in {self.sampling_directory}", local=True)
+            self.logger.log(f"Results collected in {self.campaign_directory}", local=True)
 
     # ------------------------------------------------------------------
     # Utility methods
@@ -175,11 +175,11 @@ class RemoteDispatcher(BaseDispatcher):
             script_base = (
                 ppath.join(remote_root, run_directory)
                 if run_directory
-                else ppath.join(remote_root, self.sampling_directory)
+                else ppath.join(remote_root, self.campaign_directory)
             )
             remote_script_path = ppath.join(script_base, script_name)
             self.conn.put(script, remote_script_path)
-            self.logger.log(f"Uploaded local script {script} to {self.conn.host}:{remote_script_path}")
+            self.logger.debug(f"Uploaded local script {script} to {self.conn.host}:{remote_script_path}")
             return remote_script_path
 
         script_content = create_slurm_script(
@@ -197,7 +197,7 @@ class RemoteDispatcher(BaseDispatcher):
         script_base = (
             ppath.join(remote_root, run_directory)
             if run_directory
-            else ppath.join(remote_root, self.sampling_directory)
+            else ppath.join(remote_root, self.campaign_directory)
         )
         remote_script_path = ppath.join(script_base, remote_script_name)
 
@@ -209,7 +209,7 @@ class RemoteDispatcher(BaseDispatcher):
         if not res.ok:
             raise RuntimeError(f"Failed to write SLURM script: {res.stderr}")
 
-        self.logger.log(f"Wrote SLURM script to {self.conn.host}:{remote_script_path}")
+        self.logger.debug(f"Wrote SLURM script to {self.conn.host}:{remote_script_path}")
 
         return remote_script_path
 
@@ -242,7 +242,7 @@ class RemoteDispatcher(BaseDispatcher):
         if run_directory:
             full_run_dir = ppath.join(self.config.get("remote_root"), run_directory)
         else:
-            full_run_dir = ppath.join(self.config.get("remote_root"), self.sampling_directory)
+            full_run_dir = ppath.join(self.config.get("remote_root"), self.campaign_directory)
 
         script_name = ppath.basename(remote_script_path)
         result = self.conn.run(
@@ -258,7 +258,10 @@ class RemoteDispatcher(BaseDispatcher):
             raise RuntimeError(f"Could not parse job ID from sbatch output: {result.stdout!r}")
         job_id = match.group(1)
 
-        self.logger.log(f"Submitted SLURM job {job_id}")
+        poll_interval = self.config.get("poll_interval")
+        self.logger.log(
+            f"Submitted SLURM job {job_id}, polling every {poll_interval}s (Ctrl+C to cancel job)."
+        )
         return job_id
 
     def __run(self, cmd: str, run_directory: str = None) -> Result:
@@ -310,7 +313,7 @@ class RemoteDispatcher(BaseDispatcher):
         result = self.conn.run(cmd)
 
         if not result.ok:
-            self.logger.log(f"sacct failed for job {job_id}: {result.stderr}")
+            self.logger.debug(f"sacct failed for job {job_id}: {result.stderr}")
             return None, None
 
         for line in result.stdout.splitlines():
@@ -348,6 +351,7 @@ class RemoteDispatcher(BaseDispatcher):
             elapsed = time.time() - start_wait
             if state is None:
                 if elapsed > timeout:
+                    self.logger.log(f"Gave up retrieving the sacct status of job {job_id} after {timeout}s.")
                     return None
 
                 self.logger.debug(
@@ -363,6 +367,7 @@ class RemoteDispatcher(BaseDispatcher):
 
             if state not in SLURM_TERMINAL_STATES:
                 if elapsed > timeout:
+                    self.logger.log(f"Job {job_id} did not reach a terminal state within {timeout}s (state={state}).")
                     return None
                 time.sleep(sacct_poll_interval)
                 continue
@@ -387,7 +392,6 @@ class RemoteDispatcher(BaseDispatcher):
             'None' otherwise
         """
         poll_interval = self.config.get("poll_interval")
-        self.logger.log(f"Polling SLURM job {job_id} every {poll_interval}s (Ctrl+C to cancel job)...")
         try:
             while True:
                 result = self.conn.run(f"squeue -j {job_id} -h")
@@ -397,7 +401,8 @@ class RemoteDispatcher(BaseDispatcher):
                 self.logger.debug(f"Job {job_id} still running...")
                 time.sleep(poll_interval)
 
-            self.logger.log(f"Job {job_id} completed. Retrieving sacct status...")
+            self.logger.log(f"Job {job_id} finished.")
+            self.logger.debug(f"Retrieving sacct status for job {job_id}...")
             return slurm_exitcode_to_python_style(self.__wait_for_status(job_id))
 
         except KeyboardInterrupt:
@@ -415,7 +420,7 @@ class RemoteDispatcher(BaseDispatcher):
 
         jid = shlex.quote(str(job_id))
 
-        out_dir = os.path.join(self.config.get("remote_root"), self.sampling_directory if run_directory is None else run_directory)
+        out_dir = os.path.join(self.config.get("remote_root"), self.campaign_directory if run_directory is None else run_directory)
 
         stdout_filepath = os.path.join(out_dir, self.slurm_specified_out.replace("%j", jid))
         stderr_filepath = os.path.join(out_dir, self.slurm_specified_err.replace("%j", jid))
@@ -423,7 +428,7 @@ class RemoteDispatcher(BaseDispatcher):
         stdout = get_file_contents(stdout_filepath)
         stderr = get_file_contents(stderr_filepath)
 
-        self.logger.log("Retrieved job output.")
+        self.logger.debug("Retrieved job output.")
 
         return stdout, stderr
 
@@ -441,14 +446,14 @@ class RemoteDispatcher(BaseDispatcher):
         res = self.conn.run(cmd)
         if not res.ok:
             raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
-        self.logger.log(f"Wrote remote file: {remote_path}")
+        self.logger.debug(f"Wrote remote file: {remote_path}")
 
     def __create_remote_directory(self, remote_dir: str, base_dir = False) -> None:
         remote_dir = self.__resolve_remote_path(remote_dir, preserve_relative=base_dir)
         result = self.conn.run(f"mkdir -p {shlex.quote(remote_dir)}")
         if not result.ok:
             raise RuntimeError(f"Failed to create remote directory {remote_dir}: {result.stderr}")
-        self.logger.log(f"Created remote directory: {remote_dir}")
+        self.logger.debug(f"Created remote directory: {remote_dir}")
 
     # ------------------------------------------------------------------
     # Public API
@@ -551,7 +556,7 @@ class RemoteDispatcher(BaseDispatcher):
         buffer = io.StringIO()
         np.savetxt(buffer, arr, fmt=fmt)
         self.__write_text(path, buffer.getvalue())
-        self.logger.log(f"Saved array to path {path}", local=False)
+        self.logger.debug(f"Saved array to path {path}", local=False)
 
     def np_savez(self, path: str, **arrays) -> None:
         """
@@ -571,6 +576,4 @@ class RemoteDispatcher(BaseDispatcher):
             np.savez(local_path, **arrays)
             self.put(local_path, remote_path)
 
-        final_path = remote_path
-
-        self.logger.log(f"Saved arrays to path {final_path}", local=(not self.conn))
+        self.logger.debug(f"Saved arrays to path {remote_path}", local=(not self.conn))

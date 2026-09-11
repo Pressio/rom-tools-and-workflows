@@ -17,11 +17,11 @@ class LocalDispatcher(BaseDispatcher):
     for dispatching ROM workflows on the local machine. It overrides methods to set up
     directories and execute commands without SSH, making it suitable for local execution.
     """
-    def __init__(self, sampling_directory: str = "hpctools", logger: Logger = None):
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None):
         # Local execution has no use for remote/SLURM CLI flags, and reading
         # the real process argv here would pick up whatever CLI args the
         # embedding process was started with (e.g. pytest's own flags).
-        super().__init__(sampling_directory=sampling_directory, logger=logger, argv=[])
+        super().__init__(campaign_directory=campaign_directory, logger=logger, argv=[])
 
         self.caller = LocalCaller(config=self.config, logger=self.logger)
 
@@ -35,7 +35,7 @@ class LocalDispatcher(BaseDispatcher):
         else:
             shutil.copy2(src, dst)
 
-        self.logger.log(f"Copied {src} to {dst}", local=True)
+        self.logger.debug(f"Copied {src} to {dst}", local=True)
 
     # ------------------------------------------------------------------
     # Public API
@@ -95,7 +95,7 @@ class LocalDispatcher(BaseDispatcher):
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
         np.savetxt(path, arr, fmt=fmt)
-        self.logger.log(f"Saved array to path {path}", local=True)
+        self.logger.debug(f"Saved array to path {path}", local=True)
 
     def np_savez(self, path: str, **arrays) -> None:
         """
@@ -107,6 +107,4 @@ class LocalDispatcher(BaseDispatcher):
             local_path += ".npz"
 
         np.savez(local_path, **arrays)
-        final_path = local_path
-
-        self.logger.log(f"Saved arrays to path {final_path}", local=True)
+        self.logger.debug(f"Saved arrays to path {local_path}", local=True)
