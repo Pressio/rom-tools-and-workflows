@@ -37,6 +37,7 @@ docs = [
     'nbclient',
     'nbformat',
     'ipykernel',
+    'ipynb',
 ]
 test = [
     'pytest==7.4.4',
