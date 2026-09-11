@@ -9,11 +9,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import romtools.workflows
+from romtools.workflows.parameter_spaces import MonteCarloSampler, UniformParameterSpace
 from tests.romtools.workflows.regression.inverse.cdr_regression_fixture import (
+    PARAMETER_MAXES,
+    PARAMETER_MINS,
     PARAMETER_NAMES,
     TRUTH_PARAMETERS,
     build_mf_eki_kwargs,
 )
+
+
+VISCOSITY_INDEX = PARAMETER_NAMES.index("nu")
+BENCHMARK_PARAMETER_MAXES = PARAMETER_MAXES.copy()
+BENCHMARK_PARAMETER_MAXES[VISCOSITY_INDEX] = 1.0
+ROM_EXTRA_ENSEMBLE_SIZE = 64
 
 
 class CountingModel:
@@ -34,6 +43,15 @@ class CountingModel:
 
 def _truth_parameter_vector():
     return np.array([TRUTH_PARAMETERS[name] for name in PARAMETER_NAMES], dtype=float)
+
+
+def _build_benchmark_parameter_space():
+    return UniformParameterSpace(
+        parameter_names=PARAMETER_NAMES,
+        lower_bounds=PARAMETER_MINS.copy(),
+        upper_bounds=BENCHMARK_PARAMETER_MAXES.copy(),
+        sampler=MonteCarloSampler,
+    )
 
 
 def _load_parameter_history(case_dir):
@@ -65,6 +83,9 @@ def run_case(root, name, num_substeps, start, end, max_iterations=10,
     kwargs = build_mf_eki_kwargs(str(case_dir))
     counting_model = CountingModel(kwargs["model"])
     kwargs["model"] = counting_model
+    kwargs["parameter_space"] = _build_benchmark_parameter_space()
+    kwargs["parameter_maxes"] = BENCHMARK_PARAMETER_MAXES.copy()
+    kwargs["rom_extra_ensemble_size"] = ROM_EXTRA_ENSEMBLE_SIZE
     kwargs["max_iterations"] = max_iterations
     kwargs["error_norm_tolerance"] = error_norm_tolerance
     kwargs["rom_substep_start_iteration"] = start
@@ -164,6 +185,12 @@ def main():
                 name: TRUTH_PARAMETERS[name] for name in PARAMETER_NAMES
             },
             "parameter_error_definition": "||mean(p_k)-p_truth||_2 / ||p_truth||_2",
+            "initial_parameter_bounds": {
+                name: [float(PARAMETER_MINS[i]), float(BENCHMARK_PARAMETER_MAXES[i])]
+                for i, name in enumerate(PARAMETER_NAMES)
+            },
+            "fom_ensemble_size": 8,
+            "rom_extra_ensemble_size": ROM_EXTRA_ENSEMBLE_SIZE,
             "gp": {
                 "normalize_parameters": True,
                 "normalize_targets": True,
