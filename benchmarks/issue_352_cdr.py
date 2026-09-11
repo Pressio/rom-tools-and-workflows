@@ -77,7 +77,7 @@ def _load_parameter_history(case_dir):
     return history
 
 
-def run_case(root, name, num_substeps, start, end, max_iterations=10,
+def run_case(root, name, num_substeps, start, end, max_iterations=50,
              error_norm_tolerance=0.0):
     case_dir = root / name
     kwargs = build_mf_eki_kwargs(str(case_dir))
@@ -87,6 +87,7 @@ def run_case(root, name, num_substeps, start, end, max_iterations=10,
     kwargs["parameter_maxes"] = BENCHMARK_PARAMETER_MAXES.copy()
     kwargs["rom_extra_ensemble_size"] = ROM_EXTRA_ENSEMBLE_SIZE
     kwargs["max_iterations"] = max_iterations
+    kwargs["initial_step_size"] = 0.25
     kwargs["error_norm_tolerance"] = error_norm_tolerance
     kwargs["rom_substep_start_iteration"] = start
     kwargs["rom_substep_end_iteration"] = end
@@ -119,9 +120,9 @@ def _plot_parameter_error(results, output):
     by_name = {case["name"]: case for case in results}
     selected = [
         ("baseline", "Baseline"),
-        ("s1_w0_4", "1 ROM substep, [0,4)"),
-        ("s4_w0_4", "4 ROM substeps, [0,4)"),
-        ("s4_w2_6", "4 ROM substeps, [2,6)"),
+        ("s1_w3_30", "1 ROM substep, [3,30)"),
+        ("s2_w3_30", "2 ROM substep, [3,30)"),
+        ("s4_w3_30", "4 ROM substeps, [3,30)"),
     ]
 
     fig, ax = plt.subplots(figsize=(8.5, 5.5))
@@ -134,7 +135,7 @@ def _plot_parameter_error(results, output):
     ax.set_xlabel("Outer MF-EKI iteration")
     ax.set_ylabel(r"Relative parameter error  $\|\bar{p}_k-p^*\|_2 / \|p^*\|_2$")
     ax.set_title("CDR auto-ROM benchmark: parameter convergence")
-    ax.set_xticks(range(10))
+    ax.set_xticks(range(0, 51, 5))
     ax.grid(True, alpha=0.25)
     ax.legend(frameon=False)
     fig.tight_layout()
@@ -146,21 +147,15 @@ def _plot_parameter_error(results, output):
 def main():
     fixed_budget_cases = [
         ("baseline", 0, 0, None),
-        ("s1_w0_4", 1, 0, 4),
-        ("s2_w0_4", 2, 0, 4),
-        ("s4_w0_4", 4, 0, 4),
-        ("s1_w0_6", 1, 0, 6),
-        ("s2_w0_6", 2, 0, 6),
-        ("s4_w0_6", 4, 0, 6),
-        ("s1_w2_6", 1, 2, 6),
-        ("s2_w2_6", 2, 2, 6),
-        ("s4_w2_6", 4, 2, 6),
+        ("s1_w3_30", 1, 3, 30),
+        ("s2_w3_30", 2, 3, 30),
+        ("s4_w3_30", 4, 3, 30),
     ]
 
     with tempfile.TemporaryDirectory(prefix="issue352-cdr-") as tmp:
         root = Path(tmp)
         fixed_budget = [
-            run_case(root / "fixed", *case, max_iterations=10)
+            run_case(root / "fixed", *case, max_iterations=50)
             for case in fixed_budget_cases
         ]
 
@@ -173,7 +168,7 @@ def main():
                 case[1],
                 case[2],
                 case[3],
-                max_iterations=20,
+                max_iterations=50,
                 error_norm_tolerance=target,
             )
             for case in fixed_budget_cases
@@ -191,11 +186,12 @@ def main():
             },
             "fom_ensemble_size": 8,
             "rom_extra_ensemble_size": ROM_EXTRA_ENSEMBLE_SIZE,
+            "initial_step_size": 0.25,
             "gp": {
                 "normalize_parameters": True,
                 "normalize_targets": True,
             },
-            "fixed_budget_max_iterations": 10,
+            "fixed_budget_max_iterations": 50,
             "baseline_quality_target": target,
             "fixed_budget": fixed_budget,
             "time_to_quality": time_to_quality,
