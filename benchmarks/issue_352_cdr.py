@@ -121,7 +121,7 @@ def _plot_parameter_error(results, output):
     selected = [
         ("baseline", "Baseline"),
         ("s1_w3_30", "1 ROM substep, [3,30)"),
-        ("s2_w3_30", "2 ROM substep, [3,30)"),
+        ("s2_w3_30", "2 ROM substeps, [3,30)"),
         ("s4_w3_30", "4 ROM substeps, [3,30)"),
     ]
 
