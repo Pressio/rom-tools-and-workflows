@@ -9,6 +9,7 @@ from romtools.hpc.connection import Result, run_local_bash
 from romtools.hpc.components.caller import LocalCaller
 from romtools.hpc.components.file_manager import LocalFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
+from romtools.hpc.components.transfer_manager import LocalTransferManager
 
 
 class LocalDispatcher(BaseDispatcher):
@@ -18,7 +19,8 @@ class LocalDispatcher(BaseDispatcher):
     Paths address the local filesystem and commands run in a local bash shell
     rather than over SSH. That machine may itself be a cluster node, in which
     case submit_job() reaches the scheduler directly and results need no
-    transferring.
+    transferring; upload() copies the configured files into the run directory
+    rather than sending them anywhere.
 
     Arguments:
         campaign_directory: The directory jobs run in when given no run_directory
@@ -32,6 +34,12 @@ class LocalDispatcher(BaseDispatcher):
 
         self.caller = LocalCaller(config=self.config, logger=self.logger)
         self.files = LocalFileManager(config=self.config, logger=self.logger)
+
+        self.transfer = LocalTransferManager(
+            files=self.files,
+            config=self.config,
+            logger=self.logger,
+            campaign_directory=self.campaign_directory)
 
         self.slurm = SlurmJobManager(
             run_cmd=run_local_bash,

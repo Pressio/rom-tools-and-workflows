@@ -1,17 +1,105 @@
-"""Bundling, transferring, and unpacking of run files between local and remote."""
+"""Moving a campaign's input files to where it runs, and its results back."""
 
+import glob
 import os
 
 import posixpath as ppath
 
-from romtools.hpc.components.archive import create_tarball, safe_extract_tar, validate_file_patterns
+from romtools.hpc.components.archive import (
+    create_tarball,
+    matches_everything,
+    safe_extract_tar,
+    validate_file_patterns,
+)
 from romtools.hpc.components.component import Component
-from romtools.hpc.components.file_manager import RemoteFileManager
+from romtools.hpc.components.file_manager import BaseFileManager, RemoteFileManager
 from romtools.hpc.connection import Connection, run_local_bash
 from romtools.hpc.logger import Logger
 
 
-class TransferManager(Component):
+class BaseTransferManager(Component):
+    """
+    Stages the files a campaign needs into its run directory, and brings its
+    results back afterwards.
+
+    Nothing moves by default: a dispatcher whose work already runs against the
+    files in place needs neither half. Subclasses override whichever half
+    genuinely has work to do.
+
+    Arguments:
+        files: The file manager whose resolve_path decides what paths mean
+        campaign_directory: The campaign directory results are gathered into
+        config: The dispatcher's configuration dictionary
+        logger: An instance of the Logger class for logging
+
+    Raises:
+        ValueError: if the configured collect or upload patterns are invalid.
+    """
+
+    def __init__(self, *, files: BaseFileManager, config: dict = None,
+                 logger: Logger = None, campaign_directory: str = None):
+        super().__init__(config=config, logger=logger)
+        self.files = files
+        self.campaign_directory = campaign_directory
+
+        # Patterns are this component's concern, so it validates its own
+        self.collect_patterns = validate_file_patterns(self.config.get("collect"))
+        self.upload_patterns = validate_file_patterns(self.config.get("upload"))
+
+    def _archive_name(self) -> str:
+        return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
+
+    def upload(self, run_directory) -> None:
+        """Put the configured upload patterns into the run directory."""
+
+    def collect_results(self) -> None:
+        """Gather a finished job's output into the local campaign directory."""
+
+
+class LocalTransferManager(BaseTransferManager):
+    """
+    Copies the configured upload patterns from the current directory into the
+    run directory.
+
+    The work runs on this machine against these same files, so there is nothing
+    to pack up and nothing to bring back: only upload does anything.
+    """
+
+    def upload(self, run_directory) -> None:
+        if not self.upload_patterns:
+            return
+
+        destination = self.files.resolve_path(run_directory)
+        sources = [s for s in self._expand_patterns() if not self._contains(s, destination)]
+        if not sources:
+            return
+
+        for source in sources:
+            self.files.put(source, os.path.join(destination, source))
+        self.logger.debug(f"Copied {len(sources)} upload path(s) into {destination}", local=True)
+
+    def _expand_patterns(self) -> list:
+        """Expand the upload patterns against the current directory, in order and without repeats."""
+        if matches_everything(self.upload_patterns):
+            return sorted(os.listdir(os.curdir))
+
+        sources = []
+        for pattern in self.upload_patterns:
+            matches = sorted(glob.glob(pattern))
+            if not matches:
+                self.logger.log(f"Warning: no files matched upload pattern {pattern!r}", local=True)
+            sources.extend(match for match in matches if match not in sources)
+        return sources
+
+    @staticmethod
+    def _contains(source: str, destination: str) -> bool:
+        """True if copying source would recurse into the destination directory."""
+        source = os.path.abspath(source)
+        destination = os.path.abspath(destination)
+        return os.path.commonpath([source, destination]) == source
+
+
+class RemoteTransferManager(BaseTransferManager):
     """
     Moves the files a campaign needs onto the remote host, and its results back,
     in both directions through a single tar.gz archive.
@@ -20,24 +108,13 @@ class TransferManager(Component):
         connection: An established Connection to the remote host
         campaign_directory: The campaign directory, mirrored locally and remotely
         files: The remote file manager, whose resolve_path decides what paths mean
-
-    Raises:
-        ValueError: if the configured collect or upload patterns are invalid.
     """
 
     def __init__(self, connection: Connection, *, files: RemoteFileManager, config: dict = None,
                  logger: Logger = None, campaign_directory: str = None):
-        super().__init__(config=config, logger=logger)
+        super().__init__(files=files, config=config, logger=logger,
+                         campaign_directory=campaign_directory)
         self.conn = connection
-        self.campaign_directory = campaign_directory
-        self.files = files
-
-        # Patterns are this component's concern, so it validates its own
-        self.collect_patterns = validate_file_patterns(self.config.get("collect"))
-        self.upload_patterns = validate_file_patterns(self.config.get("upload"))
-
-    def _archive_name(self) -> str:
-        return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
 
     def collect_results(self) -> None:
         """Collect results from remote HPC runs."""

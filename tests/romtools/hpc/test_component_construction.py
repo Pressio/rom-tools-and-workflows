@@ -4,7 +4,11 @@ from conftest import FakeConnection
 from romtools.hpc.components.caller import BaseCaller
 from romtools.hpc.components.file_manager import BaseFileManager, LocalFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
-from romtools.hpc.components.transfer_manager import TransferManager
+from romtools.hpc.components.transfer_manager import (
+    BaseTransferManager,
+    LocalTransferManager,
+    RemoteTransferManager,
+)
 from romtools.hpc.connection import run_local_bash
 from romtools.hpc.logger import Logger
 
@@ -13,7 +17,9 @@ from romtools.hpc.logger import Logger
     lambda: BaseFileManager(),
     lambda: BaseCaller(),
     lambda: SlurmJobManager(run_local_bash, files=LocalFileManager()),
-    lambda: TransferManager(FakeConnection(), files=LocalFileManager()),
+    lambda: BaseTransferManager(files=LocalFileManager()),
+    lambda: LocalTransferManager(files=LocalFileManager()),
+    lambda: RemoteTransferManager(FakeConnection(), files=LocalFileManager()),
 ])
 def test_components_log_without_being_handed_a_logger(build):
     """
