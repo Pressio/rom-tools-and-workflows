@@ -10,7 +10,7 @@ python example.py
 
 ### Steady CDR model
 
-This folder now includes a steady convection-diffusion-reaction (CDR) model
+This folder includes a steady convection-diffusion-reaction (CDR) model
 compatible with romtools workflow interfaces:
 
 - `steady_cdr.py`: PDE operators and steady solve routine.
@@ -22,6 +22,25 @@ Run a quick standalone model evaluation:
 ```bash
 python steady_cdr_model.py
 ```
+
+### H2-air flame model
+
+This folder also includes a nonlinear transient premixed H2-air flame benchmark
+implemented entirely in Python with NumPy and SciPy:
+
+- `h2_air_flame.py`: four-field advection-diffusion-reaction solver with the
+  parameters `kappa`, `scaled_activation_energy`, `beta_x`, and `beta_y`.
+- `h2_air_flame_model.py`: sensor-based `H2AirFlameQoiModel` wrapper for
+  romtools inverse and multifidelity workflows.
+
+Run the lightweight wrapper smoke example with:
+
+```bash
+python h2_air_flame_model.py
+```
+
+The larger reference setup used in the MFVI work is documented in
+`docs/source/demos/h2_air_flame.rst`.
 
 ## Notes
 
