@@ -1,23 +1,13 @@
 import io
 import tarfile
-import subprocess
 
 import pytest
 
 from romtools.hpc.connection import Result
-from romtools.hpc.util.file_transfer import create_tarball, safe_extract_tar, validate_file_patterns
+from romtools.hpc.components.archive import create_tarball, safe_extract_tar, validate_file_patterns
+from romtools.hpc.connection import run_local_bash
 
 from conftest import ArchiveFakeConnection, FakeConnection
-
-
-def run_local_bash(cmd: str) -> Result:
-    res = subprocess.run(
-        ["bash", "-c", cmd],
-        cwd=".",
-        capture_output=True,
-        text=True
-    )
-    return Result(res.stdout, res.stderr, res.returncode)
 
 
 # ----------------------------------------------------------------------------

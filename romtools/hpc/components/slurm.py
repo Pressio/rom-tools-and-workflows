@@ -17,6 +17,9 @@ SLURM_TERMINAL_STATES = {
 DEFAULT_SLURM_OUTFILE = "slurm.out"
 DEFAULT_SLURM_ERRFILE = "slurm.err"
 
+# Job ended but not successfully
+FAILED_EXIT_CODE = "1:0"
+
 def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall_time: str, wcid: str, partition: str, command: str) -> str:
     """
     Create a SLURM job script with the specified parameters.

@@ -7,7 +7,7 @@ from typing import Optional
 
 import numpy as np
 
-from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.uq._evaluation import evaluate_qoi_model
@@ -195,7 +195,7 @@ def run_monte_carlo(
     """
     _require_absolute_directory(absolute_uq_directory)
     _require_sample_count("number_of_samples", number_of_samples)
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_uq_directory)
     samples = parameter_space.generate_samples(number_of_samples, seed=random_seed)
     qois, run_times = evaluate_qoi_model(
@@ -411,7 +411,7 @@ def run_multifidelity_monte_carlo(
     ):
         raise ValueError("low_to_high_fidelity_cost_ratio must be positive")
 
-    dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
+    dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_uq_directory)
     high_directory_base = os.path.join(
         absolute_uq_directory, "high_fidelity", "run_"

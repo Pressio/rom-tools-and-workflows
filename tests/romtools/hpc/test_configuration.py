@@ -1,9 +1,13 @@
-import re
 import sys
 
 import pytest
 
-from romtools.hpc.configuration import SCHEMA, Configuration, _normalize_collect
+from romtools.hpc.configuration import (
+    SCHEMA,
+    Configuration,
+    ConfigurationError,
+    _normalize_file_patterns,
+)
 
 
 def test_defaults_with_no_args_or_yaml(monkeypatch):
@@ -22,7 +26,7 @@ def test_defaults_with_no_args_or_yaml(monkeypatch):
 
 
 def test_cli_args_override_defaults(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-r", "myhost", "-u", "alice", "-p", "2222"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--user", "alice", "--port", "2222"])
 
     config = Configuration()
 
@@ -31,22 +35,95 @@ def test_cli_args_override_defaults(monkeypatch):
     assert config.port == 2222
 
 
-def test_schema_flags_are_unique_single_character_switches():
-    """
-    Regression test: multi-character single-dash flags such as "-pys" are
-    prefix-ambiguous with "-p", so "-py x" aborted with "ambiguous option"
-    while "-pyszz" silently parsed as "-p yszz".
-    """
-    flags = [arg["cli"] for section in SCHEMA.values() for arg in section.values()]
+def test_every_schema_argument_has_a_long_option(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--job_name", "longjob", "--partition", "batch"])
 
-    assert len(set(flags)) == len(flags)
-    assert "-i" not in flags  # reserved for --input
-    for flag in flags:
-        assert re.fullmatch(r"-[A-Za-z]", flag), f"{flag} is not a single-character switch"
+    config = Configuration()
+
+    assert config.job_name == "longjob"
+    assert config.partition == "batch"
+
+
+def test_host_process_valueless_short_flag_does_not_raise(monkeypatch):
+    """
+    Regression test: "pytest -s tests/foo.py" reached the schema's "-s"
+    (--script) and aborted construction with a ConfigurationError.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", "-s", "-r", "-u"])
+
+    assert Configuration().script is None
+
+
+def test_explicit_argv_ignores_the_host_process_command_line(monkeypatch):
+    """An embedder configures a dispatcher from its own list, not from sys.argv."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value", "--port", "not-a-port"])
+
+    config = Configuration(argv=["--remote", "explicit"])
+
+    assert config.remote == "explicit"
+    assert config.port == 22
+
+
+def test_empty_argv_reads_nothing(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value"])
+
+    assert Configuration(argv=[]).remote is None
+
+
+def test_long_options_are_not_abbreviated(monkeypatch):
+    """A host process's "--part" must not be read as this schema's "--partition"."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--part", "host-value"])
+
+    assert Configuration().partition == "short"
+
+
+def test_bad_value_for_a_schema_argument_raises(monkeypatch):
+    """
+    Regression test: a value that fails type conversion used to warn and drop
+    the whole command line, so "--remote myhost" was silently lost with it.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--port", "not-a-port"])
+
+    with pytest.raises(ConfigurationError, match="--port"):
+        Configuration()
+
+
+def test_missing_value_for_a_schema_argument_raises(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--wall_time"])
+
+    with pytest.raises(ConfigurationError, match="--wall_time"):
+        Configuration()
+
+
+def test_missing_value_for_config_raises(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "-c"])
+
+    with pytest.raises(ConfigurationError, match="config"):
+        Configuration()
+
+
+def test_config_file_is_the_only_short_switch_claimed(monkeypatch):
+    """
+    A host program's short switches stay its own. Only -c is claimed, and even
+    -i, which it used to be, is now left to the surrounding command line.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", "-i", "/nonexistent/my_deck.yaml", "-o", "out"])
+
+    assert Configuration().remote is None
+
+
+def test_host_process_arguments_do_not_raise(monkeypatch):
+    """Arguments the schema does not own are extras, not errors."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--host-only", "3", "-n", "8", "positional"])
+
+    assert Configuration().num_nodes == 1
 
 
 def test_remote_python_args_parse_from_cli(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-e", "module load python", "-c", "srun python3"])
+    monkeypatch.setattr(
+        sys, "argv",
+        ["prog", "--python_setup", "module load python", "--python_command", "srun python3"],
+    )
 
     config = Configuration()
 
@@ -55,16 +132,20 @@ def test_remote_python_args_parse_from_cli(monkeypatch):
 
 
 def test_remote_python_defaults(monkeypatch):
+    """
+    Both are unset by default, so a local call() can tell "use this interpreter"
+    apart from an explicit request for python3.
+    """
     monkeypatch.setattr(sys, "argv", ["prog"])
 
     config = Configuration()
 
     assert config.python_setup is None
-    assert config.python_command == "python3"
+    assert config.python_command is None
 
 
 def test_debug_flag_is_a_store_true_switch(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-d"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--debug"])
     assert Configuration().debug is True
 
     monkeypatch.setattr(sys, "argv", ["prog"])
@@ -72,17 +153,33 @@ def test_debug_flag_is_a_store_true_switch(monkeypatch):
 
 
 def test_collect_normalized_from_cli(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-o", "a.txt,b.log"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--collect", "a.txt,b.log"])
 
     config = Configuration()
 
     assert config.collect == ["a.txt", "b.log"]
 
 
+@pytest.mark.parametrize("body", [
+    "collect: a.txt,b.log\nupload: in.dat\n",
+    "workflow:\n  collect: a.txt,b.log\n  upload: in.dat\n",
+])
+def test_collect_and_upload_normalized_from_yaml(tmp_path, monkeypatch, body):
+    """Regression test: the YAML path normalized these into an undefined name."""
+    yaml_path = tmp_path / "config.yaml"
+    yaml_path.write_text(body)
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
+
+    config = Configuration()
+
+    assert config.collect == ["a.txt", "b.log"]
+    assert config.upload == ["in.dat"]
+
+
 def test_yaml_flat_mapping(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\nuser: yamluser\njob_name: yamljob\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     config = Configuration()
 
@@ -102,7 +199,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
         "user-defined:\n"
         "  custom_field: 42\n"
     )
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     config = Configuration()
 
@@ -115,7 +212,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
 def test_cli_overrides_yaml(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path), "-r", "clihost"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path), "--remote", "clihost"])
 
     config = Configuration()
 
@@ -125,14 +222,14 @@ def test_cli_overrides_yaml(tmp_path, monkeypatch):
 def test_unrecognized_yaml_key_warns_but_does_not_raise(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("not_a_real_field: 5\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", str(yaml_path)])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path)])
 
     with pytest.warns(UserWarning, match="not_a_real_field"):
         Configuration()
 
 
 def test_missing_yaml_file_raises(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "-i", "/nonexistent/config.yaml"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", "/nonexistent/config.yaml"])
 
     with pytest.raises(FileNotFoundError):
         Configuration()
@@ -146,6 +243,7 @@ def test_to_dict_returns_independent_copy(monkeypatch):
     as_dict["job_name"] = "mutated"
 
     assert config.job_name == "hpctools_job"
+    assert "_argv" not in as_dict  # private parsing state is not configuration
 
 
 @pytest.mark.parametrize(
@@ -158,15 +256,15 @@ def test_to_dict_returns_independent_copy(monkeypatch):
         ([], None),
     ],
 )
-def test_normalize_collect_valid_inputs(value, expected):
-    assert _normalize_collect(value) == expected
+def test_normalize_file_patterns_valid_inputs(value, expected):
+    assert _normalize_file_patterns(value) == expected
 
 
-def test_normalize_collect_rejects_non_string_list_entries():
+def test_normalize_file_patterns_rejects_non_string_list_entries():
     with pytest.raises(ValueError):
-        _normalize_collect([1, 2])
+        _normalize_file_patterns([1, 2])
 
 
-def test_normalize_collect_rejects_unsupported_type():
+def test_normalize_file_patterns_rejects_unsupported_type():
     with pytest.raises(ValueError):
-        _normalize_collect(123)
+        _normalize_file_patterns(123)

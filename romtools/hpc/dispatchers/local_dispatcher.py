@@ -2,109 +2,64 @@
 
 import os
 import shlex
-import shutil
-import subprocess
-import numpy as np
 
-from .caller import LocalCaller
-from romtools.hpc.util.logger import Logger
-from romtools.hpc.dispatchers import BaseDispatcher
-from romtools.hpc.connection import Result
+from romtools.hpc.logger import Logger
+from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
+from romtools.hpc.connection import Result, run_local_bash
+from romtools.hpc.components.caller import LocalCaller
+from romtools.hpc.components.file_manager import LocalFileManager
+from romtools.hpc.components.slurm_job_manager import SlurmJobManager
+from romtools.hpc.components.transfer_manager import LocalTransferManager
+
 
 class LocalDispatcher(BaseDispatcher):
     """
-    LocalDispatcher is a subclass of BaseDispatcher that implements the core functionality
-    for dispatching ROM workflows on the local machine. It overrides methods to set up
-    directories and execute commands without SSH, making it suitable for local execution.
+    Runs ROM workflows on the machine this process runs on.
+
+    Paths address the local filesystem and commands run in a local bash shell
+    rather than over SSH. That machine may itself be a cluster node, in which
+    case submit_job() reaches the scheduler directly and results need no
+    transferring; upload() copies the configured files into the run directory
+    rather than sending them anywhere.
+
+    Arguments:
+        campaign_directory: The directory jobs run in when given no run_directory
+        logger: An instance of the Logger class for logging
+        argv: Argument list to configure from instead of the real process argv.
+            Pass [] to ignore the surrounding program's command line.
     """
-    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None):
-        # Local execution has no use for remote/SLURM CLI flags, and reading
-        # the real process argv here would pick up whatever CLI args the
-        # embedding process was started with (e.g. pytest's own flags).
-        super().__init__(campaign_directory=campaign_directory, logger=logger, argv=[])
+    def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
+                 argv: list = None):
+        super().__init__(campaign_directory=campaign_directory, logger=logger, argv=argv)
 
-        self.caller = LocalCaller(config=self.config, logger=self.logger)
+        self.files = LocalFileManager(config=self.config, logger=self.logger)
+        self.caller = LocalCaller(files=self.files, config=self.config, logger=self.logger)
 
-    def __copy(self, src, dst):
-        dst_dir = os.path.dirname(dst)
-        if dst_dir:
-            os.makedirs(dst_dir, exist_ok=True)
+        self.transfer = LocalTransferManager(
+            files=self.files,
+            config=self.config,
+            logger=self.logger,
+            campaign_directory=self.campaign_directory)
 
-        if os.path.isdir(src):
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src, dst)
-
-        self.logger.debug(f"Copied {src} to {dst}", local=True)
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
-    def get(self, remote_path: str, local_path: str) -> None:
-        """Local 'get' is just a copy from remote_path to local_path."""
-        self.__copy(remote_path, local_path)
-
-    def put(self, local_path: str, remote_path: str) -> None:
-        """Local 'put' is just a copy from local_path to remote_path."""
-        self.__copy(local_path, remote_path)
-
-    def path_exists(self, path: str) -> bool:
-        return os.path.exists(path)
+        self.slurm = SlurmJobManager(
+            run_cmd=run_local_bash,
+            config=self.config,
+            logger=self.logger,
+            campaign_directory=self.campaign_directory,
+            files=self.files)
 
     def require_absolute_path(self, path: str) -> None:
-        # Only LocalDispatcher needs absolute paths (for now)
-        assert os.path.isabs(path), f"You must provide an absolute path (received: {path})"
+        # Local run directories are addressed as given, and concurrent
+        # evaluations run in worker processes that may change directory.
+        if not os.path.isabs(path):
+            raise ValueError(f"You must provide an absolute path (received: {path})")
 
-    def create_empty_dir(self, dir_name: str):
-        os.makedirs(dir_name, exist_ok=True)
-
-    def list_dir(self, path: str) -> list:
-        if not os.path.isdir(path):
-            return []
-        return os.listdir(path)
-
-    def remove(self, path: str) -> None:
-        if os.path.exists(path):
-            os.remove(path)
-            self.logger.debug(f"Removed {path}", local=True)
-
-    def write_text(self, path: str, content: str) -> None:
-        parent_dir = os.path.dirname(path)
-        if parent_dir:
-            os.makedirs(parent_dir, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as text_file:
-            text_file.write(content)
-        self.logger.debug(f"Wrote file {path}", local=True)
-
-    def dispatch(self, cmd: str, run_directory: str = None) -> Result:
+    def run(self, cmd: str, run_directory: str = None) -> Result:
         """
-        Returns:
-            sacct format string of job exit code + linux signal number (always 0 in local)
-            example: '0:0'
+        Run a command on the local machine, from run_directory if given and the
+        current working directory otherwise.
+
+        Returns a Result object (with stdout, stderr, exit_code, ok)
         """
         full_cmd = f"cd {shlex.quote(run_directory)} && {cmd}" if run_directory else cmd
-        result = subprocess.run(
-            full_cmd,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-
-        return Result(result.stdout, result.stderr, result.returncode)
-
-    def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
-        np.savetxt(path, arr, fmt=fmt)
-        self.logger.debug(f"Saved array to path {path}", local=True)
-
-    def np_savez(self, path: str, **arrays) -> None:
-        """
-        Write multiple arrays to a .npz file.
-        The .npz file is written directly to the specified path.
-        """
-        local_path = os.path.normpath(path)
-        if not local_path.endswith(".npz"):
-            local_path += ".npz"
-
-        np.savez(local_path, **arrays)
-        self.logger.debug(f"Saved arrays to path {local_path}", local=True)
+        return run_local_bash(full_cmd)

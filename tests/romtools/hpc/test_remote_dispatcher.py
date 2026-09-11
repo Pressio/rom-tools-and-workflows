@@ -43,18 +43,35 @@ def test_injected_connection_skips_real_ssh_handshake(monkeypatch, make_config):
     assert dispatcher.conn is conn
 
 
-def test_dispatch_without_slurm_runs_command_directly(monkeypatch, make_config):
+def test_run_executes_command_directly_without_slurm(monkeypatch, make_config):
     conn = FakeConnection()
     config = make_config(remote_root="campaigns")
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    result = dispatcher.dispatch("./my_app", with_slurm=False)
+    result = dispatcher.run("./my_app")
 
     assert result.ok
     assert conn.calls == ["cd campaigns && ./my_app"]
 
 
-def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config, tmp_path):
+def test_run_reports_a_failed_command_without_raising(monkeypatch, make_config):
+    """
+    Both dispatchers report a failing command through the Result, so a model
+    written against one behaves the same when handed the other. This used to
+    raise RuntimeError while LocalDispatcher.run returned the failing Result.
+    """
+    conn = FakeConnection(responses=[("./my_app", Result("", "segfault", 139))])
+    config = make_config(remote_root="campaigns")
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    result = dispatcher.run("./my_app")
+
+    assert not result.ok
+    assert result.exit_code == 139
+    assert result.stderr == "segfault"
+
+
+def test_submit_job_submits_polls_and_collects(monkeypatch, make_config, tmp_path):
     monkeypatch.chdir(tmp_path)
     responses = [
         ("sbatch", Result("Submitted batch job 123\n", "", 0)),
@@ -67,7 +84,7 @@ def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config
     config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    result = dispatcher.dispatch("./my_app")
+    result = dispatcher.submit_job("./my_app")
 
     assert result.ok
     assert result.exit_code == 0
@@ -76,7 +93,7 @@ def test_dispatch_with_slurm_submits_polls_and_collects(monkeypatch, make_config
     assert any(c.startswith("rm -f") for c in conn.calls)
 
 
-def test_dispatch_collects_results_and_extracts_them_locally(monkeypatch, make_config, tmp_path):
+def test_submit_job_collects_results_and_extracts_them_locally(monkeypatch, make_config, tmp_path):
     monkeypatch.chdir(tmp_path)
     responses = [
         ("sbatch", Result("Submitted batch job 123\n", "", 0)),
@@ -89,7 +106,7 @@ def test_dispatch_collects_results_and_extracts_them_locally(monkeypatch, make_c
     config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    dispatcher.dispatch("./my_app")
+    dispatcher.submit_job("./my_app")
 
     archive_name = "dispatcher-transfer-myjob.tar.gz"
     remote_archive_path = "campaigns/dispatcher-transfer-myjob.tar.gz"
@@ -99,7 +116,30 @@ def test_dispatch_collects_results_and_extracts_them_locally(monkeypatch, make_c
     assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
 
 
-def test_dispatch_skips_local_extraction_when_no_collect_patterns(monkeypatch, make_config, tmp_path):
+def test_results_are_extracted_even_when_the_remote_cleanup_fails(monkeypatch, make_config, tmp_path):
+    """
+    Regression test: removing the remote archive raises, which aborted
+    collection after the download but before extraction, so the results were
+    never unpacked. A stale remote archive is untidy, not fatal.
+    """
+    monkeypatch.chdir(tmp_path)
+    responses = [
+        ("sbatch", Result("Submitted batch job 123\n", "", 0)),
+        ("squeue -j 123 -h", Result("", "", 0)),
+        ("tar -czf", Result("", "", 0)),
+        ("rm -f", Result("", "read-only file system", 1)),
+        ("sacct -j", Result("123|COMPLETED|0:0|0:0", "", 0)),
+    ]
+    conn = ArchiveFakeConnection(responses=responses)
+    config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=["all"])
+    dispatcher = _make_dispatcher(monkeypatch, config, conn)
+
+    dispatcher.submit_job("./my_app")
+
+    assert (tmp_path / "hpctools" / "result.txt").read_text() == "payload"
+
+
+def test_submit_job_skips_local_extraction_when_no_collect_patterns(monkeypatch, make_config, tmp_path):
     monkeypatch.chdir(tmp_path)
     responses = [
         ("sbatch", Result("Submitted batch job 9\n", "", 0)),
@@ -109,13 +149,13 @@ def test_dispatch_skips_local_extraction_when_no_collect_patterns(monkeypatch, m
     config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=None)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    dispatcher.dispatch("./my_app")
+    dispatcher.submit_job("./my_app")
 
     assert conn.get_calls == []
     assert not (tmp_path / "hpctools").exists()
 
 
-def test_dispatch_uses_run_directory_when_given(monkeypatch, make_config, tmp_path):
+def test_submit_job_uses_run_directory_when_given(monkeypatch, make_config, tmp_path):
     monkeypatch.chdir(tmp_path)
     responses = [
         ("sbatch", Result("Submitted batch job 5\n", "", 0)),
@@ -127,14 +167,14 @@ def test_dispatch_uses_run_directory_when_given(monkeypatch, make_config, tmp_pa
     config = make_config(remote_root="campaigns", job_name="myjob", poll_interval=0, collect=None)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    dispatcher.dispatch("./my_app", run_directory="run_00")
+    dispatcher.submit_job("./my_app", run_directory="run_00")
 
     assert any(c.startswith("cd campaigns/run_00 && sbatch") for c in conn.calls)
 
-def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_path(monkeypatch, make_config, tmp_path):
+def test_submit_job_with_default_relative_remote_root_submits_resolvable_script_path(monkeypatch, make_config, tmp_path):
     """
     Regression test: remote_root defaults to a relative path ("hpctools_campaigns").
-    __submit_slurm_job cd's into remote_root/run_directory and must not then hand
+    SlurmJobManager.submit cd's into remote_root/run_directory and must not then hand
     sbatch a script path that is *also* prefixed with remote_root/run_directory,
     since that duplicated path can't resolve from the new working directory.
     """
@@ -149,7 +189,7 @@ def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_pa
     config = make_config(poll_interval=0, collect=None)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    dispatcher.dispatch("./my_app", run_directory="run_00")
+    dispatcher.submit_job("./my_app", run_directory="run_00")
 
     assert (
         "cd hpctools_campaigns/run_00 && sbatch --output=slurm.out "
@@ -157,11 +197,11 @@ def test_dispatch_with_default_relative_remote_root_submits_resolvable_script_pa
     ) in conn.calls
 
 
-def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_config, tmp_path):
+def test_submit_job_with_custom_script_uploads_to_run_directory(monkeypatch, make_config, tmp_path):
     """
-    Regression test: __generate_slurm_script's custom-script branch uploaded to
+    Regression test: _generate_slurm_script's custom-script branch uploaded to
     remote_root/campaign_directory even when a run_directory was given, while
-    __submit_slurm_job cd's into remote_root/run_directory - a directory mismatch
+    SlurmJobManager.submit cd's into remote_root/run_directory - a directory mismatch
     that left the uploaded script outside the directory sbatch is run from.
     """
     monkeypatch.chdir(tmp_path)
@@ -178,7 +218,7 @@ def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_
     config = make_config(script=str(local_script), poll_interval=0, collect=None)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
-    dispatcher.dispatch(run_directory="run_00")
+    dispatcher.submit_job(run_directory="run_00")
 
     assert conn.put_calls == [(str(local_script), "hpctools_campaigns/run_00/custom_job.sh")]
     assert (
@@ -187,22 +227,22 @@ def test_dispatch_with_custom_script_uploads_to_run_directory(monkeypatch, make_
     ) in conn.calls
 
 
-def test_dispatch_raises_when_sbatch_fails(monkeypatch, make_config):
+def test_submit_job_raises_when_sbatch_fails(monkeypatch, make_config):
     conn = FakeConnection(responses=[("sbatch", Result("", "out of quota", 1))])
     config = make_config(remote_root="campaigns")
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
     with pytest.raises(RuntimeError, match="out of quota"):
-        dispatcher.dispatch("./my_app")
+        dispatcher.submit_job("./my_app")
 
 
-def test_dispatch_raises_when_sbatch_output_unparseable(monkeypatch, make_config):
+def test_submit_job_raises_when_sbatch_output_unparseable(monkeypatch, make_config):
     conn = FakeConnection(responses=[("sbatch", Result("nonsense output", "", 0))])
     config = make_config(remote_root="campaigns")
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
 
     with pytest.raises(RuntimeError, match="Could not parse job ID"):
-        dispatcher.dispatch("./my_app")
+        dispatcher.submit_job("./my_app")
 
 
 def test_keyboard_interrupt_during_poll_cancels_job(monkeypatch, make_config):
@@ -215,12 +255,12 @@ def test_keyboard_interrupt_during_poll_cancels_job(monkeypatch, make_config):
     config = make_config(remote_root="campaigns", poll_interval=1)
     dispatcher = _make_dispatcher(monkeypatch, config, conn)
     monkeypatch.setattr(
-        "romtools.hpc.dispatchers.remote_dispatcher.time.sleep",
+        "romtools.hpc.components.slurm_job_manager.time.sleep",
         MagicMock(side_effect=KeyboardInterrupt),
     )
 
     with pytest.raises(KeyboardInterrupt):
-        dispatcher.dispatch("./my_app")
+        dispatcher.submit_job("./my_app")
 
     assert any(c.startswith("scancel") for c in conn.calls)
 
@@ -404,6 +444,21 @@ def test_np_savez_uploads_via_put(monkeypatch, make_config):
     local_path, remote_path = conn.put_calls[0]
     assert remote_path == "campaigns/results/data.npz"
     assert local_path.endswith("data.npz")
+
+
+def test_np_savez_reports_a_missing_remote_directory(monkeypatch, make_config):
+    """
+    Regression test: this was a bare `assert`, which `python -O` strips, so an
+    optimized run uploaded into a directory that did not exist and scp failed
+    with a message that named neither the array nor the directory.
+    """
+    conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
+    dispatcher = _make_dispatcher(monkeypatch, make_config(remote_root="campaigns"), conn)
+
+    with pytest.raises(FileNotFoundError, match="results"):
+        dispatcher.np_savez("results/data", a=np.array([1, 2]))
+
+    assert conn.put_calls == []
 
 
 def test_require_relative_path_rejects_an_absolute_path(monkeypatch, make_config):
