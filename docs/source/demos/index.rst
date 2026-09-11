@@ -59,6 +59,7 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     :maxdepth: 1
 
     eki_mf_eki_demo
+    h2_air_flame
 
 .. toctree::
     :caption: Uncertainty quantification
