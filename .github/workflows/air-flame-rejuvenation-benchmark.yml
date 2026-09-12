@@ -1,5 +1,6 @@
 name: H2-air flame rejuvenation benchmark
 
+# Temporary full-resolution benchmark for issue 358.
 on:
   push:
     branches:
