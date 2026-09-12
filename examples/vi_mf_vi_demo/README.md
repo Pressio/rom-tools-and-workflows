@@ -19,7 +19,10 @@ are generated at the truth
 - `sigma = 0.30`
 
 from the scalar quantity of interest used by the CDR model, which approximates
-the integral of the normal derivative on the right boundary.
+the integral of the normal derivative on the right boundary. No random noise
+realization is added to the synthetic observation. The likelihood assumes
+Gaussian observation noise with standard deviation `5e-3`, corresponding to a
+scalar observation covariance of `2.5e-5`.
 
 The inference bounds are deliberately not centered on the truth:
 
