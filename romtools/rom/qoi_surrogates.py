@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence
+from typing import Any, Iterable, List, Optional, Sequence
 
 import numpy as np
 
@@ -49,18 +49,19 @@ class GaussianProcessRegressorLite:
         y_mean = kx @ self._alpha
         return y_mean.ravel()
 
-    def predict_mean_and_std(self, x_query: np.ndarray) -> tuple[np.ndarray,np.ndarray]:
+    def predict_mean_and_std(self, x_query: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         if self._x_train is None or self._alpha is None:
             raise RuntimeError("GaussianProcessRegressorLite has not been fit yet.")
         x_query = np.asarray(x_query, dtype=float)
         kx = self.kernel(x_query, self._x_train)
         y_mean = kx @ self._alpha
 
-        cov = self.kernel(x_query,x_query) - kx @ np.linalg.solve(self._chol.T, np.linalg.solve(self._chol, kx.T))
+        cov = self.kernel(x_query, x_query) - kx @ np.linalg.solve(
+            self._chol.T, np.linalg.solve(self._chol, kx.T)
+        )
         y_var = np.clip(np.diag(cov), 0.0, None)
         y_std = np.sqrt(y_var)
-        return y_mean.ravel(),y_std.ravel()
-
+        return y_mean.ravel(), y_std.ravel()
 
     @staticmethod
     def log_marginal_likelihood(x_train: np.ndarray,
@@ -158,7 +159,7 @@ class GaussianProcessQoiModel:
             return np.asarray([mean_coeffs[0]]), np.asarray([std_coeffs[0]])
         qoi_mean = self._mean_qoi + self._pod_modes @ mean_coeffs
         # assume pod modes are not correlated (should revisit this assumption)
-        qoi_std = np.sqrt(self._pod_modes @ (std_coeffs*std_coeffs))
+        qoi_std = np.sqrt(self._pod_modes @ (std_coeffs * std_coeffs))
         return np.asarray(qoi_mean).ravel(), np.asarray(qoi_std).ravel()
 
     def _parameter_sample_to_array(self, parameter_sample: dict) -> np.ndarray:
@@ -299,3 +300,308 @@ class GaussianProcessQoiModel:
                     best_lml = lml
                     best_kernel = candidate
         return best_kernel
+
+
+@dataclass
+class NeuralNetworkConfig:
+    """Configuration for the torch neural-network QoI surrogate.
+
+    The default architecture contains two hidden layers. If
+    ``hidden_neurons_per_layer`` is not provided, each hidden layer contains
+    ``hidden_width_multiplier * parameter_dimension`` neurons, giving the
+    baseline width of three times the parameter dimension.
+    """
+
+    num_hidden_layers: int = 2
+    hidden_neurons_per_layer: Optional[int] = None
+    hidden_width_multiplier: float = 3.0
+    activation: str = "tanh"
+    optimizer: str = "adam"
+    learning_rate: float = 1e-3
+    training_iterations: int = 5000
+    weight_decay: float = 0.0
+    random_seed: int = 1
+    dtype: str = "float64"
+    device: str = "cpu"
+
+    def hidden_layer_width(self, parameter_dimension: int) -> int:
+        if parameter_dimension < 1:
+            raise ValueError("parameter_dimension must be positive")
+        if self.hidden_neurons_per_layer is not None:
+            width = int(self.hidden_neurons_per_layer)
+        else:
+            width = int(round(self.hidden_width_multiplier * parameter_dimension))
+        if width < 1:
+            raise ValueError("hidden layer width must be positive")
+        return width
+
+    def validate(self) -> None:
+        if self.num_hidden_layers < 0:
+            raise ValueError("num_hidden_layers must be nonnegative")
+        if self.hidden_neurons_per_layer is not None and self.hidden_neurons_per_layer < 1:
+            raise ValueError("hidden_neurons_per_layer must be positive")
+        if self.hidden_width_multiplier <= 0.0:
+            raise ValueError("hidden_width_multiplier must be positive")
+        if self.learning_rate <= 0.0:
+            raise ValueError("learning_rate must be positive")
+        if self.training_iterations < 1:
+            raise ValueError("training_iterations must be positive")
+        if self.weight_decay < 0.0:
+            raise ValueError("weight_decay must be nonnegative")
+
+
+def _import_torch():
+    try:
+        import torch
+    except ImportError as exc:
+        raise ImportError(
+            "PyTorch is required for NeuralNetworkQoiModel. "
+            "Install romtools with the 'WithTorch' optional dependency."
+        ) from exc
+    return torch
+
+
+class NeuralNetworkQoiModel:
+    """Torch neural-network QoI surrogate following the QoiModel API.
+
+    Scalar QoIs are learned directly. Vector QoIs use the same POD reduction
+    strategy as :class:`GaussianProcessQoiModel`: the training QoIs are
+    mean-centered, truncated according to ``pod_energy_fraction`` and
+    ``max_pod_modes``, and the network predicts the retained POD coefficients.
+    A single multi-output network is used for all retained coefficients.
+    """
+
+    def __init__(self,
+                 parameters: np.ndarray,
+                 qois: np.ndarray,
+                 parameter_names: Optional[Sequence[str]] = None,
+                 pod_energy_fraction: float = 0.999999,
+                 max_pod_modes: Optional[int] = None,
+                 network_config: Optional[NeuralNetworkConfig] = None,
+                 normalize_parameters: bool = True,
+                 normalize_targets: bool = True) -> None:
+        self.parameter_names = list(parameter_names) if parameter_names is not None else None
+        self.parameters = np.asarray(parameters, dtype=float)
+        self.qois = np.asarray(qois, dtype=float)
+        self.pod_energy_fraction = float(pod_energy_fraction)
+        self.max_pod_modes = max_pod_modes
+        self.network_config = network_config if network_config is not None else NeuralNetworkConfig()
+        self.normalize_parameters = bool(normalize_parameters)
+        self.normalize_targets = bool(normalize_targets)
+
+        if self.parameters.ndim != 2:
+            raise ValueError("parameters must have shape (num_samples, parameter_dimension)")
+        if self.parameters.shape[0] < 1:
+            raise ValueError("at least one training sample is required")
+        if self.qois.ndim not in (1, 2):
+            raise ValueError("qois must have shape (num_samples,) or (num_samples, qoi_dimension)")
+        if self.qois.shape[0] != self.parameters.shape[0]:
+            raise ValueError("parameters and qois must contain the same number of samples")
+        if not 0.0 < self.pod_energy_fraction <= 1.0:
+            raise ValueError("pod_energy_fraction must be in (0, 1]")
+        if self.max_pod_modes is not None and self.max_pod_modes < 1:
+            raise ValueError("max_pod_modes must be positive")
+        self.network_config.validate()
+
+        self._mean_qoi: Optional[np.ndarray] = None
+        self._pod_modes: Optional[np.ndarray] = None
+        self._param_min: Optional[np.ndarray] = None
+        self._param_scale: Optional[np.ndarray] = None
+        self._target_min: Optional[np.ndarray] = None
+        self._target_scale: Optional[np.ndarray] = None
+        self._network: Optional[Any] = None
+        self._torch = None
+        self._torch_dtype = None
+        self.hidden_neurons_per_layer = self.network_config.hidden_layer_width(
+            self.parameters.shape[1]
+        )
+        self.final_training_loss: Optional[float] = None
+        self._fit()
+
+    def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
+        return None
+
+    def run_model(self, run_directory: str, parameter_sample: dict) -> int:
+        return 0
+
+    def compute_qoi(self, run_directory: str, parameter_sample: dict) -> np.ndarray:
+        coefficients = self._predict_reduced_targets(parameter_sample)
+        if self._pod_modes is None:
+            return np.asarray([coefficients[0]], dtype=float)
+        qoi = self._mean_qoi + self._pod_modes @ coefficients
+        return np.asarray(qoi, dtype=float).ravel()
+
+    def _parameter_sample_to_array(self, parameter_sample) -> np.ndarray:
+        if isinstance(parameter_sample, dict):
+            if self.parameter_names is None:
+                raise ValueError("parameter_names must be provided to map dict inputs.")
+            parameters = np.array(
+                [parameter_sample[name] for name in self.parameter_names], dtype=float
+            )
+        else:
+            parameters = np.asarray(parameter_sample, dtype=float).ravel()
+        if parameters.size != self.parameters.shape[1]:
+            raise ValueError(
+                "parameter sample dimension does not match the network input dimension"
+            )
+        return self._scale_parameters(parameters)
+
+    def _fit(self) -> None:
+        torch = _import_torch()
+        self._torch = torch
+        try:
+            self._torch_dtype = getattr(torch, self.network_config.dtype)
+        except AttributeError as exc:
+            raise ValueError(
+                f"Unsupported torch dtype '{self.network_config.dtype}'."
+            ) from exc
+        device = torch.device(self.network_config.device)
+
+        parameters = self._initialize_parameter_scaling()
+        targets = self._build_reduced_targets()
+        targets = self._initialize_target_scaling(targets)
+
+        torch.manual_seed(self.network_config.random_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self.network_config.random_seed)
+
+        input_dimension = parameters.shape[1]
+        output_dimension = targets.shape[1]
+        self._network = self._build_network(
+            input_dimension, output_dimension, torch
+        ).to(device=device, dtype=self._torch_dtype)
+
+        x_train = torch.as_tensor(
+            parameters, dtype=self._torch_dtype, device=device
+        )
+        y_train = torch.as_tensor(
+            targets, dtype=self._torch_dtype, device=device
+        )
+        optimizer = self._build_optimizer(torch)
+        loss_function = torch.nn.MSELoss()
+
+        self._network.train()
+        for _ in range(self.network_config.training_iterations):
+            optimizer.zero_grad()
+            prediction = self._network(x_train)
+            loss = loss_function(prediction, y_train)
+            loss.backward()
+            optimizer.step()
+        self.final_training_loss = float(loss.detach().cpu().item())
+        self._network.eval()
+
+    def _build_reduced_targets(self) -> np.ndarray:
+        if self.qois.ndim == 1 or self.qois.shape[1] == 1:
+            self._mean_qoi = np.zeros(1, dtype=float)
+            self._pod_modes = None
+            return self.qois.reshape(-1, 1)
+
+        mean_qoi = np.mean(self.qois, axis=0)
+        centered = self.qois - mean_qoi[None, :]
+        _, singular_values, right_singular_vectors = np.linalg.svd(
+            centered, full_matrices=False
+        )
+        cumulative_energy = np.cumsum(singular_values ** 2)
+        total_energy = cumulative_energy[-1] if cumulative_energy.size > 0 else 0.0
+        if total_energy == 0.0:
+            modes = np.zeros((self.qois.shape[1], 1), dtype=float)
+        else:
+            num_modes = int(
+                np.searchsorted(
+                    cumulative_energy / total_energy, self.pod_energy_fraction
+                ) + 1
+            )
+            if self.max_pod_modes is not None:
+                num_modes = min(num_modes, self.max_pod_modes)
+            num_modes = max(num_modes, 1)
+            modes = right_singular_vectors[:num_modes, :].T
+
+        self._mean_qoi = mean_qoi
+        self._pod_modes = modes
+        return centered @ modes
+
+    def _initialize_parameter_scaling(self) -> np.ndarray:
+        if not self.normalize_parameters:
+            self._param_min = None
+            self._param_scale = None
+            return self.parameters
+        self._param_min = np.min(self.parameters, axis=0)
+        parameter_max = np.max(self.parameters, axis=0)
+        self._param_scale = parameter_max - self._param_min
+        self._param_scale[self._param_scale == 0.0] = 1.0
+        return (self.parameters - self._param_min) / self._param_scale
+
+    def _scale_parameters(self, parameters: np.ndarray) -> np.ndarray:
+        if not self.normalize_parameters:
+            return np.asarray(parameters, dtype=float)
+        return (np.asarray(parameters, dtype=float) - self._param_min) / self._param_scale
+
+    def _initialize_target_scaling(self, targets: np.ndarray) -> np.ndarray:
+        targets = np.asarray(targets, dtype=float)
+        if not self.normalize_targets:
+            self._target_min = None
+            self._target_scale = None
+            return targets
+        self._target_min = np.min(targets, axis=0)
+        target_max = np.max(targets, axis=0)
+        self._target_scale = target_max - self._target_min
+        self._target_scale[self._target_scale == 0.0] = 1.0
+        return (targets - self._target_min[None, :]) / self._target_scale[None, :]
+
+    def _unscale_targets(self, targets: np.ndarray) -> np.ndarray:
+        targets = np.asarray(targets, dtype=float).ravel()
+        if not self.normalize_targets:
+            return targets
+        return targets * self._target_scale + self._target_min
+
+    def _build_network(self, input_dimension: int, output_dimension: int, torch):
+        activation_type = self._activation_type(torch)
+        layers = []
+        previous_width = input_dimension
+        for _ in range(self.network_config.num_hidden_layers):
+            layers.append(torch.nn.Linear(previous_width, self.hidden_neurons_per_layer))
+            layers.append(activation_type())
+            previous_width = self.hidden_neurons_per_layer
+        layers.append(torch.nn.Linear(previous_width, output_dimension))
+        return torch.nn.Sequential(*layers)
+
+    def _activation_type(self, torch):
+        activations = {
+            "tanh": torch.nn.Tanh,
+            "relu": torch.nn.ReLU,
+            "gelu": torch.nn.GELU,
+            "silu": torch.nn.SiLU,
+        }
+        activation = self.network_config.activation.strip().lower()
+        if activation not in activations:
+            raise ValueError(
+                f"Unsupported neural-network activation '{self.network_config.activation}'."
+            )
+        return activations[activation]
+
+    def _build_optimizer(self, torch):
+        optimizer_name = self.network_config.optimizer.strip().lower()
+        optimizer_options = {
+            "adam": torch.optim.Adam,
+            "adamw": torch.optim.AdamW,
+            "sgd": torch.optim.SGD,
+        }
+        if optimizer_name not in optimizer_options:
+            raise ValueError(
+                f"Unsupported neural-network optimizer '{self.network_config.optimizer}'."
+            )
+        return optimizer_options[optimizer_name](
+            self._network.parameters(),
+            lr=self.network_config.learning_rate,
+            weight_decay=self.network_config.weight_decay,
+        )
+
+    def _predict_reduced_targets(self, parameter_sample) -> np.ndarray:
+        parameters = self._parameter_sample_to_array(parameter_sample)
+        device = next(self._network.parameters()).device
+        x = self._torch.as_tensor(
+            parameters[None, :], dtype=self._torch_dtype, device=device
+        )
+        with self._torch.no_grad():
+            prediction = self._network(x).detach().cpu().numpy().ravel()
+        return self._unscale_targets(prediction)

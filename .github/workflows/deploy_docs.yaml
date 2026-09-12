@@ -25,7 +25,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - run: python -m pip install --upgrade pip
-      - run: pip install .[docs]
+      - run: pip install .[docs,WithTorch]
       - name: Validate documentation examples
         run: python docs/validate_examples.py
 

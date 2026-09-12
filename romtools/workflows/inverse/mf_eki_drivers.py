@@ -62,7 +62,15 @@ from romtools.workflows.inverse.eki_drivers import compute_eki_update
 from romtools.workflows.models import QoiModel
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
-from romtools.rom.qoi_surrogates import GaussianProcessKernel, GaussianProcessQoiModel
+from romtools.rom.qoi_surrogates import (
+    GaussianProcessKernel,
+    GaussianProcessQoiModel,
+    NeuralNetworkConfig,
+)
+from romtools.rom.neural_network_surrogate import (
+    LipschitzConfig,
+    NeuralNetworkQoiModelBuilderWithTrainingData,
+)
 import copy
 from romtools.workflows.parameter_spaces import ParameterSpace
 import multiprocessing
@@ -647,8 +655,13 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          rom_type: str = "gp",
                          rom_args: Optional[dict] = None,
                          dispatcher: Optional[BaseDispatcher] = None):
-    """
-    Wrapper around run_mf_eki that selects a default ROM surrogate by rom_type.
+    """Run MF-EKI with a built-in data-driven surrogate type.
+
+    ``rom_type='gp'`` selects the Gaussian-process QoI surrogate.
+    ``rom_type='nn'`` selects the PyTorch neural-network QoI surrogate.
+    ``rom_args`` contains surrogate-specific builder options. For the neural
+    network, ``network_config`` and ``lipschitz_config`` may be supplied as
+    :class:`NeuralNetworkConfig` and :class:`LipschitzConfig` instances.
     """
     rom_args = {} if rom_args is None else dict(rom_args)
     rom_type_normalized = rom_type.strip().lower()
@@ -667,8 +680,20 @@ def mf_eki_with_auto_rom(model: QoiModel,
             normalize_parameters=rom_args.get("normalize_parameters", False),
             normalize_targets=rom_args.get("normalize_targets", False),
         )
+    elif rom_type_normalized in ("nn", "neural_network", "neural-network"):
+        rom_model_builder = NeuralNetworkQoiModelBuilderWithTrainingData(
+            parameter_names=parameter_space.get_names(),
+            pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.999999),
+            max_pod_modes=rom_args.get("max_pod_modes"),
+            network_config=rom_args.get("network_config"),
+            lipschitz_config=rom_args.get("lipschitz_config"),
+            normalize_parameters=rom_args.get("normalize_parameters", True),
+            normalize_targets=rom_args.get("normalize_targets", True),
+        )
     else:
-        raise ValueError(f"Unsupported rom_type '{rom_type}'.")
+        raise ValueError(
+            f"Unsupported rom_type '{rom_type}'. Supported options are 'gp' and 'nn'."
+        )
     return run_mf_eki(
         model=model,
         rom_model_builder=rom_model_builder,
