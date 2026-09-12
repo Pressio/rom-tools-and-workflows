@@ -5,9 +5,319 @@ on:
     branches:
       - fix-358-eki-rejuvenation
 
+permissions:
+  contents: write
+
 jobs:
+  prepare:
+    if: github.event.head_commit.message == 'Apply 10-iteration rejuvenation cooldown'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-358-eki-rejuvenation
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Add adaptive rejuvenation cooldown
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new)
+
+          def regex_replace(text, pattern, repl, expected, label):
+              text, count = re.subn(pattern, repl, text, flags=re.MULTILINE)
+              if count != expected:
+                  raise RuntimeError(f'{label}: expected {expected} matches, found {count}')
+              return text
+
+          # --- Single-fidelity EKI ---
+          path = Path('romtools/workflows/inverse/eki_drivers.py')
+          text = path.read_text()
+
+          text = replace_once(
+              text,
+              '''def _validate_rejuvenation_settings(\n        rejuvenation_strategy,\n        rejuvenation_interval,\n        rejuvenation_inflation,\n        rejuvenation_prior_weight,\n        max_rejuvenations):''',
+              '''def _validate_rejuvenation_settings(\n        rejuvenation_strategy,\n        rejuvenation_interval,\n        rejuvenation_inflation,\n        rejuvenation_prior_weight,\n        max_rejuvenations,\n        rejuvenation_cooldown):''',
+              'EKI validation signature',
+          )
+          text = replace_once(
+              text,
+              '''    if max_rejuvenations < 0:\n        raise ValueError("max_rejuvenations must be nonnegative")''',
+              '''    if max_rejuvenations < 0:\n        raise ValueError("max_rejuvenations must be nonnegative")\n    if rejuvenation_cooldown < 0:\n        raise ValueError("rejuvenation_cooldown must be nonnegative")''',
+              'EKI cooldown validation',
+          )
+
+          old_should = '''def _should_rejuvenate(\n        rejuvenation_strategy,\n        iteration,\n        normalized_dp_norm,\n        error_norm,\n        delta_params_tolerance,\n        error_norm_tolerance,\n        rejuvenation_count,\n        max_rejuvenations,\n        rejuvenation_interval):\n    if rejuvenation_strategy == "none" or rejuvenation_count >= max_rejuvenations:\n        return False\n    if error_norm <= error_norm_tolerance:\n        return False\n    if rejuvenation_strategy == "adaptive":\n        return normalized_dp_norm <= delta_params_tolerance\n    return iteration > 0 and iteration % rejuvenation_interval == 0\n'''
+          new_should = '''def _adaptive_rejuvenation_cooldown_active(\n        rejuvenation_strategy,\n        iteration,\n        rejuvenation_count,\n        max_rejuvenations,\n        rejuvenation_cooldown,\n        last_rejuvenation_iteration):\n    """Return whether an adaptive rejuvenation is still in its cooldown."""\n    return (\n        rejuvenation_strategy == "adaptive"\n        and rejuvenation_count > 0\n        and rejuvenation_count < max_rejuvenations\n        and iteration - last_rejuvenation_iteration < rejuvenation_cooldown\n    )\n\n\ndef _should_rejuvenate(\n        rejuvenation_strategy,\n        iteration,\n        normalized_dp_norm,\n        error_norm,\n        delta_params_tolerance,\n        error_norm_tolerance,\n        rejuvenation_count,\n        max_rejuvenations,\n        rejuvenation_interval,\n        rejuvenation_cooldown=10,\n        last_rejuvenation_iteration=-1):\n    if rejuvenation_strategy == "none" or rejuvenation_count >= max_rejuvenations:\n        return False\n    if error_norm <= error_norm_tolerance:\n        return False\n    if _adaptive_rejuvenation_cooldown_active(\n            rejuvenation_strategy,\n            iteration,\n            rejuvenation_count,\n            max_rejuvenations,\n            rejuvenation_cooldown,\n            last_rejuvenation_iteration):\n        return False\n    if rejuvenation_strategy == "adaptive":\n        return normalized_dp_norm <= delta_params_tolerance\n    return iteration > 0 and iteration % rejuvenation_interval == 0\n'''
+          text = replace_once(text, old_should, new_should, 'EKI should-rejuvenate helper')
+
+          text = replace_once(
+              text,
+              '''        rejuvenation_reference_covariance,\n        rejuvenation_count):\n    dispatcher.np_savez(''',
+              '''        rejuvenation_reference_covariance,\n        rejuvenation_count,\n        last_rejuvenation_iteration):\n    dispatcher.np_savez(''',
+              'EKI restart signature',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_reference_covariance=rejuvenation_reference_covariance,\n        rejuvenation_count=rejuvenation_count,\n    )''',
+              '''        rejuvenation_reference_covariance=rejuvenation_reference_covariance,\n        rejuvenation_count=rejuvenation_count,\n        last_rejuvenation_iteration=last_rejuvenation_iteration,\n    )''',
+              'EKI restart payload',
+          )
+          text = replace_once(
+              text,
+              '''            rejuvenation_prior_weight: float = 0.0025,\n            max_rejuvenations: int = 3,\n            max_iterations: int = 50,''',
+              '''            rejuvenation_prior_weight: float = 0.0025,\n            max_rejuvenations: int = 3,\n            rejuvenation_cooldown: int = 10,\n            max_iterations: int = 50,''',
+              'EKI public cooldown argument',
+          )
+          text = replace_once(
+              text,
+              '''        max_rejuvenations: Maximum number of rejuvenation events.\n        max_iterations: Maximum number of EKI iterations.''',
+              '''        max_rejuvenations: Maximum number of rejuvenation events.\n        rejuvenation_cooldown: Minimum number of accepted iterations after an\n            adaptive rejuvenation before another adaptive rejuvenation may\n            occur. The default is 10. Small parameter updates during this\n            cooldown do not terminate the solve.\n        max_iterations: Maximum number of EKI iterations.''',
+              'EKI cooldown docs',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_prior_weight,\n        max_rejuvenations,\n    )''',
+              '''        rejuvenation_prior_weight,\n        max_rejuvenations,\n        rejuvenation_cooldown,\n    )''',
+              'EKI validation call',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_count = 0\n        parameter_names = parameter_space.get_names()''',
+              '''        rejuvenation_count = 0\n        last_rejuvenation_iteration = -1\n        parameter_names = parameter_space.get_names()''',
+              'EKI initial cooldown state',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_count = (\n            int(restart_data['rejuvenation_count'])\n            if 'rejuvenation_count' in restart_data\n            else 0\n        )\n\n    dp = compute_eki_update(''',
+              '''        rejuvenation_count = (\n            int(restart_data['rejuvenation_count'])\n            if 'rejuvenation_count' in restart_data\n            else 0\n        )\n        last_rejuvenation_iteration = (\n            int(restart_data['last_rejuvenation_iteration'])\n            if 'last_rejuvenation_iteration' in restart_data\n            else (iteration if rejuvenation_count > 0 else -1)\n        )\n\n    dp = compute_eki_update(''',
+              'EKI restart cooldown state',
+          )
+
+          # Return the iteration of each rejuvenation so callers update cooldown state.
+          text = replace_once(
+              text,
+              '''        normalized_dp_norm,\n        rejuvenation_count,\n    )\n\n\ndef _save_eki_restart''',
+              '''        normalized_dp_norm,\n        rejuvenation_count,\n        iteration,\n    )\n\n\ndef _save_eki_restart''',
+              'EKI rejuvenation return state',
+          )
+          text = regex_replace(
+              text,
+              r'(?P<i> +)normalized_dp_norm,\n(?P=i)rejuvenation_count,\n(?P<c> +)\) = _run_eki_rejuvenation\(',
+              r'\g<i>normalized_dp_norm,\n\g<i>rejuvenation_count,\n\g<i>last_rejuvenation_iteration,\n\g<c>) = _run_eki_rejuvenation(',
+              3,
+              'EKI rejuvenation unpacking',
+          )
+          text = regex_replace(
+              text,
+              r'(?P<i> +)rejuvenation_interval\):',
+              r'\g<i>rejuvenation_interval,\n\g<i>rejuvenation_cooldown,\n\g<i>last_rejuvenation_iteration):',
+              3,
+              'EKI should-rejuvenate call state',
+          )
+
+          # Add last-rejuvenation state to both restart writes.
+          pattern = re.compile(
+              r'(?<!def )_save_eki_restart\((?P<body>.*?)\n(?P<i> +)rejuvenation_count,\n(?P<c> +)\)',
+              re.DOTALL,
+          )
+          def add_eki_restart_state(match):
+              return (
+                  '_save_eki_restart(' + match.group('body') + '\n'
+                  + match.group('i') + 'rejuvenation_count,\n'
+                  + match.group('i') + 'last_rejuvenation_iteration,\n'
+                  + match.group('c') + ')'
+              )
+          text, count = pattern.subn(add_eki_restart_state, text)
+          if count != 2:
+              raise RuntimeError(f'EKI restart calls: expected 2 matches, found {count}')
+
+          text = replace_once(
+              text,
+              '''        if normalized_dp_norm <= delta_params_tolerance:\n            break''',
+              '''        if (\n                normalized_dp_norm <= delta_params_tolerance\n                and not _adaptive_rejuvenation_cooldown_active(\n                    rejuvenation_strategy,\n                    iteration,\n                    rejuvenation_count,\n                    max_rejuvenations,\n                    rejuvenation_cooldown,\n                    last_rejuvenation_iteration,\n                )\n        ):\n            break''',
+              'EKI cooldown-aware stagnation stop',
+          )
+          text = replace_once(
+              text,
+              'Periodic rejuvenation is also available.\n',
+              'Periodic rejuvenation is also available. Adaptive rejuvenation uses a cooldown\nwindow after each event so a newly expanded ensemble can evolve before another\nrejuvenation is permitted.\n',
+              'EKI module cooldown docs',
+          )
+          path.write_text(text)
+
+          # --- MF-EKI ---
+          path = Path('romtools/workflows/inverse/mf_eki_drivers.py')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '''    _compute_ensemble_covariance,\n    _compute_ensemble_spread,''',
+              '''    _adaptive_rejuvenation_cooldown_active,\n    _compute_ensemble_covariance,\n    _compute_ensemble_spread,''',
+              'MF-EKI cooldown helper import',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_reference_covariance,\n        rejuvenation_count):\n    dispatcher.np_savez(''',
+              '''        rejuvenation_reference_covariance,\n        rejuvenation_count,\n        last_rejuvenation_iteration):\n    dispatcher.np_savez(''',
+              'MF-EKI restart signature',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_reference_covariance=rejuvenation_reference_covariance,\n        rejuvenation_count=rejuvenation_count,\n    )''',
+              '''        rejuvenation_reference_covariance=rejuvenation_reference_covariance,\n        rejuvenation_count=rejuvenation_count,\n        last_rejuvenation_iteration=last_rejuvenation_iteration,\n    )''',
+              'MF-EKI restart payload',
+          )
+          text = replace_once(
+              text,
+              '''               rejuvenation_prior_weight: float = 0.0025,\n               max_rejuvenations: int = 3,\n               max_rom_training_history: int = 1,''',
+              '''               rejuvenation_prior_weight: float = 0.0025,\n               max_rejuvenations: int = 3,\n               rejuvenation_cooldown: int = 10,\n               max_rom_training_history: int = 1,''',
+              'MF-EKI public cooldown argument',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_prior_weight,\n        max_rejuvenations,\n    )''',
+              '''        rejuvenation_prior_weight,\n        max_rejuvenations,\n        rejuvenation_cooldown,\n    )''',
+              'MF-EKI validation call',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_count = 0\n        parameter_sample_sets = [''',
+              '''        rejuvenation_count = 0\n        last_rejuvenation_iteration = -1\n        parameter_sample_sets = [''',
+              'MF-EKI initial cooldown state',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_count = (\n            int(restart_data['rejuvenation_count'])\n            if 'rejuvenation_count' in restart_data\n            else 0\n        )\n\n    dps = compute_mf_eki_update(''',
+              '''        rejuvenation_count = (\n            int(restart_data['rejuvenation_count'])\n            if 'rejuvenation_count' in restart_data\n            else 0\n        )\n        last_rejuvenation_iteration = (\n            int(restart_data['last_rejuvenation_iteration'])\n            if 'last_rejuvenation_iteration' in restart_data\n            else (iteration if rejuvenation_count > 0 else -1)\n        )\n\n    dps = compute_mf_eki_update(''',
+              'MF-EKI restart cooldown state',
+          )
+          text = replace_once(
+              text,
+              '''        normalized_dp_norm,\n        rejuvenation_count,\n        rom_model,''',
+              '''        normalized_dp_norm,\n        rejuvenation_count,\n        iteration,\n        rom_model,''',
+              'MF-EKI rejuvenation return state',
+          )
+          text = regex_replace(
+              text,
+              r'(?P<i> +)normalized_dp_norm,\n(?P=i)rejuvenation_count,\n(?P=i)rom_model,',
+              r'\g<i>normalized_dp_norm,\n\g<i>rejuvenation_count,\n\g<i>last_rejuvenation_iteration,\n\g<i>rom_model,',
+              2,
+              'MF-EKI rejuvenation unpacking',
+          )
+          text = regex_replace(
+              text,
+              r'(?P<i> +)rejuvenation_interval\):',
+              r'\g<i>rejuvenation_interval,\n\g<i>rejuvenation_cooldown,\n\g<i>last_rejuvenation_iteration):',
+              3,
+              'MF-EKI should-rejuvenate call state',
+          )
+          pattern = re.compile(
+              r'(?<!def )_save_mf_eki_restart\((?P<body>.*?)\n(?P<i> +)rejuvenation_count,\n(?P<c> +)\)',
+              re.DOTALL,
+          )
+          def add_mf_restart_state(match):
+              return (
+                  '_save_mf_eki_restart(' + match.group('body') + '\n'
+                  + match.group('i') + 'rejuvenation_count,\n'
+                  + match.group('i') + 'last_rejuvenation_iteration,\n'
+                  + match.group('c') + ')'
+              )
+          text, count = pattern.subn(add_mf_restart_state, text)
+          if count != 2:
+              raise RuntimeError(f'MF-EKI restart calls: expected 2 matches, found {count}')
+          text = replace_once(
+              text,
+              '''        if normalized_dp_norm <= delta_params_tolerance:\n            break''',
+              '''        if (\n                normalized_dp_norm <= delta_params_tolerance\n                and not _adaptive_rejuvenation_cooldown_active(\n                    rejuvenation_strategy,\n                    iteration,\n                    rejuvenation_count,\n                    max_rejuvenations,\n                    rejuvenation_cooldown,\n                    last_rejuvenation_iteration,\n                )\n        ):\n            break''',
+              'MF-EKI cooldown-aware stagnation stop',
+          )
+          text = replace_once(
+              text,
+              '''                         rejuvenation_prior_weight: float = 0.0025,\n                         max_rejuvenations: int = 3,\n                         max_rom_training_history: int = 1,''',
+              '''                         rejuvenation_prior_weight: float = 0.0025,\n                         max_rejuvenations: int = 3,\n                         rejuvenation_cooldown: int = 10,\n                         max_rom_training_history: int = 1,''',
+              'MF-EKI auto-ROM cooldown argument',
+          )
+          text = replace_once(
+              text,
+              '''        rejuvenation_prior_weight=rejuvenation_prior_weight,\n        max_rejuvenations=max_rejuvenations,\n        max_rom_training_history=max_rom_training_history,''',
+              '''        rejuvenation_prior_weight=rejuvenation_prior_weight,\n        max_rejuvenations=max_rejuvenations,\n        rejuvenation_cooldown=rejuvenation_cooldown,\n        max_rom_training_history=max_rom_training_history,''',
+              'MF-EKI auto-ROM cooldown forwarding',
+          )
+          path.write_text(text)
+
+          # --- Tests ---
+          path = Path('tests/romtools/workflows/inverse/test_eki_rejuvenation.py')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '''def test_normalized_delta_p_default_is_dimensionless_one_per_mille():\n    signature = inspect.signature(romtools.workflows.run_eki)\n    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)\n''',
+              '''def test_normalized_delta_p_default_is_dimensionless_one_per_mille():\n    signature = inspect.signature(romtools.workflows.run_eki)\n    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)\n\n\ndef test_adaptive_rejuvenation_default_cooldown_is_ten_iterations():\n    signature = inspect.signature(romtools.workflows.run_eki)\n    assert signature.parameters["rejuvenation_cooldown"].default == 10\n''',
+              'EKI cooldown default test',
+          )
+          marker = '''def test_periodic_rejuvenation_triggers_only_on_requested_interval():\n'''
+          cooldown_test = '''def test_adaptive_rejuvenation_cooldown_blocks_repeat_for_ten_iterations():\n    common = dict(\n        rejuvenation_strategy="adaptive",\n        normalized_dp_norm=1e-8,\n        error_norm=1e-2,\n        delta_params_tolerance=1e-6,\n        error_norm_tolerance=1e-5,\n        rejuvenation_count=1,\n        max_rejuvenations=3,\n        rejuvenation_interval=5,\n        rejuvenation_cooldown=10,\n        last_rejuvenation_iteration=10,\n    )\n    assert not eki_drivers._should_rejuvenate(iteration=19, **common)\n    assert eki_drivers._should_rejuvenate(iteration=20, **common)\n\n\n'''
+          text = replace_once(text, marker, cooldown_test + marker, 'EKI cooldown behavior test')
+          text = replace_once(
+              text,
+              '''        error_norm_tolerance=1e-8,\n    )''',
+              '''        error_norm_tolerance=1e-8,\n        rejuvenation_cooldown=0,\n    )''',
+              'EKI restart reproducibility cooldown override',
+          )
+          path.write_text(text)
+
+          path = Path('tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '''def test_mf_eki_rejuvenation_defaults_to_five_percent_reference_std():\n    signature = inspect.signature(mf_eki_drivers.run_mf_eki)\n    beta = signature.parameters["rejuvenation_prior_weight"].default\n    assert beta == pytest.approx(0.05**2)\n''',
+              '''def test_mf_eki_rejuvenation_defaults_to_five_percent_reference_std():\n    signature = inspect.signature(mf_eki_drivers.run_mf_eki)\n    beta = signature.parameters["rejuvenation_prior_weight"].default\n    assert beta == pytest.approx(0.05**2)\n\n\ndef test_mf_eki_adaptive_rejuvenation_default_cooldown_is_ten_iterations():\n    signature = inspect.signature(mf_eki_drivers.run_mf_eki)\n    assert signature.parameters["rejuvenation_cooldown"].default == 10\n''',
+              'MF-EKI cooldown default test',
+          )
+          text = replace_once(
+              text,
+              '''    assert int(restart["rejuvenation_count"]) == 1\n    assert "rejuvenation_reference_covariance" in restart''',
+              '''    assert int(restart["rejuvenation_count"]) == 1\n    assert int(restart["last_rejuvenation_iteration"]) == 0\n    assert "rejuvenation_reference_covariance" in restart''',
+              'MF-EKI restart cooldown state test',
+          )
+          path.write_text(text)
+          PY
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run rejuvenation tests
+        run: |
+          pytest -q \
+            tests/romtools/workflows/inverse/test_eki_rejuvenation.py \
+            tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py
+
+      - name: Commit cooldown implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            romtools/workflows/inverse/eki_drivers.py \
+            romtools/workflows/inverse/mf_eki_drivers.py \
+            tests/romtools/workflows/inverse/test_eki_rejuvenation.py \
+            tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py
+          git commit -m "Add 10-iteration adaptive rejuvenation cooldown"
+          git push origin HEAD:fix-358-eki-rejuvenation
+
   case:
-    if: github.event.head_commit.message == 'Run parallel air-flame cases'
+    needs: prepare
+    if: github.event.head_commit.message == 'Apply 10-iteration rejuvenation cooldown' && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -16,6 +326,8 @@ jobs:
         case: [eki, eki_rejuvenated, mf_eki, mf_eki_rejuvenated]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fix-358-eki-rejuvenation
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -123,5 +435,5 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: air-flame-${{ matrix.case }}
+          name: air-flame-cooldown-${{ matrix.case }}
           path: parallel-results/${{ matrix.case }}.json
