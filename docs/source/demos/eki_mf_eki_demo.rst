@@ -16,6 +16,19 @@ QoI is the right-boundary flux functional used in the existing UQ examples.
 The example estimates the diffusion coefficient ``nu`` and reaction rate
 ``sigma`` from a synthetic observation.
 
+Consistent solver configuration
+-------------------------------
+
+All four curves use the same EKI solver controls: an initial step size of
+``0.05``, regularization parameter ``1e-4``, step-size growth and decay factors
+of ``1.25`` and ``2.0``, relaxation parameter ``1.05``, observation-error
+tolerance ``1e-5``, parameter-update tolerance ``1e-6``, and random seed ``1``.
+The three MF-EKI cases also use the same FOM and auxiliary ensemble sizes, ROM
+substep schedule, ROM error tolerance, training-history length, and policy for
+using the previous surrogate in an update when a rebuild occurs. This keeps the
+comparison focused on surrogate construction rather than differences in
+workflow defaults.
+
 Neural-network surrogate
 ------------------------
 
@@ -78,15 +91,6 @@ Results
    multifidelity EKI with a tailored ROM, multifidelity EKI with automatic
    Gaussian-process surrogate construction, and multifidelity EKI with a
    Lipschitz-constrained neural-network surrogate.
-
-For this benchmark, the Gaussian-process surrogate gives the lowest final
-observation error. The Lipschitz-constrained neural surrogate reduces the error
-much more rapidly than single-fidelity EKI during the early iterations, but
-levels off above the Gaussian-process and tailored-ROM results in the later
-iterations. At iteration 19, the mean observation errors are approximately
-``2.4e-4`` for the Gaussian process, ``1.1e-3`` for the tailored ROM,
-``1.6e-3`` for the Lipschitz neural network, and ``4.2e-3`` for single-fidelity
-EKI.
 
 Implementation
 --------------
