@@ -39,6 +39,12 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     parameter_space
 
 .. toctree::
+    :caption: Surrogate models
+    :maxdepth: 1
+
+    neural_network_surrogate
+
+.. toctree::
     :caption: Example models
     :maxdepth: 1
 
