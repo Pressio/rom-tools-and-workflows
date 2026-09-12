@@ -1,0 +1,601 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.workflows.uq.sample_allocation &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=58ecf915" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../_static/thebelab-helper.js"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/workflows/uq/sample_allocation';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.uq.sample_allocation</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.workflows.uq.sample_allocation</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Pilot-based sample allocation for two-level MFMC."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numbers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Integral</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_paired_statistics</span>
+
+
+<div class="viewcode-block" id="PilotSampleAllocation">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.uq.sample_allocation.html#romtools.workflows.uq.sample_allocation.PilotSampleAllocation">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PilotSampleAllocation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Integer sample allocation selected from paired pilot data."""</span>
+
+    <span class="n">number_high_fidelity_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">number_low_fidelity_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">control_variate_coefficients</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">pilot_correlations</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">estimated_variance</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">high_fidelity_equivalent_cost</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">use_multifidelity_estimator</span><span class="p">:</span> <span class="nb">bool</span></div>
+
+
+
+<div class="viewcode-block" id="allocate_samples_from_pilot">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.uq.sample_allocation.html#romtools.workflows.uq.sample_allocation.allocate_samples_from_pilot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">allocate_samples_from_pilot</span><span class="p">(</span>
+    <span class="n">high_fidelity_qois</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">low_fidelity_qois</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">high_fidelity_equivalent_budget</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">low_to_high_fidelity_cost_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">allocation_qoi_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PilotSampleAllocation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Select integer high- and low-fidelity counts from paired pilot data.</span>
+
+<span class="sd">    The search minimizes the standard two-level MFMC variance approximation</span>
+<span class="sd">    for the component selected by ``allocation_qoi_index`` subject to</span>
+<span class="sd">    ``N_H + cost_ratio * N_L &lt;= budget`` and ``N_L &gt;= N_H``. Pilot evaluations</span>
+<span class="sd">    are included in the returned counts and cost. The result switches to an</span>
+<span class="sd">    HF-only estimator when spending the remaining budget on high-fidelity</span>
+<span class="sd">    samples has no larger predicted variance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        high_fidelity_qois: Paired pilot QoIs with shape ``(N_p, N_qoi)`` or</span>
+<span class="sd">            ``(N_p,)``.</span>
+<span class="sd">        low_fidelity_qois: Low-fidelity pilot QoIs with the same shape and</span>
+<span class="sd">            ordering as ``high_fidelity_qois``.</span>
+<span class="sd">        high_fidelity_equivalent_budget: Total budget in high-fidelity cost</span>
+<span class="sd">            units.</span>
+<span class="sd">        low_to_high_fidelity_cost_ratio: Positive cost ratio ``c_L / c_H``.</span>
+<span class="sd">        allocation_qoi_index: QoI component used by the allocation objective.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        PilotSampleAllocation: Selected counts, frozen componentwise</span>
+<span class="sd">        coefficients, pilot correlations, predicted variance and cost, and an</span>
+<span class="sd">        indicator selecting MFMC or the HF-only fallback.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the pilot arrays are incompatible, contain fewer than</span>
+<span class="sd">            two samples, the selected component is invalid, or the pilot does</span>
+<span class="sd">            not fit in the budget.</span>
+<span class="sd">    """</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">high_fidelity_qois</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">low_fidelity_qois</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">high</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">high</span> <span class="o">=</span> <span class="n">high</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">low</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">low</span> <span class="o">=</span> <span class="n">low</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">high</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">low</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"pilot high- and low-fidelity QoIs must have the same shape"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">high</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">high</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the pilot must contain at least two paired samples"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">high_fidelity_equivalent_budget</span><span class="p">)</span> <span class="ow">or</span> <span class="n">high_fidelity_equivalent_budget</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"high_fidelity_equivalent_budget must be positive"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">low_to_high_fidelity_cost_ratio</span><span class="p">)</span> <span class="ow">or</span> <span class="n">low_to_high_fidelity_cost_ratio</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"low_to_high_fidelity_cost_ratio must be positive"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">allocation_qoi_index</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">allocation_qoi_index</span><span class="p">,</span> <span class="n">Integral</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="n">allocation_qoi_index</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="ow">or</span> <span class="n">allocation_qoi_index</span> <span class="o">&gt;=</span> <span class="n">high</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"allocation_qoi_index is outside the QoI range"</span><span class="p">)</span>
+
+    <span class="n">pilot_count</span> <span class="o">=</span> <span class="n">high</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pilot_cost</span> <span class="o">=</span> <span class="n">pilot_count</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">low_to_high_fidelity_cost_ratio</span><span class="p">)</span>
+    <span class="n">tolerance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">high_fidelity_equivalent_budget</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.0</span>
+    <span class="k">if</span> <span class="n">pilot_cost</span> <span class="o">&gt;</span> <span class="n">high_fidelity_equivalent_budget</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the paired pilot exceeds the high-fidelity-equivalent budget"</span><span class="p">)</span>
+
+    <span class="n">high_variance</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">,</span> <span class="n">correlations</span> <span class="o">=</span> <span class="n">compute_paired_statistics</span><span class="p">(</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">)</span>
+    <span class="n">variance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">high_variance</span><span class="p">[</span><span class="n">allocation_qoi_index</span><span class="p">])</span>
+    <span class="n">rho_squared</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">correlations</span><span class="p">[</span><span class="n">allocation_qoi_index</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">rho_squared</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">rho_squared</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">budget</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">high_fidelity_equivalent_budget</span><span class="p">)</span>
+    <span class="n">cost_ratio</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">low_to_high_fidelity_cost_ratio</span><span class="p">)</span>
+
+    <span class="c1"># The MC alternative retains the already-paid low-fidelity pilot but does</span>
+    <span class="c1"># not purchase more low-fidelity evaluations.</span>
+    <span class="n">mc_high_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">budget</span> <span class="o">-</span> <span class="n">cost_ratio</span> <span class="o">*</span> <span class="n">pilot_count</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">mc_high_count</span> <span class="o">&lt;</span> <span class="n">pilot_count</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"budget does not permit completion of the pilot"</span><span class="p">)</span>
+    <span class="n">mc_variance</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">/</span> <span class="n">mc_high_count</span>
+    <span class="n">mc_cost</span> <span class="o">=</span> <span class="n">mc_high_count</span> <span class="o">+</span> <span class="n">cost_ratio</span> <span class="o">*</span> <span class="n">pilot_count</span>
+
+    <span class="n">best</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">maximum_high_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">budget</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">cost_ratio</span><span class="p">)</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">number_high</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pilot_count</span><span class="p">,</span> <span class="n">maximum_high_count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">number_low</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">budget</span> <span class="o">-</span> <span class="n">number_high</span><span class="p">)</span> <span class="o">/</span> <span class="n">cost_ratio</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">number_low</span> <span class="o">&lt;</span> <span class="n">number_high</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">estimated_variance</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">rho_squared</span><span class="p">)</span> <span class="o">/</span> <span class="n">number_high</span> <span class="o">+</span> <span class="n">rho_squared</span> <span class="o">/</span> <span class="n">number_low</span>
+        <span class="p">)</span>
+        <span class="n">equivalent_cost</span> <span class="o">=</span> <span class="n">number_high</span> <span class="o">+</span> <span class="n">cost_ratio</span> <span class="o">*</span> <span class="n">number_low</span>
+        <span class="n">candidate</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">estimated_variance</span><span class="p">,</span>
+            <span class="n">equivalent_cost</span><span class="p">,</span>
+            <span class="o">-</span><span class="n">number_high</span><span class="p">,</span>
+            <span class="n">number_high</span><span class="p">,</span>
+            <span class="n">number_low</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">candidate</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best</span><span class="p">[:</span><span class="mi">3</span><span class="p">]:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="n">candidate</span>
+
+    <span class="n">variance_tolerance</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+        <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">mc_variance</span><span class="p">),</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">abs</span><span class="p">(</span><span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tiny</span><span class="p">)</span>
+        <span class="o">*</span> <span class="mf">100.0</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mc_variance</span> <span class="o">&lt;=</span> <span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">variance_tolerance</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">PilotSampleAllocation</span><span class="p">(</span>
+            <span class="n">number_high_fidelity_samples</span><span class="o">=</span><span class="n">mc_high_count</span><span class="p">,</span>
+            <span class="n">number_low_fidelity_samples</span><span class="o">=</span><span class="n">pilot_count</span><span class="p">,</span>
+            <span class="n">control_variate_coefficients</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">coefficients</span><span class="p">),</span>
+            <span class="n">pilot_correlations</span><span class="o">=</span><span class="n">correlations</span><span class="p">,</span>
+            <span class="n">estimated_variance</span><span class="o">=</span><span class="n">mc_variance</span><span class="p">,</span>
+            <span class="n">high_fidelity_equivalent_cost</span><span class="o">=</span><span class="n">mc_cost</span><span class="p">,</span>
+            <span class="n">use_multifidelity_estimator</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PilotSampleAllocation</span><span class="p">(</span>
+        <span class="n">number_high_fidelity_samples</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+        <span class="n">number_low_fidelity_samples</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+        <span class="n">control_variate_coefficients</span><span class="o">=</span><span class="n">coefficients</span><span class="p">,</span>
+        <span class="n">pilot_correlations</span><span class="o">=</span><span class="n">correlations</span><span class="p">,</span>
+        <span class="n">estimated_variance</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">high_fidelity_equivalent_cost</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">use_multifidelity_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

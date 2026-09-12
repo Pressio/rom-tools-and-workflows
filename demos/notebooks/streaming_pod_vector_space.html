@@ -1,0 +1,778 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Streaming POD vector space tutorial &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=58ecf915" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/thebelab-helper.js"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/notebooks/streaming_pod_vector_space';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Orthogonalized vector space tutorial" href="orthogonalized_vector_space.html" />
+    <link rel="prev" title="Dictionary vector space tutorial" href="dictionary_vector_space.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    ROM Tools and Workflows Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Build/install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentation.html">Documentation</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Basic concept tutorials</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../basis_construction.html">Construct your first basis!</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../vector_space.html">vector_space</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dictionary_vector_space.html">Dictionary vector space tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pod_vector_space.html">POD vector space tutorial</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Streaming POD vector space tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="orthogonalized_vector_space.html">Orthogonalized vector space tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="composite_vector_space.html">Composite vector space tutorial</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_space.html">parameter_space</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Example models</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../steady_cdr.html">Steady convection-diffusion-reaction model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../h2_air_flame.html">H2-air flame model</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Single model workflow tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../your_first_problem.html">Run your first problem!</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows.html">Single model workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../holdout_sampling.html">workflows</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM-FOM workflow tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../model_builders.html">model_builders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../greedy_training.html">Greedy Training</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse workflows</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../eki_mf_eki_demo.html">EKI and MF-EKI Demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vi_mf_vi_demo.html">VI and MF-VI Demo</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty quantification</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../uq_cdr_demo.html">Monte Carlo UQ for Convection-Diffusion-Reaction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Miscellanea</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-math-behind-streaming-pod">The math behind streaming POD</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-data-through-a-snapshot-loader">Loading data through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-1-streaming-pod-with-no-scaling-and-no-orthogonalizer">Case 1: streaming POD with no scaling and no orthogonalizer</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-2-streaming-pod-with-shifting-scaling-and-orthogonalization">Case 2: streaming POD with shifting, scaling, and orthogonalization</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#summary">Summary</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">ROM Tools and Workflows Demos</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../vector_space.html" class="nav-link">vector_space</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Streaming POD vector space tutorial</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="streaming-pod-vector-space-tutorial">
+<h1>Streaming POD vector space tutorial<a class="headerlink" href="#streaming-pod-vector-space-tutorial" title="Link to this heading">#</a></h1>
+<p>In this tutorial you will learn:</p>
+<ul class="simple">
+<li><p>How to construct a POD vector space from snapshots that are loaded <em>on demand</em> through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code>, so that the full snapshot matrix is never held in memory at once</p></li>
+<li><p>The roles of <code class="docutils literal notranslate"><span class="pre">block_size</span></code>, <code class="docutils literal notranslate"><span class="pre">max_basis_dimension</span></code>, and the basis <code class="docutils literal notranslate"><span class="pre">truncater</span></code></p></li>
+<li><p>How to use the streaming vector space with <strong>no scaling and no orthogonalizer</strong> (the defaults)</p></li>
+<li><p>How to use the streaming vector space <strong>with a scaler and an orthogonalizer</strong>, and why the two are paired</p></li>
+</ul>
+<section id="the-math-behind-streaming-pod">
+<h2>The math behind streaming POD<a class="headerlink" href="#the-math-behind-streaming-pod" title="Link to this heading">#</a></h2>
+<p>Let the snapshot matrix be <span class="math notranslate nohighlight">\(X \in \mathbb{R}^{N \times M}\)</span>, where each column is a state snapshot. For the tensor data used here, <span class="math notranslate nohighlight">\(N = n_{\text{var}} \, n_x\)</span> and <span class="math notranslate nohighlight">\(M\)</span> is the number of snapshots. Proper orthogonal decomposition (POD) seeks a rank-<span class="math notranslate nohighlight">\(k\)</span> orthonormal basis <span class="math notranslate nohighlight">\(\Phi \in \mathbb{R}^{N \times k}\)</span> that best approximates the snapshots,</p>
+<div class="math notranslate nohighlight">
+\[
+\min_{\Phi^\top \Phi = I_k} \; \lVert X - \Phi \Phi^\top X \rVert_F ,
+\]</div>
+<p>whose solution is the leading <span class="math notranslate nohighlight">\(k\)</span> left singular vectors of <span class="math notranslate nohighlight">\(X = U \Sigma V^\top\)</span>.</p>
+<p>For large datasets, <span class="math notranslate nohighlight">\(X\)</span> may not fit in memory. <strong>Streaming POD</strong> never materializes all of <span class="math notranslate nohighlight">\(X\)</span>: it reads one column block <span class="math notranslate nohighlight">\(X_{[s:e]}\)</span> at a time through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code> callable, so the memory footprint scales with the block size, not with the total number of snapshots <span class="math notranslate nohighlight">\(M\)</span>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> uses a randomized two-pass algorithm. Given a maximum candidate-basis dimension <span class="math notranslate nohighlight">\(r_{\max}\)</span>, draw a random matrix <span class="math notranslate nohighlight">\(\Omega \in \mathbb{R}^{M \times r_{\max}}\)</span>:</p>
+<ul class="simple">
+<li><p><strong>Pass 1</strong> accumulate the range sketch one block at a time,</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[
+Y = X \Omega = \sum_{\text{blocks } [s:e]} X_{[s:e]} \, \Omega_{[s:e]} ,
+\]</div>
+<p>then orthonormalize <span class="math notranslate nohighlight">\(Y\)</span> to obtain <span class="math notranslate nohighlight">\(Q\)</span> (with <span class="math notranslate nohighlight">\(Q^\top Q = I\)</span>) that approximately spans the range of <span class="math notranslate nohighlight">\(X\)</span>.</p>
+<ul class="simple">
+<li><p><strong>Pass 2</strong> form the small core matrix, again one block at a time,</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[
+B = Q^\top X = \sum_{\text{blocks } [s:e]} Q^\top X_{[s:e]} ,
+\]</div>
+<p>compute its (inexpensive) SVD <span class="math notranslate nohighlight">\(B = \tilde{U}\, \Sigma\, V^\top\)</span> and form the candidate POD basis <span class="math notranslate nohighlight">\(\Phi_{\mathrm{candidate}} = Q \tilde{U}\)</span>. The supplied truncater then selects the retained columns.</p>
+<p>Because <span class="math notranslate nohighlight">\(Q\)</span> and <span class="math notranslate nohighlight">\(\tilde{U}\)</span> both have orthonormal columns, the candidate basis is orthonormal by construction. For fixed-rank truncation, choosing <code class="docutils literal notranslate"><span class="pre">max_basis_dimension</span></code> larger than the retained dimension provides headroom that improves the randomized range approximation. An energy-based truncater instead chooses the smallest available dimension that reaches its requested fraction of the complete snapshot energy; it raises an error if the maximum candidate dimension is too small. The snapshots are read <strong>twice</strong> (one pass each); a data-derived scaler (see below) adds <strong>one</strong> more pass to compute its scalings.</p>
+<p>This tutorial runs in serial. For very large problems the same construction is row-distributed across MPI ranks by passing a communicator <code class="docutils literal notranslate"><span class="pre">comm</span></code> and an SVD functor <code class="docutils literal notranslate"><span class="pre">svdFnc=vector_space.utils.SvdMethodOfSnapshots(comm)</span></code>; each rank’s loader then returns only its local rows for the requested snapshot range.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># First, let's import the relevant modules:</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">romtools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools</span><span class="w"> </span><span class="kn">import</span> <span class="n">vector_space</span>
+
+<span class="n">streaming_pod_parameters</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span>
+    <span class="n">vector_space</span><span class="o">.</span><span class="n">VectorSpaceFromStreamingPOD</span>
+<span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+<span class="k">if</span> <span class="s1">'max_basis_dimension'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streaming_pod_parameters</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+        <span class="s1">'This notebook imported an outdated romtools package from '</span>
+        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">romtools</span><span class="o">.</span><span class="vm">__file__</span><span class="si">}</span><span class="s1">. Reinstall this checkout and restart the kernel.'</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="loading-data-through-a-snapshot-loader">
+<h2>Loading data through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code><a class="headerlink" href="#loading-data-through-a-snapshot-loader" title="Link to this heading">#</a></h2>
+<p>The streaming vector space does not take a snapshot array directly. Instead it takes a <strong><code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code></strong>: a callable <code class="docutils literal notranslate"><span class="pre">loader(start,</span> <span class="pre">end)</span></code> that returns the block of snapshots for the half-open range <code class="docutils literal notranslate"><span class="pre">[start,</span> <span class="pre">end)</span></code>. The returned array must be three-dimensional with shape <code class="docutils literal notranslate"><span class="pre">(n_var,</span> <span class="pre">n_dofs,</span> <span class="pre">end</span> <span class="pre">-</span> <span class="pre">start)</span></code> (the last axis is the snapshot axis), and the leading axes must be the same for every call.</p>
+<p>In a real large-scale problem the loader would read each block from disk so that the full matrix is never resident in memory. Any callable conforming to <code class="docutils literal notranslate"><span class="pre">romtools.vector_space.utils.SnapshotLoader</span></code> can provide those blocks. Here, for illustration, we simply slice the in-memory 1D Euler snapshots used throughout these tutorials.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load pre-computed snapshots of the 1D Euler equations (from pressio-demo-apps).</span>
+<span class="n">snapshots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'snapshots.npz'</span><span class="p">)[</span><span class="s1">'snapshots'</span><span class="p">]</span>
+
+<span class="c1"># The snapshots are in tensor form:</span>
+<span class="n">n_vars</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nt</span> <span class="o">=</span> <span class="n">snapshots</span><span class="o">.</span><span class="n">shape</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'snapshot tensor shape (n_vars, nx, nt):'</span><span class="p">,</span> <span class="n">snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="c1"># A snapshot_loader returns the 3D block for the half-open range [start, end).</span>
+<span class="c1"># In practice this would stream each block from disk; here we slice the</span>
+<span class="c1"># in-memory array purely for illustration.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_snapshot_loader</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">snapshots</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="case-1-streaming-pod-with-no-scaling-and-no-orthogonalizer">
+<h2>Case 1: streaming POD with no scaling and no orthogonalizer<a class="headerlink" href="#case-1-streaming-pod-with-no-scaling-and-no-orthogonalizer" title="Link to this heading">#</a></h2>
+<p>In the simplest case we pass the loader, <code class="docutils literal notranslate"><span class="pre">block_size</span></code>, <code class="docutils literal notranslate"><span class="pre">max_basis_dimension</span></code>, and a truncater. Here <code class="docutils literal notranslate"><span class="pre">BasisSizeTruncater(basis_dimension)</span></code> retains 20 modes from a 25-mode randomized candidate basis. The five-mode headroom improves the randomized range approximation. The scaler and orthogonalizer default to no-ops.</p>
+<p>When no shifter is supplied, the shift (affine offset) vector is zero. Case 2 demonstrates a shifter initialized directly from streamed snapshot blocks.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">block_size</span>         <span class="o">=</span> <span class="mi">8</span>    <span class="c1"># maximum number of snapshots held in memory at once</span>
+<span class="n">basis_dimension</span>    <span class="o">=</span> <span class="mi">20</span>   <span class="c1"># number of POD modes to retain</span>
+<span class="n">max_basis_dimension</span> <span class="o">=</span> <span class="mi">25</span>  <span class="c1"># size of the randomized candidate basis</span>
+<span class="n">truncater</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="n">basis_dimension</span><span class="p">)</span>
+
+<span class="n">my_streaming_vector_space</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">VectorSpaceFromStreamingPOD</span><span class="p">(</span>
+    <span class="n">snapshot_loader</span><span class="o">=</span><span class="n">my_snapshot_loader</span><span class="p">,</span>
+    <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">,</span>
+    <span class="n">n_snapshots</span><span class="o">=</span><span class="n">nt</span><span class="p">,</span>
+    <span class="n">max_basis_dimension</span><span class="o">=</span><span class="n">max_basis_dimension</span><span class="p">,</span>
+    <span class="n">truncater</span><span class="o">=</span><span class="n">truncater</span><span class="p">)</span>
+
+<span class="c1"># We can view the retained basis and the full candidate spectrum:</span>
+<span class="n">basis</span> <span class="o">=</span> <span class="n">my_streaming_vector_space</span><span class="o">.</span><span class="n">get_basis</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'The dimension of the vector space is'</span><span class="p">,</span> <span class="n">my_streaming_vector_space</span><span class="o">.</span><span class="n">extents</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Candidate singular values:'</span><span class="p">,</span> <span class="n">my_streaming_vector_space</span><span class="o">.</span><span class="n">get_singular_values</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We can look at the density component of the first basis vector:</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">basis</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'Index'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\rho$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># With no orthogonalizer, the streaming basis is already orthonormal in the</span>
+<span class="c1"># Euclidean inner product (Phi^T Phi = I) by construction:</span>
+<span class="n">is_identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,ijl-&gt;kl'</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">basis</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">is_identity</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="case-2-streaming-pod-with-shifting-scaling-and-orthogonalization">
+<h2>Case 2: streaming POD with shifting, scaling, and orthogonalization<a class="headerlink" href="#case-2-streaming-pod-with-shifting-scaling-and-orthogonalization" title="Link to this heading">#</a></h2>
+<p>An average <strong>streaming shifter</strong> first computes the temporal mean in one loader pass and subtracts it from every subsequent snapshot block. The 1D Euler state also has variables of very different magnitudes (density, momentum, and energy), so a <strong>scaler</strong> non-dimensionalizes the shifted data before the SVD. Here we use a per-variable <code class="docutils literal notranslate"><span class="pre">VariableScaler(&quot;variance&quot;)</span></code>.</p>
+<p>Scaling changes the basis after the SVD (<code class="docutils literal notranslate"><span class="pre">post_scale</span></code>), which in general destroys the Euclidean orthonormality of the modes. We therefore pair the scaler with an <strong>orthogonalizer</strong> to restore <span class="math notranslate nohighlight">\(\Phi^\top \Phi = I\)</span>. <code class="docutils literal notranslate"><span class="pre">EuclideanL2Orthogonalizer</span></code> re-orthonormalizes in the standard <span class="math notranslate nohighlight">\(L^2\)</span> inner product; if you need a physics-based inner product (e.g. weighting by cell volumes or quadrature weights <span class="math notranslate nohighlight">\(w\)</span>), use <code class="docutils literal notranslate"><span class="pre">EuclideanVectorWeightedL2Orthogonalizer(w)</span></code>, which enforces <span class="math notranslate nohighlight">\(\Phi^\top \mathrm{diag}(w)\, \Phi = I\)</span>.</p>
+<p>Initialization follows the same order as standard POD: shift first, then scale. The average shifter and <code class="docutils literal notranslate"><span class="pre">VariableScaler</span></code> each perform one initialization pass before the two POD passes, for four passes total. A first-snapshot streaming shifter instead needs only <code class="docutils literal notranslate"><span class="pre">loader(0,</span> <span class="pre">1)</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an average shifter, a per-variable scaler, and an orthogonalizer:</span>
+<span class="n">my_shifter</span>        <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">create_streaming_average_shifter</span><span class="p">()</span>
+<span class="n">my_scaler</span>         <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">VariableScaler</span><span class="p">(</span><span class="s1">'variance'</span><span class="p">)</span>
+<span class="n">my_orthogonalizer</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">EuclideanL2Orthogonalizer</span><span class="p">()</span>
+
+<span class="n">my_scaled_vector_space</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">VectorSpaceFromStreamingPOD</span><span class="p">(</span>
+    <span class="n">snapshot_loader</span><span class="o">=</span><span class="n">my_snapshot_loader</span><span class="p">,</span>
+    <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">,</span>
+    <span class="n">n_snapshots</span><span class="o">=</span><span class="n">nt</span><span class="p">,</span>
+    <span class="n">max_basis_dimension</span><span class="o">=</span><span class="n">max_basis_dimension</span><span class="p">,</span>
+    <span class="n">truncater</span><span class="o">=</span><span class="n">vector_space</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="n">basis_dimension</span><span class="p">),</span>
+    <span class="n">shifter</span><span class="o">=</span><span class="n">my_shifter</span><span class="p">,</span>
+    <span class="n">scaler</span><span class="o">=</span><span class="n">my_scaler</span><span class="p">,</span>
+    <span class="n">orthogonalizer</span><span class="o">=</span><span class="n">my_orthogonalizer</span><span class="p">)</span>
+
+<span class="n">scaled_basis</span> <span class="o">=</span> <span class="n">my_scaled_vector_space</span><span class="o">.</span><span class="n">get_basis</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'The dimension of the scaled vector space is'</span><span class="p">,</span> <span class="n">my_scaled_vector_space</span><span class="o">.</span><span class="n">extents</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Even though scaling was applied, the orthogonalizer guarantees the basis is</span>
+<span class="c1"># orthonormal in the Euclidean inner product:</span>
+<span class="n">is_identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ijk,ijl-&gt;kl'</span><span class="p">,</span> <span class="n">scaled_basis</span><span class="p">,</span> <span class="n">scaled_basis</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">is_identity</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">scaled_basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare the density component of the first mode with and without scaling:</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">basis</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">'no scaling'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">scaled_basis</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="s1">'--'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'variance scaling'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'Index'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\rho$'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">VectorSpaceFromStreamingPOD</span></code> builds a POD basis while holding only one block of snapshots in memory at a time, loading data on demand through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block_size</span></code> trades memory footprint against the number of loader calls; <code class="docutils literal notranslate"><span class="pre">max_basis_dimension</span></code> sets the randomized candidate rank, and a truncater selects the retained modes. Leaving headroom above a fixed retained rank improves randomized accuracy.</p></li>
+<li><p>With no scaler and no orthogonalizer, the basis is orthonormal by construction.</p></li>
+<li><p>Streaming average and first-snapshot shifters initialize their affine offsets directly from loader blocks; shifting occurs before scaling, as in standard POD.</p></li>
+<li><p>A scaler (e.g. <code class="docutils literal notranslate"><span class="pre">VariableScaler</span></code>) should be paired with an orthogonalizer to restore orthonormality after scaling.</p></li>
+</ul>
+<p>See the API documentation for details:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pressio.github.io/rom-tools-and-workflows/romtools/vector_space.html"><code class="docutils literal notranslate"><span class="pre">VectorSpaceFromStreamingPOD</span></code></a></p></li>
+<li><p><a class="reference external" href="https://pressio.github.io/rom-tools-and-workflows/romtools/vector_space/utils/scaler.html">scalers</a> and <a class="reference external" href="https://pressio.github.io/rom-tools-and-workflows/romtools/vector_space/utils/orthogonalizer.html">orthogonalizers</a></p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="dictionary_vector_space.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Dictionary vector space tutorial</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="orthogonalized_vector_space.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Orthogonalized vector space tutorial</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-math-behind-streaming-pod">The math behind streaming POD</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-data-through-a-snapshot-loader">Loading data through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-1-streaming-pod-with-no-scaling-and-no-orthogonalizer">Case 1: streaming POD with no scaling and no orthogonalizer</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-2-streaming-pod-with-shifting-scaling-and-orthogonalization">Case 2: streaming POD with shifting, scaling, and orthogonalization</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#summary">Summary</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/demos/notebooks/streaming_pod_vector_space.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
