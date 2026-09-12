@@ -2,10 +2,8 @@ H2-air flame model
 ==================
 
 The examples include a self-contained, pure-Python model of a two-dimensional
-premixed H2-air flame. It is intended as a moderately challenging benchmark
-for inverse and multifidelity workflows while requiring only NumPy and SciPy.
-The implementation is adapted from the four-parameter reacting-flow example
-used in the MFVI paper development repository.
+premixed H2-air flame. It provides a moderately challenging benchmark for
+romtools workflows while requiring only NumPy and SciPy.
 
 The core solver and romtools QoI wrapper live in ``examples/models``. A quick
 wrapper smoke test can be run from the repository root with
@@ -37,15 +35,15 @@ The four model parameters are
    Diffusivity.
 
 ``scaled_activation_energy``
-   Activation energy divided by 1000. The reference inverse problem uses a
-   value of 8.0, corresponding to an activation energy of 8000.
+   Activation energy divided by 1000. A representative value is 8.0,
+   corresponding to an activation energy of 8000.
 
 ``beta_x`` and ``beta_y``
    Components of the advection velocity in cm/s. ``beta_x`` is restricted to
    nonnegative values because the benchmark inlet and x-upwind stencil assume
    left-to-right flow.
 
-A representative truth parameter vector is
+A representative parameter vector is
 
 .. math::
 
@@ -137,27 +135,17 @@ same FOM evaluations to be reused later by state-based ROM builders.
    qoi_model.run_model("run_0", sample)
    qoi = qoi_model.compute_qoi("run_0", sample)
 
-This wrapper can be passed directly to EKI, MF-EKI, VI, or MF-VI. For
-multifidelity studies, an automatic QoI surrogate or a state-based ROM builder
-can be constructed from the saved FOM data without modifying the flame solver.
+This wrapper can be passed directly to romtools workflows that consume a QoI
+model.
 
-Configurations
---------------
+Computational cost
+------------------
 
 The default constructor values are intended to be lightweight enough for
-interactive experimentation. For a larger reference benchmark, the MFVI paper
-setup uses approximately
-
-.. code-block:: text
-
-   nx = 64
-   ny = 32
-   dt = 1.0e-3
-   t_end = 6.0e-2
-
-The implicit nonlinear solve can become substantially more expensive at the
-larger configuration. Benchmark studies should report FOM evaluations in
-addition to outer optimization or inference iterations.
+interactive experimentation. Increasing the spatial resolution or time horizon,
+or reducing the time step, increases the cost of the implicit nonlinear solve.
+Benchmark studies should therefore report model-evaluation counts together with
+wall-clock cost when comparing algorithms.
 
 Implementation
 --------------
@@ -167,6 +155,7 @@ Core flame solver:
 .. literalinclude:: ../../../examples/models/h2_air_flame.py
    :language: python
    :linenos:
+   :lines: 8-
 
 romtools QoI wrapper:
 
