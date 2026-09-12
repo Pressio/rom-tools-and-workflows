@@ -6,11 +6,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-from romtools.rom import (
-    LipschitzConfig,
-    NeuralNetworkConfig,
-    NeuralNetworkQoiModelBuilderWithTrainingData,
-)
+from romtools.rom import LipschitzConfig, NeuralNetworkConfig
 from romtools.workflows.inverse.eki_drivers import run_eki
 from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom, run_mf_eki
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
@@ -183,18 +179,6 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
 
     fom_model = CdrFomQoiModel(system, b_vec)
     rom_builder = CdrRomBuilder(system, b_vec, rom_dim=rom_dim)
-    lipschitz_nn_builder = NeuralNetworkQoiModelBuilderWithTrainingData(
-        parameter_names=parameter_space.get_names(),
-        network_config=NeuralNetworkConfig(
-            training_iterations=nn_training_iterations,
-        ),
-        lipschitz_config=LipschitzConfig(
-            enabled=True,
-            safety_factor=1.1,
-        ),
-        normalize_parameters=True,
-        normalize_targets=True,
-    )
 
     run_eki(
         model=fom_model,
@@ -252,9 +236,8 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         **mf_eki_solver_args,
     )
 
-    run_mf_eki(
+    mf_eki_with_auto_rom(
         model=fom_model,
-        rom_model_builder=lipschitz_nn_builder,
         parameter_space=parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
@@ -268,6 +251,18 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         max_iterations=max_iterations,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
+        rom_type="nn",
+        rom_args={
+            "network_config": NeuralNetworkConfig(
+                training_iterations=nn_training_iterations,
+            ),
+            "lipschitz_config": LipschitzConfig(
+                enabled=True,
+                safety_factor=1.1,
+            ),
+            "normalize_parameters": True,
+            "normalize_targets": True,
+        },
         max_rom_training_history=max_rom_training_history,
         **mf_eki_solver_args,
     )
