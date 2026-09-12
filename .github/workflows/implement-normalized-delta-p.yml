@@ -1,0 +1,228 @@
+name: Implement normalized delta p
+
+on:
+  push:
+    branches:
+      - fix-358-eki-rejuvenation
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    if: github.event.head_commit.message == 'Prepare normalized delta p implementation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Patch normalized update trigger and benchmark
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{label}: expected one match, found {count}")
+              return text.replace(old, new, 1)
+
+          # Single-fidelity EKI.
+          path = Path('romtools/workflows/inverse/eki_drivers.py')
+          text = path.read_text()
+          text = text.replace('dp_norm', 'normalized_dp_norm')
+          text = replace_once(
+              text,
+              'Adaptive rejuvenation is triggered when the proposed update is below\n``delta_params_tolerance`` while the residual remains above\n``error_norm_tolerance``. Periodic rejuvenation is also available.',
+              'Adaptive rejuvenation is triggered when the componentwise normalized RMS\nparameter update is below ``delta_params_tolerance`` while the residual remains\nabove ``error_norm_tolerance``. Periodic rejuvenation is also available.',
+              'EKI module rejuvenation description',
+          )
+          helper_anchor = '    return np.diag(scales**2)\n\n\ndef _build_rejuvenation_covariance('
+          helper = '''    return np.diag(scales**2)\n\n\ndef _compute_normalized_parameter_update_norm(\n        dp,\n        parameter_samples,\n        parameter_mins=None,\n        parameter_maxes=None,\n        fallback_covariance=None):\n    """Return a dimensionless RMS parameter-update magnitude.\n\n    Each parameter component is normalized by the magnitude of its current\n    ensemble mean. Near-zero means use the admissible parameter range when\n    available, then the initial-ensemble standard deviation as a fallback.\n    The RMS is taken over ensemble members and parameter components, making\n    the stagnation criterion invariant to parameter units and rescaling.\n    """\n    dp = np.asarray(dp, dtype=float)\n    if dp.ndim == 1:\n        dp = dp[None, :]\n    if dp.ndim != 2:\n        raise ValueError("dp must be a one- or two-dimensional array")\n\n    reference_covariance = _compute_parameter_scaled_reference_covariance(\n        parameter_samples,\n        parameter_mins,\n        parameter_maxes,\n        fallback_covariance=fallback_covariance,\n    )\n    scales = np.sqrt(np.maximum(np.diag(reference_covariance), 0.0))\n    if dp.shape[1] != scales.size:\n        raise ValueError("dp parameter dimension must match parameter_samples")\n\n    # A unit scale is only a final numerical safeguard for a parameter with\n    # zero mean, no finite range, and zero initial variance. Normal runs have\n    # a physical scale from one of the three sources above.\n    scales = scales.copy()\n    scales[scales <= np.finfo(float).tiny] = 1.0\n    normalized_dp = dp / scales[None, :]\n    return float(np.sqrt(np.mean(normalized_dp**2)))\n\n\ndef _build_rejuvenation_covariance('''
+          text = replace_once(text, helper_anchor, helper, 'normalized-update helper insertion')
+          text = replace_once(
+              text,
+              '    normalized_dp_norm = np.linalg.norm(dp)\n    rejuvenation_count += 1',
+              '''    normalized_dp_norm = _compute_normalized_parameter_update_norm(\n        dp,\n        parameter_samples,\n        parameter_mins,\n        parameter_maxes,\n        reference_covariance,\n    )\n    rejuvenation_count += 1''',
+              'EKI rejuvenation normalized update',
+          )
+          text = replace_once(
+              text,
+              '    normalized_dp_norm = np.linalg.norm(dp)\n    wall_time = time.time() - start_time',
+              '''    normalized_dp_norm = _compute_normalized_parameter_update_norm(\n        dp,\n        parameter_samples,\n        parameter_mins,\n        parameter_maxes,\n        rejuvenation_reference_covariance,\n    )\n    wall_time = time.time() - start_time''',
+              'EKI initial normalized update',
+          )
+          text = replace_once(
+              text,
+              '            normalized_dp_norm = np.linalg.norm(dp)\n\n            if _should_rejuvenate(',
+              '''            normalized_dp_norm = _compute_normalized_parameter_update_norm(\n                dp,\n                parameter_samples,\n                parameter_mins,\n                parameter_maxes,\n                rejuvenation_reference_covariance,\n            )\n\n            if _should_rejuvenate(''',
+              'EKI accepted-step normalized update',
+          )
+          text = text.replace('Delta p:', 'Normalized delta p:')
+          text = replace_once(
+              text,
+              '            delta_params_tolerance: float = 1e-6,',
+              '            delta_params_tolerance: float = 1e-3,',
+              'EKI normalized tolerance default',
+          )
+          text = replace_once(
+              text,
+              '        delta_params_tolerance: Parameter-update norm below which EKI is\n            considered stagnant. With adaptive rejuvenation, a large residual\n            triggers rejuvenation instead of immediate termination.',
+              '        delta_params_tolerance: Dimensionless componentwise normalized RMS\n            parameter-update threshold below which EKI is considered stagnant.\n            With adaptive rejuvenation, a large residual triggers rejuvenation\n            instead of immediate termination.',
+              'EKI delta tolerance docstring',
+          )
+          path.write_text(text)
+
+          # Multifidelity EKI.
+          path = Path('romtools/workflows/inverse/mf_eki_drivers.py')
+          text = path.read_text()
+          text = text.replace('dp_norm', 'normalized_dp_norm')
+          text = replace_once(
+              text,
+              '    _compute_ensemble_covariance,\n    _compute_ensemble_spread,',
+              '    _compute_ensemble_covariance,\n    _compute_ensemble_spread,\n    _compute_normalized_parameter_update_norm,',
+              'MF-EKI normalized helper import',
+          )
+          text = replace_once(
+              text,
+              '    normalized_dp_norm = np.linalg.norm(dps[0])\n    rejuvenation_count += 1',
+              '''    normalized_dp_norm = _compute_normalized_parameter_update_norm(\n        dps[0],\n        np.vstack(parameter_sample_sets),\n        parameter_mins,\n        parameter_maxes,\n        reference_covariance,\n    )\n    rejuvenation_count += 1''',
+              'MF-EKI rejuvenation normalized update',
+          )
+          text = replace_once(
+              text,
+              '    normalized_dp_norm = np.linalg.norm(dps[0])\n    spread = _compute_ensemble_spread(np.vstack(parameter_sample_sets))',
+              '''    normalized_dp_norm = _compute_normalized_parameter_update_norm(\n        dps[0],\n        np.vstack(parameter_sample_sets),\n        parameter_mins,\n        parameter_maxes,\n        rejuvenation_reference_covariance,\n    )\n    spread = _compute_ensemble_spread(np.vstack(parameter_sample_sets))''',
+              'MF-EKI initial normalized update',
+          )
+          text = replace_once(
+              text,
+              '            normalized_dp_norm = np.linalg.norm(dps[0])\n            training_dirs = copy.deepcopy(test_training_dirs)',
+              '''            normalized_dp_norm = _compute_normalized_parameter_update_norm(\n                dps[0],\n                np.vstack(parameter_sample_sets),\n                parameter_mins,\n                parameter_maxes,\n                rejuvenation_reference_covariance,\n            )\n            training_dirs = copy.deepcopy(test_training_dirs)''',
+              'MF-EKI accepted-step normalized update',
+          )
+          text = text.replace('Delta p:', 'Normalized delta p:')
+          if text.count('delta_params_tolerance: float = 1e-4,') != 2:
+              raise RuntimeError('MF-EKI expected two delta tolerance defaults')
+          text = text.replace(
+              'delta_params_tolerance: float = 1e-4,',
+              'delta_params_tolerance: float = 1e-3,',
+          )
+          path.write_text(text)
+
+          # Unit tests for scale invariance and fallback behavior.
+          path = Path('tests/romtools/workflows/inverse/test_eki_rejuvenation.py')
+          text = path.read_text().replace('dp_norm=', 'normalized_dp_norm=')
+          anchor = '''def test_rejuvenation_preserves_mean_without_bounds_and_is_reproducible():\n'''
+          tests = '''def test_normalized_parameter_update_norm_is_scale_invariant():\n    samples = np.tile(np.array([[2.0, 8.0]]), (4, 1))\n    dp = np.tile(np.array([[0.02, 0.08]]), (4, 1))\n    fallback_covariance = np.diag([1.0, 1.0])\n\n    value = eki_drivers._compute_normalized_parameter_update_norm(\n        dp, samples, fallback_covariance=fallback_covariance\n    )\n\n    rescaled_samples = samples.copy()\n    rescaled_samples[:, 1] *= 100.0\n    rescaled_dp = dp.copy()\n    rescaled_dp[:, 1] *= 100.0\n    rescaled_fallback = np.diag([1.0, 100.0**2])\n    rescaled_value = eki_drivers._compute_normalized_parameter_update_norm(\n        rescaled_dp,\n        rescaled_samples,\n        fallback_covariance=rescaled_fallback,\n    )\n\n    assert value == pytest.approx(0.01)\n    assert rescaled_value == pytest.approx(value)\n\n\ndef test_normalized_parameter_update_uses_bound_range_for_zero_mean():\n    samples = np.tile(np.array([[0.0, 2.0]]), (4, 1))\n    dp = np.tile(np.array([[0.2, 0.02]]), (4, 1))\n\n    value = eki_drivers._compute_normalized_parameter_update_norm(\n        dp,\n        samples,\n        parameter_mins=np.array([-10.0, -5.0]),\n        parameter_maxes=np.array([10.0, 5.0]),\n        fallback_covariance=np.eye(2),\n    )\n\n    assert value == pytest.approx(0.01)\n\n\ndef test_normalized_parameter_update_uses_initial_std_as_final_scale_fallback():\n    samples = np.zeros((4, 2))\n    dp = np.tile(np.array([[0.03, 0.04]]), (4, 1))\n\n    value = eki_drivers._compute_normalized_parameter_update_norm(\n        dp,\n        samples,\n        fallback_covariance=np.diag([3.0**2, 4.0**2]),\n    )\n\n    assert value == pytest.approx(0.01)\n\n\ndef test_normalized_delta_p_default_is_dimensionless_one_per_mille():\n    signature = inspect.signature(romtools.workflows.run_eki)\n    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)\n\n\n'''
+          text = replace_once(text, anchor, tests + anchor, 'normalized-update tests insertion')
+          path.write_text(text)
+
+          path = Path('tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py')
+          text = path.read_text()
+          anchor = '''def test_mf_eki_rejuvenation_defaults_to_five_percent_reference_std():\n'''
+          test = '''def test_mf_eki_normalized_delta_p_default_is_dimensionless_one_per_mille():\n    signature = inspect.signature(mf_eki_drivers.run_mf_eki)\n    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)\n\n\n'''
+          text = replace_once(text, anchor, test + anchor, 'MF-EKI default normalized tolerance test')
+          path.write_text(text)
+
+          # Expand the air-flame benchmark to include rejuvenated single-fidelity EKI.
+          path = Path('examples/h2_air_flame_eki_mf_eki/example.py')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              '        "eki": "Single-fidelity EKI",\n        "mf_eki": "MF-EKI",',
+              '        "eki": "Single-fidelity EKI",\n        "eki_rejuvenated": "EKI + adaptive rejuvenation",\n        "mf_eki": "MF-EKI",',
+              'benchmark labels',
+          )
+          text = replace_once(
+              text,
+              '    markers = {"eki": "o", "mf_eki": "s", "mf_eki_rejuvenated": "^"}',
+              '    markers = {"eki": "o", "eki_rejuvenated": "D", "mf_eki": "s", "mf_eki_rejuvenated": "^"}',
+              'benchmark markers',
+          )
+          text = replace_once(
+              text,
+              '        adaptive_delta_tolerance = 1.0e-4',
+              '        adaptive_delta_tolerance = 1.0e-3',
+              'benchmark normalized tolerance',
+          )
+          text = replace_once(
+              text,
+              '    eki_dir = work_dir / "eki"\n    mf_dir = work_dir / "mf_eki"',
+              '    eki_dir = work_dir / "eki"\n    eki_rejuvenated_dir = work_dir / "eki_rejuvenated"\n    mf_dir = work_dir / "mf_eki"',
+              'benchmark EKI directories',
+          )
+          insert_before = '''    print("\\n=== Single-fidelity EKI reference ===", flush=True)\n    run_eki(\n'''
+          new_block = '''    print("\\n=== Single-fidelity EKI with adaptive rejuvenation ===", flush=True)\n    run_eki(\n        model=model,\n        parameter_space=parameter_space,\n        observations=observations,\n        observations_covariance=observations_covariance,\n        parameter_mins=PARAMETER_MINS,\n        parameter_maxes=PARAMETER_MAXES,\n        absolute_eki_directory=str(eki_rejuvenated_dir),\n        ensemble_size=fom_ensemble_size,\n        max_iterations=max_iterations,\n        random_seed=1,\n        evaluation_concurrency=concurrency,\n        delta_params_tolerance=adaptive_delta_tolerance,\n        rejuvenation_strategy="adaptive",\n        max_rejuvenations=max_rejuvenations,\n    )\n\n    print("\\n=== Single-fidelity EKI reference ===", flush=True)\n    run_eki(\n'''
+          text = replace_once(text, insert_before, new_block, 'rejuvenated EKI benchmark run')
+          text = replace_once(
+              text,
+              '        evaluation_concurrency=concurrency,\n        rejuvenation_strategy="none",\n    )',
+              '        evaluation_concurrency=concurrency,\n        delta_params_tolerance=adaptive_delta_tolerance,\n        rejuvenation_strategy="none",\n    )',
+              'baseline EKI normalized tolerance',
+          )
+          text = replace_once(
+              text,
+              '    histories = {\n        "eki": _load_history(eki_dir, mf=False),\n        "mf_eki": _load_history(mf_dir, mf=True),',
+              '    histories = {\n        "eki": _load_history(eki_dir, mf=False),\n        "eki_rejuvenated": _load_history(eki_rejuvenated_dir, mf=False),\n        "mf_eki": _load_history(mf_dir, mf=True),',
+              'benchmark history collection',
+          )
+          path.write_text(text)
+
+          # Update documentation to describe the normalized trigger and four curves.
+          path = Path('docs/source/demos/h2_air_flame_eki_mf_eki_demo.rst')
+          text = path.read_text()
+          text = text.replace('The benchmark compares three cases using the same synthetic observation and\nrandom seed:', 'The benchmark compares four cases using the same synthetic observation and\nrandom seed:')
+          text = replace_once(
+              text,
+              '* single-fidelity EKI with four FOM ensemble members,\n* GP auto-ROM MF-EKI',
+              '* single-fidelity EKI with four FOM ensemble members,\n* the same EKI configuration with ``rejuvenation_strategy="adaptive"``,\n* GP auto-ROM MF-EKI',
+              'docs benchmark cases',
+          )
+          text = text.replace('falls below ``1e-4``', 'falls below ``1e-3``')
+          text = text.replace(
+              'Adaptive rejuvenation is\ntriggered when the parameter-update norm',
+              'Adaptive rejuvenation is\ntriggered when the componentwise normalized RMS parameter-update magnitude',
+          )
+          text = text.replace(
+              'single-fidelity EKI, baseline MF-EKI, and MF-EKI with adaptive rejuvenation.',
+              'single-fidelity EKI and MF-EKI, each with and without adaptive rejuvenation.',
+          )
+          path.write_text(text)
+          PY
+
+      - name: Install test dependencies
+        run: python -m pip install .[test,docs]
+
+      - name: Run rejuvenation tests
+        run: |
+          pytest tests/romtools/workflows/inverse/test_eki_rejuvenation.py \
+                 tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py --timeout=300
+
+      - name: Run air-flame smoke benchmark
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python examples/h2_air_flame_eki_mf_eki/example.py \
+            --smoke \
+            --work-dir "${RUNNER_TEMP}/h2-air-flame-smoke" \
+            --output-dir "${RUNNER_TEMP}/h2-air-flame-results"
+
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/implement-normalized-delta-p.yml
+          git add romtools/workflows/inverse/eki_drivers.py \
+                  romtools/workflows/inverse/mf_eki_drivers.py \
+                  tests/romtools/workflows/inverse/test_eki_rejuvenation.py \
+                  tests/romtools/workflows/inverse/test_mf_eki_rejuvenation.py \
+                  examples/h2_air_flame_eki_mf_eki/example.py \
+                  docs/source/demos/h2_air_flame_eki_mf_eki_demo.rst
+          git commit -m "[benchmark] Implement normalized delta p trigger"
+          git push origin HEAD:fix-358-eki-rejuvenation
