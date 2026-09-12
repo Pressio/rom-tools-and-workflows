@@ -11,4 +11,6 @@ romtools.rom.qoi\_surrogates
       GaussianProcessKernel
       GaussianProcessQoiModel
       GaussianProcessRegressorLite
+      NeuralNetworkConfig
+      NeuralNetworkQoiModel
    

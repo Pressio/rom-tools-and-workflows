@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Gaussian processes &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Neural-network QoI surrogate &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,15 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/gaussian_processes';</script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/neural_network_surrogate';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Neural-network QoI surrogate" href="neural_network_surrogate.html" />
-    <link rel="prev" title="Surrogates" href="surrogates.html" />
+    <link rel="next" title="Workflows" href="workflow_concepts.html" />
+    <link rel="prev" title="Gaussian processes" href="gaussian_processes.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -331,8 +333,8 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="surrogates.html">Surrogates</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Gaussian processes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="neural_network_surrogate.html">Neural-network QoI surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_processes.html">Gaussian processes</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Neural-network QoI surrogate</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_concepts.html">Workflows</a></li>
@@ -358,7 +360,11 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-configuration">Baseline configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-eki-auto-rom-interface">MF-EKI auto-ROM interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lipschitz-constrained-networks">Lipschitz-constrained networks</a></li>
 </ul>
   </nav></div>
     </div>
@@ -404,7 +410,7 @@
     
     <li class="breadcrumb-item"><a href="surrogates.html" class="nav-link">Surrogates</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Gaussian processes</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Neural-network QoI surrogate</span></li>
   </ul>
 </nav>
 </div>
@@ -421,36 +427,163 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="gaussian-processes">
-<h1>Gaussian processes<a class="headerlink" href="#gaussian-processes" title="Link to this heading">#</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> provides lightweight Gaussian-process surrogate models for
-approximating quantities of interest from parameter samples. Gaussian processes
-can also be used as low-fidelity models inside higher-level workflows.</p>
-<section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
-<p>The example below demonstrates fitting a Gaussian process and evaluating its
-posterior mean and uncertainty at new parameter values.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom.qoi_surrogates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">GaussianProcessKernel</span><span class="p">,</span>
-    <span class="n">GaussianProcessRegressorLite</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">x_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">]])</span>
-<span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
-<span class="n">x_query</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.5</span><span class="p">]])</span>
-
-<span class="n">gp</span> <span class="o">=</span> <span class="n">GaussianProcessRegressorLite</span><span class="p">(</span>
-    <span class="n">kernel</span><span class="o">=</span><span class="n">GaussianProcessKernel</span><span class="p">(),</span>
-    <span class="n">noise_variance</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-<span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predict_mean_and_std</span><span class="p">(</span><span class="n">x_query</span><span class="p">)</span>
+  <section id="neural-network-qoi-surrogate">
+<h1>Neural-network QoI surrogate<a class="headerlink" href="#neural-network-qoi-surrogate" title="Link to this heading">#</a></h1>
+<p>romtools provides a PyTorch-based neural-network surrogate that implements the
+standard <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> interface. The surrogate maps model parameters to scalar
+or vector quantities of interest and can be used anywhere a data-driven
+<code class="docutils literal notranslate"><span class="pre">QoiModelBuilderWithTrainingData</span></code> is accepted.</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
+<p>PyTorch is an optional dependency. Install the neural-network support with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"romtools[WithTorch]"</span>
 </pre></div>
 </div>
-<p>For examples where Gaussian-process surrogates are created automatically inside
-multifidelity inverse workflows, see <a class="reference internal" href="ensemble_kalman_inversion.html"><span class="doc">Ensemble Kalman inversion</span></a> and <a class="reference internal" href="variational_inference.html"><span class="doc">Variational inference</span></a>.</p>
+</section>
+<section id="baseline-configuration">
+<h2>Baseline configuration<a class="headerlink" href="#baseline-configuration" title="Link to this heading">#</a></h2>
+<p>The baseline network is a fully connected feed-forward network with</p>
+<ul class="simple">
+<li><p>two hidden layers,</p></li>
+<li><p>three times the parameter dimension neurons in each hidden layer,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tanh</span></code> activations,</p></li>
+<li><p>Adam optimization, and</p></li>
+<li><p>5,000 full-batch optimization iterations.</p></li>
+</ul>
+<p>These choices are collected in <code class="docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code> and can be changed when
+the surrogate builder is constructed.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NeuralNetworkConfig</span><span class="p">,</span>
+    <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">network_config</span> <span class="o">=</span> <span class="n">NeuralNetworkConfig</span><span class="p">(</span>
+    <span class="n">num_hidden_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">hidden_neurons_per_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># defaults to 3 * parameter dimension</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">,</span>
+    <span class="n">training_iterations</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+    <span class="n">random_seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">builder</span> <span class="o">=</span> <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">(</span>
+    <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"mu_1"</span><span class="p">,</span> <span class="s2">"mu_2"</span><span class="p">],</span>
+    <span class="n">network_config</span><span class="o">=</span><span class="n">network_config</span><span class="p">,</span>
+    <span class="n">normalize_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">normalize_targets</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">hidden_neurons_per_layer</span></code> to an integer overrides the default
+<code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">parameter_dimension</span></code> width. The number of hidden layers, activation,
+optimizer, learning rate, number of training iterations, weight decay, random
+seed, floating-point dtype, and torch device are also configurable through
+<code class="docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code>.</p>
+</section>
+<section id="mf-eki-auto-rom-interface">
+<h2>MF-EKI auto-ROM interface<a class="headerlink" href="#mf-eki-auto-rom-interface" title="Link to this heading">#</a></h2>
+<p>The MF-EKI convenience driver can construct the neural surrogate directly with
+<code class="docutils literal notranslate"><span class="pre">rom_type=&quot;nn&quot;</span></code>. Neural-network and Lipschitz configuration objects are
+passed through <code class="docutils literal notranslate"><span class="pre">rom_args</span></code> together with the POD and normalization controls.
+This is the same public auto-ROM interface used by the Gaussian-process
+surrogate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom</span><span class="w"> </span><span class="kn">import</span> <span class="n">LipschitzConfig</span><span class="p">,</span> <span class="n">NeuralNetworkConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.mf_eki_drivers</span><span class="w"> </span><span class="kn">import</span> <span class="n">mf_eki_with_auto_rom</span>
+
+<span class="n">mf_eki_with_auto_rom</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">fom_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="o">=</span><span class="n">parameter_space</span><span class="p">,</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
+    <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observations_covariance</span><span class="p">,</span>
+    <span class="n">rom_type</span><span class="o">=</span><span class="s2">"nn"</span><span class="p">,</span>
+    <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"network_config"</span><span class="p">:</span> <span class="n">NeuralNetworkConfig</span><span class="p">(</span>
+            <span class="n">training_iterations</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">"lipschitz_config"</span><span class="p">:</span> <span class="n">LipschitzConfig</span><span class="p">(</span>
+            <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">safety_factor</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">&quot;neural_network&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;neural-network&quot;</span></code> are accepted aliases, while
+<code class="docutils literal notranslate"><span class="pre">&quot;nn&quot;</span></code> is the canonical short form used in the examples.</p>
+</section>
+<section id="pod-for-vector-qois">
+<h2>POD for vector QoIs<a class="headerlink" href="#pod-for-vector-qois" title="Link to this heading">#</a></h2>
+<p>Vector-valued QoIs use the same POD reduction strategy as the Gaussian-process
+surrogate. The training QoIs are mean-centered, an SVD is computed, and the
+basis is truncated using <code class="docutils literal notranslate"><span class="pre">pod_energy_fraction</span></code> and, optionally,
+<code class="docutils literal notranslate"><span class="pre">max_pod_modes</span></code>. The neural network predicts the retained POD coefficients
+and the full QoI is reconstructed from those coefficients.</p>
+<p>Unlike the Gaussian-process implementation, which trains one scalar GP for
+each retained coefficient, the neural-network surrogate uses one multi-output
+network for all retained POD coefficients.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">builder</span> <span class="o">=</span> <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">(</span>
+    <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"mu_1"</span><span class="p">,</span> <span class="s2">"mu_2"</span><span class="p">,</span> <span class="s2">"mu_3"</span><span class="p">],</span>
+    <span class="n">pod_energy_fraction</span><span class="o">=</span><span class="mf">0.999999</span><span class="p">,</span>
+    <span class="n">max_pod_modes</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">network_config</span><span class="o">=</span><span class="n">NeuralNetworkConfig</span><span class="p">(),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>For a scalar QoI, no POD reduction is performed and the network predicts the
+QoI directly.</p>
+</section>
+<section id="lipschitz-constrained-networks">
+<h2>Lipschitz-constrained networks<a class="headerlink" href="#lipschitz-constrained-networks" title="Link to this heading">#</a></h2>
+<p>A hard Lipschitz constraint can optionally be applied using spectral
+normalization. For a network with <code class="docutils literal notranslate"><span class="pre">L</span></code> linear layers, each linear operator is
+spectrally normalized and then multiplied by a layer constant <code class="docutils literal notranslate"><span class="pre">K_l</span></code>. With a
+1-Lipschitz activation, the resulting network satisfies the approximate bound</p>
+<div class="math notranslate nohighlight">
+\[\operatorname{Lip}(f) \lesssim \prod_{l=1}^{L} K_l.\]</div>
+<p>The approximation reflects the finite power iteration used by PyTorch spectral
+normalization. By default, the global constant <code class="docutils literal notranslate"><span class="pre">K</span></code> is distributed uniformly
+across the linear layers,</p>
+<div class="math notranslate nohighlight">
+\[K_l = K^{1/L}.\]</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">lipschitz_constant</span></code> is not supplied, romtools estimates a data-based
+constant from the maximum pairwise slope</p>
+<div class="math notranslate nohighlight">
+\[K_{\mathrm{data}}
+= \max_{i&lt;j}
+\frac{\|z_i-z_j\|_2}{\|x_i-x_j\|_2},\]</div>
+<p>and uses <code class="docutils literal notranslate"><span class="pre">K</span> <span class="pre">=</span> <span class="pre">safety_factor</span> <span class="pre">*</span> <span class="pre">K_data</span></code>. The estimate is computed in the exact
+coordinates learned by the network: after parameter normalization and, for
+vector QoIs, after POD projection and optional target normalization.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom</span><span class="w"> </span><span class="kn">import</span> <span class="n">LipschitzConfig</span>
+
+<span class="n">lipschitz_config</span> <span class="o">=</span> <span class="n">LipschitzConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">lipschitz_constant</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>       <span class="c1"># estimate from the training data</span>
+    <span class="n">safety_factor</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+    <span class="n">spectral_norm_power_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">builder</span> <span class="o">=</span> <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">(</span>
+    <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"mu_1"</span><span class="p">,</span> <span class="s2">"mu_2"</span><span class="p">],</span>
+    <span class="n">network_config</span><span class="o">=</span><span class="n">NeuralNetworkConfig</span><span class="p">(</span><span class="n">activation</span><span class="o">=</span><span class="s2">"tanh"</span><span class="p">),</span>
+    <span class="n">lipschitz_config</span><span class="o">=</span><span class="n">lipschitz_config</span><span class="p">,</span>
+    <span class="n">normalize_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">normalize_targets</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>An explicit global constant can be supplied with <code class="docutils literal notranslate"><span class="pre">lipschitz_constant</span></code>.
+Advanced users may also provide <code class="docutils literal notranslate"><span class="pre">layer_lipschitz_constants</span></code> directly; there
+must be one value for each linear layer and their product cannot exceed the
+global constant.</p>
+<p>The hard-constraint mode currently accepts <code class="docutils literal notranslate"><span class="pre">tanh</span></code> and ReLU activations,
+which are 1-Lipschitz. GELU and SiLU are intentionally rejected because the
+linear-layer spectral constraints alone would not imply the requested global
+bound. Coincident training parameter samples with different transformed
+targets are also rejected because they imply no finite data-based Lipschitz
+constant.</p>
 </section>
 </section>
 
@@ -465,20 +598,20 @@ multifidelity inverse workflows, see <a class="reference internal" href="ensembl
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="surrogates.html"
+       href="gaussian_processes.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Surrogates</p>
+        <p class="prev-next-title">Gaussian processes</p>
       </div>
     </a>
     <a class="right-next"
-       href="neural_network_surrogate.html"
+       href="workflow_concepts.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Neural-network QoI surrogate</p>
+        <p class="prev-next-title">Workflows</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -501,14 +634,18 @@ multifidelity inverse workflows, see <a class="reference internal" href="ensembl
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-configuration">Baseline configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-eki-auto-rom-interface">MF-EKI auto-ROM interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lipschitz-constrained-networks">Lipschitz-constrained networks</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/demos/gaussian_processes.rst.txt">
+    <a href="../_sources/demos/neural_network_surrogate.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

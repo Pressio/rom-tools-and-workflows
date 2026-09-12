@@ -437,7 +437,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QoiModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span><span class="p">,</span> <span class="n">resolve_dispatcher</span><span class="p">,</span> <span class="n">resolve_local_dispatcher</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.model_builders</span><span class="w"> </span><span class="kn">import</span> <span class="n">QoiModelBuilderWithTrainingData</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom.qoi_surrogates</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianProcessKernel</span><span class="p">,</span> <span class="n">GaussianProcessQoiModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom.qoi_surrogates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GaussianProcessKernel</span><span class="p">,</span>
+    <span class="n">GaussianProcessQoiModel</span><span class="p">,</span>
+    <span class="n">NeuralNetworkConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom.neural_network_surrogate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LipschitzConfig</span><span class="p">,</span>
+    <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.parameter_spaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterSpace</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
@@ -1027,8 +1035,13 @@
                          <span class="n">rom_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"gp"</span><span class="p">,</span>
                          <span class="n">rom_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Wrapper around run_mf_eki that selects a default ROM surrogate by rom_type.</span>
+<span class="w">    </span><span class="sd">"""Run MF-EKI with a built-in data-driven surrogate type.</span>
+
+<span class="sd">    ``rom_type='gp'`` selects the Gaussian-process QoI surrogate.</span>
+<span class="sd">    ``rom_type='nn'`` selects the PyTorch neural-network QoI surrogate.</span>
+<span class="sd">    ``rom_args`` contains surrogate-specific builder options. For the neural</span>
+<span class="sd">    network, ``network_config`` and ``lipschitz_config`` may be supplied as</span>
+<span class="sd">    :class:`NeuralNetworkConfig` and :class:`LipschitzConfig` instances.</span>
 <span class="sd">    """</span>
     <span class="n">rom_args</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">rom_args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rom_args</span><span class="p">)</span>
     <span class="n">rom_type_normalized</span> <span class="o">=</span> <span class="n">rom_type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
@@ -1047,8 +1060,20 @@
             <span class="n">normalize_parameters</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"normalize_parameters"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
             <span class="n">normalize_targets</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"normalize_targets"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
         <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">rom_type_normalized</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"nn"</span><span class="p">,</span> <span class="s2">"neural_network"</span><span class="p">,</span> <span class="s2">"neural-network"</span><span class="p">):</span>
+        <span class="n">rom_model_builder</span> <span class="o">=</span> <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">(</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_space</span><span class="o">.</span><span class="n">get_names</span><span class="p">(),</span>
+            <span class="n">pod_energy_fraction</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pod_energy_fraction"</span><span class="p">,</span> <span class="mf">0.999999</span><span class="p">),</span>
+            <span class="n">max_pod_modes</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"max_pod_modes"</span><span class="p">),</span>
+            <span class="n">network_config</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"network_config"</span><span class="p">),</span>
+            <span class="n">lipschitz_config</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"lipschitz_config"</span><span class="p">),</span>
+            <span class="n">normalize_parameters</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"normalize_parameters"</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="n">normalize_targets</span><span class="o">=</span><span class="n">rom_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"normalize_targets"</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported rom_type '</span><span class="si">{</span><span class="n">rom_type</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Unsupported rom_type '</span><span class="si">{</span><span class="n">rom_type</span><span class="si">}</span><span class="s2">'. Supported options are 'gp' and 'nn'."</span>
+        <span class="p">)</span>
     <span class="k">return</span> <span class="n">run_mf_eki</span><span class="p">(</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
         <span class="n">rom_model_builder</span><span class="o">=</span><span class="n">rom_model_builder</span><span class="p">,</span>

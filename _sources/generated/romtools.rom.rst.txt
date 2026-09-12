@@ -10,5 +10,6 @@ romtools.rom
    :toctree:
    :recursive:
 
+   neural_network_surrogate
    projections
    qoi_surrogates

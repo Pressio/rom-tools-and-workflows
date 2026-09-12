@@ -335,6 +335,7 @@
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.rom.html">romtools.rom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.rom.neural_network_surrogate.html">romtools.rom.neural_network_surrogate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.rom.projections.html">romtools.rom.projections</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.rom.qoi_surrogates</a></li>
 </ul>
@@ -347,6 +348,7 @@
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.rom.html">romtools.rom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="romtools.rom.neural_network_surrogate.html">romtools.rom.neural_network_surrogate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.rom.projections.html">romtools.rom.projections</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">romtools.rom.qoi_surrogates</a></li>
 </ul>
@@ -389,6 +391,8 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.GaussianProcessKernel"><code class="docutils literal notranslate"><span class="pre">GaussianProcessKernel</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.GaussianProcessQoiModel"><code class="docutils literal notranslate"><span class="pre">GaussianProcessQoiModel</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.NeuralNetworkConfig"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.NeuralNetworkQoiModel"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkQoiModel</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -468,6 +472,12 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">GaussianProcessRegressorLite</span></code>([kernel, ...])</p></td>
 <td><p></p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.rom.qoi_surrogates.NeuralNetworkConfig" title="romtools.rom.qoi_surrogates.NeuralNetworkConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code></a>([num_hidden_layers, ...])</p></td>
+<td><p>Configuration for the torch neural-network QoI surrogate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.rom.qoi_surrogates.NeuralNetworkQoiModel" title="romtools.rom.qoi_surrogates.NeuralNetworkQoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralNetworkQoiModel</span></code></a>(parameters, qois[, ...])</p></td>
+<td><p>Torch neural-network QoI surrogate following the QoiModel API.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -507,6 +517,60 @@ reduced coefficient.</p>
 <li><p><strong>tune_hyperparameters</strong> (<em>bool</em>)</p></li>
 <li><p><strong>length_scale_grid</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>float</em><em>]</em><em>]</em>)</p></li>
 <li><p><strong>signal_variance_grid</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>float</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>normalize_parameters</strong> (<em>bool</em>)</p></li>
+<li><p><strong>normalize_targets</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.rom.qoi_surrogates.NeuralNetworkConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.rom.qoi_surrogates.</span></span><span class="sig-name descname"><span class="pre">NeuralNetworkConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_neurons_per_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_width_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tanh'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'adam'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'float64'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/qoi_surrogates.html#NeuralNetworkConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.qoi_surrogates.NeuralNetworkConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for the torch neural-network QoI surrogate.</p>
+<p>The default architecture contains two hidden layers. If
+<code class="docutils literal notranslate"><span class="pre">hidden_neurons_per_layer</span></code> is not provided, each hidden layer contains
+<code class="docutils literal notranslate"><span class="pre">hidden_width_multiplier</span> <span class="pre">*</span> <span class="pre">parameter_dimension</span></code> neurons, giving the
+baseline width of three times the parameter dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_hidden_layers</strong> (<em>int</em>)</p></li>
+<li><p><strong>hidden_neurons_per_layer</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>hidden_width_multiplier</strong> (<em>float</em>)</p></li>
+<li><p><strong>activation</strong> (<em>str</em>)</p></li>
+<li><p><strong>optimizer</strong> (<em>str</em>)</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em>)</p></li>
+<li><p><strong>training_iterations</strong> (<em>int</em>)</p></li>
+<li><p><strong>weight_decay</strong> (<em>float</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>str</em>)</p></li>
+<li><p><strong>device</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.rom.qoi_surrogates.NeuralNetworkQoiModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.rom.qoi_surrogates.</span></span><span class="sig-name descname"><span class="pre">NeuralNetworkQoiModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod_energy_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.999999</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pod_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/qoi_surrogates.html#NeuralNetworkQoiModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.qoi_surrogates.NeuralNetworkQoiModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Torch neural-network QoI surrogate following the QoiModel API.</p>
+<p>Scalar QoIs are learned directly. Vector QoIs use the same POD reduction
+strategy as <a class="reference internal" href="#romtools.rom.qoi_surrogates.GaussianProcessQoiModel" title="romtools.rom.qoi_surrogates.GaussianProcessQoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianProcessQoiModel</span></code></a>: the training QoIs are
+mean-centered, truncated according to <code class="docutils literal notranslate"><span class="pre">pod_energy_fraction</span></code> and
+<code class="docutils literal notranslate"><span class="pre">max_pod_modes</span></code>, and the network predicts the retained POD coefficients.
+A single multi-output network is used for all retained coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameters</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>qois</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>parameter_names</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>pod_energy_fraction</strong> (<em>float</em>)</p></li>
+<li><p><strong>max_pod_modes</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>network_config</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#romtools.rom.qoi_surrogates.NeuralNetworkConfig" title="romtools.rom.qoi_surrogates.NeuralNetworkConfig"><em>NeuralNetworkConfig</em></a><em>]</em>)</p></li>
 <li><p><strong>normalize_parameters</strong> (<em>bool</em>)</p></li>
 <li><p><strong>normalize_targets</strong> (<em>bool</em>)</p></li>
 </ul>
@@ -565,6 +629,8 @@ reduced coefficient.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.GaussianProcessKernel"><code class="docutils literal notranslate"><span class="pre">GaussianProcessKernel</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.GaussianProcessQoiModel"><code class="docutils literal notranslate"><span class="pre">GaussianProcessQoiModel</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.NeuralNetworkConfig"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.qoi_surrogates.NeuralNetworkQoiModel"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkQoiModel</span></code></a></li>
 </ul>
   </nav></div>
 

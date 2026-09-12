@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.rom.projections &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.rom.neural_network_surrogate &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,15 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.rom.projections';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.rom.neural_network_surrogate';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.rom.qoi_surrogates" href="romtools.rom.qoi_surrogates.html" />
-    <link rel="prev" title="romtools.rom.neural_network_surrogate" href="romtools.rom.neural_network_surrogate.html" />
+    <link rel="next" title="romtools.rom.projections" href="romtools.rom.projections.html" />
+    <link rel="prev" title="romtools.rom" href="romtools.rom.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -337,8 +335,8 @@
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.rom.html">romtools.rom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="romtools.rom.neural_network_surrogate.html">romtools.rom.neural_network_surrogate</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.rom.projections</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.rom.neural_network_surrogate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.rom.projections.html">romtools.rom.projections</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.rom.qoi_surrogates.html">romtools.rom.qoi_surrogates</a></li>
 </ul>
 </details></li>
@@ -350,8 +348,8 @@
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.rom.html">romtools.rom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.rom.neural_network_surrogate.html">romtools.rom.neural_network_surrogate</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">romtools.rom.projections</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">romtools.rom.neural_network_surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.rom.projections.html">romtools.rom.projections</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.rom.qoi_surrogates.html">romtools.rom.qoi_surrogates</a></li>
 </ul>
 </details></li>
@@ -391,7 +389,10 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.projections.optimal_l2_projection"><code class="docutils literal notranslate"><span class="pre">optimal_l2_projection()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.LipschitzConfig"><code class="docutils literal notranslate"><span class="pre">LipschitzConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel"><code class="docutils literal notranslate"><span class="pre">LipschitzNeuralNetworkQoiModel</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkQoiModelBuilderWithTrainingData</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant"><code class="docutils literal notranslate"><span class="pre">estimate_pairwise_lipschitz_constant()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -440,7 +441,7 @@
     
     <li class="breadcrumb-item"><a href="romtools.rom.html" class="nav-link">romtools.rom</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.rom.projections</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.rom.neural_network_surrogate</span></li>
   </ul>
 </nav>
 </div>
@@ -457,33 +458,116 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.rom.projections">
-<span id="romtools-rom-projections"></span><h1>romtools.rom.projections<a class="headerlink" href="#module-romtools.rom.projections" title="Link to this heading">#</a></h1>
+  <section id="module-romtools.rom.neural_network_surrogate">
+<span id="romtools-rom-neural-network-surrogate"></span><h1>romtools.rom.neural_network_surrogate<a class="headerlink" href="#module-romtools.rom.neural_network_surrogate" title="Link to this heading">#</a></h1>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.rom.projections.optimal_l2_projection" title="romtools.rom.projections.optimal_l2_projection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimal_l2_projection</span></code></a>(input_tensor, vector_space)</p></td>
-<td><p>Compute L2 projection in the weighted inner product.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant" title="romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_pairwise_lipschitz_constant</span></code></a>(...[, ...])</p></td>
+<td><p>Estimate the maximum pairwise Lipschitz slope from training data.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.rom.projections.optimal_l2_projection">
-<span class="sig-prename descclassname"><span class="pre">romtools.rom.projections.</span></span><span class="sig-name descname"><span class="pre">optimal_l2_projection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vector_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting_matrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_full_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/projections.html#optimal_l2_projection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.projections.optimal_l2_projection" title="Link to this definition">#</a></dt>
-<dd><p>Compute L2 projection in the weighted inner product.</p>
-<div class="math notranslate nohighlight">
-\[\arg\min \| ( \Phi \hat{x} + x_{ref}) - x \|_M^2\]</div>
-<p>Solution satisfies the linear system</p>
-<div class="math notranslate nohighlight">
-\[\Phi^T M \Phi \hat{x} = \Phi^T M ( x - x_{ref} )\]</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.rom.neural_network_surrogate.LipschitzConfig" title="romtools.rom.neural_network_surrogate.LipschitzConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LipschitzConfig</span></code></a>([enabled, ...])</p></td>
+<td><p>Configuration for a hard Lipschitz constraint on the neural surrogate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel" title="romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LipschitzNeuralNetworkQoiModel</span></code></a>(parameters, qois)</p></td>
+<td><p>Neural-network QoI surrogate with a spectral Lipschitz constraint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData" title="romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralNetworkQoiModelBuilderWithTrainingData</span></code></a>(...)</p></td>
+<td><p>Build a torch neural-network QoI surrogate from workflow training data.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.rom.neural_network_surrogate.LipschitzConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.rom.neural_network_surrogate.</span></span><span class="sig-name descname"><span class="pre">LipschitzConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lipschitz_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safety_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectral_norm_power_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pairwise_distance_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_lipschitz_constants</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/neural_network_surrogate.html#LipschitzConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.neural_network_surrogate.LipschitzConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for a hard Lipschitz constraint on the neural surrogate.</p>
+<p>When enabled, spectral normalization constrains every linear operator to
+unit spectral norm and a scalar multiplier is applied to each layer. If
+<code class="docutils literal notranslate"><span class="pre">lipschitz_constant</span></code> is not supplied, the global constant is estimated
+from pairwise slopes in the transformed training coordinates and multiplied
+by <code class="docutils literal notranslate"><span class="pre">safety_factor</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_tensor</strong> (<em>np.ndarray</em>) – 2d or 3d data array of size (n_vars, nx) or (n_vars, nx, n_snaps)</p></li>
-<li><p><strong>vector_space</strong> (<em>romtools.VectorSpace</em>) – vector space class containing basis and affine offset</p></li>
-<li><p><strong>weighting_matrix</strong> (<em>np.ndarray</em>) – 2d weighting matrix of size <span class="math notranslate nohighlight">\(nvars nx \times nvars nx\)</span></p></li>
+<li><p><strong>enabled</strong> (<em>bool</em>)</p></li>
+<li><p><strong>lipschitz_constant</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>safety_factor</strong> (<em>float</em>)</p></li>
+<li><p><strong>spectral_norm_power_iterations</strong> (<em>int</em>)</p></li>
+<li><p><strong>pairwise_distance_tolerance</strong> (<em>float</em>)</p></li>
+<li><p><strong>layer_lipschitz_constants</strong> (<em>Sequence</em><em>[</em><em>float</em><em>] </em><em>| </em><em>None</em>)</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.rom.neural_network_surrogate.</span></span><span class="sig-name descname"><span class="pre">LipschitzNeuralNetworkQoiModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod_energy_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.999999</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pod_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lipschitz_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/neural_network_surrogate.html#LipschitzNeuralNetworkQoiModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="romtools.rom.qoi_surrogates.html#romtools.rom.qoi_surrogates.NeuralNetworkQoiModel" title="romtools.rom.qoi_surrogates.NeuralNetworkQoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralNetworkQoiModel</span></code></a></p>
+<p>Neural-network QoI surrogate with a spectral Lipschitz constraint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameters</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>qois</strong> (<em>np.ndarray</em>)</p></li>
+<li><p><strong>parameter_names</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>pod_energy_fraction</strong> (<em>float</em>)</p></li>
+<li><p><strong>max_pod_modes</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>network_config</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="romtools.rom.qoi_surrogates.html#romtools.rom.qoi_surrogates.NeuralNetworkConfig" title="romtools.rom.qoi_surrogates.NeuralNetworkConfig"><em>NeuralNetworkConfig</em></a><em>]</em>)</p></li>
+<li><p><strong>lipschitz_config</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#romtools.rom.neural_network_surrogate.LipschitzConfig" title="romtools.rom.neural_network_surrogate.LipschitzConfig"><em>LipschitzConfig</em></a><em>]</em>)</p></li>
+<li><p><strong>normalize_parameters</strong> (<em>bool</em>)</p></li>
+<li><p><strong>normalize_targets</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.rom.neural_network_surrogate.</span></span><span class="sig-name descname"><span class="pre">NeuralNetworkQoiModelBuilderWithTrainingData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod_energy_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.999999</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pod_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lipschitz_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/neural_network_surrogate.html#NeuralNetworkQoiModelBuilderWithTrainingData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Build a torch neural-network QoI surrogate from workflow training data.</p>
+<p>The builder mirrors the POD controls used by the Gaussian-process
+surrogate while keeping neural-network architecture and optimization
+settings in <code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code>. A hard Lipschitz constraint can
+be enabled independently with <a class="reference internal" href="#romtools.rom.neural_network_surrogate.LipschitzConfig" title="romtools.rom.neural_network_surrogate.LipschitzConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">LipschitzConfig</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter_names</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>pod_energy_fraction</strong> (<em>float</em>)</p></li>
+<li><p><strong>max_pod_modes</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>network_config</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="romtools.rom.qoi_surrogates.html#romtools.rom.qoi_surrogates.NeuralNetworkConfig" title="romtools.rom.qoi_surrogates.NeuralNetworkConfig"><em>NeuralNetworkConfig</em></a><em>]</em>)</p></li>
+<li><p><strong>lipschitz_config</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#romtools.rom.neural_network_surrogate.LipschitzConfig" title="romtools.rom.neural_network_surrogate.LipschitzConfig"><em>LipschitzConfig</em></a><em>]</em>)</p></li>
+<li><p><strong>normalize_parameters</strong> (<em>bool</em>)</p></li>
+<li><p><strong>normalize_targets</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant">
+<span class="sig-prename descclassname"><span class="pre">romtools.rom.neural_network_surrogate.</span></span><span class="sig-name descname"><span class="pre">estimate_pairwise_lipschitz_constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/rom/neural_network_surrogate.html#estimate_pairwise_lipschitz_constant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant" title="Link to this definition">#</a></dt>
+<dd><p>Estimate the maximum pairwise Lipschitz slope from training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameters</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>targets</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>distance_tolerance</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -501,20 +585,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="romtools.rom.neural_network_surrogate.html"
+       href="romtools.rom.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">romtools.rom.neural_network_surrogate</p>
+        <p class="prev-next-title">romtools.rom</p>
       </div>
     </a>
     <a class="right-next"
-       href="romtools.rom.qoi_surrogates.html"
+       href="romtools.rom.projections.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">romtools.rom.qoi_surrogates</p>
+        <p class="prev-next-title">romtools.rom.projections</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -537,14 +621,17 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.projections.optimal_l2_projection"><code class="docutils literal notranslate"><span class="pre">optimal_l2_projection()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.LipschitzConfig"><code class="docutils literal notranslate"><span class="pre">LipschitzConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.LipschitzNeuralNetworkQoiModel"><code class="docutils literal notranslate"><span class="pre">LipschitzNeuralNetworkQoiModel</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.NeuralNetworkQoiModelBuilderWithTrainingData"><code class="docutils literal notranslate"><span class="pre">NeuralNetworkQoiModelBuilderWithTrainingData</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.rom.neural_network_surrogate.estimate_pairwise_lipschitz_constant"><code class="docutils literal notranslate"><span class="pre">estimate_pairwise_lipschitz_constant()</span></code></a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.rom.projections.rst.txt">
+    <a href="../_sources/generated/romtools.rom.neural_network_surrogate.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
