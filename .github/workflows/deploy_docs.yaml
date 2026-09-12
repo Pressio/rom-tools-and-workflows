@@ -37,6 +37,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - uses: actions/setup-python@v4
         with:
           python-version: '3.12'
