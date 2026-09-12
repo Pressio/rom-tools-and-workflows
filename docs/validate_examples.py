@@ -77,7 +77,7 @@ def _execute_notebook(relative_path: str) -> None:
 
 def _run_eki_smoke_test() -> None:
     example = REPOSITORY_ROOT / "examples/eki_mf_eki_demo/example.py"
-    print("Running full EKI/MF-EKI documentation benchmark for figure regeneration", flush=True)
+    print("Running reduced EKI/MF-EKI documentation smoke test", flush=True)
 
     with tempfile.TemporaryDirectory(prefix="romtools-docs-eki-") as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -87,6 +87,7 @@ def _run_eki_smoke_test() -> None:
             [
                 sys.executable,
                 str(example),
+                "--smoke",
                 "--work-dir",
                 str(tmp_path / "work"),
                 "--output",
