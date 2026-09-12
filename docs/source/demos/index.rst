@@ -1,85 +1,63 @@
-ROM Tools and Workflows Demos
-=============================
+ROM Tools and Workflows: Examples and Demos
+===========================================
 
-The ROM tools and workflows Python library comprises a set of algorithms for
-constructing and exploiting ROMs. The library is designed internally in terms of
-Protocols and abstract base classes that encapsulate all the information needed
-to run a given algorithm. The philosophy is that, for any given application, the
-user simply needs to create a class that meets the required API of the abstract base class.
-Once this class is complete, the user gains access to all of our existing algorithms.
+``romtools`` provides reusable building blocks for projection-based reduced-order
+models, surrogate models, and model-based computational workflows. The examples
+are organized around those three concepts so that each capability can grow
+without turning this page into a flat catalog of notebooks.
 
+Projection-based ROM utilities
+------------------------------
 
+Construct and manipulate the ingredients of projection-based reduced-order
+models, including reduced vector spaces and basis construction.
 
-This site provides a suite of tutorials and demos on how to use the rom-tools-and-workflows package. We provide tutorials for
+:doc:`Explore projection-based ROM utilities <projection_rom_utilities>`
 
-* Basis construction
-* Parameter spaces
-* Workflows
+Surrogates
+----------
 
+Build data-driven approximations to model responses and quantities of interest.
+The current surrogate capability is based on Gaussian processes.
 
+:doc:`Explore surrogates <surrogates>`
 
-.. Important::
+Workflows
+---------
 
-    rom-tools-and-workflows is only responsible for the offline and workflow aspects of model reduction. It does not deal with the construction of ROMs.
+Organize and execute parameterized computational studies. Workflow concepts
+include models, parameter spaces, model execution, ROM construction and
+adaptation, uncertainty quantification, and inverse problems.
 
+:doc:`Explore workflows <workflow_concepts>`
 
+Getting started
+---------------
 
-.. toctree::
-    :maxdepth: 2
-
-    installation
-    documentation
-
-.. toctree::
-    :caption: Basic concept tutorials
-    :maxdepth: 1
-
-    basis_construction
-    vector_space
-    parameter_space
-
-.. toctree::
-    :caption: Example models
-    :maxdepth: 1
-
-    steady_cdr
-    h2_air_flame
+If you are new to ``romtools``, start with projection-based ROM utilities to
+learn the reduced-space abstractions, then continue to the workflow examples.
+If you already have an application that you want to run through ``romtools``,
+start with :doc:`Models <models>` and :doc:`Model execution <workflows>`.
 
 .. toctree::
-    :caption: Single model workflow tutorials
-    :maxdepth: 1
+   :hidden:
+   :maxdepth: 3
 
-    your_first_problem
-    models
-    workflows
-    holdout_sampling
-
-.. toctree::
-    :caption: ROM-FOM workflow tutorials
-    :maxdepth: 1
-
-    model_builders
-    greedy_training
+   projection_rom_utilities
+   surrogates
+   workflow_concepts
 
 .. toctree::
-    :caption: Inverse workflows
-    :maxdepth: 1
+   :caption: Getting started
+   :maxdepth: 1
 
-    eki_mf_eki_demo
-    h2_air_flame_eki_mf_eki_demo
-    vi_mf_vi_demo
-    h2_air_flame_vi_mf_vi_demo
+   installation
+   documentation
 
 .. toctree::
-    :caption: Uncertainty quantification
-    :maxdepth: 1
+   :caption: Project
+   :maxdepth: 1
 
-    uq_cdr_demo
-
-.. toctree::
-    :caption: Miscellanea
-    :maxdepth: 1
-
-    GitHub Repo <https://github.com/Pressio/rom-tools-and-workflows>
-    Open an issue/feature req. <https://github.com/Pressio/rom-tools-and-workflows/issues>
-    license
+   GitHub Repo <https://github.com/Pressio/rom-tools-and-workflows>
+   Open an issue/feature req. <https://github.com/Pressio/rom-tools-and-workflows/issues>
+   license
