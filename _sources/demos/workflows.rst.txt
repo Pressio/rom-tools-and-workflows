@@ -1,13 +1,15 @@
-Single model workflows
-=======================
+Model execution
+===============
 
-This set of tutorials will show you how to use romtools to execute outerloop
-workflows.
+Model-execution workflows coordinate evaluations of a ``romtools`` model over
+sets of parameter samples, including external and parallel applications.
+
+Examples
+--------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
 
+   your_first_problem
    notebooks/basic_sampling.ipynb
-
-
+   holdout_sampling

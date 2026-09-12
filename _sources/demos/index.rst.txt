@@ -1,85 +1,99 @@
-ROM Tools and Workflows Demos
-=============================
+ROM Tools and Workflows: Examples and Demos
+===========================================
 
-The ROM tools and workflows Python library comprises a set of algorithms for
-constructing and exploiting ROMs. The library is designed internally in terms of
-Protocols and abstract base classes that encapsulate all the information needed
-to run a given algorithm. The philosophy is that, for any given application, the
-user simply needs to create a class that meets the required API of the abstract base class.
-Once this class is complete, the user gains access to all of our existing algorithms.
+.. raw:: html
 
+   <div class="demos-landing">
+     <section class="demos-hero-panel">
+       <div class="demos-hero-eyebrow">Examples and demos</div>
+       <h2 class="demos-hero-heading">romtools examples organized by capability.</h2>
+       <p class="demos-hero-copy">
+         The examples are grouped around three areas: projection-based ROM utilities,
+         surrogate models, and computational workflows.
+       </p>
+     </section>
 
+     <section class="demos-area-grid" aria-label="Main romtools areas">
+       <a class="demos-area-card demos-area-rom" href="projection_rom_utilities.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">01</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Projection-based ROM utilities</h2>
+         <p>Utilities for constructing reduced spaces and related offline ingredients for projection-based reduced-order models.</p>
+         <div class="demos-area-tags">
+           <span>Vector spaces</span>
+           <span>Basis construction</span>
+           <span>Hyper-reduction</span>
+         </div>
+       </a>
 
-This site provides a suite of tutorials and demos on how to use the rom-tools-and-workflows package. We provide tutorials for
+       <a class="demos-area-card demos-area-surrogates" href="surrogates.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">02</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Surrogates</h2>
+         <p>Data-driven approximations of model responses and quantities of interest.</p>
+         <div class="demos-area-tags">
+           <span>Gaussian processes</span>
+           <span>Regression</span>
+           <span>Workflow integration</span>
+         </div>
+       </a>
 
-* Basis construction
-* Parameter spaces
-* Workflows
+       <a class="demos-area-card demos-area-workflows" href="workflow_concepts.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">03</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Workflows</h2>
+         <p>Workflow abstractions for model execution, parameter studies, ROM construction, uncertainty quantification, and inverse problems.</p>
+         <div class="demos-area-tags">
+           <span>Models</span>
+           <span>UQ</span>
+           <span>Inverse problems</span>
+         </div>
+       </a>
+     </section>
 
-
-
-.. Important::
-
-    rom-tools-and-workflows is only responsible for the offline and workflow aspects of model reduction. It does not deal with the construction of ROMs.
-
-
+     <section class="demos-start-panel">
+       <div class="demos-start-copy">
+         <div class="demos-start-eyebrow">Suggested starting points</div>
+         <h2>Choose an entry point based on the task of interest.</h2>
+       </div>
+       <div class="demos-start-links">
+         <a href="projection_rom_utilities.html">
+           <strong>Reduced-space construction</strong>
+           <span>Projection-based ROM utilities →</span>
+         </a>
+         <a href="models.html">
+           <strong>Model-based workflows</strong>
+           <span>Model interfaces and execution →</span>
+         </a>
+       </div>
+     </section>
+   </div>
 
 .. toctree::
-    :maxdepth: 2
+   :hidden:
+   :maxdepth: 3
 
-    installation
-    documentation
-
-.. toctree::
-    :caption: Basic concept tutorials
-    :maxdepth: 1
-
-    basis_construction
-    vector_space
-    parameter_space
+   projection_rom_utilities
+   surrogates
+   workflow_concepts
 
 .. toctree::
-    :caption: Example models
-    :maxdepth: 1
+   :caption: Getting started
+   :maxdepth: 1
 
-    steady_cdr
-    h2_air_flame
-
-.. toctree::
-    :caption: Single model workflow tutorials
-    :maxdepth: 1
-
-    your_first_problem
-    models
-    workflows
-    holdout_sampling
+   installation
+   documentation
 
 .. toctree::
-    :caption: ROM-FOM workflow tutorials
-    :maxdepth: 1
+   :caption: Project
+   :maxdepth: 1
 
-    model_builders
-    greedy_training
-
-.. toctree::
-    :caption: Inverse workflows
-    :maxdepth: 1
-
-    eki_mf_eki_demo
-    h2_air_flame_eki_mf_eki_demo
-    vi_mf_vi_demo
-    h2_air_flame_vi_mf_vi_demo
-
-.. toctree::
-    :caption: Uncertainty quantification
-    :maxdepth: 1
-
-    uq_cdr_demo
-
-.. toctree::
-    :caption: Miscellanea
-    :maxdepth: 1
-
-    GitHub Repo <https://github.com/Pressio/rom-tools-and-workflows>
-    Open an issue/feature req. <https://github.com/Pressio/rom-tools-and-workflows/issues>
-    license
+   GitHub Repo <https://github.com/Pressio/rom-tools-and-workflows>
+   Open an issue/feature req. <https://github.com/Pressio/rom-tools-and-workflows/issues>
+   license

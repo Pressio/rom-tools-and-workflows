@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>vector_space &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Vector spaces &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -36,7 +36,8 @@
     <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=58ecf915" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
@@ -59,7 +60,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Dictionary vector space tutorial" href="notebooks/dictionary_vector_space.html" />
-    <link rel="prev" title="POD vector space tutorial" href="notebooks/pod_vector_space.html" />
+    <link rel="prev" title="Projection-based ROM utilities" href="projection_rom_utilities.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -160,7 +161,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
-    ROM Tools and Workflows Demos
+    ROM Tools and Workflows: Examples and Demos
   </a>
 </li>
 
@@ -274,7 +275,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
-    ROM Tools and Workflows Demos
+    ROM Tools and Workflows: Examples and Demos
   </a>
 </li>
 
@@ -327,50 +328,28 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">Vector spaces</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/dictionary_vector_space.html">Dictionary vector space tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/pod_vector_space.html">POD vector space tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html">Streaming POD vector space tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/orthogonalized_vector_space.html">Orthogonalized vector space tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/composite_vector_space.html">Composite vector space tutorial</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="basis_construction.html">Basis construction</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_concepts.html">Workflows</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Basic concept tutorials</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="basis_construction.html">Construct your first basis!</a></li>
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">vector_space</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/dictionary_vector_space.html">Dictionary vector space tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/pod_vector_space.html">POD vector space tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html">Streaming POD vector space tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/orthogonalized_vector_space.html">Orthogonalized vector space tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/composite_vector_space.html">Composite vector space tutorial</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1"><a class="reference internal" href="parameter_space.html">parameter_space</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Example models</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="steady_cdr.html">Steady convection-diffusion-reaction model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="h2_air_flame.html">H2-air flame model</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Single model workflow tutorials</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="your_first_problem.html">Run your first problem!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html">Single model workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="holdout_sampling.html">workflows</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM-FOM workflow tutorials</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="model_builders.html">model_builders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="greedy_training.html">Greedy Training</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse workflows</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="eki_mf_eki_demo.html">EKI and MF-EKI Demo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vi_mf_vi_demo.html">VI and MF-VI Demo</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty quantification</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="uq_cdr_demo.html">Monte Carlo UQ for Convection-Diffusion-Reaction</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Miscellanea</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Project</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
@@ -378,6 +357,17 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -416,9 +406,12 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="index.html" class="nav-link">ROM Tools and Workflows Demos</a></li>
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">ROM Tools and Workflows: Examples and Demos</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">vector_space</span></li>
+    
+    <li class="breadcrumb-item"><a href="projection_rom_utilities.html" class="nav-link">Projection-based ROM utilities</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Vector spaces</span></li>
   </ul>
 </nav>
 </div>
@@ -435,27 +428,23 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="vector-space">
-<h1>vector_space<a class="headerlink" href="#vector-space" title="Link to this heading">#</a></h1>
-<p>This set of tutorials will show you the basics of constructing a vector space.
-In practice, a vector space comprises a basis and, potentially, an affine offset.</p>
+  <section id="vector-spaces">
+<h1>Vector spaces<a class="headerlink" href="#vector-spaces" title="Link to this heading">#</a></h1>
+<p>A projection-based ROM vector space comprises a reduced basis and, potentially,
+an affine offset. <code class="docutils literal notranslate"><span class="pre">romtools</span></code> provides several vector-space constructions for
+different data layouts and basis-generation strategies.</p>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/dictionary_vector_space.html">Dictionary vector space tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/pod_vector_space.html">POD vector space tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html">Streaming POD vector space tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html#the-math-behind-streaming-pod">The math behind streaming POD</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html#loading-data-through-a-snapshot-loader">Loading data through a <code class="docutils literal notranslate"><span class="pre">snapshot_loader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html#case-1-streaming-pod-with-no-scaling-and-no-orthogonalizer">Case 1: streaming POD with no scaling and no orthogonalizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html#case-2-streaming-pod-with-shifting-scaling-and-orthogonalization">Case 2: streaming POD with shifting, scaling, and orthogonalization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html#summary">Summary</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/streaming_pod_vector_space.html">Streaming POD vector space tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/orthogonalized_vector_space.html">Orthogonalized vector space tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/composite_vector_space.html">Composite vector space tutorial</a></li>
 </ul>
 </div>
+</section>
 </section>
 
 
@@ -469,12 +458,12 @@ In practice, a vector space comprises a basis and, potentially, an affine offset
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="notebooks/pod_vector_space.html"
+       href="projection_rom_utilities.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">POD vector space tutorial</p>
+        <p class="prev-next-title">Projection-based ROM utilities</p>
       </div>
     </a>
     <a class="right-next"
@@ -496,6 +485,18 @@ In practice, a vector space comprises a basis and, potentially, an affine offset
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

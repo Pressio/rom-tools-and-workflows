@@ -36,7 +36,8 @@
     <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=58ecf915" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
@@ -58,7 +59,7 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="model_builders" href="model_builders.html" />
+    <link rel="next" title="ROM construction and adaptation" href="rom_construction.html" />
     <link rel="prev" title="Basic sampling tutorial" href="notebooks/basic_sampling.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -160,7 +161,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
-    ROM Tools and Workflows Demos
+    ROM Tools and Workflows: Examples and Demos
   </a>
 </li>
 
@@ -274,7 +275,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
-    ROM Tools and Workflows Demos
+    ROM Tools and Workflows: Examples and Demos
   </a>
 </li>
 
@@ -327,46 +328,30 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="workflows.html">Model execution</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="your_first_problem.html">Run your first problem!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/basic_sampling.html">Basic sampling tutorial</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">workflows</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Basic concept tutorials</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="basis_construction.html">Construct your first basis!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vector_space.html">vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameter_space.html">parameter_space</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Example models</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="steady_cdr.html">Steady convection-diffusion-reaction model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="h2_air_flame.html">H2-air flame model</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Single model workflow tutorials</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="your_first_problem.html">Run your first problem!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html">Single model workflows</a></li>
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/basic_sampling.html">Basic sampling tutorial</a></li>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inverse_problems.html">Inverse problems</a></li>
 </ul>
 </details></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM-FOM workflow tutorials</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="model_builders.html">model_builders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="greedy_training.html">Greedy Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse workflows</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="eki_mf_eki_demo.html">EKI and MF-EKI Demo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vi_mf_vi_demo.html">VI and MF-VI Demo</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty quantification</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="uq_cdr_demo.html">Monte Carlo UQ for Convection-Diffusion-Reaction</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Miscellanea</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Project</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
@@ -412,7 +397,13 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="index.html" class="nav-link">ROM Tools and Workflows Demos</a></li>
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">ROM Tools and Workflows: Examples and Demos</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="workflow_concepts.html" class="nav-link">Workflows</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="workflows.html" class="nav-link">Model execution</a></li>
     
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">workflows</span></li>
   </ul>
@@ -462,11 +453,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="model_builders.html"
+       href="rom_construction.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">model_builders</p>
+        <p class="prev-next-title">ROM construction and adaptation</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
