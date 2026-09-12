@@ -155,7 +155,6 @@ Core flame solver:
 .. literalinclude:: ../../../examples/models/h2_air_flame.py
    :language: python
    :linenos:
-   :lines: 8-
 
 romtools QoI wrapper:
 
