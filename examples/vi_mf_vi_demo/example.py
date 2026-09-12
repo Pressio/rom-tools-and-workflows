@@ -132,8 +132,11 @@ def main(
     model.run_model(str(truth_dir), truth_parameters)
     observations = model.compute_qoi(str(truth_dir), truth_parameters)
 
+    # Deliberately choose admissible bounds whose midpoint is not the truth.
+    # This avoids giving the inference problem an artificially favorable
+    # initialization through the Gaussian prior mean.
     parameter_mins = np.array([0.01, 0.1])
-    parameter_maxes = np.array([0.08, 0.6])
+    parameter_maxes = np.array([0.10, 0.8])
     prior = GaussianParameterSpace(
         ["nu", "sigma"],
         (parameter_mins + parameter_maxes) / 2.0,
@@ -148,11 +151,14 @@ def main(
         newton_hessian_averaging_factor=0.5,
     )
     line_search = VIStochasticNonmonotoneLineSearchConfig()
+    observation_noise_std = 5.0e-3
     common_arguments = {
         "model": model,
         "prior_parameter_space": prior,
         "observations": observations,
-        "observations_covariance": np.eye(observations.size) * 1.0e-5,
+        "observations_covariance": (
+            np.eye(observations.size) * observation_noise_std**2
+        ),
         "parameter_mins": parameter_mins,
         "parameter_maxes": parameter_maxes,
         "optimizer_method": "newton",
