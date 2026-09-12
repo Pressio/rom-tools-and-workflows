@@ -82,3 +82,67 @@ network for all retained POD coefficients.
 
 For a scalar QoI, no POD reduction is performed and the network predicts the
 QoI directly.
+
+Lipschitz-constrained networks
+------------------------------
+
+A hard Lipschitz constraint can optionally be applied using spectral
+normalization. For a network with ``L`` linear layers, each linear operator is
+spectrally normalized and then multiplied by a layer constant ``K_l``. With a
+1-Lipschitz activation, the resulting network satisfies the approximate bound
+
+.. math::
+
+   \operatorname{Lip}(f) \lesssim \prod_{l=1}^{L} K_l.
+
+The approximation reflects the finite power iteration used by PyTorch spectral
+normalization. By default, the global constant ``K`` is distributed uniformly
+across the linear layers,
+
+.. math::
+
+   K_l = K^{1/L}.
+
+If ``lipschitz_constant`` is not supplied, romtools estimates a data-based
+constant from the maximum pairwise slope
+
+.. math::
+
+   K_{\mathrm{data}}
+   = \max_{i<j}
+   \frac{\|z_i-z_j\|_2}{\|x_i-x_j\|_2},
+
+and uses ``K = safety_factor * K_data``. The estimate is computed in the exact
+coordinates learned by the network: after parameter normalization and, for
+vector QoIs, after POD projection and optional target normalization.
+
+.. code-block:: python
+
+   from romtools.rom import LipschitzConfig
+
+   lipschitz_config = LipschitzConfig(
+       enabled=True,
+       lipschitz_constant=None,       # estimate from the training data
+       safety_factor=1.1,
+       spectral_norm_power_iterations=5,
+   )
+
+   builder = NeuralNetworkQoiModelBuilderWithTrainingData(
+       parameter_names=["mu_1", "mu_2"],
+       network_config=NeuralNetworkConfig(activation="tanh"),
+       lipschitz_config=lipschitz_config,
+       normalize_parameters=True,
+       normalize_targets=True,
+   )
+
+An explicit global constant can be supplied with ``lipschitz_constant``.
+Advanced users may also provide ``layer_lipschitz_constants`` directly; there
+must be one value for each linear layer and their product cannot exceed the
+global constant.
+
+The hard-constraint mode currently accepts ``tanh`` and ReLU activations,
+which are 1-Lipschitz. GELU and SiLU are intentionally rejected because the
+linear-layer spectral constraints alone would not imply the requested global
+bound. Coincident training parameter samples with different transformed
+targets are also rejected because they imply no finite data-based Lipschitz
+constant.
