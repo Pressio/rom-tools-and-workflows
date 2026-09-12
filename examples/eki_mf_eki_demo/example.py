@@ -137,6 +137,24 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
     max_rom_training_history = 2 if smoke else 3
     nn_training_iterations = 100 if smoke else 5000
 
+    # Use the same EKI controls for every curve so differences are due to the
+    # surrogate strategy rather than hidden workflow defaults.
+    eki_solver_args = {
+        "initial_step_size": 0.05,
+        "regularization_parameter": 1.0e-4,
+        "step_size_growth_factor": 1.25,
+        "step_size_decay_factor": 2.0,
+        "max_step_size_decrease_trys": 5,
+        "relaxation_parameter": 1.05,
+        "error_norm_tolerance": 1.0e-5,
+        "delta_params_tolerance": 1.0e-6,
+        "random_seed": 1,
+    }
+    mf_eki_solver_args = {
+        **eki_solver_args,
+        "use_updated_rom_in_update_on_rebuild": False,
+    }
+
     system = cdr.AdvectionDiffusionSystem(Nx=grid_size, Ny=grid_size)
     b_vec = np.array([1.0, 1.0])
 
@@ -187,6 +205,7 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         ensemble_size=fom_ensemble_size,
         max_iterations=max_iterations,
         evaluation_concurrency=1,
+        **eki_solver_args,
     )
 
     run_mf_eki(
@@ -206,6 +225,7 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         max_rom_training_history=max_rom_training_history,
+        **mf_eki_solver_args,
     )
 
     mf_eki_with_auto_rom(
@@ -229,6 +249,7 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
             "normalize_targets": True,
         },
         max_rom_training_history=max_rom_training_history,
+        **mf_eki_solver_args,
     )
 
     run_mf_eki(
@@ -244,12 +265,11 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         fom_ensemble_size=fom_ensemble_size,
         rom_extra_ensemble_size=rom_extra_ensemble_size,
         rom_tolerance=0.001,
-        use_updated_rom_in_update_on_rebuild=False,
-        initial_step_size=0.05,
         max_iterations=max_iterations,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         max_rom_training_history=max_rom_training_history,
+        **mf_eki_solver_args,
     )
 
     eki_history = _collect_error_history(eki_dir, mf=False)
