@@ -9,3 +9,4 @@ utilities because they do not require a reduced basis or projection.
    :maxdepth: 2
 
    gaussian_processes
+   neural_network_surrogate
