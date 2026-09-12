@@ -245,6 +245,7 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         rom_extra_ensemble_size=rom_extra_ensemble_size,
         rom_tolerance=0.001,
         use_updated_rom_in_update_on_rebuild=False,
+        initial_step_size=0.05,
         max_iterations=max_iterations,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
