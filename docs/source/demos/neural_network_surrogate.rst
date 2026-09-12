@@ -58,6 +58,42 @@ optimizer, learning rate, number of training iterations, weight decay, random
 seed, floating-point dtype, and torch device are also configurable through
 ``NeuralNetworkConfig``.
 
+MF-EKI auto-ROM interface
+-------------------------
+
+The MF-EKI convenience driver can construct the neural surrogate directly with
+``rom_type="nn"``. Neural-network and Lipschitz configuration objects are
+passed through ``rom_args`` together with the POD and normalization controls.
+This is the same public auto-ROM interface used by the Gaussian-process
+surrogate.
+
+.. code-block:: python
+
+   from romtools.rom import LipschitzConfig, NeuralNetworkConfig
+   from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom
+
+   mf_eki_with_auto_rom(
+       model=fom_model,
+       parameter_space=parameter_space,
+       observations=observations,
+       observations_covariance=observations_covariance,
+       rom_type="nn",
+       rom_args={
+           "network_config": NeuralNetworkConfig(
+               training_iterations=5000,
+           ),
+           "lipschitz_config": LipschitzConfig(
+               enabled=True,
+               safety_factor=1.1,
+           ),
+           "normalize_parameters": True,
+           "normalize_targets": True,
+       },
+   )
+
+``"neural_network"`` and ``"neural-network"`` are accepted aliases, while
+``"nn"`` is the canonical short form used in the examples.
+
 POD for vector QoIs
 -------------------
 
