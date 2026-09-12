@@ -1,6 +1,7 @@
 name: deploy-docs
 
-# Build documentation for pull requests and deploy it after commits land on develop.
+# Validate documentation examples for pull requests and deploy rendered docs
+# after commits land on develop.
 on:
   push:
     branches:
@@ -14,8 +15,24 @@ permissions:
   contents: read
 
 jobs:
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: python -m pip install --upgrade pip
+      - run: pip install .[docs]
+      - name: Validate documentation examples
+        run: python docs/validate_examples.py
+
   # Build the documentation and upload the static HTML files as an artifact.
+  # Sphinx itself never executes notebooks; execution is handled explicitly by
+  # the validation job above.
   build:
+    needs: validate-examples
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,24 +1,45 @@
 EKI and MF-EKI Demo
 ===================
 
-This demo showcases single-fidelity EKI and multi-fidelity EKI on a
-convection-diffusion-reaction (CDR) model with two inferred parameters.
-It mirrors the UQ-style workflow used elsewhere in the demos and keeps the
-physics lightweight enough to run quickly.
+This demo compares single-fidelity EKI with two multifidelity variants on a
+convection-diffusion-reaction (CDR) model with two inferred parameters:
+
+* EKI using only the full-order model (FOM),
+* MF-EKI using a tailored projection-based ROM, and
+* MF-EKI using automatic on-the-fly Gaussian-process ROM construction.
 
 The forward model solves a steady 2D CDR equation on a structured grid, and the
-QoI is the right-boundary flux functional used in the existing UQ examples. EKI
-estimates the diffusion coefficient `nu` and reaction rate `sigma` from a
-synthetic observation. MF‑EKI augments each iteration with ROM evaluations built
-from FOM snapshots, illustrating how multi-fidelity updates reduce error at
-lower cost.
+QoI is the right-boundary flux functional used in the existing UQ examples.
+The example estimates the diffusion coefficient ``nu`` and reaction rate
+``sigma`` from a synthetic observation.
 
 Run the demo
 ------------
 
+The canonical implementation lives under ``examples/`` and is validated against
+the current romtools checkout in CI.
+
 .. code-block:: bash
 
-   python docs/source/demos/notebooks/eki_mf_eki_demo.py
+   python examples/eki_mf_eki_demo/example.py
+
+A reduced configuration is available for quick validation:
+
+.. code-block:: bash
+
+   python examples/eki_mf_eki_demo/example.py --smoke
+
+Regenerate the published figure
+-------------------------------
+
+The documentation build does not execute this scientific demo implicitly.
+Regenerate the checked-in figure explicitly after changes that affect the
+benchmark:
+
+.. code-block:: bash
+
+   python examples/eki_mf_eki_demo/example.py \
+       --output docs/source/demos/notebooks/eki_mf_eki_demo.png
 
 Results
 -------
@@ -28,11 +49,13 @@ Results
    :align: center
    :width: 90%
 
-   Mean observation error across iterations for EKI and MF-EKI.
+   Mean observation error across iterations for single-fidelity EKI,
+   multifidelity EKI with a tailored ROM, and multifidelity EKI with automatic
+   Gaussian-process ROM construction.
 
 Implementation
 --------------
 
-.. literalinclude:: notebooks/eki_mf_eki_demo.py
+.. literalinclude:: ../../../examples/eki_mf_eki_demo/example.py
    :language: python
    :linenos:

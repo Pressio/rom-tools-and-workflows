@@ -34,6 +34,10 @@ docs = [
     'sphinx-design',
     'myst-nb>=0.18',
     'jupyter-sphinx',
+    'nbclient',
+    'nbformat',
+    'ipykernel',
+    'ipynb',
 ]
 test = [
     'pytest==7.4.4',
