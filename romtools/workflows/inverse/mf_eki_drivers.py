@@ -38,6 +38,7 @@ from romtools.rom.neural_network_surrogate import (
 )
 from romtools.workflows.inverse._inverse_utils import *
 from romtools.workflows.inverse.eki_drivers import (
+    _adaptive_rejuvenation_cooldown_active,
     _compute_ensemble_covariance,
     _compute_ensemble_spread,
     _compute_normalized_parameter_update_norm,
@@ -215,7 +216,8 @@ def _save_mf_eki_restart(
         rom_substep_end_iteration,
         num_rom_substeps,
         rejuvenation_reference_covariance,
-        rejuvenation_count):
+        rejuvenation_count,
+        last_rejuvenation_iteration):
     dispatcher.np_savez(
         restart_path,
         sample_one_rom_results=sample_one_rom_results,
@@ -239,6 +241,7 @@ def _save_mf_eki_restart(
         num_rom_substeps=num_rom_substeps,
         rejuvenation_reference_covariance=rejuvenation_reference_covariance,
         rejuvenation_count=rejuvenation_count,
+        last_rejuvenation_iteration=last_rejuvenation_iteration,
     )
 
 
@@ -414,6 +417,7 @@ def _run_mf_eki_rejuvenation(
         dps,
         normalized_dp_norm,
         rejuvenation_count,
+        iteration,
         rom_model,
         training_dirs,
         training_parameters,
@@ -449,6 +453,7 @@ def run_mf_eki(model: QoiModel,
                rejuvenation_inflation: float = 1.1,
                rejuvenation_prior_weight: float = 0.0025,
                max_rejuvenations: int = 3,
+               rejuvenation_cooldown: int = 10,
                max_rom_training_history: int = 1,
                rom_substep_start_iteration: int = 0,
                rom_substep_end_iteration: Optional[int] = None,
@@ -486,6 +491,7 @@ def run_mf_eki(model: QoiModel,
         rejuvenation_inflation,
         rejuvenation_prior_weight,
         max_rejuvenations,
+        rejuvenation_cooldown,
     )
     if parameter_mins is not None:
         assert np.size(parameter_mins) == parameter_space.get_dimensionality(), (
@@ -513,6 +519,7 @@ def run_mf_eki(model: QoiModel,
             parameter_samples
         )
         rejuvenation_count = 0
+        last_rejuvenation_iteration = -1
         parameter_sample_sets = [
             parameter_samples[:fom_ensemble_size].copy(),
             parameter_samples[fom_ensemble_size:].copy(),
@@ -665,6 +672,11 @@ def run_mf_eki(model: QoiModel,
             if 'rejuvenation_count' in restart_data
             else 0
         )
+        last_rejuvenation_iteration = (
+            int(restart_data['last_rejuvenation_iteration'])
+            if 'last_rejuvenation_iteration' in restart_data
+            else (iteration if rejuvenation_count > 0 else -1)
+        )
 
     dps = compute_mf_eki_update(
         parameter_sample_sets,
@@ -697,7 +709,9 @@ def run_mf_eki(model: QoiModel,
             error_norm_tolerance,
             rejuvenation_count,
             max_rejuvenations,
-            rejuvenation_interval):
+            rejuvenation_interval,
+            rejuvenation_cooldown,
+            last_rejuvenation_iteration):
         if rejuvenation_strategy != "adaptive":
             break
         (
@@ -709,6 +723,7 @@ def run_mf_eki(model: QoiModel,
             dps,
             normalized_dp_norm,
             rejuvenation_count,
+            last_rejuvenation_iteration,
             rom_model,
             training_dirs,
             training_parameters,
@@ -768,12 +783,23 @@ def run_mf_eki(model: QoiModel,
         num_rom_substeps,
         rejuvenation_reference_covariance,
         rejuvenation_count,
+        last_rejuvenation_iteration,
     )
 
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if normalized_dp_norm <= delta_params_tolerance:
+        if (
+                normalized_dp_norm <= delta_params_tolerance
+                and not _adaptive_rejuvenation_cooldown_active(
+                    rejuvenation_strategy,
+                    iteration,
+                    rejuvenation_count,
+                    max_rejuvenations,
+                    rejuvenation_cooldown,
+                    last_rejuvenation_iteration,
+                )
+        ):
             break
 
         test_parameter_sample_sets = copy.deepcopy(parameter_sample_sets)
@@ -979,7 +1005,9 @@ def run_mf_eki(model: QoiModel,
                     error_norm_tolerance,
                     rejuvenation_count,
                     max_rejuvenations,
-                    rejuvenation_interval):
+                    rejuvenation_interval,
+                    rejuvenation_cooldown,
+                    last_rejuvenation_iteration):
                 if rejuvenation_strategy == "periodic":
                     rejuvenations_this_iteration = 1
                 else:
@@ -1007,6 +1035,7 @@ def run_mf_eki(model: QoiModel,
                         dps,
                         normalized_dp_norm,
                         rejuvenation_count,
+                        last_rejuvenation_iteration,
                         rom_model,
                         training_dirs,
                         training_parameters,
@@ -1074,6 +1103,7 @@ def run_mf_eki(model: QoiModel,
                 num_rom_substeps,
                 rejuvenation_reference_covariance,
                 rejuvenation_count,
+                last_rejuvenation_iteration,
             )
             iteration += 1
         else:
@@ -1130,6 +1160,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          rejuvenation_inflation: float = 1.1,
                          rejuvenation_prior_weight: float = 0.0025,
                          max_rejuvenations: int = 3,
+                         rejuvenation_cooldown: int = 10,
                          max_rom_training_history: int = 1,
                          rom_substep_start_iteration: int = 0,
                          rom_substep_end_iteration: Optional[int] = None,
@@ -1209,6 +1240,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
         rejuvenation_inflation=rejuvenation_inflation,
         rejuvenation_prior_weight=rejuvenation_prior_weight,
         max_rejuvenations=max_rejuvenations,
+        rejuvenation_cooldown=rejuvenation_cooldown,
         max_rom_training_history=max_rom_training_history,
         rom_substep_start_iteration=rom_substep_start_iteration,
         rom_substep_end_iteration=rom_substep_end_iteration,

@@ -197,6 +197,11 @@ def test_normalized_delta_p_default_is_dimensionless_one_per_mille():
     assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)
 
 
+def test_adaptive_rejuvenation_default_cooldown_is_ten_iterations():
+    signature = inspect.signature(romtools.workflows.run_eki)
+    assert signature.parameters["rejuvenation_cooldown"].default == 10
+
+
 def test_rejuvenation_preserves_mean_without_bounds_and_is_reproducible():
     samples = np.array([
         [-1.0, -0.5],
@@ -275,6 +280,23 @@ def test_adaptive_rejuvenation_distinguishes_stagnation_from_convergence():
     )
 
 
+def test_adaptive_rejuvenation_cooldown_blocks_repeat_for_ten_iterations():
+    common = dict(
+        rejuvenation_strategy="adaptive",
+        normalized_dp_norm=1e-8,
+        error_norm=1e-2,
+        delta_params_tolerance=1e-6,
+        error_norm_tolerance=1e-5,
+        rejuvenation_count=1,
+        max_rejuvenations=3,
+        rejuvenation_interval=5,
+        rejuvenation_cooldown=10,
+        last_rejuvenation_iteration=10,
+    )
+    assert not eki_drivers._should_rejuvenate(iteration=19, **common)
+    assert eki_drivers._should_rejuvenate(iteration=20, **common)
+
+
 def test_periodic_rejuvenation_triggers_only_on_requested_interval():
     assert eki_drivers._should_rejuvenate(
         "periodic",
@@ -329,6 +351,7 @@ def test_adaptive_rejuvenation_is_restart_reproducible(tmp_path):
         rejuvenation_prior_weight=0.05**2,
         delta_params_tolerance=1e-12,
         error_norm_tolerance=1e-8,
+        rejuvenation_cooldown=0,
     )
 
     uninterrupted_dir = tmp_path / "uninterrupted"

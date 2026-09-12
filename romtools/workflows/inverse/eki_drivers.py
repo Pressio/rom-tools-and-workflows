@@ -62,7 +62,9 @@ collapses before the observation residual is small. ``run_eki`` can rejuvenate
 the ensemble by resampling around the current mean with an inflated covariance.
 Adaptive rejuvenation is triggered when the componentwise normalized RMS
 parameter update is below ``delta_params_tolerance`` while the residual remains
-above ``error_norm_tolerance``. Periodic rejuvenation is also available.
+above ``error_norm_tolerance``. Periodic rejuvenation is also available. Adaptive rejuvenation uses a cooldown
+window after each event so a newly expanded ensemble can evolve before another
+rejuvenation is permitted.
 
 The rejuvenation covariance is
 
@@ -134,7 +136,8 @@ def _validate_rejuvenation_settings(
         rejuvenation_interval,
         rejuvenation_inflation,
         rejuvenation_prior_weight,
-        max_rejuvenations):
+        max_rejuvenations,
+        rejuvenation_cooldown):
     if rejuvenation_strategy not in _REJUVENATION_STRATEGIES:
         raise ValueError(
             "rejuvenation_strategy must be one of "
@@ -148,6 +151,8 @@ def _validate_rejuvenation_settings(
         raise ValueError("rejuvenation_prior_weight must be nonnegative")
     if max_rejuvenations < 0:
         raise ValueError("max_rejuvenations must be nonnegative")
+    if rejuvenation_cooldown < 0:
+        raise ValueError("rejuvenation_cooldown must be nonnegative")
 
 
 def _compute_ensemble_covariance(parameter_samples):
@@ -309,6 +314,22 @@ def _rejuvenate_parameter_samples(
     )
 
 
+def _adaptive_rejuvenation_cooldown_active(
+        rejuvenation_strategy,
+        iteration,
+        rejuvenation_count,
+        max_rejuvenations,
+        rejuvenation_cooldown,
+        last_rejuvenation_iteration):
+    """Return whether an adaptive rejuvenation is still in its cooldown."""
+    return (
+        rejuvenation_strategy == "adaptive"
+        and rejuvenation_count > 0
+        and rejuvenation_count < max_rejuvenations
+        and iteration - last_rejuvenation_iteration < rejuvenation_cooldown
+    )
+
+
 def _should_rejuvenate(
         rejuvenation_strategy,
         iteration,
@@ -318,10 +339,20 @@ def _should_rejuvenate(
         error_norm_tolerance,
         rejuvenation_count,
         max_rejuvenations,
-        rejuvenation_interval):
+        rejuvenation_interval,
+        rejuvenation_cooldown=10,
+        last_rejuvenation_iteration=-1):
     if rejuvenation_strategy == "none" or rejuvenation_count >= max_rejuvenations:
         return False
     if error_norm <= error_norm_tolerance:
+        return False
+    if _adaptive_rejuvenation_cooldown_active(
+            rejuvenation_strategy,
+            iteration,
+            rejuvenation_count,
+            max_rejuvenations,
+            rejuvenation_cooldown,
+            last_rejuvenation_iteration):
         return False
     if rejuvenation_strategy == "adaptive":
         return normalized_dp_norm <= delta_params_tolerance
@@ -405,6 +436,7 @@ def _run_eki_rejuvenation(
         dp,
         normalized_dp_norm,
         rejuvenation_count,
+        iteration,
     )
 
 
@@ -418,7 +450,8 @@ def _save_eki_restart(
         iteration,
         step_size,
         rejuvenation_reference_covariance,
-        rejuvenation_count):
+        rejuvenation_count,
+        last_rejuvenation_iteration):
     dispatcher.np_savez(
         restart_path,
         qois=qois,
@@ -429,6 +462,7 @@ def _save_eki_restart(
         step_size=step_size,
         rejuvenation_reference_covariance=rejuvenation_reference_covariance,
         rejuvenation_count=rejuvenation_count,
+        last_rejuvenation_iteration=last_rejuvenation_iteration,
     )
 
 
@@ -453,6 +487,7 @@ def run_eki(model: QoiModel,
             rejuvenation_inflation: float = 1.1,
             rejuvenation_prior_weight: float = 0.0025,
             max_rejuvenations: int = 3,
+            rejuvenation_cooldown: int = 10,
             max_iterations: int = 50,
             random_seed: int = 1,
             evaluation_concurrency=1,
@@ -513,6 +548,10 @@ def run_eki(model: QoiModel,
             relative to a nonzero current parameter mean when the empirical
             covariance has collapsed.
         max_rejuvenations: Maximum number of rejuvenation events.
+        rejuvenation_cooldown: Minimum number of accepted iterations after an
+            adaptive rejuvenation before another adaptive rejuvenation may
+            occur. The default is 10. Small parameter updates during this
+            cooldown do not terminate the solve.
         max_iterations: Maximum number of EKI iterations.
         random_seed: RNG seed used for the initial ensemble draw and as the
             base for deterministic rejuvenation-event seeds.
@@ -544,6 +583,7 @@ def run_eki(model: QoiModel,
         rejuvenation_inflation,
         rejuvenation_prior_weight,
         max_rejuvenations,
+        rejuvenation_cooldown,
     )
     if parameter_mins is not None:
         assert np.size(parameter_mins) == parameter_space.get_dimensionality(), (
@@ -571,6 +611,7 @@ def run_eki(model: QoiModel,
             parameter_samples
         )
         rejuvenation_count = 0
+        last_rejuvenation_iteration = -1
         parameter_names = parameter_space.get_names()
         run_directory_base = f'{absolute_eki_directory}/iteration_0/run_'
         results = run_eki_iteration(
@@ -610,6 +651,11 @@ def run_eki(model: QoiModel,
             if 'rejuvenation_count' in restart_data
             else 0
         )
+        last_rejuvenation_iteration = (
+            int(restart_data['last_rejuvenation_iteration'])
+            if 'last_rejuvenation_iteration' in restart_data
+            else (iteration if rejuvenation_count > 0 else -1)
+        )
 
     dp = compute_eki_update(
         parameter_samples,
@@ -643,7 +689,9 @@ def run_eki(model: QoiModel,
             error_norm_tolerance,
             rejuvenation_count,
             max_rejuvenations,
-            rejuvenation_interval):
+            rejuvenation_interval,
+            rejuvenation_cooldown,
+            last_rejuvenation_iteration):
         if rejuvenation_strategy != "adaptive":
             break
         (
@@ -655,6 +703,7 @@ def run_eki(model: QoiModel,
             dp,
             normalized_dp_norm,
             rejuvenation_count,
+            last_rejuvenation_iteration,
         ) = _run_eki_rejuvenation(
             model,
             observations,
@@ -686,12 +735,23 @@ def run_eki(model: QoiModel,
         step_size,
         rejuvenation_reference_covariance,
         rejuvenation_count,
+        last_rejuvenation_iteration,
     )
 
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if normalized_dp_norm <= delta_params_tolerance:
+        if (
+                normalized_dp_norm <= delta_params_tolerance
+                and not _adaptive_rejuvenation_cooldown_active(
+                    rejuvenation_strategy,
+                    iteration,
+                    rejuvenation_count,
+                    max_rejuvenations,
+                    rejuvenation_cooldown,
+                    last_rejuvenation_iteration,
+                )
+        ):
             break
 
         test_parameter_samples = parameter_samples + step_size * dp
@@ -749,7 +809,9 @@ def run_eki(model: QoiModel,
                     error_norm_tolerance,
                     rejuvenation_count,
                     max_rejuvenations,
-                    rejuvenation_interval):
+                    rejuvenation_interval,
+                    rejuvenation_cooldown,
+                    last_rejuvenation_iteration):
                 if rejuvenation_strategy == "periodic":
                     (
                         parameter_samples,
@@ -760,6 +822,7 @@ def run_eki(model: QoiModel,
                         dp,
                         normalized_dp_norm,
                         rejuvenation_count,
+                        last_rejuvenation_iteration,
                     ) = _run_eki_rejuvenation(
                         model,
                         observations,
@@ -789,7 +852,9 @@ def run_eki(model: QoiModel,
                             error_norm_tolerance,
                             rejuvenation_count,
                             max_rejuvenations,
-                            rejuvenation_interval):
+                            rejuvenation_interval,
+                            rejuvenation_cooldown,
+                            last_rejuvenation_iteration):
                         (
                             parameter_samples,
                             qois,
@@ -799,6 +864,7 @@ def run_eki(model: QoiModel,
                             dp,
                             normalized_dp_norm,
                             rejuvenation_count,
+                            last_rejuvenation_iteration,
                         ) = _run_eki_rejuvenation(
                             model,
                             observations,
@@ -837,6 +903,7 @@ def run_eki(model: QoiModel,
                 step_size,
                 rejuvenation_reference_covariance,
                 rejuvenation_count,
+                last_rejuvenation_iteration,
             )
             iteration += 1
         else:

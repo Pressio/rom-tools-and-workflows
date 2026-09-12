@@ -77,6 +77,11 @@ def test_mf_eki_rejuvenation_defaults_to_five_percent_reference_std():
     assert beta == pytest.approx(0.05**2)
 
 
+def test_mf_eki_adaptive_rejuvenation_default_cooldown_is_ten_iterations():
+    signature = inspect.signature(mf_eki_drivers.run_mf_eki)
+    assert signature.parameters["rejuvenation_cooldown"].default == 10
+
+
 @pytest.mark.mpi_skip
 def test_mf_eki_rejuvenation_rechecks_rom_and_rebuilds_when_needed(tmp_path):
     builder = RefreshingRomBuilder()
@@ -106,6 +111,7 @@ def test_mf_eki_rejuvenation_rechecks_rom_and_rebuilds_when_needed(tmp_path):
 
     restart = np.load(tmp_path / "iteration_0" / "restart.npz", allow_pickle=True)
     assert int(restart["rejuvenation_count"]) == 1
+    assert int(restart["last_rejuvenation_iteration"]) == 0
     assert "rejuvenation_reference_covariance" in restart
 
 
