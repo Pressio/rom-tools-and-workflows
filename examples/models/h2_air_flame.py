@@ -1,9 +1,8 @@
 """Pure-Python two-dimensional premixed H2-air flame model.
 
-The implementation is adapted from the four-parameter Zhar CDR benchmark used
-in the MFVI paper. It solves a transient advection-diffusion-reaction system
-for H2, O2, H2O mass fractions and a nondimensional temperature using
-Crank-Nicolson time integration and Newton iterations.
+Solves a transient advection-diffusion-reaction system for H2, O2, H2O mass
+fractions and a nondimensional temperature using Crank-Nicolson time
+integration and Newton iterations.
 """
 
 from typing import Tuple
