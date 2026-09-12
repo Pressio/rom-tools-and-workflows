@@ -6,10 +6,10 @@ ROM Tools and Workflows: Examples and Demos
    <div class="demos-landing">
      <section class="demos-hero-panel">
        <div class="demos-hero-eyebrow">Examples and demos</div>
-       <h2 class="demos-hero-heading">Explore romtools by capability.</h2>
+       <h2 class="demos-hero-heading">romtools examples organized by capability.</h2>
        <p class="demos-hero-copy">
-         Start with the kind of problem you want to solve: construct reduced spaces,
-         build data-driven surrogates, or orchestrate complete computational workflows.
+         The examples are grouped around three areas: projection-based ROM utilities,
+         surrogate models, and computational workflows.
        </p>
      </section>
 
@@ -20,7 +20,7 @@ ROM Tools and Workflows: Examples and Demos
            <span class="demos-area-arrow" aria-hidden="true">↗</span>
          </div>
          <h2>Projection-based ROM utilities</h2>
-         <p>Construct the reduced spaces and offline ingredients used by projection-based ROMs.</p>
+         <p>Utilities for constructing reduced spaces and related offline ingredients for projection-based reduced-order models.</p>
          <div class="demos-area-tags">
            <span>Vector spaces</span>
            <span>Basis construction</span>
@@ -34,7 +34,7 @@ ROM Tools and Workflows: Examples and Demos
            <span class="demos-area-arrow" aria-hidden="true">↗</span>
          </div>
          <h2>Surrogates</h2>
-         <p>Build data-driven approximations to model responses and quantities of interest.</p>
+         <p>Data-driven approximations of model responses and quantities of interest.</p>
          <div class="demos-area-tags">
            <span>Gaussian processes</span>
            <span>Regression</span>
@@ -48,7 +48,7 @@ ROM Tools and Workflows: Examples and Demos
            <span class="demos-area-arrow" aria-hidden="true">↗</span>
          </div>
          <h2>Workflows</h2>
-         <p>Coordinate models, parameter studies, ROM construction, UQ, and inverse problems.</p>
+         <p>Workflow abstractions for model execution, parameter studies, ROM construction, uncertainty quantification, and inverse problems.</p>
          <div class="demos-area-tags">
            <span>Models</span>
            <span>UQ</span>
@@ -59,17 +59,17 @@ ROM Tools and Workflows: Examples and Demos
 
      <section class="demos-start-panel">
        <div class="demos-start-copy">
-         <div class="demos-start-eyebrow">Not sure where to begin?</div>
-         <h2>Pick the path that matches what you already have.</h2>
+         <div class="demos-start-eyebrow">Suggested starting points</div>
+         <h2>Choose an entry point based on the task of interest.</h2>
        </div>
        <div class="demos-start-links">
          <a href="projection_rom_utilities.html">
-           <strong>I want to build a reduced basis</strong>
-           <span>Start with projection-based ROM utilities →</span>
+           <strong>Reduced-space construction</strong>
+           <span>Projection-based ROM utilities →</span>
          </a>
          <a href="models.html">
-           <strong>I already have a computational model</strong>
-           <span>Start with the model interface →</span>
+           <strong>Model-based workflows</strong>
+           <span>Model interfaces and execution →</span>
          </a>
        </div>
      </section>
