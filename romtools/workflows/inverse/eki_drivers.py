@@ -60,9 +60,9 @@ adding a scaled column of :math:`\Delta \Theta`.
 The routine uses a simple trust-region-like acceptance rule on top of the EKI
 update. A trial step is accepted only if the mean observation-space error norm
 decreases by at least the factor set by ``relaxation_parameter``. Accepted
-steps grow the step size by ``step_size_growth_factor``; rejected steps shrink
-it by ``step_size_decay_factor`` until either a step is accepted or the
-maximum number of retries is reached.
+steps grow the step size by ``step_size_growth_factor`` up to
+``max_step_size``; rejected steps shrink it by ``step_size_decay_factor``
+until either a step is accepted or the maximum number of retries is reached.
 
 .. rubric:: Practical Notes
 
@@ -112,7 +112,8 @@ def run_eki(model: QoiModel,
                  random_seed: int = 1,
                  evaluation_concurrency = 1,
                  restart_file = None,
-                 dispatcher: Optional[BaseDispatcher] = None):
+                 dispatcher: Optional[BaseDispatcher] = None,
+                 max_step_size: float = np.inf):
     """
     Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
 
@@ -140,6 +141,9 @@ def run_eki(model: QoiModel,
         ensemble_size: Number of ensemble members used in the EKI update.
         initial_step_size: Initial multiplier applied to the computed Kalman
             update directions.
+        max_step_size: Maximum step size allowed after accepted-step growth.
+            The default of ``np.inf`` preserves the legacy uncapped behavior;
+            set a finite value to limit step growth.
         regularization_parameter: Tikhonov regularization added to the QoI
             covariance solve for numerical stability.
         step_size_growth_factor: Factor used to increase the step size after
@@ -178,6 +182,8 @@ def run_eki(model: QoiModel,
     dispatcher.require_supported_concurrency(evaluation_concurrency)
     assert step_size_growth_factor > 1.0 , "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0 , "step_size_decay_factor must be greater than 1.0"
+    assert max_step_size > 0.0, "max_step_size must be positive"
+    assert initial_step_size <= max_step_size, "initial_step_size must not exceed max_step_size"
     if parameter_mins is not None:
       assert np.size(parameter_mins) == parameter_space.get_dimensionality(), f"parameter_mins of size {np.size(parameter_mins)} is inconsistent with the parameter_space of size {parameter_space.get_dimensionality()}"
     if parameter_maxes is not None:
@@ -206,7 +212,7 @@ def run_eki(model: QoiModel,
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
         iteration = restart_file['iteration']
-        step_size = restart_file['step_size']
+        step_size = min(float(restart_file['step_size']), max_step_size)
         parameter_names = parameter_space.get_names()
         run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
         qois =restart_file['qois']
@@ -237,7 +243,7 @@ def run_eki(model: QoiModel,
           mean_qoi = test_mean_qoi*1.0
           errors = test_errors*1.0
           error_norm = test_error_norm*1.0
-          step_size = min(step_size*step_size_growth_factor,1.0)
+          step_size = min(step_size*step_size_growth_factor, max_step_size)
           wall_time = time.time() - start_time
           # Compute Kalman update
           dp = compute_eki_update(parameter_samples,qois,mean_qoi,errors,observations_covariance,regularization_parameter)

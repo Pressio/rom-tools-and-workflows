@@ -230,7 +230,8 @@ def run_mf_eki(model: QoiModel,
             fom_evaluation_concurrency: int = 1,
             rom_evaluation_concurrency: int = 1,
             restart_file: str = None,   # Optional parameter for restart file
-            dispatcher: Optional[BaseDispatcher] = None
+            dispatcher: Optional[BaseDispatcher] = None,
+            max_step_size: float = np.inf
             ):
     """
     Run a multi-fidelity ensemble Kalman inversion (MF-EKI) workflow.
@@ -271,6 +272,9 @@ def run_mf_eki(model: QoiModel,
             the update for that step.
         initial_step_size: Initial multiplier applied to the multifidelity
             Kalman update directions.
+        max_step_size: Maximum step size allowed after accepted-step growth.
+            The default of ``np.inf`` preserves the legacy uncapped behavior;
+            set a finite value to limit step growth.
         regularization_parameter: Tikhonov regularization added to the QoI
             covariance solve.
         step_size_growth_factor: Factor used to increase the step size after
@@ -326,6 +330,8 @@ def run_mf_eki(model: QoiModel,
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     assert step_size_growth_factor > 1.0, "step_size_growth_factor must be greater than 1.0"
     assert step_size_decay_factor > 1.0, "step_size_decay_factor must be greater than 1.0"
+    assert max_step_size > 0.0, "max_step_size must be positive"
+    assert initial_step_size <= max_step_size, "initial_step_size must not exceed max_step_size"
     _validate_rom_substep_settings(
         rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps
     )
@@ -416,7 +422,7 @@ def run_mf_eki(model: QoiModel,
         parameter_samples_two = restart_file['parameter_samples_two']
         parameter_sample_sets = [parameter_samples_one,parameter_samples_two]
         iteration = restart_file['iteration']
-        step_size = restart_file['step_size']
+        step_size = min(float(restart_file['step_size']), max_step_size)
         if 'num_rom_substeps' in restart_file:
             rom_substep_start_iteration = int(restart_file['rom_substep_start_iteration'])
             saved_end_iteration = int(restart_file['rom_substep_end_iteration'])
@@ -557,8 +563,7 @@ def run_mf_eki(model: QoiModel,
             sample_one_rom_results = test_sample_one_rom_results.copy()
             sample_two_rom_results = test_sample_two_rom_results.copy()
             error_norm = test_error_norm
-            step_size *= step_size_growth_factor
-            step_size = min(step_size,1.0)             
+            step_size = min(step_size * step_size_growth_factor, max_step_size)
             wall_time = time.time() - start_time
 
             # Compute Kalman update
@@ -646,7 +651,8 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          restart_file: str = None,
                          rom_type: str = "gp",
                          rom_args: Optional[dict] = None,
-                         dispatcher: Optional[BaseDispatcher] = None):
+                         dispatcher: Optional[BaseDispatcher] = None,
+                         max_step_size: float = np.inf):
     """
     Wrapper around run_mf_eki that selects a default ROM surrogate by rom_type.
     """
@@ -683,6 +689,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
         rom_tolerance=rom_tolerance,
         use_updated_rom_in_update_on_rebuild=use_updated_rom_in_update_on_rebuild,
         initial_step_size=initial_step_size,
+        max_step_size=max_step_size,
         regularization_parameter=regularization_parameter,
         step_size_growth_factor=step_size_growth_factor,
         step_size_decay_factor=step_size_decay_factor,
