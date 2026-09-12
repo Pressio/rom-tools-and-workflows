@@ -32,12 +32,9 @@ Synthetic observations are generated from the full-order model at
 
    \nu_{\mathrm{true}} = 0.04,
    \qquad
-   \sigma_{\mathrm{true}} = 0.30.
+   \sigma_{\mathrm{true}} = 0.30,
 
-No random perturbation is added to the synthetic observation itself. The
-likelihood assumes independent Gaussian observation noise with standard
-deviation :math:`5\times 10^{-3}`, corresponding to covariance
-:math:`2.5\times 10^{-5}` for the scalar observation.
+with observation covariance :math:`10^{-5}`.
 
 The admissible parameter ranges are deliberately chosen so that their midpoint
 is not the true parameter vector:
