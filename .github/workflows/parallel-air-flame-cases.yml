@@ -1,0 +1,127 @@
+name: Parallel H2-air flame rejuvenation cases
+
+on:
+  push:
+    branches:
+      - fix-358-eki-rejuvenation
+
+jobs:
+  case:
+    if: github.event.head_commit.message == 'Run parallel air-flame cases'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [eki, eki_rejuvenated, mf_eki, mf_eki_rejuvenated]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[docs]
+      - name: Run case
+        env:
+          CASE: ${{ matrix.case }}
+          MPLBACKEND: Agg
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+
+          sys.path.insert(0, str((Path.cwd() / 'examples' / 'h2_air_flame_eki_mf_eki').resolve()))
+          import example as bench
+
+          case = os.environ['CASE']
+          work_dir = Path(os.environ['RUNNER_TEMP']) / case
+          shutil.rmtree(work_dir, ignore_errors=True)
+          work_dir.mkdir(parents=True)
+
+          model = bench.H2AirFlameQoiModel(
+              nx=64,
+              ny=32,
+              dt=1.0e-3,
+              t_end=6.0e-2,
+              snapshot_stride=10,
+          )
+          truth = {
+              'kappa': bench.TRUTH[0],
+              'scaled_activation_energy': bench.TRUTH[1],
+              'beta_x': bench.TRUTH[2],
+              'beta_y': bench.TRUTH[3],
+          }
+          parameter_space = bench._parameter_space()
+          truth_dir = work_dir / 'truth'
+          model.populate_run_directory(str(truth_dir), truth)
+          model.run_model(str(truth_dir), truth)
+          observations = model.compute_qoi(str(truth_dir), truth)
+          observations_covariance = np.eye(observations.size) * 1.0e-4
+
+          common = dict(
+              model=model,
+              parameter_space=parameter_space,
+              observations=observations,
+              observations_covariance=observations_covariance,
+              parameter_mins=bench.PARAMETER_MINS,
+              parameter_maxes=bench.PARAMETER_MAXES,
+              max_iterations=30,
+              random_seed=1,
+          )
+
+          if case.startswith('mf_'):
+              bench.mf_eki_with_auto_rom(
+                  **common,
+                  absolute_eki_directory=str(work_dir / 'run'),
+                  fom_ensemble_size=4,
+                  rom_extra_ensemble_size=32,
+                  max_rom_training_history=3,
+                  rom_substep_start_iteration=3,
+                  rom_substep_end_iteration=15,
+                  num_rom_substeps=3,
+                  fom_evaluation_concurrency=4,
+                  rom_type='gp',
+                  rom_args={
+                      'normalize_parameters': True,
+                      'normalize_targets': True,
+                  },
+                  delta_params_tolerance=1.0e-3,
+                  rejuvenation_strategy=(
+                      'adaptive' if case == 'mf_eki_rejuvenated' else 'none'
+                  ),
+                  max_rejuvenations=3,
+              )
+              history = bench._load_history(work_dir / 'run', mf=True)
+          else:
+              bench.run_eki(
+                  **common,
+                  absolute_eki_directory=str(work_dir / 'run'),
+                  ensemble_size=4,
+                  evaluation_concurrency=4,
+                  delta_params_tolerance=1.0e-3,
+                  rejuvenation_strategy=(
+                      'adaptive' if case == 'eki_rejuvenated' else 'none'
+                  ),
+                  max_rejuvenations=3,
+              )
+              history = bench._load_history(work_dir / 'run', mf=False)
+
+          summary = bench._summary(history)
+          result = {'case': case, 'summary': summary, 'history': history}
+          out = Path('parallel-results')
+          out.mkdir(exist_ok=True)
+          (out / f'{case}.json').write_text(json.dumps(result, indent=2) + '\n')
+          print('CASE_SUMMARY_JSON=' + json.dumps(result, sort_keys=True), flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: air-flame-${{ matrix.case }}
+          path: parallel-results/${{ matrix.case }}.json
