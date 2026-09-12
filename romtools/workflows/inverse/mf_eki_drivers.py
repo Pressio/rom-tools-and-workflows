@@ -40,6 +40,7 @@ from romtools.workflows.inverse._inverse_utils import *
 from romtools.workflows.inverse.eki_drivers import (
     _compute_ensemble_covariance,
     _compute_ensemble_spread,
+    _compute_normalized_parameter_update_norm,
     _rejuvenate_parameter_samples,
     _should_rejuvenate,
     _validate_rejuvenation_settings,
@@ -176,7 +177,7 @@ def _apply_rom_only_substeps(rom_model,
         )
         print(
             f'  ROM-only substep {substep + 1}/{num_rom_substeps} after outer '
-            f'iteration {outer_iteration}, Delta p: {np.linalg.norm(dp):.5f}'
+            f'iteration {outer_iteration}, Normalized delta p: {np.linalg.norm(dp):.5f}'
         )
 
     return [
@@ -389,12 +390,18 @@ def _run_mf_eki_rejuvenation(
         observations_covariance,
         regularization_parameter,
     )
-    dp_norm = np.linalg.norm(dps[0])
+    normalized_dp_norm = _compute_normalized_parameter_update_norm(
+        dps[0],
+        np.vstack(parameter_sample_sets),
+        parameter_mins,
+        parameter_maxes,
+        reference_covariance,
+    )
     rejuvenation_count += 1
     spread = _compute_ensemble_spread(combined_parameter_samples)
     print(
         f'  Rejuvenated MF-EKI ensemble {rejuvenation_count}: '
-        f'Error 2-norm: {error_norm:.5f}, Delta p: {dp_norm:.5f}, '
+        f'Error 2-norm: {error_norm:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
         f'Ensemble spread: {spread:.5f}'
     )
 
@@ -405,7 +412,7 @@ def _run_mf_eki_rejuvenation(
         sample_two_rom_results,
         error_norm,
         dps,
-        dp_norm,
+        normalized_dp_norm,
         rejuvenation_count,
         rom_model,
         training_dirs,
@@ -436,7 +443,7 @@ def run_mf_eki(model: QoiModel,
                max_step_size_decrease_trys: int = 5,
                relaxation_parameter: float = 1.05,
                error_norm_tolerance: float = 1e-5,
-               delta_params_tolerance: float = 1e-4,
+               delta_params_tolerance: float = 1e-3,
                rejuvenation_strategy: str = "none",
                rejuvenation_interval: int = 5,
                rejuvenation_inflation: float = 1.1,
@@ -666,19 +673,25 @@ def run_mf_eki(model: QoiModel,
         observations_covariance,
         regularization_parameter,
     )
-    dp_norm = np.linalg.norm(dps[0])
+    normalized_dp_norm = _compute_normalized_parameter_update_norm(
+        dps[0],
+        np.vstack(parameter_sample_sets),
+        parameter_mins,
+        parameter_maxes,
+        rejuvenation_reference_covariance,
+    )
     spread = _compute_ensemble_spread(np.vstack(parameter_sample_sets))
     wall_time = time.time() - start_time
     print(
         f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, '
-        f'Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, '
+        f'Step size: {step_size:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
         f'Ensemble spread: {spread:.5f}, Wall time: {wall_time:.5f}'
     )
 
     while _should_rejuvenate(
             rejuvenation_strategy,
             iteration,
-            dp_norm,
+            normalized_dp_norm,
             error_norm,
             delta_params_tolerance,
             error_norm_tolerance,
@@ -694,7 +707,7 @@ def run_mf_eki(model: QoiModel,
             sample_two_rom_results,
             error_norm,
             dps,
-            dp_norm,
+            normalized_dp_norm,
             rejuvenation_count,
             rom_model,
             training_dirs,
@@ -760,7 +773,7 @@ def run_mf_eki(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if dp_norm <= delta_params_tolerance:
+        if normalized_dp_norm <= delta_params_tolerance:
             break
 
         test_parameter_sample_sets = copy.deepcopy(parameter_sample_sets)
@@ -943,7 +956,13 @@ def run_mf_eki(model: QoiModel,
                 observations_covariance,
                 regularization_parameter,
             )
-            dp_norm = np.linalg.norm(dps[0])
+            normalized_dp_norm = _compute_normalized_parameter_update_norm(
+                dps[0],
+                np.vstack(parameter_sample_sets),
+                parameter_mins,
+                parameter_maxes,
+                rejuvenation_reference_covariance,
+            )
             training_dirs = copy.deepcopy(test_training_dirs)
             training_parameters = test_training_parameters.copy()
             training_qois = test_training_qois.copy()
@@ -954,7 +973,7 @@ def run_mf_eki(model: QoiModel,
             if _should_rejuvenate(
                     rejuvenation_strategy,
                     iteration,
-                    dp_norm,
+                    normalized_dp_norm,
                     error_norm,
                     delta_params_tolerance,
                     error_norm_tolerance,
@@ -970,7 +989,7 @@ def run_mf_eki(model: QoiModel,
                     and _should_rejuvenate(
                         rejuvenation_strategy,
                         iteration,
-                        dp_norm,
+                        normalized_dp_norm,
                         error_norm,
                         delta_params_tolerance,
                         error_norm_tolerance,
@@ -986,7 +1005,7 @@ def run_mf_eki(model: QoiModel,
                         sample_two_rom_results,
                         error_norm,
                         dps,
-                        dp_norm,
+                        normalized_dp_norm,
                         rejuvenation_count,
                         rom_model,
                         training_dirs,
@@ -1032,7 +1051,7 @@ def run_mf_eki(model: QoiModel,
             spread = _compute_ensemble_spread(np.vstack(parameter_sample_sets))
             print(
                 f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, '
-                f'Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, '
+                f'Step size: {step_size:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
                 f'Ensemble spread: {spread:.5f}, Wall time: {wall_time:.5f}'
             )
             _save_mf_eki_restart(
@@ -1063,7 +1082,7 @@ def run_mf_eki(model: QoiModel,
             print(
                 f'  Warning, lowering step size, Iteration: {iteration}, '
                 f'Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, '
-                f'Delta p: {dp_norm:.5f}'
+                f'Normalized delta p: {normalized_dp_norm:.5f}'
             )
             if step_failed_counter > max_step_size_decrease_trys:
                 print(
@@ -1076,7 +1095,7 @@ def run_mf_eki(model: QoiModel,
         print('Max iterations reached, terminating')
     elif error_norm <= error_norm_tolerance:
         print('Error norm dropped below tolerance!')
-    elif dp_norm <= delta_params_tolerance:
+    elif normalized_dp_norm <= delta_params_tolerance:
         if rejuvenation_count >= max_rejuvenations:
             print(
                 'MF-EKI parameter update stagnated above the residual '
@@ -1105,7 +1124,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          max_step_size_decrease_trys: int = 5,
                          relaxation_parameter: float = 1.05,
                          error_norm_tolerance: float = 1e-5,
-                         delta_params_tolerance: float = 1e-4,
+                         delta_params_tolerance: float = 1e-3,
                          rejuvenation_strategy: str = "none",
                          rejuvenation_interval: int = 5,
                          rejuvenation_inflation: float = 1.1,

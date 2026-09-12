@@ -131,10 +131,11 @@ def _summary(history: dict[str, list]) -> dict[str, float | int]:
 def _plot_histories(histories: dict[str, dict[str, list]], output_dir: Path) -> None:
     labels = {
         "eki": "Single-fidelity EKI",
+        "eki_rejuvenated": "EKI + adaptive rejuvenation",
         "mf_eki": "MF-EKI",
         "mf_eki_rejuvenated": "MF-EKI + adaptive rejuvenation",
     }
-    markers = {"eki": "o", "mf_eki": "s", "mf_eki_rejuvenated": "^"}
+    markers = {"eki": "o", "eki_rejuvenated": "D", "mf_eki": "s", "mf_eki_rejuvenated": "^"}
 
     figure, axes = plt.subplots(1, 3, figsize=(13.0, 3.8))
     for key, history in histories.items():
@@ -199,7 +200,7 @@ def main() -> None:
         rom_substep_start_iteration, rom_substep_end_iteration = 3, 15
         num_rom_substeps = 3
         max_rom_training_history = 3
-        adaptive_delta_tolerance = 1.0e-4
+        adaptive_delta_tolerance = 1.0e-3
         max_rejuvenations = 3
 
     model = H2AirFlameQoiModel(
@@ -229,6 +230,7 @@ def main() -> None:
     observations_covariance = np.eye(observations.size) * 1.0e-4
 
     eki_dir = work_dir / "eki"
+    eki_rejuvenated_dir = work_dir / "eki_rejuvenated"
     mf_dir = work_dir / "mf_eki"
     mf_rejuvenated_dir = work_dir / "mf_eki_rejuvenated"
 
@@ -271,6 +273,24 @@ def main() -> None:
         max_rejuvenations=max_rejuvenations,
     )
 
+    print("\n=== Single-fidelity EKI with adaptive rejuvenation ===", flush=True)
+    run_eki(
+        model=model,
+        parameter_space=parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        parameter_mins=PARAMETER_MINS,
+        parameter_maxes=PARAMETER_MAXES,
+        absolute_eki_directory=str(eki_rejuvenated_dir),
+        ensemble_size=fom_ensemble_size,
+        max_iterations=max_iterations,
+        random_seed=1,
+        evaluation_concurrency=concurrency,
+        delta_params_tolerance=adaptive_delta_tolerance,
+        rejuvenation_strategy="adaptive",
+        max_rejuvenations=max_rejuvenations,
+    )
+
     print("\n=== Single-fidelity EKI reference ===", flush=True)
     run_eki(
         model=model,
@@ -284,11 +304,13 @@ def main() -> None:
         max_iterations=max_iterations,
         random_seed=1,
         evaluation_concurrency=concurrency,
+        delta_params_tolerance=adaptive_delta_tolerance,
         rejuvenation_strategy="none",
     )
 
     histories = {
         "eki": _load_history(eki_dir, mf=False),
+        "eki_rejuvenated": _load_history(eki_rejuvenated_dir, mf=False),
         "mf_eki": _load_history(mf_dir, mf=True),
         "mf_eki_rejuvenated": _load_history(mf_rejuvenated_dir, mf=True),
     }

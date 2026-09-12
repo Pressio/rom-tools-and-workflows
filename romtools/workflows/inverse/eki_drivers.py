@@ -60,9 +60,9 @@ adding a scaled column of :math:`\Delta \Theta`.
 EKI can stagnate when the empirical parameter-observation cross-covariance
 collapses before the observation residual is small. ``run_eki`` can rejuvenate
 the ensemble by resampling around the current mean with an inflated covariance.
-Adaptive rejuvenation is triggered when the proposed update is below
-``delta_params_tolerance`` while the residual remains above
-``error_norm_tolerance``. Periodic rejuvenation is also available.
+Adaptive rejuvenation is triggered when the componentwise normalized RMS
+parameter update is below ``delta_params_tolerance`` while the residual remains
+above ``error_norm_tolerance``. Periodic rejuvenation is also available.
 
 The rejuvenation covariance is
 
@@ -208,6 +208,45 @@ def _compute_parameter_scaled_reference_covariance(
     return np.diag(scales**2)
 
 
+def _compute_normalized_parameter_update_norm(
+        dp,
+        parameter_samples,
+        parameter_mins=None,
+        parameter_maxes=None,
+        fallback_covariance=None):
+    """Return a dimensionless RMS parameter-update magnitude.
+
+    Each parameter component is normalized by the magnitude of its current
+    ensemble mean. Near-zero means use the admissible parameter range when
+    available, then the initial-ensemble standard deviation as a fallback.
+    The RMS is taken over ensemble members and parameter components, making
+    the stagnation criterion invariant to parameter units and rescaling.
+    """
+    dp = np.asarray(dp, dtype=float)
+    if dp.ndim == 1:
+        dp = dp[None, :]
+    if dp.ndim != 2:
+        raise ValueError("dp must be a one- or two-dimensional array")
+
+    reference_covariance = _compute_parameter_scaled_reference_covariance(
+        parameter_samples,
+        parameter_mins,
+        parameter_maxes,
+        fallback_covariance=fallback_covariance,
+    )
+    scales = np.sqrt(np.maximum(np.diag(reference_covariance), 0.0))
+    if dp.shape[1] != scales.size:
+        raise ValueError("dp parameter dimension must match parameter_samples")
+
+    # A unit scale is only a final numerical safeguard for a parameter with
+    # zero mean, no finite range, and zero initial variance. Normal runs have
+    # a physical scale from one of the three sources above.
+    scales = scales.copy()
+    scales[scales <= np.finfo(float).tiny] = 1.0
+    normalized_dp = dp / scales[None, :]
+    return float(np.sqrt(np.mean(normalized_dp**2)))
+
+
 def _build_rejuvenation_covariance(
         parameter_samples,
         reference_covariance,
@@ -273,7 +312,7 @@ def _rejuvenate_parameter_samples(
 def _should_rejuvenate(
         rejuvenation_strategy,
         iteration,
-        dp_norm,
+        normalized_dp_norm,
         error_norm,
         delta_params_tolerance,
         error_norm_tolerance,
@@ -285,7 +324,7 @@ def _should_rejuvenate(
     if error_norm <= error_norm_tolerance:
         return False
     if rejuvenation_strategy == "adaptive":
-        return dp_norm <= delta_params_tolerance
+        return normalized_dp_norm <= delta_params_tolerance
     return iteration > 0 and iteration % rejuvenation_interval == 0
 
 
@@ -343,12 +382,18 @@ def _run_eki_rejuvenation(
         observations_covariance,
         regularization_parameter,
     )
-    dp_norm = np.linalg.norm(dp)
+    normalized_dp_norm = _compute_normalized_parameter_update_norm(
+        dp,
+        parameter_samples,
+        parameter_mins,
+        parameter_maxes,
+        reference_covariance,
+    )
     rejuvenation_count += 1
     spread = _compute_ensemble_spread(parameter_samples)
     print(
         f'  Rejuvenated ensemble {rejuvenation_count}: '
-        f'Error 2-norm: {error_norm:.5f}, Delta p: {dp_norm:.5f}, '
+        f'Error 2-norm: {error_norm:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
         f'Ensemble spread: {spread:.5f}'
     )
     return (
@@ -358,7 +403,7 @@ def _run_eki_rejuvenation(
         errors,
         error_norm,
         dp,
-        dp_norm,
+        normalized_dp_norm,
         rejuvenation_count,
     )
 
@@ -402,7 +447,7 @@ def run_eki(model: QoiModel,
             max_step_size_decrease_trys: int = 5,
             relaxation_parameter: float = 1.05,
             error_norm_tolerance: float = 1e-5,
-            delta_params_tolerance: float = 1e-6,
+            delta_params_tolerance: float = 1e-3,
             rejuvenation_strategy: str = "none",
             rejuvenation_interval: int = 5,
             rejuvenation_inflation: float = 1.1,
@@ -451,9 +496,10 @@ def run_eki(model: QoiModel,
             ``relaxation_parameter * current_error_norm``.
         error_norm_tolerance: Stop when the mean observation-space error norm
             falls below this value.
-        delta_params_tolerance: Parameter-update norm below which EKI is
-            considered stagnant. With adaptive rejuvenation, a large residual
-            triggers rejuvenation instead of immediate termination.
+        delta_params_tolerance: Dimensionless componentwise normalized RMS
+            parameter-update threshold below which EKI is considered stagnant.
+            With adaptive rejuvenation, a large residual triggers rejuvenation
+            instead of immediate termination.
         rejuvenation_strategy: ``"none"`` (default), ``"adaptive"``, or
             ``"periodic"``. Adaptive rejuvenation is triggered by a small
             update and non-converged residual.
@@ -573,19 +619,25 @@ def run_eki(model: QoiModel,
         observations_covariance,
         regularization_parameter,
     )
-    dp_norm = np.linalg.norm(dp)
+    normalized_dp_norm = _compute_normalized_parameter_update_norm(
+        dp,
+        parameter_samples,
+        parameter_mins,
+        parameter_maxes,
+        rejuvenation_reference_covariance,
+    )
     wall_time = time.time() - start_time
     spread = _compute_ensemble_spread(parameter_samples)
     print(
         f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, '
-        f'Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, '
+        f'Step size: {step_size:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
         f'Ensemble spread: {spread:.5f}, Wall time: {wall_time:.5f}'
     )
 
     while _should_rejuvenate(
             rejuvenation_strategy,
             iteration,
-            dp_norm,
+            normalized_dp_norm,
             error_norm,
             delta_params_tolerance,
             error_norm_tolerance,
@@ -601,7 +653,7 @@ def run_eki(model: QoiModel,
             errors,
             error_norm,
             dp,
-            dp_norm,
+            normalized_dp_norm,
             rejuvenation_count,
         ) = _run_eki_rejuvenation(
             model,
@@ -639,7 +691,7 @@ def run_eki(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if dp_norm <= delta_params_tolerance:
+        if normalized_dp_norm <= delta_params_tolerance:
             break
 
         test_parameter_samples = parameter_samples + step_size * dp
@@ -680,12 +732,18 @@ def run_eki(model: QoiModel,
                 observations_covariance,
                 regularization_parameter,
             )
-            dp_norm = np.linalg.norm(dp)
+            normalized_dp_norm = _compute_normalized_parameter_update_norm(
+                dp,
+                parameter_samples,
+                parameter_mins,
+                parameter_maxes,
+                rejuvenation_reference_covariance,
+            )
 
             if _should_rejuvenate(
                     rejuvenation_strategy,
                     iteration,
-                    dp_norm,
+                    normalized_dp_norm,
                     error_norm,
                     delta_params_tolerance,
                     error_norm_tolerance,
@@ -700,7 +758,7 @@ def run_eki(model: QoiModel,
                         errors,
                         error_norm,
                         dp,
-                        dp_norm,
+                        normalized_dp_norm,
                         rejuvenation_count,
                     ) = _run_eki_rejuvenation(
                         model,
@@ -725,7 +783,7 @@ def run_eki(model: QoiModel,
                     while _should_rejuvenate(
                             rejuvenation_strategy,
                             iteration,
-                            dp_norm,
+                            normalized_dp_norm,
                             error_norm,
                             delta_params_tolerance,
                             error_norm_tolerance,
@@ -739,7 +797,7 @@ def run_eki(model: QoiModel,
                             errors,
                             error_norm,
                             dp,
-                            dp_norm,
+                            normalized_dp_norm,
                             rejuvenation_count,
                         ) = _run_eki_rejuvenation(
                             model,
@@ -765,7 +823,7 @@ def run_eki(model: QoiModel,
             spread = _compute_ensemble_spread(parameter_samples)
             print(
                 f'Iteration: {iteration}, Error 2-norm: {error_norm:.5f}, '
-                f'Step size: {step_size:.5f}, Delta p: {dp_norm:.5f}, '
+                f'Step size: {step_size:.5f}, Normalized delta p: {normalized_dp_norm:.5f}, '
                 f'Ensemble spread: {spread:.5f}, Wall time: {wall_time:.5f}'
             )
             _save_eki_restart(
@@ -787,7 +845,7 @@ def run_eki(model: QoiModel,
             print(
                 f'  Warning, lowering step size, Iteration: {iteration}, '
                 f'Error 2-norm: {error_norm:.5f}, Step size: {step_size:.5f}, '
-                f'Delta p: {dp_norm:.5f}'
+                f'Normalized delta p: {normalized_dp_norm:.5f}'
             )
             if step_failed_counter > max_step_size_decrease_trys:
                 print(
@@ -800,7 +858,7 @@ def run_eki(model: QoiModel,
         print('Max iterations reached, terminating')
     elif error_norm <= error_norm_tolerance:
         print('Error norm dropped below tolerance!')
-    elif dp_norm <= delta_params_tolerance:
+    elif normalized_dp_norm <= delta_params_tolerance:
         if rejuvenation_count >= max_rejuvenations:
             print(
                 'Parameter update stagnated above the residual tolerance and '

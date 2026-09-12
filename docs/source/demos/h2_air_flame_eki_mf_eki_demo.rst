@@ -9,17 +9,18 @@ activation energy, and the two advection components ``beta_x`` and ``beta_y``.
 Benchmark design
 ----------------
 
-The benchmark compares three cases using the same synthetic observation and
+The benchmark compares four cases using the same synthetic observation and
 random seed:
 
 * single-fidelity EKI with four FOM ensemble members,
+* the same EKI configuration with ``rejuvenation_strategy="adaptive"``,
 * GP auto-ROM MF-EKI with four FOM members and 32 additional ROM-only members,
   with rejuvenation disabled, and
 * the same MF-EKI configuration with ``rejuvenation_strategy="adaptive"``.
 
 The full model uses a ``64 x 32`` mesh, ``dt = 1e-3``, and ``t_end = 6e-2``.
 The full benchmark permits up to 30 outer iterations. Adaptive rejuvenation is
-triggered when the parameter-update norm falls below ``1e-4`` while the
+triggered when the componentwise normalized RMS parameter-update magnitude falls below ``1e-3`` while the
 observation residual is still above its convergence tolerance. At most three
 rejuvenations are allowed.
 
@@ -44,7 +45,7 @@ The benchmark records three diagnostics at every saved outer iteration:
    :width: 100%
 
    Observation residual, parameter error, and ensemble spread for
-   single-fidelity EKI, baseline MF-EKI, and MF-EKI with adaptive rejuvenation.
+   single-fidelity EKI and MF-EKI, each with and without adaptive rejuvenation.
 
 Run the example
 ---------------

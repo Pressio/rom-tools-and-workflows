@@ -66,6 +66,11 @@ class ExactRomBuilder:
         return LinearQoiModel()
 
 
+def test_mf_eki_normalized_delta_p_default_is_dimensionless_one_per_mille():
+    signature = inspect.signature(mf_eki_drivers.run_mf_eki)
+    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)
+
+
 def test_mf_eki_rejuvenation_defaults_to_five_percent_reference_std():
     signature = inspect.signature(mf_eki_drivers.run_mf_eki)
     beta = signature.parameters["rejuvenation_prior_weight"].default

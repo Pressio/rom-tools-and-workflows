@@ -140,6 +140,63 @@ def test_zero_mean_unbounded_parameter_uses_initial_covariance_fallback():
     )
 
 
+def test_normalized_parameter_update_norm_is_scale_invariant():
+    samples = np.tile(np.array([[2.0, 8.0]]), (4, 1))
+    dp = np.tile(np.array([[0.02, 0.08]]), (4, 1))
+    fallback_covariance = np.diag([1.0, 1.0])
+
+    value = eki_drivers._compute_normalized_parameter_update_norm(
+        dp, samples, fallback_covariance=fallback_covariance
+    )
+
+    rescaled_samples = samples.copy()
+    rescaled_samples[:, 1] *= 100.0
+    rescaled_dp = dp.copy()
+    rescaled_dp[:, 1] *= 100.0
+    rescaled_fallback = np.diag([1.0, 100.0**2])
+    rescaled_value = eki_drivers._compute_normalized_parameter_update_norm(
+        rescaled_dp,
+        rescaled_samples,
+        fallback_covariance=rescaled_fallback,
+    )
+
+    assert value == pytest.approx(0.01)
+    assert rescaled_value == pytest.approx(value)
+
+
+def test_normalized_parameter_update_uses_bound_range_for_zero_mean():
+    samples = np.tile(np.array([[0.0, 2.0]]), (4, 1))
+    dp = np.tile(np.array([[0.2, 0.02]]), (4, 1))
+
+    value = eki_drivers._compute_normalized_parameter_update_norm(
+        dp,
+        samples,
+        parameter_mins=np.array([-10.0, -5.0]),
+        parameter_maxes=np.array([10.0, 5.0]),
+        fallback_covariance=np.eye(2),
+    )
+
+    assert value == pytest.approx(0.01)
+
+
+def test_normalized_parameter_update_uses_initial_std_as_final_scale_fallback():
+    samples = np.zeros((4, 2))
+    dp = np.tile(np.array([[0.03, 0.04]]), (4, 1))
+
+    value = eki_drivers._compute_normalized_parameter_update_norm(
+        dp,
+        samples,
+        fallback_covariance=np.diag([3.0**2, 4.0**2]),
+    )
+
+    assert value == pytest.approx(0.01)
+
+
+def test_normalized_delta_p_default_is_dimensionless_one_per_mille():
+    signature = inspect.signature(romtools.workflows.run_eki)
+    assert signature.parameters["delta_params_tolerance"].default == pytest.approx(1e-3)
+
+
 def test_rejuvenation_preserves_mean_without_bounds_and_is_reproducible():
     samples = np.array([
         [-1.0, -0.5],
@@ -197,7 +254,7 @@ def test_adaptive_rejuvenation_distinguishes_stagnation_from_convergence():
     assert eki_drivers._should_rejuvenate(
         "adaptive",
         iteration=4,
-        dp_norm=1e-8,
+        normalized_dp_norm=1e-8,
         error_norm=1e-2,
         delta_params_tolerance=1e-6,
         error_norm_tolerance=1e-5,
@@ -208,7 +265,7 @@ def test_adaptive_rejuvenation_distinguishes_stagnation_from_convergence():
     assert not eki_drivers._should_rejuvenate(
         "adaptive",
         iteration=4,
-        dp_norm=1e-8,
+        normalized_dp_norm=1e-8,
         error_norm=1e-7,
         delta_params_tolerance=1e-6,
         error_norm_tolerance=1e-5,
@@ -222,7 +279,7 @@ def test_periodic_rejuvenation_triggers_only_on_requested_interval():
     assert eki_drivers._should_rejuvenate(
         "periodic",
         iteration=10,
-        dp_norm=1.0,
+        normalized_dp_norm=1.0,
         error_norm=1.0,
         delta_params_tolerance=1e-6,
         error_norm_tolerance=1e-5,
@@ -233,7 +290,7 @@ def test_periodic_rejuvenation_triggers_only_on_requested_interval():
     assert not eki_drivers._should_rejuvenate(
         "periodic",
         iteration=11,
-        dp_norm=1.0,
+        normalized_dp_norm=1.0,
         error_norm=1.0,
         delta_params_tolerance=1e-6,
         error_norm_tolerance=1e-5,
@@ -247,7 +304,7 @@ def test_periodic_rejuvenation_does_not_run_after_residual_convergence():
     assert not eki_drivers._should_rejuvenate(
         "periodic",
         iteration=10,
-        dp_norm=1.0,
+        normalized_dp_norm=1.0,
         error_norm=1e-7,
         delta_params_tolerance=1e-6,
         error_norm_tolerance=1e-5,
