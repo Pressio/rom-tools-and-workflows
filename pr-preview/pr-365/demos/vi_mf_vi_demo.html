@@ -54,6 +54,8 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'demos/vi_mf_vi_demo';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
@@ -366,6 +368,7 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-definition">Problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run-the-example">Run the example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerate-the-published-figures">Regenerate the published figures</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results">Results</a></li>
@@ -443,11 +446,45 @@
 <p>This example compares single-fidelity variational inference with multifidelity
 variational inference for a steady convection-diffusion-reaction model. Both
 methods approximate the posterior over the diffusion coefficient <code class="docutils literal notranslate"><span class="pre">nu</span></code> and
-reaction rate <code class="docutils literal notranslate"><span class="pre">sigma</span></code> with a Gaussian distribution.</p>
+reaction coefficient <code class="docutils literal notranslate"><span class="pre">sigma</span></code> with a Gaussian distribution.</p>
+<section id="problem-definition">
+<h2>Problem definition<a class="headerlink" href="#problem-definition" title="Link to this heading">#</a></h2>
+<p>The forward model solves the steady linear convection-diffusion-reaction
+problem on the unit square,</p>
+<div class="math notranslate nohighlight">
+\[-\nu \nabla^2 u + \mathbf{b}\cdot\nabla u + \sigma u = 1,
+\qquad \mathbf{b}=(1,1),\]</div>
+<p>with homogeneous Dirichlet boundary conditions. The diffusion coefficient
+<span class="math notranslate nohighlight">\(\nu\)</span> and reaction coefficient <span class="math notranslate nohighlight">\(\sigma\)</span> are treated as uncertain
+parameters. The scalar quantity of interest approximates the integral of the
+normal derivative on the right boundary,</p>
+<div class="math notranslate nohighlight">
+\[Q(u) = \int_{x=1} \frac{\partial u}{\partial x}\,dy.\]</div>
+<p>Synthetic observations are generated from the full-order model at</p>
+<div class="math notranslate nohighlight">
+\[\nu_{\mathrm{true}} = 0.04,
+\qquad
+\sigma_{\mathrm{true}} = 0.30.\]</div>
+<p>No random perturbation is added to the synthetic observation itself. The
+likelihood assumes independent Gaussian observation noise with standard
+deviation <span class="math notranslate nohighlight">\(5\times 10^{-3}\)</span>, corresponding to covariance
+<span class="math notranslate nohighlight">\(2.5\times 10^{-5}\)</span> for the scalar observation.</p>
+<p>The admissible parameter ranges are deliberately chosen so that their midpoint
+is not the true parameter vector:</p>
+<div class="math notranslate nohighlight">
+\[0.01 \leq \nu \leq 0.10,
+\qquad
+0.10 \leq \sigma \leq 0.80.\]</div>
+<p>The Gaussian prior is initialized with the midpoint of these intervals as its
+mean and one quarter of each interval width as its standard deviation. Thus,
+its mean is <span class="math notranslate nohighlight">\((0.055, 0.45)\)</span>, rather than the truth
+<span class="math notranslate nohighlight">\((0.04, 0.30)\)</span>. This avoids giving the inference problem an artificially
+favorable initialization centered on the data-generating parameters.</p>
 <p>The multifidelity method supplements its full-order-model samples with
 additional evaluations of a Gaussian-process surrogate. The surrogate is
 constructed automatically from the full-order-model parameter and QoI data,
 with both inputs and targets normalized before fitting.</p>
+</section>
 <section id="run-the-example">
 <h2>Run the example<a class="headerlink" href="#run-the-example" title="Link to this heading">#</a></h2>
 <p>The canonical implementation lives under <code class="docutils literal notranslate"><span class="pre">examples/</span></code> and is exercised
@@ -488,7 +525,7 @@ construction.</span><a class="headerlink" href="#id1" title="Link to this image"
 </a>
 <figcaption>
 <p><span class="caption-text">Variational means and one-standard-deviation bands for the inferred
-diffusion coefficient and reaction rate.</span><a class="headerlink" href="#id2" title="Link to this image">#</a></p>
+diffusion coefficient and reaction coefficient.</span><a class="headerlink" href="#id2" title="Link to this image">#</a></p>
 </figcaption>
 </figure>
 </section>
@@ -628,91 +665,97 @@ diffusion coefficient and reaction rate.</span><a class="headerlink" href="#id2"
 <span class="linenos">132</span>    <span class="n">model</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">truth_dir</span><span class="p">),</span> <span class="n">truth_parameters</span><span class="p">)</span>
 <span class="linenos">133</span>    <span class="n">observations</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">truth_dir</span><span class="p">),</span> <span class="n">truth_parameters</span><span class="p">)</span>
 <span class="linenos">134</span>
-<span class="linenos">135</span>    <span class="n">parameter_mins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span>
-<span class="linenos">136</span>    <span class="n">parameter_maxes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">])</span>
-<span class="linenos">137</span>    <span class="n">prior</span> <span class="o">=</span> <span class="n">GaussianParameterSpace</span><span class="p">(</span>
-<span class="linenos">138</span>        <span class="p">[</span><span class="s2">"nu"</span><span class="p">,</span> <span class="s2">"sigma"</span><span class="p">],</span>
-<span class="linenos">139</span>        <span class="p">(</span><span class="n">parameter_mins</span> <span class="o">+</span> <span class="n">parameter_maxes</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
-<span class="linenos">140</span>        <span class="p">(</span><span class="n">parameter_maxes</span> <span class="o">-</span> <span class="n">parameter_mins</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">,</span>
-<span class="linenos">141</span>        <span class="n">MonteCarloSampler</span><span class="p">,</span>
-<span class="linenos">142</span>    <span class="p">)</span>
-<span class="linenos">143</span>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
-<span class="linenos">144</span>        <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
-<span class="linenos">145</span>        <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<span class="linenos">146</span>        <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
-<span class="linenos">147</span>        <span class="n">newton_curvature_strategy</span><span class="o">=</span><span class="s2">"lagged"</span><span class="p">,</span>
-<span class="linenos">148</span>        <span class="n">newton_hessian_averaging_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-<span class="linenos">149</span>    <span class="p">)</span>
-<span class="linenos">150</span>    <span class="n">line_search</span> <span class="o">=</span> <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">()</span>
-<span class="linenos">151</span>    <span class="n">common_arguments</span> <span class="o">=</span> <span class="p">{</span>
-<span class="linenos">152</span>        <span class="s2">"model"</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
-<span class="linenos">153</span>        <span class="s2">"prior_parameter_space"</span><span class="p">:</span> <span class="n">prior</span><span class="p">,</span>
-<span class="linenos">154</span>        <span class="s2">"observations"</span><span class="p">:</span> <span class="n">observations</span><span class="p">,</span>
-<span class="linenos">155</span>        <span class="s2">"observations_covariance"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">observations</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0e-5</span><span class="p">,</span>
-<span class="linenos">156</span>        <span class="s2">"parameter_mins"</span><span class="p">:</span> <span class="n">parameter_mins</span><span class="p">,</span>
-<span class="linenos">157</span>        <span class="s2">"parameter_maxes"</span><span class="p">:</span> <span class="n">parameter_maxes</span><span class="p">,</span>
-<span class="linenos">158</span>        <span class="s2">"optimizer_method"</span><span class="p">:</span> <span class="s2">"newton"</span><span class="p">,</span>
-<span class="linenos">159</span>        <span class="s2">"optimizer_config"</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">,</span>
-<span class="linenos">160</span>        <span class="s2">"line_search_method"</span><span class="p">:</span> <span class="s2">"stochastic_nonmonotone"</span><span class="p">,</span>
-<span class="linenos">161</span>        <span class="s2">"line_search_config"</span><span class="p">:</span> <span class="n">line_search</span><span class="p">,</span>
-<span class="linenos">162</span>        <span class="s2">"restart_files_to_keep"</span><span class="p">:</span> <span class="n">max_iterations</span><span class="p">,</span>
-<span class="linenos">163</span>        <span class="s2">"baseline_method"</span><span class="p">:</span> <span class="s2">"loo"</span><span class="p">,</span>
-<span class="linenos">164</span>        <span class="s2">"random_seed"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-<span class="linenos">165</span>    <span class="p">}</span>
-<span class="linenos">166</span>
-<span class="linenos">167</span>    <span class="n">vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"vi"</span>
-<span class="linenos">168</span>    <span class="n">mf_vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"mf_vi"</span>
-<span class="linenos">169</span>    <span class="n">run_vi</span><span class="p">(</span>
-<span class="linenos">170</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">171</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
-<span class="linenos">172</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos">173</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">174</span>    <span class="p">)</span>
-<span class="linenos">175</span>    <span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
+<span class="linenos">135</span>    <span class="c1"># Deliberately choose admissible bounds whose midpoint is not the truth.</span>
+<span class="linenos">136</span>    <span class="c1"># This avoids giving the inference problem an artificially favorable</span>
+<span class="linenos">137</span>    <span class="c1"># initialization through the Gaussian prior mean.</span>
+<span class="linenos">138</span>    <span class="n">parameter_mins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span>
+<span class="linenos">139</span>    <span class="n">parameter_maxes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">])</span>
+<span class="linenos">140</span>    <span class="n">prior</span> <span class="o">=</span> <span class="n">GaussianParameterSpace</span><span class="p">(</span>
+<span class="linenos">141</span>        <span class="p">[</span><span class="s2">"nu"</span><span class="p">,</span> <span class="s2">"sigma"</span><span class="p">],</span>
+<span class="linenos">142</span>        <span class="p">(</span><span class="n">parameter_mins</span> <span class="o">+</span> <span class="n">parameter_maxes</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
+<span class="linenos">143</span>        <span class="p">(</span><span class="n">parameter_maxes</span> <span class="o">-</span> <span class="n">parameter_mins</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">,</span>
+<span class="linenos">144</span>        <span class="n">MonteCarloSampler</span><span class="p">,</span>
+<span class="linenos">145</span>    <span class="p">)</span>
+<span class="linenos">146</span>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
+<span class="linenos">147</span>        <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
+<span class="linenos">148</span>        <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="linenos">149</span>        <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
+<span class="linenos">150</span>        <span class="n">newton_curvature_strategy</span><span class="o">=</span><span class="s2">"lagged"</span><span class="p">,</span>
+<span class="linenos">151</span>        <span class="n">newton_hessian_averaging_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="linenos">152</span>    <span class="p">)</span>
+<span class="linenos">153</span>    <span class="n">line_search</span> <span class="o">=</span> <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">()</span>
+<span class="linenos">154</span>    <span class="n">observation_noise_std</span> <span class="o">=</span> <span class="mf">5.0e-3</span>
+<span class="linenos">155</span>    <span class="n">common_arguments</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos">156</span>        <span class="s2">"model"</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
+<span class="linenos">157</span>        <span class="s2">"prior_parameter_space"</span><span class="p">:</span> <span class="n">prior</span><span class="p">,</span>
+<span class="linenos">158</span>        <span class="s2">"observations"</span><span class="p">:</span> <span class="n">observations</span><span class="p">,</span>
+<span class="linenos">159</span>        <span class="s2">"observations_covariance"</span><span class="p">:</span> <span class="p">(</span>
+<span class="linenos">160</span>            <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">observations</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">observation_noise_std</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">161</span>        <span class="p">),</span>
+<span class="linenos">162</span>        <span class="s2">"parameter_mins"</span><span class="p">:</span> <span class="n">parameter_mins</span><span class="p">,</span>
+<span class="linenos">163</span>        <span class="s2">"parameter_maxes"</span><span class="p">:</span> <span class="n">parameter_maxes</span><span class="p">,</span>
+<span class="linenos">164</span>        <span class="s2">"optimizer_method"</span><span class="p">:</span> <span class="s2">"newton"</span><span class="p">,</span>
+<span class="linenos">165</span>        <span class="s2">"optimizer_config"</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">,</span>
+<span class="linenos">166</span>        <span class="s2">"line_search_method"</span><span class="p">:</span> <span class="s2">"stochastic_nonmonotone"</span><span class="p">,</span>
+<span class="linenos">167</span>        <span class="s2">"line_search_config"</span><span class="p">:</span> <span class="n">line_search</span><span class="p">,</span>
+<span class="linenos">168</span>        <span class="s2">"restart_files_to_keep"</span><span class="p">:</span> <span class="n">max_iterations</span><span class="p">,</span>
+<span class="linenos">169</span>        <span class="s2">"baseline_method"</span><span class="p">:</span> <span class="s2">"loo"</span><span class="p">,</span>
+<span class="linenos">170</span>        <span class="s2">"random_seed"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<span class="linenos">171</span>    <span class="p">}</span>
+<span class="linenos">172</span>
+<span class="linenos">173</span>    <span class="n">vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"vi"</span>
+<span class="linenos">174</span>    <span class="n">mf_vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"mf_vi"</span>
+<span class="linenos">175</span>    <span class="n">run_vi</span><span class="p">(</span>
 <span class="linenos">176</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">177</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
-<span class="linenos">178</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos">179</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
-<span class="linenos">180</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">181</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">182</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
-<span class="linenos">183</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
-<span class="linenos">184</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">185</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">186</span>        <span class="p">},</span>
-<span class="linenos">187</span>    <span class="p">)</span>
-<span class="linenos">188</span>
-<span class="linenos">189</span>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="k">if</span> <span class="n">output_dir</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
-<span class="linenos">190</span>    <span class="n">truth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">truth_parameters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">prior</span><span class="o">.</span><span class="n">get_names</span><span class="p">()])</span>
-<span class="linenos">191</span>    <span class="n">_write_plots</span><span class="p">(</span>
-<span class="linenos">192</span>        <span class="n">output_path</span><span class="p">,</span>
-<span class="linenos">193</span>        <span class="n">prior</span><span class="o">.</span><span class="n">get_names</span><span class="p">(),</span>
-<span class="linenos">194</span>        <span class="n">truth</span><span class="p">,</span>
-<span class="linenos">195</span>        <span class="n">_collect_vi_history</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
-<span class="linenos">196</span>        <span class="n">_collect_vi_history</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
-<span class="linenos">197</span>    <span class="p">)</span>
-<span class="linenos">198</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wrote VI/MF-VI figures to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">199</span>
-<span class="linenos">200</span>
-<span class="linenos">201</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
-<span class="linenos">202</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
-<span class="linenos">203</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-<span class="linenos">204</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
-<span class="linenos">205</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
-<span class="linenos">206</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run the reduced configuration used for CI validation."</span><span class="p">,</span>
-<span class="linenos">207</span>    <span class="p">)</span>
-<span class="linenos">208</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Override the workflow output directory."</span><span class="p">)</span>
-<span class="linenos">209</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Override the figure output directory."</span><span class="p">)</span>
-<span class="linenos">210</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">211</span>
-<span class="linenos">212</span>
-<span class="linenos">213</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">214</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
-<span class="linenos">215</span>    <span class="n">main</span><span class="p">(</span>
-<span class="linenos">216</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
-<span class="linenos">217</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
-<span class="linenos">218</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<span class="linenos">219</span>    <span class="p">)</span>
+<span class="linenos">177</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
+<span class="linenos">178</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
+<span class="linenos">179</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">180</span>    <span class="p">)</span>
+<span class="linenos">181</span>    <span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
+<span class="linenos">182</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
+<span class="linenos">183</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
+<span class="linenos">184</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
+<span class="linenos">185</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
+<span class="linenos">186</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">187</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">188</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+<span class="linenos">189</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+<span class="linenos">190</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">191</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">192</span>        <span class="p">},</span>
+<span class="linenos">193</span>    <span class="p">)</span>
+<span class="linenos">194</span>
+<span class="linenos">195</span>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="k">if</span> <span class="n">output_dir</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+<span class="linenos">196</span>    <span class="n">truth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">truth_parameters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">prior</span><span class="o">.</span><span class="n">get_names</span><span class="p">()])</span>
+<span class="linenos">197</span>    <span class="n">_write_plots</span><span class="p">(</span>
+<span class="linenos">198</span>        <span class="n">output_path</span><span class="p">,</span>
+<span class="linenos">199</span>        <span class="n">prior</span><span class="o">.</span><span class="n">get_names</span><span class="p">(),</span>
+<span class="linenos">200</span>        <span class="n">truth</span><span class="p">,</span>
+<span class="linenos">201</span>        <span class="n">_collect_vi_history</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
+<span class="linenos">202</span>        <span class="n">_collect_vi_history</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
+<span class="linenos">203</span>    <span class="p">)</span>
+<span class="linenos">204</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wrote VI/MF-VI figures to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="linenos">205</span>
+<span class="linenos">206</span>
+<span class="linenos">207</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
+<span class="linenos">208</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
+<span class="linenos">209</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+<span class="linenos">210</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
+<span class="linenos">211</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+<span class="linenos">212</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run the reduced configuration used for CI validation."</span><span class="p">,</span>
+<span class="linenos">213</span>    <span class="p">)</span>
+<span class="linenos">214</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Override the workflow output directory."</span><span class="p">)</span>
+<span class="linenos">215</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Override the figure output directory."</span><span class="p">)</span>
+<span class="linenos">216</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="linenos">217</span>
+<span class="linenos">218</span>
+<span class="linenos">219</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">220</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
+<span class="linenos">221</span>    <span class="n">main</span><span class="p">(</span>
+<span class="linenos">222</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
+<span class="linenos">223</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+<span class="linenos">224</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+<span class="linenos">225</span>    <span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -765,6 +808,7 @@ diffusion coefficient and reaction rate.</span><a class="headerlink" href="#id2"
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-definition">Problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run-the-example">Run the example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerate-the-published-figures">Regenerate the published figures</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results">Results</a></li>
