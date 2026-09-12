@@ -93,3 +93,26 @@ jobs:
       - name: Run tests (MPI, n=4)
         run: |
           mpirun -n 4 python -m pytest tests/romtools/* --with-mpi --timeout=300
+
+  torch-surrogate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install package and CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install .[test]
+
+      - name: Run neural-network surrogate tests
+        run: |
+          pytest tests/romtools/rom/test_neural_network_surrogate.py --timeout=300
