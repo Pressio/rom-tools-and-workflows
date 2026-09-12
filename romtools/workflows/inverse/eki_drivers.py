@@ -113,7 +113,7 @@ def run_eki(model: QoiModel,
                  evaluation_concurrency = 1,
                  restart_file = None,
                  dispatcher: Optional[BaseDispatcher] = None,
-                 max_step_size: float = 1.0):
+                 max_step_size: float = np.inf):
     """
     Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
 
@@ -142,8 +142,8 @@ def run_eki(model: QoiModel,
         initial_step_size: Initial multiplier applied to the computed Kalman
             update directions.
         max_step_size: Maximum step size allowed after accepted-step growth.
-            The default of ``1.0`` limits updates to at most a full Kalman
-            correction.
+            The default of ``np.inf`` preserves the legacy uncapped behavior;
+            set a finite value to limit step growth.
         regularization_parameter: Tikhonov regularization added to the QoI
             covariance solve for numerical stability.
         step_size_growth_factor: Factor used to increase the step size after
