@@ -1,43 +1,85 @@
 ROM Tools and Workflows: Examples and Demos
 ===========================================
 
-``romtools`` provides reusable building blocks for projection-based reduced-order
-models, surrogate models, and model-based computational workflows. The examples
-are organized around those three concepts so that each capability can grow
-without turning this page into a flat catalog of notebooks.
+.. raw:: html
 
-Projection-based ROM utilities
-------------------------------
+   <div class="demos-hero">
+     <div class="demos-hero-eyebrow">ROM Tools and Workflows</div>
+     <div class="demos-hero-title">Build reduced models. Fit surrogates. Run workflows.</div>
+     <div class="demos-hero-subtitle">
+       Explore the main romtools capabilities through focused concepts and runnable examples.
+       Start from reduced-space construction, data-driven surrogates, or end-to-end computational workflows.
+     </div>
+   </div>
 
-Construct and manipulate the ingredients of projection-based reduced-order
-models, including reduced vector spaces and basis construction.
+Choose a capability
+-------------------
 
-:doc:`Explore projection-based ROM utilities <projection_rom_utilities>`
+.. grid:: 3
+   :gutter: 2
+   :class-container: demos-capability-grid
 
-Surrogates
-----------
+   .. grid-item-card:: Projection-based ROM utilities
+      :link: projection_rom_utilities
+      :link-type: doc
+      :class-card: demos-capability-card demos-capability-card-rom
 
-Build data-driven approximations to model responses and quantities of interest.
-The current surrogate capability is based on Gaussian processes.
+      Build and manipulate the ingredients of projection-based reduced-order
+      models, including reduced vector spaces and basis construction.
 
-:doc:`Explore surrogates <surrogates>`
+      +++
+      **Explore ROM utilities →**
 
-Workflows
----------
+   .. grid-item-card:: Surrogates
+      :link: surrogates
+      :link-type: doc
+      :class-card: demos-capability-card demos-capability-card-surrogate
 
-Organize and execute parameterized computational studies. Workflow concepts
-include models, parameter spaces, model execution, ROM construction and
-adaptation, uncertainty quantification, and inverse problems.
+      Build data-driven approximations to model responses and quantities of
+      interest. Current examples focus on Gaussian-process surrogates.
 
-:doc:`Explore workflows <workflow_concepts>`
+      +++
+      **Explore surrogates →**
 
-Getting started
----------------
+   .. grid-item-card:: Workflows
+      :link: workflow_concepts
+      :link-type: doc
+      :class-card: demos-capability-card demos-capability-card-workflow
 
-If you are new to ``romtools``, start with projection-based ROM utilities to
-learn the reduced-space abstractions, then continue to the workflow examples.
-If you already have an application that you want to run through ``romtools``,
-start with :doc:`Models <models>` and :doc:`Model execution <workflows>`.
+      Organize parameterized studies, execute models, construct ROMs, quantify
+      uncertainty, and solve inverse problems.
+
+      +++
+      **Explore workflows →**
+
+Where should I start?
+---------------------
+
+.. grid:: 2
+   :gutter: 2
+   :class-container: demos-start-grid
+
+   .. grid-item-card:: I want to build a reduced basis
+      :link: projection_rom_utilities
+      :link-type: doc
+
+      Start with projection-based ROM utilities and learn the reduced-space
+      abstractions used throughout romtools.
+
+   .. grid-item-card:: I already have a computational model
+      :link: models
+      :link-type: doc
+
+      Start with the model interface, then move into parameter spaces, model
+      execution, ROM construction, UQ, or inverse workflows.
+
+.. raw:: html
+
+   <div class="demos-feature-strip">
+     <div><span class="demos-feature-number">01</span><strong>Learn the concept</strong><br><span>Short overview pages keep the abstraction clear.</span></div>
+     <div><span class="demos-feature-number">02</span><strong>Run an example</strong><br><span>Examples live directly beneath the concept they demonstrate.</span></div>
+     <div><span class="demos-feature-number">03</span><strong>Scale up</strong><br><span>Reuse the same abstractions in larger workflow studies.</span></div>
+   </div>
 
 .. toctree::
    :hidden:
