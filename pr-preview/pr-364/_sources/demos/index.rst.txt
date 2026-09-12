@@ -3,82 +3,76 @@ ROM Tools and Workflows: Examples and Demos
 
 .. raw:: html
 
-   <div class="demos-hero">
-     <div class="demos-hero-eyebrow">ROM Tools and Workflows</div>
-     <div class="demos-hero-title">Build reduced models. Fit surrogates. Run workflows.</div>
-     <div class="demos-hero-subtitle">
-       Explore the main romtools capabilities through focused concepts and runnable examples.
-       Start from reduced-space construction, data-driven surrogates, or end-to-end computational workflows.
-     </div>
-   </div>
+   <div class="demos-landing">
+     <section class="demos-hero-panel">
+       <div class="demos-hero-eyebrow">Examples and demos</div>
+       <h2 class="demos-hero-heading">Explore romtools by capability.</h2>
+       <p class="demos-hero-copy">
+         Start with the kind of problem you want to solve: construct reduced spaces,
+         build data-driven surrogates, or orchestrate complete computational workflows.
+       </p>
+     </section>
 
-Choose a capability
--------------------
+     <section class="demos-area-grid" aria-label="Main romtools areas">
+       <a class="demos-area-card demos-area-rom" href="projection_rom_utilities.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">01</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Projection-based ROM utilities</h2>
+         <p>Construct the reduced spaces and offline ingredients used by projection-based ROMs.</p>
+         <div class="demos-area-tags">
+           <span>Vector spaces</span>
+           <span>Basis construction</span>
+           <span>Hyper-reduction</span>
+         </div>
+       </a>
 
-.. grid:: 3
-   :gutter: 2
-   :class-container: demos-capability-grid
+       <a class="demos-area-card demos-area-surrogates" href="surrogates.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">02</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Surrogates</h2>
+         <p>Build data-driven approximations to model responses and quantities of interest.</p>
+         <div class="demos-area-tags">
+           <span>Gaussian processes</span>
+           <span>Regression</span>
+           <span>Workflow integration</span>
+         </div>
+       </a>
 
-   .. grid-item-card:: Projection-based ROM utilities
-      :link: projection_rom_utilities
-      :link-type: doc
-      :class-card: demos-capability-card demos-capability-card-rom
+       <a class="demos-area-card demos-area-workflows" href="workflow_concepts.html">
+         <div class="demos-area-topline">
+           <span class="demos-area-index">03</span>
+           <span class="demos-area-arrow" aria-hidden="true">↗</span>
+         </div>
+         <h2>Workflows</h2>
+         <p>Coordinate models, parameter studies, ROM construction, UQ, and inverse problems.</p>
+         <div class="demos-area-tags">
+           <span>Models</span>
+           <span>UQ</span>
+           <span>Inverse problems</span>
+         </div>
+       </a>
+     </section>
 
-      Build and manipulate the ingredients of projection-based reduced-order
-      models, including reduced vector spaces and basis construction.
-
-      +++
-      **Explore ROM utilities →**
-
-   .. grid-item-card:: Surrogates
-      :link: surrogates
-      :link-type: doc
-      :class-card: demos-capability-card demos-capability-card-surrogate
-
-      Build data-driven approximations to model responses and quantities of
-      interest. Current examples focus on Gaussian-process surrogates.
-
-      +++
-      **Explore surrogates →**
-
-   .. grid-item-card:: Workflows
-      :link: workflow_concepts
-      :link-type: doc
-      :class-card: demos-capability-card demos-capability-card-workflow
-
-      Organize parameterized studies, execute models, construct ROMs, quantify
-      uncertainty, and solve inverse problems.
-
-      +++
-      **Explore workflows →**
-
-Where should I start?
----------------------
-
-.. grid:: 2
-   :gutter: 2
-   :class-container: demos-start-grid
-
-   .. grid-item-card:: I want to build a reduced basis
-      :link: projection_rom_utilities
-      :link-type: doc
-
-      Start with projection-based ROM utilities and learn the reduced-space
-      abstractions used throughout romtools.
-
-   .. grid-item-card:: I already have a computational model
-      :link: models
-      :link-type: doc
-
-      Start with the model interface, then move into parameter spaces, model
-      execution, ROM construction, UQ, or inverse workflows.
-
-.. raw:: html
-
-   <div class="demos-feature-strip">
-     <div><span class="demos-feature-number">01</span><strong>Learn the concept</strong><br><span>Short overview pages keep the abstraction clear.</span></div>
-     <div><span class="demos-feature-number">02</span><strong>Run an example</strong><br><span>Examples live directly beneath the concept they demonstrate.</span></div>
-     <div><span class="demos-feature-number">03</span><strong>Scale up</strong><br><span>Reuse the same abstractions in larger workflow studies.</span></div>
+     <section class="demos-start-panel">
+       <div class="demos-start-copy">
+         <div class="demos-start-eyebrow">Not sure where to begin?</div>
+         <h2>Pick the path that matches what you already have.</h2>
+       </div>
+       <div class="demos-start-links">
+         <a href="projection_rom_utilities.html">
+           <strong>I want to build a reduced basis</strong>
+           <span>Start with projection-based ROM utilities →</span>
+         </a>
+         <a href="models.html">
+           <strong>I already have a computational model</strong>
+           <span>Start with the model interface →</span>
+         </a>
+       </div>
+     </section>
    </div>
 
 .. toctree::
