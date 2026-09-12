@@ -231,7 +231,7 @@ def run_mf_eki(model: QoiModel,
             rom_evaluation_concurrency: int = 1,
             restart_file: str = None,   # Optional parameter for restart file
             dispatcher: Optional[BaseDispatcher] = None,
-            max_step_size: float = 1.0
+            max_step_size: float = np.inf
             ):
     """
     Run a multi-fidelity ensemble Kalman inversion (MF-EKI) workflow.
@@ -273,8 +273,8 @@ def run_mf_eki(model: QoiModel,
         initial_step_size: Initial multiplier applied to the multifidelity
             Kalman update directions.
         max_step_size: Maximum step size allowed after accepted-step growth.
-            The default of ``1.0`` limits updates to at most a full Kalman
-            correction.
+            The default of ``np.inf`` preserves the legacy uncapped behavior;
+            set a finite value to limit step growth.
         regularization_parameter: Tikhonov regularization added to the QoI
             covariance solve.
         step_size_growth_factor: Factor used to increase the step size after
@@ -652,7 +652,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          rom_type: str = "gp",
                          rom_args: Optional[dict] = None,
                          dispatcher: Optional[BaseDispatcher] = None,
-                         max_step_size: float = 1.0):
+                         max_step_size: float = np.inf):
     """
     Wrapper around run_mf_eki that selects a default ROM surrogate by rom_type.
     """
