@@ -39,6 +39,13 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     parameter_space
 
 .. toctree::
+    :caption: Example models
+    :maxdepth: 1
+
+    steady_cdr
+    h2_air_flame
+
+.. toctree::
     :caption: Single model workflow tutorials
     :maxdepth: 1
 
@@ -59,7 +66,6 @@ This site provides a suite of tutorials and demos on how to use the rom-tools-an
     :maxdepth: 1
 
     eki_mf_eki_demo
-    h2_air_flame
     h2_air_flame_eki_mf_eki_demo
     vi_mf_vi_demo
     h2_air_flame_vi_mf_vi_demo
