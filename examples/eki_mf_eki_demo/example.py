@@ -6,6 +6,11 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
+from romtools.rom import (
+    LipschitzConfig,
+    NeuralNetworkConfig,
+    NeuralNetworkQoiModelBuilderWithTrainingData,
+)
 from romtools.workflows.inverse.eki_drivers import run_eki
 from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom, run_mf_eki
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
@@ -130,6 +135,7 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
     rom_substep_end_iteration = 1 if smoke else 15
     num_rom_substeps = 1 if smoke else 4
     max_rom_training_history = 2 if smoke else 3
+    nn_training_iterations = 100 if smoke else 5000
 
     system = cdr.AdvectionDiffusionSystem(Nx=grid_size, Ny=grid_size)
     b_vec = np.array([1.0, 1.0])
@@ -153,11 +159,24 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
     eki_dir = os.path.join(base_dir, "eki")
     mf_dir = os.path.join(base_dir, "mf_eki")
     mf_auto_rom_dir = os.path.join(base_dir, "mf_eki_auto_rom")
+    mf_lipschitz_nn_dir = os.path.join(base_dir, "mf_eki_lipschitz_nn")
     shutil.rmtree(base_dir, ignore_errors=True)
     os.makedirs(base_dir, exist_ok=True)
 
     fom_model = CdrFomQoiModel(system, b_vec)
     rom_builder = CdrRomBuilder(system, b_vec, rom_dim=rom_dim)
+    lipschitz_nn_builder = NeuralNetworkQoiModelBuilderWithTrainingData(
+        parameter_names=parameter_space.get_names(),
+        network_config=NeuralNetworkConfig(
+            training_iterations=nn_training_iterations,
+        ),
+        lipschitz_config=LipschitzConfig(
+            enabled=True,
+            safety_factor=1.1,
+        ),
+        normalize_parameters=True,
+        normalize_targets=True,
+    )
 
     run_eki(
         model=fom_model,
@@ -212,14 +231,40 @@ def main(smoke: bool = False, work_dir: str = None, output_path: str = None) -> 
         max_rom_training_history=max_rom_training_history,
     )
 
+    run_mf_eki(
+        model=fom_model,
+        rom_model_builder=lipschitz_nn_builder,
+        parameter_space=parameter_space,
+        observations=observations,
+        observations_covariance=observations_covariance,
+        absolute_eki_directory=mf_lipschitz_nn_dir,
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
+        fom_ensemble_size=fom_ensemble_size,
+        rom_extra_ensemble_size=rom_extra_ensemble_size,
+        rom_tolerance=0.001,
+        use_updated_rom_in_update_on_rebuild=False,
+        max_iterations=max_iterations,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+        max_rom_training_history=max_rom_training_history,
+    )
+
     eki_history = _collect_error_history(eki_dir, mf=False)
     mf_history = _collect_error_history(mf_dir, mf=True)
     mf_auto_rom_history = _collect_error_history(mf_auto_rom_dir, mf=True)
+    mf_lipschitz_nn_history = _collect_error_history(mf_lipschitz_nn_dir, mf=True)
 
-    plt.figure(figsize=(6.5, 4.0))
+    plt.figure(figsize=(7.2, 4.2))
     plt.plot(eki_history, marker="o", label="EKI (FOM)")
     plt.plot(mf_history, marker="s", label="MF-EKI (FOM+ROM)")
     plt.plot(mf_auto_rom_history, marker="^", label="MF-EKI (FOM+GP auto-ROM)")
+    plt.plot(
+        mf_lipschitz_nn_history,
+        marker="D",
+        label="MF-EKI (FOM+Lipschitz NN auto-ROM)",
+    )
     plt.yscale("log")
     plt.xlabel("Iteration")
     plt.ylabel("Mean observation error")
