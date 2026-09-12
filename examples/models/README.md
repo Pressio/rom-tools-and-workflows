@@ -31,7 +31,7 @@ implemented entirely in Python with NumPy and SciPy:
 - `h2_air_flame.py`: four-field advection-diffusion-reaction solver with the
   parameters `kappa`, `scaled_activation_energy`, `beta_x`, and `beta_y`.
 - `h2_air_flame_model.py`: sensor-based `H2AirFlameQoiModel` wrapper for
-  romtools inverse and multifidelity workflows.
+  romtools workflows.
 
 Run the lightweight wrapper smoke example with:
 
@@ -39,8 +39,7 @@ Run the lightweight wrapper smoke example with:
 python h2_air_flame_model.py
 ```
 
-The larger reference setup used in the MFVI work is documented in
-`docs/source/demos/h2_air_flame.rst`.
+See `docs/source/demos/h2_air_flame.rst` for the model description and usage.
 
 ## Notes
 
