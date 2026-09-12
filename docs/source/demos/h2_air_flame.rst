@@ -1,11 +1,18 @@
-H2-air flame benchmark
-======================
+H2-air flame model
+==================
 
 The examples include a self-contained, pure-Python model of a two-dimensional
 premixed H2-air flame. It is intended as a moderately challenging benchmark
 for inverse and multifidelity workflows while requiring only NumPy and SciPy.
 The implementation is adapted from the four-parameter reacting-flow example
 used in the MFVI paper development repository.
+
+The core solver and romtools QoI wrapper live in ``examples/models``. A quick
+wrapper smoke test can be run from the repository root with
+
+.. code-block:: bash
+
+   python examples/models/h2_air_flame_model.py
 
 Problem definition
 ------------------
@@ -52,7 +59,8 @@ SciPy sparse matrices.
 Direct use
 ----------
 
-The core solver is independent of romtools workflow interfaces:
+The core solver is independent of romtools workflow interfaces. From
+``examples/models``:
 
 .. code-block:: python
 
@@ -97,8 +105,8 @@ This corresponds to ``nx = 25``, ``ny = 13``, ``dt = 1e-4``, and
 
    Final temperature field at ``t = 0.005 s`` for the default configuration.
 
-QoI model for inverse workflows
--------------------------------
+QoI model for romtools workflows
+--------------------------------
 
 ``H2AirFlameQoiModel`` provides the standard romtools model protocol. It uses
 regularly strided temperature sensors as the QoI and writes both the QoI and
