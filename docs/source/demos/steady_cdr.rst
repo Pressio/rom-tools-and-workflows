@@ -2,10 +2,9 @@ Steady convection-diffusion-reaction model
 ==========================================
 
 The examples include a self-contained steady convection-diffusion-reaction
-(CDR) model that is used throughout the romtools workflow demonstrations.  It
-is intentionally small and inexpensive, making it useful for testing sampling,
-uncertainty-quantification, inverse, and multifidelity algorithms without an
-external simulation code.
+(CDR) model that is used throughout the romtools workflow demonstrations. It
+is intentionally small and inexpensive, making it useful for testing romtools
+interfaces and workflows without an external simulation code.
 
 The implementation lives in ``examples/models`` and requires only NumPy and
 SciPy.
@@ -19,14 +18,14 @@ The model solves a scalar steady CDR equation on the unit square,
 
    \nu \nabla^2 u - \boldsymbol{b}\cdot\nabla u - \sigma u = -1,
 
-with homogeneous boundary data represented by the discrete operators.  The
+with homogeneous boundary data represented by the discrete operators. The
 four model parameters are
 
 ``bmag``
    Magnitude of the advection velocity.
 
 ``theta``
-   Advection direction in radians.  The velocity vector is
+   Advection direction in radians. The velocity vector is
 
    .. math::
 
@@ -40,7 +39,7 @@ four model parameters are
    Reaction coefficient.
 
 The spatial discretization uses a second-order central stencil for diffusion
-and upwind finite differences for advection.  The resulting sparse linear
+and upwind finite differences for advection. The resulting sparse linear
 system is assembled with SciPy and solved with ``scipy.sparse.linalg.spsolve``.
 
 Direct use
@@ -73,8 +72,8 @@ romtools QoI model
 ------------------
 
 ``SteadyCdrQoiModel`` wraps the solver using the standard romtools QoI-model
-protocol.  It implements ``populate_run_directory``, ``run_model``, and
-``compute_qoi`` so the same model can be passed directly to romtools workflows.
+protocol. It implements ``populate_run_directory``, ``run_model``, and
+``compute_qoi`` so the model can be passed directly to romtools workflows.
 For each evaluation, the wrapper stores the state, model parameters, and a
 one-sided boundary-derivative QoI in ``solution.npz``.
 
@@ -98,19 +97,12 @@ The complete wrapper can be exercised from the repository root with
 The script performs one model evaluation and reports the size and norm of the
 resulting QoI.
 
-Use in workflow examples
-------------------------
+Related examples
+----------------
 
-The CDR model is deliberately reusable across multiple examples.  In
-particular, :doc:`uq_cdr_demo` uses different grid resolutions as a paired
-high- and low-fidelity model for multifidelity Monte Carlo.  The inverse
-workflow examples use related CDR configurations to demonstrate EKI, MF-EKI,
-VI, and MF-VI.
-
-Changing ``nx`` and ``ny`` provides a simple way to vary the model cost while
-preserving the same parameterization.  This makes the problem useful for
-multifidelity tests where the low-fidelity model is a coarser discretization of
-the same governing equation.
+Several demos use this model or closely related CDR configurations. See the
+uncertainty-quantification and inverse-workflow sections for examples of how a
+``QoiModel`` is consumed by higher-level romtools algorithms.
 
 Implementation
 --------------
