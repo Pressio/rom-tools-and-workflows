@@ -64,12 +64,12 @@ benchmark:
 .. code-block:: bash
 
    python examples/eki_mf_eki_demo/example.py \
-       --output docs/source/demos/notebooks/eki_mf_eki_demo.png
+       --output docs/source/demos/notebooks/eki_mf_eki_demo.svg
 
 Results
 -------
 
-.. figure:: notebooks/eki_mf_eki_demo.png
+.. figure:: notebooks/eki_mf_eki_demo.svg
    :alt: EKI and MF-EKI error convergence
    :align: center
    :width: 90%
