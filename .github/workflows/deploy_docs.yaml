@@ -43,6 +43,18 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y pandoc
       - run: pip install .[docs]
+      - name: Regenerate VI/MF-VI benchmark figures
+        run: >-
+          python examples/vi_mf_vi_demo/example.py
+          --output-dir docs/source/demos/notebooks
+      - name: Upload VI/MF-VI benchmark figures
+        uses: actions/upload-artifact@v4
+        with:
+          name: vi-mfvi-figures
+          path: |
+            docs/source/demos/notebooks/vi_mf_vi_elbo_convergence.png
+            docs/source/demos/notebooks/vi_mf_vi_parameter_convergence.png
+          retention-days: 1
       - run: sphinx-build -b html docs/source docs/build/html
       - name: Disable Jekyll processing
         run: touch docs/build/html/.nojekyll
