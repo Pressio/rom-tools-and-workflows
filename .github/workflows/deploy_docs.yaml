@@ -44,12 +44,15 @@ jobs:
       - run: sudo apt-get install -y pandoc
       - run: pip install .[docs]
       - run: sphinx-build -b html docs/source docs/build/html
+      - name: Disable Jekyll processing
+        run: touch docs/build/html/.nojekyll
 
       - name: Upload rendered documentation
         uses: actions/upload-artifact@v4
         with:
           name: documentation-html
           path: docs/build/html
+          include-hidden-files: true
           retention-days: 14
 
   # Publish a browser-accessible preview for same-repository pull requests.
@@ -114,6 +117,7 @@ jobs:
           sudo apt-get install -y pandoc
           pip install .[docs]
           sphinx-build -b html docs/source docs/build/html
+          touch docs/build/html/.nojekyll
 
       - name: Seed production site on gh-pages
         if: steps.pages-branch.outputs.exists == 'false'
