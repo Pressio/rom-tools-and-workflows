@@ -7,6 +7,7 @@ on:
 
 jobs:
   benchmark:
+    if: contains(github.event.head_commit.message, '[benchmark]')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
