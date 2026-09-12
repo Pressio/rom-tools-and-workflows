@@ -151,11 +151,14 @@ def main(
         newton_hessian_averaging_factor=0.5,
     )
     line_search = VIStochasticNonmonotoneLineSearchConfig()
+    observation_noise_std = 5.0e-3
     common_arguments = {
         "model": model,
         "prior_parameter_space": prior,
         "observations": observations,
-        "observations_covariance": np.eye(observations.size) * 1.0e-5,
+        "observations_covariance": (
+            np.eye(observations.size) * observation_noise_std**2
+        ),
         "parameter_mins": parameter_mins,
         "parameter_maxes": parameter_maxes,
         "optimizer_method": "newton",
