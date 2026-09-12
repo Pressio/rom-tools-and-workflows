@@ -1,0 +1,39 @@
+name: H2-air flame rejuvenation benchmark
+
+on:
+  push:
+    branches:
+      - fix-358-eki-rejuvenation
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install romtools and benchmark dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[docs]
+
+      - name: Run full H2-air flame benchmark
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python examples/h2_air_flame_eki_mf_eki/example.py \
+            --work-dir "${RUNNER_TEMP}/h2-air-flame-work" \
+            --output-dir benchmark-results
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-air-flame-rejuvenation-benchmark
+          path: benchmark-results/
