@@ -1,7 +1,7 @@
 name: deploy-docs
 
-# Validate documentation examples for pull requests and deploy rendered docs
-# after commits land on develop.
+# Validate documentation examples for pull requests, publish live PR previews,
+# and deploy the canonical site after commits land on develop.
 on:
   push:
     branches:
@@ -9,13 +9,14 @@ on:
   pull_request:
     branches:
       - develop
+    types: [opened, reopened, synchronize, closed]
 
-# security: restrict permissions for CI jobs.
 permissions:
   contents: read
 
 jobs:
   validate-examples:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,10 +29,8 @@ jobs:
       - name: Validate documentation examples
         run: python docs/validate_examples.py
 
-  # Build the documentation and upload the static HTML files as an artifact.
-  # Sphinx itself never executes notebooks; execution is handled explicitly by
-  # the validation job above.
   build:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     needs: validate-examples
     runs-on: ubuntu-latest
     steps:
@@ -43,26 +42,143 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: sudo apt-get update
       - run: sudo apt-get install -y pandoc
-
       - run: pip install .[docs]
       - run: sphinx-build -b html docs/source docs/build/html
+      - name: Disable Jekyll processing
+        run: touch docs/build/html/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload rendered documentation
+        uses: actions/upload-artifact@v4
         with:
+          name: documentation-html
+          path: docs/build/html
+          include-hidden-files: true
+          retention-days: 14
+
+  # Publish a browser-accessible preview for same-repository pull requests.
+  # rossjrw/pr-preview-action stores each preview below pr-preview/pr-<number>
+  # on the gh-pages branch and posts the preview URL to the pull request.
+  deploy-preview:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: docs-pages-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download rendered pull-request documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-html
           path: docs/build/html
 
-  # Deploy only after a successful build on a push to develop.
+      # The repository previously deployed Pages directly from Actions. Seed the
+      # gh-pages branch once with the current develop documentation so switching
+      # Pages to branch-based publishing does not replace the production site
+      # with an empty root containing only a PR preview.
+      - name: Check for gh-pages branch
+        id: pages-branch
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout develop for initial production-site seed
+        if: steps.pages-branch.outputs.exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          path: production-source
+
+      - name: Set up Python for initial production-site seed
+        if: steps.pages-branch.outputs.exists == 'false'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: production-source/pyproject.toml
+
+      - name: Build current develop documentation for initial seed
+        if: steps.pages-branch.outputs.exists == 'false'
+        working-directory: production-source
+        run: |
+          python -m pip install --upgrade pip
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+          pip install .[docs]
+          sphinx-build -b html docs/source docs/build/html
+          touch docs/build/html/.nojekyll
+
+      - name: Seed production site on gh-pages
+        if: steps.pages-branch.outputs.exists == 'false'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: production-source/docs/build/html
+          clean: true
+
+      - name: Publish pull-request preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: docs/build/html
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          pages-base-url: pressio.github.io/rom-tools-and-workflows
+
+  remove-preview:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: docs-pages-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove pull-request preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          action: remove
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          pages-base-url: pressio.github.io/rom-tools-and-workflows
+
+  # Once Pages is configured to publish from gh-pages, every successful push to
+  # develop refreshes the production root while preserving active PR previews.
   deploy:
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: docs-pages-publish
+      cancel-in-progress: false
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+      - name: Download rendered documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-html
+          path: docs/build/html
+      - name: Deploy production documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/build/html
+          clean: true
+          clean-exclude: pr-preview

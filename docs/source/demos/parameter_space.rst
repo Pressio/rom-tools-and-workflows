@@ -1,12 +1,13 @@
-parameter_space
-=======================
+Parameter spaces
+================
 
-This set of tutorials will show you how to construct a parameter space in romtools
+Parameter spaces define the parameter domain used by ``romtools`` workflows and
+provide the sampling interface used to generate model evaluations.
+
+Examples
+--------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
 
    notebooks/parameter_space.ipynb
-
-
