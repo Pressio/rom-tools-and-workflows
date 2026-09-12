@@ -28,9 +28,8 @@ jobs:
       - name: Validate documentation examples
         run: python docs/validate_examples.py
 
-  # Build the documentation and upload the static HTML files as an artifact.
-  # Sphinx itself never executes notebooks; execution is handled explicitly by
-  # the validation job above.
+  # Build the documentation. Sphinx itself never executes notebooks; execution
+  # is handled explicitly by the validation job above.
   build:
     needs: validate-examples
     runs-on: ubuntu-latest
@@ -43,15 +42,42 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: sudo apt-get update
       - run: sudo apt-get install -y pandoc
-
       - run: pip install .[docs]
       - run: sphinx-build -b html docs/source docs/build/html
 
+      # Keep the Pages artifact used by the canonical develop deployment.
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/build/html
 
-  # Deploy only after a successful build on a push to develop.
+      # For pull requests, also publish the rendered HTML as a normal workflow
+      # artifact so reviewers can inspect the complete site before merge without
+      # touching the canonical GitHub Pages deployment.
+      - name: Upload pull-request documentation preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-preview-pr-${{ github.event.pull_request.number }}
+          path: docs/build/html
+          retention-days: 14
+
+      - name: Add preview instructions to workflow summary
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo '## Documentation preview'
+            echo
+            echo 'The complete rendered Sphinx site is attached to this workflow run as:'
+            echo
+            echo '\`documentation-preview-pr-${{ github.event.pull_request.number }}\`'
+            echo
+            echo 'Download the artifact, extract it, and open \`index.html\` in a browser to review the site before merging.'
+            echo
+            echo '[Open this workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Deploy only after a successful build on a push to develop. PR preview
+  # artifacts above never modify the canonical site.
   deploy:
     if: github.event_name == 'push'
     needs: build
