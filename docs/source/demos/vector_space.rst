@@ -1,17 +1,18 @@
-vector_space
-=======================
+Vector spaces
+=============
 
-This set of tutorials will show you the basics of constructing a vector space.
-In practice, a vector space comprises a basis and, potentially, an affine offset.
+A projection-based ROM vector space comprises a reduced basis and, potentially,
+an affine offset. ``romtools`` provides several vector-space constructions for
+different data layouts and basis-generation strategies.
+
+Examples
+--------
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
    notebooks/dictionary_vector_space.ipynb
    notebooks/pod_vector_space.ipynb
    notebooks/streaming_pod_vector_space.ipynb
    notebooks/orthogonalized_vector_space.ipynb
    notebooks/composite_vector_space.ipynb
-
-
