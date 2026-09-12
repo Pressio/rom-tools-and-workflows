@@ -82,7 +82,8 @@ Results
 For this benchmark, the Gaussian-process surrogate gives the lowest final
 observation error. The Lipschitz-constrained neural surrogate reduces the error
 much more rapidly than single-fidelity EKI during the early iterations, but
-levels off above the Gaussian-process result in the later iterations.
+levels off above the Gaussian-process and tailored-ROM results in the later
+iterations.
 
 Implementation
 --------------
