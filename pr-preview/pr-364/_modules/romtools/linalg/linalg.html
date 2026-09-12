@@ -1,0 +1,2309 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.linalg.linalg &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=58ecf915" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/thebelab-helper.js"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/linalg/linalg';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.linalg.linalg</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.linalg.linalg</h1><div class="highlight"><pre>
+<span></span>
+<span class="sd">'''</span>
+<span class="sd">see this for why this file exists and is done this way</span>
+<span class="sd">https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1</span>
+<span class="sd">'''</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">builtins</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.linalg.parallel_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_axis_is_none_or_within_rank</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.vector_space.utils.snapshot_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">SnapshotLoader</span>
+
+<span class="c1"># ----------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_max_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Return the maximum of a possibly distributed array or maximum along an axis.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): input data</span>
+<span class="sd">        axis (None or int): the axis along which to compute the maximum.</span>
+<span class="sd">            If None, computes the max of the flattened array. (default: None)</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - if axis == None, returns a scalar</span>
+<span class="sd">        - if axis is not None, returns an array of dimension a.ndim - 1</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">        - a is at most a rank-3 tensor</span>
+<span class="sd">        - if a is a distributed 2-D array, it must be distributed along axis=0,</span>
+<span class="sd">          and every rank must have the same a.shape[1]</span>
+<span class="sd">        - if a is a distributed 3-D tensor, it must be distributed along axis=1,</span>
+<span class="sd">          and every rank must have the same a.shape[0] and a.shape[2]</span>
+<span class="sd">        - if axis != None, then it must be an int</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">        - a and comm are not modified</span>
+
+<span class="sd">    Example 1:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    Input data:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">       rank 0  2.2</span>
+<span class="sd">               3.3</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 1  40.</span>
+<span class="sd">               51.</span>
+<span class="sd">               -24.</span>
+<span class="sd">               45.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 2  -4.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, comm)</span>
+
+<span class="sd">    Then all ranks will contain res = 51.</span>
+
+<span class="sd">    Example 2:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">       rank 0  2.2  1.3  4.</span>
+<span class="sd">               3.3  5.0  33.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 1  40.  -2.  -4.</span>
+<span class="sd">               51.   4.   6.</span>
+<span class="sd">               -24.  8.   9.</span>
+<span class="sd">               45.  -3.  -4.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 2  -4.  8.   9.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = la.max(a, axis=0, comm)</span>
+
+<span class="sd">    Then every rank will contain the same res which is an array = ([51., 8., 33])</span>
+<span class="sd">    this is because the max is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed. So this operation must be a</span>
+<span class="sd">    collective operation.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      res = la.max(a, axis=1, comm)</span>
+
+<span class="sd">    Then res is now a rank-1 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  4.</span>
+<span class="sd">                33.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.</span>
+<span class="sd">                51.</span>
+<span class="sd">                9.</span>
+<span class="sd">                45.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  9.</span>
+
+<span class="sd">    Because the axis queried for the max is NOT a distributed axis so this</span>
+<span class="sd">    operation is purely local and the result has the same distribution as the</span>
+<span class="sd">    original array.</span>
+
+<span class="sd">    Example 3:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           / 3.   4.   /  2.   8.   2.   1.   / 2.</span>
+<span class="sd">          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -&gt; slice T(:,:,1)</span>
+<span class="sd">         /  -7.   5. /    5.   0.   3.   1. /   3.</span>
+<span class="sd">        |-----------|----------------------|--------</span>
+<span class="sd">        | 2.   3.   |  4.   5.  -2.   4.   | -4.</span>
+<span class="sd">        | 1.   5.   | -2.   4.   8.  -3.   |  8.    -&gt;  slice T(:,:,0)</span>
+<span class="sd">        | 4.   3.   | -4.   6.   9.  -4.   |  9.</span>
+
+<span class="sd">            r0                r1              r2</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=0, comm)</span>
+
+<span class="sd">    Then res is now a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           /  6.  5.   /  5.   8.   3.   1.  /  3.</span>
+<span class="sd">          / 4.   5.   / 4.   6.   9.   4.   /  9.</span>
+<span class="sd">         /           /                     /</span>
+<span class="sd">        /    r1     /         r2          /  r3</span>
+
+<span class="sd">    Because the axis queried for the max is NOT a distributed axis and this is</span>
+<span class="sd">    effectively a reduction over the 0-th axis so this operation is purely local</span>
+<span class="sd">    and the result has the same distribution as the original array.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=1, comm)</span>
+
+<span class="sd">    Then this is effectively a reduction over axis=1, and every rank will</span>
+<span class="sd">    contain the same res which is a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        5.  8.</span>
+<span class="sd">        8.  6.</span>
+<span class="sd">        9.  5.</span>
+
+<span class="sd">    This is because the max is queried for the 0-th axis which is the axis along</span>
+<span class="sd">    which the data array is distributed. So this operation must be a collective</span>
+<span class="sd">    operation and we know that memory-wise it is feasible to hold because this</span>
+<span class="sd">    is no larger than the local allocation on each rank.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=2, comm)</span>
+
+<span class="sd">    Then res is now a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">          r0     ||          r1           ||  r2</span>
+<span class="sd">                 ||                       ||</span>
+<span class="sd">        3.   4.  ||   4.   8.   2.   4.   ||   2.</span>
+<span class="sd">        6.   5.  ||  -2.   4.   8.  -3.   ||   8.</span>
+<span class="sd">        4.   5.  ||   5.   6.   9.   1.   ||   9.</span>
+<span class="sd">                 ||                       ||</span>
+
+<span class="sd">    Because the axis queried for the max is NOT a distributed axis and this is</span>
+<span class="sd">    effectively a reduction over the 2-th axis so this operation is purely local</span>
+<span class="sd">    and the result has the same distribution as the original array.</span>
+
+<span class="sd">    '''</span>
+    <span class="c1"># Enforce preconditions</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"a must be at most a rank-3 tensor"</span>
+    <span class="n">assert_axis_is_none_or_within_rank</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Return np.max if running serial</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Otherwise, calculate distributed max</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="c1"># Get the max on the current process</span>
+    <span class="n">local_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Identify the axis along which the data is the distributed</span>
+    <span class="n">distributed_axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># Return the max of the flattened array if no axis is given</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_max</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MAX</span><span class="p">)</span>
+
+    <span class="c1"># If queried axis is the same as distributed axis, perform collective operation</span>
+    <span class="k">if</span> <span class="n">axis</span><span class="o">==</span><span class="n">distributed_axis</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">local_max</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="n">global_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">local_max</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">local_max</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_max</span><span class="p">,</span> <span class="n">global_max</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MAX</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">global_max</span>
+
+    <span class="c1"># Otherwise, return the local_max on the current process</span>
+    <span class="k">return</span> <span class="n">local_max</span>
+
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_argmax_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Return the index of an array's maximum value. If the array is distributed, also returns the</span>
+<span class="sd">    value itself and the MPI rank on which it occurs.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): input data</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - if comm == None, returns the index of the maximum value (identical to np.argmax)</span>
+<span class="sd">        - if comm != None, returns a tuple containing (value, index, rank):</span>
+<span class="sd">            - value: the global maximum</span>
+<span class="sd">            - index: the local index of the global maximum</span>
+<span class="sd">            - rank: the rank on which the global maximum resides</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">      - a is at most a rank-3 tensor</span>
+<span class="sd">      - if a is a distributed 2-D array, it must be distributed along axis=0,</span>
+<span class="sd">        and every rank must have the same a.shape[1]</span>
+<span class="sd">      - if a is a distributed 3-D tensor, it must be distributed along axis=1,</span>
+<span class="sd">        and every rank must have the same a.shape[0] and a.shape[2]</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">      - a and comm are not modified</span>
+
+<span class="sd">    Example 1:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">       rank 0  2.2</span>
+<span class="sd">               3.3</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 1  40.</span>
+<span class="sd">               51.</span>
+<span class="sd">               -24.</span>
+<span class="sd">               45.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 2  -4.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.argmax(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = (1, 1).</span>
+<span class="sd">    (The global maximum (51.) occurs at index 1 of the local array on Rank 1.)</span>
+
+<span class="sd">    Example 2:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">       rank 0  2.2  1.3  4.</span>
+<span class="sd">               3.3  5.0  33.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 1  40.  -2.  -4.</span>
+<span class="sd">               51.   4.   6.</span>
+<span class="sd">               -24.  8.   9.</span>
+<span class="sd">               45.  -3.  -4.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 2  -4.  8.   9.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = la.argmax(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = (3, 1)</span>
+<span class="sd">    (The global maximum (51.) occurs at index 3 of the flattened local array on Rank 1.)</span>
+
+<span class="sd">    Example 3:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           / 3.   4.   /  2.   8.   2.   1.   / 2.</span>
+<span class="sd">          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -&gt; slice T(:,:,1)</span>
+<span class="sd">         /  -7.   5. /    5.   0.   3.   1. /   3.</span>
+<span class="sd">        |-----------|----------------------|--------</span>
+<span class="sd">        | 2.   3.   |  4.   5.  -2.   4.   | -4.</span>
+<span class="sd">        | 1.   5.   | -2.   4.   8.  -3.   |  8.    -&gt;  slice T(:,:,0)</span>
+<span class="sd">        | 4.   3.   | -4.   6.   9.  -4.   |  9.</span>
+
+<span class="sd">            r0                r1              r2</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.argmax(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = (20, 1)</span>
+<span class="sd">    (The global maximum (9.) occurs on both Rank 1 and Rank 2, but we automatically return the</span>
+<span class="sd">    index on the lowest rank. In this case, that is index 20 of the flattened local array on Rank 1.)</span>
+
+<span class="sd">    '''</span>
+    <span class="c1"># Enforce preconditions</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"a must be at most a rank-3 tensor"</span>
+
+    <span class="c1"># Return "local" result if not running distributed</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+    <span class="c1"># Get local array argmax result</span>
+    <span class="n">local_max_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">local_max_val</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="n">local_max_index</span><span class="p">]</span>
+
+    <span class="c1"># Set up local solution</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_max_val</span>
+    <span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_max_index</span>
+    <span class="n">tmp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="c1"># Define custom MPI op to find distributed max index</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mycomp</span><span class="p">(</span><span class="n">A_mem</span><span class="p">,</span><span class="n">B_mem</span><span class="p">,</span><span class="n">dt</span><span class="p">):</span> <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">A_mem</span><span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">B_mem</span><span class="p">)</span>
+
+        <span class="c1"># Return the index of the max (or the max on the lowest rank, if multiple occurrences)</span>
+        <span class="k">if</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">A</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">B</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">B</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">A</span>
+
+        <span class="c1"># Copy result to B for next comparison</span>
+        <span class="n">B</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">result</span>
+
+    <span class="c1"># Perform operation</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">myop</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">Op</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">mycomp</span><span class="p">,</span> <span class="n">commute</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">myop</span><span class="p">)</span>
+    <span class="n">myop</span><span class="o">.</span><span class="n">Free</span><span class="p">()</span>
+
+    <span class="c1"># Return index (int64), and rank (int)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+
+<span class="c1"># # ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_min_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Return the minimum of a possibly distributed array or minimum along an axis.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): input data</span>
+<span class="sd">        axis (None or int): the axis along which to compute the minimum. If None, computes the min of the flattened array.</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - if axis == None, returns a scalar</span>
+<span class="sd">        - if axis is not None, returns an array of dimension a.ndim - 1</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">        - a is at most a rank-3 tensor</span>
+<span class="sd">        - if a is a distributed 2-D array, it must be distributed along axis=0,</span>
+<span class="sd">          and every rank must have the same a.shape[1]</span>
+<span class="sd">        - if a is a distributed 3-D tensor, it must be distributed along axis=1,</span>
+<span class="sd">          and every rank must have the same a.shape[0] and a.shape[2]</span>
+<span class="sd">        - if axis != None, then it must be an int</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">        - a and comm are not modified</span>
+
+<span class="sd">    Example 1:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.2</span>
+<span class="sd">                3.3</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.</span>
+<span class="sd">                51.</span>
+<span class="sd">                -24.</span>
+<span class="sd">                45.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  -4.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.min(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = -4.</span>
+
+<span class="sd">    Example 2:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.2  1.3  4.</span>
+<span class="sd">                3.3  5.0  33.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.  -2.  -4.</span>
+<span class="sd">                51.   4.   6.</span>
+<span class="sd">                -24.  8.   9.</span>
+<span class="sd">                45.  -3.  -4.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  -4.  8.   9.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = la.min(a, axis=0, comm)</span>
+
+<span class="sd">    then every rank will contain the same res which is an array = ([-24., -3., -4])</span>
+<span class="sd">    this is because the min is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      res = la.min(a, axis=1, comm)</span>
+
+<span class="sd">    then res is now a rank-1 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  1.3</span>
+<span class="sd">                3.3</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  -4.</span>
+<span class="sd">                4.</span>
+<span class="sd">                -24.</span>
+<span class="sd">                -4.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  -4.</span>
+
+<span class="sd">    because the axis queried for the min is NOT a distributed axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Example 3:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           / 3.   4.   /  2.   8.   2.   1.   / 2.</span>
+<span class="sd">          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -&gt; slice T(:,:,1)</span>
+<span class="sd">         /  -7.   5. /    5.   0.   3.   1. /   3.</span>
+<span class="sd">        |-----------|----------------------|--------</span>
+<span class="sd">        | 2.   3.   |  4.   5.  -2.   4.   | -4.</span>
+<span class="sd">        | 1.   5.   | -2.   4.   8.  -3.   |  8.    -&gt;  slice T(:,:,0)</span>
+<span class="sd">        | 4.   3.   | -4.   6.   9.  -4.   |  9.</span>
+
+<span class="sd">            r0                r1              r2</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=0, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           /  -7.  -1.  /  -2.   -1.   0.   -6.  /  0.</span>
+<span class="sd">          / 1.    3.   / -4.    4.   -2.   -4.  /  -4.</span>
+<span class="sd">         /            /                        /</span>
+<span class="sd">        /     r1     /           r2           /   r3</span>
+
+<span class="sd">    because the axis queried for the max is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 0-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=1, comm)</span>
+
+<span class="sd">    then this is effectively a reduction over axis=1,</span>
+<span class="sd">    and every rank will contain the same res which is a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        -4.   1.</span>
+<span class="sd">        -3.  -6.</span>
+<span class="sd">        -4.  -7.</span>
+
+<span class="sd">    this is because the max is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation and we know that</span>
+<span class="sd">    memory-wise it is feasible to hold because this is no larger than the</span>
+<span class="sd">    local allocation on each rank.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.max(a, axis=2, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">             r0    ||          r1           ||  r2</span>
+<span class="sd">                   ||                       ||</span>
+<span class="sd">           2.  3.  ||   2.   5.  -2.   1.   ||  -4.</span>
+<span class="sd">           1. -1.  ||  -2.  -1.   0.  -6.   ||   0.</span>
+<span class="sd">          -7.  3.  ||  -4.   0.   3.  -4.   ||   3.</span>
+<span class="sd">                   ||                       ||</span>
+
+<span class="sd">    because the axis queried for the max is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 2-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    '''</span>
+    <span class="c1"># Enforce preconditions</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"a must be at most a rank-3 tensor"</span>
+    <span class="n">assert_axis_is_none_or_within_rank</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Return np.min if running serial</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Otherwise, calculate distributed min</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="c1"># Get the min on the current process</span>
+    <span class="n">local_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Identify the axis along which the data is the distributed</span>
+    <span class="n">distributed_axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># Return the min of the flattened array if no axis is given</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_min</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MIN</span><span class="p">)</span>
+
+    <span class="c1"># If queried axis is the same as distributed axis, perform collective operation</span>
+    <span class="k">if</span> <span class="n">axis</span><span class="o">==</span><span class="n">distributed_axis</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">local_min</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="n">global_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">local_min</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">local_min</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_min</span><span class="p">,</span> <span class="n">global_min</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MIN</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">global_min</span>
+
+    <span class="c1"># Otherwise, return the local_min on the current process</span>
+    <span class="k">return</span> <span class="n">local_min</span>
+
+
+<span class="c1"># # ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_mean_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Return the mean of a possibly distributed array over a given axis.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): input data</span>
+<span class="sd">        dtype (data-type): Type to use in computing the mean</span>
+<span class="sd">        axis (None or int): the axis along which to compute the mean. If None, computes the mean of the flattened array.</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - if axis == None, returns a scalar</span>
+<span class="sd">        - if axis is not None, returns an array of dimension a.ndim - 1</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">        - a is at most a rank-3 tensor</span>
+<span class="sd">        - if a is a distributed 2-D array, it must be distributed along axis=0,</span>
+<span class="sd">          and every rank must have the same a.shape[1]</span>
+<span class="sd">        - if a is a distributed 3-D tensor, it must be distributed along axis=1,</span>
+<span class="sd">          and every rank must have the same a.shape[0] and a.shape[2]</span>
+<span class="sd">        - if axis != None, then it must be an int</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">        - a and comm are not modified</span>
+
+<span class="sd">    Example 1:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">       rank 0  2.2</span>
+<span class="sd">               3.3</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 1  40.</span>
+<span class="sd">               51.</span>
+<span class="sd">               -24.</span>
+<span class="sd">               45.</span>
+<span class="sd">      =======================</span>
+<span class="sd">       rank 2  -4.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.mean(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = 16.21</span>
+
+<span class="sd">    Example 2:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.2  1.3  4.</span>
+<span class="sd">                3.3  5.0  33.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.  -2.  -4.</span>
+<span class="sd">                51.   4.   6.</span>
+<span class="sd">                -24.  8.   9.</span>
+<span class="sd">                45.  -3.  -4.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  -4.   8.   9.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = la.mean(a, axis=0, comm)</span>
+
+<span class="sd">    then every rank will contain the same res which is:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = ([16.21,  3.04,  7.57])</span>
+
+<span class="sd">    this is because the mean is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      res = la.mean(a, axis=1, comm)</span>
+
+<span class="sd">    then res is now a rank-1 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.5</span>
+<span class="sd">                13.77</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  11.33</span>
+<span class="sd">                20.33</span>
+<span class="sd">                -2.33</span>
+<span class="sd">                12.67</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  4.33</span>
+
+<span class="sd">    because the axis queried for the mean is NOT a distributed axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Example 3:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           / 3.   4.   /  2.   8.   2.   1.   / 2.</span>
+<span class="sd">          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -&gt; slice T(:,:,1)</span>
+<span class="sd">         /  -7.   5. /    5.   0.   3.   1. /   3.</span>
+<span class="sd">        |-----------|----------------------|--------</span>
+<span class="sd">        | 2.   3.   |  4.   5.  -2.   4.   | -4.</span>
+<span class="sd">        | 1.   5.   | -2.   4.   8.  -3.   |  8.    -&gt;  slice T(:,:,0)</span>
+<span class="sd">        | 4.   3.   | -4.   6.   9.  -4.   |  9.</span>
+
+<span class="sd">            r0                r1              r2</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.mean(a, axis=0, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           /   0.6667   2.6667  /    1.6667   2.3333   1.6667   -1.3333  /   1.6667</span>
+<span class="sd">          / 2.3333  3.6667     / -0.6667.   5.       5.      -1.        /  4.3333</span>
+<span class="sd">         /                    /                                        /</span>
+<span class="sd">        /         r1         /                  r2                    /    r3</span>
+
+<span class="sd">    because the axis queried for the mean is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 0-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      res = la.mean(a, axis=1, comm)</span>
+
+<span class="sd">    then this is effectively a reduction over axis=1,</span>
+<span class="sd">    and every rank will contain the same res which is a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        1.71428571  3.1428571</span>
+<span class="sd">        3.         -0.5714285</span>
+<span class="sd">        3.28571429  1.4285714</span>
+
+<span class="sd">    this is because the mean is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation and we know that</span>
+<span class="sd">    memory-wise it is feasible to hold because this is no larger than the</span>
+<span class="sd">    local allocation on each rank.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">      res = la.mean(a, axis=2, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           r0      ||          r1           ||  r2</span>
+<span class="sd">                   ||                       ||</span>
+<span class="sd">         2.5  3.5  ||   3.   6.5  0.   2.5  || -1.</span>
+<span class="sd">         3.5  2.   ||  -2.   1.5  4.  -4.5  ||  4.</span>
+<span class="sd">        -1.5  4.   ||   0.5  3.   6.  -1.5  ||  6.</span>
+<span class="sd">                   ||                       ||</span>
+
+<span class="sd">    because the axis queried for the mean is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 2-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    '''</span>
+    <span class="c1"># Enforce preconditions</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"a must be at most a rank-3 tensor"</span>
+    <span class="n">assert_axis_is_none_or_within_rank</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Return np.mean if running serial</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Otherwise calculate distributed mean</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="c1"># Get the size (mean = sum/size) -- num elements if axis is None, or num rows along given axis</span>
+    <span class="n">local_size</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span> <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+    <span class="n">global_size</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_size</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+
+    <span class="c1"># Warn if dividing by 0</span>
+    <span class="k">if</span> <span class="n">global_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Invalid value encountered in scalar divide (global_size = 0)"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="c1"># Identify the axis along which the input array is distributed</span>
+    <span class="n">distributed_axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># Calculate mean of flattened array if no axis is given</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">local_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">global_sum</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_sum</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">global_sum</span> <span class="o">/</span> <span class="n">global_size</span>
+
+    <span class="c1"># Get mean along distributed axis and perform collective operation</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="n">distributed_axis</span><span class="p">:</span>
+        <span class="n">local_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="n">global_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_sum</span><span class="p">,</span> <span class="n">global_sum</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">global_sum</span> <span class="o">/</span> <span class="n">global_size</span>
+
+    <span class="c1"># Return the local mean if queried axis is not the distributed axis</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_std_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Return the standard deviation of a possibly distributed array over a given axis.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): input data</span>
+<span class="sd">        dtype (data-type): Type to use in computing the mean</span>
+<span class="sd">        axis (None or int): the axis along which to compute the mean. If None, computes the mean of the flattened array.</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - if axis == None, returns a scalar</span>
+<span class="sd">        - if axis is not None, returns an array of dimension a.ndim - 1</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">        - a is at most a rank-3 tensor</span>
+<span class="sd">        - if a is a distributed 2-D array, it must be distributed along axis=0,</span>
+<span class="sd">          and every rank must have the same a.shape[1]</span>
+<span class="sd">        - if a is a distributed 3-D tensor, it must be distributed along axis=1,</span>
+<span class="sd">          and every rank must have the same a.shape[0] and a.shape[2]</span>
+<span class="sd">        - if axis != None, then it must be an int</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">        - a and comm are not modified</span>
+
+<span class="sd">    Example 1:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.2</span>
+<span class="sd">                3.3</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.</span>
+<span class="sd">                51.</span>
+<span class="sd">                -24.</span>
+<span class="sd">                45.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  -4.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, comm)</span>
+
+<span class="sd">    then ALL ranks will contain res = 26.71</span>
+
+<span class="sd">    Example 2:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  2.2  1.3  4.</span>
+<span class="sd">                3.3  5.0  33.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  40.  -2.  -4.</span>
+<span class="sd">                51.   4.   6.</span>
+<span class="sd">                -24.  8.   9.</span>
+<span class="sd">                45.  -3.  -4.</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2. -4.  8.   9.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, axis=0, comm)</span>
+
+<span class="sd">    then every rank will contain the same res which is:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       res = ([26.71,  4.12 , 11.55])</span>
+
+<span class="sd">    this is because the standard deviation is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, axis=1, comm)</span>
+
+<span class="sd">    then res is now a rank-1 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        rank 0  1.12</span>
+<span class="sd">                13.62</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 1  20.29</span>
+<span class="sd">                21.70</span>
+<span class="sd">                15.33</span>
+<span class="sd">                22.87</span>
+<span class="sd">        =======================</span>
+<span class="sd">        rank 2  5.91</span>
+
+<span class="sd">    because the axis queried for the standard deviation is NOT a distributed axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Example 3:</span>
+<span class="sd">    ^^^^^^^^^^</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           / 3.   4.   /  2.   8.   2.   1.   / 2.</span>
+<span class="sd">          /  6.  -1.  /  -2.  -1.   0.  -6.  /  0.    -&gt; slice T(:,:,1)</span>
+<span class="sd">         /  -7.   5. /    5.   0.   3.   1. /   3.</span>
+<span class="sd">        |-----------|----------------------|--------</span>
+<span class="sd">        | 2.   3.   |  4.   5.  -2.   4.   | -4.</span>
+<span class="sd">        | 1.   5.   | -2.   4.   8.  -3.   |  8.    -&gt;  slice T(:,:,0)</span>
+<span class="sd">        | 4.   3.   | -4.   6.   9.  -4.   |  9.</span>
+
+<span class="sd">            r0                r1              r2</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, axis=0, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           /   5.5578   2.6247   /    2.8674   4.0277   1.2472   3.2998   /   1.2472</span>
+<span class="sd">          / 1.2472   0.9428     / 3.3993   0.8165   4.9666   3.5590      / 5.9067</span>
+<span class="sd">         /                     /                                        /</span>
+<span class="sd">        /          r1         /                  r2                    /     r3</span>
+
+<span class="sd">    because the axis queried for the standard deviation is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 0-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, axis=1, comm)</span>
+
+<span class="sd">    then this is effectively a reduction over axis=1,</span>
+<span class="sd">    and every rank will contain the same res which is a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        3.14934396  2.16653584</span>
+<span class="sd">        4.14039336  3.28881841</span>
+<span class="sd">        5.06287004  3.84919817</span>
+
+<span class="sd">    this is because the standard deviation is queried for the 0-th axis which is the</span>
+<span class="sd">    axis along which the data array is distributed.</span>
+<span class="sd">    So this operation must be a collective operation and we know that</span>
+<span class="sd">    memory-wise it is feasible to hold because this is no larger than the</span>
+<span class="sd">    local allocation on each rank.</span>
+
+<span class="sd">    Suppose that we do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        res = la.std(a, axis=2, comm)</span>
+
+<span class="sd">    then res is now a rank-2 array as follows</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">           r0      ||          r1           ||  r2</span>
+<span class="sd">                   ||                       ||</span>
+<span class="sd">         0.5  0.5  ||   1.   1.5  2.  1.5   ||   3.</span>
+<span class="sd">         2.5  3.   ||   0.   2.5  4.  1.5   ||   4.</span>
+<span class="sd">         5.5  1.   ||   4.5  3.   3.  2.5   ||   3.</span>
+<span class="sd">                   ||                       ||</span>
+
+<span class="sd">    because the axis queried for the standard deviation is NOT a distributed axis</span>
+<span class="sd">    and this is effectively a reduction over the 2-th axis</span>
+<span class="sd">    so this operation is purely local and the result has the same distribution</span>
+<span class="sd">    as the original array.</span>
+<span class="sd">    '''</span>
+    <span class="c1"># Enforce preconditions</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"a must be at most a rank-3 tensor"</span>
+    <span class="n">assert_axis_is_none_or_within_rank</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Return np.std if running serial</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+    <span class="c1"># Otherwis, calculate distributed standard deviation</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="c1"># Determine the axis along which the data is distributed</span>
+    <span class="n">distributed_axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># Calculate standard deviation of flattened array</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">global_mean</span> <span class="o">=</span> <span class="n">_basic_mean_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">comm</span><span class="p">)</span>
+
+        <span class="c1"># Compute the sum of the squared differences from the mean</span>
+        <span class="n">local_sq_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">global_mean</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="n">local_size</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">global_size</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_size</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+        <span class="n">global_sq_diff</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_sq_diff</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+
+        <span class="c1"># Return the standard deviation</span>
+        <span class="n">global_std_dev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">global_sq_diff</span> <span class="o">/</span> <span class="p">(</span><span class="n">global_size</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">global_std_dev</span>
+
+    <span class="c1"># Calculate standard deviation along specified axis</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="n">distributed_axis</span><span class="p">:</span>
+        <span class="n">global_mean</span> <span class="o">=</span> <span class="n">_basic_mean_via_python</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">comm</span><span class="p">)</span>
+
+        <span class="c1"># Compute the sum of the squared differences from the mean</span>
+        <span class="k">if</span> <span class="n">distributed_axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">local_sq_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">global_mean</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Must specify how to broadcast the global_mean to match dimensions of a</span>
+            <span class="n">local_sq_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">global_mean</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,:]),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+        <span class="c1"># Get global squared differences</span>
+        <span class="n">local_size</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+        <span class="n">global_size</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_size</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+        <span class="n">global_sq_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">local_sq_diff</span><span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_sq_diff</span><span class="p">,</span> <span class="n">global_sq_diff</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+
+        <span class="c1"># Return the standard deviation</span>
+        <span class="n">global_std_dev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">global_sq_diff</span> <span class="o">/</span> <span class="p">(</span><span class="n">global_size</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">global_std_dev</span>
+
+    <span class="c1"># Return the local standard deviation if queried axis is not the distributed axis</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_basic_product_via_python</span><span class="p">(</span><span class="n">flagA</span><span class="p">,</span> <span class="n">flagB</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Computes C = beta*C + alpha*op(A)*op(B), where A and B are row-distributed matrices.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        flagA (str): Determines the orientation of A, "T" for transpose or "N" for non-transpose.</span>
+<span class="sd">        flagB (str): Determines the orientation of B, "T" for transpose or "N" for non-transpose.</span>
+<span class="sd">        alpha (float): Coefficient of AB.</span>
+<span class="sd">        A (np.array): 2-D matrix</span>
+<span class="sd">        B (np.array): 2-D matrix</span>
+<span class="sd">        beta (float): Coefficient of C.</span>
+<span class="sd">        C (np.array): 2-D matrix to be filled with the product</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        C (np.array): The specified product</span>
+<span class="sd">    '''</span>
+    <span class="k">if</span> <span class="n">flagA</span> <span class="o">==</span> <span class="s2">"N"</span><span class="p">:</span>
+        <span class="n">mat1</span> <span class="o">=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">alpha</span>
+    <span class="k">elif</span> <span class="n">flagA</span> <span class="o">==</span> <span class="s2">"T"</span><span class="p">:</span>
+        <span class="n">mat1</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">*</span> <span class="n">alpha</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"flagA not recognized; use either 'N' or 'T'"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">flagB</span> <span class="o">==</span> <span class="s2">"N"</span><span class="p">:</span>
+        <span class="n">mat2</span> <span class="o">=</span> <span class="n">B</span>
+    <span class="k">elif</span> <span class="n">flagB</span> <span class="o">==</span> <span class="s2">"T"</span><span class="p">:</span>
+        <span class="n">mat2</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"flagB not recognized; use either 'N' or 'T'"</span><span class="p">)</span>
+
+    <span class="c1"># CONSTRAINTS</span>
+    <span class="n">mat1_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">mat1</span><span class="p">)</span>
+    <span class="n">mat2_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">mat2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">mat1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">mat2</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">C</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">mat1_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">mat2_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Size of output array C (</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">C</span><span class="p">)</span><span class="si">}</span><span class="s2">) is invalid. For A (m x n) and B (n x l), C has dimensions (m x l))."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mat1_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mat2_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid input array size. For A (m x n), B must be (n x l)."</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">mat1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">mat2</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"This operation currently supports rank-2 tensors."</span><span class="p">)</span>
+
+    <span class="n">local_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+        <span class="n">global_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">local_product</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_product</span><span class="p">,</span> <span class="n">global_product</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">beta</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">global_product</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_C</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">C</span> <span class="o">+</span> <span class="n">global_product</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">new_C</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">beta</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">local_product</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_C</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">C</span> <span class="o">+</span> <span class="n">local_product</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">new_C</span><span class="p">)</span>
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_transposed_pseudoinverse_via_python</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Computes the pseudoinverse of A and returns its *transpose*.</span>
+<span class="sd">    Note that returning the transpose(A^+) is because of convenience.</span>
+<span class="sd">    In fact, when A is row-distributed and comm is not None,</span>
+<span class="sd">    then the result has the same distribution of A.</span>
+<span class="sd">    If the matrix A is too large, this is the only feasible way</span>
+<span class="sd">    to store the pseudoinverse since no single rank can fully store it.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        - A (np.ndarray): input matrix</span>
+<span class="sd">        - comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - The transpose of A^+ computed as: (A^+)^T = A (A^T A)^(-1)^T</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">        - A must be a real, rank-2 matrix</span>
+<span class="sd">        - A must have more rows than columns</span>
+<span class="sd">        - A must have linearly independent columns</span>
+<span class="sd">        - If A is distributed, it must be so along its rows</span>
+
+<span class="sd">    Post-conditions:</span>
+<span class="sd">        - A and comm are not modified</span>
+<span class="sd">        - A^+ A = I</span>
+<span class="sd">    '''</span>
+    <span class="c1"># Check preconditions</span>
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"A must be a rank-2 matrix"</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span>
+
+    <span class="c1"># (A^T A)</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">_basic_product_via_python</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,</span> <span class="s2">"N"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span>
+
+    <span class="c1"># (A^T A)^(-1)</span>
+    <span class="n">C_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+
+    <span class="c1"># A ((A^T A)^(-1))^T</span>
+    <span class="n">pinv_transpose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">C_inv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">_basic_product_via_python</span><span class="p">(</span><span class="s2">"N"</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">C_inv</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pinv_transpose</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pinv_transpose</span>
+
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_thin_svd_via_method_of_snapshots</span><span class="p">(</span><span class="n">snapshots</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Performs SVD via method of snapshots.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        snapshots (np.array): Distributed array of snapshots</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator (default: None)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        U (np.array): Phi, or modes; a numpy array where each column is a POD mode</span>
+<span class="sd">        sigma (float): Energy; the energy associated with each mode (singular values)</span>
+<span class="sd">    '''</span>
+    <span class="n">gram_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">_basic_product_via_python</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,</span> <span class="s2">"N"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">snapshots</span><span class="p">,</span> <span class="n">snapshots</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gram_matrix</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span>
+    <span class="n">eigenvalues</span><span class="p">,</span><span class="n">eigenvectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">gram_matrix</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">)</span>
+    <span class="n">modes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">snapshots</span><span class="p">))</span>
+    <span class="n">modes</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">snapshots</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">eigenvectors</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">sigma</span><span class="p">)))</span>
+    <span class="c1">## sort by singular values</span>
+    <span class="n">ordering</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">sigma</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"function modes:"</span><span class="p">,</span> <span class="n">modes</span><span class="p">[:,</span> <span class="n">ordering</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">modes</span><span class="p">[:,</span> <span class="n">ordering</span><span class="p">],</span> <span class="n">sigma</span><span class="p">[</span><span class="n">ordering</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_thin_svd_auto_select_algo</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">comm</span><span class="p">):</span>
+    <span class="c1"># for now this is it, improve later</span>
+    <span class="k">return</span> <span class="n">_thin_svd_via_method_of_snapshots</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_thin_svd</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Preconditions:</span>
+<span class="sd">      - M is rank-2 tensor</span>
+<span class="sd">      - if M is distributed, M is distributed over its 0-th axis (row distribution)</span>
+<span class="sd">      - allowed choices for method are "auto", "method_of_snapshots"</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      - left singular vectors and singular values</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">      - M is not modified</span>
+<span class="sd">      - if M is distributed, the left singular vectors have the same distributions</span>
+<span class="sd">    '''</span>
+    <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'auto'</span><span class="p">,</span> <span class="s1">'method_of_snapshots'</span><span class="p">],</span> \
+        <span class="s2">"thin_svd currently supports only method = 'auto' or 'method_of_snapshots'"</span>
+
+    <span class="c1"># if user wants a specific algorithm, then call it</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">'method_of_snapshots'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_thin_svd_via_method_of_snapshots</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span>
+
+    <span class="c1"># otherwise we have some freedom to decide</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_thin_svd_auto_select_algo</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="move_distributed_linear_system_to_rank_zero">
+<a class="viewcode-back" href="../../../generated/romtools.linalg.linalg.html#romtools.linalg.move_distributed_linear_system_to_rank_zero">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">move_distributed_linear_system_to_rank_zero</span><span class="p">(</span><span class="n">A_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">b_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">comm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Gathers a distributed linear system (A, b) from multiple MPI ranks to rank 0.</span>
+
+<span class="sd">    Preconditions:</span>
+<span class="sd">      - A_in is a rank-2 tensor (2D array) representing a portion of the global matrix A.</span>
+<span class="sd">      - b_in is a rank-1 or rank-2 tensor (1D or 2D array) representing a portion of the global vector b.</span>
+<span class="sd">      - A_in and b_in are distributed row-wise across MPI ranks.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      - A_g (numpy.ndarray): The global matrix A assembled on rank 0.</span>
+<span class="sd">      - b_g (numpy.ndarray): The global vector b assembled on rank 0.</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">      - On rank 0, A_g and b_g contain the fully assembled matrix and vector, respectively.</span>
+<span class="sd">      - On other ranks, A_g and b_g are dummy arrays with no meaningful content.</span>
+<span class="sd">      - The input arrays A_in and b_in are not modified.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">      - The function ensures that all data is gathered without additional copies or unnecessary data movement.</span>
+<span class="sd">      - Only rank 0 ends up with the complete system; other ranks have placeholder arrays.</span>
+<span class="sd">    '''</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="n">root_rank</span>  <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">my_rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+
+    <span class="c1"># need to copy into C order because this is needed below when we</span>
+    <span class="c1"># serialize to send/recv with MPI without additional copies and also</span>
+    <span class="c1"># working correctly to store the data when received</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">A_in</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">'C'</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfortran</span><span class="p">(</span><span class="n">A_in</span><span class="p">)</span> <span class="k">else</span> <span class="n">A_in</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">b_in</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">'C'</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfortran</span><span class="p">(</span><span class="n">b_in</span><span class="p">)</span> <span class="k">else</span> <span class="n">b_in</span>
+    <span class="n">my_num_rows</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">my_num_cols</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># for ranks where we have data, check that num of rows of A = rows of b</span>
+    <span class="c1"># and that the dimensionality makes sense</span>
+    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+
+    <span class="c1"># count total num of rows across the whole communicator</span>
+    <span class="n">rows_per_rank</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">Gather</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">my_num_rows</span><span class="p">]),</span> <span class="n">rows_per_rank</span><span class="p">)</span>
+    <span class="n">global_num_rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rows_per_rank</span><span class="p">)</span>
+    <span class="c1"># at least one rank must have data</span>
+    <span class="k">if</span> <span class="n">my_rank</span><span class="o">==</span><span class="n">root_rank</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">global_num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="c1"># we need to figure out the num of columns using a collective</span>
+    <span class="c1"># we assume row-distributed</span>
+    <span class="n">global_num_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">Reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">my_num_cols</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span> <span class="n">global_num_cols</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MAX</span><span class="p">)</span>
+    <span class="c1"># global_num_cols is only valid on rank root_rank</span>
+    <span class="n">global_num_cols</span> <span class="o">=</span> <span class="n">global_num_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># create the storage for the final assembled system</span>
+    <span class="c1"># note that this only has meaningful shape on rank root_rank</span>
+    <span class="c1"># all other ranks have a dummy A_g, b_g</span>
+    <span class="n">A_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">global_num_rows</span><span class="p">,</span> <span class="n">global_num_cols</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">'C'</span><span class="p">)</span>
+    <span class="n">b_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">global_num_rows</span><span class="p">)</span>
+
+    <span class="c1"># each rank != root_rank starts the send of its part of A and b</span>
+    <span class="n">my_reqs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">my_rank</span> <span class="o">&gt;</span> <span class="n">root_rank</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tag_A</span> <span class="o">=</span> <span class="n">my_rank</span><span class="o">*</span><span class="mi">2</span>
+            <span class="c1"># we can ravel here because A is row-major  so this guarantees a view</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Isend</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">A</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="n">tag_A</span><span class="p">)</span>
+            <span class="n">my_reqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Isend</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="n">tag_A</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">my_reqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># rank0 first stores, if needed, its part</span>
+        <span class="k">if</span> <span class="n">my_num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">A_g</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">my_num_rows</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">b_g</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">my_num_rows</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="c1"># then posts recvs for all other messages from other ranks</span>
+        <span class="n">row_shift</span> <span class="o">=</span> <span class="n">my_num_rows</span>
+        <span class="k">for</span> <span class="n">i_rank</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()):</span>
+            <span class="n">curr_rank_num_rows</span> <span class="o">=</span> <span class="n">rows_per_rank</span><span class="p">[</span><span class="n">i_rank</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">curr_rank_num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">tag_A</span> <span class="o">=</span> <span class="n">i_rank</span><span class="o">*</span><span class="mi">2</span>
+                <span class="n">row_begin</span> <span class="o">=</span> <span class="n">row_shift</span>
+                <span class="n">row_end_exclusive</span> <span class="o">=</span> <span class="n">row_shift</span> <span class="o">+</span> <span class="n">curr_rank_num_rows</span>
+                <span class="n">req</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Irecv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">A_g</span><span class="p">[</span><span class="n">row_begin</span><span class="p">:</span><span class="n">row_end_exclusive</span><span class="p">,:]),</span> <span class="n">i_rank</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="n">tag_A</span><span class="p">)</span>
+                <span class="n">my_reqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+                <span class="n">req</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Irecv</span><span class="p">(</span><span class="n">b_g</span><span class="p">[</span><span class="n">row_shift</span><span class="p">:],</span> <span class="n">i_rank</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="n">tag_A</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">my_reqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+                <span class="n">row_shift</span> <span class="o">+=</span> <span class="n">curr_rank_num_rows</span>
+
+    <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">my_reqs</span><span class="p">:</span>
+        <span class="n">req</span><span class="o">.</span><span class="n">Wait</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">A_g</span><span class="p">,</span> <span class="n">b_g</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_streaming_pod</span><span class="p">(</span><span class="n">snapshot_loader</span><span class="p">:</span> <span class="n">SnapshotLoader</span><span class="p">,</span>
+                   <span class="n">block_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                   <span class="n">max_basis_dimension</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">svdFnc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute a randomized streaming POD from indexed snapshot blocks.</span>
+
+<span class="sd">    The loader returns snapshot blocks whose last axis is the snapshot axis.</span>
+<span class="sd">    With a multi-rank communicator, each rank must load its local spatial rows</span>
+<span class="sd">    for the same snapshot ranges. In that case, svdFnc must implement a</span>
+<span class="sd">    distributed SVD of the row-distributed range sketch.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        snapshot_loader: Snapshot loader called as snapshot_loader(start, end).</span>
+<span class="sd">        block_size (int): Maximum number of snapshots loaded at once.</span>
+<span class="sd">        n_snapshots (int): Total number of snapshots.</span>
+<span class="sd">        max_basis_dimension (int): Number of randomized candidate modes to</span>
+<span class="sd">            compute. A caller may subsequently truncate these modes further.</span>
+<span class="sd">        svdFnc: NumPy-compatible SVD callable used for the range sketch. NumPy</span>
+<span class="sd">            is used by default in serial. A callable is required with MPI.</span>
+<span class="sd">        comm: Optional MPI communicator enabling row-distributed execution.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - U, ndarray(shape=(*local_state_shape, max_basis_dimension)):</span>
+<span class="sd">          candidate POD modes.</span>
+<span class="sd">        - S, ndarray(shape=(max_basis_dimension,)): approximate singular values.</span>
+<span class="sd">        - Vt, ndarray(shape=(max_basis_dimension, n_snapshots)): right singular</span>
+<span class="sd">          vectors.</span>
+<span class="sd">        - total_energy (float): Squared Frobenius norm of the complete snapshot</span>
+<span class="sd">          matrix.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">block_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"block_size must be positive"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_snapshots</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_snapshots must be positive"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">max_basis_dimension</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"max_basis_dimension must be positive"</span><span class="p">)</span>
+
+    <span class="n">distributed</span> <span class="o">=</span> <span class="n">comm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">distributed</span> <span class="ow">and</span> <span class="n">svdFnc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svdFnc is required for distributed streaming POD"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">MPI</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">range_svd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span> <span class="k">if</span> <span class="n">svdFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">svdFnc</span>
+    <span class="n">sketch_dimension</span> <span class="o">=</span> <span class="n">max_basis_dimension</span>
+    <span class="n">state_shape</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">range_sketch</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">local_total_energy</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="c1"># Pass one: form the local rows of Y = X Omega.</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">builtins</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">)</span>
+        <span class="n">snapshot_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">snapshot_loader</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot blocks must have at least two dimensions"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot loader returned an incorrect number of snapshots"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">state_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state_shape</span> <span class="o">=</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">local_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">state_shape</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+                <span class="n">tensor_metadata</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allgather</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">snapshot_block</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span>
+                     <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">metadata</span> <span class="o">!=</span> <span class="n">tensor_metadata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                       <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">tensor_metadata</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">"snapshot tensor rank and variable count must match across ranks"</span>
+                    <span class="p">)</span>
+                <span class="n">minimum_local_rows</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_rows</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">MIN</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">minimum_local_rows</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">"each MPI rank must own at least one state row"</span>
+                    <span class="p">)</span>
+                <span class="n">global_rows</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_rows</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">global_rows</span> <span class="o">=</span> <span class="n">local_rows</span>
+
+            <span class="k">if</span> <span class="n">sketch_dimension</span> <span class="o">&gt;</span> <span class="n">global_rows</span> <span class="ow">or</span> <span class="n">sketch_dimension</span> <span class="o">&gt;</span> <span class="n">n_snapshots</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">"max_basis_dimension cannot exceed either global snapshot "</span>
+                    <span class="s2">"matrix dimension"</span>
+                <span class="p">)</span>
+            <span class="n">range_sketch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">local_rows</span><span class="p">,</span> <span class="n">sketch_dimension</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">state_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot loader returned inconsistent state dimensions"</span><span class="p">)</span>
+
+        <span class="n">snapshot_matrix</span> <span class="o">=</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">))</span>
+        <span class="n">local_total_energy</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vdot</span><span class="p">(</span><span class="n">snapshot_matrix</span><span class="p">,</span> <span class="n">snapshot_matrix</span><span class="p">)</span><span class="o">.</span><span class="n">real</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">omega_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span> <span class="n">sketch_dimension</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">omega_block</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">omega_block</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">omega_block</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">omega_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span> <span class="n">sketch_dimension</span><span class="p">)</span>
+        <span class="n">range_sketch</span> <span class="o">+=</span> <span class="n">snapshot_matrix</span> <span class="o">@</span> <span class="n">omega_block</span>
+
+    <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+        <span class="n">total_energy</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">local_total_energy</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">total_energy</span> <span class="o">=</span> <span class="n">local_total_energy</span>
+
+    <span class="n">left_vectors</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">range_svd</span><span class="p">(</span>
+        <span class="n">range_sketch</span><span class="p">,</span>
+        <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">left_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">sketch_dimension</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svdFnc returned too few range vectors"</span><span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">left_vectors</span><span class="p">[:,</span> <span class="p">:</span><span class="n">sketch_dimension</span><span class="p">]</span>
+
+    <span class="c1"># Pass two: reduce small core blocks instead of assembling the range sketch.</span>
+    <span class="n">core_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">sketch_dimension</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">builtins</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">)</span>
+        <span class="n">snapshot_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">snapshot_loader</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">state_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot loader returned inconsistent state dimensions"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot loader returned an incorrect number of snapshots"</span><span class="p">)</span>
+
+        <span class="n">snapshot_matrix</span> <span class="o">=</span> <span class="n">snapshot_block</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">))</span>
+        <span class="n">local_core_block</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">snapshot_matrix</span>
+        <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+            <span class="n">core_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">local_core_block</span><span class="p">)</span>
+            <span class="n">comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">(</span><span class="n">local_core_block</span><span class="p">,</span> <span class="n">core_block</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">MPI</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">core_block</span> <span class="o">=</span> <span class="n">local_core_block</span>
+        <span class="n">core_matrix</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span> <span class="o">=</span> <span class="n">core_block</span>
+
+    <span class="k">if</span> <span class="n">distributed</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">core_left_vectors</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">,</span> <span class="n">right_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span>
+                <span class="n">core_matrix</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">core_left_vectors</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">singular_values</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">right_vectors</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">core_left_vectors</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">core_left_vectors</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">singular_values</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">singular_values</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">right_vectors</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">right_vectors</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">core_left_vectors</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">,</span> <span class="n">right_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span>
+            <span class="n">core_matrix</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+    <span class="n">modes</span> <span class="o">=</span> <span class="n">Q</span> <span class="o">@</span> <span class="n">core_left_vectors</span>
+    <span class="n">local_modes</span> <span class="o">=</span> <span class="n">modes</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">*</span><span class="n">state_shape</span><span class="p">,</span> <span class="n">max_basis_dimension</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">local_modes</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">,</span> <span class="n">right_vectors</span><span class="p">,</span> <span class="n">total_energy</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_local_column_range</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">M</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Compute the range of matrix columns assigned to a given process.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        rank (int): identifier of the current process</span>
+<span class="sd">        size (int): total number of processes</span>
+<span class="sd">        M (int): total number of columns to distribute</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - start (int) - index of the first column assigned to the process (inclusive).</span>
+<span class="sd">        - end (int) - index of the last column boundary (exclusive).</span>
+
+<span class="sd">    Postconditions:</span>
+<span class="sd">        - Columns are distributed as evenly as possible among processes.</span>
+<span class="sd">        - If M is not divisible by size, the first (M % size) processes receive one additional column.</span>
+
+<span class="sd">    Example 1</span>
+<span class="sd">    ^^^^^^^^^</span>
+
+<span class="sd">    For size = 3 and M = 10:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=0, size=3, M=10)</span>
+<span class="sd">        (0, 4)</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=1, size, M)</span>
+<span class="sd">        (4, 7)</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=1, size, M)</span>
+<span class="sd">        (7, 10)</span>
+
+<span class="sd">    Example 2</span>
+<span class="sd">    ^^^^^^^^^</span>
+
+<span class="sd">    For size = 4 and M = 8:</span>
+
+<span class="sd">    .. code-block:: text</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=0, size=4, M=8)</span>
+<span class="sd">        (0, 2)</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=1, size, M)</span>
+<span class="sd">        (2, 4)</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=2, size, M)</span>
+<span class="sd">        (4, 6)</span>
+
+<span class="sd">        &gt;&gt;&gt; start, end = _local_column_range(rank=3, size, M)</span>
+<span class="sd">        (6, 8)</span>
+<span class="sd">    '''</span>
+    <span class="n">q</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">rank</span> <span class="o">*</span> <span class="n">q</span> <span class="o">+</span> <span class="n">builtins</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">q</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">&lt;</span> <span class="n">r</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span>
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_distributed_svd</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Compute the thin SVD of a matrix distributed by rows.</span>
+
+<span class="sd">    This is a two-level Tall-Skinny QR (TSQR) algorithm. Each MPI rank</span>
+<span class="sd">    factors its local rows, rank zero factors the vertically stacked local</span>
+<span class="sd">    ``R`` factors, and only the resulting small factors are communicated.</span>
+<span class="sd">    The global input matrix is never assembled on any rank.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        a (np.ndarray): Local rows of a globally row-distributed 2-D matrix.</span>
+<span class="sd">        comm (MPI_Comm): MPI communicator. If ``None``, NumPy is used directly.</span>
+<span class="sd">        full_matrices (bool): ``False`` is supported when singular vectors are</span>
+<span class="sd">            requested. As in NumPy, this option is ignored when</span>
+<span class="sd">            ``compute_uv=False``.</span>
+<span class="sd">        compute_uv (bool): If ``True``, return ``(U_local, s, Vh)``. Otherwise,</span>
+<span class="sd">            return only ``s``.</span>
+<span class="sd">        hermitian (bool): Only ``False`` is supported.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - If ``compute_uv=True``, ``(U_local, s, Vh)``. ``U_local`` has the same</span>
+<span class="sd">            row distribution as ``a`` while ``s`` and ``Vh`` are replicated.</span>
+<span class="sd">        - If ``compute_uv=False``, only the replicated singular values are</span>
+<span class="sd">            returned.</span>
+<span class="sd">    '''</span>
+    <span class="c1"># Convert the local input without copying it when it is already an ndarray,</span>
+    <span class="c1"># and record validation failures instead of raising immediately. Delaying</span>
+    <span class="c1"># the error lets every MPI rank participate in the same collective.</span>
+    <span class="n">local_error</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">local_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">local_a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">local_error</span> <span class="o">=</span> <span class="s2">"a must be a two-dimensional array"</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">local_a</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">):</span>
+            <span class="n">local_error</span> <span class="o">=</span> <span class="s2">"a must have a real or complex numeric dtype"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+        <span class="n">local_a</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">local_error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"a could not be converted to an array: </span><span class="si">{</span><span class="n">exception</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="n">local_metadata</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"error"</span><span class="p">:</span> <span class="n">local_error</span><span class="p">,</span>
+        <span class="s2">"shape"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">local_a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">local_a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">local_a</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+        <span class="s2">"dtype"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">local_a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">local_a</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">str</span><span class="p">,</span>
+        <span class="s2">"options"</span><span class="p">:</span> <span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">full_matrices</span><span class="p">),</span> <span class="nb">bool</span><span class="p">(</span><span class="n">compute_uv</span><span class="p">),</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hermitian</span><span class="p">)),</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Exchange only error, shape, dtype, and options metadata. This collectively</span>
+    <span class="c1"># validates the row distribution before any rank enters QR.</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">all_metadata</span> <span class="o">=</span> <span class="p">[</span><span class="n">local_metadata</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">all_metadata</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allgather</span><span class="p">(</span><span class="n">local_metadata</span><span class="p">)</span>
+
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span>
+              <span class="k">if</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"invalid distributed SVD input: "</span> <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span>
+
+    <span class="n">option_sets</span> <span class="o">=</span> <span class="p">{</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">option_sets</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"all ranks must use the same SVD options"</span><span class="p">)</span>
+
+    <span class="n">column_counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"shape"</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">column_counts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"all ranks must have the same number of matrix columns"</span>
+        <span class="p">)</span>
+
+    <span class="n">dtypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"all ranks must use the same matrix dtype"</span><span class="p">)</span>
+
+    <span class="c1"># Reject NumPy options for which this distributed implementation cannot</span>
+    <span class="c1"># provide the documented NumPy result shape or algorithm semantics.</span>
+    <span class="k">if</span> <span class="n">hermitian</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"DistributedSvd does not support hermitian=True"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">compute_uv</span> <span class="ow">and</span> <span class="n">full_matrices</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"DistributedSvd supports only full_matrices=False when "</span>
+            <span class="s2">"compute_uv=True"</span>
+        <span class="p">)</span>
+
+    <span class="c1"># For a serial call, use NumPy directly after applying the same option</span>
+    <span class="c1"># validation as the distributed path.</span>
+    <span class="k">if</span> <span class="n">comm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span>
+            <span class="n">local_a</span><span class="p">,</span>
+            <span class="n">full_matrices</span><span class="o">=</span><span class="n">full_matrices</span><span class="p">,</span>
+            <span class="n">compute_uv</span><span class="o">=</span><span class="n">compute_uv</span><span class="p">,</span>
+            <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Compute a reduced QR factorization of the local rows. Empty local</span>
+    <span class="c1"># partitions and partitions with fewer rows than columns are valid inputs.</span>
+    <span class="n">local_qr_error</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">compute_uv</span><span class="p">:</span>
+            <span class="n">local_q</span><span class="p">,</span> <span class="n">local_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span><span class="p">(</span><span class="n">local_a</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"reduced"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Singular values depend only on R. Avoid constructing the large</span>
+            <span class="c1"># local Q factor when no singular vectors were requested.</span>
+            <span class="n">local_q</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">local_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span><span class="p">(</span><span class="n">local_a</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+        <span class="n">local_q</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">local_r</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">local_qr_error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+
+    <span class="n">qr_errors</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allgather</span><span class="p">(</span><span class="n">local_qr_error</span><span class="p">)</span>
+    <span class="n">qr_errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">error</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">qr_errors</span> <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">qr_errors</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">(</span>
+            <span class="s2">"local QR factorization failed: "</span> <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">qr_errors</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Gather the reduced R factors as NumPy buffers. Lowercase ``gather``</span>
+    <span class="c1"># pickles them into a byte stream, which can overflow a 32-bit byte count.</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
+
+    <span class="n">local_r_row_counts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">builtins</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"shape"</span><span class="p">])</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span>
+    <span class="p">]</span>
+    <span class="n">uniform_r_shapes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">local_r_row_counts</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">column_count</span> <span class="o">=</span> <span class="n">local_a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">r_element_counts</span> <span class="o">=</span> <span class="p">[</span><span class="n">rows</span><span class="o">*</span><span class="n">column_count</span> <span class="k">for</span> <span class="n">rows</span> <span class="ow">in</span> <span class="n">local_r_row_counts</span><span class="p">]</span>
+    <span class="n">maximum_mpi_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">iinfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">max</span>
+    <span class="k">if</span> <span class="n">uniform_r_shapes</span><span class="p">:</span>
+        <span class="n">communication_size_is_supported</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">r_element_counts</span>
+            <span class="ow">or</span> <span class="n">r_element_counts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">maximum_mpi_count</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">communication_size_is_supported</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">r_element_counts</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">maximum_mpi_count</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">communication_size_is_supported</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"distributed SVD buffer collective exceeds the MPI signed-int "</span>
+            <span class="s2">"element-count limit"</span>
+        <span class="p">)</span>
+
+    <span class="n">factor_dtype</span> <span class="o">=</span> <span class="n">local_r</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">mpi_dtype</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">_typedict</span><span class="p">[</span><span class="n">factor_dtype</span><span class="o">.</span><span class="n">char</span><span class="p">]</span>
+    <span class="n">stacked_r</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">root_allocation_error</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stacked_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+                <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">local_r_row_counts</span><span class="p">),</span> <span class="n">column_count</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">factor_dtype</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">MemoryError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="n">root_allocation_error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+    <span class="n">root_allocation_error</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">root_allocation_error</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">root_allocation_error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">MemoryError</span><span class="p">(</span>
+            <span class="s2">"could not allocate the distributed SVD root buffer: "</span>
+            <span class="o">+</span> <span class="n">root_allocation_error</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">uniform_r_shapes</span><span class="p">:</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Gather</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">local_r</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">stacked_r</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">]</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">r_displacements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+            <span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">r_element_counts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Gatherv</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">local_r</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">stacked_r</span><span class="p">,</span> <span class="n">r_element_counts</span><span class="p">,</span> <span class="n">r_displacements</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">singular_values</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">right_singular_vectors</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reduction_error</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Finish the two-level TSQR factorization on rank zero by factoring</span>
+            <span class="c1"># the vertical stack filled directly by Gather/Gatherv.</span>
+            <span class="k">if</span> <span class="n">compute_uv</span><span class="p">:</span>
+                <span class="n">reduced_q</span><span class="p">,</span> <span class="n">final_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span><span class="p">(</span>
+                    <span class="n">stacked_r</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"reduced"</span>
+                <span class="p">)</span>
+                <span class="k">del</span> <span class="n">stacked_r</span>
+                <span class="c1"># A: Compute the SVD only of the final reduced factor, then fold</span>
+                <span class="c1"># its left vectors into the second-level TSQR Q.</span>
+                <span class="n">final_u</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">,</span> <span class="n">right_singular_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span>
+                    <span class="n">final_r</span><span class="p">,</span>
+                    <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">del</span> <span class="n">final_r</span>
+                <span class="n">stacked_left_transform</span> <span class="o">=</span> <span class="n">reduced_q</span> <span class="o">@</span> <span class="n">final_u</span>
+                <span class="k">del</span> <span class="n">reduced_q</span><span class="p">,</span> <span class="n">final_u</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># B: NumPy returns only singular values when left and right</span>
+                <span class="c1"># singular vectors were not requested. The second-level Q is</span>
+                <span class="c1"># not needed in this path either.</span>
+                <span class="n">final_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span><span class="p">(</span><span class="n">stacked_r</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">stacked_r</span>
+                <span class="n">singular_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span>
+                    <span class="n">final_r</span><span class="p">,</span>
+                    <span class="n">full_matrices</span><span class="o">=</span><span class="n">full_matrices</span><span class="p">,</span>
+                    <span class="n">compute_uv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">del</span> <span class="n">final_r</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="n">reduction_error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+
+    <span class="c1"># Broadcast a root-side failure before entering any later collectives,</span>
+    <span class="c1"># preventing other ranks from waiting indefinitely.</span>
+    <span class="n">reduction_error</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">reduction_error</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">reduction_error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">(</span>
+            <span class="s2">"reduced QR or SVD factorization failed: "</span> <span class="o">+</span> <span class="n">reduction_error</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Replicate the singular values, matching NumPy's single-array return</span>
+    <span class="c1"># convention when compute_uv=False.</span>
+    <span class="n">singular_values</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">singular_values</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">compute_uv</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">singular_values</span>
+
+    <span class="c1"># Replicate Vh, scatter the reduced left transformations, and multiply by</span>
+    <span class="c1"># the local first-level Q to recover each rank's rows of U.</span>
+    <span class="n">right_singular_vectors</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">right_singular_vectors</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+    <span class="n">global_thin_rank</span> <span class="o">=</span> <span class="n">builtins</span><span class="o">.</span><span class="n">min</span><span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"shape"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">all_metadata</span><span class="p">),</span> <span class="n">column_count</span>
+    <span class="p">)</span>
+    <span class="n">local_left_transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">local_r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">global_thin_rank</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">factor_dtype</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">uniform_r_shapes</span><span class="p">:</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">stacked_left_transform</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">]</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">local_left_transform</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">],</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">left_element_counts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">rows</span><span class="o">*</span><span class="n">global_thin_rank</span> <span class="k">for</span> <span class="n">rows</span> <span class="ow">in</span> <span class="n">local_r_row_counts</span>
+        <span class="p">]</span>
+        <span class="n">left_displacements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+            <span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">left_element_counts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">Scatterv</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">stacked_left_transform</span><span class="p">,</span> <span class="n">left_element_counts</span><span class="p">,</span>
+             <span class="n">left_displacements</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">]</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">local_left_transform</span><span class="p">,</span> <span class="n">mpi_dtype</span><span class="p">],</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="n">root</span><span class="p">:</span>
+        <span class="c1"># The scatter is blocking, so its send buffer is no longer needed.</span>
+        <span class="c1"># Release it before allocating this rank's local U matrix.</span>
+        <span class="k">del</span> <span class="n">stacked_left_transform</span>
+    <span class="n">local_left_singular_vectors</span> <span class="o">=</span> <span class="n">local_q</span> <span class="o">@</span> <span class="n">local_left_transform</span>
+
+    <span class="k">return</span> <span class="n">local_left_singular_vectors</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">,</span> <span class="n">right_singular_vectors</span>
+
+<div class="viewcode-block" id="DistributedSvd">
+<a class="viewcode-back" href="../../../generated/romtools.linalg.linalg.html#romtools.linalg.DistributedSvd">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DistributedSvd</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">'''NumPy-compatible thin SVD callable for a row-distributed matrix.</span>
+
+<span class="sd">    Bind an MPI communicator once, then pass this object anywhere a callable</span>
+<span class="sd">    compatible with :func:`numpy.linalg.svd` is expected, including</span>
+<span class="sd">    :class:`romtools.vector_space.VectorSpaceFromPOD`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        comm (MPI_Comm): Communicator over which matrix rows are distributed.</span>
+<span class="sd">            If ``None``, supported calls delegate to NumPy in serial.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; distributed_svd = DistributedSvd(comm)</span>
+<span class="sd">        &gt;&gt;&gt; U_local, s, Vh = distributed_svd(</span>
+<span class="sd">        ...     A_local, full_matrices=False, compute_uv=True, hermitian=False</span>
+<span class="sd">        ... )</span>
+<span class="sd">    '''</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">comm</span>
+
+<div class="viewcode-block" id="DistributedSvd.__call__">
+<a class="viewcode-back" href="../../../distributed_svd.html#romtools.linalg.DistributedSvd.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Compute a thin SVD collectively over the bound communicator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            a (np.ndarray): The calling rank's local matrix rows.</span>
+<span class="sd">            full_matrices (bool): Must be ``False`` when ``compute_uv=True``.</span>
+<span class="sd">            compute_uv (bool): Return singular vectors when ``True``; otherwise</span>
+<span class="sd">                return only singular values.</span>
+<span class="sd">            hermitian (bool): Must be ``False``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``(U_local, s, Vh)`` when ``compute_uv=True``; otherwise ``s``.</span>
+<span class="sd">        '''</span>
+        <span class="c1"># Use the internal implementation.</span>
+        <span class="k">return</span> <span class="n">_distributed_svd</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">,</span>
+            <span class="n">comm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_comm</span><span class="p">,</span>
+            <span class="n">full_matrices</span><span class="o">=</span><span class="n">full_matrices</span><span class="p">,</span>
+            <span class="n">compute_uv</span><span class="o">=</span><span class="n">compute_uv</span><span class="p">,</span>
+            <span class="n">hermitian</span><span class="o">=</span><span class="n">hermitian</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+<span class="c1"># ----------------------------------------------------</span>
+<span class="c1"># ----------------------------------------------------</span>
+
+<span class="c1"># pylint: disable=redefined-builtin</span>
+<span class="c1"># Define public facing API</span>
+<span class="nb">max</span> <span class="o">=</span> <span class="n">_basic_max_via_python</span>
+<span class="n">argmax</span> <span class="o">=</span> <span class="n">_basic_argmax_via_python</span>
+<span class="nb">min</span> <span class="o">=</span> <span class="n">_basic_min_via_python</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">_basic_mean_via_python</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">_basic_std_via_python</span>
+<span class="n">product</span> <span class="o">=</span> <span class="n">_basic_product_via_python</span>
+<span class="n">pinv</span> <span class="o">=</span> <span class="n">_transposed_pseudoinverse_via_python</span>
+<span class="n">thin_svd</span> <span class="o">=</span> <span class="n">_thin_svd</span>
+<span class="n">streaming_pod</span> <span class="o">=</span> <span class="n">_streaming_pod</span>
+<span class="n">local_column_range</span> <span class="o">=</span> <span class="n">_local_column_range</span>
+<span class="n">distributed_svd</span> <span class="o">=</span> <span class="n">_distributed_svd</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

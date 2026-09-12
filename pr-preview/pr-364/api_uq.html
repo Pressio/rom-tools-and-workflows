@@ -1,0 +1,664 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Uncertainty Quantification Workflows &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=58ecf915" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/thebelab-helper.js"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_uq';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="romtools.workflows.uq.run_monte_carlo" href="generated/romtools.workflows.uq.run_monte_carlo.html" />
+    <link rel="prev" title="Ensemble Kalman Inversion (EKI)" href="api_inverse_eki.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.html">romtools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.linalg.html">romtools.linalg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.rom.html">romtools.rom</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">romtools.vector_space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.html">romtools.workflows</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Formatting Utility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_svd.html">Distributed SVD</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">Vector Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">Composite Vector Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">Hyper Reduction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">Uncertainty Quantification Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_monte_carlo.html">romtools.workflows.uq.run_monte_carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_multifidelity_monte_carlo.html">romtools.workflows.uq.run_multifidelity_monte_carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.MonteCarloResult.html">romtools.workflows.uq.MonteCarloResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelityMonteCarloResult.html">romtools.workflows.uq.MultifidelityMonteCarloResult</a></li>
+</ul>
+</details></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#monte-carlo">Monte Carlo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multifidelity-monte-carlo">Multifidelity Monte Carlo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-allocation">Pilot allocation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results-and-restart-behavior">Results and restart behavior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="api.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Uncertainty Quantification Workflows</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="uncertainty-quantification-workflows">
+<h1>Uncertainty Quantification Workflows<a class="headerlink" href="#uncertainty-quantification-workflows" title="Link to this heading">#</a></h1>
+<section id="monte-carlo">
+<h2>Monte Carlo<a class="headerlink" href="#monte-carlo" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">run_monte_carlo</span></code> evaluates a <a class="reference internal" href="generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">QoiModel</span></code></a>
+at samples generated by a
+<a class="reference internal" href="generated/romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterSpace</span></code></a>. It returns the
+componentwise sample mean, variance, standard deviation, and standard error.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_monte_carlo</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">run_monte_carlo</span><span class="p">(</span>
+    <span class="n">qoi_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="p">,</span>
+    <span class="s2">"/absolute/path/to/mc"</span><span class="p">,</span>
+    <span class="n">number_of_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_seed</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">standard_error</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multifidelity-monte-carlo">
+<h2>Multifidelity Monte Carlo<a class="headerlink" href="#multifidelity-monte-carlo" title="Link to this heading">#</a></h2>
+<p>The two-level multifidelity workflow uses paired high- and low-fidelity QoIs
+as a control variate. Fixed allocation accepts both sample counts directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_multifidelity_monte_carlo</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">run_multifidelity_monte_carlo</span><span class="p">(</span>
+    <span class="n">high_fidelity_model</span><span class="p">,</span>
+    <span class="n">low_fidelity_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="p">,</span>
+    <span class="s2">"/absolute/path/to/mfmc"</span><span class="p">,</span>
+    <span class="n">number_of_high_fidelity_samples</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">number_of_low_fidelity_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">low_to_high_fidelity_cost_ratio</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pilot-allocation">
+<h2>Pilot allocation<a class="headerlink" href="#pilot-allocation" title="Link to this heading">#</a></h2>
+<p>Pilot mode evaluates both models at an initial paired set, estimates their
+correlation and control-variate coefficient, and selects integer final sample
+counts under a high-fidelity-equivalent budget. The pilot evaluations count
+toward both the final sample counts and the budget.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_multifidelity_monte_carlo</span><span class="p">(</span>
+    <span class="n">high_fidelity_model</span><span class="p">,</span>
+    <span class="n">low_fidelity_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="p">,</span>
+    <span class="s2">"/absolute/path/to/pilot-mfmc"</span><span class="p">,</span>
+    <span class="n">pilot_sample_count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">high_fidelity_equivalent_budget</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+    <span class="n">low_to_high_fidelity_cost_ratio</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">allocation_qoi_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The budget constraint is</p>
+<div class="math notranslate nohighlight">
+\[N_H + (c_L/c_H)N_L \leq B.\]</div>
+<p>If the pilot predicts that purchasing more low-fidelity samples is no better
+than using the remaining budget for high-fidelity Monte Carlo, the workflow
+automatically falls back to that estimator. For vector-valued QoIs,
+<code class="docutils literal notranslate"><span class="pre">allocation_qoi_index</span></code> selects the component used to allocate samples while
+statistics and control-variate coefficients are still returned for every
+component. If <code class="docutils literal notranslate"><span class="pre">low_to_high_fidelity_cost_ratio</span></code> is omitted, pilot mode
+estimates it from measured model run times.</p>
+<p>A complete single- and multifidelity example using the existing steady
+convection-diffusion-reaction model is available in
+<a class="reference internal" href="demos/uq_cdr_demo.html"><span class="doc">Monte Carlo UQ for Convection-Diffusion-Reaction</span></a>.</p>
+</section>
+<section id="results-and-restart-behavior">
+<h2>Results and restart behavior<a class="headerlink" href="#results-and-restart-behavior" title="Link to this heading">#</a></h2>
+<p>Each workflow returns a result dataclass and saves the same statistics and
+allocation metadata in <code class="docutils literal notranslate"><span class="pre">uq_stats.npz</span></code>. Individual successful evaluations
+are marked in their run directories and reused unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>.</p>
+</section>
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.run_monte_carlo.html#romtools.workflows.uq.run_monte_carlo" title="romtools.workflows.uq.run_monte_carlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.run_monte_carlo</span></code></a>(model, ...)</p></td>
+<td><p>Estimate the mean of a model QoI by Monte Carlo sampling.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.run_multifidelity_monte_carlo.html#romtools.workflows.uq.run_multifidelity_monte_carlo" title="romtools.workflows.uq.run_multifidelity_monte_carlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.run_multifidelity_monte_carlo</span></code></a>(...)</p></td>
+<td><p>Estimate a QoI mean using two-level multifidelity Monte Carlo.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.MonteCarloResult.html#romtools.workflows.uq.MonteCarloResult" title="romtools.workflows.uq.MonteCarloResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.MonteCarloResult</span></code></a>(...)</p></td>
+<td><p>Outputs from a Monte Carlo QoI-mean estimate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelityMonteCarloResult.html#romtools.workflows.uq.MultifidelityMonteCarloResult" title="romtools.workflows.uq.MultifidelityMonteCarloResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.MultifidelityMonteCarloResult</span></code></a>(...)</p></td>
+<td><p>Outputs from a fixed or pilot-allocated two-level MFMC estimate.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="api_inverse_eki.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Ensemble Kalman Inversion (EKI)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="generated/romtools.workflows.uq.run_monte_carlo.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">romtools.workflows.uq.run_monte_carlo</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#monte-carlo">Monte Carlo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multifidelity-monte-carlo">Multifidelity Monte Carlo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-allocation">Pilot allocation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results-and-restart-behavior">Results and restart behavior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/api_uq.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

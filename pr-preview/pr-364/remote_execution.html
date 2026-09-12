@@ -1,0 +1,859 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Remote Execution &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=58ecf915" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/thebelab-helper.js"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'remote_execution';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="ROM-Tools at Scale: Example Applications" href="rom_tools_at_scale.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"></div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-dispatcher">The Dispatcher</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-your-model">Updating your model</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-add-a-constructor">Step 1: Add a constructor</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-set-up-the-run-directory">Step 2: Set up the run directory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-define-run-model">Step 3: Define <code class="docutils literal notranslate"><span class="pre">run_model()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-update-other-methods">Step 4: Update other methods</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-your-workflow">Updating your workflow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-workflows">Supported workflows</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-workflows">Inverse workflows</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuring-the-dispatcher">Configuring the dispatcher</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core-configuration-arguments">Core configuration arguments</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Remote Execution</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="remote-execution">
+<h1>Remote Execution<a class="headerlink" href="#remote-execution" title="Link to this heading">#</a></h1>
+<p>The remote execution layer runs Pressio-based ROM workflows on HPC clusters
+from your local environment. Everything goes through the <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code> class,
+which manages the SSH connection, file transfers, job submission, monitoring,
+and result collection on your behalf.</p>
+<section id="the-dispatcher">
+<h2>The Dispatcher<a class="headerlink" href="#the-dispatcher" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code> exposes a small public interface:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">put(local_path,</span> <span class="pre">remote_path)</span></code>: Copy a local file to the remote host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get(remote_path,</span> <span class="pre">local_path)</span></code>: Copy a remote file to the local host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dispatch(cmd,</span> <span class="pre">remote_run_directory)</span></code>: Execute <code class="docutils literal notranslate"><span class="pre">cmd</span></code> from the remote
+host’s <code class="docutils literal notranslate"><span class="pre">run_directory</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">call(target,</span> <span class="pre">*args,</span> <span class="pre">run_directory,</span> <span class="pre">**kwargs)</span></code>: Run the Python callable
+named by <code class="docutils literal notranslate"><span class="pre">target</span></code> (as <code class="docutils literal notranslate"><span class="pre">&quot;module:qualname&quot;</span></code>) on the execution host and
+return its result.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">path_exists(path)</span></code>: Whether <code class="docutils literal notranslate"><span class="pre">path</span></code> exists on the execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">create_empty_dir(dir_name)</span></code>: Create <code class="docutils literal notranslate"><span class="pre">dir_name</span></code>, and any missing parents,
+on the execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">list_dir(path)</span></code>: Names of the entries in <code class="docutils literal notranslate"><span class="pre">path</span></code> on the execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remove(path)</span></code>: Delete the file at <code class="docutils literal notranslate"><span class="pre">path</span></code> on the execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">write_text(path,</span> <span class="pre">content)</span></code>: Write <code class="docutils literal notranslate"><span class="pre">content</span></code> to a text file on the
+execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">np_savetxt(path,</span> <span class="pre">arr,</span> <span class="pre">fmt)</span></code> and <code class="docutils literal notranslate"><span class="pre">np_savez(path,</span> <span class="pre">**arrays)</span></code>: Write numpy
+data to the execution host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_config(param=None)</span></code>: Return the value of the specified param, or the
+whole config dict if no argument is given.</p></li>
+</ul>
+<p>You wire the dispatcher into your model class and your workflow file. The
+<code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code> is the only class you need to interact with; it uses an internal
+<code class="docutils literal notranslate"><span class="pre">Connection</span></code> class to maintain a persistent SSH connection that you never
+touch directly.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code> overloads all public methods of the <code class="docutils literal notranslate"><span class="pre">Dispatcher</span></code>
+without sending any work to a remote host. This lets a workflow run with no
+remote capability when needed; for example, both <code class="docutils literal notranslate"><span class="pre">put()</span></code> and <code class="docutils literal notranslate"><span class="pre">get()</span></code>
+become a local <code class="docutils literal notranslate"><span class="pre">cp</span></code>.</p>
+</div>
+</section>
+<section id="updating-your-model">
+<h2>Updating your model<a class="headerlink" href="#updating-your-model" title="Link to this heading">#</a></h2>
+<p>Assume your model has the two fundamental methods <code class="docutils literal notranslate"><span class="pre">populate_run_directory()</span></code>
+and <code class="docutils literal notranslate"><span class="pre">run_model()</span></code>. The same ideas apply to any other methods your model
+contains.</p>
+<section id="step-1-add-a-constructor">
+<h3>Step 1: Add a constructor<a class="headerlink" href="#step-1-add-a-constructor" title="Link to this heading">#</a></h3>
+<p>Construct your model with the dispatcher as a member variable:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span><span class="p">,</span> <span class="n">LocalDispatcher</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyModel</span><span class="p">:</span>
+
+   <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">dispatcher</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+         <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">LocalDispatcher</span><span class="p">()</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">dispatcher</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Defaulting to <code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code> lets the workflow function with no
+remote capability if needed.</p>
+</div>
+</section>
+<section id="step-2-set-up-the-run-directory">
+<h3>Step 2: Set up the run directory<a class="headerlink" href="#step-2-set-up-the-run-directory" title="Link to this heading">#</a></h3>
+<p>Update <code class="docutils literal notranslate"><span class="pre">populate_run_directory()</span></code> so that, instead of copying files locally,
+you use <code class="docutils literal notranslate"><span class="pre">self.dispatcher.put(local_file,</span> <span class="pre">remote_path)</span></code> to copy the necessary
+files to the remote host.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can pass relative paths to <code class="docutils literal notranslate"><span class="pre">put()</span></code> and <code class="docutils literal notranslate"><span class="pre">get()</span></code>. The base directory
+on the remote host where all commands are executed is called the
+<code class="docutils literal notranslate"><span class="pre">remote_root</span></code> and is configured at runtime (see
+<a class="reference internal" href="#configuring-the-dispatcher">Configuring the dispatcher</a>).</p>
+</div>
+<p>To run shell commands, e.g. to validate input decks or load modules:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cmd</span> <span class="o">=</span> <span class="s2">"load my_module &amp;&amp; my_input_validator -i input_file.yaml"</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">dispatch</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">with_slurm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">with_slurm</span></code> flag determines whether your command is submitted to the
+scheduler. For simple validation commands you will probably want <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+The default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+</section>
+<section id="step-3-define-run-model">
+<h3>Step 3: Define <code class="docutils literal notranslate"><span class="pre">run_model()</span></code><a class="headerlink" href="#step-3-define-run-model" title="Link to this heading">#</a></h3>
+<p>There are two primary ways to run the model through the dispatcher.</p>
+<p><strong>SLURM script.</strong> Create a SLURM script locally that executes your model and
+configure the dispatcher with that script (using <code class="docutils literal notranslate"><span class="pre">-s</span></code>, see
+<a class="reference internal" href="#configuring-the-dispatcher">Configuring the dispatcher</a>). Then <code class="docutils literal notranslate"><span class="pre">run_model()</span></code> can be as simple as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">dispatch</span><span class="p">()</span>
+    <span class="k">return</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>This copies your local SLURM script onto the remote host, submits it, and polls
+it until it completes.</p>
+<p><strong>Manual commands.</strong> Alternatively, have the dispatcher create the SLURM script
+for you. Define the command you wish to execute and let the dispatcher wrap it
+in a SLURM script and submit it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">"srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">dispatch</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>The dispatcher creates a SLURM script that executes this command (configured at
+runtime), submits it, and polls the job until it completes.</p>
+</section>
+<section id="step-4-update-other-methods">
+<h3>Step 4: Update other methods<a class="headerlink" href="#step-4-update-other-methods" title="Link to this heading">#</a></h3>
+<p>Any other methods that execute commands or read files can be wired with the
+same core dispatcher functionality.</p>
+</section>
+</section>
+<section id="updating-your-workflow">
+<h2>Updating your workflow<a class="headerlink" href="#updating-your-workflow" title="Link to this heading">#</a></h2>
+<p>After updating your model class, instantiate the dispatcher in your workflow.
+The safest approach is to scope it with a context manager:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sampling_dir</span> <span class="o">=</span> <span class="s2">"sample_00"</span>
+<span class="k">with</span> <span class="n">RemoteDispatcher</span><span class="p">(</span><span class="n">sampling_dir</span><span class="p">)</span> <span class="k">as</span> <span class="n">dispatcher</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">ExampleModel</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
+    <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_sampling</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that the dispatcher is passed to both the model and the sampling workflow.
+The <code class="docutils literal notranslate"><span class="pre">sampling_directory</span></code> you pass to the dispatcher is created both locally
+and remotely, as a subdirectory of your local current directory and your remote
+<code class="docutils literal notranslate"><span class="pre">remote_root</span></code>. This mirrored directory structure simplifies sending files
+back and forth between hosts, and gives each run its own subdirectory.</p>
+</section>
+<section id="supported-workflows">
+<h2>Supported workflows<a class="headerlink" href="#supported-workflows" title="Link to this heading">#</a></h2>
+<p>Each of these workflows accepts a <code class="docutils literal notranslate"><span class="pre">dispatcher</span></code> argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">run_sampling()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_eki()</span></code>, <code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code>, <code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code>, <code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code>, <code class="docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom()</span></code></p></li>
+</ul>
+<p>Every one of them falls back to a <code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code> when you pass nothing, so
+existing workflows and models keep running unchanged.</p>
+<section id="inverse-workflows">
+<h3>Inverse workflows<a class="headerlink" href="#inverse-workflows" title="Link to this heading">#</a></h3>
+<p>Inverse workflows evaluate the model many times per iteration, under
+<code class="docutils literal notranslate"><span class="pre">&lt;work_directory&gt;/iteration_&lt;k&gt;/run_*</span></code>. Pass the dispatcher to the model and
+to the driver just as you would for sampling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">RemoteDispatcher</span><span class="p">(</span><span class="s2">"eki_00"</span><span class="p">)</span> <span class="k">as</span> <span class="n">dispatcher</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">MyModel</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
+    <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_eki</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">parameter_space</span><span class="o">=</span><span class="n">my_parameter_space</span><span class="p">,</span>
+        <span class="n">observations</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span>
+        <span class="n">observations_covariance</span><span class="o">=</span><span class="n">obs_cov</span><span class="p">,</span>
+        <span class="n">absolute_eki_directory</span><span class="o">=</span><span class="s2">"eki_00"</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>The driver uses the dispatcher to create each run directory and to write its
+restart, history, and per-iteration statistics files. Your model still decides
+how a single evaluation runs, through the <code class="docutils literal notranslate"><span class="pre">self.dispatcher</span></code> calls you added
+above.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The working directory argument (<code class="docutils literal notranslate"><span class="pre">absolute_eki_directory</span></code> or
+<code class="docutils literal notranslate"><span class="pre">absolute_vi_directory</span></code>) must be an absolute path for local runs. When you
+pass a <code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code>, a relative path is also accepted and is
+resolved against <code class="docutils literal notranslate"><span class="pre">remote_root</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the multifidelity workflows (<code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code>, <code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code>, and their
+<code class="docutils literal notranslate"><span class="pre">*_with_auto_rom()</span></code> wrappers), only the high-fidelity (FOM) evaluations
+are dispatched. Surrogate (ROM) models are fit and evaluated in-process, so
+their run directories always stay on the local machine.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">evaluation_concurrency</span></code> greater than 1 is not supported with a
+<code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code>. Concurrent evaluation runs each sample in a separate
+process, which a remote connection is not set up to share. Use
+<code class="docutils literal notranslate"><span class="pre">evaluation_concurrency=1</span></code> for remote runs and let SLURM provide the
+parallelism, or keep concurrency with a <code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Restart files written through a <code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code> land on the remote host,
+but the drivers read <code class="docutils literal notranslate"><span class="pre">restart_file</span></code> from the local filesystem. To restart a
+remote run, retrieve the restart file first, either with the <code class="docutils literal notranslate"><span class="pre">collect</span></code>
+configuration option or with <code class="docutils literal notranslate"><span class="pre">dispatcher.get()</span></code>.</p>
+</div>
+</section>
+</section>
+<section id="configuring-the-dispatcher">
+<h2>Configuring the dispatcher<a class="headerlink" href="#configuring-the-dispatcher" title="Link to this heading">#</a></h2>
+<p>Once the model is updated and the workflow is defined, run the workflow and
+configure the dispatcher:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>my_workflow.py<span class="w"> </span>&lt;config<span class="w"> </span>args&gt;
+</pre></div>
+</div>
+<p>There are three ways to configure:</p>
+<ol class="arabic">
+<li><p><strong>YAML.</strong> Define a YAML file with all configurable params and pass it with
+<code class="docutils literal notranslate"><span class="pre">-i</span> <span class="pre">path/to/your/input.yaml</span></code>.</p></li>
+<li><p><strong>CLI.</strong> Set params on the command line. For example, set the
+<code class="docutils literal notranslate"><span class="pre">remote_root</span></code> by passing <code class="docutils literal notranslate"><span class="pre">-R</span> <span class="pre">/path/to/remote/root</span></code>.</p></li>
+<li><p><strong>Combination.</strong> CLI arguments override YAML parameters, so you can use a
+YAML file for the bulk of configuration and CLI args to vary settings from
+run to run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>my_workflow.py<span class="w"> </span>-i<span class="w"> </span>path/to/input.yaml<span class="w"> </span>-o<span class="w"> </span><span class="s1">'*.log'</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Pass <code class="docutils literal notranslate"><span class="pre">-h</span></code> to your workflow, or refer to the <code class="docutils literal notranslate"><span class="pre">SCHEMA</span></code> in
+<code class="docutils literal notranslate"><span class="pre">hpc/configuration.py</span></code>, to see the full schema of configuration arguments.
+You do not need to specify every argument; the <code class="docutils literal notranslate"><span class="pre">Configuration</span></code> class
+defines a default value for each parameter.</p>
+</div>
+<section id="core-configuration-arguments">
+<h3>Core configuration arguments<a class="headerlink" href="#core-configuration-arguments" title="Link to this heading">#</a></h3>
+<p><strong>ssh</strong> — establish the connection with the remote host:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">remote</span></code> (<code class="docutils literal notranslate"><span class="pre">-r</span></code>): Name of the remote host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (<code class="docutils literal notranslate"><span class="pre">-u</span></code>): Username for the connection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">port</span></code> (<code class="docutils literal notranslate"><span class="pre">-p</span></code>): Port for the connection.</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">ssh</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">remote</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_cluster</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_name</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+</pre></div>
+</div>
+<p><strong>workflow</strong> — file management with the dispatcher:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">remote_root</span></code> (<code class="docutils literal notranslate"><span class="pre">-R</span></code>): Directory on the remote host where commands are
+executed, absolute or relative to the home directory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">collect</span></code> (<code class="docutils literal notranslate"><span class="pre">-o</span></code>): Comma-separated list of files, directories, or glob
+patterns to retrieve from the remote run directory. If omitted, nothing is
+retrieved.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">upload</span></code> (<code class="docutils literal notranslate"><span class="pre">-U</span></code>): Comma-separated list of files, directories, or glob
+patterns to upload to the remote run directory. If omitted, nothing is
+uploaded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">python_setup</span></code> (<code class="docutils literal notranslate"><span class="pre">-e</span></code>): Shell commands that set up the remote environment
+before invoking Python, such as loading modules or activating a virtual
+environment. Used by <code class="docutils literal notranslate"><span class="pre">call()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">python_command</span></code> (<code class="docutils literal notranslate"><span class="pre">-c</span></code>): Command that invokes the remote Python with the
+necessary libraries installed (default: <code class="docutils literal notranslate"><span class="pre">python3</span></code>). Used by <code class="docutils literal notranslate"><span class="pre">call()</span></code>.</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">workflow</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">remote_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_sampling_directory</span>
+<span class="w">    </span><span class="nt">collect</span><span class="p">:</span><span class="w"> </span><span class="s">"*.log,</span><span class="nv"> </span><span class="s">passed.txt"</span>
+<span class="w">    </span><span class="nt">upload</span><span class="p">:</span><span class="w"> </span><span class="s">"input.yaml,</span><span class="nv"> </span><span class="s">mesh/"</span>
+<span class="w">    </span><span class="nt">python_setup</span><span class="p">:</span><span class="w"> </span><span class="s">"module</span><span class="nv"> </span><span class="s">load</span><span class="nv"> </span><span class="s">python/3.11"</span>
+<span class="w">    </span><span class="nt">python_command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python3</span>
+</pre></div>
+</div>
+<p><strong>slurm</strong> — schedule jobs with the dispatcher:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">script</span></code> (<code class="docutils literal notranslate"><span class="pre">-s</span></code>): Path to a local SLURM script, uploaded to the remote
+host and submitted on calls to <code class="docutils literal notranslate"><span class="pre">dispatch()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">account</span></code> (<code class="docutils literal notranslate"><span class="pre">-a</span></code>): Account WCID to charge for the job.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">job_name</span></code> (<code class="docutils literal notranslate"><span class="pre">-j</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_nodes</span></code> (<code class="docutils literal notranslate"><span class="pre">-n</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tasks_per_node</span></code> (<code class="docutils literal notranslate"><span class="pre">-t</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wall_time</span></code> (<code class="docutils literal notranslate"><span class="pre">-w</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">partition</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">poll_interval</span></code> (<code class="docutils literal notranslate"><span class="pre">-I</span></code>): Seconds between <code class="docutils literal notranslate"><span class="pre">squeue</span></code> polls.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (<code class="docutils literal notranslate"><span class="pre">-T</span></code>): Seconds to keep retrying the <code class="docutils literal notranslate"><span class="pre">sacct</span></code> query for a
+finished job’s exit code before giving up.</p></li>
+</ul>
+<p>All arguments other than <code class="docutils literal notranslate"><span class="pre">script</span></code> are used when the dispatcher creates the
+SLURM script for you from a command.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">slurm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/script</span>
+<span class="w">    </span><span class="nt">poll_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</pre></div>
+</div>
+<p><strong>output</strong> — toggle debug logging for the dispatcher:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">debug</span></code> (<code class="docutils literal notranslate"><span class="pre">-d</span></code>)</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p><strong>user_defined</strong> — define your own parameters:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">user_defined</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">my_param</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+<p>Access them in your model class with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">my_param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">get_config</span><span class="p">(</span><span class="s2">"my_param"</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
+<p>Run the example workflow with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>romtools/hpc/example/workflow.py<span class="w"> </span>-r<span class="w"> </span>&lt;remote-host&gt;<span class="w"> </span>-u<span class="w"> </span>&lt;username&gt;<span class="w"> </span>-a<span class="w"> </span>&lt;account/wcid&gt;
+</pre></div>
+</div>
+<p>See all available arguments with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>romtools/hpc/example/workflow.py<span class="w"> </span>-h
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="rom_tools_at_scale.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">ROM-Tools at Scale: Example Applications</p>
+      </div>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-dispatcher">The Dispatcher</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-your-model">Updating your model</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-add-a-constructor">Step 1: Add a constructor</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-set-up-the-run-directory">Step 2: Set up the run directory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-define-run-model">Step 3: Define <code class="docutils literal notranslate"><span class="pre">run_model()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-update-other-methods">Step 4: Update other methods</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-your-workflow">Updating your workflow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-workflows">Supported workflows</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-workflows">Inverse workflows</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuring-the-dispatcher">Configuring the dispatcher</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core-configuration-arguments">Core configuration arguments</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/remote_execution.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
