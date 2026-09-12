@@ -1,0 +1,20 @@
+romtools.hpc.dispatchers.caller
+===============================
+
+.. automodule:: romtools.hpc.dispatchers.caller
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_call_command
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseCaller
+      LocalCaller
+      RemoteCaller
+   
