@@ -362,6 +362,7 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-configuration">Baseline configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-eki-auto-rom-interface">MF-EKI auto-ROM interface</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lipschitz-constrained-networks">Lipschitz-constrained networks</a></li>
 </ul>
@@ -478,6 +479,39 @@ the surrogate builder is constructed.</p>
 optimizer, learning rate, number of training iterations, weight decay, random
 seed, floating-point dtype, and torch device are also configurable through
 <code class="docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code>.</p>
+</section>
+<section id="mf-eki-auto-rom-interface">
+<h2>MF-EKI auto-ROM interface<a class="headerlink" href="#mf-eki-auto-rom-interface" title="Link to this heading">#</a></h2>
+<p>The MF-EKI convenience driver can construct the neural surrogate directly with
+<code class="docutils literal notranslate"><span class="pre">rom_type=&quot;nn&quot;</span></code>. Neural-network and Lipschitz configuration objects are
+passed through <code class="docutils literal notranslate"><span class="pre">rom_args</span></code> together with the POD and normalization controls.
+This is the same public auto-ROM interface used by the Gaussian-process
+surrogate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom</span><span class="w"> </span><span class="kn">import</span> <span class="n">LipschitzConfig</span><span class="p">,</span> <span class="n">NeuralNetworkConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.mf_eki_drivers</span><span class="w"> </span><span class="kn">import</span> <span class="n">mf_eki_with_auto_rom</span>
+
+<span class="n">mf_eki_with_auto_rom</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">fom_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="o">=</span><span class="n">parameter_space</span><span class="p">,</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
+    <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observations_covariance</span><span class="p">,</span>
+    <span class="n">rom_type</span><span class="o">=</span><span class="s2">"nn"</span><span class="p">,</span>
+    <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"network_config"</span><span class="p">:</span> <span class="n">NeuralNetworkConfig</span><span class="p">(</span>
+            <span class="n">training_iterations</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">"lipschitz_config"</span><span class="p">:</span> <span class="n">LipschitzConfig</span><span class="p">(</span>
+            <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">safety_factor</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">&quot;neural_network&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;neural-network&quot;</span></code> are accepted aliases, while
+<code class="docutils literal notranslate"><span class="pre">&quot;nn&quot;</span></code> is the canonical short form used in the examples.</p>
 </section>
 <section id="pod-for-vector-qois">
 <h2>POD for vector QoIs<a class="headerlink" href="#pod-for-vector-qois" title="Link to this heading">#</a></h2>
@@ -602,6 +636,7 @@ constant.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-configuration">Baseline configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-eki-auto-rom-interface">MF-EKI auto-ROM interface</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lipschitz-constrained-networks">Lipschitz-constrained networks</a></li>
 </ul>
