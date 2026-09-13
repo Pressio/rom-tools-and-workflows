@@ -368,6 +368,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.bfgs_drivers.html">romtools.workflows.inverse.bfgs_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_drivers.html">romtools.workflows.inverse.ego_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_optimization_methods.html">romtools.workflows.inverse.ego_optimization_methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_bound_transforms.html">romtools.workflows.inverse.eki_bound_transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html">romtools.workflows.inverse.eki_drivers</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
@@ -422,8 +423,6 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update"><code class="docutils literal notranslate"><span class="pre">compute_mf_eki_update()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.run_mf_eki"><code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -501,7 +500,7 @@ solve while preserving high-fidelity correction steps. The implementation uses
 one high-fidelity ensemble and an additional ROM-only ensemble so that the
 Kalman update benefits from a larger effective sample set.</p>
 <p>MF-EKI supports the same adaptive or periodic ensemble rejuvenation as
-<a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html#romtools.workflows.inverse.eki_drivers.run_eki" title="romtools.workflows.inverse.eki_drivers.run_eki"><code class="xref py py-func docutils literal notranslate"><span class="pre">romtools.workflows.inverse.eki_drivers.run_eki()</span></code></a>. When rejuvenation moves
+<code class="xref py py-func docutils literal notranslate"><span class="pre">romtools.workflows.inverse.eki_drivers.run_eki()</span></code>. When rejuvenation moves
 the ensemble, the FOM is reevaluated on the shared high-fidelity sample set and
 the existing ROM validity check is applied. If the ROM error exceeds
 <code class="docutils literal notranslate"><span class="pre">rom_tolerance</span></code>, the surrogate is rebuilt before the multifidelity Kalman
@@ -511,12 +510,6 @@ update is recomputed.</p>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update" title="romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_mf_eki_update</span></code></a>(parameter_sample_sets, ...)</p></td>
 <td><p>Compute the update matrices for the MF-EKI algorithm.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom" title="romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom</span></code></a>(model, parameter_space, ...)</p></td>
-<td><p>Run MF-EKI with a built-in data-driven surrogate type.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.mf_eki_drivers.run_mf_eki" title="romtools.workflows.inverse.mf_eki_drivers.run_mf_eki"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_eki</span></code></a>(model, rom_model_builder, ...[, ...])</p></td>
-<td><p>Run a multi-fidelity ensemble Kalman inversion workflow.</p></td>
 </tr>
 </tbody>
 </table>
@@ -534,108 +527,6 @@ update is recomputed.</p>
 <dt class="sig sig-object py" id="romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update">
 <span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.mf_eki_drivers.</span></span><span class="sig-name descname"><span class="pre">compute_mf_eki_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_sample_sets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_results_for_sample_sets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_results_for_sample_sets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/mf_eki_drivers.html#compute_mf_eki_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update" title="Link to this definition">#</a></dt>
 <dd><p>Compute the update matrices for the MF-EKI algorithm.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.mf_eki_drivers.</span></span><span class="sig-name descname"><span class="pre">mf_eki_with_auto_rom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_extra_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_updated_rom_in_update_on_rebuild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_inflation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_prior_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0025</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rejuvenations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_cooldown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rom_training_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_start_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_end_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rom_substeps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_eki_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/mf_eki_drivers.html#mf_eki_with_auto_rom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom" title="Link to this definition">#</a></dt>
-<dd><p>Run MF-EKI with a built-in data-driven surrogate type.</p>
-<p><code class="docutils literal notranslate"><span class="pre">rom_type='gp'</span></code> selects the Gaussian-process QoI surrogate.
-<code class="docutils literal notranslate"><span class="pre">rom_type='nn'</span></code> selects the PyTorch neural-network QoI surrogate.
-<code class="docutils literal notranslate"><span class="pre">rom_args</span></code> contains surrogate-specific builder options. For the neural
-network, <code class="docutils literal notranslate"><span class="pre">network_config</span></code> and <code class="docutils literal notranslate"><span class="pre">lipschitz_config</span></code> may be supplied as
-<code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralNetworkConfig</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">LipschitzConfig</span></code> instances.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>fom_ensemble_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>use_updated_rom_in_update_on_rebuild</strong> (<em>bool</em>)</p></li>
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>regularization_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>error_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>delta_params_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>rejuvenation_interval</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_inflation</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_prior_weight</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_rejuvenations</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_cooldown</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_rom_training_history</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_start_iteration</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_end_iteration</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>num_rom_substeps</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>fom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>)</p></li>
-<li><p><strong>rom_type</strong> (<em>str</em>)</p></li>
-<li><p><strong>rom_args</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>absolute_eki_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.mf_eki_drivers.run_mf_eki">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.mf_eki_drivers.</span></span><span class="sig-name descname"><span class="pre">run_mf_eki</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_extra_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_updated_rom_in_update_on_rebuild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_inflation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_prior_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0025</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rejuvenations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_cooldown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rom_training_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_start_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_end_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rom_substeps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_eki_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/mf_eki_drivers.html#run_mf_eki"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.mf_eki_drivers.run_mf_eki" title="Link to this definition">#</a></dt>
-<dd><p>Run a multi-fidelity ensemble Kalman inversion workflow.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelBuilderWithTrainingData" title="romtools.workflows.model_builders.QoiModelBuilderWithTrainingData"><em>QoiModelBuilderWithTrainingData</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>fom_ensemble_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>use_updated_rom_in_update_on_rebuild</strong> (<em>bool</em>)</p></li>
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>regularization_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>error_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>delta_params_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>rejuvenation_interval</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_inflation</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_prior_weight</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_rejuvenations</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_cooldown</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_rom_training_history</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_start_iteration</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_end_iteration</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>num_rom_substeps</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>fom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>absolute_eki_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 </section>
@@ -664,8 +555,6 @@ network, <code class="docutils literal notranslate"><span class="pre">network_co
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.compute_mf_eki_update"><code class="docutils literal notranslate"><span class="pre">compute_mf_eki_update()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.mf_eki_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.mf_eki_drivers.run_mf_eki"><code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code></a></li>
 </ul>
   </nav></div>
 
