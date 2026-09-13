@@ -1,0 +1,82 @@
+name: temporary PR 374 review fixes
+
+on:
+  push:
+    branches:
+      - issue-369-standardize-work-dir-v2
+    paths:
+      - .github/workflows/tmp-pr374-review-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: issue-369-standardize-work-dir-v2
+      - name: Apply review fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          old_names = (
+              "absolute_sampling_directory",
+              "absolute_work_directory",
+              "absolute_greedy_work_directory",
+              "absolute_uq_directory",
+              "absolute_ego_directory",
+              "absolute_eki_directory",
+              "absolute_vi_directory",
+          )
+
+          compatibility_test = Path("tests/romtools/workflows/test_work_dir_arguments.py")
+          for path in Path("tests").rglob("*.py"):
+              if path == compatibility_test:
+                  continue
+              text = path.read_text()
+              updated = text
+              for old_name in old_names:
+                  updated = updated.replace(old_name, "absolute_work_dir")
+              if updated != text:
+                  path.write_text(updated)
+
+          docs_path = Path("docs/source/remote_execution.rst")
+          text = docs_path.read_text()
+          text = text.replace(
+              "The working directory argument (``absolute_work_dir`` or\n   ``absolute_work_dir``) must be an absolute path for local runs.",
+              "The working directory argument ``absolute_work_dir`` must be an absolute path for local runs.",
+          )
+          docs_path.write_text(text)
+
+          eki_path = Path("romtools/workflows/inverse/eki_drivers.py")
+          text = eki_path.read_text()
+          marker = "    scales = scales.copy()\n"
+          comment = (
+              "    # A unit scale is only a final numerical safeguard for a parameter with\n"
+              "    # zero mean, no finite range, and zero initial variance. Normal runs have\n"
+              "    # a physical scale from one of the three sources above.\n"
+          )
+          if comment not in text:
+              text = text.replace(marker, comment + marker, 1)
+          eki_path.write_text(text)
+
+          text = compatibility_test.read_text()
+          text = text.replace("import inspect\n\nimport pytest", "import inspect\n\nimport numpy as np\nimport pytest")
+          insertion_marker = "\n\ndef test_deprecated_sampling_keyword_warns_and_is_rejected_with_new_keyword():\n"
+          old_only_test = '''\n\nclass _MinimalParameterSpace:\n    def generate_samples(self, number_of_samples):\n        return np.zeros((number_of_samples, 1))\n\n    def get_names(self):\n        return [\"x\"]\n\n    def get_dimensionality(self):\n        return 1\n\n\nclass _MinimalModel:\n    def populate_run_directory(self, run_directory, parameter_sample):\n        return None\n\n\ndef test_deprecated_sampling_keyword_alone_still_works(tmp_path):\n    work_dir = tmp_path / \"sampling\"\n    with pytest.warns(DeprecationWarning, match=\"absolute_sampling_directory\"):\n        run_directories = run_sampling(\n            _MinimalModel(),\n            _MinimalParameterSpace(),\n            absolute_sampling_directory=str(work_dir),\n            number_of_samples=1,\n            dry_run=True,\n        )\n    assert run_directories == [str(work_dir / \"run_0\")]\n'''
+          if "test_deprecated_sampling_keyword_alone_still_works" not in text:
+              text = text.replace(insertion_marker, old_only_test + insertion_marker)
+          compatibility_test.write_text(text)
+
+          Path(".github/workflows/tmp-pr374-review-fixes.yml").unlink()
+          PY
+      - name: Commit review fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Address work-directory API review"
+          git push origin HEAD:issue-369-standardize-work-dir-v2
