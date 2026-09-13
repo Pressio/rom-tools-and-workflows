@@ -14,6 +14,7 @@ from solid_dynamics import (  # noqa: E402
     gaussian_displacement,
     longitudinal_wave_model,
     longitudinal_wave_speed,
+    two_way_gaussian_solution,
 )
 
 
@@ -91,6 +92,77 @@ def test_longitudinal_wave_configuration_is_symmetric():
     )
     bottom_row_ux = displacements[-1, 0 : 2 * (model.mesh.nx + 1) : 2]
     np.testing.assert_allclose(bottom_row_ux, bottom_row_ux[::-1], atol=1.0e-12)
+
+
+def test_longitudinal_wave_converges_to_analytic_solution():
+    """Check h/dt convergence to the d'Alembert two-way Gaussian solution."""
+    length = 4.0
+    amplitude = 2.0e-2
+    width = 0.40
+    center = 0.5 * length
+    t_end = 5.0e-3
+    cfl = 0.10
+    nx_values = (32, 64, 128)
+    errors = []
+    spacings = []
+
+    for nx in nx_values:
+        model = longitudinal_wave_model(
+            length=length,
+            nx=nx,
+            ny=1,
+            mass_type="lumped",
+        )
+        wave_speed = longitudinal_wave_speed(model.material)
+        initial_displacement = gaussian_displacement(
+            model,
+            amplitude=amplitude,
+            width=width,
+            center=center,
+            direction="axial",
+        )
+        zero_force = lambda _time: np.zeros(model.ndof)
+        state = model.initial_state(
+            displacement=initial_displacement,
+            external_force=zero_force,
+        )
+
+        dx = length / nx
+        dt_target = cfl * dx / wave_speed
+        num_steps = int(np.ceil(t_end / dt_target))
+        dt = t_end / num_steps
+        times, displacements, _velocities = model.solve_explicit(
+            state,
+            dt=dt,
+            num_steps=num_steps,
+            external_force=zero_force,
+            snapshot_stride=num_steps,
+        )
+
+        x = model.mesh.coordinates[: nx + 1, 0]
+        numerical = displacements[-1, 0 : 2 * (nx + 1) : 2]
+        exact = two_way_gaussian_solution(
+            x,
+            times[-1],
+            amplitude=amplitude,
+            width=width,
+            center=center,
+            wave_speed=wave_speed,
+        )
+        error = np.sqrt(dx * np.sum((numerical - exact) ** 2))
+        exact_norm = np.sqrt(dx * np.sum(exact**2))
+        errors.append(error / exact_norm)
+        spacings.append(dx)
+
+    errors = np.asarray(errors)
+    spacings = np.asarray(spacings)
+    rates = np.log(errors[:-1] / errors[1:]) / np.log(
+        spacings[:-1] / spacings[1:]
+    )
+
+    assert np.all(np.diff(errors) < 0.0)
+    assert np.all(rates > 1.25)
+    assert errors[-1] < 0.3 * errors[0]
 
 
 def test_velocity_primary_newmark_smoke():
