@@ -55,9 +55,9 @@ problem-dependent. Implementations of these aspects, including the generation of
 of a sample mesh, are left to the user.
 '''
 
-from romtools.hyper_reduction import deim, ecsw
-from romtools.hyper_reduction.ecsw import *
-from romtools.hyper_reduction.deim import DEIM, QDEIM
+from . import deim, ecsw
+from .deim import DEIM, QDEIM
+from .ecsw import ECSWsolver, ECSWsolverNNLS
 
 __all__ = [
     "deim",
