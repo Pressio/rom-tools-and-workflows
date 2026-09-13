@@ -171,11 +171,31 @@ with the plane-strain longitudinal wave speed
 
    c_p = \sqrt{\frac{\lambda+2\mu}{\rho}}.
 
-An initially stationary Gaussian therefore splits into equal left- and
-right-traveling pulses before boundary reflections occur.  This provides a
-simple linear-dynamics sanity check independent of the nonlinear benchmark.
+For zero initial velocity and the Gaussian initial displacement
 
-Run it with
+.. math::
+
+   g(x)=A\exp\left[-\frac{(x-x_c)^2}{2\sigma^2}\right],
+
+D'Alembert's solution on the line is
+
+.. math::
+
+   u(x,t)=\frac{1}{2}g(x-c_pt)+\frac{1}{2}g(x+c_pt).
+
+The example compares the finite-element solution directly with this analytic
+solution before either pulse reaches a clamped boundary.  The initial Gaussian
+is chosen sufficiently far from the ends that its boundary value is negligible
+over the comparison interval.
+
+The script also performs a coupled spatial/temporal refinement study with
+``dt`` proportional to ``dx/c_p``.  It reports the relative discrete
+:math:`L^2` displacement error and observed convergence rate for successively
+refined Q4 meshes.  The corresponding CI test requires the error to decrease
+under refinement and checks for the expected near-second-order trend without
+using a platform-sensitive exact rate tolerance.
+
+Run the analytic comparison and convergence study with
 
 .. code-block:: bash
 
@@ -217,8 +237,9 @@ The initial solver keeps verification deliberately focused:
 * the Neo-Hookean analytical tangent is compared with a finite-difference
   directional derivative of the internal force;
 * the linear material is checked for force linearity and a constant tangent;
-* the longitudinal linear-wave configuration is checked for the expected
-  left/right symmetry;
+* the longitudinal linear-wave configuration is checked for left/right
+  symmetry and convergence to the analytic D'Alembert solution under mesh/time
+  refinement;
 * a small velocity-primary Newmark solve checks constrained DOFs and nonlinear
   convergence; and
 * the first minimum of the Stickle cantilever response is used as an external

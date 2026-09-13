@@ -576,10 +576,23 @@ through the height.  The continuum reduction is</p>
 <p>with the plane-strain longitudinal wave speed</p>
 <div class="math notranslate nohighlight">
 \[c_p = \sqrt{\frac{\lambda+2\mu}{\rho}}.\]</div>
-<p>An initially stationary Gaussian therefore splits into equal left- and
-right-traveling pulses before boundary reflections occur.  This provides a
-simple linear-dynamics sanity check independent of the nonlinear benchmark.</p>
-<p>Run it with</p>
+<p>For zero initial velocity and the Gaussian initial displacement</p>
+<div class="math notranslate nohighlight">
+\[g(x)=A\exp\left[-\frac{(x-x_c)^2}{2\sigma^2}\right],\]</div>
+<p>D’Alembert’s solution on the line is</p>
+<div class="math notranslate nohighlight">
+\[u(x,t)=\frac{1}{2}g(x-c_pt)+\frac{1}{2}g(x+c_pt).\]</div>
+<p>The example compares the finite-element solution directly with this analytic
+solution before either pulse reaches a clamped boundary.  The initial Gaussian
+is chosen sufficiently far from the ends that its boundary value is negligible
+over the comparison interval.</p>
+<p>The script also performs a coupled spatial/temporal refinement study with
+<code class="docutils literal notranslate"><span class="pre">dt</span></code> proportional to <code class="docutils literal notranslate"><span class="pre">dx/c_p</span></code>.  It reports the relative discrete
+<span class="math notranslate nohighlight">\(L^2\)</span> displacement error and observed convergence rate for successively
+refined Q4 meshes.  The corresponding CI test requires the error to decrease
+under refinement and checks for the expected near-second-order trend without
+using a platform-sensitive exact rate tolerance.</p>
+<p>Run the analytic comparison and convergence study with</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/nonlinear_solid_dynamics/linear_wave.py
 </pre></div>
 </div>
@@ -614,8 +627,9 @@ The full example retains the published <code class="docutils literal notranslate
 <li><p>the Neo-Hookean analytical tangent is compared with a finite-difference
 directional derivative of the internal force;</p></li>
 <li><p>the linear material is checked for force linearity and a constant tangent;</p></li>
-<li><p>the longitudinal linear-wave configuration is checked for the expected
-left/right symmetry;</p></li>
+<li><p>the longitudinal linear-wave configuration is checked for left/right
+symmetry and convergence to the analytic D’Alembert solution under mesh/time
+refinement;</p></li>
 <li><p>a small velocity-primary Newmark solve checks constrained DOFs and nonlinear
 convergence; and</p></li>
 <li><p>the first minimum of the Stickle cantilever response is used as an external
