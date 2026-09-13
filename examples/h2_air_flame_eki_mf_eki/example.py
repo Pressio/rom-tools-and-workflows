@@ -260,14 +260,14 @@ def main() -> None:
     print("\n=== Baseline MF-EKI ===", flush=True)
     mf_eki_with_auto_rom(
         **common_mf_args,
-        absolute_eki_directory=str(mf_dir),
+        absolute_work_dir=str(mf_dir),
         rejuvenation_strategy="none",
     )
 
     print("\n=== MF-EKI with adaptive rejuvenation ===", flush=True)
     mf_eki_with_auto_rom(
         **common_mf_args,
-        absolute_eki_directory=str(mf_rejuvenated_dir),
+        absolute_work_dir=str(mf_rejuvenated_dir),
         rejuvenation_strategy="adaptive",
         delta_params_tolerance=adaptive_delta_tolerance,
         max_rejuvenations=max_rejuvenations,
@@ -281,7 +281,7 @@ def main() -> None:
         observations_covariance=observations_covariance,
         parameter_mins=PARAMETER_MINS,
         parameter_maxes=PARAMETER_MAXES,
-        absolute_eki_directory=str(eki_rejuvenated_dir),
+        absolute_work_dir=str(eki_rejuvenated_dir),
         ensemble_size=fom_ensemble_size,
         max_iterations=max_iterations,
         random_seed=1,
@@ -299,7 +299,7 @@ def main() -> None:
         observations_covariance=observations_covariance,
         parameter_mins=PARAMETER_MINS,
         parameter_maxes=PARAMETER_MAXES,
-        absolute_eki_directory=str(eki_dir),
+        absolute_work_dir=str(eki_dir),
         ensemble_size=fom_ensemble_size,
         max_iterations=max_iterations,
         random_seed=1,

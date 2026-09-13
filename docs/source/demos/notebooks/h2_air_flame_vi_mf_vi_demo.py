@@ -28,8 +28,8 @@ def main():
     line_search = VIStochasticNonmonotoneLineSearchConfig()
     common = dict(model=model, prior_parameter_space=prior, observations=observations, observations_covariance=np.eye(observations.size) * 1e-4, parameter_mins=mins, parameter_maxes=maxes, optimizer_method="newton", optimizer_config=optimizer, line_search_method="stochastic_nonmonotone", line_search_config=line_search, restart_files_to_keep=50)
     vi_dir, mf_dir = root / "vi", root / "mf_vi"
-    run_vi(**common, absolute_vi_directory=str(vi_dir), sample_size=8, evaluation_concurrency=4)
-    mf_vi_with_auto_rom(**common, absolute_vi_directory=str(mf_dir), fom_sample_size=8, rom_extra_sample_size=64, fom_evaluation_concurrency=4, rom_type="gp", rom_args={"normalize_parameters": True, "normalize_targets": True})
+    run_vi(**common, absolute_work_dir=str(vi_dir), sample_size=8, evaluation_concurrency=4)
+    mf_vi_with_auto_rom(**common, absolute_work_dir=str(mf_dir), fom_sample_size=8, rom_extra_sample_size=64, fom_evaluation_concurrency=4, rom_type="gp", rom_args={"normalize_parameters": True, "normalize_targets": True})
     write_vi_plots(Path(__file__).resolve().parent, "h2_air_flame_vi_mf_vi", names, np.array([truth[name] for name in names]), collect_vi_history(vi_dir), collect_vi_history(mf_dir))
 
 

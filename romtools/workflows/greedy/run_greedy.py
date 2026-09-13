@@ -114,7 +114,7 @@ def run_greedy(fom_model: QoiModel,
                rom_model_builder: QoiModelWithErrorEstimateBuilder,
                parameter_space: ParameterSpace,
                absolute_work_dir: str = None,
-               tolerance: float = 1e-5,
+               tolerance: float = None,
                testing_sample_size: int = 10,
                random_seed: int = 1,
                calibrated_error: bool=True,
@@ -134,6 +134,8 @@ def run_greedy(fom_model: QoiModel,
         absolute_work_dir = absolute_greedy_work_directory
     if absolute_work_dir is None:
         raise TypeError("'absolute_work_dir' is required")
+    if tolerance is None:
+        raise TypeError("'tolerance' is required")
 
     greedy_directory = absolute_work_dir
     create_empty_dir(greedy_directory)

@@ -53,7 +53,7 @@ def main(output_directory: Optional[Path] = None) -> None:
     mc_result = run_monte_carlo(
         model=IntegratedFluxCdrModel(nx=21, ny=21),
         parameter_space=parameter_space,
-        absolute_uq_directory=str(output_directory / "monte_carlo"),
+        absolute_work_dir=str(output_directory / "monte_carlo"),
         number_of_samples=12,
         random_seed=7,
     )
@@ -62,7 +62,7 @@ def main(output_directory: Optional[Path] = None) -> None:
         high_fidelity_model=IntegratedFluxCdrModel(nx=21, ny=21),
         low_fidelity_model=IntegratedFluxCdrModel(nx=9, ny=9),
         parameter_space=parameter_space,
-        absolute_uq_directory=str(output_directory / "multifidelity"),
+        absolute_work_dir=str(output_directory / "multifidelity"),
         pilot_sample_count=4,
         high_fidelity_equivalent_budget=12.0,
         low_to_high_fidelity_cost_ratio=0.05,

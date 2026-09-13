@@ -174,13 +174,13 @@ def main(
     mf_vi_dir = root / "mf_vi"
     run_vi(
         **common_arguments,
-        absolute_vi_directory=str(vi_dir),
+        absolute_work_dir=str(vi_dir),
         sample_size=sample_size,
         evaluation_concurrency=1,
     )
     mf_vi_with_auto_rom(
         **common_arguments,
-        absolute_vi_directory=str(mf_vi_dir),
+        absolute_work_dir=str(mf_vi_dir),
         fom_sample_size=sample_size,
         rom_extra_sample_size=rom_extra_sample_size,
         fom_evaluation_concurrency=1,

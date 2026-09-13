@@ -182,7 +182,7 @@ to the driver just as you would for sampling:
            parameter_space=my_parameter_space,
            observations=obs,
            observations_covariance=obs_cov,
-           absolute_eki_directory="eki_00",
+           absolute_work_dir="eki_00",
            dispatcher=dispatcher,
        )
 
@@ -192,8 +192,8 @@ how a single evaluation runs, through the ``self.dispatcher`` calls you added
 above.
 
 .. note::
-   The working directory argument (``absolute_eki_directory`` or
-   ``absolute_vi_directory``) must be an absolute path for local runs. When you
+   The working directory argument (``absolute_work_dir`` or
+   ``absolute_work_dir``) must be an absolute path for local runs. When you
    pass a ``RemoteDispatcher``, a relative path is also accepted and is
    resolved against ``remote_root``.
 

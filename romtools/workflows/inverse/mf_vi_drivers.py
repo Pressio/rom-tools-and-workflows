@@ -117,6 +117,7 @@ Newton curvature model are otherwise shared with :func:`run_vi`.
 import copy
 import os
 import time
+import warnings
 from typing import Optional, Tuple
 
 import numpy as np
@@ -1470,7 +1471,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
 
 
 def _validate_run_mf_vi_inputs(restart_file: str,
-                               absolute_vi_directory: str,
+                               absolute_work_dir: str,
                                fom_sample_size: int,
                                rom_extra_sample_size: int,
                                max_step_size: float,
@@ -1508,7 +1509,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_file is not None:
         assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
-    require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_vi_directory)
+    require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_work_dir)
     assert fom_sample_size > 1, "fom_sample_size must be greater than 1"
     assert rom_extra_sample_size >= 0, "rom_extra_sample_size must be non-negative"
     assert max_step_size > 0.0, "max_step_size must be positive"
@@ -1611,7 +1612,7 @@ def run_mf_vi(model: QoiModel,
               optimizer_config=None,
               line_search_method: str = 'stochastic_nonmonotone',
               line_search_config=None,
-              absolute_vi_directory: str = os.getcwd() + "/work/",
+              absolute_work_dir: str = None,
               fom_sample_size: int = 10,
               rom_extra_sample_size: int = 30,
               rom_tolerance: float = 0.005,
@@ -1634,7 +1635,9 @@ def run_mf_vi(model: QoiModel,
               transform_interior_margin: float = 1e-8,
               transform_map: str = 'sigmoid',
               min_physical_variational_std_fraction: float = 1e-8,
-              dispatcher: Optional[BaseDispatcher] = None):
+              dispatcher: Optional[BaseDispatcher] = None,
+              *,
+              absolute_vi_directory: str = None):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
@@ -1682,12 +1685,24 @@ def run_mf_vi(model: QoiModel,
             LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations
             to the configured remote host (e.g. an HPC cluster). ROM
             evaluations always run locally, so a RemoteDispatcher requires a
-            relative `absolute_vi_directory` and
+            relative `absolute_work_dir` and
             `fom_evaluation_concurrency=1`.
 
     Returns:
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
     """
+    if absolute_vi_directory is not None:
+        warnings.warn(
+            "'absolute_vi_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_vi_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     start_time = time.time()
@@ -1808,7 +1823,7 @@ def run_mf_vi(model: QoiModel,
     rom_base_sampling_strategy = _normalize_rom_base_sampling_strategy(rom_base_sampling_strategy)
     _validate_run_mf_vi_inputs(
         restart_file=restart_file,
-        absolute_vi_directory=absolute_vi_directory,
+        absolute_work_dir=absolute_work_dir,
         fom_sample_size=fom_sample_size,
         rom_extra_sample_size=rom_extra_sample_size,
         max_step_size=max_step_size,
@@ -1901,7 +1916,7 @@ def run_mf_vi(model: QoiModel,
             rom_model_builder=rom_model_builder,
             observations=observations,
             observations_covariance=observations_covariance,
-            iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
+            iteration_directory=f'{absolute_work_dir}/iteration_{iteration}',
             parameter_names=parameter_names,
             variational_mean=variational_mean,
             variational_log_std=variational_log_std,
@@ -2084,7 +2099,7 @@ def run_mf_vi(model: QoiModel,
         rom_training_parameters = restart_data['rom_training_parameters']
         rom_training_qois = restart_data['rom_training_qois']
         rom_model = rom_model_builder.build_from_training_dirs(
-            f'{absolute_vi_directory}/iteration_{iteration}',
+            f'{absolute_work_dir}/iteration_{iteration}',
             rom_training_dirs,
             rom_training_parameters,
             rom_training_qois,
@@ -2159,7 +2174,7 @@ def run_mf_vi(model: QoiModel,
                 rom_model_builder=rom_model_builder,
                 observations=observations,
                 observations_covariance=observations_covariance,
-                iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
+                iteration_directory=f'{absolute_work_dir}/iteration_{iteration}',
                 parameter_names=parameter_names,
                 variational_mean=variational_mean,
                 variational_log_std=variational_log_std,
@@ -2248,7 +2263,7 @@ def run_mf_vi(model: QoiModel,
     )
 
     _save_mf_vi_restart(
-        f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
+        f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
         state,
         variational_mean,
         variational_log_std,
@@ -2278,7 +2293,7 @@ def run_mf_vi(model: QoiModel,
         accepted_elbo_history=accepted_elbo_history,
         dispatcher=dispatcher,
     )
-    _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
+    _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
 
     gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
@@ -2318,7 +2333,7 @@ def run_mf_vi(model: QoiModel,
         parameter_samples=state['parameter_samples'],
     )
     _write_iteration_stats_file(
-        f'{absolute_vi_directory}/iteration_{iteration}',
+        f'{absolute_work_dir}/iteration_{iteration}',
         variational_mean,
         variational_log_std,
         min_variational_std,
@@ -2390,7 +2405,7 @@ def run_mf_vi(model: QoiModel,
                         observations=observations,
                         observations_covariance=observations_covariance,
                         iteration_directory=(
-                            f'{absolute_vi_directory}/iteration_{iteration}/hessian'
+                            f'{absolute_work_dir}/iteration_{iteration}/hessian'
                         ),
                         parameter_names=parameter_names,
                         variational_mean=variational_mean,
@@ -2538,7 +2553,7 @@ def run_mf_vi(model: QoiModel,
             rom_model_builder=rom_model_builder,
             observations=observations,
             observations_covariance=observations_covariance,
-            iteration_directory=f'{absolute_vi_directory}/iteration_{iteration}',
+            iteration_directory=f'{absolute_work_dir}/iteration_{iteration}',
             parameter_names=parameter_names,
             variational_mean=test_variational_mean,
             variational_log_std=test_variational_log_std,
@@ -2655,7 +2670,7 @@ def run_mf_vi(model: QoiModel,
                 parameter_samples=state['parameter_samples'],
             )
             _write_iteration_stats_file(
-                f'{absolute_vi_directory}/iteration_{iteration}',
+                f'{absolute_work_dir}/iteration_{iteration}',
                 variational_mean,
                 variational_log_std,
                 min_variational_std,
@@ -2675,7 +2690,7 @@ def run_mf_vi(model: QoiModel,
                 dispatcher=dispatcher,
             )
             _save_mf_vi_restart(
-                f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
+                f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                 state,
                 variational_mean,
                 variational_log_std,
@@ -2705,7 +2720,7 @@ def run_mf_vi(model: QoiModel,
                 accepted_elbo_history=accepted_elbo_history,
                 dispatcher=dispatcher,
             )
-            _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
+            _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
             iteration += 1
             if elbo_converged:
                 print(
@@ -2745,7 +2760,7 @@ def run_mf_vi(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
-    _save_vi_history(absolute_vi_directory, vi_history, dispatcher)
+    _save_vi_history(absolute_work_dir, vi_history, dispatcher)
     return variational_mean, variational_std, state['parameter_samples_fom'], state['qois_fom']
 
 
@@ -2761,7 +2776,7 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         optimizer_config=None,
                         line_search_method: str = 'stochastic_nonmonotone',
                         line_search_config=None,
-                        absolute_vi_directory: str = os.getcwd() + "/work/",
+                        absolute_work_dir: str = None,
                         fom_sample_size: int = 10,
                         rom_extra_sample_size: int = 30,
                         rom_tolerance: float = 0.005,
@@ -2786,11 +2801,25 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         min_physical_variational_std_fraction: float = 1e-8,
                         rom_type: str = "gp",
                         rom_args: Optional[dict] = None,
-                        dispatcher: Optional[BaseDispatcher] = None):
+                        dispatcher: Optional[BaseDispatcher] = None,
+                        *,
+                        absolute_vi_directory: str = None):
     """
     Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
     Accepts the same rom_base_sampling_strategy options as run_mf_vi.
     """
+    if absolute_vi_directory is not None:
+        warnings.warn(
+            "'absolute_vi_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_vi_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
         parameter_mins,
         parameter_maxes,
@@ -2854,7 +2883,7 @@ def mf_vi_with_auto_rom(model: QoiModel,
         optimizer_config=resolved_optimizer_config,
         line_search_method=resolved_line_search_method,
         line_search_config=resolved_line_search_config,
-        absolute_vi_directory=absolute_vi_directory,
+        absolute_work_dir=absolute_work_dir,
         fom_sample_size=fom_sample_size,
         rom_extra_sample_size=rom_extra_sample_size,
         rom_tolerance=rom_tolerance,
