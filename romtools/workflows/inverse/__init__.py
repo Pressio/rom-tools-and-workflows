@@ -27,8 +27,32 @@ from romtools.workflows.inverse.vi_drivers import *
 from romtools.workflows.inverse.vi_optimization_methods import *
 from romtools.workflows.inverse.ego_drivers import *
 from romtools.workflows.inverse.ego_optimization_methods import *
+from romtools.workflows._work_dir_compat import patch_work_dir_argument as _patch_work_dir_argument
 
-# Expose submodules as attributes so `import romtools.workflows.inverse.mf_eki_drivers as m`
-# binds to the module instead of the function imported above.
-#run_eki = _import_module("romtools.workflows.inverse.eki_drivers")
-#run_mf_eki = _import_module("romtools.workflows.inverse.mf_eki_drivers")
+_eki_drivers = _import_module("romtools.workflows.inverse.eki_drivers")
+_mf_eki_drivers = _import_module("romtools.workflows.inverse.mf_eki_drivers")
+_vi_drivers = _import_module("romtools.workflows.inverse.vi_drivers")
+_mf_vi_drivers = _import_module("romtools.workflows.inverse.mf_vi_drivers")
+_ego_drivers = _import_module("romtools.workflows.inverse.ego_drivers")
+
+run_eki = _patch_work_dir_argument(
+    _eki_drivers, "run_eki", "absolute_eki_directory"
+)
+run_mf_eki = _patch_work_dir_argument(
+    _mf_eki_drivers, "run_mf_eki", "absolute_eki_directory"
+)
+mf_eki_with_auto_rom = _patch_work_dir_argument(
+    _mf_eki_drivers, "mf_eki_with_auto_rom", "absolute_eki_directory"
+)
+run_vi = _patch_work_dir_argument(
+    _vi_drivers, "run_vi", "absolute_vi_directory"
+)
+run_mf_vi = _patch_work_dir_argument(
+    _mf_vi_drivers, "run_mf_vi", "absolute_vi_directory"
+)
+mf_vi_with_auto_rom = _patch_work_dir_argument(
+    _mf_vi_drivers, "mf_vi_with_auto_rom", "absolute_vi_directory"
+)
+run_ego = _patch_work_dir_argument(
+    _ego_drivers, "run_ego", "absolute_ego_directory"
+)
