@@ -94,10 +94,17 @@ EKI configuration
 -----------------
 
 Both EKI and MF-EKI use an initial EKI step size of ``0.25`` and a
-regularization parameter of ``1e-8``.  The step-size growth factor is ``1.25``,
-the decay factor is ``2.0``, and the maximum number of outer iterations is 15.
-The same EKI tuning is used in the single- and multifidelity runs so that the
-comparison isolates the effect of the GP-assisted inner updates.
+regularization parameter of ``1e-8``.  The step-size growth factor is ``1.25``
+and the decay factor is ``2.0``.  The production study runs for at most 25 outer
+iterations.
+
+Both studies use periodic ensemble rejuvenation with
+``rejuvenation_strategy="periodic"`` and ``rejuvenation_interval=10``.  Thus,
+provided the residual tolerance has not already terminated the solve, the
+ensemble is rejuvenated after accepted outer iterations 10 and 20.  The same
+EKI tuning and rejuvenation schedule are used in the single- and multifidelity
+runs so that the comparison isolates the effect of the GP-assisted inner
+updates.
 
 Automatic GP low-fidelity model
 --------------------------------
@@ -130,8 +137,9 @@ Cost metric
 The dominant cost is the ``33 x 16`` nonlinear finite-element solve.  The main
 comparison therefore plots observation error against cumulative high-fidelity
 model evaluations.  GP evaluations are treated as negligible in this primary
-cost metric.  The example also records cumulative high-fidelity wall-clock time
-for both EKI and MF-EKI in the summary JSON.
+cost metric.  Rejuvenation evaluations are included in the high-fidelity count.
+The example also records cumulative high-fidelity wall-clock time for both EKI
+and MF-EKI in the summary JSON.
 
 Running the benchmark
 ---------------------
@@ -156,8 +164,9 @@ The script writes
 * ``solid_dynamics_error_vs_cost.png`` for convergence versus cumulative
   high-fidelity evaluations; and
 * ``solid_dynamics_eki_mf_eki_summary.json`` containing the truth, FOM and GP
-  settings, QoI dimension and observation times, EKI tuning, final estimates,
-  high-fidelity evaluation counts, and high-fidelity wall-clock totals.
+  settings, QoI dimension and observation times, EKI tuning and rejuvenation
+  settings, final estimates, high-fidelity evaluation counts, and high-fidelity
+  wall-clock totals.
 
 Implementation
 --------------

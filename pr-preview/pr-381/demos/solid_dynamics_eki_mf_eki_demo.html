@@ -522,10 +522,16 @@ lightweight.</p>
 <section id="eki-configuration">
 <h2>EKI configuration<a class="headerlink" href="#eki-configuration" title="Link to this heading">#</a></h2>
 <p>Both EKI and MF-EKI use an initial EKI step size of <code class="docutils literal notranslate"><span class="pre">0.25</span></code> and a
-regularization parameter of <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.  The step-size growth factor is <code class="docutils literal notranslate"><span class="pre">1.25</span></code>,
-the decay factor is <code class="docutils literal notranslate"><span class="pre">2.0</span></code>, and the maximum number of outer iterations is 15.
-The same EKI tuning is used in the single- and multifidelity runs so that the
-comparison isolates the effect of the GP-assisted inner updates.</p>
+regularization parameter of <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.  The step-size growth factor is <code class="docutils literal notranslate"><span class="pre">1.25</span></code>
+and the decay factor is <code class="docutils literal notranslate"><span class="pre">2.0</span></code>.  The production study runs for at most 25 outer
+iterations.</p>
+<p>Both studies use periodic ensemble rejuvenation with
+<code class="docutils literal notranslate"><span class="pre">rejuvenation_strategy=&quot;periodic&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">rejuvenation_interval=10</span></code>.  Thus,
+provided the residual tolerance has not already terminated the solve, the
+ensemble is rejuvenated after accepted outer iterations 10 and 20.  The same
+EKI tuning and rejuvenation schedule are used in the single- and multifidelity
+runs so that the comparison isolates the effect of the GP-assisted inner
+updates.</p>
 </section>
 <section id="automatic-gp-low-fidelity-model">
 <h2>Automatic GP low-fidelity model<a class="headerlink" href="#automatic-gp-low-fidelity-model" title="Link to this heading">#</a></h2>
@@ -552,8 +558,9 @@ surrogate: there is no separate coarse finite-element model to tune.</p>
 <p>The dominant cost is the <code class="docutils literal notranslate"><span class="pre">33</span> <span class="pre">x</span> <span class="pre">16</span></code> nonlinear finite-element solve.  The main
 comparison therefore plots observation error against cumulative high-fidelity
 model evaluations.  GP evaluations are treated as negligible in this primary
-cost metric.  The example also records cumulative high-fidelity wall-clock time
-for both EKI and MF-EKI in the summary JSON.</p>
+cost metric.  Rejuvenation evaluations are included in the high-fidelity count.
+The example also records cumulative high-fidelity wall-clock time for both EKI
+and MF-EKI in the summary JSON.</p>
 </section>
 <section id="running-the-benchmark">
 <h2>Running the benchmark<a class="headerlink" href="#running-the-benchmark" title="Link to this heading">#</a></h2>
@@ -573,8 +580,9 @@ parameter estimates;</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_error_vs_cost.png</span></code> for convergence versus cumulative
 high-fidelity evaluations; and</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_eki_mf_eki_summary.json</span></code> containing the truth, FOM and GP
-settings, QoI dimension and observation times, EKI tuning, final estimates,
-high-fidelity evaluation counts, and high-fidelity wall-clock totals.</p></li>
+settings, QoI dimension and observation times, EKI tuning and rejuvenation
+settings, final estimates, high-fidelity evaluation counts, and high-fidelity
+wall-clock totals.</p></li>
 </ul>
 </section>
 <section id="implementation">
