@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "examples/solid_dynamics_eki_mf_eki/**"
+      - "examples/models/sparse_solid_dynamics.py"
       - "docs/source/demos/solid_dynamics_eki_mf_eki_demo.rst"
       - ".github/workflows/solid-dynamics-eki-benchmark.yaml"
   workflow_dispatch:
@@ -27,10 +28,25 @@ jobs:
           MPLBACKEND: Agg
         run: |
           mkdir -p benchmark-results
-          python examples/solid_dynamics_eki_mf_eki/example.py \
-            --work-dir benchmark-work \
-            --output-dir benchmark-results \
-            | tee benchmark-results/full_benchmark.log
+          python - <<'PY' | tee benchmark-results/full_benchmark.log
+          import runpy
+          import sys
+
+          sys.path.insert(0, "examples/models")
+          from nonlinear_solid_dynamics import NonlinearSolid2D
+          from sparse_solid_dynamics import enable_sparse_implicit_solver
+
+          enable_sparse_implicit_solver(NonlinearSolid2D)
+          sys.argv = [
+              "examples/solid_dynamics_eki_mf_eki/example.py",
+              "--work-dir", "benchmark-work",
+              "--output-dir", "benchmark-results",
+          ]
+          runpy.run_path(
+              "examples/solid_dynamics_eki_mf_eki/example.py",
+              run_name="__main__",
+          )
+          PY
       - name: Upload benchmark results
         if: always()
         uses: actions/upload-artifact@v4
