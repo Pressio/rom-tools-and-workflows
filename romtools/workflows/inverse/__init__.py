@@ -50,6 +50,26 @@ _eki_drivers_module.run_eki = run_eki
 _mf_eki_drivers_module.run_mf_eki = run_mf_eki
 _mf_eki_drivers_module.mf_eki_with_auto_rom = mf_eki_with_auto_rom
 
+# Install the opt-in VI/MFVI sample-reuse layer after the original drivers have
+# loaded. With sample_reuse_config=None the wrappers delegate directly to the
+# original implementations, preserving the existing behavior and API.
+from romtools.workflows.inverse.vi_sample_reuse import (
+    VISampleReuseConfig,
+    run_vi as _sample_reuse_run_vi,
+    run_mf_vi as _sample_reuse_run_mf_vi,
+    mf_vi_with_auto_rom as _sample_reuse_mf_vi_with_auto_rom,
+)
+
+run_vi = _sample_reuse_run_vi
+run_mf_vi = _sample_reuse_run_mf_vi
+mf_vi_with_auto_rom = _sample_reuse_mf_vi_with_auto_rom
+
+_vi_drivers_module = _import_module("romtools.workflows.inverse.vi_drivers")
+_mf_vi_drivers_module = _import_module("romtools.workflows.inverse.mf_vi_drivers")
+_vi_drivers_module.run_vi = run_vi
+_mf_vi_drivers_module.run_mf_vi = run_mf_vi
+_mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
+
 # Expose submodules as attributes so `import romtools.workflows.inverse.mf_eki_drivers as m`
 # binds to the module instead of the function imported above.
 #run_eki = _import_module("romtools.workflows.inverse.eki_drivers")
