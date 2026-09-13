@@ -1,13 +1,13 @@
 """Newton/Hessian support for importance-sampling VI sample reuse.
 
 This module extends :mod:`vi_sample_reuse` without changing the first-pass
-archive implementation.  Reused FOM evaluations are combined with current
+archive implementation. Reused FOM evaluations are combined with current
 score-function Hessian factors using the same deterministic-mixture importance
-weights as the gradient.  The existing VI/MFVI Newton solvers, curvature
+weights as the gradient. The existing VI/MFVI Newton solvers, curvature
 strategies, absolute-Hessian treatment, and multifidelity gain machinery remain
 responsible for constructing the optimization step.
 
-The extension is installed for side effects by ``inverse.__init__``.  Keeping
+The extension is installed for side effects by ``inverse.__init__``. Keeping
 it separate makes the Hessian-specific assumptions explicit while the sample
 reuse API is still experimental.
 """
@@ -80,9 +80,7 @@ def _compute_hessian_score_blocks(samples: np.ndarray,
         outer_normalized = normalized[:, :, None] * normalized[:, None, :]
         second_log_std = -(outer_normalized * correlation_inverse[None, :, :])
         index = np.arange(dimensionality)
-        second_log_std[:, index, index] -= (
-            normalized * inverse_times_normalized
-        )
+        second_log_std[:, index, index] -= normalized * inverse_times_normalized
         second_cross = -(
             (normalized[:, None, :] * correlation_inverse[None, :, :])
             / std[None, :, None]
@@ -158,7 +156,6 @@ def _mf_hessian_from_reuse(optimizer_samples_fom: np.ndarray,
     high_scores = _compute_hessian_score_blocks(
         optimizer_samples_fom, mean, log_std, correlation_cholesky
     )
-    # The coupled ROM base is evaluated at the same archived optimizer samples.
     low_base_scores = high_scores
     if optimizer_samples_rom_extra.shape[0] > 0:
         low_extra_scores = _compute_hessian_score_blocks(
@@ -266,10 +263,29 @@ def _build_reused_mf_state_with_hessian(self, a, weights, origin_weights, ess):
     n_fom = optimizer_fom.shape[0]
     optimizer_extra = np.asarray(state["optimizer_samples"])[2 * n_fom :]
 
-    # The first-pass MF reuse state stores the coupled ROM base joint terms
-    # after applying MIS weights.  Recover the unweighted integrand here so the
-    # Hessian can apply the same weights exactly once.
-    raw_rom_base_joint = np.asarray(state["log_joint_terms_rom_base"]) / weights
+    rom_base_errors = (
+        np.asarray(state["qois_rom_base"])
+        - np.asarray(a["observations"])[:, None]
+    )
+    rom_base_log_likelihoods, _ = _vi._compute_log_likelihoods(
+        rom_base_errors,
+        a["observations_covariance"],
+        a["covariance_regularization"],
+        precision_operator=a.get("log_likelihood_precision_operator"),
+    )
+    _, _, raw_rom_base_joint = _vi._compute_log_prior_and_joint_terms(
+        rom_base_log_likelihoods,
+        np.asarray(state["parameter_samples_rom_base"]),
+        optimizer_fom,
+        a["prior_mean"],
+        a["prior_precision_operator"],
+        a["prior_covariance_log_det"],
+        a["bounded_parameter_handling"],
+        a["parameter_mins"],
+        a["parameter_maxes"],
+        a["transform_interior_margin"],
+        a["transform_map"],
+    )
     hessian_full = _mf_hessian_from_reuse(
         optimizer_fom,
         optimizer_extra,
