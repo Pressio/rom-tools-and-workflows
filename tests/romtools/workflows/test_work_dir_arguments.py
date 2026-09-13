@@ -54,7 +54,7 @@ class _MinimalModel:
         return None
 
 
-def test_deprecated_sampling_keyword_alone_still_works(tmp_path):
+def test_deprecated_sampling_keyword_alone_warns_and_runs(tmp_path):
     work_dir = tmp_path / "sampling"
     with pytest.warns(DeprecationWarning, match="absolute_sampling_directory"):
         run_directories = run_sampling(
