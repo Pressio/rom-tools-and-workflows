@@ -535,6 +535,11 @@ gradients through the PDE model:</p>
 Carlo samples from the current variational distribution. Because only
 <span class="math notranslate nohighlight">\(\nabla_{\zeta}\log q\)</span> is needed, the forward model itself is treated as
 derivative-free.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;adam&quot;</span></code>, the selected score gradient is passed to a
+stateful Adam ascent update. By default, the raw score gradient is
+preconditioned with the damped mean-field Gaussian Fisher matrix before Adam,
+matching the ABRIS setup; the default initial learning rate is <span class="math notranslate nohighlight">\(0.1/d\)</span>,
+where <span class="math notranslate nohighlight">\(d\)</span> is the parameter dimension.</p>
 <p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;newton&quot;</span></code>, the routine also forms a second-order
 score-function estimator for curvature:</p>
 <div class="math notranslate nohighlight">
@@ -619,9 +624,10 @@ prior moments.</p></li>
 <li><p><strong>restart_file</strong> (<em>str</em>) – Optional restart file path. Restart files written by this
 routine store <cite>variational_mean</cite> in physical coordinates.</p></li>
 <li><p><strong>optimizer_method</strong> (<em>str</em>) – Optimizer used for variational updates. Supported
-options are ‘gradient’ and ‘newton’.</p></li>
+options are ‘gradient’, ‘adam’, and ‘newton’.</p></li>
 <li><p><strong>optimizer_config</strong> – Method-specific optimizer config. Expected types are
 <cite>VIGradientOptimizerConfig</cite> for optimizer_method=’gradient’,
+<cite>VIAdamOptimizerConfig</cite> for optimizer_method=’adam’, and
 <cite>VINewtonOptimizerConfig</cite> for optimizer_method=’newton’.</p></li>
 <li><p><strong>line_search_method</strong> (<em>str</em>) – Line-search acceptance strategy. Supported options
 are ‘legacy’ and ‘stochastic_nonmonotone’. Defaults to

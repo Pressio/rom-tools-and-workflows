@@ -657,9 +657,10 @@ prior moments.</p></li>
 <li><p><strong>restart_file</strong> (<em>str</em>) – Optional restart file path. Restart files written by this
 routine store <cite>variational_mean</cite> in physical coordinates.</p></li>
 <li><p><strong>optimizer_method</strong> (<em>str</em>) – Optimizer used for variational updates. Supported
-options are ‘gradient’ and ‘newton’.</p></li>
+options are ‘gradient’, ‘adam’, and ‘newton’.</p></li>
 <li><p><strong>optimizer_config</strong> – Method-specific optimizer config. Expected types are
 <cite>VIGradientOptimizerConfig</cite> for optimizer_method=’gradient’,
+<cite>VIAdamOptimizerConfig</cite> for optimizer_method=’adam’, and
 <cite>VINewtonOptimizerConfig</cite> for optimizer_method=’newton’.</p></li>
 <li><p><strong>line_search_method</strong> (<em>str</em>) – Line-search acceptance strategy. Supported options
 are ‘legacy’ and ‘stochastic_nonmonotone’. Defaults to

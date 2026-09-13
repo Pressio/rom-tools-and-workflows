@@ -394,6 +394,37 @@
 
 
 
+<div class="viewcode-block" id="VIAdamOptimizerConfig">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.VIAdamOptimizerConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VIAdamOptimizerConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Configuration for Adam-based stochastic ELBO maximization.</span>
+
+<span class="sd">    By default Adam is applied to the mean-field Gaussian natural gradient.</span>
+<span class="sd">    Following the ABRIS setup, the Fisher matrix is damped early in the</span>
+<span class="sd">    optimization and the preconditioned gradient is clipped by its L2 norm.</span>
+<span class="sd">    When ``learning_rate`` is ``None``, the ABRIS convention</span>
+<span class="sd">    ``0.1 / parameter_dimension`` is used.</span>
+<span class="sd">    """</span>
+
+    <span class="n">gradient_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'natural'</span>
+    <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">learning_rate_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">beta1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
+    <span class="n">beta2</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.999</span>
+    <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span>
+    <span class="n">fisher_damping_initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span>
+    <span class="n">fisher_damping_decay_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">fisher_damping_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="n">gradient_clip_norm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e6</span>
+    <span class="n">gradient_norm_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span>
+    <span class="n">max_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">max_log_std_update</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">min_variational_std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="n">max_variational_std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e6</span></div>
+
+
+
 <div class="viewcode-block" id="VINewtonOptimizerConfig">
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.VINewtonOptimizerConfig">[docs]</a>
 <span class="nd">@dataclass</span>
@@ -450,10 +481,10 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_optimization_method</span><span class="p">(</span><span class="n">optimization_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="n">method</span> <span class="o">=</span> <span class="n">optimization_method</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'gradient'</span><span class="p">,</span> <span class="s1">'newton'</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'gradient'</span><span class="p">,</span> <span class="s1">'adam'</span><span class="p">,</span> <span class="s1">'newton'</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"Unsupported optimization_method '</span><span class="si">{</span><span class="n">optimization_method</span><span class="si">}</span><span class="s2">'. "</span>
-            <span class="s2">"Supported options are 'gradient' and 'newton'."</span>
+            <span class="s2">"Supported options are 'gradient', 'adam', and 'newton'."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">method</span>
 
@@ -518,7 +549,8 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_optimizer_config</span><span class="p">(</span><span class="n">optimizer_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                               <span class="n">optimizer_config</span><span class="p">,</span>
                               <span class="n">default_gradient_config</span><span class="p">:</span> <span class="n">VIGradientOptimizerConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                              <span class="n">default_newton_config</span><span class="p">:</span> <span class="n">VINewtonOptimizerConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                              <span class="n">default_newton_config</span><span class="p">:</span> <span class="n">VINewtonOptimizerConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                              <span class="n">default_adam_config</span><span class="p">:</span> <span class="n">VIAdamOptimizerConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="n">normalized_optimizer_method</span> <span class="o">=</span> <span class="n">_normalize_optimization_method</span><span class="p">(</span><span class="n">optimizer_method</span><span class="p">)</span>
     <span class="n">gradient_config</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">default_gradient_config</span><span class="p">)</span> <span class="k">if</span> <span class="n">default_gradient_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span>
         <span class="n">VIGradientOptimizerConfig</span><span class="p">()</span>
@@ -526,13 +558,18 @@
     <span class="n">newton_config</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">default_newton_config</span><span class="p">)</span> <span class="k">if</span> <span class="n">default_newton_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span>
         <span class="n">VINewtonOptimizerConfig</span><span class="p">()</span>
     <span class="p">)</span>
+    <span class="n">adam_config</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">default_adam_config</span><span class="p">)</span> <span class="k">if</span> <span class="n">default_adam_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span>
+        <span class="n">VIAdamOptimizerConfig</span><span class="p">()</span>
+    <span class="p">)</span>
 
     <span class="n">optimizer_type_by_method</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">'gradient'</span><span class="p">:</span> <span class="n">VIGradientOptimizerConfig</span><span class="p">,</span>
+        <span class="s1">'adam'</span><span class="p">:</span> <span class="n">VIAdamOptimizerConfig</span><span class="p">,</span>
         <span class="s1">'newton'</span><span class="p">:</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">default_config_by_method</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">'gradient'</span><span class="p">:</span> <span class="n">gradient_config</span><span class="p">,</span>
+        <span class="s1">'adam'</span><span class="p">:</span> <span class="n">adam_config</span><span class="p">,</span>
         <span class="s1">'newton'</span><span class="p">:</span> <span class="n">newton_config</span><span class="p">,</span>
     <span class="p">}</span>
 
@@ -594,6 +631,261 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AdamSolver">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.AdamSolver">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AdamSolver</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Stateful Adam ascent direction for stochastic VI gradients."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">learning_rate_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">beta1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
+                 <span class="n">beta2</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.999</span><span class="p">,</span>
+                 <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">,</span>
+                 <span class="n">fisher_damping_initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span>
+                 <span class="n">fisher_damping_decay_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+                 <span class="n">fisher_damping_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+                 <span class="n">gradient_clip_norm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">,</span>
+                 <span class="n">parameter_dimension</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">learning_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">learning_rate</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"learning_rate must be positive when provided."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">learning_rate_scale</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"learning_rate_scale must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">beta1</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"beta1 must be in [0, 1)."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">beta2</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"beta2 must be in [0, 1)."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">epsilon</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"epsilon must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_initial</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_initial must be nonnegative."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_decay_start</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_decay_start must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_min</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_min must be nonnegative."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_min</span> <span class="o">&gt;</span> <span class="n">fisher_damping_initial</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"fisher_damping_min cannot exceed fisher_damping_initial."</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">gradient_clip_norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">gradient_clip_norm</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"gradient_clip_norm must be positive or None."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">parameter_dimension</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"parameter_dimension must be positive when provided."</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate_scale</span> <span class="o">=</span> <span class="n">learning_rate_scale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span> <span class="o">=</span> <span class="n">beta1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span> <span class="o">=</span> <span class="n">beta2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span> <span class="o">=</span> <span class="n">fisher_damping_initial</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fisher_damping_decay_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span> <span class="o">=</span> <span class="n">fisher_damping_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="o">=</span> <span class="n">gradient_clip_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="o">=</span> <span class="n">parameter_dimension</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VIAdamOptimizerConfig</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">learning_rate</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+            <span class="n">learning_rate_scale</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">learning_rate_scale</span><span class="p">,</span>
+            <span class="n">beta1</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">beta1</span><span class="p">,</span>
+            <span class="n">beta2</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">beta2</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">epsilon</span><span class="p">,</span>
+            <span class="n">fisher_damping_initial</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_initial</span><span class="p">,</span>
+            <span class="n">fisher_damping_decay_start</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">,</span>
+            <span class="n">fisher_damping_min</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">,</span>
+            <span class="n">gradient_clip_norm</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolved_learning_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+        <span class="n">parameter_dimension</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span>
+        <span class="k">if</span> <span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">gradient</span><span class="o">.</span><span class="n">size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">"Cannot infer the VI parameter dimension from an odd-sized Adam gradient."</span>
+                <span class="p">)</span>
+            <span class="n">parameter_dimension</span> <span class="o">=</span> <span class="n">gradient</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate_scale</span> <span class="o">/</span> <span class="n">parameter_dimension</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_current_fisher_damping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span>
+        <span class="n">decay_exponent</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">decay_exponent</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="AdamSolver.resolved_learning_rate">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.resolved_learning_rate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolved_learning_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return the learning rate used for the supplied VI gradient."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_learning_rate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_diagonal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fisher_diagonal</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fisher_diagonal</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">gradient</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Fisher diagonal must have the same shape as gradient."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">fisher_diagonal</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Fisher diagonal entries must be nonnegative."</span><span class="p">)</span>
+            <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="n">fisher_diagonal</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_fisher_damping</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">gradient_norm</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">:</span>
+                <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="o">/</span> <span class="n">gradient_norm</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gradient</span>
+
+<div class="viewcode-block" id="AdamSolver.prepare_gradient">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.prepare_gradient">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Apply Fisher damping and clipping without updating Adam moments."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">gradient</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam gradient shape changed after optimizer initialization."</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span><span class="p">)</span> <span class="o">*</span> <span class="n">gradient</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span><span class="p">)</span> <span class="o">*</span> <span class="n">gradient</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="n">first_moment_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span><span class="p">)</span>
+        <span class="n">second_moment_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span><span class="p">)</span>
+        <span class="n">learning_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_learning_rate</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">first_moment_hat</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">second_moment_hat</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="AdamSolver.restart_state_dict">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.restart_state_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restart_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return restart-safe Adam state and configuration metadata."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">'adam_iteration'</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iteration</span><span class="p">),</span>
+            <span class="s1">'adam_first_moment'</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="p">),</span>
+            <span class="s1">'adam_second_moment'</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="p">),</span>
+            <span class="s1">'adam_learning_rate'</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="s1">'adam_learning_rate_scale'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate_scale</span><span class="p">),</span>
+            <span class="s1">'adam_beta1'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta1</span><span class="p">),</span>
+            <span class="s1">'adam_beta2'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta2</span><span class="p">),</span>
+            <span class="s1">'adam_epsilon'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">),</span>
+            <span class="s1">'adam_fisher_damping_initial'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span><span class="p">),</span>
+            <span class="s1">'adam_fisher_damping_decay_start'</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">),</span>
+            <span class="s1">'adam_fisher_damping_min'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">),</span>
+            <span class="s1">'adam_gradient_clip_norm'</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="s1">'adam_parameter_dimension'</span><span class="p">:</span> <span class="p">(</span>
+                <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span><span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AdamSolver.load_restart_state_dict">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.load_restart_state_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_restart_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">restart_data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Restore Adam state and reject incompatible optimizer configuration."""</span>
+        <span class="n">required_keys</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">restart_state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_keys</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Restart file is missing Adam optimizer state: "</span>
+                <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_check_float</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">current_value</span><span class="p">):</span>
+            <span class="n">saved_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">current_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">saved_value</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Restart file </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> does not match current Adam config."</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">saved_value</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">saved_value</span><span class="p">,</span> <span class="n">current_value</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Restart file </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> does not match current Adam config."</span><span class="p">)</span>
+
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_learning_rate'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_learning_rate_scale'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate_scale</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_beta1'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_beta2'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_epsilon'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_fisher_damping_initial'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_fisher_damping_min'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">)</span>
+        <span class="n">_check_float</span><span class="p">(</span><span class="s1">'adam_gradient_clip_norm'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_fisher_damping_decay_start'</span><span class="p">])</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Restart file adam_fisher_damping_decay_start does not match current Adam config."</span>
+            <span class="p">)</span>
+        <span class="n">saved_parameter_dimension</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_parameter_dimension'</span><span class="p">])</span>
+        <span class="n">current_parameter_dimension</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">saved_parameter_dimension</span> <span class="o">!=</span> <span class="n">current_parameter_dimension</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Restart file adam_parameter_dimension does not match current Adam config."</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_iteration'</span><span class="p">])</span>
+        <span class="n">first_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_first_moment'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">second_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_second_moment'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">first_moment</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">second_moment</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">first_moment</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">second_moment</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restarted Adam moments must have matching shapes."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="n">first_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="n">second_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restarted Adam state has a positive iteration but no moments."</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">'iteration'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span><span class="p">,</span>
+            <span class="s1">'first_moment'</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="s1">'second_moment'</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'iteration'</span><span class="p">])</span>
+        <span class="n">first_moment</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'first_moment'</span><span class="p">)</span>
+        <span class="n">second_moment</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'second_moment'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">first_moment</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">second_moment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">second_moment</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam first and second moments must either both be set or both be None."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam first and second moments must have matching shapes."</span><span class="p">)</span></div>
 
 
 

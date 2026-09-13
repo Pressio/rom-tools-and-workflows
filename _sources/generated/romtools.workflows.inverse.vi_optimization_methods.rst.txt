@@ -8,8 +8,10 @@ romtools.workflows.inverse.vi\_optimization\_methods
 
    .. autosummary::
    
+      AdamSolver
       NewtonSolver
       SteepestDescentSolver
+      VIAdamOptimizerConfig
       VIGradientOptimizerConfig
       VILegacyLineSearchConfig
       VINewtonOptimizerConfig
