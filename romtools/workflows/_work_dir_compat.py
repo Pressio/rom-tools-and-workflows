@@ -12,10 +12,13 @@ _UNSET = object()
 def standardize_work_dir_argument(function, deprecated_name):
     """Wrap a workflow so ``absolute_work_dir`` replaces a legacy keyword.
 
-    Positional calls retain their historical behavior.  Calls using the legacy
-    keyword continue to work and emit a deprecation warning.  Supplying both
+    Positional calls retain their historical behavior. Calls using the legacy
+    keyword continue to work and emit a deprecation warning. Supplying both
     names is rejected as an ambiguous duplicate specification.
     """
+    if getattr(function, "_romtools_work_dir_deprecated_name", None) == deprecated_name:
+        return function
+
     signature = inspect.signature(function)
     parameters = list(signature.parameters.values())
     deprecated_index = None
@@ -65,6 +68,9 @@ def standardize_work_dir_argument(function, deprecated_name):
         return function(*args, **kwargs)
 
     wrapper.__signature__ = signature.replace(parameters=parameters)
+    if wrapper.__doc__:
+        wrapper.__doc__ = wrapper.__doc__.replace(deprecated_name, "absolute_work_dir")
+    wrapper._romtools_work_dir_deprecated_name = deprecated_name
     return wrapper
 
 
