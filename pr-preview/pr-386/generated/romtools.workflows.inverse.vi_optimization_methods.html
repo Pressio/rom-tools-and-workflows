@@ -422,7 +422,13 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver"><code class="docutils literal notranslate"><span class="pre">AdamSolver</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver"><code class="docutils literal notranslate"><span class="pre">AdamSolver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.load_restart_state_dict"><code class="docutils literal notranslate"><span class="pre">AdamSolver.load_restart_state_dict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.prepare_gradient"><code class="docutils literal notranslate"><span class="pre">AdamSolver.prepare_gradient()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.resolved_learning_rate"><code class="docutils literal notranslate"><span class="pre">AdamSolver.resolved_learning_rate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.restart_state_dict"><code class="docutils literal notranslate"><span class="pre">AdamSolver.restart_state_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.NewtonSolver"><code class="docutils literal notranslate"><span class="pre">NewtonSolver</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.SteepestDescentSolver"><code class="docutils literal notranslate"><span class="pre">SteepestDescentSolver</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.VIAdamOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIAdamOptimizerConfig</span></code></a></li>
@@ -552,6 +558,56 @@
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_optimization_methods.AdamSolver.load_restart_state_dict">
+<span class="sig-name descname"><span class="pre">load_restart_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restart_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#AdamSolver.load_restart_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.load_restart_state_dict" title="Link to this definition">#</a></dt>
+<dd><p>Restore Adam state and reject incompatible optimizer configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_optimization_methods.AdamSolver.prepare_gradient">
+<span class="sig-name descname"><span class="pre">prepare_gradient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fisher_diagonal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#AdamSolver.prepare_gradient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.prepare_gradient" title="Link to this definition">#</a></dt>
+<dd><p>Apply Fisher damping and clipping without updating Adam moments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gradient</strong> (<em>ndarray</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_optimization_methods.AdamSolver.resolved_learning_rate">
+<span class="sig-name descname"><span class="pre">resolved_learning_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#AdamSolver.resolved_learning_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.resolved_learning_rate" title="Link to this definition">#</a></dt>
+<dd><p>Return the learning rate used for the supplied VI gradient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gradient</strong> (<em>ndarray</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_optimization_methods.AdamSolver.restart_state_dict">
+<span class="sig-name descname"><span class="pre">restart_state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#AdamSolver.restart_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.restart_state_dict" title="Link to this definition">#</a></dt>
+<dd><p>Return restart-safe Adam state and configuration metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -721,7 +777,13 @@ When <code class="docutils literal notranslate"><span class="pre">learning_rate<
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver"><code class="docutils literal notranslate"><span class="pre">AdamSolver</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver"><code class="docutils literal notranslate"><span class="pre">AdamSolver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.load_restart_state_dict"><code class="docutils literal notranslate"><span class="pre">AdamSolver.load_restart_state_dict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.prepare_gradient"><code class="docutils literal notranslate"><span class="pre">AdamSolver.prepare_gradient()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.resolved_learning_rate"><code class="docutils literal notranslate"><span class="pre">AdamSolver.resolved_learning_rate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.AdamSolver.restart_state_dict"><code class="docutils literal notranslate"><span class="pre">AdamSolver.restart_state_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.NewtonSolver"><code class="docutils literal notranslate"><span class="pre">NewtonSolver</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.SteepestDescentSolver"><code class="docutils literal notranslate"><span class="pre">SteepestDescentSolver</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_optimization_methods.VIAdamOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIAdamOptimizerConfig</span></code></a></li>

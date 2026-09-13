@@ -1634,6 +1634,50 @@
     <span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_adam_fisher_diagonal</span><span class="p">(</span><span class="n">variational_log_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                  <span class="n">min_variational_std</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                                  <span class="n">max_variational_std</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                                  <span class="n">gradient_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">gradient_method</span> <span class="o">==</span> <span class="s1">'standard'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">gradient_method</span> <span class="o">!=</span> <span class="s1">'natural'</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Unsupported Adam gradient_method '</span><span class="si">{</span><span class="n">gradient_method</span><span class="si">}</span><span class="s2">'. "</span>
+            <span class="s2">"Supported options are 'standard' and 'natural'."</span>
+        <span class="p">)</span>
+    <span class="n">variational_std</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_compute_variational_std</span><span class="p">(</span>
+        <span class="n">variational_log_std</span><span class="p">,</span>
+        <span class="n">min_variational_std</span><span class="p">,</span>
+        <span class="n">max_variational_std</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+        <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">variational_std</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">variational_std</span><span class="p">),</span>
+    <span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_adam_diagnostics</span><span class="p">(</span><span class="n">adam_solver</span><span class="p">:</span> <span class="n">AdamSolver</span><span class="p">,</span>
+                              <span class="n">state</span><span class="p">,</span>
+                              <span class="n">variational_log_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                              <span class="n">min_variational_std</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="n">max_variational_std</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="n">gradient_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">]])</span>
+    <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="n">_compute_adam_fisher_diagonal</span><span class="p">(</span>
+        <span class="n">variational_log_std</span><span class="p">,</span>
+        <span class="n">min_variational_std</span><span class="p">,</span>
+        <span class="n">max_variational_std</span><span class="p">,</span>
+        <span class="n">gradient_method</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">prepared_gradient</span> <span class="o">=</span> <span class="n">adam_solver</span><span class="o">.</span><span class="n">prepare_gradient</span><span class="p">(</span>
+        <span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">adam_solver</span><span class="o">.</span><span class="n">resolved_learning_rate</span><span class="p">(</span><span class="n">gradient</span><span class="p">),</span>
+        <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">prepared_gradient</span><span class="p">)),</span>
+    <span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_compute_newton_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span>
                          <span class="n">newton_regularization</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                          <span class="n">newton_hessian_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'diagonal'</span><span class="p">,</span>
@@ -2117,6 +2161,8 @@
                      <span class="n">newton_hessian_averaging_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
                      <span class="n">running_hessian</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                      <span class="n">accepted_elbo_history</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">adam_restart_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">adam_gradient_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                      <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="n">persisted_variational_mean</span> <span class="o">=</span> <span class="n">_get_persisted_variational_mean</span><span class="p">(</span>
         <span class="n">variational_mean</span><span class="p">,</span>
@@ -2185,6 +2231,9 @@
         <span class="n">save_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_pack_vi_history</span><span class="p">(</span><span class="n">vi_history</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">variational_correlation_cholesky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">save_data</span><span class="p">[</span><span class="s1">'variational_correlation_cholesky'</span><span class="p">]</span> <span class="o">=</span> <span class="n">variational_correlation_cholesky</span>
+    <span class="k">if</span> <span class="n">adam_restart_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">save_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">adam_restart_data</span><span class="p">)</span>
+        <span class="n">save_data</span><span class="p">[</span><span class="s1">'adam_gradient_method'</span><span class="p">]</span> <span class="o">=</span> <span class="n">adam_gradient_method</span>
     <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span><span class="o">.</span><span class="n">np_savez</span><span class="p">(</span><span class="n">restart_path</span><span class="p">,</span> <span class="o">**</span><span class="n">save_data</span><span class="p">)</span>
 
 
@@ -2445,6 +2494,11 @@
         <span class="n">VINewtonOptimizerConfig</span><span class="p">(),</span>
         <span class="n">VIAdamOptimizerConfig</span><span class="p">(),</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="ow">and</span> <span class="n">line_search_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"line_search_config is not supported with optimizer_method='adam'; "</span>
+            <span class="s2">"Adam supplies the complete update step."</span>
+        <span class="p">)</span>
     <span class="n">line_search_method</span><span class="p">,</span> <span class="n">resolved_line_search_config</span> <span class="o">=</span> <span class="n">_resolve_line_search_config</span><span class="p">(</span>
         <span class="n">line_search_method</span><span class="p">,</span>
         <span class="n">line_search_config</span><span class="p">,</span>
@@ -2465,14 +2519,6 @@
             <span class="n">line_search_sample_growth_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
             <span class="n">log_std_learning_rate_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">restart_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                <span class="s2">"Adam optimizer moments are not stored in VI restart files; "</span>
-                <span class="s2">"restarting resets the Adam first- and second-moment state."</span><span class="p">,</span>
-                <span class="ne">RuntimeWarning</span><span class="p">,</span>
-                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-            <span class="p">)</span>
-
     <span class="n">gradient_method</span> <span class="o">=</span> <span class="s1">'standard'</span>
     <span class="k">if</span> <span class="n">optimization_method</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'gradient'</span><span class="p">,</span> <span class="s1">'adam'</span><span class="p">):</span>
         <span class="n">gradient_method</span> <span class="o">=</span> <span class="n">resolved_optimizer_config</span><span class="o">.</span><span class="n">gradient_method</span>
@@ -2558,6 +2604,15 @@
         <span class="n">initial_variational_parameter_space</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">variational_distribution</span> <span class="o">=</span> <span class="n">_normalize_variational_distribution</span><span class="p">(</span><span class="n">variational_distribution</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span>
+        <span class="ow">and</span> <span class="n">gradient_method</span> <span class="o">==</span> <span class="s1">'natural'</span>
+        <span class="ow">and</span> <span class="n">variational_distribution</span> <span class="o">==</span> <span class="s1">'multivariate'</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"Natural-gradient Adam is not supported for correlated multivariate "</span>
+            <span class="s2">"Gaussian VI. Use VIAdamOptimizerConfig(gradient_method='standard') instead."</span>
+        <span class="p">)</span>
     <span class="n">line_search_objective</span> <span class="o">=</span> <span class="n">_normalize_line_search_objective</span><span class="p">(</span><span class="n">line_search_objective</span><span class="p">)</span>
     <span class="n">_validate_run_vi_inputs</span><span class="p">(</span>
         <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">absolute_work_dir</span><span class="p">,</span>
@@ -2927,6 +2982,21 @@
         <span class="k">else</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'elbo'</span><span class="p">])]</span>
     <span class="p">)</span>
 
+    <span class="n">steepest_descent_solver</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">AdamSolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">resolved_optimizer_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span>
+        <span class="k">else</span> <span class="n">SteepestDescentSolver</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="ow">and</span> <span class="n">restart_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">'adam_gradient_method'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restart file is missing Adam gradient-method state."</span><span class="p">)</span>
+        <span class="n">restart_adam_gradient_method</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'adam_gradient_method'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">restart_adam_gradient_method</span> <span class="o">!=</span> <span class="n">gradient_method</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Restart file adam_gradient_method does not match current Adam config."</span>
+            <span class="p">)</span>
+        <span class="n">steepest_descent_solver</span><span class="o">.</span><span class="n">load_restart_state_dict</span><span class="p">(</span><span class="n">restart_data</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">restart_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_save_vi_restart</span><span class="p">(</span>
             <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
@@ -2964,11 +3034,27 @@
             <span class="n">newton_hessian_averaging_factor</span><span class="o">=</span><span class="n">newton_hessian_averaging_factor</span><span class="p">,</span>
             <span class="n">running_hessian</span><span class="o">=</span><span class="n">running_hessian</span><span class="p">,</span>
             <span class="n">accepted_elbo_history</span><span class="o">=</span><span class="n">accepted_elbo_history</span><span class="p">,</span>
+            <span class="n">adam_restart_data</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">steepest_descent_solver</span><span class="o">.</span><span class="n">restart_state_dict</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">adam_gradient_method</span><span class="o">=</span><span class="p">(</span><span class="n">gradient_method</span> <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
             <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">_prune_old_restart_files</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">,</span> <span class="n">restart_files_to_keep</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">)</span>
 
-    <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_gradient_norm</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">optimization_method</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
+        <span class="n">adam_learning_rate</span><span class="p">,</span> <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_adam_diagnostics</span><span class="p">(</span>
+            <span class="n">steepest_descent_solver</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">,</span>
+            <span class="n">variational_log_std</span><span class="p">,</span>
+            <span class="n">min_variational_std</span><span class="p">,</span>
+            <span class="n">max_variational_std</span><span class="p">,</span>
+            <span class="n">gradient_method</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">adam_learning_rate</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_gradient_norm</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">optimization_method</span><span class="p">)</span>
     <span class="n">wall_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
     <span class="n">cpu_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_cpu_time</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">iteration</span><span class="p">:</span>
@@ -2988,10 +3074,15 @@
             <span class="n">transform_interior_margin</span><span class="p">,</span>
             <span class="n">transform_map</span><span class="p">,</span>
         <span class="p">)</span>
+    <span class="n">optimizer_status</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s1">'Adam learning rate: </span><span class="si">{</span><span class="n">adam_learning_rate</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
+        <span class="sa">f</span><span class="s1">'Adam input gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
+        <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span>
+        <span class="k">else</span> <span class="sa">f</span><span class="s1">'Step size: </span><span class="si">{</span><span class="n">step_size</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, Gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
+    <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span>
         <span class="sa">f</span><span class="s1">'Iteration: </span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">, Relative MSE: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"mean_relative_mse"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, '</span>
-        <span class="sa">f</span><span class="s1">'ELBO: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"elbo"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, Step size: </span><span class="si">{</span><span class="n">step_size</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, '</span>
-        <span class="sa">f</span><span class="s1">'Gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, Wall time: </span><span class="si">{</span><span class="n">wall_time</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
+        <span class="sa">f</span><span class="s1">'ELBO: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"elbo"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">optimizer_status</span><span class="si">}</span><span class="s1">, Wall time: </span><span class="si">{</span><span class="n">wall_time</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
     <span class="p">)</span>
     <span class="n">_print_gradient_signal_to_noise_ratio</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
     <span class="n">_print_vi_parameters</span><span class="p">(</span>
@@ -3021,11 +3112,6 @@
     <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="n">step_failed_counter</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">line_search_standard_normal_cache</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">steepest_descent_solver</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">AdamSolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">resolved_optimizer_config</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span>
-        <span class="k">else</span> <span class="n">SteepestDescentSolver</span><span class="p">()</span>
-    <span class="p">)</span>
     <span class="n">elbo_converged</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">independent_hessian_cache</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -3116,17 +3202,12 @@
         <span class="k">if</span> <span class="n">optimization_method</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'gradient'</span><span class="p">,</span> <span class="s1">'adam'</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
                 <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">]])</span>
-                <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">if</span> <span class="n">gradient_method</span> <span class="o">==</span> <span class="s1">'natural'</span><span class="p">:</span>
-                    <span class="n">variational_std_for_fisher</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_compute_variational_std</span><span class="p">(</span>
-                        <span class="n">variational_log_std</span><span class="p">,</span>
-                        <span class="n">min_variational_std</span><span class="p">,</span>
-                        <span class="n">max_variational_std</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
-                        <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">variational_std_for_fisher</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
-                        <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">variational_std_for_fisher</span><span class="p">),</span>
-                    <span class="p">])</span>
+                <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="n">_compute_adam_fisher_diagonal</span><span class="p">(</span>
+                    <span class="n">variational_log_std</span><span class="p">,</span>
+                    <span class="n">min_variational_std</span><span class="p">,</span>
+                    <span class="n">max_variational_std</span><span class="p">,</span>
+                    <span class="n">gradient_method</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="n">step</span> <span class="o">=</span> <span class="n">steepest_descent_solver</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
                     <span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span>
                 <span class="p">)</span>
@@ -3271,7 +3352,17 @@
                 <span class="p">):</span>
                     <span class="n">elbo_converged</span> <span class="o">=</span> <span class="kc">True</span>
 
-                <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_gradient_norm</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">optimization_method</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
+                    <span class="n">adam_learning_rate</span><span class="p">,</span> <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_adam_diagnostics</span><span class="p">(</span>
+                        <span class="n">steepest_descent_solver</span><span class="p">,</span>
+                        <span class="n">state</span><span class="p">,</span>
+                        <span class="n">variational_log_std</span><span class="p">,</span>
+                        <span class="n">min_variational_std</span><span class="p">,</span>
+                        <span class="n">max_variational_std</span><span class="p">,</span>
+                        <span class="n">gradient_method</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">_compute_gradient_norm</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">optimization_method</span><span class="p">)</span>
                 <span class="n">wall_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
                 <span class="n">cpu_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_cpu_time</span>
                 <span class="n">_append_vi_history</span><span class="p">(</span>
@@ -3290,11 +3381,16 @@
                     <span class="n">transform_interior_margin</span><span class="p">,</span>
                     <span class="n">transform_map</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="n">optimizer_status</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">'Adam learning rate: </span><span class="si">{</span><span class="n">adam_learning_rate</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
+                    <span class="sa">f</span><span class="s1">'Adam input gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
+                    <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span>
+                    <span class="k">else</span> <span class="sa">f</span><span class="s1">'Step size: </span><span class="si">{</span><span class="n">step_size</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, Gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
+                <span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s1">'Iteration: </span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">, Relative MSE: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"mean_relative_mse"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, '</span>
                     <span class="sa">f</span><span class="s1">'ELBO: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"elbo"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, Relative ELBO (initial ref): </span><span class="si">{</span><span class="n">relative_elbo_improvement</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
-                    <span class="sa">f</span><span class="s1">'Step size: </span><span class="si">{</span><span class="n">step_size</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
-                    <span class="sa">f</span><span class="s1">'Gradient norm: </span><span class="si">{</span><span class="n">gradient_norm</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, Samples: </span><span class="si">{</span><span class="n">line_search_sample_size</span><span class="si">}</span><span class="s1">, '</span>
+                    <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">optimizer_status</span><span class="si">}</span><span class="s1">, Samples: </span><span class="si">{</span><span class="n">line_search_sample_size</span><span class="si">}</span><span class="s1">, '</span>
                     <span class="sa">f</span><span class="s1">'Wall time: </span><span class="si">{</span><span class="n">wall_time</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span>
                 <span class="p">)</span>
                 <span class="n">_print_gradient_signal_to_noise_ratio</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
@@ -3358,6 +3454,13 @@
                     <span class="n">vi_history</span><span class="o">=</span><span class="n">vi_history</span><span class="p">,</span>
                     <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
                     <span class="n">max_mean_update_std</span><span class="o">=</span><span class="n">max_mean_update_std</span><span class="p">,</span>
+                    <span class="n">adam_restart_data</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">steepest_descent_solver</span><span class="o">.</span><span class="n">restart_state_dict</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">adam_gradient_method</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">gradient_method</span> <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                     <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">_prune_old_restart_files</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">,</span> <span class="n">restart_files_to_keep</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">)</span>
