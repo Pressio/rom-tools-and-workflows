@@ -24,14 +24,12 @@ jobs:
           MPLBACKEND: Agg
         run: |
           python - <<'PY'
-          import importlib.util
-          from pathlib import Path
+          import sys
           import time
 
-          path = Path("examples/solid_dynamics_eki_mf_eki/example.py").resolve()
-          spec = importlib.util.spec_from_file_location("solid_benchmark", path)
-          mod = importlib.util.module_from_spec(spec)
-          spec.loader.exec_module(mod)
+          sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
+          import example as mod
+
           cfg = mod.configuration(False)
           model = mod.CantileverInverseQoiModel(cfg.fom, cfg.observation_times)
           start = time.perf_counter()
