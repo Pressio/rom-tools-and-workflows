@@ -44,6 +44,7 @@
 #
 
 import time
+import warnings
 import numpy as np
 
 from romtools.workflows.models import QoiModel
@@ -60,18 +61,32 @@ def run_sampling_with_holdout(
     fom_model: QoiModel,
     rom_model_builder: QoiModelBuilder,
     parameter_space: ParameterSpace,
-    absolute_work_directory: str,
+    absolute_work_dir: str = None,
     holdout_set_size: int = 5,
     max_number_of_rom_samples: int = 20,
     tolerance=1e-5,
     random_seed: int = 1,
+    *,
+    absolute_work_directory: str = None,
 ):
     '''
     Core algorithm
     '''
+    if absolute_work_directory is not None:
+        warnings.warn(
+            "'absolute_work_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_work_directory
+    if absolute_work_dir is None:
+        raise TypeError("'absolute_work_dir' is required")
+
     assert max_number_of_rom_samples >= 2
 
-    sampling_directory = absolute_work_directory
+    sampling_directory = absolute_work_dir
     create_empty_dir(sampling_directory)
     offline_directory_prefix = "offline_data"
 
@@ -141,7 +156,6 @@ def run_sampling_with_holdout(
     holdout_set_errs = np.array([])
     sample_index = 0
 
-
     # Initialize FOM to be run at first two training set samples
     sampling_file.write(f"Holdout set iteration # {sample_index}\n")
     sampling_file.flush()
@@ -168,7 +182,6 @@ def run_sampling_with_holdout(
 
     # Run FOM at next training parameter
     sample_index += 1
-
 
     while converged is False and sample_index < max_number_of_rom_samples:
 
