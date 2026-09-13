@@ -356,14 +356,14 @@ def test_adaptive_rejuvenation_is_restart_reproducible(tmp_path):
 
     uninterrupted_dir = tmp_path / "uninterrupted"
     uninterrupted_samples, _ = romtools.workflows.run_eki(
-        absolute_eki_directory=str(uninterrupted_dir),
+        absolute_work_dir=str(uninterrupted_dir),
         max_rejuvenations=2,
         **common_args,
     )
 
     first_dir = tmp_path / "first"
     romtools.workflows.run_eki(
-        absolute_eki_directory=str(first_dir),
+        absolute_work_dir=str(first_dir),
         max_rejuvenations=1,
         **common_args,
     )
@@ -373,7 +373,7 @@ def test_adaptive_rejuvenation_is_restart_reproducible(tmp_path):
 
     restarted_dir = tmp_path / "restarted"
     restarted_samples, _ = romtools.workflows.run_eki(
-        absolute_eki_directory=str(restarted_dir),
+        absolute_work_dir=str(restarted_dir),
         max_rejuvenations=2,
         restart_file=str(restart_file),
         **common_args,
@@ -391,7 +391,7 @@ def test_adaptive_rejuvenation_runs_again_when_cooldown_expires(tmp_path):
         parameter_space=DeterministicTwoParameterSpace(),
         observations=np.array([1.0]),
         observations_covariance=np.eye(1),
-        absolute_eki_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         ensemble_size=6,
         max_iterations=4,
         random_seed=13,

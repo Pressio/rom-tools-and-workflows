@@ -244,6 +244,9 @@ def _compute_normalized_parameter_update_norm(
     if dp.shape[1] != scales.size:
         raise ValueError("dp parameter dimension must match parameter_samples")
 
+    # A unit scale is only a final numerical safeguard for a parameter with
+    # zero mean, no finite range, and zero initial variance. Normal runs have
+    # a physical scale from one of the three sources above.
     scales = scales.copy()
     scales[scales <= np.finfo(float).tiny] = 1.0
     normalized_dp = dp / scales[None, :]

@@ -2,6 +2,7 @@
 
 import inspect
 
+import numpy as np
 import pytest
 
 from romtools.workflows.greedy.run_greedy import run_greedy
@@ -35,6 +36,35 @@ WORKFLOWS = (
 def test_workflows_use_absolute_work_dir():
     for workflow in WORKFLOWS:
         assert "absolute_work_dir" in inspect.signature(workflow).parameters
+
+
+class _MinimalParameterSpace:
+    def generate_samples(self, number_of_samples):
+        return np.zeros((number_of_samples, 1))
+
+    def get_names(self):
+        return ["x"]
+
+    def get_dimensionality(self):
+        return 1
+
+
+class _MinimalModel:
+    def populate_run_directory(self, run_directory, parameter_sample):
+        return None
+
+
+def test_deprecated_sampling_keyword_alone_still_works(tmp_path):
+    work_dir = tmp_path / "sampling"
+    with pytest.warns(DeprecationWarning, match="absolute_sampling_directory"):
+        run_directories = run_sampling(
+            _MinimalModel(),
+            _MinimalParameterSpace(),
+            absolute_sampling_directory=str(work_dir),
+            number_of_samples=1,
+            dry_run=True,
+        )
+    assert run_directories == [str(work_dir / "run_0")]
 
 
 def test_deprecated_sampling_keyword_warns_and_is_rejected_with_new_keyword():
