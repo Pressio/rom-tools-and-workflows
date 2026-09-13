@@ -457,7 +457,7 @@ statistics are computed componentwise.</p>
 <li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – Distribution used to generate independent parameter
 samples. Its parameter names define the dictionary passed to the
 model methods.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute output path. Sample <code class="docutils literal notranslate"><span class="pre">i</span></code> is evaluated
+<li><p><strong>absolute_uq_directory</strong> – Absolute output path. Sample <code class="docutils literal notranslate"><span class="pre">i</span></code> is evaluated
 in <code class="docutils literal notranslate"><span class="pre">run_i</span></code> and aggregate results are saved to <code class="docutils literal notranslate"><span class="pre">uq_stats.npz</span></code>.</p></li>
 <li><p><strong>number_of_samples</strong> (<em>int</em>) – Number of model evaluations. Must be at least two.</p></li>
 <li><p><strong>random_seed</strong> (<em>int</em>) – Seed forwarded to <code class="docutils literal notranslate"><span class="pre">parameter_space.generate_samples</span></code>.</p></li>
@@ -468,6 +468,7 @@ dispatcher must be pickleable.</p></li>
 <code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, populate and evaluate every sample.</p></li>
 <li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
 <a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

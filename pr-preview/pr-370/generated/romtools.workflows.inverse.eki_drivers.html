@@ -619,7 +619,7 @@ The workflow is fully derivative-free with respect to <code class="docutils lite
 parameters.</p></li>
 <li><p><strong>parameter_maxes</strong> (<em>ndarray</em>) – Optional upper bounds applied to sampled and updated
 parameters.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute path to the working directory. Each
+<li><p><strong>absolute_eki_directory</strong> – Absolute path to the working directory. Each
 accepted or tested iteration writes into
 <code class="docutils literal notranslate"><span class="pre">iteration_&lt;k&gt;/run_*</span></code> subdirectories under this path.</p></li>
 <li><p><strong>ensemble_size</strong> (<em>int</em>) – Number of ensemble members used in the EKI update.</p></li>
@@ -668,6 +668,7 @@ each EKI iteration. Must be 1 when a RemoteDispatcher is supplied.</p></li>
 run. Rejuvenation count and fallback covariance are restored when
 available; older restart files remain supported.</p></li>
 <li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Optional dispatcher. <code class="docutils literal notranslate"><span class="pre">None</span></code> uses a LocalDispatcher.</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

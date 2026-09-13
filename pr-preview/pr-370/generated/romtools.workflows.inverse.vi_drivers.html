@@ -629,7 +629,7 @@ are ‘legacy’ and ‘stochastic_nonmonotone’. Defaults to
 are <cite>VILegacyLineSearchConfig</cite> for line_search_method=’legacy’ and
 <cite>VIStochasticNonmonotoneLineSearchConfig</cite> for
 line_search_method=’stochastic_nonmonotone’.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute path to the working directory for runs.</p></li>
+<li><p><strong>absolute_vi_directory</strong> – Absolute path to the working directory for runs.</p></li>
 <li><p><strong>sample_size</strong> (<em>int</em>) – Number of MC samples per iteration.</p></li>
 <li><p><strong>random_seed</strong> (<em>int</em>) – RNG seed for reproducibility.</p></li>
 <li><p><strong>sampling_method</strong> (<em>str</em>) – Sampling method for variational draws. Supported
@@ -637,7 +637,7 @@ options are ‘mc’ and ‘rqmc’.</p></li>
 <li><p><strong>evaluation_concurrency</strong> – Concurrent model evaluations per iteration.</p></li>
 <li><p><strong>covariance_regularization</strong> (<em>float</em>) – Diagonal regularization for covariance inversion.</p></li>
 <li><p><strong>restart_files_to_keep</strong> (<em>int</em>) – Number of most-recent restart files to retain
-under <cite>absolute_work_dir</cite>. Older restart files are removed.</p></li>
+under <cite>absolute_vi_directory</cite>. Older restart files are removed.</p></li>
 <li><p><strong>elbo_scaling_factor</strong> – Positive scalar that multiplies the ELBO objective,
 or a string mode. Supported string modes are:
 ‘diag_mean’ (or ‘auto’): mean(diag(observations_covariance)),
@@ -661,6 +661,7 @@ when bounded_parameter_handling=’transform’.</p></li>
 <li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Optional (defaults to None, which instantiates a
 LocalDispatcher). Pass a RemoteDispatcher to send model evaluations
 to the configured remote host (e.g. an HPC cluster).</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

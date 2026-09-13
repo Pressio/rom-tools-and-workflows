@@ -571,7 +571,7 @@ the corresponding minimum objective function and QoI as of the last iteration.</
 parameters.</p></li>
 <li><p><strong>parameter_maxes</strong> (<em>ndarray</em>) – Optional upper bounds applied to sampled and updated
 parameters.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute path to the working directory. Each
+<li><p><strong>absolute_ego_directory</strong> – Absolute path to the working directory. Each
 accepted or tested iteration writes into
 <code class="docutils literal notranslate"><span class="pre">iteration_&lt;k&gt;/run_*</span></code> subdirectories under this path.</p></li>
 <li><p><strong>number_initial_samples</strong> (<em>int</em>) – Optional number of model samples to train the
@@ -587,6 +587,7 @@ drawing a new sample.</p></li>
 <li><p><strong>expected_improvement_epsilon</strong> (<em>float</em>) – Optional parameter for expected improvement.
 Values greater than zero will promote design space exploration</p></li>
 <li><p><strong>number_of_iterations</strong> (<em>int</em>)</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
