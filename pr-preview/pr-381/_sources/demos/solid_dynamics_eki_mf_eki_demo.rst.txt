@@ -1,8 +1,7 @@
 Solid-dynamics EKI and MF-EKI benchmark
 =======================================
 
-This example uses the nonlinear cantilever in the :doc:`solid dynamics model
-<nonlinear_solid_dynamics>` as a controlled inverse problem for comparing
+This example uses the nonlinear cantilever in the :doc:`solid dynamics model <nonlinear_solid_dynamics>` as a controlled inverse problem for comparing
 single-fidelity ensemble Kalman inversion (EKI) and multifidelity EKI (MF-EKI).
 The first benchmark intentionally changes only numerical resolution between the
 high- and low-fidelity models; both use the same compressible Neo-Hookean
