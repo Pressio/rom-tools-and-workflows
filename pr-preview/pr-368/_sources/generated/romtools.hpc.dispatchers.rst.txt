@@ -1,0 +1,18 @@
+romtools.hpc.dispatchers
+========================
+
+.. automodule:: romtools.hpc.dispatchers
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   base_dispatcher
+   call_runner
+   caller
+   local_dispatcher
+   remote_dispatcher
+   resolve
