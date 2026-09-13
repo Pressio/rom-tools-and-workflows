@@ -1,0 +1,1421 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>H2-air flame model &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/thebelab-helper.js"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/h2_air_flame';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Parameter spaces" href="parameter_space.html" />
+    <link rel="prev" title="Steady convection-diffusion-reaction model" href="steady_cdr.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="models.html">Models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="notebooks/basic_model.html">Basic model tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/external_model.html">External model tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/external_qoi_model.html">External QoiModel tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steady_cdr.html">Steady convection-diffusion-reaction model</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">H2-air flame model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html">Model execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inverse_problems.html">Inverse problems</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-definition">Problem definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#direct-use">Direct use</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-solution-plot">Default solution plot</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qoi-model-for-romtools-workflows">QoI model for romtools workflows</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#computational-cost">Computational cost</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">ROM Tools and Workflows: Examples and Demos</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="workflow_concepts.html" class="nav-link">Workflows</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="models.html" class="nav-link">Models</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">H2-air flame model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="h2-air-flame-model">
+<h1>H2-air flame model<a class="headerlink" href="#h2-air-flame-model" title="Link to this heading">#</a></h1>
+<p>The examples include a self-contained, pure-Python model of a two-dimensional
+premixed H2-air flame. It provides a moderately challenging benchmark for
+romtools workflows while requiring only NumPy and SciPy.</p>
+<p>The core solver and romtools QoI wrapper live in <code class="docutils literal notranslate"><span class="pre">examples/models</span></code>. A quick
+wrapper smoke test can be run from the repository root with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/models/h2_air_flame_model.py
+</pre></div>
+</div>
+<section id="problem-definition">
+<h2>Problem definition<a class="headerlink" href="#problem-definition" title="Link to this heading">#</a></h2>
+<p>The state contains hydrogen, oxygen, and water mass fractions together with a
+nondimensional temperature,</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol{u} = [Y_{H_2}, Y_{O_2}, Y_{H_2O}, \theta]^T,
+\qquad \theta = T / T_{\mathrm{ref}},\]</div>
+<p>on a rectangular domain of size 1.8 cm by 0.9 cm. The semi-discrete model
+combines advection, diffusion, and an Arrhenius reaction source. A hot
+premixed inlet occupies the middle third of the left boundary, with ambient
+Dirichlet data above and below it and homogeneous-Neumann conditions on the
+remaining boundaries.</p>
+<p>The four model parameters are</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">kappa</span></code></dt><dd><p>Diffusivity.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">scaled_activation_energy</span></code></dt><dd><p>Activation energy divided by 1000. A representative value is 8.0,
+corresponding to an activation energy of 8000.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">beta_x</span></code> and <code class="docutils literal notranslate"><span class="pre">beta_y</span></code></dt><dd><p>Components of the advection velocity in cm/s. <code class="docutils literal notranslate"><span class="pre">beta_x</span></code> is restricted to
+nonnegative values because the benchmark inlet and x-upwind stencil assume
+left-to-right flow.</p>
+</dd>
+</dl>
+<p>A representative parameter vector is</p>
+<div class="math notranslate nohighlight">
+\[(\kappa, E/1000, \beta_x, \beta_y) = (2, 8, 40, 7).\]</div>
+<p>The solver uses Crank-Nicolson time integration, central differences for
+diffusion, a second-order backward upwind stencil in the x direction, and an
+upwind stencil in the y direction. Newton systems are assembled and solved as
+SciPy sparse matrices.</p>
+</section>
+<section id="direct-use">
+<h2>Direct use<a class="headerlink" href="#direct-use" title="Link to this heading">#</a></h2>
+<p>The core solver is independent of romtools workflow interfaces. From
+<code class="docutils literal notranslate"><span class="pre">examples/models</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">h2_air_flame</span><span class="w"> </span><span class="kn">import</span> <span class="n">H2AirFlame</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">H2AirFlame</span><span class="p">(</span>
+    <span class="n">nx</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="n">ny</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+    <span class="n">dt</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+    <span class="n">t_end</span><span class="o">=</span><span class="mf">5.0e-3</span><span class="p">,</span>
+    <span class="n">snapshot_stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">states</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+    <span class="n">kappa</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">scaled_activation_energy</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
+    <span class="n">beta_x</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span>
+    <span class="n">beta_y</span><span class="o">=</span><span class="mf">7.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">states</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(num_snapshots,</span> <span class="pre">4,</span> <span class="pre">nx,</span> <span class="pre">ny)</span></code>. The temperature field is
+stored as <code class="docutils literal notranslate"><span class="pre">theta</span> <span class="pre">=</span> <span class="pre">T</span> <span class="pre">/</span> <span class="pre">300</span> <span class="pre">K</span></code> so that the four state components remain on a
+more useful scale for reduced-order modeling. Dimensional temperature is
+therefore <code class="docutils literal notranslate"><span class="pre">300</span> <span class="pre">*</span> <span class="pre">states[:,</span> <span class="pre">3]</span></code>.</p>
+</section>
+<section id="default-solution-plot">
+<h2>Default solution plot<a class="headerlink" href="#default-solution-plot" title="Link to this heading">#</a></h2>
+<p>The figure below shows the final temperature field for the default lightweight
+configuration and the representative parameter vector</p>
+<div class="math notranslate nohighlight">
+\[(\kappa, E/1000, \beta_x, \beta_y) = (2, 8, 40, 7).\]</div>
+<p>This corresponds to <code class="docutils literal notranslate"><span class="pre">nx</span> <span class="pre">=</span> <span class="pre">25</span></code>, <code class="docutils literal notranslate"><span class="pre">ny</span> <span class="pre">=</span> <span class="pre">13</span></code>, <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">1e-4</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">t_end</span> <span class="pre">=</span> <span class="pre">5e-3</span></code>.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="_static/h2_air_flame_default_temperature.svg"><img alt="Final temperature field for the default H2-air flame configuration" src="_static/h2_air_flame_default_temperature.svg" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Final temperature field at <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">0.005</span> <span class="pre">s</span></code> for the default configuration.</span><a class="headerlink" href="#id1" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="qoi-model-for-romtools-workflows">
+<h2>QoI model for romtools workflows<a class="headerlink" href="#qoi-model-for-romtools-workflows" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">H2AirFlameQoiModel</span></code> provides the standard romtools model protocol. It uses
+regularly strided temperature sensors as the QoI and writes both the QoI and
+full state history to each run directory. Saving the state history allows the
+same FOM evaluations to be reused later by state-based ROM builders.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">h2_air_flame_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">H2AirFlameQoiModel</span>
+
+<span class="n">qoi_model</span> <span class="o">=</span> <span class="n">H2AirFlameQoiModel</span><span class="p">(</span>
+    <span class="n">nx</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="n">ny</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+    <span class="n">dt</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+    <span class="n">t_end</span><span class="o">=</span><span class="mf">5.0e-3</span><span class="p">,</span>
+    <span class="n">snapshot_stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">spatial_sensor_stride</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sample</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"kappa"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="s2">"scaled_activation_energy"</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span>
+    <span class="s2">"beta_x"</span><span class="p">:</span> <span class="mf">40.0</span><span class="p">,</span>
+    <span class="s2">"beta_y"</span><span class="p">:</span> <span class="mf">7.0</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">qoi_model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="s2">"run_0"</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="n">qoi_model</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="s2">"run_0"</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="n">qoi</span> <span class="o">=</span> <span class="n">qoi_model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="s2">"run_0"</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This wrapper can be passed directly to romtools workflows that consume a QoI
+model.</p>
+</section>
+<section id="computational-cost">
+<h2>Computational cost<a class="headerlink" href="#computational-cost" title="Link to this heading">#</a></h2>
+<p>The default constructor values are intended to be lightweight enough for
+interactive experimentation. Increasing the spatial resolution or time horizon,
+or reducing the time step, increases the cost of the implicit nonlinear solve.
+Benchmark studies should therefore report model-evaluation counts together with
+wall-clock cost when comparing algorithms.</p>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h2>
+<p>Core flame solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">  1</span><span class="sd">"""Pure-Python two-dimensional premixed H2-air flame model.</span>
+<span class="linenos">  2</span>
+<span class="linenos">  3</span><span class="sd">Solves a transient advection-diffusion-reaction system for H2, O2, H2O mass</span>
+<span class="linenos">  4</span><span class="sd">fractions and a nondimensional temperature using Crank-Nicolson time</span>
+<span class="linenos">  5</span><span class="sd">integration and Newton iterations.</span>
+<span class="linenos">  6</span><span class="sd">"""</span>
+<span class="linenos">  7</span>
+<span class="linenos">  8</span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
+<span class="linenos">  9</span>
+<span class="linenos"> 10</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="linenos"> 11</span><span class="kn">import</span><span class="w"> </span><span class="nn">scipy.sparse</span>
+<span class="linenos"> 12</span><span class="kn">import</span><span class="w"> </span><span class="nn">scipy.sparse.linalg</span>
+<span class="linenos"> 13</span>
+<span class="linenos"> 14</span>
+<span class="linenos"> 15</span><span class="k">class</span><span class="w"> </span><span class="nc">H2AirFlame</span><span class="p">:</span>
+<span class="linenos"> 16</span><span class="w">    </span><span class="sd">"""Two-dimensional premixed H2-air advection-diffusion-reaction model.</span>
+<span class="linenos"> 17</span>
+<span class="linenos"> 18</span><span class="sd">    The state ordering is ``[Y_H2, Y_O2, Y_H2O, theta]``, where</span>
+<span class="linenos"> 19</span><span class="sd">    ``theta = T / temperature_scale``. The four model parameters are the</span>
+<span class="linenos"> 20</span><span class="sd">    diffusivity ``kappa``, scaled activation energy ``E / 1000``, and the two</span>
+<span class="linenos"> 21</span><span class="sd">    advection-velocity components ``beta_x`` and ``beta_y``.</span>
+<span class="linenos"> 22</span>
+<span class="linenos"> 23</span><span class="sd">    Parameters</span>
+<span class="linenos"> 24</span><span class="sd">    ----------</span>
+<span class="linenos"> 25</span><span class="sd">    nx, ny:</span>
+<span class="linenos"> 26</span><span class="sd">        Number of nodal points in the x and y directions, including boundary</span>
+<span class="linenos"> 27</span><span class="sd">        points.</span>
+<span class="linenos"> 28</span><span class="sd">    dt:</span>
+<span class="linenos"> 29</span><span class="sd">        Time step in seconds.</span>
+<span class="linenos"> 30</span><span class="sd">    t_end:</span>
+<span class="linenos"> 31</span><span class="sd">        Final time in seconds. ``t_end / dt`` must be an integer.</span>
+<span class="linenos"> 32</span><span class="sd">    snapshot_stride:</span>
+<span class="linenos"> 33</span><span class="sd">        Number of time steps between stored snapshots. The initial and final</span>
+<span class="linenos"> 34</span><span class="sd">        states are always stored.</span>
+<span class="linenos"> 35</span><span class="sd">    newton_relative_tolerance, newton_absolute_tolerance:</span>
+<span class="linenos"> 36</span><span class="sd">        Newton convergence tolerances for each implicit time step.</span>
+<span class="linenos"> 37</span><span class="sd">    newton_max_iterations:</span>
+<span class="linenos"> 38</span><span class="sd">        Maximum Newton iterations per time step.</span>
+<span class="linenos"> 39</span><span class="sd">    """</span>
+<span class="linenos"> 40</span>
+<span class="linenos"> 41</span>    <span class="n">field_names</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Y_H2"</span><span class="p">,</span> <span class="s2">"Y_O2"</span><span class="p">,</span> <span class="s2">"Y_H2O"</span><span class="p">,</span> <span class="s2">"theta"</span><span class="p">)</span>
+<span class="linenos"> 42</span>    <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"kappa"</span><span class="p">,</span> <span class="s2">"scaled_activation_energy"</span><span class="p">,</span> <span class="s2">"beta_x"</span><span class="p">,</span> <span class="s2">"beta_y"</span><span class="p">)</span>
+<span class="linenos"> 43</span>
+<span class="linenos"> 44</span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="linenos"> 45</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos"> 46</span>        <span class="n">nx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
+<span class="linenos"> 47</span>        <span class="n">ny</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">13</span><span class="p">,</span>
+<span class="linenos"> 48</span>        <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-4</span><span class="p">,</span>
+<span class="linenos"> 49</span>        <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0e-3</span><span class="p">,</span>
+<span class="linenos"> 50</span>        <span class="n">snapshot_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="linenos"> 51</span>        <span class="n">newton_relative_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-6</span><span class="p">,</span>
+<span class="linenos"> 52</span>        <span class="n">newton_absolute_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-10</span><span class="p">,</span>
+<span class="linenos"> 53</span>        <span class="n">newton_max_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">80</span><span class="p">,</span>
+<span class="linenos"> 54</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="linenos"> 55</span>        <span class="k">if</span> <span class="n">nx</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+<span class="linenos"> 56</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"nx must be at least 4 for the x-upwind stencil"</span><span class="p">)</span>
+<span class="linenos"> 57</span>        <span class="k">if</span> <span class="n">ny</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+<span class="linenos"> 58</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"ny must be at least 3"</span><span class="p">)</span>
+<span class="linenos"> 59</span>        <span class="k">if</span> <span class="n">dt</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos"> 60</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"dt must be positive"</span><span class="p">)</span>
+<span class="linenos"> 61</span>        <span class="k">if</span> <span class="n">t_end</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos"> 62</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"t_end must be positive"</span><span class="p">)</span>
+<span class="linenos"> 63</span>        <span class="k">if</span> <span class="n">snapshot_stride</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos"> 64</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"snapshot_stride must be at least 1"</span><span class="p">)</span>
+<span class="linenos"> 65</span>        <span class="k">if</span> <span class="n">newton_relative_tolerance</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">newton_absolute_tolerance</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos"> 66</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<span class="linenos"> 67</span>                <span class="s2">"Newton tolerances must be nonnegative and rtol must be positive"</span>
+<span class="linenos"> 68</span>            <span class="p">)</span>
+<span class="linenos"> 69</span>        <span class="k">if</span> <span class="n">newton_max_iterations</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos"> 70</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"newton_max_iterations must be at least 1"</span><span class="p">)</span>
+<span class="linenos"> 71</span>
+<span class="linenos"> 72</span>        <span class="n">n_steps_float</span> <span class="o">=</span> <span class="n">t_end</span> <span class="o">/</span> <span class="n">dt</span>
+<span class="linenos"> 73</span>        <span class="n">n_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">n_steps_float</span><span class="p">))</span>
+<span class="linenos"> 74</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">n_steps_float</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1.0e-12</span><span class="p">):</span>
+<span class="linenos"> 75</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"t_end must be an integer multiple of dt"</span><span class="p">)</span>
+<span class="linenos"> 76</span>
+<span class="linenos"> 77</span>        <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
+<span class="linenos"> 78</span>        <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ny</span><span class="p">)</span>
+<span class="linenos"> 79</span>        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+<span class="linenos"> 80</span>        <span class="bp">self</span><span class="o">.</span><span class="n">t_end</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t_end</span><span class="p">)</span>
+<span class="linenos"> 81</span>        <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_stride</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">snapshot_stride</span><span class="p">)</span>
+<span class="linenos"> 82</span>        <span class="bp">self</span><span class="o">.</span><span class="n">newton_relative_tolerance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newton_relative_tolerance</span><span class="p">)</span>
+<span class="linenos"> 83</span>        <span class="bp">self</span><span class="o">.</span><span class="n">newton_absolute_tolerance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newton_absolute_tolerance</span><span class="p">)</span>
+<span class="linenos"> 84</span>        <span class="bp">self</span><span class="o">.</span><span class="n">newton_max_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">newton_max_iterations</span><span class="p">)</span>
+<span class="linenos"> 85</span>        <span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span> <span class="o">=</span> <span class="n">n_steps</span>
+<span class="linenos"> 86</span>
+<span class="linenos"> 87</span>        <span class="bp">self</span><span class="o">.</span><span class="n">length_x</span> <span class="o">=</span> <span class="mf">1.8</span>  <span class="c1"># cm</span>
+<span class="linenos"> 88</span>        <span class="bp">self</span><span class="o">.</span><span class="n">length_y</span> <span class="o">=</span> <span class="mf">0.9</span>  <span class="c1"># cm</span>
+<span class="linenos"> 89</span>        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">)</span>
+<span class="linenos"> 90</span>        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">)</span>
+<span class="linenos"> 91</span>        <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos"> 92</span>        <span class="bp">self</span><span class="o">.</span><span class="n">dy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos"> 93</span>
+<span class="linenos"> 94</span>        <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span> <span class="o">=</span> <span class="mf">300.0</span>  <span class="c1"># K</span>
+<span class="linenos"> 95</span>        <span class="bp">self</span><span class="o">.</span><span class="n">reaction_prefactor</span> <span class="o">=</span> <span class="mf">4.464956898694298e12</span>
+<span class="linenos"> 96</span>        <span class="bp">self</span><span class="o">.</span><span class="n">molecular_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.016</span><span class="p">,</span> <span class="mf">31.9</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">])</span>  <span class="c1"># g/mol</span>
+<span class="linenos"> 97</span>        <span class="bp">self</span><span class="o">.</span><span class="n">density</span> <span class="o">=</span> <span class="mf">1.39e-3</span>  <span class="c1"># g/cm^3</span>
+<span class="linenos"> 98</span>        <span class="bp">self</span><span class="o">.</span><span class="n">heat_of_reaction_scaled</span> <span class="o">=</span> <span class="mf">9800.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos"> 99</span>        <span class="bp">self</span><span class="o">.</span><span class="n">gas_constant_times_temperature_scale</span> <span class="o">=</span> <span class="mf">8.314472</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">100</span>        <span class="bp">self</span><span class="o">.</span><span class="n">stoichiometric_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">])</span>
+<span class="linenos">101</span>
+<span class="linenos">102</span>        <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">=</span> <span class="mf">300.0</span>
+<span class="linenos">103</span>        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_temperature</span> <span class="o">=</span> <span class="mf">950.0</span>
+<span class="linenos">104</span>        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2_mass_fraction</span> <span class="o">=</span> <span class="mf">0.0282</span>
+<span class="linenos">105</span>        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_o2_mass_fraction</span> <span class="o">=</span> <span class="mf">0.2259</span>
+<span class="linenos">106</span>        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2o_mass_fraction</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">107</span>
+<span class="linenos">108</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="mf">0.6</span>
+<span class="linenos">109</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mf">0.3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">)</span>
+<span class="linenos">110</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="mf">0.3</span>
+<span class="linenos">111</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">112</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">113</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">114</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">115</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">116</span>
+<span class="linenos">117</span>    <span class="k">def</span><span class="w"> </span><span class="nf">initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">118</span><span class="w">        </span><span class="sd">"""Return the initial state with boundary conditions applied."""</span>
+<span class="linenos">119</span>        <span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">120</span>        <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">121</span>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_boundary_conditions</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="linenos">122</span>
+<span class="linenos">123</span>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_boundary_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">124</span><span class="w">        </span><span class="sd">"""Apply Dirichlet inlet and homogeneous-Neumann outlet/wall conditions."""</span>
+<span class="linenos">125</span>        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">):</span>
+<span class="linenos">126</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<span class="linenos">127</span>                <span class="s2">"state must have shape (4, nx, ny); got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="linenos">128</span>            <span class="p">)</span>
+<span class="linenos">129</span>
+<span class="linenos">130</span>        <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="linenos">131</span>        <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+<span class="linenos">132</span>        <span class="n">state</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>
+<span class="linenos">133</span>
+<span class="linenos">134</span>        <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">135</span>        <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">136</span>        <span class="n">state</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">137</span>        <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">138</span>
+<span class="linenos">139</span>        <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2_mass_fraction</span>
+<span class="linenos">140</span>        <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_o2_mass_fraction</span>
+<span class="linenos">141</span>        <span class="n">state</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2o_mass_fraction</span>
+<span class="linenos">142</span>        <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">143</span>
+<span class="linenos">144</span>        <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">145</span>        <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">146</span>        <span class="n">state</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">147</span>        <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">148</span>        <span class="k">return</span> <span class="n">state</span>
+<span class="linenos">149</span>
+<span class="linenos">150</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_parameters</span><span class="p">(</span>
+<span class="linenos">151</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">152</span>        <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">153</span>        <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">154</span>        <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">155</span>        <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">156</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="linenos">157</span>        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+<span class="linenos">158</span>            <span class="p">[</span><span class="n">kappa</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>
+<span class="linenos">159</span>        <span class="p">)</span>
+<span class="linenos">160</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+<span class="linenos">161</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"model parameters must be finite"</span><span class="p">)</span>
+<span class="linenos">162</span>        <span class="k">if</span> <span class="n">kappa</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">163</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"kappa must be positive"</span><span class="p">)</span>
+<span class="linenos">164</span>        <span class="k">if</span> <span class="n">scaled_activation_energy</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">165</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"scaled_activation_energy must be positive"</span><span class="p">)</span>
+<span class="linenos">166</span>        <span class="k">if</span> <span class="n">beta_x</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">167</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<span class="linenos">168</span>                <span class="s2">"beta_x must be nonnegative because the inlet and x-upwind stencil "</span>
+<span class="linenos">169</span>                <span class="s2">"assume left-to-right flow"</span>
+<span class="linenos">170</span>            <span class="p">)</span>
+<span class="linenos">171</span>        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">)</span>
+<span class="linenos">172</span>
+<span class="linenos">173</span>    <span class="nd">@staticmethod</span>
+<span class="linenos">174</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_laplacian</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dy</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">175</span>        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="linenos">176</span>        <span class="n">result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+=</span> <span class="p">(</span>
+<span class="linenos">177</span>            <span class="n">state</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">state</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>
+<span class="linenos">178</span>        <span class="p">)</span> <span class="o">/</span> <span class="n">dx</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">179</span>        <span class="n">result</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+<span class="linenos">180</span>            <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">:]</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+<span class="linenos">181</span>        <span class="p">)</span> <span class="o">/</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">182</span>        <span class="k">return</span> <span class="n">result</span>
+<span class="linenos">183</span>
+<span class="linenos">184</span>    <span class="nd">@staticmethod</span>
+<span class="linenos">185</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_x_upwind_derivative</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">186</span>        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="linenos">187</span>        <span class="n">result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">state</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span> <span class="o">/</span> <span class="n">dx</span>
+<span class="linenos">188</span>        <span class="n">result</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">189</span>            <span class="mf">1.5</span> <span class="o">*</span> <span class="n">state</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:,</span> <span class="p">:]</span>
+<span class="linenos">190</span>            <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">state</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+<span class="linenos">191</span>            <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>
+<span class="linenos">192</span>        <span class="p">)</span> <span class="o">/</span> <span class="n">dx</span>
+<span class="linenos">193</span>        <span class="k">return</span> <span class="n">result</span>
+<span class="linenos">194</span>
+<span class="linenos">195</span>    <span class="nd">@staticmethod</span>
+<span class="linenos">196</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_y_upwind_derivative</span><span class="p">(</span>
+<span class="linenos">197</span>        <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span>
+<span class="linenos">198</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">199</span>        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="linenos">200</span>        <span class="k">if</span> <span class="n">beta_y</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">201</span>            <span class="n">result</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">dy</span>
+<span class="linenos">202</span>        <span class="k">else</span><span class="p">:</span>
+<span class="linenos">203</span>            <span class="n">result</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">state</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">dy</span>
+<span class="linenos">204</span>        <span class="k">return</span> <span class="n">result</span>
+<span class="linenos">205</span>
+<span class="linenos">206</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_linear_rhs</span><span class="p">(</span>
+<span class="linenos">207</span>        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span>
+<span class="linenos">208</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">209</span>        <span class="k">return</span> <span class="p">(</span>
+<span class="linenos">210</span>            <span class="n">kappa</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_laplacian</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span><span class="p">)</span>
+<span class="linenos">211</span>            <span class="o">-</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x_upwind_derivative</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="p">)</span>
+<span class="linenos">212</span>            <span class="o">-</span> <span class="n">beta_y</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_upwind_derivative</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">)</span>
+<span class="linenos">213</span>        <span class="p">)</span>
+<span class="linenos">214</span>
+<span class="linenos">215</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_reaction_rhs</span><span class="p">(</span>
+<span class="linenos">216</span>        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span>
+<span class="linenos">217</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">218</span>        <span class="n">theta</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="linenos">219</span>        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">theta</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+<span class="linenos">220</span>            <span class="k">raise</span> <span class="ne">FloatingPointError</span><span class="p">(</span><span class="s2">"temperature became nonpositive during the solve"</span><span class="p">)</span>
+<span class="linenos">221</span>
+<span class="linenos">222</span>        <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">density</span>
+<span class="linenos">223</span>        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecular_weights</span>
+<span class="linenos">224</span>        <span class="n">activation_energy</span> <span class="o">=</span> <span class="n">scaled_activation_energy</span> <span class="o">*</span> <span class="mf">1.0e3</span>
+<span class="linenos">225</span>        <span class="n">exponential</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+<span class="linenos">226</span>            <span class="o">-</span><span class="n">activation_energy</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gas_constant_times_temperature_scale</span> <span class="o">*</span> <span class="n">theta</span><span class="p">)</span>
+<span class="linenos">227</span>        <span class="p">)</span>
+<span class="linenos">228</span>        <span class="n">h2_concentration</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">229</span>        <span class="n">o2_concentration</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="linenos">230</span>        <span class="n">rate</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">231</span>            <span class="n">h2_concentration</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">232</span>            <span class="o">*</span> <span class="n">o2_concentration</span>
+<span class="linenos">233</span>            <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_prefactor</span>
+<span class="linenos">234</span>            <span class="o">*</span> <span class="n">exponential</span>
+<span class="linenos">235</span>        <span class="p">)</span>
+<span class="linenos">236</span>
+<span class="linenos">237</span>        <span class="n">reaction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="linenos">238</span>        <span class="k">for</span> <span class="n">species</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+<span class="linenos">239</span>            <span class="n">reaction</span><span class="p">[</span><span class="n">species</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">240</span>                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">stoichiometric_coefficients</span><span class="p">[</span><span class="n">species</span><span class="p">]</span>
+<span class="linenos">241</span>                <span class="o">*</span> <span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">species</span><span class="p">]</span> <span class="o">/</span> <span class="n">rho</span><span class="p">)</span>
+<span class="linenos">242</span>                <span class="o">*</span> <span class="n">rate</span>
+<span class="linenos">243</span>            <span class="p">)</span>
+<span class="linenos">244</span>        <span class="n">reaction</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">reaction</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">heat_of_reaction_scaled</span>
+<span class="linenos">245</span>        <span class="k">return</span> <span class="n">reaction</span>
+<span class="linenos">246</span>
+<span class="linenos">247</span>    <span class="k">def</span><span class="w"> </span><span class="nf">rhs</span><span class="p">(</span>
+<span class="linenos">248</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">249</span>        <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">250</span>        <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">251</span>        <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">252</span>        <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">253</span>        <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">254</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">255</span><span class="w">        </span><span class="sd">"""Evaluate the semi-discrete right-hand side."""</span>
+<span class="linenos">256</span>        <span class="n">kappa</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_parameters</span><span class="p">(</span>
+<span class="linenos">257</span>            <span class="n">kappa</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span>
+<span class="linenos">258</span>        <span class="p">)</span>
+<span class="linenos">259</span>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linear_rhs</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_rhs</span><span class="p">(</span>
+<span class="linenos">260</span>            <span class="n">state</span><span class="p">,</span> <span class="n">scaled_activation_energy</span>
+<span class="linenos">261</span>        <span class="p">)</span>
+<span class="linenos">262</span>
+<span class="linenos">263</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_boundary_conditions_to_residual</span><span class="p">(</span>
+<span class="linenos">264</span>        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">residual</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+<span class="linenos">265</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">266</span>        <span class="n">state_view</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">267</span>        <span class="n">residual_view</span> <span class="o">=</span> <span class="n">residual</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">268</span>
+<span class="linenos">269</span>        <span class="n">residual_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="linenos">270</span>        <span class="n">residual_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+<span class="linenos">271</span>        <span class="n">residual_view</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">state_view</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>
+<span class="linenos">272</span>
+<span class="linenos">273</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span>
+<span class="linenos">274</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span>
+<span class="linenos">275</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span>
+<span class="linenos">276</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">277</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_1</span><span class="p">]</span>
+<span class="linenos">278</span>            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">279</span>        <span class="p">)</span>
+<span class="linenos">280</span>
+<span class="linenos">281</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">282</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2_mass_fraction</span>
+<span class="linenos">283</span>        <span class="p">)</span>
+<span class="linenos">284</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">285</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_o2_mass_fraction</span>
+<span class="linenos">286</span>        <span class="p">)</span>
+<span class="linenos">287</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">288</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_h2o_mass_fraction</span>
+<span class="linenos">289</span>        <span class="p">)</span>
+<span class="linenos">290</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">291</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_2</span><span class="p">]</span>
+<span class="linenos">292</span>            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">293</span>        <span class="p">)</span>
+<span class="linenos">294</span>
+<span class="linenos">295</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span>
+<span class="linenos">296</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span>
+<span class="linenos">297</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_view</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span>
+<span class="linenos">298</span>        <span class="n">residual_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">299</span>            <span class="n">state_view</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gamma_3</span><span class="p">]</span>
+<span class="linenos">300</span>            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambient_temperature</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_scale</span>
+<span class="linenos">301</span>        <span class="p">)</span>
+<span class="linenos">302</span>        <span class="k">return</span> <span class="n">residual_view</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="linenos">303</span>
+<span class="linenos">304</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_residual</span><span class="p">(</span>
+<span class="linenos">305</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">306</span>        <span class="n">next_state_flat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">307</span>        <span class="n">previous_state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">308</span>        <span class="n">previous_rhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">309</span>        <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">310</span>        <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">311</span>        <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">312</span>        <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">313</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">314</span>        <span class="n">next_state</span> <span class="o">=</span> <span class="n">next_state_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">315</span>        <span class="n">next_rhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linear_rhs</span><span class="p">(</span>
+<span class="linenos">316</span>            <span class="n">next_state</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span>
+<span class="linenos">317</span>        <span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_rhs</span><span class="p">(</span><span class="n">next_state</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">)</span>
+<span class="linenos">318</span>        <span class="n">residual</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">319</span>            <span class="n">next_state</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="linenos">320</span>            <span class="o">-</span> <span class="n">previous_state</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="linenos">321</span>            <span class="o">-</span> <span class="mf">0.5</span>
+<span class="linenos">322</span>            <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span>
+<span class="linenos">323</span>            <span class="o">*</span> <span class="p">(</span><span class="n">next_rhs</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">previous_rhs</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="linenos">324</span>        <span class="p">)</span>
+<span class="linenos">325</span>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_boundary_conditions_to_residual</span><span class="p">(</span><span class="n">next_state_flat</span><span class="p">,</span> <span class="n">residual</span><span class="p">)</span>
+<span class="linenos">326</span>
+<span class="linenos">327</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_build_linear_residual_jacobian</span><span class="p">(</span>
+<span class="linenos">328</span>        <span class="bp">self</span><span class="p">,</span> <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span>
+<span class="linenos">329</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">:</span>
+<span class="linenos">330</span>        <span class="n">block_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span>
+<span class="linenos">331</span>        <span class="n">block</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">block_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="linenos">332</span>        <span class="n">dx2_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">333</span>        <span class="n">dy2_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">334</span>        <span class="n">dx_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span>
+<span class="linenos">335</span>        <span class="n">dy_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span>
+<span class="linenos">336</span>
+<span class="linenos">337</span>        <span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="linenos">338</span>            <span class="k">return</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">+</span> <span class="n">j</span>
+<span class="linenos">339</span>
+<span class="linenos">340</span>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">):</span>
+<span class="linenos">341</span>            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">):</span>
+<span class="linenos">342</span>                <span class="n">row</span> <span class="o">=</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+<span class="linenos">343</span>                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<span class="linenos">344</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="linenos">345</span>                    <span class="k">continue</span>
+<span class="linenos">346</span>                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos">347</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="linenos">348</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+<span class="linenos">349</span>                    <span class="k">continue</span>
+<span class="linenos">350</span>                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<span class="linenos">351</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+<span class="linenos">352</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="linenos">353</span>                    <span class="k">continue</span>
+<span class="linenos">354</span>                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos">355</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="linenos">356</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+<span class="linenos">357</span>                    <span class="k">continue</span>
+<span class="linenos">358</span>
+<span class="linenos">359</span>                <span class="n">diagonal</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="p">(</span><span class="n">dx2_inv</span> <span class="o">+</span> <span class="n">dy2_inv</span><span class="p">)</span>
+<span class="linenos">360</span>                <span class="n">x_im1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dx2_inv</span>
+<span class="linenos">361</span>                <span class="n">x_im2</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="linenos">362</span>                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos">363</span>                    <span class="n">diagonal</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="n">dx_inv</span>
+<span class="linenos">364</span>                    <span class="n">x_im1</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="n">dx_inv</span>
+<span class="linenos">365</span>                <span class="k">else</span><span class="p">:</span>
+<span class="linenos">366</span>                    <span class="n">diagonal</span> <span class="o">+=</span> <span class="mf">0.75</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="n">dx_inv</span>
+<span class="linenos">367</span>                    <span class="n">x_im1</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="n">dx_inv</span>
+<span class="linenos">368</span>                    <span class="n">x_im2</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_x</span> <span class="o">*</span> <span class="n">dx_inv</span>
+<span class="linenos">369</span>
+<span class="linenos">370</span>                <span class="k">if</span> <span class="n">beta_y</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">371</span>                    <span class="n">diagonal</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_y</span> <span class="o">*</span> <span class="n">dy_inv</span>
+<span class="linenos">372</span>                    <span class="n">y_jm1</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">373</span>                        <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dy2_inv</span>
+<span class="linenos">374</span>                        <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_y</span> <span class="o">*</span> <span class="n">dy_inv</span>
+<span class="linenos">375</span>                    <span class="p">)</span>
+<span class="linenos">376</span>                    <span class="n">y_jp1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dy2_inv</span>
+<span class="linenos">377</span>                <span class="k">else</span><span class="p">:</span>
+<span class="linenos">378</span>                    <span class="n">diagonal</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_y</span> <span class="o">*</span> <span class="n">dy_inv</span>
+<span class="linenos">379</span>                    <span class="n">y_jm1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dy2_inv</span>
+<span class="linenos">380</span>                    <span class="n">y_jp1</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">381</span>                        <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dy2_inv</span>
+<span class="linenos">382</span>                        <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">beta_y</span> <span class="o">*</span> <span class="n">dy_inv</span>
+<span class="linenos">383</span>                    <span class="p">)</span>
+<span class="linenos">384</span>
+<span class="linenos">385</span>                <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">diagonal</span>
+<span class="linenos">386</span>                <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">dx2_inv</span>
+<span class="linenos">387</span>                <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="n">x_im1</span>
+<span class="linenos">388</span>                <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_jm1</span>
+<span class="linenos">389</span>                <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_jp1</span>
+<span class="linenos">390</span>                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+<span class="linenos">391</span>                    <span class="n">block</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">index</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="n">x_im2</span>
+<span class="linenos">392</span>
+<span class="linenos">393</span>        <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">block_diag</span><span class="p">(</span>
+<span class="linenos">394</span>            <span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)],</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"csr"</span>
+<span class="linenos">395</span>        <span class="p">)</span>
+<span class="linenos">396</span>
+<span class="linenos">397</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_reaction_jacobian</span><span class="p">(</span>
+<span class="linenos">398</span>        <span class="bp">self</span><span class="p">,</span> <span class="n">state_flat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span>
+<span class="linenos">399</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">:</span>
+<span class="linenos">400</span>        <span class="n">state</span> <span class="o">=</span> <span class="n">state_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">))</span>
+<span class="linenos">401</span>        <span class="n">theta</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="linenos">402</span>        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">theta</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+<span class="linenos">403</span>            <span class="k">raise</span> <span class="ne">FloatingPointError</span><span class="p">(</span><span class="s2">"temperature became nonpositive during the solve"</span><span class="p">)</span>
+<span class="linenos">404</span>
+<span class="linenos">405</span>        <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">density</span>
+<span class="linenos">406</span>        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecular_weights</span>
+<span class="linenos">407</span>        <span class="n">activation_energy</span> <span class="o">=</span> <span class="n">scaled_activation_energy</span> <span class="o">*</span> <span class="mf">1.0e3</span>
+<span class="linenos">408</span>        <span class="n">exponential</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+<span class="linenos">409</span>            <span class="o">-</span><span class="n">activation_energy</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gas_constant_times_temperature_scale</span> <span class="o">*</span> <span class="n">theta</span><span class="p">)</span>
+<span class="linenos">410</span>        <span class="p">)</span>
+<span class="linenos">411</span>        <span class="n">h2_concentration</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="linenos">412</span>        <span class="n">o2_concentration</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="linenos">413</span>
+<span class="linenos">414</span>        <span class="n">prefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reaction_prefactor</span> <span class="o">*</span> <span class="n">exponential</span>
+<span class="linenos">415</span>        <span class="n">rate</span> <span class="o">=</span> <span class="n">h2_concentration</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">o2_concentration</span> <span class="o">*</span> <span class="n">prefactor</span>
+<span class="linenos">416</span>        <span class="n">d_rate_d_h2</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">417</span>            <span class="mf">2.0</span>
+<span class="linenos">418</span>            <span class="o">*</span> <span class="p">(</span><span class="n">rho</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="linenos">419</span>            <span class="o">*</span> <span class="n">h2_concentration</span>
+<span class="linenos">420</span>            <span class="o">*</span> <span class="n">o2_concentration</span>
+<span class="linenos">421</span>            <span class="o">*</span> <span class="n">prefactor</span>
+<span class="linenos">422</span>        <span class="p">)</span>
+<span class="linenos">423</span>        <span class="n">d_rate_d_o2</span> <span class="o">=</span> <span class="p">(</span><span class="n">rho</span> <span class="o">/</span> <span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">h2_concentration</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">prefactor</span>
+<span class="linenos">424</span>        <span class="n">d_rate_d_theta</span> <span class="o">=</span> <span class="n">rate</span> <span class="o">*</span> <span class="n">activation_energy</span> <span class="o">/</span> <span class="p">(</span>
+<span class="linenos">425</span>            <span class="bp">self</span><span class="o">.</span><span class="n">gas_constant_times_temperature_scale</span> <span class="o">*</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span>
+<span class="linenos">426</span>        <span class="p">)</span>
+<span class="linenos">427</span>
+<span class="linenos">428</span>        <span class="n">d_rate_d_h2</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span>
+<span class="linenos">429</span>        <span class="n">d_rate_d_o2</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span>
+<span class="linenos">430</span>        <span class="n">d_rate_d_theta</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_mask</span>
+<span class="linenos">431</span>
+<span class="linenos">432</span>        <span class="n">block_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span>
+<span class="linenos">433</span>        <span class="n">local</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="linenos">434</span>        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="linenos">435</span>        <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="linenos">436</span>        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="linenos">437</span>
+<span class="linenos">438</span>        <span class="k">for</span> <span class="n">species</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+<span class="linenos">439</span>            <span class="k">if</span> <span class="n">species</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+<span class="linenos">440</span>                <span class="n">coefficient</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">441</span>                    <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">stoichiometric_coefficients</span><span class="p">[</span><span class="n">species</span><span class="p">]</span>
+<span class="linenos">442</span>                    <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="n">species</span><span class="p">]</span>
+<span class="linenos">443</span>                    <span class="o">/</span> <span class="n">rho</span>
+<span class="linenos">444</span>                <span class="p">)</span>
+<span class="linenos">445</span>            <span class="k">else</span><span class="p">:</span>
+<span class="linenos">446</span>                <span class="n">coefficient</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">447</span>                    <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">stoichiometric_coefficients</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="linenos">448</span>                    <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="linenos">449</span>                    <span class="o">/</span> <span class="n">rho</span>
+<span class="linenos">450</span>                    <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">heat_of_reaction_scaled</span>
+<span class="linenos">451</span>                <span class="p">)</span>
+<span class="linenos">452</span>
+<span class="linenos">453</span>            <span class="n">row</span> <span class="o">=</span> <span class="n">species</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">local</span>
+<span class="linenos">454</span>            <span class="n">rows</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">row</span><span class="p">])</span>
+<span class="linenos">455</span>            <span class="n">cols</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<span class="linenos">456</span>                <span class="p">[</span>
+<span class="linenos">457</span>                    <span class="mi">0</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">local</span><span class="p">,</span>
+<span class="linenos">458</span>                    <span class="mi">1</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">local</span><span class="p">,</span>
+<span class="linenos">459</span>                    <span class="mi">3</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">local</span><span class="p">,</span>
+<span class="linenos">460</span>                <span class="p">]</span>
+<span class="linenos">461</span>            <span class="p">)</span>
+<span class="linenos">462</span>            <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<span class="linenos">463</span>                <span class="p">[</span>
+<span class="linenos">464</span>                    <span class="n">coefficient</span> <span class="o">*</span> <span class="n">d_rate_d_h2</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+<span class="linenos">465</span>                    <span class="n">coefficient</span> <span class="o">*</span> <span class="n">d_rate_d_o2</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+<span class="linenos">466</span>                    <span class="n">coefficient</span> <span class="o">*</span> <span class="n">d_rate_d_theta</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+<span class="linenos">467</span>                <span class="p">]</span>
+<span class="linenos">468</span>            <span class="p">)</span>
+<span class="linenos">469</span>
+<span class="linenos">470</span>        <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
+<span class="linenos">471</span>            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">cols</span><span class="p">))),</span>
+<span class="linenos">472</span>            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">block_size</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">block_size</span><span class="p">),</span>
+<span class="linenos">473</span>        <span class="p">)</span>
+<span class="linenos">474</span>
+<span class="linenos">475</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_newton_solve</span><span class="p">(</span>
+<span class="linenos">476</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">477</span>        <span class="n">previous_state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">478</span>        <span class="n">previous_rhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">479</span>        <span class="n">linear_jacobian</span><span class="p">:</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">,</span>
+<span class="linenos">480</span>        <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">481</span>        <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">482</span>        <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">483</span>        <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">484</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">485</span>        <span class="n">iterate</span> <span class="o">=</span> <span class="n">previous_state</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="linenos">486</span>        <span class="n">residual</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual</span><span class="p">(</span>
+<span class="linenos">487</span>            <span class="n">iterate</span><span class="p">,</span>
+<span class="linenos">488</span>            <span class="n">previous_state</span><span class="p">,</span>
+<span class="linenos">489</span>            <span class="n">previous_rhs</span><span class="p">,</span>
+<span class="linenos">490</span>            <span class="n">kappa</span><span class="p">,</span>
+<span class="linenos">491</span>            <span class="n">scaled_activation_energy</span><span class="p">,</span>
+<span class="linenos">492</span>            <span class="n">beta_x</span><span class="p">,</span>
+<span class="linenos">493</span>            <span class="n">beta_y</span><span class="p">,</span>
+<span class="linenos">494</span>        <span class="p">)</span>
+<span class="linenos">495</span>        <span class="n">initial_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+<span class="linenos">496</span>        <span class="n">target</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">497</span>            <span class="bp">self</span><span class="o">.</span><span class="n">newton_absolute_tolerance</span>
+<span class="linenos">498</span>            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">newton_relative_tolerance</span> <span class="o">*</span> <span class="n">initial_norm</span>
+<span class="linenos">499</span>        <span class="p">)</span>
+<span class="linenos">500</span>        <span class="k">if</span> <span class="n">initial_norm</span> <span class="o">&lt;=</span> <span class="n">target</span><span class="p">:</span>
+<span class="linenos">501</span>            <span class="k">return</span> <span class="n">iterate</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">previous_state</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="linenos">502</span>
+<span class="linenos">503</span>        <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">newton_max_iterations</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+<span class="linenos">504</span>            <span class="n">reaction_jacobian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_jacobian</span><span class="p">(</span>
+<span class="linenos">505</span>                <span class="n">iterate</span><span class="p">,</span> <span class="n">scaled_activation_energy</span>
+<span class="linenos">506</span>            <span class="p">)</span>
+<span class="linenos">507</span>            <span class="c1"># Crank-Nicolson contributes one half of the new-state RHS Jacobian.</span>
+<span class="linenos">508</span>            <span class="n">jacobian</span> <span class="o">=</span> <span class="n">linear_jacobian</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">reaction_jacobian</span>
+<span class="linenos">509</span>            <span class="n">update</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="o">-</span><span class="n">residual</span><span class="p">)</span>
+<span class="linenos">510</span>            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">update</span><span class="p">)):</span>
+<span class="linenos">511</span>                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+<span class="linenos">512</span>                    <span class="s2">"Newton linear solve produced non-finite values at iteration </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+<span class="linenos">513</span>                        <span class="n">iteration</span>
+<span class="linenos">514</span>                    <span class="p">)</span>
+<span class="linenos">515</span>                <span class="p">)</span>
+<span class="linenos">516</span>            <span class="n">iterate</span> <span class="o">+=</span> <span class="n">update</span>
+<span class="linenos">517</span>            <span class="n">residual</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual</span><span class="p">(</span>
+<span class="linenos">518</span>                <span class="n">iterate</span><span class="p">,</span>
+<span class="linenos">519</span>                <span class="n">previous_state</span><span class="p">,</span>
+<span class="linenos">520</span>                <span class="n">previous_rhs</span><span class="p">,</span>
+<span class="linenos">521</span>                <span class="n">kappa</span><span class="p">,</span>
+<span class="linenos">522</span>                <span class="n">scaled_activation_energy</span><span class="p">,</span>
+<span class="linenos">523</span>                <span class="n">beta_x</span><span class="p">,</span>
+<span class="linenos">524</span>                <span class="n">beta_y</span><span class="p">,</span>
+<span class="linenos">525</span>            <span class="p">)</span>
+<span class="linenos">526</span>            <span class="n">residual_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+<span class="linenos">527</span>            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">residual_norm</span><span class="p">):</span>
+<span class="linenos">528</span>                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+<span class="linenos">529</span>                    <span class="s2">"Newton residual became non-finite at iteration </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iteration</span><span class="p">)</span>
+<span class="linenos">530</span>                <span class="p">)</span>
+<span class="linenos">531</span>            <span class="k">if</span> <span class="n">residual_norm</span> <span class="o">&lt;=</span> <span class="n">target</span><span class="p">:</span>
+<span class="linenos">532</span>                <span class="k">return</span> <span class="n">iterate</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">previous_state</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="linenos">533</span>
+<span class="linenos">534</span>        <span class="n">final_relative</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span>
+<span class="linenos">535</span>            <span class="n">initial_norm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tiny</span>
+<span class="linenos">536</span>        <span class="p">)</span>
+<span class="linenos">537</span>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+<span class="linenos">538</span>            <span class="s2">"Newton solver failed to converge in </span><span class="si">{}</span><span class="s2"> iterations; "</span>
+<span class="linenos">539</span>            <span class="s2">"final relative residual=</span><span class="si">{:.3e}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+<span class="linenos">540</span>                <span class="bp">self</span><span class="o">.</span><span class="n">newton_max_iterations</span><span class="p">,</span> <span class="n">final_relative</span>
+<span class="linenos">541</span>            <span class="p">)</span>
+<span class="linenos">542</span>        <span class="p">)</span>
+<span class="linenos">543</span>
+<span class="linenos">544</span>    <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span>
+<span class="linenos">545</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">546</span>        <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">547</span>        <span class="n">scaled_activation_energy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">548</span>        <span class="n">beta_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">549</span>        <span class="n">beta_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="linenos">550</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="linenos">551</span><span class="w">        </span><span class="sd">"""Integrate the flame model and return ``(states, times)``.</span>
+<span class="linenos">552</span>
+<span class="linenos">553</span><span class="sd">        ``states`` has shape ``(num_snapshots, 4, nx, ny)``. The temperature</span>
+<span class="linenos">554</span><span class="sd">        component is nondimensional; multiply ``states[:, 3]`` by</span>
+<span class="linenos">555</span><span class="sd">        :attr:`temperature_scale` to obtain kelvin.</span>
+<span class="linenos">556</span><span class="sd">        """</span>
+<span class="linenos">557</span>        <span class="n">kappa</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_parameters</span><span class="p">(</span>
+<span class="linenos">558</span>            <span class="n">kappa</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span>
+<span class="linenos">559</span>        <span class="p">)</span>
+<span class="linenos">560</span>        <span class="n">linear_jacobian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_linear_residual_jacobian</span><span class="p">(</span>
+<span class="linenos">561</span>            <span class="n">kappa</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span>
+<span class="linenos">562</span>        <span class="p">)</span>
+<span class="linenos">563</span>
+<span class="linenos">564</span>        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_state</span><span class="p">()</span>
+<span class="linenos">565</span>        <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span>
+<span class="linenos">566</span>        <span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+<span class="linenos">567</span>
+<span class="linenos">568</span>        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+<span class="linenos">569</span>            <span class="n">previous_state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="linenos">570</span>            <span class="n">previous_rhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linear_rhs</span><span class="p">(</span>
+<span class="linenos">571</span>                <span class="n">previous_state</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">beta_x</span><span class="p">,</span> <span class="n">beta_y</span>
+<span class="linenos">572</span>            <span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reaction_rhs</span><span class="p">(</span><span class="n">previous_state</span><span class="p">,</span> <span class="n">scaled_activation_energy</span><span class="p">)</span>
+<span class="linenos">573</span>            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_newton_solve</span><span class="p">(</span>
+<span class="linenos">574</span>                <span class="n">previous_state</span><span class="p">,</span>
+<span class="linenos">575</span>                <span class="n">previous_rhs</span><span class="p">,</span>
+<span class="linenos">576</span>                <span class="n">linear_jacobian</span><span class="p">,</span>
+<span class="linenos">577</span>                <span class="n">kappa</span><span class="p">,</span>
+<span class="linenos">578</span>                <span class="n">scaled_activation_energy</span><span class="p">,</span>
+<span class="linenos">579</span>                <span class="n">beta_x</span><span class="p">,</span>
+<span class="linenos">580</span>                <span class="n">beta_y</span><span class="p">,</span>
+<span class="linenos">581</span>            <span class="p">)</span>
+<span class="linenos">582</span>            <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_stride</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">step</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span><span class="p">:</span>
+<span class="linenos">583</span>                <span class="n">states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+<span class="linenos">584</span>                <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+<span class="linenos">585</span>
+<span class="linenos">586</span>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+<span class="linenos">587</span>
+<span class="linenos">588</span>
+<span class="linenos">589</span><span class="k">def</span><span class="w"> </span><span class="nf">extract_temperature_sensors</span><span class="p">(</span>
+<span class="linenos">590</span>    <span class="n">states</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="linenos">591</span>    <span class="n">spatial_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+<span class="linenos">592</span>    <span class="n">temporal_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="linenos">593</span>    <span class="n">temperature_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="linenos">594</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">595</span><span class="w">    </span><span class="sd">"""Extract a flattened temperature-sensor QoI from a state history.</span>
+<span class="linenos">596</span>
+<span class="linenos">597</span><span class="sd">    Parameters</span>
+<span class="linenos">598</span><span class="sd">    ----------</span>
+<span class="linenos">599</span><span class="sd">    states:</span>
+<span class="linenos">600</span><span class="sd">        State history with shape ``(num_snapshots, 4, nx, ny)``.</span>
+<span class="linenos">601</span><span class="sd">    spatial_stride:</span>
+<span class="linenos">602</span><span class="sd">        Sample every ``spatial_stride`` grid points in each spatial direction.</span>
+<span class="linenos">603</span><span class="sd">    temporal_stride:</span>
+<span class="linenos">604</span><span class="sd">        Sample every ``temporal_stride`` stored snapshots.</span>
+<span class="linenos">605</span><span class="sd">    temperature_scale:</span>
+<span class="linenos">606</span><span class="sd">        Optional multiplicative scale. Use ``300.0`` to convert the default</span>
+<span class="linenos">607</span><span class="sd">        nondimensional temperature to kelvin.</span>
+<span class="linenos">608</span><span class="sd">    """</span>
+<span class="linenos">609</span>    <span class="n">states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+<span class="linenos">610</span>    <span class="k">if</span> <span class="n">states</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span> <span class="ow">or</span> <span class="n">states</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+<span class="linenos">611</span>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"states must have shape (num_snapshots, 4, nx, ny)"</span><span class="p">)</span>
+<span class="linenos">612</span>    <span class="k">if</span> <span class="n">spatial_stride</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">temporal_stride</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos">613</span>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"sensor strides must be at least 1"</span><span class="p">)</span>
+<span class="linenos">614</span>    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">temperature_scale</span><span class="p">)</span> <span class="ow">or</span> <span class="n">temperature_scale</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<span class="linenos">615</span>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"temperature_scale must be finite and positive"</span><span class="p">)</span>
+<span class="linenos">616</span>
+<span class="linenos">617</span>    <span class="n">temperature</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span>
+<span class="linenos">618</span>        <span class="p">::</span><span class="n">temporal_stride</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">::</span><span class="n">spatial_stride</span><span class="p">,</span> <span class="p">::</span><span class="n">spatial_stride</span>
+<span class="linenos">619</span>    <span class="p">]</span>
+<span class="linenos">620</span>    <span class="k">return</span> <span class="p">(</span><span class="n">temperature_scale</span> <span class="o">*</span> <span class="n">temperature</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>romtools QoI wrapper:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="sd">"""romtools QoI-model wrapper for the pure-Python H2-air flame benchmark."""</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="linenos"> 4</span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span>
+<span class="linenos"> 5</span>
+<span class="linenos"> 6</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="linenos"> 7</span>
+<span class="linenos"> 8</span><span class="kn">from</span><span class="w"> </span><span class="nn">h2_air_flame</span><span class="w"> </span><span class="kn">import</span> <span class="n">H2AirFlame</span><span class="p">,</span> <span class="n">extract_temperature_sensors</span>
+<span class="linenos"> 9</span>
+<span class="linenos">10</span>
+<span class="linenos">11</span><span class="k">class</span><span class="w"> </span><span class="nc">H2AirFlameQoiModel</span><span class="p">:</span>
+<span class="linenos">12</span><span class="w">    </span><span class="sd">"""Sensor-based ``QoiModel`` wrapper around :class:`H2AirFlame`.</span>
+<span class="linenos">13</span>
+<span class="linenos">14</span><span class="sd">    The QoI consists of nondimensional temperature samples on regular spatial</span>
+<span class="linenos">15</span><span class="sd">    and temporal strides. Full state histories are saved to each run directory</span>
+<span class="linenos">16</span><span class="sd">    so the same FOM evaluations can also be reused for ROM construction.</span>
+<span class="linenos">17</span><span class="sd">    """</span>
+<span class="linenos">18</span>
+<span class="linenos">19</span>    <span class="n">parameter_names</span> <span class="o">=</span> <span class="n">H2AirFlame</span><span class="o">.</span><span class="n">parameter_names</span>
+<span class="linenos">20</span>
+<span class="linenos">21</span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="linenos">22</span>        <span class="bp">self</span><span class="p">,</span>
+<span class="linenos">23</span>        <span class="n">nx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
+<span class="linenos">24</span>        <span class="n">ny</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">13</span><span class="p">,</span>
+<span class="linenos">25</span>        <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-4</span><span class="p">,</span>
+<span class="linenos">26</span>        <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0e-3</span><span class="p">,</span>
+<span class="linenos">27</span>        <span class="n">snapshot_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="linenos">28</span>        <span class="n">spatial_sensor_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+<span class="linenos">29</span>        <span class="n">temporal_sensor_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="linenos">30</span>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="linenos">31</span>        <span class="bp">self</span><span class="o">.</span><span class="n">_model_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos">32</span>            <span class="s2">"nx"</span><span class="p">:</span> <span class="n">nx</span><span class="p">,</span>
+<span class="linenos">33</span>            <span class="s2">"ny"</span><span class="p">:</span> <span class="n">ny</span><span class="p">,</span>
+<span class="linenos">34</span>            <span class="s2">"dt"</span><span class="p">:</span> <span class="n">dt</span><span class="p">,</span>
+<span class="linenos">35</span>            <span class="s2">"t_end"</span><span class="p">:</span> <span class="n">t_end</span><span class="p">,</span>
+<span class="linenos">36</span>            <span class="s2">"snapshot_stride"</span><span class="p">:</span> <span class="n">snapshot_stride</span><span class="p">,</span>
+<span class="linenos">37</span>        <span class="p">}</span>
+<span class="linenos">38</span>        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_sensor_stride</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spatial_sensor_stride</span><span class="p">)</span>
+<span class="linenos">39</span>        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_sensor_stride</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">temporal_sensor_stride</span><span class="p">)</span>
+<span class="linenos">40</span>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_sensor_stride</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_sensor_stride</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<span class="linenos">41</span>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"sensor strides must be at least 1"</span><span class="p">)</span>
+<span class="linenos">42</span>
+<span class="linenos">43</span>    <span class="k">def</span><span class="w"> </span><span class="nf">populate_run_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="linenos">44</span><span class="w">        </span><span class="sd">"""Create the run directory required by the workflow model protocol."""</span>
+<span class="linenos">45</span>        <span class="k">del</span> <span class="n">parameter_sample</span>
+<span class="linenos">46</span>        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="linenos">47</span>
+<span class="linenos">48</span>    <span class="k">def</span><span class="w"> </span><span class="nf">_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
+<span class="linenos">49</span>        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parameter_sample</span><span class="p">]</span>
+<span class="linenos">50</span>        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+<span class="linenos">51</span>            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+<span class="linenos">52</span>                <span class="s2">"parameter_sample is missing required keys: </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span>
+<span class="linenos">53</span>            <span class="p">)</span>
+<span class="linenos">54</span>        <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">parameter_sample</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">]</span>
+<span class="linenos">55</span>
+<span class="linenos">56</span>    <span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="linenos">57</span><span class="w">        </span><span class="sd">"""Run the flame model and save states, times, parameters, and QoI."""</span>
+<span class="linenos">58</span>        <span class="n">model</span> <span class="o">=</span> <span class="n">H2AirFlame</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_kwargs</span><span class="p">)</span>
+<span class="linenos">59</span>        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">(</span><span class="n">parameter_sample</span><span class="p">)</span>
+<span class="linenos">60</span>        <span class="n">states</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">*</span><span class="n">parameters</span><span class="p">)</span>
+<span class="linenos">61</span>        <span class="n">qoi</span> <span class="o">=</span> <span class="n">extract_temperature_sensors</span><span class="p">(</span>
+<span class="linenos">62</span>            <span class="n">states</span><span class="p">,</span>
+<span class="linenos">63</span>            <span class="n">spatial_stride</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_sensor_stride</span><span class="p">,</span>
+<span class="linenos">64</span>            <span class="n">temporal_stride</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_sensor_stride</span><span class="p">,</span>
+<span class="linenos">65</span>        <span class="p">)</span>
+<span class="linenos">66</span>        <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span>
+<span class="linenos">67</span>            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="s2">"solution.npz"</span><span class="p">),</span>
+<span class="linenos">68</span>            <span class="n">states</span><span class="o">=</span><span class="n">states</span><span class="p">,</span>
+<span class="linenos">69</span>            <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
+<span class="linenos">70</span>            <span class="n">qoi</span><span class="o">=</span><span class="n">qoi</span><span class="p">,</span>
+<span class="linenos">71</span>            <span class="n">parameter_names</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">),</span>
+<span class="linenos">72</span>            <span class="n">parameters</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">parameters</span><span class="p">),</span>
+<span class="linenos">73</span>        <span class="p">)</span>
+<span class="linenos">74</span>        <span class="k">return</span> <span class="mi">0</span>
+<span class="linenos">75</span>
+<span class="linenos">76</span>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_qoi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="linenos">77</span><span class="w">        </span><span class="sd">"""Read and return the flattened temperature-sensor QoI."""</span>
+<span class="linenos">78</span>        <span class="k">del</span> <span class="n">parameter_sample</span>
+<span class="linenos">79</span>        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="s2">"solution.npz"</span><span class="p">))</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
+<span class="linenos">80</span>            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"qoi"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="linenos">81</span>
+<span class="linenos">82</span>
+<span class="linenos">83</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">84</span>    <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="linenos">85</span>
+<span class="linenos">86</span>    <span class="n">sample</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos">87</span>        <span class="s2">"kappa"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
+<span class="linenos">88</span>        <span class="s2">"scaled_activation_energy"</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span>
+<span class="linenos">89</span>        <span class="s2">"beta_x"</span><span class="p">:</span> <span class="mf">40.0</span><span class="p">,</span>
+<span class="linenos">90</span>        <span class="s2">"beta_y"</span><span class="p">:</span> <span class="mf">7.0</span><span class="p">,</span>
+<span class="linenos">91</span>    <span class="p">}</span>
+<span class="linenos">92</span>    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">directory</span><span class="p">:</span>
+<span class="linenos">93</span>        <span class="n">model</span> <span class="o">=</span> <span class="n">H2AirFlameQoiModel</span><span class="p">(</span>
+<span class="linenos">94</span>            <span class="n">nx</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">t_end</span><span class="o">=</span><span class="mf">2.0e-4</span><span class="p">,</span> <span class="n">snapshot_stride</span><span class="o">=</span><span class="mi">1</span>
+<span class="linenos">95</span>        <span class="p">)</span>
+<span class="linenos">96</span>        <span class="n">model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="linenos">97</span>        <span class="n">model</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="linenos">98</span>        <span class="n">qoi</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="linenos">99</span>        <span class="nb">print</span><span class="p">(</span><span class="s2">"H2-air flame QoI size:"</span><span class="p">,</span> <span class="n">qoi</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="steady_cdr.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Steady convection-diffusion-reaction model</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="parameter_space.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Parameter spaces</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-definition">Problem definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#direct-use">Direct use</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-solution-plot">Default solution plot</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qoi-model-for-romtools-workflows">QoI model for romtools workflows</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#computational-cost">Computational cost</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/demos/h2_air_flame.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
