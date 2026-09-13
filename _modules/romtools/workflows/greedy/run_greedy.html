@@ -471,6 +471,7 @@
 <span class="sd">'''</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">romtools.linalg.linalg</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">la</span>
@@ -483,20 +484,37 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_create_parameter_dict</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">))</span>
 
+
 <div class="viewcode-block" id="run_greedy">
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.greedy.run_greedy.html#romtools.workflows.greedy.run_greedy">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_greedy</span><span class="p">(</span><span class="n">fom_model</span><span class="p">:</span> <span class="n">QoiModel</span><span class="p">,</span>
                <span class="n">rom_model_builder</span><span class="p">:</span> <span class="n">QoiModelWithErrorEstimateBuilder</span><span class="p">,</span>
                <span class="n">parameter_space</span><span class="p">:</span> <span class="n">ParameterSpace</span><span class="p">,</span>
-               <span class="n">absolute_greedy_work_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-               <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+               <span class="n">absolute_work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                <span class="n">testing_sample_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
                <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-               <span class="n">calibrated_error</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+               <span class="n">calibrated_error</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="o">*</span><span class="p">,</span>
+               <span class="n">absolute_greedy_work_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Main implementation of the greedy algorithm.</span>
 <span class="sd">    '''</span>
-    <span class="n">greedy_directory</span> <span class="o">=</span> <span class="n">absolute_greedy_work_directory</span>
+    <span class="k">if</span> <span class="n">absolute_greedy_work_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"'absolute_greedy_work_directory' is deprecated; use 'absolute_work_dir' instead."</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Specify only 'absolute_work_dir', not both directory arguments."</span><span class="p">)</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">absolute_greedy_work_directory</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"'absolute_work_dir' is required"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"'tolerance' is required"</span><span class="p">)</span>
+
+    <span class="n">greedy_directory</span> <span class="o">=</span> <span class="n">absolute_work_dir</span>
     <span class="n">create_empty_dir</span><span class="p">(</span><span class="n">greedy_directory</span><span class="p">)</span>
     <span class="n">offline_directory_prefix</span> <span class="o">=</span> <span class="s1">'offline_data'</span>
 
@@ -608,7 +626,6 @@
         <span class="n">greedy_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Running FOM sample"</span>
                           <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">sample_with_highest_error_indicator</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
         <span class="n">greedy_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-
 
         <span class="c1">## Identify the sample with the highest error and run FOM</span>
         <span class="n">fom_run_directory</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">greedy_directory</span><span class="si">}</span><span class="s1">/fom/</span><span class="si">{</span><span class="n">run_directory_prefix</span><span class="si">}{</span><span class="n">sample_with_highest_error_indicator</span><span class="si">}</span><span class="s1">'</span>

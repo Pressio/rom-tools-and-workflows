@@ -393,6 +393,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -515,7 +516,7 @@
                              <span class="n">regularization_parameter</span><span class="p">,</span>
                              <span class="n">parameter_mins</span><span class="p">,</span>
                              <span class="n">parameter_maxes</span><span class="p">,</span>
-                             <span class="n">absolute_eki_directory</span><span class="p">,</span>
+                             <span class="n">absolute_work_dir</span><span class="p">,</span>
                              <span class="n">outer_iteration</span><span class="p">,</span>
                              <span class="n">num_rom_substeps</span><span class="p">,</span>
                              <span class="n">rom_evaluation_concurrency</span><span class="p">,</span>
@@ -526,7 +527,7 @@
 
     <span class="k">for</span> <span class="n">substep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_rom_substeps</span><span class="p">):</span>
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">outer_iteration</span><span class="si">}</span><span class="s1">/'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">outer_iteration</span><span class="si">}</span><span class="s1">/'</span>
             <span class="sa">f</span><span class="s1">'rom_substep_</span><span class="si">{</span><span class="n">substep</span><span class="si">}</span><span class="s1">/run_rom_'</span>
         <span class="p">)</span>
         <span class="n">rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
@@ -626,7 +627,7 @@
         <span class="n">rom_model</span><span class="p">,</span>
         <span class="n">observations</span><span class="p">,</span>
         <span class="n">observations_covariance</span><span class="p">,</span>
-        <span class="n">absolute_eki_directory</span><span class="p">,</span>
+        <span class="n">absolute_work_dir</span><span class="p">,</span>
         <span class="n">iteration</span><span class="p">,</span>
         <span class="n">parameter_names</span><span class="p">,</span>
         <span class="n">parameter_sample_sets</span><span class="p">,</span>
@@ -669,7 +670,7 @@
     <span class="p">]</span>
 
     <span class="n">event_dir</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
         <span class="sa">f</span><span class="s1">'rejuvenation_</span><span class="si">{</span><span class="n">rejuvenation_count</span><span class="si">}</span><span class="s1">'</span>
     <span class="p">)</span>
     <span class="n">fom_run_base</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">event_dir</span><span class="si">}</span><span class="s1">/run_fom_sample_set_0_'</span>
@@ -812,7 +813,7 @@
                <span class="n">observations_covariance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                <span class="n">parameter_mins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                <span class="n">parameter_maxes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-               <span class="n">absolute_eki_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"/work/"</span><span class="p">,</span>
+               <span class="n">absolute_work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                <span class="n">fom_ensemble_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
                <span class="n">rom_extra_ensemble_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                <span class="n">rom_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.005</span><span class="p">,</span>
@@ -840,8 +841,22 @@
                <span class="n">fom_evaluation_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                <span class="n">rom_evaluation_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                <span class="n">restart_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-               <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+               <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="o">*</span><span class="p">,</span>
+               <span class="n">absolute_eki_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run a multi-fidelity ensemble Kalman inversion workflow."""</span>
+    <span class="k">if</span> <span class="n">absolute_eki_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"'absolute_eki_directory' is deprecated; use 'absolute_work_dir' instead."</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Specify only 'absolute_work_dir', not both directory arguments."</span><span class="p">)</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">absolute_eki_directory</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"/work/"</span>
+
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">rom_dispatcher</span> <span class="o">=</span> <span class="n">resolve_local_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">max_rom_training_dirs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
@@ -849,7 +864,7 @@
     <span class="p">)</span>
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
-    <span class="n">require_relative_or_absolute_path</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">,</span> <span class="n">absolute_eki_directory</span><span class="p">)</span>
+    <span class="n">require_relative_or_absolute_path</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">,</span> <span class="n">absolute_work_dir</span><span class="p">)</span>
     <span class="n">dispatcher</span><span class="o">.</span><span class="n">require_supported_concurrency</span><span class="p">(</span><span class="n">fom_evaluation_concurrency</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">step_size_growth_factor</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span>
         <span class="s2">"step_size_growth_factor must be greater than 1.0"</span>
@@ -904,7 +919,7 @@
         <span class="n">parameter_names</span> <span class="o">=</span> <span class="n">parameter_space</span><span class="o">.</span><span class="n">get_names</span><span class="p">()</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_0/run_fom_sample_set_0_'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_0/run_fom_sample_set_0_'</span>
         <span class="p">)</span>
         <span class="n">sample_one_fom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span>
@@ -930,7 +945,7 @@
         <span class="n">rom_training_dirs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">training_dirs</span><span class="p">)</span>
         <span class="n">rom_training_parameters</span> <span class="o">=</span> <span class="n">training_parameters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">rom_training_qois</span> <span class="o">=</span> <span class="n">training_qois</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_0/'</span>
+        <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_0/'</span>
         <span class="n">rom_model</span> <span class="o">=</span> <span class="n">rom_model_builder</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
             <span class="n">offline_dir</span><span class="p">,</span>
             <span class="n">rom_training_dirs</span><span class="p">,</span>
@@ -939,7 +954,7 @@
         <span class="p">)</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_0/run_rom_sample_set_0_'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_0/run_rom_sample_set_0_'</span>
         <span class="p">)</span>
         <span class="n">sample_one_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
             <span class="n">rom_model</span><span class="p">,</span>
@@ -957,7 +972,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  ROM error = </span><span class="si">{</span><span class="n">rom_error</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_0/run_rom_sample_set_1_'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_0/run_rom_sample_set_1_'</span>
         <span class="p">)</span>
         <span class="n">sample_two_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
             <span class="n">rom_model</span><span class="p">,</span>
@@ -1017,7 +1032,7 @@
             <span class="s1">'sample_one_fom_results'</span>
         <span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
-        <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+        <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"==================Building ROM============="</span><span class="p">)</span>
         <span class="n">rom_model</span> <span class="o">=</span> <span class="n">rom_model_builder</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
             <span class="n">offline_dir</span><span class="p">,</span>
@@ -1114,7 +1129,7 @@
             <span class="n">rom_model</span><span class="p">,</span>
             <span class="n">observations</span><span class="p">,</span>
             <span class="n">observations_covariance</span><span class="p">,</span>
-            <span class="n">absolute_eki_directory</span><span class="p">,</span>
+            <span class="n">absolute_work_dir</span><span class="p">,</span>
             <span class="n">iteration</span><span class="p">,</span>
             <span class="n">parameter_names</span><span class="p">,</span>
             <span class="n">parameter_sample_sets</span><span class="p">,</span>
@@ -1142,7 +1157,7 @@
 
     <span class="n">_save_mf_eki_restart</span><span class="p">(</span>
         <span class="n">dispatcher</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
         <span class="n">sample_one_rom_results</span><span class="p">,</span>
         <span class="n">sample_two_rom_results</span><span class="p">,</span>
         <span class="n">sample_one_fom_results</span><span class="p">,</span>
@@ -1210,7 +1225,7 @@
                     <span class="n">rom_model</span><span class="p">,</span>
                     <span class="n">observations</span><span class="p">,</span>
                     <span class="n">observations_covariance</span><span class="p">,</span>
-                    <span class="n">absolute_eki_directory</span><span class="p">,</span>
+                    <span class="n">absolute_work_dir</span><span class="p">,</span>
                     <span class="n">iteration</span><span class="p">,</span>
                     <span class="n">parameter_names</span><span class="p">,</span>
                     <span class="n">parameter_sample_sets</span><span class="p">,</span>
@@ -1237,7 +1252,7 @@
                 <span class="p">)</span>
                 <span class="n">_save_mf_eki_restart</span><span class="p">(</span>
                     <span class="n">dispatcher</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
                     <span class="n">sample_one_rom_results</span><span class="p">,</span>
                     <span class="n">sample_two_rom_results</span><span class="p">,</span>
                     <span class="n">sample_one_fom_results</span><span class="p">,</span>
@@ -1290,7 +1305,7 @@
                 <span class="n">regularization_parameter</span><span class="o">=</span><span class="n">regularization_parameter</span><span class="p">,</span>
                 <span class="n">parameter_mins</span><span class="o">=</span><span class="n">parameter_mins</span><span class="p">,</span>
                 <span class="n">parameter_maxes</span><span class="o">=</span><span class="n">parameter_maxes</span><span class="p">,</span>
-                <span class="n">absolute_eki_directory</span><span class="o">=</span><span class="n">absolute_eki_directory</span><span class="p">,</span>
+                <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">absolute_work_dir</span><span class="p">,</span>
                 <span class="n">outer_iteration</span><span class="o">=</span><span class="n">outer_iteration</span><span class="p">,</span>
                 <span class="n">num_rom_substeps</span><span class="o">=</span><span class="n">num_rom_substeps</span><span class="p">,</span>
                 <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="n">rom_evaluation_concurrency</span><span class="p">,</span>
@@ -1298,7 +1313,7 @@
             <span class="p">)</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
             <span class="s1">'run_fom_sample_set_0_'</span>
         <span class="p">)</span>
         <span class="n">test_training_dirs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">training_dirs</span><span class="p">)</span>
@@ -1329,7 +1344,7 @@
         <span class="p">])</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
             <span class="s1">'run_rom_sample_set_0_'</span>
         <span class="p">)</span>
         <span class="n">test_sample_one_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
@@ -1347,7 +1362,7 @@
         <span class="p">)</span>
 
         <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
             <span class="s1">'run_rom_sample_set_1_'</span>
         <span class="p">)</span>
         <span class="n">old_sample_two_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
@@ -1369,7 +1384,7 @@
             <span class="nb">print</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s1">'  ROM error = </span><span class="si">{</span><span class="n">rom_error</span><span class="si">}</span><span class="s1"> above tolerance, re-building ROM'</span>
             <span class="p">)</span>
-            <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+            <span class="n">offline_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
             <span class="n">test_rom_training_dirs</span> <span class="o">=</span> <span class="n">test_training_dirs</span><span class="p">[</span><span class="o">-</span><span class="n">max_rom_training_dirs</span><span class="p">:]</span>
             <span class="n">test_rom_training_parameters</span> <span class="o">=</span> <span class="n">test_training_parameters</span><span class="p">[</span>
                 <span class="o">-</span><span class="n">max_rom_training_dirs</span><span class="p">:</span>
@@ -1383,7 +1398,7 @@
             <span class="p">)</span>
             <span class="n">rom_rebuilt_this_iteration</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
                 <span class="s1">'run_rom_sample_set_0_'</span>
             <span class="p">)</span>
             <span class="n">test_sample_one_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
@@ -1401,7 +1416,7 @@
             <span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Updated ROM error = </span><span class="si">{</span><span class="n">rom_error</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
             <span class="n">run_directory_base</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
+                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/'</span>
                 <span class="s1">'run_rom_sample_set_1_'</span>
             <span class="p">)</span>
             <span class="n">test_sample_two_rom_results</span> <span class="o">=</span> <span class="n">run_eki_iteration</span><span class="p">(</span>
@@ -1512,7 +1527,7 @@
                         <span class="n">rom_model</span><span class="p">,</span>
                         <span class="n">observations</span><span class="p">,</span>
                         <span class="n">observations_covariance</span><span class="p">,</span>
-                        <span class="n">absolute_eki_directory</span><span class="p">,</span>
+                        <span class="n">absolute_work_dir</span><span class="p">,</span>
                         <span class="n">iteration</span><span class="p">,</span>
                         <span class="n">parameter_names</span><span class="p">,</span>
                         <span class="n">parameter_sample_sets</span><span class="p">,</span>
@@ -1548,7 +1563,7 @@
             <span class="p">)</span>
             <span class="n">_save_mf_eki_restart</span><span class="p">(</span>
                 <span class="n">dispatcher</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_eki_directory</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/restart.npz'</span><span class="p">,</span>
                 <span class="n">sample_one_rom_results</span><span class="p">,</span>
                 <span class="n">sample_two_rom_results</span><span class="p">,</span>
                 <span class="n">sample_one_fom_results</span><span class="p">,</span>
@@ -1608,7 +1623,7 @@
                          <span class="n">observations_covariance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                          <span class="n">parameter_mins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">parameter_maxes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                         <span class="n">absolute_eki_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"/work/"</span><span class="p">,</span>
+                         <span class="n">absolute_work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">fom_ensemble_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
                          <span class="n">rom_extra_ensemble_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                          <span class="n">rom_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.005</span><span class="p">,</span>
@@ -1638,7 +1653,9 @@
                          <span class="n">restart_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">rom_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"gp"</span><span class="p">,</span>
                          <span class="n">rom_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                         <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                         <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="o">*</span><span class="p">,</span>
+                         <span class="n">absolute_eki_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run MF-EKI with a built-in data-driven surrogate type.</span>
 
 <span class="sd">    ``rom_type='gp'`` selects the Gaussian-process QoI surrogate.</span>
@@ -1647,6 +1664,18 @@
 <span class="sd">    network, ``network_config`` and ``lipschitz_config`` may be supplied as</span>
 <span class="sd">    :class:`NeuralNetworkConfig` and :class:`LipschitzConfig` instances.</span>
 <span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">absolute_eki_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"'absolute_eki_directory' is deprecated; use 'absolute_work_dir' instead."</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Specify only 'absolute_work_dir', not both directory arguments."</span><span class="p">)</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">absolute_eki_directory</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"/work/"</span>
+
     <span class="n">rom_args</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">rom_args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rom_args</span><span class="p">)</span>
     <span class="n">rom_type_normalized</span> <span class="o">=</span> <span class="n">rom_type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">rom_type_normalized</span> <span class="o">==</span> <span class="s2">"gp"</span><span class="p">:</span>
@@ -1688,7 +1717,7 @@
         <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observations_covariance</span><span class="p">,</span>
         <span class="n">parameter_mins</span><span class="o">=</span><span class="n">parameter_mins</span><span class="p">,</span>
         <span class="n">parameter_maxes</span><span class="o">=</span><span class="n">parameter_maxes</span><span class="p">,</span>
-        <span class="n">absolute_eki_directory</span><span class="o">=</span><span class="n">absolute_eki_directory</span><span class="p">,</span>
+        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">absolute_work_dir</span><span class="p">,</span>
         <span class="n">fom_ensemble_size</span><span class="o">=</span><span class="n">fom_ensemble_size</span><span class="p">,</span>
         <span class="n">rom_extra_ensemble_size</span><span class="o">=</span><span class="n">rom_extra_ensemble_size</span><span class="p">,</span>
         <span class="n">rom_tolerance</span><span class="o">=</span><span class="n">rom_tolerance</span><span class="p">,</span>

@@ -78,7 +78,7 @@
     "    sample_directories = sampling.run_sampling(\n",
     "    \tmodel = myModel,\n",
     "    \tparameter_space = myParameterSpace,\n",
-    "    \tabsolute_sampling_directory=work_directory,\n",
+    "    \tabsolute_work_dir=work_directory,\n",
     "        number_of_samples = 5)\n",
     "#The sample_directories returned by the algorithm contains all the directories that samples were run in:\n",
     "# work_directory/run_0\n",

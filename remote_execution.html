@@ -573,7 +573,7 @@ to the driver just as you would for sampling:</p>
         <span class="n">parameter_space</span><span class="o">=</span><span class="n">my_parameter_space</span><span class="p">,</span>
         <span class="n">observations</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span>
         <span class="n">observations_covariance</span><span class="o">=</span><span class="n">obs_cov</span><span class="p">,</span>
-        <span class="n">absolute_eki_directory</span><span class="o">=</span><span class="s2">"eki_00"</span><span class="p">,</span>
+        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="s2">"eki_00"</span><span class="p">,</span>
         <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
     <span class="p">)</span>
 </pre></div>
@@ -584,8 +584,7 @@ how a single evaluation runs, through the <code class="docutils literal notransl
 above.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The working directory argument (<code class="docutils literal notranslate"><span class="pre">absolute_eki_directory</span></code> or
-<code class="docutils literal notranslate"><span class="pre">absolute_vi_directory</span></code>) must be an absolute path for local runs. When you
+<p>The working directory argument <code class="docutils literal notranslate"><span class="pre">absolute_work_dir</span></code> must be an absolute path for local runs. When you
 pass a <code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code>, a relative path is also accepted and is
 resolved against <code class="docutils literal notranslate"><span class="pre">remote_root</span></code>.</p>
 </div>

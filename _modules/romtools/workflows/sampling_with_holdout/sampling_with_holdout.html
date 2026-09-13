@@ -419,6 +419,7 @@
 <span class="c1">#</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QoiModel</span>
@@ -437,18 +438,32 @@
     <span class="n">fom_model</span><span class="p">:</span> <span class="n">QoiModel</span><span class="p">,</span>
     <span class="n">rom_model_builder</span><span class="p">:</span> <span class="n">QoiModelBuilder</span><span class="p">,</span>
     <span class="n">parameter_space</span><span class="p">:</span> <span class="n">ParameterSpace</span><span class="p">,</span>
-    <span class="n">absolute_work_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">absolute_work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">holdout_set_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
     <span class="n">max_number_of_rom_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
     <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
     <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">absolute_work_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Core algorithm</span>
 <span class="sd">    '''</span>
+    <span class="k">if</span> <span class="n">absolute_work_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"'absolute_work_directory' is deprecated; use 'absolute_work_dir' instead."</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Specify only 'absolute_work_dir', not both directory arguments."</span><span class="p">)</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">absolute_work_directory</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"'absolute_work_dir' is required"</span><span class="p">)</span>
+
     <span class="k">assert</span> <span class="n">max_number_of_rom_samples</span> <span class="o">&gt;=</span> <span class="mi">2</span>
 
-    <span class="n">sampling_directory</span> <span class="o">=</span> <span class="n">absolute_work_directory</span>
+    <span class="n">sampling_directory</span> <span class="o">=</span> <span class="n">absolute_work_dir</span>
     <span class="n">create_empty_dir</span><span class="p">(</span><span class="n">sampling_directory</span><span class="p">)</span>
     <span class="n">offline_directory_prefix</span> <span class="o">=</span> <span class="s2">"offline_data"</span>
 
@@ -518,7 +533,6 @@
     <span class="n">holdout_set_errs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
     <span class="n">sample_index</span> <span class="o">=</span> <span class="mi">0</span>
 
-
     <span class="c1"># Initialize FOM to be run at first two training set samples</span>
     <span class="n">sampling_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Holdout set iteration # </span><span class="si">{</span><span class="n">sample_index</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">sampling_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
@@ -545,7 +559,6 @@
 
     <span class="c1"># Run FOM at next training parameter</span>
     <span class="n">sample_index</span> <span class="o">+=</span> <span class="mi">1</span>
-
 
     <span class="k">while</span> <span class="n">converged</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">sample_index</span> <span class="o">&lt;</span> <span class="n">max_number_of_rom_samples</span><span class="p">:</span>
 

@@ -707,13 +707,13 @@ diffusion coefficient and reaction coefficient.</span><a class="headerlink" href
 <span class="linenos">174</span>    <span class="n">mf_vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"mf_vi"</span>
 <span class="linenos">175</span>    <span class="n">run_vi</span><span class="p">(</span>
 <span class="linenos">176</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">177</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
+<span class="linenos">177</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
 <span class="linenos">178</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
 <span class="linenos">179</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="linenos">180</span>    <span class="p">)</span>
 <span class="linenos">181</span>    <span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
 <span class="linenos">182</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">183</span>        <span class="n">absolute_vi_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
+<span class="linenos">183</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
 <span class="linenos">184</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
 <span class="linenos">185</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
 <span class="linenos">186</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
