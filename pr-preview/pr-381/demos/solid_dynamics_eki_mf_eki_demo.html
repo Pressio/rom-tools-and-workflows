@@ -371,9 +371,9 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-parameters">Inverse parameters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-model">Observation model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fidelity-hierarchy">Fidelity hierarchy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-fidelity-model">High-fidelity model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-gp-low-fidelity-model">Automatic GP low-fidelity model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cost-metric">Cost metric</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-correlation">Pilot correlation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-benchmark">Running the benchmark</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 </ul>
@@ -448,10 +448,10 @@
 <h1>Solid-dynamics EKI and MF-EKI benchmark<a class="headerlink" href="#solid-dynamics-eki-and-mf-eki-benchmark" title="Link to this heading">#</a></h1>
 <p>This example uses the nonlinear cantilever in the <a class="reference internal" href="nonlinear_solid_dynamics.html"><span class="doc">solid dynamics model</span></a> as a controlled inverse problem for comparing
 single-fidelity ensemble Kalman inversion (EKI) and multifidelity EKI (MF-EKI).
-The first benchmark intentionally changes only numerical resolution between the
-high- and low-fidelity models; both use the same compressible Neo-Hookean
-physics.  This makes it possible to study the effect of fidelity correlation
-without introducing model-form error at the same time.</p>
+Synthetic truth and the inference high-fidelity model intentionally use the
+same finite-element mesh and time step.  MF-EKI then constructs a
+Gaussian-process QoI surrogate automatically from the high-fidelity evaluations
+and uses that GP as the low-fidelity model.</p>
 <section id="inverse-parameters">
 <h2>Inverse parameters<a class="headerlink" href="#inverse-parameters" title="Link to this heading">#</a></h2>
 <p>The unknown physical parameters are Young’s modulus, Poisson’s ratio, and the
@@ -481,20 +481,21 @@ vector concatenates transverse-displacement histories at</p>
 <div class="math notranslate nohighlight">
 \[x/L = 0.50,\ 0.75,\ 1.00,\]</div>
 <p>sampled every <code class="docutils literal notranslate"><span class="pre">0.1</span> <span class="pre">s</span></code> from <code class="docutils literal notranslate"><span class="pre">0.1</span></code> through <code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code>.  Synthetic data are
-generated on the truth discretization and perturbed with reproducible Gaussian
-noise.  A single standard deviation equal to one percent of the largest clean
-observed displacement is used for the initial benchmark,</p>
+generated with the same high-fidelity model used during inversion and perturbed
+with reproducible Gaussian noise.  A single standard deviation equal to one
+percent of the largest clean observed displacement is used,</p>
 <div class="math notranslate nohighlight">
-\[y = \mathcal G_{\mathrm{truth}}(\theta^*) + \eta,
+\[y = \mathcal G_H(\theta^*) + \eta,
 \qquad
 \eta\sim\mathcal N(0,\sigma_{\mathrm{obs}}^2 I).\]</div>
-<p>The truth discretization is finer than the inference high-fidelity model, so
-the inverse problem does not use exactly the same discrete model to generate and
-fit the observations.</p>
+<p>This is intentionally a controlled algorithmic benchmark rather than a study of
+discretization mismatch: truth and high fidelity share the same discrete
+forward model.</p>
 </section>
-<section id="fidelity-hierarchy">
-<h2>Fidelity hierarchy<a class="headerlink" href="#fidelity-hierarchy" title="Link to this heading">#</a></h2>
-<p>The default non-smoke configuration uses</p>
+<section id="high-fidelity-model">
+<h2>High-fidelity model<a class="headerlink" href="#high-fidelity-model" title="Link to this heading">#</a></h2>
+<p>The default non-smoke benchmark uses the same discretization for synthetic truth
+and every high-fidelity evaluation:</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
@@ -504,52 +505,45 @@ fit the observations.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>Synthetic truth</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">12</span> <span class="pre">x</span> <span class="pre">4</span></code></p></td>
+<tr class="row-even"><td><p>Synthetic truth / high fidelity</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">33</span> <span class="pre">x</span> <span class="pre">16</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">0.005</span> <span class="pre">s</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>High fidelity</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">x</span> <span class="pre">2</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">0.01</span> <span class="pre">s</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>Low fidelity</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">x</span> <span class="pre">2</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">0.02</span> <span class="pre">s</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>The MF-EKI low-fidelity model is passed through the normal
-<code class="docutils literal notranslate"><span class="pre">QoiModelBuilderWithTrainingData</span></code>-style interface, but the builder returns a
-fixed coarse discretization rather than learning a ROM from the high-fidelity
-snapshots.  This is deliberate: the benchmark first asks how MF-EKI behaves
-when the low-fidelity error is ordinary spatial/temporal discretization error.
-A later experiment can replace the coarse Neo-Hookean model with linear
-elasticity to introduce controlled model-form error.</p>
+<p>Both EKI and MF-EKI therefore query the same <code class="docutils literal notranslate"><span class="pre">33</span> <span class="pre">x</span> <span class="pre">16</span></code> Neo-Hookean FOM.  The
+<code class="docutils literal notranslate"><span class="pre">--smoke</span></code> path uses a much smaller discretization solely to keep CI validation
+lightweight.</p>
+</section>
+<section id="automatic-gp-low-fidelity-model">
+<h2>Automatic GP low-fidelity model<a class="headerlink" href="#automatic-gp-low-fidelity-model" title="Link to this heading">#</a></h2>
+<p>MF-EKI is run through <code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom</span></code> with <code class="docutils literal notranslate"><span class="pre">rom_type=&quot;gp&quot;</span></code>.  The GP
+maps the three transformed parameters</p>
+<div class="math notranslate nohighlight">
+\[(\log E,\nu,\log F_0)\]</div>
+<p>onto the concatenated sensor time histories.  It is rebuilt from accumulated
+high-fidelity parameter/QoI pairs when its error exceeds the MF-EKI ROM
+tolerance.  Parameters and QoIs are normalized before GP construction.</p>
+<p>The default benchmark uses</p>
+<ul class="simple">
+<li><p>8 shared FOM ensemble members;</p></li>
+<li><p>24 additional GP-only ensemble members;</p></li>
+<li><p>up to 4 GP-only EKI substeps after each outer high-fidelity update;</p></li>
+<li><p>a relative ROM tolerance of <code class="docutils literal notranslate"><span class="pre">0.005</span></code>; and</p></li>
+<li><p>at most 5 recent high-fidelity training batches when rebuilding the GP.</p></li>
+</ul>
+<p>This setup isolates the benefit of an automatically constructed data-driven
+surrogate: there is no separate coarse finite-element model to tune.</p>
 </section>
 <section id="cost-metric">
 <h2>Cost metric<a class="headerlink" href="#cost-metric" title="Link to this heading">#</a></h2>
-<p>Every model evaluation stores both its wall-clock time and a deterministic work
-proxy</p>
-<div class="math notranslate nohighlight">
-\[W \propto N_{\mathrm{elem}}N_{\mathrm{step}}.\]</div>
-<p>The high-fidelity model has unit cost and the low-fidelity evaluations are
-weighted by their ratio to the high-fidelity work proxy.  The main comparison
-therefore plots observation error against cumulative <strong>HF-equivalent work</strong>.
-Wall-clock totals are also written to the summary JSON for reference, but they
-are not used as the primary algorithmic metric because they are machine
-dependent.</p>
-</section>
-<section id="pilot-correlation">
-<h2>Pilot correlation<a class="headerlink" href="#pilot-correlation" title="Link to this heading">#</a></h2>
-<p>Before the full solve, the example can evaluate a small pilot ensemble on the
-high- and low-fidelity models and report componentwise HF/LF QoI correlations.
-This provides a direct diagnostic for whether the coarse model is useful to
-MF-EKI.  The example reports the minimum, median, and maximum correlation across
-all sensor/time components.</p>
+<p>The dominant cost is the <code class="docutils literal notranslate"><span class="pre">33</span> <span class="pre">x</span> <span class="pre">16</span></code> nonlinear finite-element solve.  The main
+comparison therefore plots observation error against cumulative high-fidelity
+model evaluations.  GP evaluations are treated as negligible in this primary
+cost metric.  The example also records cumulative high-fidelity wall-clock time
+for both EKI and MF-EKI in the summary JSON.</p>
 </section>
 <section id="running-the-benchmark">
 <h2>Running the benchmark<a class="headerlink" href="#running-the-benchmark" title="Link to this heading">#</a></h2>
@@ -564,12 +558,13 @@ all sensor/time components.</p>
 <p>The script writes</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_observations.png</span></code> for the clean/noisy sensor histories;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_parameter_convergence.png</span></code> for the EKI and MF-EKI parameter
-estimates;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_error_vs_cost.png</span></code> for convergence versus HF-equivalent
-work; and</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_eki_mf_eki_summary.json</span></code> containing the truth, final
-estimates, pilot correlations, nominal costs, and wall-clock totals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_parameter_convergence.png</span></code> for the EKI and GP MF-EKI
+parameter estimates;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_error_vs_cost.png</span></code> for convergence versus cumulative
+high-fidelity evaluations; and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_eki_mf_eki_summary.json</span></code> containing the truth, FOM and GP
+settings, final estimates, high-fidelity evaluation counts, and high-fidelity
+wall-clock totals.</p></li>
 </ul>
 </section>
 <section id="implementation">
@@ -1190,9 +1185,9 @@ estimates, pilot correlations, nominal costs, and wall-clock totals.</p></li>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-parameters">Inverse parameters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-model">Observation model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fidelity-hierarchy">Fidelity hierarchy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-fidelity-model">High-fidelity model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-gp-low-fidelity-model">Automatic GP low-fidelity model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cost-metric">Cost metric</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-correlation">Pilot correlation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-benchmark">Running the benchmark</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 </ul>
