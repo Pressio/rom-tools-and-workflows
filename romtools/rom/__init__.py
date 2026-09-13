@@ -5,10 +5,21 @@ Implementation helpers remain accessible from their defining modules but are
 not part of the compatibility guarantee.
 """
 
-from romtools.rom import neural_network_surrogate, projections, qoi_surrogates
-from romtools.rom.projections import *
-from romtools.rom.qoi_surrogates import *
-from romtools.rom.neural_network_surrogate import *
+from . import neural_network_surrogate, projections, qoi_surrogates
+from .neural_network_surrogate import (
+    LipschitzConfig,
+    LipschitzNeuralNetworkQoiModel,
+    NeuralNetworkQoiModelBuilderWithTrainingData,
+    estimate_pairwise_lipschitz_constant,
+)
+from .projections import optimal_l2_projection
+from .qoi_surrogates import (
+    GaussianProcessKernel,
+    GaussianProcessQoiModel,
+    GaussianProcessRegressorLite,
+    NeuralNetworkConfig,
+    NeuralNetworkQoiModel,
+)
 
 __all__ = [
     "projections",
