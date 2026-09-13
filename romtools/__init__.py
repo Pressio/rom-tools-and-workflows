@@ -56,16 +56,22 @@ backwards compatibility but is intentionally not part of ``__all__``.
 
 from importlib.metadata import PackageNotFoundError, version
 
-from romtools import composite_vector_space, hpc, hyper_reduction, linalg, rom, vector_space, workflows
-from romtools.composite_vector_space import CompositeVectorSpace
-from romtools.hyper_reduction import *
-from romtools.rom import *
+# Load the vector-space aliases first because a small amount of legacy code
+# still resolves type annotations through ``romtools.VectorSpace`` at import
+# time. These aliases remain available for backwards compatibility but are not
+# part of the canonical top-level API.
+from romtools import vector_space
 from romtools.vector_space import (
     DictionaryVectorSpace,
     VectorSpace,
     VectorSpaceFromPOD,
     VectorSpaceFromStreamingPOD,
 )
+
+from romtools import composite_vector_space, hpc, hyper_reduction, linalg, rom, workflows
+from romtools.composite_vector_space import CompositeVectorSpace
+from romtools.hyper_reduction import *
+from romtools.rom import *
 from romtools.workflows import *
 
 try:
