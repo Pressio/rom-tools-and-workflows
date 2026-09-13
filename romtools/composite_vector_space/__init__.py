@@ -104,7 +104,7 @@ class CompositeVectorSpace:
                ), "Error constructing composite vector space, not all spaces have the same spatial dimension"
 
     def __construct_global_shift_vector(self):
-        # Constructs a full shift vector
+        # Constructs the shift vector for the composite vector space
         shift_vector = self.__compact_shift_vector[0]
         for local_shift_vector in self.__compact_shift_vector[1:]:
             shift_vector = np.append(shift_vector, local_shift_vector, axis=0)
