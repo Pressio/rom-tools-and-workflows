@@ -92,9 +92,9 @@ def configuration(smoke: bool) -> BenchmarkConfig:
         eki_ensemble_size=8,
         mf_fom_ensemble_size=8,
         mf_extra_gp_ensemble_size=24,
-        max_iterations=15,
+        max_iterations=25,
         gp_substep_start_iteration=1,
-        gp_substep_end_iteration=15,
+        gp_substep_end_iteration=25,
         num_gp_substeps=4,
         max_gp_training_history=5,
     )
@@ -446,6 +446,8 @@ def main(
         relaxation_parameter=1.05,
         error_norm_tolerance=1.0e-5,
         delta_params_tolerance=1.0e-6,
+        rejuvenation_strategy="periodic",
+        rejuvenation_interval=10,
         max_iterations=cfg.max_iterations,
         random_seed=5,
     )
@@ -535,6 +537,9 @@ def main(
         "eki_settings": {
             "initial_step_size": solver_args["initial_step_size"],
             "regularization_parameter": solver_args["regularization_parameter"],
+            "rejuvenation_strategy": solver_args["rejuvenation_strategy"],
+            "rejuvenation_interval": solver_args["rejuvenation_interval"],
+            "max_iterations": cfg.max_iterations,
         },
         "truth_and_hf_share_discretization": True,
         "low_fidelity_model": "Gaussian-process automatic QoI ROM",
