@@ -52,7 +52,8 @@ vector concatenates transverse-displacement histories at
 
    x/L = 0.50,\ 0.75,\ 1.00,
 
-sampled every ``0.1 s`` from ``0.1`` through ``1.0 s``.  Synthetic data are
+sampled every ``0.05 s`` from ``0.05`` through ``1.0 s``.  This gives 20 time
+samples at each of three sensors, for a 60-dimensional QoI.  Synthetic data are
 generated with the same high-fidelity model used during inversion and perturbed
 with reproducible Gaussian noise.  A single standard deviation equal to one
 percent of the largest clean observed displacement is used,
@@ -88,6 +89,15 @@ and every high-fidelity evaluation:
 Both EKI and MF-EKI therefore query the same ``33 x 16`` Neo-Hookean FOM.  The
 ``--smoke`` path uses a much smaller discretization solely to keep CI validation
 lightweight.
+
+EKI configuration
+-----------------
+
+Both EKI and MF-EKI use an initial EKI step size of ``0.25`` and a
+regularization parameter of ``1e-8``.  The step-size growth factor is ``1.25``,
+the decay factor is ``2.0``, and the maximum number of outer iterations is 15.
+The same EKI tuning is used in the single- and multifidelity runs so that the
+comparison isolates the effect of the GP-assisted inner updates.
 
 Automatic GP low-fidelity model
 --------------------------------
@@ -146,8 +156,8 @@ The script writes
 * ``solid_dynamics_error_vs_cost.png`` for convergence versus cumulative
   high-fidelity evaluations; and
 * ``solid_dynamics_eki_mf_eki_summary.json`` containing the truth, FOM and GP
-  settings, final estimates, high-fidelity evaluation counts, and high-fidelity
-  wall-clock totals.
+  settings, QoI dimension and observation times, EKI tuning, final estimates,
+  high-fidelity evaluation counts, and high-fidelity wall-clock totals.
 
 Implementation
 --------------

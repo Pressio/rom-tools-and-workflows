@@ -372,6 +372,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-parameters">Inverse parameters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-model">Observation model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-fidelity-model">High-fidelity model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#eki-configuration">EKI configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-gp-low-fidelity-model">Automatic GP low-fidelity model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cost-metric">Cost metric</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-benchmark">Running the benchmark</a></li>
@@ -480,7 +481,8 @@ transient used in the solid-dynamics cantilever example.  The observation
 vector concatenates transverse-displacement histories at</p>
 <div class="math notranslate nohighlight">
 \[x/L = 0.50,\ 0.75,\ 1.00,\]</div>
-<p>sampled every <code class="docutils literal notranslate"><span class="pre">0.1</span> <span class="pre">s</span></code> from <code class="docutils literal notranslate"><span class="pre">0.1</span></code> through <code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code>.  Synthetic data are
+<p>sampled every <code class="docutils literal notranslate"><span class="pre">0.05</span> <span class="pre">s</span></code> from <code class="docutils literal notranslate"><span class="pre">0.05</span></code> through <code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">s</span></code>.  This gives 20 time
+samples at each of three sensors, for a 60-dimensional QoI.  Synthetic data are
 generated with the same high-fidelity model used during inversion and perturbed
 with reproducible Gaussian noise.  A single standard deviation equal to one
 percent of the largest clean observed displacement is used,</p>
@@ -516,6 +518,14 @@ and every high-fidelity evaluation:</p>
 <p>Both EKI and MF-EKI therefore query the same <code class="docutils literal notranslate"><span class="pre">33</span> <span class="pre">x</span> <span class="pre">16</span></code> Neo-Hookean FOM.  The
 <code class="docutils literal notranslate"><span class="pre">--smoke</span></code> path uses a much smaller discretization solely to keep CI validation
 lightweight.</p>
+</section>
+<section id="eki-configuration">
+<h2>EKI configuration<a class="headerlink" href="#eki-configuration" title="Link to this heading">#</a></h2>
+<p>Both EKI and MF-EKI use an initial EKI step size of <code class="docutils literal notranslate"><span class="pre">0.25</span></code> and a
+regularization parameter of <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.  The step-size growth factor is <code class="docutils literal notranslate"><span class="pre">1.25</span></code>,
+the decay factor is <code class="docutils literal notranslate"><span class="pre">2.0</span></code>, and the maximum number of outer iterations is 15.
+The same EKI tuning is used in the single- and multifidelity runs so that the
+comparison isolates the effect of the GP-assisted inner updates.</p>
 </section>
 <section id="automatic-gp-low-fidelity-model">
 <h2>Automatic GP low-fidelity model<a class="headerlink" href="#automatic-gp-low-fidelity-model" title="Link to this heading">#</a></h2>
@@ -563,8 +573,8 @@ parameter estimates;</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_error_vs_cost.png</span></code> for convergence versus cumulative
 high-fidelity evaluations; and</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">solid_dynamics_eki_mf_eki_summary.json</span></code> containing the truth, FOM and GP
-settings, final estimates, high-fidelity evaluation counts, and high-fidelity
-wall-clock totals.</p></li>
+settings, QoI dimension and observation times, EKI tuning, final estimates,
+high-fidelity evaluation counts, and high-fidelity wall-clock totals.</p></li>
 </ul>
 </section>
 <section id="implementation">
@@ -1193,6 +1203,7 @@ wall-clock totals.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inverse-parameters">Inverse parameters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-model">Observation model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-fidelity-model">High-fidelity model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#eki-configuration">EKI configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-gp-low-fidelity-model">Automatic GP low-fidelity model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cost-metric">Cost metric</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-benchmark">Running the benchmark</a></li>
