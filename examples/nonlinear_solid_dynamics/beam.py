@@ -1,4 +1,4 @@
-"""Transiently loaded nonlinear cantilever beam example."""
+"""Transiently loaded cantilever beam example."""
 
 from pathlib import Path
 import sys
@@ -10,11 +10,16 @@ MODELS = Path(__file__).resolve().parents[1] / "models"
 if str(MODELS) not in sys.path:
     sys.path.insert(0, str(MODELS))
 
-from nonlinear_solid_dynamics import cantilever_model  # noqa: E402
+from solid_dynamics import cantilever_model  # noqa: E402
 
 
-def run():
-    model = cantilever_model(nx=8, ny=2, mass_type="consistent")
+def run(material_model="neo_hookean"):
+    model = cantilever_model(
+        nx=8,
+        ny=2,
+        mass_type="consistent",
+        material_model=material_model,
+    )
     load_amplitude = 1000.0
     pulse_duration = 0.15
     edge_shape = model.boundary_force_x(model.mesh.length, np.array([0.0, -1.0]))
@@ -42,7 +47,7 @@ def main():
     plt.plot(times, tip_y)
     plt.xlabel("Time [s]")
     plt.ylabel("Tip vertical displacement [m]")
-    plt.title("Nonlinear cantilever response")
+    plt.title("Cantilever response")
     plt.tight_layout()
     plt.show()
 
