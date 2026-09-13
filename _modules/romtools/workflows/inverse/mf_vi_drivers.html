@@ -471,6 +471,11 @@
 <span class="sd">This is the role of the ``use_mfmc_control_variate`` and</span>
 <span class="sd">``mfmc_control_variate_mode`` options. The implementation supports scalar,</span>
 <span class="sd">componentwise, and matrix-valued control-variate coefficients.</span>
+<span class="sd">For ``score_function_entropy_strategy="joint"``, fitted gradient coefficients</span>
+<span class="sd">are set to zero when the measured high-fidelity variance is at roundoff. This</span>
+<span class="sd">avoids amplifying ROM noise at an exact high-fidelity fixed point. Explicitly</span>
+<span class="sd">fixed coefficients requested through ``use_mfmc_control_variate=False`` are</span>
+<span class="sd">preserved.</span>
 
 <span class="sd">.. rubric:: Adaptive ROM Use</span>
 
@@ -520,6 +525,7 @@
     <span class="n">_compute_component_standard_error</span><span class="p">,</span>
     <span class="n">_compute_correlation_cholesky_from_samples</span><span class="p">,</span>
     <span class="n">_compute_gaussian_log_density_data</span><span class="p">,</span>
+    <span class="n">_compute_variational_log_densities</span><span class="p">,</span>
     <span class="n">_compute_gradient_signal_to_noise_ratio</span><span class="p">,</span>
     <span class="n">_clip_variational_log_std</span><span class="p">,</span>
     <span class="n">_enforce_variational_log_std_bounds</span><span class="p">,</span>
@@ -547,6 +553,7 @@
     <span class="n">_normalize_bounded_parameter_handling</span><span class="p">,</span>
     <span class="n">_normalize_transform_map</span><span class="p">,</span>
     <span class="n">_normalize_sampling_method</span><span class="p">,</span>
+    <span class="n">_normalize_score_function_entropy_strategy</span><span class="p">,</span>
     <span class="n">_print_gradient_signal_to_noise_ratio</span><span class="p">,</span>
     <span class="n">_print_vi_parameters</span><span class="p">,</span>
     <span class="n">_initialize_vi_history</span><span class="p">,</span>
@@ -663,7 +670,9 @@
                              <span class="n">low_terms_base</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                              <span class="n">low_terms_extra</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                              <span class="n">use_control_variate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-                             <span class="n">control_variate_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+                             <span class="n">control_variate_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">high_variance_reference_terms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span>
+                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
     <span class="n">trailing_shape</span> <span class="o">=</span> <span class="n">high_terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
     <span class="n">high_flat</span> <span class="o">=</span> <span class="n">high_terms</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">high_terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">low_base_flat</span> <span class="o">=</span> <span class="n">low_terms_base</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">low_terms_base</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -680,6 +689,24 @@
             <span class="n">low_terms_base</span><span class="p">,</span>
             <span class="n">mode</span><span class="o">=</span><span class="n">control_variate_mode</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">high_variance_reference_terms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">high_reference_flat</span> <span class="o">=</span> <span class="n">high_variance_reference_terms</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="n">high_variance_reference_terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">high_standard_deviation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">high_flat</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">reference_rms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">high_reference_flat</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">negligible</span> <span class="o">=</span> <span class="n">high_standard_deviation</span> <span class="o">&lt;=</span> <span class="p">(</span>
+                <span class="mf">64.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+                <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">reference_rms</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tiny</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">control_variate_mode</span> <span class="o">==</span> <span class="s2">"matrix"</span><span class="p">:</span>
+                <span class="n">alpha</span><span class="p">[:,</span> <span class="n">negligible</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">elif</span> <span class="n">control_variate_mode</span> <span class="o">==</span> <span class="s2">"scalar"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">negligible</span><span class="p">):</span>
+                    <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">alpha</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="n">negligible</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">control_variate_mode</span> <span class="o">==</span> <span class="s2">"matrix"</span><span class="p">:</span>
             <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">high_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -720,7 +747,8 @@
                                       <span class="n">use_mfmc_control_variate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
                                       <span class="n">mfmc_control_variate_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"componentwise"</span><span class="p">,</span>
                                       <span class="n">variational_correlation_cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                                      <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+                                      <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                                      <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_compute_mfmc_estimator_standard_error</span><span class="p">(</span><span class="n">high_terms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                                <span class="n">low_terms_base</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                                <span class="n">low_terms_extra</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -790,35 +818,68 @@
     <span class="n">scaled_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">rom_log_likelihoods_base</span>
     <span class="n">scaled_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">rom_log_likelihoods_extra</span>
 
+    <span class="n">entropy_strategy</span> <span class="o">=</span> <span class="n">_normalize_score_function_entropy_strategy</span><span class="p">(</span>
+        <span class="n">score_function_entropy_strategy</span>
+    <span class="p">)</span>
+    <span class="n">fom_weights</span> <span class="o">=</span> <span class="n">scaled_fom_log_likelihoods</span>
+    <span class="n">rom_base_weights</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_base</span>
+    <span class="n">rom_extra_weights</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_extra</span>
+    <span class="n">fom_log_q</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'joint'</span><span class="p">:</span>
+        <span class="n">fom_log_q</span> <span class="o">=</span> <span class="n">_compute_variational_log_densities</span><span class="p">(</span>
+            <span class="n">optimizer_samples_fom</span><span class="p">,</span>
+            <span class="n">variational_mean</span><span class="p">,</span>
+            <span class="n">variational_std</span><span class="p">,</span>
+            <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fom_weights</span> <span class="o">=</span> <span class="n">fom_weights</span> <span class="o">-</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">fom_log_q</span>
+        <span class="n">rom_base_weights</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">rom_base_weights</span>
+            <span class="o">-</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">_compute_variational_log_densities</span><span class="p">(</span>
+                <span class="n">optimizer_samples_rom_base</span><span class="p">,</span>
+                <span class="n">variational_mean</span><span class="p">,</span>
+                <span class="n">variational_std</span><span class="p">,</span>
+                <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">optimizer_samples_rom_extra</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">optimizer_samples_rom_extra</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rom_extra_weights</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">rom_extra_weights</span>
+                <span class="o">-</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">_compute_variational_log_densities</span><span class="p">(</span>
+                    <span class="n">optimizer_samples_rom_extra</span><span class="p">,</span>
+                    <span class="n">variational_mean</span><span class="p">,</span>
+                    <span class="n">variational_std</span><span class="p">,</span>
+                    <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
     <span class="c1"># Compute shared baselines and centered likelihood weights.</span>
     <span class="c1"># Baselines are estimated from FOM statistics and reused for ROM terms.</span>
     <span class="n">baseline_method</span> <span class="o">=</span> <span class="n">_normalize_baseline_method</span><span class="p">(</span><span class="n">baseline_method</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s1">'optimal'</span><span class="p">:</span>
-        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">scaled_fom_log_likelihoods</span><span class="p">,</span> <span class="n">score_mean_fom</span><span class="p">)</span>
-        <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">scaled_fom_log_likelihoods</span><span class="p">,</span> <span class="n">score_log_std_fom</span><span class="p">)</span>
-        <span class="n">centered_fom_log_likelihoods</span> <span class="o">=</span> <span class="n">scaled_fom_log_likelihoods</span>
-        <span class="n">centered_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_base</span>
-        <span class="n">centered_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_extra</span>
+        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">fom_weights</span><span class="p">,</span> <span class="n">score_mean_fom</span><span class="p">)</span>
+        <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">fom_weights</span><span class="p">,</span> <span class="n">score_log_std_fom</span><span class="p">)</span>
+        <span class="n">centered_fom_log_likelihoods</span> <span class="o">=</span> <span class="n">fom_weights</span>
+        <span class="n">centered_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="n">rom_base_weights</span>
+        <span class="n">centered_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="n">rom_extra_weights</span>
     <span class="k">elif</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s1">'loo'</span><span class="p">:</span>
         <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
         <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
         <span class="n">centered_fom_log_likelihoods</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">scaled_fom_log_likelihoods</span> <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">scaled_fom_log_likelihoods</span><span class="p">)</span>
+            <span class="n">fom_weights</span> <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">fom_weights</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="n">centered_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">scaled_rom_log_likelihoods_base</span>
-            <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">scaled_rom_log_likelihoods_base</span><span class="p">)</span>
+            <span class="n">rom_base_weights</span> <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">rom_base_weights</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="n">centered_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">scaled_rom_log_likelihoods_extra</span>
-            <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">scaled_rom_log_likelihoods_extra</span><span class="p">)</span>
+            <span class="n">rom_extra_weights</span> <span class="o">-</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">rom_extra_weights</span><span class="p">)</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
         <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
-        <span class="n">centered_fom_log_likelihoods</span> <span class="o">=</span> <span class="n">scaled_fom_log_likelihoods</span>
-        <span class="n">centered_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_base</span>
-        <span class="n">centered_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="n">scaled_rom_log_likelihoods_extra</span>
+        <span class="n">centered_fom_log_likelihoods</span> <span class="o">=</span> <span class="n">fom_weights</span>
+        <span class="n">centered_rom_log_likelihoods_base</span> <span class="o">=</span> <span class="n">rom_base_weights</span>
+        <span class="n">centered_rom_log_likelihoods_extra</span> <span class="o">=</span> <span class="n">rom_extra_weights</span>
 
     <span class="c1"># High terms use FOM samples; low base terms use an independent low-fidelity sample set.</span>
     <span class="n">high_mean_terms</span> <span class="o">=</span> <span class="p">(</span><span class="n">centered_fom_log_likelihoods</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span> <span class="o">*</span> <span class="n">score_mean_fom</span>
@@ -851,6 +912,12 @@
         <span class="n">low_mean_terms_extra</span><span class="p">,</span>
         <span class="n">use_mfmc_control_variate</span><span class="p">,</span>
         <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scaled_fom_log_likelihoods</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+             <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">fom_log_q</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">])</span>
+            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">score_mean_fom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'joint'</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">),</span>
     <span class="p">)</span>
     <span class="n">gradient_log_std</span><span class="p">,</span> <span class="n">alpha_log_std</span> <span class="o">=</span> <span class="n">_mfmc_gradient_estimator</span><span class="p">(</span>
         <span class="n">high_log_std_terms</span><span class="p">,</span>
@@ -858,6 +925,12 @@
         <span class="n">low_log_std_terms_extra</span><span class="p">,</span>
         <span class="n">use_mfmc_control_variate</span><span class="p">,</span>
         <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scaled_fom_log_likelihoods</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+             <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">fom_log_q</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">])</span>
+            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">score_log_std_fom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'joint'</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">),</span>
     <span class="p">)</span>
     <span class="n">gradient_standard_error_mean</span> <span class="o">=</span> <span class="n">_compute_mfmc_estimator_standard_error</span><span class="p">(</span>
         <span class="n">high_mean_terms</span><span class="p">,</span>
@@ -874,7 +947,8 @@
         <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="c1"># Entropy gradient contribution for log-std parameters.</span>
-    <span class="n">gradient_log_std</span> <span class="o">+=</span> <span class="n">elbo_scaling_factor</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'analytic'</span><span class="p">:</span>
+        <span class="n">gradient_log_std</span> <span class="o">+=</span> <span class="n">elbo_scaling_factor</span>
     <span class="n">gradient_signal_to_noise_ratio</span> <span class="o">=</span> <span class="n">_compute_gradient_signal_to_noise_ratio</span><span class="p">(</span>
         <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">gradient_mean</span><span class="p">,</span> <span class="n">gradient_log_std</span><span class="p">]),</span>
         <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
@@ -890,6 +964,10 @@
         <span class="n">alpha_mean</span><span class="p">,</span>
         <span class="n">alpha_log_std</span><span class="p">,</span>
         <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+            <span class="n">gradient_standard_error_mean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">gradient_standard_error_log_std</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+        <span class="p">]),</span>
     <span class="p">)</span>
 
 
@@ -1204,6 +1282,7 @@
                         <span class="n">transform_map</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">optimization_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">mfmc_control_variate_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                        <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">parameter_mins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="n">parameter_maxes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="n">transform_interior_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -1247,6 +1326,7 @@
         <span class="n">transform_map</span><span class="o">=</span><span class="n">transform_map</span><span class="p">,</span>
         <span class="n">optimization_method</span><span class="o">=</span><span class="n">optimization_method</span><span class="p">,</span>
         <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
         <span class="n">max_mean_update_std</span><span class="o">=</span><span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">if</span> <span class="n">max_mean_update_std</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_mean_update_std</span><span class="p">)</span>
@@ -1289,6 +1369,7 @@
         <span class="s1">'log_joint_terms_rom_only'</span><span class="p">:</span> <span class="s1">'log_joint_terms_rom_only'</span><span class="p">,</span>
         <span class="s1">'gradient_mean'</span><span class="p">:</span> <span class="s1">'gradient_mean'</span><span class="p">,</span>
         <span class="s1">'gradient_log_std'</span><span class="p">:</span> <span class="s1">'gradient_log_std'</span><span class="p">,</span>
+        <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="s1">'gradient_standard_error'</span><span class="p">,</span>
         <span class="s1">'hessian_diagonal_mean'</span><span class="p">:</span> <span class="s1">'hessian_diagonal_mean'</span><span class="p">,</span>
         <span class="s1">'hessian_diagonal_log_std'</span><span class="p">:</span> <span class="s1">'hessian_diagonal_log_std'</span><span class="p">,</span>
         <span class="s1">'hessian_full'</span><span class="p">:</span> <span class="s1">'hessian_full'</span><span class="p">,</span>
@@ -1396,7 +1477,8 @@
                           <span class="n">rom_training_qois</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                           <span class="n">log_likelihood_precision_operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                           <span class="n">sampling_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'mc'</span><span class="p">,</span>
-                          <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                          <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">rom_dispatcher</span> <span class="o">=</span> <span class="n">resolve_local_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">run_directory_base</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">iteration_directory</span><span class="si">}</span><span class="s1">/run_fom_sample_set_0_'</span>
@@ -1717,6 +1799,7 @@
         <span class="n">alpha_mean</span><span class="p">,</span>
         <span class="n">alpha_log_std</span><span class="p">,</span>
         <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="n">gradient_standard_error</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">_compute_mfmc_reinforce_gradients</span><span class="p">(</span>
             <span class="n">optimizer_samples_fom</span><span class="p">,</span>
@@ -1732,6 +1815,7 @@
             <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
             <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
             <span class="n">elbo_scaling_factor</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">hessian_diagonal_mean</span><span class="p">,</span> <span class="n">hessian_diagonal_log_std</span> <span class="o">=</span> <span class="n">_compute_mfmc_reinforce_hessian_diagonal</span><span class="p">(</span>
@@ -1839,6 +1923,7 @@
         <span class="s1">'baseline_mean'</span><span class="p">:</span> <span class="n">baseline_mean</span><span class="p">,</span>
         <span class="s1">'baseline_log_std'</span><span class="p">:</span> <span class="n">baseline_log_std</span><span class="p">,</span>
         <span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">:</span> <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="n">gradient_standard_error</span><span class="p">,</span>
         <span class="s1">'mfmc_alpha_mean'</span><span class="p">:</span> <span class="n">alpha_mean</span><span class="p">,</span>
         <span class="s1">'mfmc_alpha_log_std'</span><span class="p">:</span> <span class="n">alpha_log_std</span><span class="p">,</span>
         <span class="s1">'rom_error'</span><span class="p">:</span> <span class="n">rom_error</span><span class="p">,</span>
@@ -2023,7 +2108,8 @@
               <span class="n">min_physical_variational_std_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">,</span>
               <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
               <span class="o">*</span><span class="p">,</span>
-              <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+              <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Run multi-fidelity VI with MFMC variance-reduced score-function gradients.</span>
 
@@ -2067,6 +2153,10 @@
 <span class="sd">        min_physical_variational_std_fraction: Minimum physical-space</span>
 <span class="sd">            variational standard deviation as a fraction of each parameter range</span>
 <span class="sd">            when bounded_parameter_handling='transform'.</span>
+<span class="sd">        score_function_entropy_strategy: Entropy treatment in the score-function</span>
+<span class="sd">            gradient. ``'analytic'`` retains the analytic Gaussian entropy</span>
+<span class="sd">            gradient; ``'joint'`` estimates the full ``log_joint - log_q``</span>
+<span class="sd">            integrand. The joint strategy is not a pathwise estimator.</span>
 
 <span class="sd">        dispatcher: Optional (defaults to None, which instantiates a</span>
 <span class="sd">            LocalDispatcher). Pass a RemoteDispatcher to send FOM evaluations</span>
@@ -2231,6 +2321,9 @@
     <span class="k">if</span> <span class="n">baseline_method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">baseline_method</span> <span class="o">=</span> <span class="s1">'loo'</span>
     <span class="n">baseline_method</span> <span class="o">=</span> <span class="n">_normalize_baseline_method</span><span class="p">(</span><span class="n">baseline_method</span><span class="p">)</span>
+    <span class="n">score_function_entropy_strategy</span> <span class="o">=</span> <span class="n">_normalize_score_function_entropy_strategy</span><span class="p">(</span>
+        <span class="n">score_function_entropy_strategy</span>
+    <span class="p">)</span>
     <span class="n">mfmc_control_variate_mode</span> <span class="o">=</span> <span class="n">_normalize_mfmc_control_variate_mode</span><span class="p">(</span>
         <span class="n">mfmc_control_variate_mode</span>
     <span class="p">)</span>
@@ -2369,6 +2462,7 @@
             <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
             <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
             <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">initial_elbo_reference</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'elbo'</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
@@ -2441,6 +2535,15 @@
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">restart_control_variate_mode</span> <span class="o">!=</span> <span class="n">mfmc_control_variate_mode</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"restart_file mfmc_control_variate_mode does not match current run."</span><span class="p">)</span>
+        <span class="n">restart_entropy_strategy</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'score_function_entropy_strategy'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="k">if</span> <span class="s1">'score_function_entropy_strategy'</span> <span class="ow">in</span> <span class="n">restart_data</span>
+            <span class="k">else</span> <span class="s1">'analytic'</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">restart_entropy_strategy</span> <span class="o">!=</span> <span class="n">score_function_entropy_strategy</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"restart_file score_function_entropy_strategy does not match current run."</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="s1">'sampling_method'</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
             <span class="n">restart_sampling_method</span> <span class="o">=</span> <span class="n">_normalize_sampling_method</span><span class="p">(</span>
                 <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'sampling_method'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
@@ -2567,6 +2670,11 @@
                 <span class="s1">'baseline_log_std'</span><span class="p">:</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'baseline_log_std'</span><span class="p">],</span>
                 <span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">])</span>
                 <span class="k">if</span> <span class="s1">'gradient_signal_to_noise_ratio'</span> <span class="ow">in</span> <span class="n">restart_data</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">restart_data</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s1">'gradient_standard_error'</span> <span class="ow">in</span> <span class="n">restart_data</span>
+                    <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                <span class="p">),</span>
                 <span class="s1">'mfmc_alpha_mean'</span><span class="p">:</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">],</span>
                 <span class="s1">'mfmc_alpha_log_std'</span><span class="p">:</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">],</span>
                 <span class="s1">'rom_error'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'rom_error'</span><span class="p">]),</span>
@@ -2627,6 +2735,7 @@
                 <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                 <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
                 <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+                <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="s1">'initial_elbo_reference'</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
             <span class="n">initial_elbo_reference</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'initial_elbo_reference'</span><span class="p">])</span>
@@ -2709,6 +2818,7 @@
         <span class="n">transform_map</span><span class="p">,</span>
         <span class="n">optimization_method</span><span class="p">,</span>
         <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="n">parameter_mins</span><span class="o">=</span><span class="n">parameter_mins</span><span class="p">,</span>
         <span class="n">parameter_maxes</span><span class="o">=</span><span class="n">parameter_maxes</span><span class="p">,</span>
         <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">transform_interior_margin</span><span class="p">,</span>
@@ -2759,6 +2869,11 @@
             <span class="n">parameter_maxes</span><span class="p">,</span>
             <span class="n">transform_interior_margin</span><span class="p">,</span>
             <span class="n">transform_map</span><span class="p">,</span>
+            <span class="n">gradient_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span>
+            <span class="n">gradient_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">],</span>
+            <span class="n">gradient_standard_error</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">],</span>
+            <span class="n">mfmc_alpha_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">],</span>
+            <span class="n">mfmc_alpha_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">],</span>
         <span class="p">)</span>
     <span class="n">alpha_mean_scalar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">]))</span>
     <span class="n">alpha_log_scalar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">]))</span>
@@ -2895,6 +3010,7 @@
                         <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                         <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
                         <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+                        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">independent_hessian_cache</span> <span class="o">=</span> <span class="n">_get_state_hessian</span><span class="p">(</span>
                         <span class="n">hessian_state</span><span class="p">,</span> <span class="n">newton_hessian_type</span>
@@ -3056,6 +3172,7 @@
             <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
             <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
             <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
@@ -3096,6 +3213,7 @@
             <span class="p">):</span>
                 <span class="n">elbo_converged</span> <span class="o">=</span> <span class="kc">True</span>
 
+            <span class="n">accepted_step_size</span> <span class="o">=</span> <span class="n">step_size</span>
             <span class="n">step_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">step_size</span> <span class="o">*</span> <span class="n">step_size_growth_factor</span><span class="p">,</span> <span class="n">max_step_size</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
@@ -3126,6 +3244,12 @@
                 <span class="n">parameter_maxes</span><span class="p">,</span>
                 <span class="n">transform_interior_margin</span><span class="p">,</span>
                 <span class="n">transform_map</span><span class="p">,</span>
+                <span class="n">accepted_step_size</span><span class="o">=</span><span class="n">accepted_step_size</span><span class="p">,</span>
+                <span class="n">gradient_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span>
+                <span class="n">gradient_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">],</span>
+                <span class="n">gradient_standard_error</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">],</span>
+                <span class="n">mfmc_alpha_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">],</span>
+                <span class="n">mfmc_alpha_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">],</span>
             <span class="p">)</span>
             <span class="n">alpha_mean_scalar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">]))</span>
             <span class="n">alpha_log_scalar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">]))</span>
@@ -3188,6 +3312,7 @@
                 <span class="n">transform_map</span><span class="p">,</span>
                 <span class="n">optimization_method</span><span class="p">,</span>
                 <span class="n">mfmc_control_variate_mode</span><span class="p">,</span>
+                <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                 <span class="n">parameter_mins</span><span class="o">=</span><span class="n">parameter_mins</span><span class="p">,</span>
                 <span class="n">parameter_maxes</span><span class="o">=</span><span class="n">parameter_maxes</span><span class="p">,</span>
                 <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">transform_interior_margin</span><span class="p">,</span>
@@ -3294,7 +3419,8 @@
                         <span class="n">rom_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="o">*</span><span class="p">,</span>
-                        <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                        <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.</span>
 <span class="sd">    Accepts the same rom_base_sampling_strategy options as run_mf_vi.</span>
@@ -3398,6 +3524,7 @@
         <span class="n">transform_map</span><span class="o">=</span><span class="n">transform_map</span><span class="p">,</span>
         <span class="n">min_physical_variational_std_fraction</span><span class="o">=</span><span class="n">min_physical_variational_std_fraction</span><span class="p">,</span>
         <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 </pre></div>

@@ -463,6 +463,14 @@
 
 <span class="sd">.. rubric:: Variance Reduction</span>
 
+<span class="sd">``score_function_entropy_strategy="analytic"`` (the default) estimates the</span>
+<span class="sd">log-joint score contribution and adds the Gaussian entropy gradient exactly.</span>
+<span class="sd">The ``"joint"`` strategy instead keeps :math:`-\log q` inside the sampled ELBO</span>
+<span class="sd">integrand. The analytic strategy can have lower variance far from the optimum;</span>
+<span class="sd">with a suitable baseline, the joint strategy has zero per-sample contribution</span>
+<span class="sd">when the posterior belongs to the variational family. Both choices are</span>
+<span class="sd">score-function estimators, not pathwise estimators.</span>
+
 <span class="sd">The gradient estimator optionally supports a baseline through</span>
 <span class="sd">``baseline_method``. In particular, the leave-one-out option subtracts a</span>
 <span class="sd">sample mean baseline that is independent of the current score term,</span>
@@ -709,6 +717,34 @@
         <span class="n">quadratic_terms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">centered_samples</span> <span class="o">*</span> <span class="n">weighted_samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span>
     <span class="n">normalizer</span> <span class="o">=</span> <span class="n">dimensionality</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="n">covariance_log_det</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">quadratic_terms</span> <span class="o">+</span> <span class="n">normalizer</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_variational_log_densities</span><span class="p">(</span>
+        <span class="n">optimizer_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">variational_mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">variational_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">variational_correlation_cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Evaluate the Gaussian variational density in optimizer coordinates."""</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">optimizer_samples</span> <span class="o">-</span> <span class="n">variational_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="p">)</span> <span class="o">/</span> <span class="n">variational_std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">log_det_correlation</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="n">variational_correlation_cholesky</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">quadratic_terms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">whitened</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+            <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
+            <span class="n">normalized</span><span class="o">.</span><span class="n">transpose</span><span class="p">(),</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="n">quadratic_terms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">whitened</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">log_det_correlation</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">variational_correlation_cholesky</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="n">log_det_covariance</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">variational_std</span><span class="p">))</span> <span class="o">+</span> <span class="n">log_det_correlation</span>
+    <span class="p">)</span>
+    <span class="n">normalizer</span> <span class="o">=</span> <span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_det_covariance</span>
     <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">quadratic_terms</span> <span class="o">+</span> <span class="n">normalizer</span><span class="p">)</span>
 
 
@@ -1014,6 +1050,11 @@
         <span class="s1">'relative_mse'</span><span class="p">:</span> <span class="p">[],</span>
         <span class="s1">'loglikelihood'</span><span class="p">:</span> <span class="p">[],</span>
         <span class="s1">'cpu_time_seconds'</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">'accepted_step_size'</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">'gradient'</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">'mfmc_alpha_mean'</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s1">'mfmc_alpha_log_std'</span><span class="p">:</span> <span class="p">[],</span>
     <span class="p">}</span>
 
 
@@ -1035,6 +1076,35 @@
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'relative_mse'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'vi_history_relative_mse'</span><span class="p">]]</span>
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'loglikelihood'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'vi_history_loglikelihood'</span><span class="p">]]</span>
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'vi_history_cpu_time_seconds'</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="s1">'vi_history_accepted_step_size'</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
+        <span class="n">vi_history</span><span class="p">[</span><span class="s1">'accepted_step_size'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">[</span><span class="s1">'vi_history_accepted_step_size'</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vi_history</span><span class="p">[</span><span class="s1">'accepted_step_size'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">vi_history</span><span class="p">[</span><span class="s1">'variational_mean'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="k">if</span> <span class="n">vi_history</span><span class="p">[</span><span class="s1">'variational_mean'</span><span class="p">]</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="n">alpha_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dimensionality</span><span class="p">,)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="s1">'mfmc_control_variate_mode'</span> <span class="ow">in</span> <span class="n">restart_data</span>
+        <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'mfmc_control_variate_mode'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">==</span> <span class="s1">'matrix'</span>
+    <span class="p">):</span>
+        <span class="n">alpha_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dimensionality</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">)</span>
+    <span class="n">diagnostic_shapes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">'gradient'</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dimensionality</span><span class="p">,),</span>
+        <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dimensionality</span><span class="p">,),</span>
+        <span class="s1">'mfmc_alpha_mean'</span><span class="p">:</span> <span class="n">alpha_shape</span><span class="p">,</span>
+        <span class="s1">'mfmc_alpha_log_std'</span><span class="p">:</span> <span class="n">alpha_shape</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">diagnostic_shapes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">restart_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'vi_history_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">'</span>
+        <span class="k">if</span> <span class="n">restart_key</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
+            <span class="n">vi_history</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">[</span><span class="n">restart_key</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vi_history</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">]</span>
+            <span class="p">]</span>
     <span class="k">return</span> <span class="n">vi_history</span>
 
 
@@ -1051,7 +1121,13 @@
                        <span class="n">parameter_mins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">parameter_maxes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">transform_interior_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-                       <span class="n">transform_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'sigmoid'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                       <span class="n">transform_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'sigmoid'</span><span class="p">,</span>
+                       <span class="n">accepted_step_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                       <span class="n">gradient_mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">gradient_log_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">gradient_standard_error</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mfmc_alpha_mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mfmc_alpha_log_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">variational_std</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_compute_variational_std</span><span class="p">(</span>
         <span class="n">variational_log_std</span><span class="p">,</span>
         <span class="n">min_variational_std</span><span class="p">,</span>
@@ -1074,6 +1150,26 @@
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'relative_mse'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">mean_relative_mse</span><span class="p">))</span>
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'loglikelihood'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">log_likelihoods</span><span class="p">)))</span>
     <span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cpu_time_seconds</span><span class="p">))</span>
+    <span class="n">vi_history</span><span class="p">[</span><span class="s1">'accepted_step_size'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">accepted_step_size</span><span class="p">))</span>
+    <span class="n">gradient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gradient_mean</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gradient_log_std</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">gradient_mean</span><span class="p">,</span> <span class="n">gradient_log_std</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">vi_history</span><span class="p">[</span><span class="s1">'gradient'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+    <span class="n">vi_history</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gradient_standard_error</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient_standard_error</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">,</span> <span class="n">mfmc_alpha_mean</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">,</span> <span class="n">mfmc_alpha_log_std</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="n">vi_history</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_pack_vi_history</span><span class="p">(</span><span class="n">vi_history</span><span class="p">):</span>
@@ -1097,6 +1193,15 @@
         <span class="s1">'vi_history_relative_mse'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'relative_mse'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
         <span class="s1">'vi_history_loglikelihood'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'loglikelihood'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
         <span class="s1">'vi_history_cpu_time_seconds'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'cpu_time_seconds'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="s1">'vi_history_accepted_step_size'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">vi_history</span><span class="p">[</span><span class="s1">'accepted_step_size'</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>
+        <span class="p">),</span>
+        <span class="s1">'vi_history_gradient'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'gradient'</span><span class="p">]),</span>
+        <span class="s1">'vi_history_gradient_standard_error'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">vi_history</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">]</span>
+        <span class="p">),</span>
+        <span class="s1">'vi_history_mfmc_alpha_mean'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'mfmc_alpha_mean'</span><span class="p">]),</span>
+        <span class="s1">'vi_history_mfmc_alpha_log_std'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vi_history</span><span class="p">[</span><span class="s1">'mfmc_alpha_log_std'</span><span class="p">]),</span>
     <span class="p">}</span>
 
 
@@ -1129,6 +1234,16 @@
             <span class="s2">"Supported options are 'none', 'loo', and 'optimal'."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">method</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_score_function_entropy_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">normalized</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'analytic'</span><span class="p">,</span> <span class="s1">'joint'</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Unsupported score_function_entropy_strategy '</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">'. "</span>
+            <span class="s2">"Supported options are 'analytic' and 'joint'."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">normalized</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_variational_distribution</span><span class="p">(</span><span class="n">variational_distribution</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -1413,7 +1528,8 @@
                                  <span class="n">log_likelihoods</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                  <span class="n">baseline_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                                  <span class="n">variational_correlation_cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                                 <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+                                 <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                                 <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="n">centered_parameters</span> <span class="o">=</span> <span class="n">parameter_samples</span> <span class="o">-</span> <span class="n">variational_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
     <span class="n">normalized_parameters</span> <span class="o">=</span> <span class="n">centered_parameters</span> <span class="o">/</span> <span class="n">variational_std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
     <span class="k">if</span> <span class="n">variational_correlation_cholesky</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1431,28 +1547,44 @@
         <span class="n">score_mean</span> <span class="o">=</span> <span class="n">correlation_inverse_times_normalized</span> <span class="o">/</span> <span class="n">variational_std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
         <span class="n">score_log_std</span> <span class="o">=</span> <span class="n">normalized_parameters</span> <span class="o">*</span> <span class="n">correlation_inverse_times_normalized</span> <span class="o">-</span> <span class="mf">1.0</span>
 
+    <span class="n">entropy_strategy</span> <span class="o">=</span> <span class="n">_normalize_score_function_entropy_strategy</span><span class="p">(</span>
+        <span class="n">score_function_entropy_strategy</span>
+    <span class="p">)</span>
+    <span class="n">gradient_weights</span> <span class="o">=</span> <span class="n">log_likelihoods</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'joint'</span><span class="p">:</span>
+        <span class="n">gradient_weights</span> <span class="o">=</span> <span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">_compute_variational_log_densities</span><span class="p">(</span>
+                <span class="n">parameter_samples</span><span class="p">,</span>
+                <span class="n">variational_mean</span><span class="p">,</span>
+                <span class="n">variational_std</span><span class="p">,</span>
+                <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
     <span class="n">baseline_method</span> <span class="o">=</span> <span class="n">_normalize_baseline_method</span><span class="p">(</span><span class="n">baseline_method</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s1">'optimal'</span><span class="p">:</span>
-        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">log_likelihoods</span><span class="p">,</span> <span class="n">score_mean</span><span class="p">)</span>
-        <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">log_likelihoods</span><span class="p">,</span> <span class="n">score_log_std</span><span class="p">)</span>
-        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="n">log_likelihoods</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
-        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="n">log_likelihoods</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_log_std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">gradient_weights</span><span class="p">,</span> <span class="n">score_mean</span><span class="p">)</span>
+        <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">_compute_optimal_baseline</span><span class="p">(</span><span class="n">gradient_weights</span><span class="p">,</span> <span class="n">score_log_std</span><span class="p">)</span>
+        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="n">gradient_weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="n">gradient_weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_log_std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
     <span class="k">elif</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s1">'loo'</span><span class="p">:</span>
-        <span class="n">baseline_loo</span> <span class="o">=</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">log_likelihoods</span><span class="p">)</span>
+        <span class="n">baseline_loo</span> <span class="o">=</span> <span class="n">_compute_leave_one_out_baseline</span><span class="p">(</span><span class="n">gradient_weights</span><span class="p">)</span>
         <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
         <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
-        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">baseline_loo</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="p">(</span><span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">baseline_loo</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">gradient_weights</span> <span class="o">-</span> <span class="n">baseline_loo</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="p">(</span><span class="n">gradient_weights</span> <span class="o">-</span> <span class="n">baseline_loo</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
         <span class="n">baseline_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">variational_mean</span><span class="p">)</span>
-        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="n">log_likelihoods</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="n">log_likelihoods</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_weights_mean</span> <span class="o">=</span> <span class="n">gradient_weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_weights_log_std</span> <span class="o">=</span> <span class="n">gradient_weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
 
     <span class="n">gradient_terms_mean</span> <span class="o">=</span> <span class="n">centered_weights_mean</span> <span class="o">*</span> <span class="n">score_mean</span>
     <span class="n">gradient_terms_log_std</span> <span class="o">=</span> <span class="n">centered_weights_log_std</span> <span class="o">*</span> <span class="n">score_log_std</span>
     <span class="n">gradient_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gradient_terms_mean</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">gradient_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gradient_terms_log_std</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">elbo_scaling_factor</span>
+    <span class="n">gradient_log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gradient_terms_log_std</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s1">'analytic'</span><span class="p">:</span>
+        <span class="n">gradient_log_std</span> <span class="o">+=</span> <span class="n">elbo_scaling_factor</span>
     <span class="n">gradient_standard_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
         <span class="n">_compute_component_standard_error</span><span class="p">(</span><span class="n">gradient_terms_mean</span><span class="p">),</span>
         <span class="n">_compute_component_standard_error</span><span class="p">(</span><span class="n">gradient_terms_log_std</span><span class="p">),</span>
@@ -1461,7 +1593,14 @@
         <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">gradient_mean</span><span class="p">,</span> <span class="n">gradient_log_std</span><span class="p">]),</span>
         <span class="n">gradient_standard_error</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">gradient_mean</span><span class="p">,</span> <span class="n">gradient_log_std</span><span class="p">,</span> <span class="n">baseline_mean</span><span class="p">,</span> <span class="n">baseline_log_std</span><span class="p">,</span> <span class="n">gradient_signal_to_noise_ratio</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">gradient_mean</span><span class="p">,</span>
+        <span class="n">gradient_log_std</span><span class="p">,</span>
+        <span class="n">baseline_mean</span><span class="p">,</span>
+        <span class="n">baseline_log_std</span><span class="p">,</span>
+        <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="n">gradient_standard_error</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_compute_reinforce_hessian_diagonal</span><span class="p">(</span><span class="n">parameter_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -1857,7 +1996,8 @@
                                  <span class="n">transform_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'sigmoid'</span><span class="p">,</span>
                                  <span class="n">variational_correlation_cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                                  <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-                                 <span class="n">log_likelihood_precision_operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                                 <span class="n">log_likelihood_precision_operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="n">qois</span> <span class="o">=</span> <span class="n">iteration_results</span><span class="p">[</span><span class="s1">'qois'</span><span class="p">]</span>
     <span class="n">mean_qoi</span> <span class="o">=</span> <span class="n">iteration_results</span><span class="p">[</span><span class="s1">'mean-qoi'</span><span class="p">]</span>
     <span class="n">errors</span> <span class="o">=</span> <span class="n">iteration_results</span><span class="p">[</span><span class="s1">'errors'</span><span class="p">]</span>
@@ -1895,6 +2035,7 @@
         <span class="n">baseline_mean</span><span class="p">,</span>
         <span class="n">baseline_log_std</span><span class="p">,</span>
         <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="n">gradient_standard_error</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">=</span> <span class="n">_compute_reinforce_gradients</span><span class="p">(</span>
         <span class="n">optimizer_samples</span><span class="p">,</span>
         <span class="n">variational_mean</span><span class="p">,</span>
@@ -1903,6 +2044,7 @@
         <span class="n">baseline_method</span><span class="p">,</span>
         <span class="n">variational_correlation_cholesky</span><span class="p">,</span>
         <span class="n">elbo_scaling_factor</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">hessian_diagonal_mean</span><span class="p">,</span> <span class="n">hessian_diagonal_log_std</span> <span class="o">=</span> <span class="n">_compute_reinforce_hessian_diagonal</span><span class="p">(</span>
         <span class="n">optimizer_samples</span><span class="p">,</span>
@@ -1959,6 +2101,7 @@
         <span class="s1">'baseline_mean'</span><span class="p">:</span> <span class="n">baseline_mean</span><span class="p">,</span>
         <span class="s1">'baseline_log_std'</span><span class="p">:</span> <span class="n">baseline_log_std</span><span class="p">,</span>
         <span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">:</span> <span class="n">gradient_signal_to_noise_ratio</span><span class="p">,</span>
+        <span class="s1">'gradient_standard_error'</span><span class="p">:</span> <span class="n">gradient_standard_error</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">state</span>
 
@@ -1989,7 +2132,8 @@
                        <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
                        <span class="n">log_likelihood_precision_operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">sampling_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'mc'</span><span class="p">,</span>
-                       <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                       <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span> <span class="o">=</span> <span class="n">_draw_parameter_samples</span><span class="p">(</span>
         <span class="n">variational_mean</span><span class="p">,</span>
         <span class="n">variational_log_std</span><span class="p">,</span>
@@ -2037,6 +2181,7 @@
         <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">variational_correlation_cholesky</span><span class="p">,</span>
         <span class="n">elbo_scaling_factor</span><span class="o">=</span><span class="n">elbo_scaling_factor</span><span class="p">,</span>
         <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
     <span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_vi_candidate_for_line_search</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">QoiModel</span><span class="p">,</span>
@@ -2066,7 +2211,8 @@
                                            <span class="n">variational_correlation_cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                                            <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
                                            <span class="n">log_likelihood_precision_operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                                           <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                                           <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                           <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
     <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span> <span class="o">=</span> <span class="n">_draw_parameter_samples</span><span class="p">(</span>
         <span class="n">variational_mean</span><span class="p">,</span>
         <span class="n">variational_log_std</span><span class="p">,</span>
@@ -2122,6 +2268,7 @@
             <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">variational_correlation_cholesky</span><span class="p">,</span>
             <span class="n">elbo_scaling_factor</span><span class="o">=</span><span class="n">elbo_scaling_factor</span><span class="p">,</span>
             <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">candidate</span>
 
@@ -2142,6 +2289,7 @@
                      <span class="n">bounded_parameter_handling</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                      <span class="n">transform_map</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                      <span class="n">baseline_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                     <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                      <span class="n">optimization_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                      <span class="n">line_search_objective</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                      <span class="n">line_search_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2192,6 +2340,7 @@
         <span class="n">bounded_parameter_handling</span><span class="o">=</span><span class="n">bounded_parameter_handling</span><span class="p">,</span>
         <span class="n">transform_map</span><span class="o">=</span><span class="n">transform_map</span><span class="p">,</span>
         <span class="n">baseline_method</span><span class="o">=</span><span class="n">baseline_method</span><span class="p">,</span>
+        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="n">optimization_method</span><span class="o">=</span><span class="n">optimization_method</span><span class="p">,</span>
         <span class="n">line_search_objective</span><span class="o">=</span><span class="n">line_search_objective</span><span class="p">,</span>
         <span class="n">line_search_method</span><span class="o">=</span><span class="n">line_search_method</span><span class="p">,</span>
@@ -2218,7 +2367,7 @@
         <span class="s1">'gradient_mean'</span><span class="p">,</span> <span class="s1">'gradient_log_std'</span><span class="p">,</span> <span class="s1">'hessian_diagonal_mean'</span><span class="p">,</span>
         <span class="s1">'hessian_diagonal_log_std'</span><span class="p">,</span> <span class="s1">'hessian_full'</span><span class="p">,</span> <span class="s1">'update_direction_mean'</span><span class="p">,</span>
         <span class="s1">'update_direction_log_std'</span><span class="p">,</span> <span class="s1">'baseline_mean'</span><span class="p">,</span> <span class="s1">'baseline_log_std'</span><span class="p">,</span>
-        <span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">,</span>
+        <span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">,</span> <span class="s1">'gradient_standard_error'</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">restart_state_keys</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">state</span> <span class="ow">and</span> <span class="n">state</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2393,7 +2542,8 @@
            <span class="n">min_physical_variational_std_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
            <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
            <span class="o">*</span><span class="p">,</span>
-           <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+           <span class="n">absolute_vi_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+           <span class="n">score_function_entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'analytic'</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Run Gaussian variational inference with score-function gradients.</span>
 
@@ -2449,6 +2599,10 @@
 <span class="sd">            this tolerance.</span>
 <span class="sd">        baseline_method: Baseline used in REINFORCE gradient estimation.</span>
 <span class="sd">            Supported options are 'none', 'loo', and 'optimal'.</span>
+<span class="sd">        score_function_entropy_strategy: Entropy treatment in the score-function</span>
+<span class="sd">            gradient. ``'analytic'`` retains the analytic Gaussian entropy</span>
+<span class="sd">            gradient; ``'joint'`` estimates the full ``log_joint - log_q``</span>
+<span class="sd">            integrand. The joint strategy is not a pathwise estimator.</span>
 <span class="sd">        bounded_parameter_handling: Parameter bounds handling. Supported options</span>
 <span class="sd">            are 'clip' and 'transform'.</span>
 <span class="sd">        transform_interior_margin: Margin used by bounded_parameter_handling='transform'</span>
@@ -2590,6 +2744,9 @@
     <span class="k">if</span> <span class="n">baseline_method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">baseline_method</span> <span class="o">=</span> <span class="s1">'loo'</span>
     <span class="n">baseline_method</span> <span class="o">=</span> <span class="n">_normalize_baseline_method</span><span class="p">(</span><span class="n">baseline_method</span><span class="p">)</span>
+    <span class="n">score_function_entropy_strategy</span> <span class="o">=</span> <span class="n">_normalize_score_function_entropy_strategy</span><span class="p">(</span>
+        <span class="n">score_function_entropy_strategy</span>
+    <span class="p">)</span>
     <span class="n">sampling_method</span> <span class="o">=</span> <span class="n">_normalize_sampling_method</span><span class="p">(</span><span class="n">sampling_method</span><span class="p">)</span>
     <span class="p">(</span>
         <span class="n">parameter_names</span><span class="p">,</span>
@@ -2730,6 +2887,7 @@
             <span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
             <span class="n">sampling_method</span><span class="p">,</span>
             <span class="n">dispatcher</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">initial_elbo_reference</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'elbo'</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
@@ -2782,6 +2940,15 @@
             <span class="n">restart_baseline_method</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'baseline_method'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">restart_baseline_method</span> <span class="o">!=</span> <span class="n">baseline_method</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restart file baseline_method does not match current run."</span><span class="p">)</span>
+        <span class="n">restart_entropy_strategy</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'score_function_entropy_strategy'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="k">if</span> <span class="s1">'score_function_entropy_strategy'</span> <span class="ow">in</span> <span class="n">restart_data</span>
+            <span class="k">else</span> <span class="s1">'analytic'</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">restart_entropy_strategy</span> <span class="o">!=</span> <span class="n">score_function_entropy_strategy</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Restart file score_function_entropy_strategy does not match current run."</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="s1">'variational_distribution'</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
             <span class="n">restart_variational_distribution</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'variational_distribution'</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">restart_variational_distribution</span> <span class="o">!=</span> <span class="n">variational_distribution</span><span class="p">:</span>
@@ -2902,6 +3069,11 @@
             <span class="n">state</span><span class="p">[</span><span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
                 <span class="n">restart_data</span><span class="p">[</span><span class="s1">'gradient_signal_to_noise_ratio'</span><span class="p">]</span>
             <span class="p">)</span> <span class="k">if</span> <span class="s1">'gradient_signal_to_noise_ratio'</span> <span class="ow">in</span> <span class="n">restart_data</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">restart_data</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">'gradient_standard_error'</span> <span class="ow">in</span> <span class="n">restart_data</span>
+                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">variational_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="p">)</span>
             <span class="n">state</span><span class="p">[</span><span class="s1">'gradient_method'</span><span class="p">]</span> <span class="o">=</span> <span class="n">gradient_method</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">run_directory_base</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s1">/iteration_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">/run_'</span>
@@ -2933,6 +3105,7 @@
                 <span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                 <span class="n">sampling_method</span><span class="p">,</span>
                 <span class="n">dispatcher</span><span class="p">,</span>
+                <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="s1">'initial_elbo_reference'</span> <span class="ow">in</span> <span class="n">restart_data</span><span class="p">:</span>
             <span class="n">initial_elbo_reference</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">restart_data</span><span class="p">[</span><span class="s1">'initial_elbo_reference'</span><span class="p">])</span>
@@ -3015,6 +3188,7 @@
             <span class="n">bounded_parameter_handling</span><span class="p">,</span>
             <span class="n">transform_map</span><span class="p">,</span>
             <span class="n">baseline_method</span><span class="p">,</span>
+            <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
             <span class="n">optimization_method</span><span class="p">,</span>
             <span class="n">line_search_objective</span><span class="p">,</span>
             <span class="n">line_search_method</span><span class="p">,</span>
@@ -3073,6 +3247,9 @@
             <span class="n">parameter_maxes</span><span class="p">,</span>
             <span class="n">transform_interior_margin</span><span class="p">,</span>
             <span class="n">transform_map</span><span class="p">,</span>
+            <span class="n">gradient_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span>
+            <span class="n">gradient_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">],</span>
+            <span class="n">gradient_standard_error</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">],</span>
         <span class="p">)</span>
     <span class="n">optimizer_status</span> <span class="o">=</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s1">'Adam learning rate: </span><span class="si">{</span><span class="n">adam_learning_rate</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
@@ -3186,6 +3363,7 @@
                         <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                         <span class="n">sampling_method</span><span class="o">=</span><span class="n">sampling_method</span><span class="p">,</span>
                         <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+                        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">independent_hessian_cache</span> <span class="o">=</span> <span class="n">_get_state_hessian</span><span class="p">(</span>
                         <span class="n">hessian_state</span><span class="p">,</span> <span class="n">newton_hessian_type</span>
@@ -3279,6 +3457,7 @@
                 <span class="n">elbo_scaling_factor</span><span class="p">,</span>
                 <span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                 <span class="n">dispatcher</span><span class="p">,</span>
+                <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">optimization_method</span> <span class="o">==</span> <span class="s1">'adam'</span><span class="p">:</span>
@@ -3338,9 +3517,11 @@
                     <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">variational_correlation_cholesky</span><span class="p">,</span>
                     <span class="n">elbo_scaling_factor</span><span class="o">=</span><span class="n">elbo_scaling_factor</span><span class="p">,</span>
                     <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
+                    <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="n">state</span> <span class="o">=</span> <span class="n">test_state</span>
                 <span class="n">accepted_elbo_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'elbo'</span><span class="p">])</span>
+                <span class="n">accepted_step_size</span> <span class="o">=</span> <span class="n">step_size</span>
                 <span class="n">step_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">step_size</span> <span class="o">*</span> <span class="n">step_size_growth_factor</span><span class="p">,</span> <span class="n">max_step_size</span><span class="p">)</span>
                 <span class="n">line_search_standard_normal_cache</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="n">relative_elbo_improvement</span> <span class="o">=</span> <span class="p">(</span>
@@ -3380,6 +3561,10 @@
                     <span class="n">parameter_maxes</span><span class="p">,</span>
                     <span class="n">transform_interior_margin</span><span class="p">,</span>
                     <span class="n">transform_map</span><span class="p">,</span>
+                    <span class="n">accepted_step_size</span><span class="o">=</span><span class="n">accepted_step_size</span><span class="p">,</span>
+                    <span class="n">gradient_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span>
+                    <span class="n">gradient_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">],</span>
+                    <span class="n">gradient_standard_error</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">],</span>
                 <span class="p">)</span>
                 <span class="n">optimizer_status</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="sa">f</span><span class="s1">'Adam learning rate: </span><span class="si">{</span><span class="n">adam_learning_rate</span><span class="si">:</span><span class="s1">.5e</span><span class="si">}</span><span class="s1">, '</span>
@@ -3440,6 +3625,7 @@
                     <span class="n">bounded_parameter_handling</span><span class="p">,</span>
                     <span class="n">transform_map</span><span class="p">,</span>
                     <span class="n">baseline_method</span><span class="p">,</span>
+                    <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="n">optimization_method</span><span class="p">,</span>
                     <span class="n">line_search_objective</span><span class="p">,</span>
                     <span class="n">line_search_method</span><span class="p">,</span>
@@ -3585,6 +3771,7 @@
                 <span class="n">elbo_scaling_factor</span><span class="p">,</span>
                 <span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
                 <span class="n">dispatcher</span><span class="p">,</span>
+                <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">line_search_objective</span> <span class="o">==</span> <span class="s1">'elbo'</span><span class="p">:</span>
@@ -3641,11 +3828,13 @@
                     <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">variational_correlation_cholesky</span><span class="p">,</span>
                     <span class="n">elbo_scaling_factor</span><span class="o">=</span><span class="n">elbo_scaling_factor</span><span class="p">,</span>
                     <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">log_likelihood_precision_operator</span><span class="p">,</span>
+                    <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="n">state</span> <span class="o">=</span> <span class="n">test_state</span>
                 <span class="k">if</span> <span class="n">newton_curvature_strategy</span> <span class="o">==</span> <span class="s1">'lagged'</span><span class="p">:</span>
                     <span class="n">running_hessian</span> <span class="o">=</span> <span class="n">pending_running_hessian</span>
                 <span class="n">independent_hessian_cache</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">accepted_step_size</span> <span class="o">=</span> <span class="n">step_size</span>
                 <span class="n">step_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">step_size</span> <span class="o">*</span> <span class="n">step_size_growth_factor</span><span class="p">,</span> <span class="n">max_step_size</span><span class="p">)</span>
                 <span class="n">line_search_standard_normal_cache</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -3676,6 +3865,10 @@
                     <span class="n">parameter_maxes</span><span class="p">,</span>
                     <span class="n">transform_interior_margin</span><span class="p">,</span>
                     <span class="n">transform_map</span><span class="p">,</span>
+                    <span class="n">accepted_step_size</span><span class="o">=</span><span class="n">accepted_step_size</span><span class="p">,</span>
+                    <span class="n">gradient_mean</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span>
+                    <span class="n">gradient_log_std</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">],</span>
+                    <span class="n">gradient_standard_error</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s1">'gradient_standard_error'</span><span class="p">],</span>
                 <span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s1">'Iteration: </span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">, Relative MSE: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s2">"mean_relative_mse"</span><span class="p">]</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">, '</span>
@@ -3731,6 +3924,7 @@
                     <span class="n">bounded_parameter_handling</span><span class="p">,</span>
                     <span class="n">transform_map</span><span class="p">,</span>
                     <span class="n">baseline_method</span><span class="p">,</span>
+                    <span class="n">score_function_entropy_strategy</span><span class="p">,</span>
                     <span class="n">optimization_method</span><span class="p">,</span>
                     <span class="n">line_search_objective</span><span class="p">,</span>
                     <span class="n">line_search_method</span><span class="p">,</span>
