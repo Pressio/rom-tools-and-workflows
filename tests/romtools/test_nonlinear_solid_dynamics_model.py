@@ -1,4 +1,4 @@
-"""Tests for the lightweight nonlinear solid-dynamics example model."""
+"""Tests for the lightweight solid-dynamics example model."""
 
 from pathlib import Path
 import sys
@@ -9,7 +9,12 @@ MODELS = Path(__file__).resolve().parents[2] / "examples" / "models"
 if str(MODELS) not in sys.path:
     sys.path.insert(0, str(MODELS))
 
-from nonlinear_solid_dynamics import cantilever_model  # noqa: E402
+from solid_dynamics import (  # noqa: E402
+    cantilever_model,
+    gaussian_displacement,
+    longitudinal_wave_model,
+    longitudinal_wave_speed,
+)
 
 
 def test_undeformed_internal_force_is_zero():
@@ -38,6 +43,54 @@ def test_consistent_tangent_matches_directional_finite_difference():
         finite_difference
     )
     assert relative_error < 1.0e-6
+
+
+def test_linear_material_is_linear_and_has_constant_tangent():
+    model = cantilever_model(nx=2, ny=1, material_model="linear")
+    rng = np.random.default_rng(8)
+    u1 = np.zeros(model.ndof)
+    u2 = np.zeros(model.ndof)
+    u1[model.free_dofs] = 1.0e-3 * rng.standard_normal(model.free_dofs.size)
+    u2[model.free_dofs] = 1.0e-3 * rng.standard_normal(model.free_dofs.size)
+
+    np.testing.assert_allclose(
+        model.internal_force(u1 + u2),
+        model.internal_force(u1) + model.internal_force(u2),
+        rtol=1.0e-12,
+        atol=1.0e-10,
+    )
+    np.testing.assert_allclose(
+        model.tangent_stiffness(u1),
+        model.tangent_stiffness(u2),
+        rtol=1.0e-13,
+        atol=1.0e-10,
+    )
+
+
+def test_longitudinal_wave_configuration_is_symmetric():
+    model = longitudinal_wave_model(nx=20, ny=1, mass_type="lumped")
+    initial_displacement = gaussian_displacement(
+        model,
+        amplitude=1.0e-2,
+        width=0.30,
+        direction="axial",
+    )
+    zero_force = lambda _time: np.zeros(model.ndof)
+    state = model.initial_state(
+        displacement=initial_displacement,
+        external_force=zero_force,
+    )
+    wave_speed = longitudinal_wave_speed(model.material)
+    dx = model.mesh.length / model.mesh.nx
+    dt = 0.1 * dx / wave_speed
+    _times, displacements, _velocities = model.solve_explicit(
+        state,
+        dt=dt,
+        num_steps=10,
+        external_force=zero_force,
+    )
+    bottom_row_ux = displacements[-1, 0 : 2 * (model.mesh.nx + 1) : 2]
+    np.testing.assert_allclose(bottom_row_ux, bottom_row_ux[::-1], atol=1.0e-12)
 
 
 def test_velocity_primary_newmark_smoke():
