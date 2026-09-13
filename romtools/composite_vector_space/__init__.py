@@ -47,6 +47,8 @@ from typing import List
 import numpy as np
 from romtools.vector_space import VectorSpace
 
+__all__ = ["CompositeVectorSpace"]
+
 
 class CompositeVectorSpace:
     '''
@@ -102,26 +104,29 @@ class CompositeVectorSpace:
                ), "Error constructing composite vector space, not all spaces have the same spatial dimension"
 
     def __construct_global_shift_vector(self):
-        # Constructs the shift vector for the composite vector space
-        shift_vector = self.__compact_shift_vector[0]
-        for local_shift_vector in self.__compact_shift_vector[1:]:
-            shift_vector = np.append(shift_vector, local_shift_vector, axis=0)
-        return shift_vector
+        # Constructs the full shift vector
+        return np.concatenate(self.__compact_shift_vector, axis=0)
 
     def __construct_full_basis(self):
-        # Constructs a dense basis for the composite vector space
-        basis = np.zeros((self.__extent[0], self.__extent[1], self.__extent[2]))
-        start_var_index = 0
-        start_basis_index = 0
+        # Constructs a full block-diagonal basis from the compact bases
+        full_basis = np.zeros(self.__extent, dtype=self.__compact_basis[0].dtype)
+        var_offset = 0
+        basis_offset = 0
         for local_basis in self.__compact_basis:
-            dim = local_basis.shape
-            basis[start_var_index:start_var_index+dim[0], :, start_basis_index:start_basis_index+dim[2]] = local_basis
-            start_var_index += dim[0]
-            start_basis_index += dim[2]
-        return basis
+            n_vars, _, n_basis = local_basis.shape
+            full_basis[
+                var_offset:var_offset+n_vars,
+                :,
+                basis_offset:basis_offset+n_basis,
+            ] = local_basis
+            var_offset += n_vars
+            basis_offset += n_basis
+        return full_basis
 
     def __construct_compact_basis(self, list_of_vector_spaces):
-        # Constructs a list of bases.
-        # This is much more efficient in terms of memory
-        self.__compact_basis = [space.get_basis() for space in list_of_vector_spaces]
-        self.__compact_shift_vector = [space.get_shift_vector() for space in list_of_vector_spaces]
+        self.__compact_basis = [
+            vector_space.get_basis() for vector_space in list_of_vector_spaces
+        ]
+        self.__compact_shift_vector = [
+            vector_space.get_shift_vector() for vector_space in list_of_vector_spaces
+        ]
