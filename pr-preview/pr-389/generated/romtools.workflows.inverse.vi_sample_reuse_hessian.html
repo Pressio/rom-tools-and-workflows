@@ -486,12 +486,12 @@
 <span id="romtools-workflows-inverse-vi-sample-reuse-hessian"></span><h1>romtools.workflows.inverse.vi_sample_reuse_hessian<a class="headerlink" href="#module-romtools.workflows.inverse.vi_sample_reuse_hessian" title="Link to this heading">#</a></h1>
 <p>Newton/Hessian support for importance-sampling VI sample reuse.</p>
 <p>This module extends <code class="xref py py-mod docutils literal notranslate"><span class="pre">vi_sample_reuse</span></code> without changing the first-pass
-archive implementation.  Reused FOM evaluations are combined with current
+archive implementation. Reused FOM evaluations are combined with current
 score-function Hessian factors using the same deterministic-mixture importance
-weights as the gradient.  The existing VI/MFVI Newton solvers, curvature
+weights as the gradient. The existing VI/MFVI Newton solvers, curvature
 strategies, absolute-Hessian treatment, and multifidelity gain machinery remain
 responsible for constructing the optimization step.</p>
-<p>The extension is installed for side effects by <code class="docutils literal notranslate"><span class="pre">inverse.__init__</span></code>.  Keeping
+<p>The extension is installed for side effects by <code class="docutils literal notranslate"><span class="pre">inverse.__init__</span></code>. Keeping
 it separate makes the Hessian-specific assumptions explicit while the sample
 reuse API is still experimental.</p>
 </section>
