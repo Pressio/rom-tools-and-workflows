@@ -73,5 +73,8 @@ for _module_name, _functions, _old_name in (
     ("inverse.mf_vi_drivers", ("run_mf_vi", "mf_vi_with_auto_rom"), "absolute_vi_directory"),
 ):
     _module = _import_module(f"romtools.workflows.{_module_name}")
+    _package = _import_module(f"romtools.workflows.{_module_name.rsplit('.', 1)[0]}")
     for _function in _functions:
-        globals()[_function] = _patch_work_dir(_module, _function, _old_name)
+        _wrapped = _patch_work_dir(_module, _function, _old_name)
+        setattr(_package, _function, _wrapped)
+        globals()[_function] = _wrapped
