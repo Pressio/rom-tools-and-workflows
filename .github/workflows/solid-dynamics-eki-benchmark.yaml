@@ -1,0 +1,40 @@
+name: solid-dynamics-eki-benchmark
+
+on:
+  pull_request:
+    paths:
+      - "examples/solid_dynamics_eki_mf_eki/**"
+      - "docs/source/demos/solid_dynamics_eki_mf_eki_demo.rst"
+      - ".github/workflows/solid-dynamics-eki-benchmark.yaml"
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install romtools
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+      - name: Run full solid-dynamics EKI/MF-EKI benchmark
+        env:
+          MPLBACKEND: Agg
+        run: |
+          mkdir -p benchmark-results
+          python examples/solid_dynamics_eki_mf_eki/example.py \
+            --work-dir benchmark-work \
+            --output-dir benchmark-results \
+            | tee benchmark-results/full_benchmark.log
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solid-dynamics-eki-benchmark-results
+          path: benchmark-results
+          if-no-files-found: warn
