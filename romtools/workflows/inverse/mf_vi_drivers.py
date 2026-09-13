@@ -126,7 +126,9 @@ from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
+    AdamSolver,
     SteepestDescentSolver,
+    VIAdamOptimizerConfig,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -1653,9 +1655,10 @@ def run_mf_vi(model: QoiModel,
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
-            options are 'gradient' and 'newton'.
+            options are 'gradient', 'adam', and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
+            `VIAdamOptimizerConfig` for optimizer_method='adam', and
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
             are 'legacy' and 'stochastic_nonmonotone'. Defaults to
@@ -1717,6 +1720,7 @@ def run_mf_vi(model: QoiModel,
         optimizer_config,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
+        VIAdamOptimizerConfig(),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
@@ -1731,8 +1735,28 @@ def run_mf_vi(model: QoiModel,
         ),
     )
 
+    if optimization_method == 'adam':
+        line_search_method = 'legacy'
+        resolved_line_search_config = VILegacyLineSearchConfig(
+            initial_step_size=1.0,
+            max_step_size=1.0,
+            step_size_growth_factor=1.0,
+            step_size_decay_factor=1.0,
+            max_step_size_decrease_trys=0,
+            relaxation_parameter=1.0,
+            line_search_sample_growth_factor=1.0,
+            log_std_learning_rate_factor=1.0,
+        )
+        if restart_file is not None:
+            warnings.warn(
+                "Adam optimizer moments are not stored in MF-VI restart files; "
+                "restarting resets the Adam first- and second-moment state.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
     gradient_method = 'standard'
-    if optimization_method == 'gradient':
+    if optimization_method in ('gradient', 'adam'):
         gradient_method = resolved_optimizer_config.gradient_method
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
@@ -2355,7 +2379,11 @@ def run_mf_vi(model: QoiModel,
 
     iteration += 1
     step_failed_counter = 0
-    steepest_descent_solver = SteepestDescentSolver()
+    steepest_descent_solver = (
+        AdamSolver.from_config(resolved_optimizer_config)
+        if optimization_method == 'adam'
+        else SteepestDescentSolver()
+    )
     elbo_converged = False
     independent_hessian_cache = None
 
@@ -2459,7 +2487,7 @@ def run_mf_vi(model: QoiModel,
                 )
 
         line_search_predicted_slope = 0.0
-        if optimization_method == 'gradient':
+        if optimization_method in ('gradient', 'adam'):
             gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
             step = steepest_descent_solver.step(gradient)
             dimensionality = state['update_direction_mean'].size
@@ -2594,7 +2622,9 @@ def run_mf_vi(model: QoiModel,
             dispatcher=dispatcher,
         )
 
-        if line_search_method == 'legacy':
+        if optimization_method == 'adam':
+            accept_step = True
+        elif line_search_method == 'legacy':
             allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
             accept_step = test_state['elbo'] >= state['elbo'] - allowable_elbo_drop
         else:

@@ -53,6 +53,11 @@ Carlo samples from the current variational distribution. Because only
 :math:`\nabla_{\zeta}\log q` is needed, the forward model itself is treated as
 derivative-free.
 
+When ``optimizer_method="adam"``, the selected score gradient (standard or
+natural/Fisher-preconditioned) is passed to a stateful Adam ascent update.
+The Adam default uses the natural gradient and the ABRIS initial learning-rate
+convention :math:`0.1/d`, where :math:`d` is the parameter dimension.
+
 When ``optimizer_method="newton"``, the routine also forms a second-order
 score-function estimator for curvature:
 
@@ -134,8 +139,10 @@ from romtools.workflows.parameter_spaces import (
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration
 from romtools.workflows.inverse._inverse_utils import bound_samples
 from romtools.workflows.inverse.vi_optimization_methods import (
+    AdamSolver,
     NewtonSolver,
     SteepestDescentSolver,
+    VIAdamOptimizerConfig,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -1983,9 +1990,10 @@ def run_vi(model: QoiModel,
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
-            options are 'gradient' and 'newton'.
+            options are 'gradient', 'adam', and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
+            `VIAdamOptimizerConfig` for optimizer_method='adam', and
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
             are 'legacy' and 'stochastic_nonmonotone'. Defaults to
@@ -2057,6 +2065,7 @@ def run_vi(model: QoiModel,
         optimizer_config,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(),
+        VIAdamOptimizerConfig(),
     )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
@@ -2065,8 +2074,29 @@ def run_vi(model: QoiModel,
         VIStochasticNonmonotoneLineSearchConfig(),
     )
 
+    if optimization_method == 'adam':
+        line_search_method = 'legacy'
+        resolved_line_search_config = VILegacyLineSearchConfig(
+            initial_step_size=1.0,
+            max_step_size=1.0,
+            step_size_growth_factor=1.0,
+            step_size_decay_factor=1.0,
+            max_step_size_decrease_trys=0,
+            relaxation_parameter=1.0,
+            line_search_objective='elbo',
+            line_search_sample_growth_factor=1.0,
+            log_std_learning_rate_factor=1.0,
+        )
+        if restart_file is not None:
+            warnings.warn(
+                "Adam optimizer moments are not stored in VI restart files; "
+                "restarting resets the Adam first- and second-moment state.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
     gradient_method = 'standard'
-    if optimization_method == 'gradient':
+    if optimization_method in ('gradient', 'adam'):
         gradient_method = resolved_optimizer_config.gradient_method
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
@@ -2613,7 +2643,11 @@ def run_vi(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     line_search_standard_normal_cache = None
-    steepest_descent_solver = SteepestDescentSolver()
+    steepest_descent_solver = (
+        AdamSolver.from_config(resolved_optimizer_config)
+        if optimization_method == 'adam'
+        else SteepestDescentSolver()
+    )
     elbo_converged = False
     independent_hessian_cache = None
 
@@ -2701,7 +2735,7 @@ def run_vi(model: QoiModel,
                     newton_hessian_averaging_factor,
                 )
 
-        if optimization_method == 'gradient':
+        if optimization_method in ('gradient', 'adam'):
             gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
             step = steepest_descent_solver.step(gradient)
             dimensionality = state['update_direction_mean'].size
@@ -2769,7 +2803,10 @@ def run_vi(model: QoiModel,
                 dispatcher,
             )
 
-            if line_search_objective == 'elbo':
+            if optimization_method == 'adam':
+                test_state = test_candidate['state']
+                accept_step = True
+            elif line_search_objective == 'elbo':
                 test_state = test_candidate['state']
                 if line_search_method == 'legacy':
                     allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
