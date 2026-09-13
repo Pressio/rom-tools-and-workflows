@@ -48,12 +48,4 @@ Implementation of basic sampling workflow. Given a parameter space :math:`\\math
 run our model for each sample.
 '''
 
-from importlib import import_module as _import_module
-
 from romtools.workflows.sampling.sampling import *
-from romtools.workflows._work_dir_compat import patch_work_dir_argument
-
-_sampling = _import_module("romtools.workflows.sampling.sampling")
-run_sampling = patch_work_dir_argument(
-    _sampling, "run_sampling", "absolute_sampling_directory"
-)
