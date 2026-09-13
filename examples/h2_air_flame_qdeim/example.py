@@ -17,8 +17,15 @@ from h2_air_flame import H2AirFlame  # noqa: E402
 
 
 def _rhs_snapshots(model, states, parameters):
-    snapshots = [model.rhs(state, *parameters).reshape(-1) for state in states]
-    return np.column_stack(snapshots)
+    snapshots = [
+        np.reshape(
+            model.rhs(state, *parameters),
+            (len(model.field_names), model.nx * model.ny),
+            order="C",
+        )
+        for state in states
+    ]
+    return np.stack(snapshots, axis=2)
 
 
 def main(smoke=False):
@@ -49,27 +56,32 @@ def main(smoke=False):
         model, training_states, training_parameters
     )
 
-    # QDEIM shares the DEIM reconstruction API; only the default point
-    # selection changes to a pivoted-QR selection of interpolation points.
+    # Use a separate POD/QDEIM basis for each field. Pivoted QR is applied to
+    # each basis independently, then the selected spatial points are unioned.
     qdeim = QDEIM.from_snapshots(
         rhs_training_snapshots,
         truncater=BasisSizeTruncater(basis_dimension),
+        basis_mode="per_state",
     )
 
     test_states, _ = model.solve(*test_parameters)
     rhs_test_snapshots = _rhs_snapshots(model, test_states, test_parameters)
 
     relative_errors = []
-    for rhs in rhs_test_snapshots.T:
-        sampled_rhs = rhs[qdeim.sample_indices]
+    for snapshot_index in range(rhs_test_snapshots.shape[2]):
+        rhs = rhs_test_snapshots[:, :, snapshot_index]
+        sampled_rhs = rhs[:, qdeim.sample_indices]
         reconstructed_rhs = qdeim.reconstruct(sampled_rhs)
         denominator = max(np.linalg.norm(rhs), np.finfo(float).eps)
         relative_errors.append(
             np.linalg.norm(reconstructed_rhs - rhs) / denominator
         )
 
-    print(f"Full RHS dimension: {rhs_test_snapshots.shape[0]}")
-    print(f"QDEIM sample points: {qdeim.sample_indices.size}")
+    full_rhs_dimension = rhs_test_snapshots.shape[0] * rhs_test_snapshots.shape[1]
+    print(f"Full RHS dimension: {full_rhs_dimension}")
+    print(f"Per-state basis sizes: {qdeim.basis_sizes}")
+    print(f"QDEIM spatial sample points: {qdeim.sample_indices.size}")
+    print(f"Sampled state entries: {rhs_test_snapshots.shape[0] * qdeim.sample_indices.size}")
     print(f"Mean relative RHS reconstruction error: {np.mean(relative_errors):.3e}")
     print(f"Max relative RHS reconstruction error: {np.max(relative_errors):.3e}")
 
