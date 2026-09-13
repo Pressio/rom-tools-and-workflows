@@ -16,6 +16,5 @@ romtools.workflows.inverse
    eki_drivers
    mf_eki_drivers
    mf_vi_drivers
-   vi_adam_integration
    vi_drivers
    vi_optimization_methods
