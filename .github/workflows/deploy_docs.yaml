@@ -43,6 +43,8 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y pandoc
       - run: pip install .[docs]
+      - name: Generate solid dynamics documentation media
+        run: python examples/nonlinear_solid_dynamics/generate_docs_media.py
       - run: sphinx-build -b html docs/source docs/build/html
       - name: Disable Jekyll processing
         run: touch docs/build/html/.nojekyll
@@ -116,6 +118,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pandoc
           pip install .[docs]
+          python examples/nonlinear_solid_dynamics/generate_docs_media.py
           sphinx-build -b html docs/source docs/build/html
           touch docs/build/html/.nojekyll
 
