@@ -11,8 +11,8 @@ romtools currently supports:
 - Ensemble Kalman inversion (EKI) for derivative-free parameter calibration.
 - Multifidelity EKI with control variates and adaptive reduced-order model
   refresh strategies.
-- Variational inference (VI) with gradient and Newton optimizers for Gaussian
-  variational families.
+- Variational inference (VI) with gradient, Adam, and Newton optimizers for
+  Gaussian variational families.
 - Multifidelity VI with control variates and adaptive reduced-order model
   updates.
 """

@@ -126,7 +126,9 @@ from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
 from romtools.workflows.inverse.vi_optimization_methods import (
+    AdamSolver,
     SteepestDescentSolver,
+    VIAdamOptimizerConfig,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -147,6 +149,8 @@ from romtools.workflows.inverse.vi_drivers import (
     _clip_variational_log_std,
     _enforce_variational_log_std_bounds,
     _compute_gradient_norm,
+    _compute_adam_fisher_diagonal,
+    _compute_adam_diagnostics,
     _compute_leave_one_out_baseline,
     _compute_log_likelihoods,
     _compute_log_likelihood_precision_operator,
@@ -836,6 +840,8 @@ def _save_mf_vi_restart(restart_path: str,
                         newton_hessian_averaging_factor: float = 0.9,
                         running_hessian: np.ndarray = None,
                         accepted_elbo_history=None,
+                        adam_restart_data=None,
+                        adam_gradient_method: str = None,
                         dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
@@ -930,6 +936,9 @@ def _save_mf_vi_restart(restart_path: str,
         save_data.update(_pack_vi_history(vi_history))
     if variational_correlation_cholesky is not None:
         save_data['variational_correlation_cholesky'] = variational_correlation_cholesky
+    if adam_restart_data is not None:
+        save_data.update(adam_restart_data)
+        save_data['adam_gradient_method'] = adam_gradient_method
     resolve_dispatcher(dispatcher).np_savez(restart_path, **save_data)
 
 
@@ -1653,9 +1662,10 @@ def run_mf_vi(model: QoiModel,
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
-            options are 'gradient' and 'newton'.
+            options are 'gradient', 'adam', and 'newton'.
         optimizer_config: Method-specific optimizer config. Expected types are
             `VIGradientOptimizerConfig` for optimizer_method='gradient',
+            `VIAdamOptimizerConfig` for optimizer_method='adam', and
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
             are 'legacy' and 'stochastic_nonmonotone'. Defaults to
@@ -1717,7 +1727,13 @@ def run_mf_vi(model: QoiModel,
         optimizer_config,
         VIGradientOptimizerConfig(),
         VINewtonOptimizerConfig(newton_regularization=1e-8),
+        VIAdamOptimizerConfig(),
     )
+    if optimization_method == 'adam' and line_search_config is not None:
+        raise ValueError(
+            "line_search_config is not supported with optimizer_method='adam'; "
+            "Adam supplies the complete update step."
+        )
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
         line_search_config,
@@ -1731,8 +1747,20 @@ def run_mf_vi(model: QoiModel,
         ),
     )
 
+    if optimization_method == 'adam':
+        line_search_method = 'legacy'
+        resolved_line_search_config = VILegacyLineSearchConfig(
+            initial_step_size=1.0,
+            max_step_size=1.0,
+            step_size_growth_factor=1.0,
+            step_size_decay_factor=1.0,
+            max_step_size_decrease_trys=0,
+            relaxation_parameter=1.0,
+            line_search_sample_growth_factor=1.0,
+            log_std_learning_rate_factor=1.0,
+        )
     gradient_method = 'standard'
-    if optimization_method == 'gradient':
+    if optimization_method in ('gradient', 'adam'):
         gradient_method = resolved_optimizer_config.gradient_method
     gradient_norm_tolerance = resolved_optimizer_config.gradient_norm_tolerance
     max_iterations = resolved_optimizer_config.max_iterations
@@ -1812,6 +1840,15 @@ def run_mf_vi(model: QoiModel,
         prior_parameter_space,
         initial_variational_parameter_space,
     )
+    if (
+        optimization_method == 'adam'
+        and gradient_method == 'natural'
+        and variational_distribution == 'multivariate'
+    ):
+        raise NotImplementedError(
+            "Natural-gradient Adam is not supported for correlated multivariate "
+            "Gaussian MF-VI. Use VIAdamOptimizerConfig(gradient_method='standard') instead."
+        )
     sampling_method = _normalize_sampling_method(sampling_method)
     correlation_estimator = _normalize_correlation_estimator(correlation_estimator)
     if baseline_method is None:
@@ -2262,6 +2299,21 @@ def run_mf_vi(model: QoiModel,
         else [float(state['elbo'])]
     )
 
+    steepest_descent_solver = (
+        AdamSolver.from_config(resolved_optimizer_config)
+        if optimization_method == 'adam'
+        else SteepestDescentSolver()
+    )
+    if optimization_method == 'adam' and restart_file is not None:
+        if 'adam_gradient_method' not in restart_data:
+            raise ValueError("restart_file is missing Adam gradient-method state.")
+        restart_adam_gradient_method = str(restart_data['adam_gradient_method'].item())
+        if restart_adam_gradient_method != gradient_method:
+            raise ValueError(
+                "restart_file adam_gradient_method does not match current Adam config."
+            )
+        steepest_descent_solver.load_restart_state_dict(restart_data)
+
     _save_mf_vi_restart(
         f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
         state,
@@ -2291,11 +2343,27 @@ def run_mf_vi(model: QoiModel,
         newton_hessian_averaging_factor=newton_hessian_averaging_factor,
         running_hessian=running_hessian,
         accepted_elbo_history=accepted_elbo_history,
+        adam_restart_data=(
+            steepest_descent_solver.restart_state_dict()
+            if optimization_method == 'adam' else None
+        ),
+        adam_gradient_method=(gradient_method if optimization_method == 'adam' else None),
         dispatcher=dispatcher,
     )
     _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
 
-    gradient_norm = _compute_gradient_norm(state, optimization_method)
+    if optimization_method == 'adam':
+        adam_learning_rate, gradient_norm = _compute_adam_diagnostics(
+            steepest_descent_solver,
+            state,
+            variational_log_std,
+            min_variational_std,
+            max_variational_std,
+            gradient_method,
+        )
+    else:
+        adam_learning_rate = None
+        gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
     cpu_time = time.process_time() - start_cpu_time
     if len(vi_history['cpu_time_seconds']) <= iteration:
@@ -2317,11 +2385,17 @@ def run_mf_vi(model: QoiModel,
         )
     alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
     alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
+    optimizer_status = (
+        f'Adam learning rate: {adam_learning_rate:.5e}, '
+        f'Adam input gradient norm: {gradient_norm:.5f}'
+        if optimization_method == 'adam'
+        else f'Step size: {step_size:.5f}, Gradient norm: {gradient_norm:.5f}'
+    )
     print(
         f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
         f'ELBO: {state["elbo"]:.5f}, ROM err: {state["rom_error"]:.5f}, '
         f'alpha_mean: {alpha_mean_scalar:.5f}, alpha_logstd: {alpha_log_scalar:.5f}, '
-        f'Step size: {step_size:.5f}, Gradient norm: {gradient_norm:.5f}, Wall time: {wall_time:.5f}'
+        f'{optimizer_status}, Wall time: {wall_time:.5f}'
     )
     _print_gradient_signal_to_noise_ratio(state)
     _print_vi_parameters(
@@ -2355,7 +2429,6 @@ def run_mf_vi(model: QoiModel,
 
     iteration += 1
     step_failed_counter = 0
-    steepest_descent_solver = SteepestDescentSolver()
     elbo_converged = False
     independent_hessian_cache = None
 
@@ -2459,9 +2532,23 @@ def run_mf_vi(model: QoiModel,
                 )
 
         line_search_predicted_slope = 0.0
-        if optimization_method == 'gradient':
-            gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
-            step = steepest_descent_solver.step(gradient)
+        if optimization_method in ('gradient', 'adam'):
+            if optimization_method == 'adam':
+                gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
+                fisher_diagonal = _compute_adam_fisher_diagonal(
+                    variational_log_std,
+                    min_variational_std,
+                    max_variational_std,
+                    gradient_method,
+                )
+                step = steepest_descent_solver.step(
+                    gradient, fisher_diagonal=fisher_diagonal
+                )
+            else:
+                gradient = np.concatenate([
+                    state['update_direction_mean'], state['update_direction_log_std']
+                ])
+                step = steepest_descent_solver.step(gradient)
             dimensionality = state['update_direction_mean'].size
             direction_mean = step[:dimensionality]
             direction_log_std = step[dimensionality:]
@@ -2594,7 +2681,9 @@ def run_mf_vi(model: QoiModel,
             dispatcher=dispatcher,
         )
 
-        if line_search_method == 'legacy':
+        if optimization_method == 'adam':
+            accept_step = True
+        elif line_search_method == 'legacy':
             allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
             accept_step = test_state['elbo'] >= state['elbo'] - allowable_elbo_drop
         else:
@@ -2632,7 +2721,17 @@ def run_mf_vi(model: QoiModel,
 
             step_size = min(step_size * step_size_growth_factor, max_step_size)
 
-            gradient_norm = _compute_gradient_norm(state, optimization_method)
+            if optimization_method == 'adam':
+                adam_learning_rate, gradient_norm = _compute_adam_diagnostics(
+                    steepest_descent_solver,
+                    state,
+                    variational_log_std,
+                    min_variational_std,
+                    max_variational_std,
+                    gradient_method,
+                )
+            else:
+                gradient_norm = _compute_gradient_norm(state, optimization_method)
             wall_time = time.time() - start_time
             cpu_time = time.process_time() - start_cpu_time
             _append_vi_history(
@@ -2653,12 +2752,17 @@ def run_mf_vi(model: QoiModel,
             )
             alpha_mean_scalar = float(np.mean(state['mfmc_alpha_mean']))
             alpha_log_scalar = float(np.mean(state['mfmc_alpha_log_std']))
+            optimizer_status = (
+                f'Adam learning rate: {adam_learning_rate:.5e}, '
+                f'Adam input gradient norm: {gradient_norm:.5f}'
+                if optimization_method == 'adam'
+                else f'Step size: {step_size:.5e}, Gradient norm: {gradient_norm:.5f}'
+            )
             print(
                 f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, ELBO: {state["elbo"]:.5f}, '
                 f'Relative ELBO (initial ref): {relative_elbo_improvement:.5e}, '
                 f'ROM err: {state["rom_error"]:.5f}, alpha_mean: {alpha_mean_scalar:.5f}, '
-                f'alpha_logstd: {alpha_log_scalar:.5f}, Step size: {step_size:.5e}, '
-                f'Gradient norm: {gradient_norm:.5f}, Wall time: {wall_time:.5f}'
+                f'alpha_logstd: {alpha_log_scalar:.5f}, {optimizer_status}, Wall time: {wall_time:.5f}'
             )
             _print_gradient_signal_to_noise_ratio(state)
             _print_vi_parameters(
@@ -2718,6 +2822,13 @@ def run_mf_vi(model: QoiModel,
                 newton_hessian_averaging_factor=newton_hessian_averaging_factor,
                 running_hessian=running_hessian,
                 accepted_elbo_history=accepted_elbo_history,
+                adam_restart_data=(
+                    steepest_descent_solver.restart_state_dict()
+                    if optimization_method == 'adam' else None
+                ),
+                adam_gradient_method=(
+                    gradient_method if optimization_method == 'adam' else None
+                ),
                 dispatcher=dispatcher,
             )
             _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
