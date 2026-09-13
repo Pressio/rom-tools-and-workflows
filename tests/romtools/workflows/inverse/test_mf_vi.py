@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse import mf_vi_drivers
+from romtools.workflows.inverse import mf_vi_drivers, vi_drivers
 from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
 
 
@@ -105,6 +105,72 @@ def test_compute_mfmc_alpha_scalar_mode_matches_isotropic_target():
         mode="scalar",
     )
     assert np.isclose(float(alpha_scalar), true_alpha, atol=1e-10)
+
+
+@pytest.mark.parametrize("mode", ["componentwise", "scalar", "matrix"])
+def test_joint_mfmc_fitted_alpha_is_zero_at_exact_hf_optimum(mode):
+    rng = np.random.default_rng(350)
+    mean = np.array([0.25])
+    std = np.array([0.9])
+    fom_samples = rng.normal(mean, std, size=(24, 1))
+    rom_extra_samples = rng.normal(mean, std, size=(64, 1))
+    fom_log_q = vi_drivers._compute_variational_log_densities(
+        fom_samples, mean, std
+    )
+    rom_extra_log_q = vi_drivers._compute_variational_log_densities(
+        rom_extra_samples, mean, std
+    )
+    rom_base_joint = fom_log_q + 0.15 * fom_samples[:, 0]
+    rom_extra_joint = rom_extra_log_q + 0.15 * rom_extra_samples[:, 0]
+
+    result = mf_vi_drivers._compute_mfmc_reinforce_gradients(
+        fom_samples,
+        fom_samples,
+        rom_extra_samples,
+        mean,
+        std,
+        fom_log_q + 2.0,
+        rom_base_joint,
+        rom_extra_joint,
+        baseline_method="loo",
+        use_mfmc_control_variate=True,
+        mfmc_control_variate_mode=mode,
+        score_function_entropy_strategy="joint",
+    )
+
+    assert np.linalg.norm(np.concatenate(result[:2])) < 1e-14
+    assert np.linalg.norm(np.asarray(result[4])) == 0.0
+    assert np.linalg.norm(np.asarray(result[5])) == 0.0
+
+
+def test_joint_mfmc_preserves_explicit_fixed_coefficient():
+    rng = np.random.default_rng(352)
+    mean = np.array([0.25])
+    std = np.array([0.9])
+    fom_samples = rng.normal(mean, std, size=(24, 1))
+    rom_extra_samples = rng.normal(mean, std, size=(64, 1))
+    fom_log_q = vi_drivers._compute_variational_log_densities(fom_samples, mean, std)
+    rom_extra_log_q = vi_drivers._compute_variational_log_densities(
+        rom_extra_samples, mean, std
+    )
+
+    result = mf_vi_drivers._compute_mfmc_reinforce_gradients(
+        fom_samples,
+        fom_samples,
+        rom_extra_samples,
+        mean,
+        std,
+        fom_log_q + 2.0,
+        fom_log_q + 0.2 * fom_samples[:, 0],
+        rom_extra_log_q + 0.2 * rom_extra_samples[:, 0],
+        baseline_method="loo",
+        use_mfmc_control_variate=False,
+        score_function_entropy_strategy="joint",
+    )
+
+    assert np.all(result[4] == 1.0)
+    assert np.all(result[5] == 1.0)
+    assert np.linalg.norm(np.concatenate(result[:2])) > 1e-5
 
 
 def test_run_mf_vi_rejects_removed_legacy_kwargs():
@@ -506,12 +572,22 @@ def test_run_mf_vi_restart_continues_optimization_with_minimal_restart(tmp_path)
         assert "vi_history_relative_mse" in history
         assert "vi_history_loglikelihood" in history
         assert "vi_history_cpu_time_seconds" in history
+        assert "vi_history_accepted_step_size" in history
+        assert "vi_history_gradient" in history
+        assert "vi_history_gradient_standard_error" in history
+        assert "vi_history_mfmc_alpha_mean" in history
+        assert "vi_history_mfmc_alpha_log_std" in history
         num_entries = history["vi_history_cpu_time_seconds"].shape[0]
         assert num_entries >= 1
         assert history["vi_history_variational_mean"].shape[0] == num_entries
         assert history["vi_history_variational_covariance"].shape[0] == num_entries
         assert history["vi_history_relative_mse"].shape[0] == num_entries
         assert history["vi_history_loglikelihood"].shape[0] == num_entries
+        assert history["vi_history_accepted_step_size"].shape[0] == num_entries
+        assert history["vi_history_gradient"].shape == (num_entries, 2)
+        assert history["vi_history_gradient_standard_error"].shape == (num_entries, 2)
+        assert history["vi_history_mfmc_alpha_mean"].shape[0] == num_entries
+        assert history["vi_history_mfmc_alpha_log_std"].shape[0] == num_entries
 
 
 @pytest.mark.mpi_skip
@@ -555,6 +631,7 @@ def test_run_mf_vi_accepts_matrix_control_variate_mode(tmp_path):
         ),
         use_mfmc_control_variate=True,
         mfmc_control_variate_mode="matrix",
+        score_function_entropy_strategy="joint",
         bounded_parameter_handling="transform",
         random_seed=17,
         fom_evaluation_concurrency=1,
@@ -566,6 +643,7 @@ def test_run_mf_vi_accepts_matrix_control_variate_mode(tmp_path):
     with np.load(restart_file, allow_pickle=True) as restart:
         assert "mfmc_control_variate_mode" in restart
         assert str(restart["mfmc_control_variate_mode"].item()) == "matrix"
+        assert str(restart["score_function_entropy_strategy"].item()) == "joint"
 
 
 @pytest.mark.mpi_skip
