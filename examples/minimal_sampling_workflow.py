@@ -36,7 +36,7 @@ def main() -> None:
     sample_dirs = sampling.run_sampling(
         model=ToyModel(),
         parameter_space=parameter_space,
-        absolute_sampling_directory=str(output_dir),
+        absolute_work_dir=str(output_dir),
         number_of_samples=3,
         random_seed=1,
     )
