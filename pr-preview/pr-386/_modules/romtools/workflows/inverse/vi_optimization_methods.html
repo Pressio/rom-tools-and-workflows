@@ -400,11 +400,11 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">VIAdamOptimizerConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Configuration for Adam-based stochastic ELBO maximization.</span>
 
-<span class="sd">    By default Adam is applied to the natural gradient. For the Gaussian</span>
-<span class="sd">    variational parameterization used by the VI drivers this corresponds to</span>
-<span class="sd">    preconditioning the mean gradient by ``std**2`` and the log-standard-</span>
-<span class="sd">    deviation gradient by ``1/2``. When ``learning_rate`` is ``None``, the</span>
-<span class="sd">    ABRIS convention ``0.1 / parameter_dimension`` is used.</span>
+<span class="sd">    By default Adam is applied to the mean-field Gaussian natural gradient.</span>
+<span class="sd">    Following the ABRIS setup, the Fisher matrix is damped early in the</span>
+<span class="sd">    optimization and the preconditioned gradient is clipped by its L2 norm.</span>
+<span class="sd">    When ``learning_rate`` is ``None``, the ABRIS convention</span>
+<span class="sd">    ``0.1 / parameter_dimension`` is used.</span>
 <span class="sd">    """</span>
 
     <span class="n">gradient_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'natural'</span>
@@ -413,6 +413,10 @@
     <span class="n">beta1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
     <span class="n">beta2</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.999</span>
     <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span>
+    <span class="n">fisher_damping_initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span>
+    <span class="n">fisher_damping_decay_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">fisher_damping_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="n">gradient_clip_norm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e6</span>
     <span class="n">gradient_norm_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span>
     <span class="n">max_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
     <span class="n">max_log_std_update</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
@@ -641,6 +645,10 @@
                  <span class="n">beta1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
                  <span class="n">beta2</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.999</span><span class="p">,</span>
                  <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">,</span>
+                 <span class="n">fisher_damping_initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span>
+                 <span class="n">fisher_damping_decay_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+                 <span class="n">fisher_damping_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+                 <span class="n">gradient_clip_norm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">,</span>
                  <span class="n">parameter_dimension</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">learning_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">learning_rate</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"learning_rate must be positive when provided."</span><span class="p">)</span>
@@ -652,6 +660,18 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"beta2 must be in [0, 1)."</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">epsilon</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"epsilon must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_initial</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_initial must be nonnegative."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_decay_start</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_decay_start must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_min</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"fisher_damping_min must be nonnegative."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_damping_min</span> <span class="o">&gt;</span> <span class="n">fisher_damping_initial</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"fisher_damping_min cannot exceed fisher_damping_initial."</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">gradient_clip_norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">gradient_clip_norm</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"gradient_clip_norm must be positive or None."</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">parameter_dimension</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"parameter_dimension must be positive when provided."</span><span class="p">)</span>
 
@@ -660,6 +680,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">beta1</span> <span class="o">=</span> <span class="n">beta1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta2</span> <span class="o">=</span> <span class="n">beta2</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span> <span class="o">=</span> <span class="n">fisher_damping_initial</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fisher_damping_decay_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span> <span class="o">=</span> <span class="n">fisher_damping_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="o">=</span> <span class="n">gradient_clip_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="o">=</span> <span class="n">parameter_dimension</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="kc">None</span>
@@ -673,6 +697,10 @@
             <span class="n">beta1</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">beta1</span><span class="p">,</span>
             <span class="n">beta2</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">beta2</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">epsilon</span><span class="p">,</span>
+            <span class="n">fisher_damping_initial</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_initial</span><span class="p">,</span>
+            <span class="n">fisher_damping_decay_start</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">,</span>
+            <span class="n">fisher_damping_min</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">,</span>
+            <span class="n">gradient_clip_norm</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolved_learning_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
@@ -687,9 +715,37 @@
             <span class="n">parameter_dimension</span> <span class="o">=</span> <span class="n">gradient</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="mi">2</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate_scale</span> <span class="o">/</span> <span class="n">parameter_dimension</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_current_fisher_damping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span>
+        <span class="n">decay_exponent</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_decay_start</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_initial</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">decay_exponent</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fisher_diagonal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fisher_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fisher_diagonal</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fisher_diagonal</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">gradient</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Fisher diagonal must have the same shape as gradient."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">fisher_diagonal</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Fisher diagonal entries must be nonnegative."</span><span class="p">)</span>
+            <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="n">fisher_diagonal</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_fisher_damping</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">gradient_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">gradient_norm</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span><span class="p">:</span>
+                <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="o">/</span> <span class="n">gradient_norm</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gradient</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>

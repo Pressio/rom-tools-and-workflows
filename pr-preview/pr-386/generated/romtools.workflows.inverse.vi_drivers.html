@@ -534,10 +534,11 @@ gradients through the PDE model:</p>
 Carlo samples from the current variational distribution. Because only
 <span class="math notranslate nohighlight">\(\nabla_{\zeta}\log q\)</span> is needed, the forward model itself is treated as
 derivative-free.</p>
-<p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;adam&quot;</span></code>, the selected score gradient (standard or
-natural/Fisher-preconditioned) is passed to a stateful Adam ascent update.
-The Adam default uses the natural gradient and the ABRIS initial learning-rate
-convention <span class="math notranslate nohighlight">\(0.1/d\)</span>, where <span class="math notranslate nohighlight">\(d\)</span> is the parameter dimension.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;adam&quot;</span></code>, the selected score gradient is passed to a
+stateful Adam ascent update. By default, the raw score gradient is
+preconditioned with the damped mean-field Gaussian Fisher matrix before Adam,
+matching the ABRIS setup; the default initial learning rate is <span class="math notranslate nohighlight">\(0.1/d\)</span>,
+where <span class="math notranslate nohighlight">\(d\)</span> is the parameter dimension.</p>
 <p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;newton&quot;</span></code>, the routine also forms a second-order
 score-function estimator for curvature:</p>
 <div class="math notranslate nohighlight">
