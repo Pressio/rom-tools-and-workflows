@@ -50,4 +50,16 @@ we run N FOM samples and then iteratively build up the ROM until
 the error in a QoI over the holdout set is below a specified tolerance.
 '''
 
+from importlib import import_module as _import_module
+
 from romtools.workflows.sampling_with_holdout.sampling_with_holdout import *
+from romtools.workflows._work_dir_compat import patch_work_dir_argument
+
+_sampling_with_holdout = _import_module(
+    "romtools.workflows.sampling_with_holdout.sampling_with_holdout"
+)
+run_sampling_with_holdout = patch_work_dir_argument(
+    _sampling_with_holdout,
+    "run_sampling_with_holdout",
+    "absolute_work_directory",
+)
