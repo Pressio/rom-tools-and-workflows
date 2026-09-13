@@ -48,14 +48,16 @@ A lightweight 2-D solid dynamics reference model is also provided:
 - `nonlinear_solid_dynamics.py`: structured Q4 total-Lagrangian finite-element
   solver with a compressible Neo-Hookean material, explicit velocity-Verlet and
   implicit velocity-primary Newmark integration.
-- `solid_dynamics.py`: common material-model facade adding small-strain isotropic
-  linear elasticity while reusing the same mesh, operators, and time integrators.
+- `solid_dynamics.py`: common facade adding small-strain isotropic linear
+  elasticity, shared model constructors, Gaussian initial conditions, and the
+  analytic two-way Gaussian wave solution used for convergence checks.
 - `nonlinear_solid_dynamics_model.py`: parameterized cantilever QoI wrapper for
-  romtools workflows; the wrapper can use either Neo-Hookean or linear elasticity.
+  romtools workflows.
 
-User-facing beam, doubly clamped Gaussian-perturbation, longitudinal linear-wave,
-and published benchmark examples live in `examples/nonlinear_solid_dynamics`.
-See `docs/source/demos/nonlinear_solid_dynamics.rst` for the formulation and
+User-facing beam, doubly clamped Gaussian-perturbation, analytic linear-wave
+convergence, and published nonlinear benchmark examples live in
+`examples/nonlinear_solid_dynamics`. See
+`docs/source/demos/nonlinear_solid_dynamics.rst` for the formulation and
 validation notes.
 
 ## Notes
