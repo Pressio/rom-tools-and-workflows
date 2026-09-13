@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/solid-dynamics-fom-timing.yaml"
+      - "examples/models/sparse_solid_dynamics.py"
 
 jobs:
   timing:
@@ -26,6 +27,11 @@ jobs:
           python - <<'PY'
           import sys
           import time
+
+          sys.path.insert(0, "examples/models")
+          from nonlinear_solid_dynamics import NonlinearSolid2D
+          from sparse_solid_dynamics import enable_sparse_implicit_solver
+          enable_sparse_implicit_solver(NonlinearSolid2D)
 
           sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
           import example as mod
