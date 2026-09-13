@@ -719,12 +719,12 @@ therefore be used when comparing DEIM and QDEIM in an application.</p>
 <span class="linenos">56</span>        <span class="n">model</span><span class="p">,</span> <span class="n">training_states</span><span class="p">,</span> <span class="n">training_parameters</span>
 <span class="linenos">57</span>    <span class="p">)</span>
 <span class="linenos">58</span>
-<span class="linenos">59</span>    <span class="c1"># QDEIM shares the tensor-native DEIM reconstruction API; only the initial</span>
-<span class="linenos">60</span>    <span class="c1"># scalar point selection changes to pivoted QR. Shared-state sampling remains</span>
-<span class="linenos">61</span>    <span class="c1"># the default, so every field is evaluated at each selected spatial point.</span>
-<span class="linenos">62</span>    <span class="n">qdeim</span> <span class="o">=</span> <span class="n">QDEIM</span><span class="o">.</span><span class="n">from_snapshots</span><span class="p">(</span>
-<span class="linenos">63</span>        <span class="n">rhs_training_snapshots</span><span class="p">,</span>
-<span class="linenos">64</span>        <span class="n">truncater</span><span class="o">=</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="n">basis_dimension</span><span class="p">),</span>
+<span class="linenos">59</span>    <span class="c1"># Use a separate POD/QDEIM basis for each field. Pivoted QR is applied to</span>
+<span class="linenos">60</span>    <span class="c1"># each basis independently, then the selected spatial points are unioned.</span>
+<span class="linenos">61</span>    <span class="n">qdeim</span> <span class="o">=</span> <span class="n">QDEIM</span><span class="o">.</span><span class="n">from_snapshots</span><span class="p">(</span>
+<span class="linenos">62</span>        <span class="n">rhs_training_snapshots</span><span class="p">,</span>
+<span class="linenos">63</span>        <span class="n">truncater</span><span class="o">=</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="n">basis_dimension</span><span class="p">),</span>
+<span class="linenos">64</span>        <span class="n">basis_mode</span><span class="o">=</span><span class="s2">"per_state"</span><span class="p">,</span>
 <span class="linenos">65</span>    <span class="p">)</span>
 <span class="linenos">66</span>
 <span class="linenos">67</span>    <span class="n">test_states</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">*</span><span class="n">test_parameters</span><span class="p">)</span>
@@ -742,23 +742,24 @@ therefore be used when comparing DEIM and QDEIM in an application.</p>
 <span class="linenos">79</span>
 <span class="linenos">80</span>    <span class="n">full_rhs_dimension</span> <span class="o">=</span> <span class="n">rhs_test_snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">rhs_test_snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="linenos">81</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Full RHS dimension: </span><span class="si">{</span><span class="n">full_rhs_dimension</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">82</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"QDEIM spatial sample points: </span><span class="si">{</span><span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">83</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sampled state entries: </span><span class="si">{</span><span class="n">rhs_test_snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">84</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean relative RHS reconstruction error: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">relative_errors</span><span class="p">)</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">85</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Max relative RHS reconstruction error: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">relative_errors</span><span class="p">)</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="linenos">86</span>
+<span class="linenos">82</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Per-state basis sizes: </span><span class="si">{</span><span class="n">qdeim</span><span class="o">.</span><span class="n">basis_sizes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="linenos">83</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"QDEIM spatial sample points: </span><span class="si">{</span><span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="linenos">84</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sampled state entries: </span><span class="si">{</span><span class="n">rhs_test_snapshots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="linenos">85</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean relative RHS reconstruction error: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">relative_errors</span><span class="p">)</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="linenos">86</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Max relative RHS reconstruction error: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">relative_errors</span><span class="p">)</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="linenos">87</span>
-<span class="linenos">88</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">89</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-<span class="linenos">90</span>        <span class="n">description</span><span class="o">=</span><span class="s2">"Reconstruct the H2-air flame RHS with QDEIM."</span>
-<span class="linenos">91</span>    <span class="p">)</span>
-<span class="linenos">92</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-<span class="linenos">93</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
-<span class="linenos">94</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
-<span class="linenos">95</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run a reduced configuration for CI validation."</span><span class="p">,</span>
-<span class="linenos">96</span>    <span class="p">)</span>
-<span class="linenos">97</span>    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">98</span>    <span class="n">main</span><span class="p">(</span><span class="n">smoke</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">smoke</span><span class="p">)</span>
+<span class="linenos">88</span>
+<span class="linenos">89</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">90</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+<span class="linenos">91</span>        <span class="n">description</span><span class="o">=</span><span class="s2">"Reconstruct the H2-air flame RHS with QDEIM."</span>
+<span class="linenos">92</span>    <span class="p">)</span>
+<span class="linenos">93</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+<span class="linenos">94</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
+<span class="linenos">95</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+<span class="linenos">96</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run a reduced configuration for CI validation."</span><span class="p">,</span>
+<span class="linenos">97</span>    <span class="p">)</span>
+<span class="linenos">98</span>    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="linenos">99</span>    <span class="n">main</span><span class="p">(</span><span class="n">smoke</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">smoke</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
