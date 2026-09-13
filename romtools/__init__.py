@@ -60,19 +60,19 @@ from importlib.metadata import PackageNotFoundError, version
 # still resolves type annotations through ``romtools.VectorSpace`` at import
 # time. These aliases remain available for backwards compatibility but are not
 # part of the canonical top-level API.
-from romtools import vector_space
-from romtools.vector_space import (
+from . import vector_space
+from .vector_space import (
     DictionaryVectorSpace,
     VectorSpace,
     VectorSpaceFromPOD,
     VectorSpaceFromStreamingPOD,
 )
 
-from romtools import composite_vector_space, hpc, hyper_reduction, linalg, rom, workflows
-from romtools.composite_vector_space import CompositeVectorSpace
-from romtools.hyper_reduction import *
-from romtools.rom import *
-from romtools.workflows import *
+from . import composite_vector_space, hpc, hyper_reduction, linalg, rom, workflows
+from .composite_vector_space import CompositeVectorSpace
+from .hyper_reduction import *
+from .rom import *
+from .workflows import *
 
 try:
     __version__ = version("romtools")
