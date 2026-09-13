@@ -8,7 +8,7 @@ integrators.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 
@@ -68,6 +68,29 @@ class LinearElasticSolid2D(NonlinearSolid2D):
             stress = self._cauchy_stress(grad_u)
             fe += (grad_n @ stress.T) * dv
         return fe.reshape(-1)
+
+    def acceleration(
+        self,
+        displacement: Array,
+        velocity: Array,
+        time: float,
+        external_force: Callable[[float], Array],
+    ) -> Array:
+        """Evaluate acceleration, using diagonal inversion for lumped mass."""
+        if self.mass_type != "lumped":
+            return super().acceleration(displacement, velocity, time, external_force)
+        c = self.damping_matrix()
+        rhs = (
+            external_force(time)
+            - self.internal_force(displacement)
+            - c @ velocity
+        )
+        acceleration = np.zeros(self.ndof, dtype=float)
+        mass_diagonal = np.diag(self._mass)
+        acceleration[self.free_dofs] = (
+            rhs[self.free_dofs] / mass_diagonal[self.free_dofs]
+        )
+        return acceleration
 
 
 def _solid_class(material_model: str):
@@ -176,3 +199,27 @@ def longitudinal_wave_speed(material: Material) -> float:
     return float(
         np.sqrt((material.lame_lambda + 2.0 * material.lame_mu) / material.density)
     )
+
+
+def two_way_gaussian_solution(
+    x: Array,
+    time: float,
+    amplitude: float,
+    width: float,
+    center: float,
+    wave_speed: float,
+) -> Array:
+    """D'Alembert solution for a stationary Gaussian displacement pulse.
+
+    This whole-line solution is the exact solution of ``u_tt = c**2 u_xx`` for
+    ``u(x, 0) = g(x)`` and ``u_t(x, 0) = 0``.  It can be compared directly to
+    the clamped-bar solution before the two traveling pulses reach the ends,
+    provided the initial Gaussian is negligible at the boundaries.
+    """
+    x = np.asarray(x, dtype=float)
+    sigma = float(width)
+    c = float(wave_speed)
+    t = float(time)
+    left = np.exp(-0.5 * ((x + c * t - center) / sigma) ** 2)
+    right = np.exp(-0.5 * ((x - c * t - center) / sigma) ** 2)
+    return 0.5 * float(amplitude) * (left + right)
