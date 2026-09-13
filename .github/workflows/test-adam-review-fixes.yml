@@ -1,0 +1,20 @@
+name: test-adam-review-fixes
+
+on:
+  push:
+    branches:
+      - feature-vi-mfvi-adam-natural-gradient
+    paths:
+      - .github/workflows/test-adam-review-fixes.yml
+
+jobs:
+  test-adam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip
+      - run: pip install .[test]
+      - run: pytest -q tests/romtools/workflows/inverse/test_vi_adam.py --timeout=300
