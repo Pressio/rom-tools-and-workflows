@@ -44,16 +44,58 @@
 #
 
 '''
-The workflows module contains all of our "outerloop" workflows used for ROM construction and ROM exploitation.
-We currently support:
-- Greedy sampling for construction of reduced-basis ROMs
-- Random sampling for model exploitation
-- Coupling classes to Dakota for
-  - Random sampling
+The workflows module contains the outer-loop workflows used for ROM construction,
+model exploitation, inverse problems, and uncertainty quantification.
+
+The names in ``__all__`` define the supported public API at this package level.
+More specialized functionality should be imported from its domain subpackage.
 '''
-from romtools.workflows.dakota import *
-from romtools.workflows.greedy import *
-from romtools.workflows.sampling import *
-from romtools.workflows.inverse import *
-from romtools.workflows.formatting import *
-from romtools.workflows.uq import *
+
+from . import dakota, formatting, greedy, inverse, sampling, uq
+from .formatting import format_file, format_files, format_text
+from .greedy import QoIvsErrorIndicatorRegressor, run_greedy
+from .inverse import (
+    mf_eki_with_auto_rom,
+    mf_vi_with_auto_rom,
+    run_batch_ego,
+    run_ego,
+    run_eki,
+    run_mf_eki,
+    run_mf_vi,
+    run_vi,
+)
+from .sampling import run_sample, run_sampling
+from .uq import (
+    MonteCarloResult,
+    MultifidelityMonteCarloResult,
+    run_monte_carlo,
+    run_multifidelity_monte_carlo,
+)
+
+__all__ = [
+    "dakota",
+    "formatting",
+    "greedy",
+    "inverse",
+    "sampling",
+    "uq",
+    "run_greedy",
+    "QoIvsErrorIndicatorRegressor",
+    "run_sampling",
+    "run_sample",
+    "format_text",
+    "format_file",
+    "format_files",
+    "run_eki",
+    "run_mf_eki",
+    "mf_eki_with_auto_rom",
+    "run_vi",
+    "run_mf_vi",
+    "mf_vi_with_auto_rom",
+    "run_ego",
+    "run_batch_ego",
+    "MonteCarloResult",
+    "MultifidelityMonteCarloResult",
+    "run_monte_carlo",
+    "run_multifidelity_monte_carlo",
+]

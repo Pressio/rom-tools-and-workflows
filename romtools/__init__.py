@@ -76,18 +76,55 @@ The Python library, called `romtools`, contains abstract interfaces and function
 
 Please see the Demos section of the documentation for demos and tutorials.
 
+# Public API
+
+For the stable user-facing API, prefer imports from the domain namespaces such
+as `romtools.vector_space`, `romtools.hyper_reduction`, `romtools.rom`, and
+`romtools.workflows`. The top-level package exposes those namespaces and package
+metadata. A small set of historical flat aliases remains available for backwards
+compatibility but is intentionally not part of `__all__`.
+
 # License
 ```plaintext
 .. include:: ../LICENSE
 ```
 '''
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
+from importlib.metadata import PackageNotFoundError, version
+
+# Load the vector-space aliases first because a small amount of legacy code
+# still resolves type annotations through ``romtools.VectorSpace`` at import
+# time. These aliases remain available for backwards compatibility but are not
+# part of the canonical top-level API.
+from . import vector_space
+from .vector_space import (
+    DictionaryVectorSpace,
+    VectorSpace,
+    VectorSpaceFromPOD,
+    VectorSpaceFromStreamingPOD,
+)
+
+from . import composite_vector_space, hpc, hyper_reduction, linalg, rom, workflows
+from .composite_vector_space import CompositeVectorSpace
+from .hyper_reduction import *
+from .rom import *
+from .workflows import *
+
+try:
+    __version__ = version("romtools")
+except PackageNotFoundError:
+    # Keep source-tree imports usable before the package has been installed.
+    __version__ = "0+unknown"
 
 __docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.vector_space import *
-from romtools.hyper_reduction import *
-from romtools.workflows import *
-from romtools.composite_vector_space import *
-from romtools.rom import *
+__all__ = [
+    "__version__",
+    "vector_space",
+    "composite_vector_space",
+    "hyper_reduction",
+    "linalg",
+    "rom",
+    "workflows",
+    "hpc",
+]
