@@ -361,6 +361,7 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tensor-convention-and-shared-state-sampling">Tensor convention and shared-state sampling</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deim">DEIM</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#full-implementation">Full implementation</a></li>
 </ul>
@@ -439,37 +440,58 @@ The examples below apply DEIM and QDEIM to the complete semi-discrete right-hand
 side of the H2-air flame model rather than to only the reaction term. This keeps
 the example close to the operation required by a hyper-reduced projection ROM:
 construct a basis for the full RHS, evaluate only selected entries, and
-reconstruct the full vector.</p>
+reconstruct the full tensor.</p>
+<section id="tensor-convention-and-shared-state-sampling">
+<h2>Tensor convention and shared-state sampling<a class="headerlink" href="#tensor-convention-and-shared-state-sampling" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">DEIM</span></code> and <code class="docutils literal notranslate"><span class="pre">QDEIM</span></code> class APIs use the standard <code class="docutils literal notranslate"><span class="pre">romtools</span></code> tensor
+layout. Function snapshots have shape
+<code class="docutils literal notranslate"><span class="pre">(n_vars,</span> <span class="pre">n_dofs,</span> <span class="pre">n_snapshots)</span></code> and function bases have shape
+<code class="docutils literal notranslate"><span class="pre">(n_vars,</span> <span class="pre">n_dofs,</span> <span class="pre">n_basis)</span></code>. The first two axes are collapsed internally in
+explicit C order whenever the DEIM algebra requires a matrix representation.
+Users therefore do not need to flatten multistate data before constructing a
+hyper-reduction operator.</p>
 <p>For a state <span class="math notranslate nohighlight">\(x\)</span> and parameters <span class="math notranslate nohighlight">\(\mu\)</span>, let
-<span class="math notranslate nohighlight">\(f(x;\mu) \in \mathbb{R}^N\)</span> denote the full RHS. A POD basis
-<span class="math notranslate nohighlight">\(U \in \mathbb{R}^{N \times r}\)</span> is built from RHS snapshots. DEIM or
-QDEIM then selects interpolation indices <span class="math notranslate nohighlight">\(P\)</span>, and the full RHS is
-approximated from the sampled entries by</p>
+<span class="math notranslate nohighlight">\(f(x;\mu)\)</span> denote the full multistate RHS. Internally, a POD basis
+<span class="math notranslate nohighlight">\(U \in \mathbb{R}^{N \times r}\)</span> is formed from the tensor snapshots,
+where <span class="math notranslate nohighlight">\(N = n_{vars} n_{dofs}\)</span>. DEIM or QDEIM first selects scalar rows of
+this matrix, and the full RHS is approximated by</p>
 <div class="math notranslate nohighlight">
 \[f(x;\mu) \approx U (P^T U)^{\dagger} P^T f(x;\mu).\]</div>
-<p>The main difference between the two methods in <code class="docutils literal notranslate"><span class="pre">romtools</span></code> is the default
-sample-point selection. DEIM uses the classical greedy selection algorithm,
-while QDEIM uses column-pivoted QR. Their reconstruction APIs are otherwise the
-same.</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">sample_all_states=True</span></code>. A scalar row selected for any state is
+converted to its spatial index, and every state at that spatial point is then
+included in the sampling operator. Thus <code class="docutils literal notranslate"><span class="pre">sample_indices</span></code> contains spatial
+sample points, and a sampled RHS has shape <code class="docutils literal notranslate"><span class="pre">(n_vars,</span> <span class="pre">n_sample_points)</span></code>. This
+is usually the desired behavior for coupled PDE discretizations because an
+application evaluates all state components at a selected mesh point.</p>
+<p>Independent flattened state-DOF sampling remains available with
+<code class="docutils literal notranslate"><span class="pre">sample_all_states=False</span></code> for applications that explicitly need it.</p>
+<p>The main difference between DEIM and QDEIM is the initial scalar point
+selection. DEIM uses the classical greedy selection algorithm, while QDEIM uses
+column-pivoted QR. Their tensor handling and reconstruction APIs are otherwise
+the same.</p>
+</section>
 <section id="deim">
 <h2>DEIM<a class="headerlink" href="#deim" title="Link to this heading">#</a></h2>
 <p>The shortest path through the public API is:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hyper_reduction</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEIM</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.vector_space.utils.truncater</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasisSizeTruncater</span>
 
+<span class="c1"># rhs_training_snapshots.shape == (n_vars, n_dofs, n_snapshots)</span>
 <span class="n">deim</span> <span class="o">=</span> <span class="n">DEIM</span><span class="o">.</span><span class="n">from_snapshots</span><span class="p">(</span>
     <span class="n">rhs_training_snapshots</span><span class="p">,</span>
     <span class="n">truncater</span><span class="o">=</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="n">sampled_rhs</span> <span class="o">=</span> <span class="n">full_rhs</span><span class="p">[</span><span class="n">deim</span><span class="o">.</span><span class="n">sample_indices</span><span class="p">]</span>
+<span class="c1"># full_rhs.shape == (n_vars, n_dofs)</span>
+<span class="n">sampled_rhs</span> <span class="o">=</span> <span class="n">full_rhs</span><span class="p">[:,</span> <span class="n">deim</span><span class="o">.</span><span class="n">sample_indices</span><span class="p">]</span>
 <span class="n">reconstructed_rhs</span> <span class="o">=</span> <span class="n">deim</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">(</span><span class="n">sampled_rhs</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">DEIM.from_snapshots</span></code> performs the POD internally, selects the interpolation
-points, and constructs the reconstruction operator. The example deliberately
-flattens all four H2-air flame fields into one RHS vector, so
-<code class="docutils literal notranslate"><span class="pre">reconstructed_rhs</span></code> approximates the entire coupled RHS.</p>
+points, expands those spatial points across all state variables by default, and
+constructs the reconstruction operator. In the H2-air flame example, the four
+RHS fields are kept as the first tensor axis while the two spatial dimensions
+are collapsed into the <code class="docutils literal notranslate"><span class="pre">n_dofs</span></code> axis using C ordering.</p>
 <p>The training snapshots come from one flame trajectory, while reconstruction is
 measured on a second trajectory at different parameter values. This avoids
 measuring only interpolation of the data used to construct the basis.</p>
@@ -583,8 +605,8 @@ measuring only interpolation of the data used to construct the basis.</p>
 </section>
 <section id="qdeim">
 <h2>QDEIM<a class="headerlink" href="#qdeim" title="Link to this heading">#</a></h2>
-<p>QDEIM uses the same API. Replacing <code class="docutils literal notranslate"><span class="pre">DEIM</span></code> with <code class="docutils literal notranslate"><span class="pre">QDEIM</span></code> changes the default
-sample selection to pivoted QR:</p>
+<p>QDEIM uses the same tensor-native API. Replacing <code class="docutils literal notranslate"><span class="pre">DEIM</span></code> with <code class="docutils literal notranslate"><span class="pre">QDEIM</span></code> changes
+the initial scalar sample selection to pivoted QR:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hyper_reduction</span><span class="w"> </span><span class="kn">import</span> <span class="n">QDEIM</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.vector_space.utils.truncater</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasisSizeTruncater</span>
 
@@ -593,12 +615,12 @@ sample selection to pivoted QR:</p>
     <span class="n">truncater</span><span class="o">=</span><span class="n">BasisSizeTruncater</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="n">sampled_rhs</span> <span class="o">=</span> <span class="n">full_rhs</span><span class="p">[</span><span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="p">]</span>
+<span class="n">sampled_rhs</span> <span class="o">=</span> <span class="n">full_rhs</span><span class="p">[:,</span> <span class="n">qdeim</span><span class="o">.</span><span class="n">sample_indices</span><span class="p">]</span>
 <span class="n">reconstructed_rhs</span> <span class="o">=</span> <span class="n">qdeim</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">(</span><span class="n">sampled_rhs</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The same <code class="docutils literal notranslate"><span class="pre">sample_indices</span></code> and <code class="docutils literal notranslate"><span class="pre">reconstruct</span></code> interface can therefore be used
-when comparing DEIM and QDEIM in an application.</p>
+<p>The same spatial <code class="docutils literal notranslate"><span class="pre">sample_indices</span></code> and tensor <code class="docutils literal notranslate"><span class="pre">reconstruct</span></code> interface can
+therefore be used when comparing DEIM and QDEIM in an application.</p>
 <p>Run the example with</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/h2_air_flame_qdeim/example.py
 </pre></div>
@@ -732,6 +754,7 @@ when comparing DEIM and QDEIM in an application.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tensor-convention-and-shared-state-sampling">Tensor convention and shared-state sampling</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deim">DEIM</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#full-implementation">Full implementation</a></li>
 </ul>
