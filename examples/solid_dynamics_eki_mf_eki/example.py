@@ -1,9 +1,10 @@
-"""EKI and MF-EKI benchmark for the nonlinear solid-dynamics cantilever.
+"""EKI and GP auto-ROM MF-EKI benchmark for the solid-dynamics cantilever.
 
 The inverse problem estimates Young's modulus, Poisson's ratio, and transient
 load amplitude from noisy transverse-displacement histories at three sensors.
-The truth, high-fidelity, and low-fidelity models use the same Neo-Hookean
-physics but different mesh/time resolutions.
+Synthetic truth and the inference FOM intentionally use the same spatial and
+temporal discretization. MF-EKI uses romtools' on-the-fly Gaussian-process QoI
+surrogate as its low-fidelity model.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from romtools.workflows.inverse.eki_drivers import run_eki
-from romtools.workflows.inverse.mf_eki_drivers import run_mf_eki
+from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom
 from romtools.workflows.parameter_spaces import HeterogeneousParameterSpace
 from romtools.workflows.parameters import UniformParameter
 
@@ -54,56 +55,57 @@ class Discretization:
     def num_steps(self) -> int:
         return int(round(self.t_end / self.dt))
 
-    @property
-    def work_proxy(self) -> float:
-        """Deterministic element-time-step proxy used for cost comparisons."""
-        return float(self.nx * self.ny * self.num_steps)
-
 
 @dataclass(frozen=True)
 class BenchmarkConfig:
-    truth: Discretization
-    high: Discretization
-    low: Discretization
+    fom: Discretization
     observation_times: np.ndarray
     eki_ensemble_size: int
     mf_fom_ensemble_size: int
-    mf_extra_lf_ensemble_size: int
+    mf_extra_gp_ensemble_size: int
     max_iterations: int
-    num_lf_substeps: int
-    pilot_samples: int
+    gp_substep_start_iteration: int
+    gp_substep_end_iteration: int
+    num_gp_substeps: int
+    max_gp_training_history: int
 
 
 def configuration(smoke: bool) -> BenchmarkConfig:
+    """Return the production benchmark or a reduced CI-only configuration."""
     if smoke:
         return BenchmarkConfig(
-            truth=Discretization(8, 2, 0.025, 0.20),
-            high=Discretization(4, 2, 0.05, 0.20),
-            low=Discretization(4, 2, 0.10, 0.20),
+            fom=Discretization(4, 2, 0.05, 0.20),
             observation_times=np.array([0.10, 0.20]),
             eki_ensemble_size=3,
             mf_fom_ensemble_size=3,
-            mf_extra_lf_ensemble_size=3,
+            mf_extra_gp_ensemble_size=3,
             max_iterations=2,
-            num_lf_substeps=1,
-            pilot_samples=0,
+            gp_substep_start_iteration=0,
+            gp_substep_end_iteration=2,
+            num_gp_substeps=1,
+            max_gp_training_history=2,
         )
     return BenchmarkConfig(
-        truth=Discretization(12, 4, 0.005, 1.0),
-        high=Discretization(8, 2, 0.01, 1.0),
-        low=Discretization(4, 2, 0.02, 1.0),
+        # Truth and inference HF deliberately use this same discretization.
+        fom=Discretization(33, 16, 0.005, 1.0),
         observation_times=np.arange(0.10, 1.001, 0.10),
         eki_ensemble_size=8,
         mf_fom_ensemble_size=8,
-        mf_extra_lf_ensemble_size=16,
+        mf_extra_gp_ensemble_size=24,
         max_iterations=15,
-        num_lf_substeps=2,
-        pilot_samples=12,
+        gp_substep_start_iteration=1,
+        gp_substep_end_iteration=15,
+        num_gp_substeps=4,
+        max_gp_training_history=5,
     )
 
 
 def transformed_sample(E: float, nu: float, F0: float) -> dict[str, float]:
-    return {"log_E": float(np.log(E)), "nu": float(nu), "log_F0": float(np.log(F0))}
+    return {
+        "log_E": float(np.log(E)),
+        "nu": float(nu),
+        "log_F0": float(np.log(F0)),
+    }
 
 
 def physical_parameters(parameter_sample: dict[str, float]) -> tuple[float, float, float]:
@@ -115,23 +117,26 @@ def physical_parameters(parameter_sample: dict[str, float]) -> tuple[float, floa
 
 
 class CantileverInverseQoiModel:
-    """Parameterized cantilever returning concatenated sensor displacement histories."""
+    """Parameterized FOM returning concatenated transverse sensor histories."""
 
     def __init__(
         self,
         discretization: Discretization,
         observation_times: np.ndarray,
-        fidelity: str,
-        relative_cost: float,
+        fidelity: str = "high",
     ) -> None:
         self.discretization = discretization
         self.observation_times = np.asarray(observation_times, dtype=float)
         self.fidelity = fidelity
-        self.relative_cost = float(relative_cost)
         time_indices = np.rint(self.observation_times / discretization.dt).astype(int)
         represented_times = time_indices * discretization.dt
-        if not np.allclose(represented_times, self.observation_times, atol=1.0e-12, rtol=0.0):
-            raise ValueError("Observation times must lie on every model time grid")
+        if not np.allclose(
+            represented_times,
+            self.observation_times,
+            atol=1.0e-12,
+            rtol=0.0,
+        ):
+            raise ValueError("Observation times must lie on the FOM time grid")
         self._time_indices = time_indices
 
     def _solve(self, parameter_sample: dict[str, float]) -> tuple[np.ndarray, np.ndarray]:
@@ -174,9 +179,7 @@ class CantileverInverseQoiModel:
             )
             sensor_dofs.append(2 * node + 1)
         sensor_dofs = np.asarray(sensor_dofs, dtype=int)
-
         sampled = displacements[np.ix_(self._time_indices, sensor_dofs)]
-        # Store sensor-major histories: all times at x/L=0.5, then 0.75, then 1.0.
         qoi = sampled.T.reshape(-1)
         return times, qoi
 
@@ -198,7 +201,6 @@ class CantileverInverseQoiModel:
             times=times,
             qoi=qoi,
             fidelity=self.fidelity,
-            relative_cost=self.relative_cost,
             elapsed_seconds=elapsed,
         )
         return 0
@@ -207,23 +209,6 @@ class CantileverInverseQoiModel:
         del parameter_sample
         with np.load(Path(run_directory) / "solution.npz") as data:
             return np.array(data["qoi"], copy=True)
-
-
-class FixedLowFidelityBuilder:
-    """Adapter that exposes a fixed coarse model through the MF-EKI builder API."""
-
-    def __init__(self, low_fidelity_model: CantileverInverseQoiModel) -> None:
-        self.low_fidelity_model = low_fidelity_model
-
-    def build_from_training_dirs(
-        self,
-        offline_data_dir: str,
-        training_data_dirs,
-        training_parameters=None,
-        training_qois=None,
-    ) -> CantileverInverseQoiModel:
-        del offline_data_dir, training_data_dirs, training_parameters, training_qois
-        return self.low_fidelity_model
 
 
 def parameter_space() -> HeterogeneousParameterSpace:
@@ -258,7 +243,11 @@ def _parameter_history(work_dir: Path, multifidelity: bool) -> np.ndarray:
     history = []
     for restart in _restart_files(work_dir):
         with np.load(restart, allow_pickle=True) as data:
-            samples = data["parameter_samples_one"] if multifidelity else data["parameter_samples"]
+            samples = (
+                data["parameter_samples_one"]
+                if multifidelity
+                else data["parameter_samples"]
+            )
             E = np.mean(np.exp(samples[:, 0]))
             nu = np.mean(samples[:, 1])
             F0 = np.mean(np.exp(samples[:, 2]))
@@ -278,9 +267,10 @@ def _error_history(work_dir: Path, multifidelity: bool) -> np.ndarray:
     return np.asarray(history)
 
 
-def _iteration_cost_history(work_dir: Path) -> np.ndarray:
+def _hf_evaluation_history(work_dir: Path) -> np.ndarray:
+    """Cumulative HF solves; GP evaluations are treated as negligible cost."""
     cumulative = []
-    running = 0.0
+    running = 0
     iteration = 0
     while True:
         iteration_dir = work_dir / f"iteration_{iteration}"
@@ -288,57 +278,41 @@ def _iteration_cost_history(work_dir: Path) -> np.ndarray:
             break
         for solution in iteration_dir.rglob("solution.npz"):
             with np.load(solution) as data:
-                if "relative_cost" in data:
-                    running += float(data["relative_cost"])
-        cumulative.append(running)
+                if "fidelity" in data and str(data["fidelity"]) == "high":
+                    running += 1
+        cumulative.append(float(running))
         iteration += 1
     return np.asarray(cumulative)
 
 
-def _wallclock_summary(work_dir: Path) -> dict[str, float]:
-    summary: dict[str, float] = {}
+def _hf_wallclock(work_dir: Path) -> float:
+    total = 0.0
     for solution in work_dir.rglob("solution.npz"):
         with np.load(solution) as data:
-            fidelity = str(data["fidelity"])
-            summary[fidelity] = summary.get(fidelity, 0.0) + float(data["elapsed_seconds"])
-    return summary
+            if (
+                "fidelity" in data
+                and str(data["fidelity"]) == "high"
+                and "elapsed_seconds" in data
+            ):
+                total += float(data["elapsed_seconds"])
+    return total
 
 
-def _pilot_correlations(
-    high_model: CantileverInverseQoiModel,
-    low_model: CantileverInverseQoiModel,
-    num_samples: int,
-    seed: int,
-) -> np.ndarray:
-    if num_samples <= 1:
-        return np.array([])
-    rng = np.random.default_rng(seed)
-    high_qois = []
-    low_qois = []
-    for _ in range(num_samples):
-        sample = {
-            "log_E": rng.uniform(np.log(E_RANGE[0]), np.log(E_RANGE[1])),
-            "nu": rng.uniform(*NU_RANGE),
-            "log_F0": rng.uniform(np.log(F0_RANGE[0]), np.log(F0_RANGE[1])),
-        }
-        high_qois.append(high_model.evaluate_qoi(sample))
-        low_qois.append(low_model.evaluate_qoi(sample))
-    high_qois = np.asarray(high_qois)
-    low_qois = np.asarray(low_qois)
-    correlations = []
-    for column in range(high_qois.shape[1]):
-        if np.std(high_qois[:, column]) == 0.0 or np.std(low_qois[:, column]) == 0.0:
-            continue
-        correlations.append(np.corrcoef(high_qois[:, column], low_qois[:, column])[0, 1])
-    return np.asarray(correlations)
-
-
-def _plot_truth(observation_times: np.ndarray, clean: np.ndarray, noisy: np.ndarray, output: Path) -> None:
+def _plot_truth(
+    observation_times: np.ndarray,
+    clean: np.ndarray,
+    noisy: np.ndarray,
+    output: Path,
+) -> None:
     fig, ax = plt.subplots(figsize=(7.0, 4.2))
     n_times = observation_times.size
     for i, x_fraction in enumerate(SENSOR_X_OVER_L):
         sl = slice(i * n_times, (i + 1) * n_times)
-        ax.plot(observation_times, clean[sl], label=f"truth x/L={x_fraction:.2f}")
+        ax.plot(
+            observation_times,
+            clean[sl],
+            label=f"truth x/L={x_fraction:.2f}",
+        )
         ax.plot(observation_times, noisy[sl], "o", ms=3, alpha=0.65)
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Transverse displacement [m]")
@@ -356,15 +330,34 @@ def _plot_parameter_history(
     output: Path,
 ) -> None:
     truth = np.array([TRUTH["E"], TRUTH["nu"], TRUTH["F0"]])
-    labels = ["Young's modulus E [MPa]", "Poisson ratio nu", "Load amplitude F0 [N]"]
+    labels = [
+        "Young's modulus E [MPa]",
+        "Poisson ratio nu",
+        "Load amplitude F0 [N]",
+    ]
     scales = [1.0e-6, 1.0, 1.0]
     fig, axes = plt.subplots(1, 3, figsize=(11.0, 3.4))
     for j, ax in enumerate(axes):
         if eki_history.size:
-            ax.plot(np.arange(len(eki_history)), eki_history[:, j] * scales[j], "o-", label="EKI")
+            ax.plot(
+                np.arange(len(eki_history)),
+                eki_history[:, j] * scales[j],
+                "o-",
+                label="EKI",
+            )
         if mf_history.size:
-            ax.plot(np.arange(len(mf_history)), mf_history[:, j] * scales[j], "s-", label="MF-EKI")
-        ax.axhline(truth[j] * scales[j], ls="--", color="0.25", label="truth" if j == 0 else None)
+            ax.plot(
+                np.arange(len(mf_history)),
+                mf_history[:, j] * scales[j],
+                "s-",
+                label="MF-EKI (GP auto-ROM)",
+            )
+        ax.axhline(
+            truth[j] * scales[j],
+            ls="--",
+            color="0.25",
+            label="truth" if j == 0 else None,
+        )
         ax.set_xlabel("Iteration")
         ax.set_ylabel(labels[j])
         ax.grid(True, alpha=0.25)
@@ -388,11 +381,16 @@ def _plot_error_vs_cost(
         ax.plot(eki_cost[:n], eki_error[:n], "o-", label="EKI")
     n = min(len(mf_error), len(mf_cost))
     if n:
-        ax.plot(mf_cost[:n], mf_error[:n], "s-", label="MF-EKI")
+        ax.plot(
+            mf_cost[:n],
+            mf_error[:n],
+            "s-",
+            label="MF-EKI (GP auto-ROM)",
+        )
     ax.set_yscale("log")
-    ax.set_xlabel("Cumulative HF-equivalent work")
+    ax.set_xlabel("Cumulative high-fidelity model evaluations")
     ax.set_ylabel("Mean observation error")
-    ax.set_title("Convergence versus nominal model cost")
+    ax.set_title("Convergence versus high-fidelity cost")
     ax.grid(True, alpha=0.25)
     ax.legend()
     fig.tight_layout()
@@ -400,7 +398,11 @@ def _plot_error_vs_cost(
     plt.close(fig)
 
 
-def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | None = None) -> None:
+def main(
+    smoke: bool = False,
+    work_dir: str | None = None,
+    output_dir: str | None = None,
+) -> None:
     cfg = configuration(smoke)
     base_dir = Path(work_dir) if work_dir is not None else EXAMPLE_DIR / "work"
     figures_dir = Path(output_dir) if output_dir is not None else EXAMPLE_DIR
@@ -408,50 +410,32 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
     shutil.rmtree(base_dir, ignore_errors=True)
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    hf_reference_work = cfg.high.work_proxy
-    truth_model = CantileverInverseQoiModel(
-        cfg.truth,
-        cfg.observation_times,
-        fidelity="truth",
-        relative_cost=cfg.truth.work_proxy / hf_reference_work,
-    )
     high_model = CantileverInverseQoiModel(
-        cfg.high,
+        cfg.fom,
         cfg.observation_times,
         fidelity="high",
-        relative_cost=1.0,
-    )
-    low_model = CantileverInverseQoiModel(
-        cfg.low,
-        cfg.observation_times,
-        fidelity="low",
-        relative_cost=cfg.low.work_proxy / hf_reference_work,
     )
 
+    # Synthetic truth intentionally uses the exact same FOM discretization as
+    # the HF inference model for this controlled algorithmic benchmark.
     truth_sample = transformed_sample(**TRUTH)
-    clean_observations = truth_model.evaluate_qoi(truth_sample)
-    noise_sigma = 0.01 * max(float(np.max(np.abs(clean_observations))), 1.0e-8)
-    rng = np.random.default_rng(17)
-    observations = clean_observations + rng.normal(0.0, noise_sigma, clean_observations.shape)
-    observations_covariance = np.eye(observations.size) * noise_sigma**2
-
-    correlations = _pilot_correlations(
-        high_model,
-        low_model,
-        cfg.pilot_samples,
-        seed=23,
+    clean_observations = high_model.evaluate_qoi(truth_sample)
+    noise_sigma = 0.01 * max(
+        float(np.max(np.abs(clean_observations))),
+        1.0e-8,
     )
-    if correlations.size:
-        print(
-            "Pilot HF/LF QoI correlation: "
-            f"median={np.median(correlations):.4f}, min={np.min(correlations):.4f}, "
-            f"max={np.max(correlations):.4f}"
-        )
+    rng = np.random.default_rng(17)
+    observations = clean_observations + rng.normal(
+        0.0,
+        noise_sigma,
+        clean_observations.shape,
+    )
+    observations_covariance = np.eye(observations.size) * noise_sigma**2
 
     lower, upper = parameter_bounds()
     space = parameter_space()
     eki_dir = base_dir / "eki"
-    mf_dir = base_dir / "mf_eki"
+    mf_dir = base_dir / "mf_eki_gp_auto_rom"
 
     solver_args = dict(
         initial_step_size=0.05,
@@ -479,9 +463,8 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
         **solver_args,
     )
 
-    run_mf_eki(
+    mf_eki_with_auto_rom(
         model=high_model,
-        rom_model_builder=FixedLowFidelityBuilder(low_model),
         parameter_space=space,
         observations=observations,
         observations_covariance=observations_covariance,
@@ -489,17 +472,21 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
         parameter_maxes=upper,
         absolute_work_dir=str(mf_dir),
         fom_ensemble_size=cfg.mf_fom_ensemble_size,
-        rom_extra_ensemble_size=cfg.mf_extra_lf_ensemble_size,
-        # This benchmark deliberately uses a fixed LF discretization rather than
-        # an adaptively rebuilt ROM. Infinity therefore disables rebuilds.
-        rom_tolerance=np.inf,
-        max_rom_training_history=1,
-        rom_substep_start_iteration=0,
-        rom_substep_end_iteration=cfg.max_iterations,
-        num_rom_substeps=cfg.num_lf_substeps,
+        rom_extra_ensemble_size=cfg.mf_extra_gp_ensemble_size,
+        rom_tolerance=0.005,
+        max_rom_training_history=cfg.max_gp_training_history,
+        rom_substep_start_iteration=cfg.gp_substep_start_iteration,
+        rom_substep_end_iteration=cfg.gp_substep_end_iteration,
+        num_rom_substeps=cfg.num_gp_substeps,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         use_updated_rom_in_update_on_rebuild=False,
+        rom_type="gp",
+        rom_args={
+            "normalize_parameters": True,
+            "normalize_targets": True,
+            "noise_variance_fraction": 1.0e-6,
+        },
         **solver_args,
     )
 
@@ -507,8 +494,8 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
     mf_parameters = _parameter_history(mf_dir, multifidelity=True)
     eki_error = _error_history(eki_dir, multifidelity=False)
     mf_error = _error_history(mf_dir, multifidelity=True)
-    eki_cost = _iteration_cost_history(eki_dir)
-    mf_cost = _iteration_cost_history(mf_dir)
+    eki_cost = _hf_evaluation_history(eki_dir)
+    mf_cost = _hf_evaluation_history(mf_dir)
 
     _plot_truth(
         cfg.observation_times,
@@ -541,29 +528,30 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
     summary = {
         "truth": TRUTH,
         "noise_sigma": noise_sigma,
-        "discretizations": {
-            "truth": vars(cfg.truth),
-            "high": vars(cfg.high),
-            "low": vars(cfg.low),
-        },
-        "low_to_high_work_ratio": cfg.low.work_proxy / cfg.high.work_proxy,
-        "pilot_correlation": None
-        if not correlations.size
-        else {
-            "median": float(np.median(correlations)),
-            "min": float(np.min(correlations)),
-            "max": float(np.max(correlations)),
+        "fom_discretization": vars(cfg.fom),
+        "truth_and_hf_share_discretization": True,
+        "low_fidelity_model": "Gaussian-process automatic QoI ROM",
+        "gp_settings": {
+            "normalize_parameters": True,
+            "normalize_targets": True,
+            "noise_variance_fraction": 1.0e-6,
+            "rom_tolerance": 0.005,
+            "max_training_history": cfg.max_gp_training_history,
+            "extra_ensemble_size": cfg.mf_extra_gp_ensemble_size,
+            "num_rom_substeps": cfg.num_gp_substeps,
         },
         "eki_final_estimate": final_estimate(eki_parameters),
         "mf_eki_final_estimate": final_estimate(mf_parameters),
         "eki_final_error": None if not eki_error.size else float(eki_error[-1]),
         "mf_eki_final_error": None if not mf_error.size else float(mf_error[-1]),
-        "eki_hf_equivalent_work": None if not eki_cost.size else float(eki_cost[-1]),
-        "mf_eki_hf_equivalent_work": None if not mf_cost.size else float(mf_cost[-1]),
-        "eki_wallclock_by_fidelity": _wallclock_summary(eki_dir),
-        "mf_eki_wallclock_by_fidelity": _wallclock_summary(mf_dir),
+        "eki_hf_evaluations": None if not eki_cost.size else float(eki_cost[-1]),
+        "mf_eki_hf_evaluations": None if not mf_cost.size else float(mf_cost[-1]),
+        "eki_hf_wallclock_seconds": _hf_wallclock(eki_dir),
+        "mf_eki_hf_wallclock_seconds": _hf_wallclock(mf_dir),
     }
-    with (figures_dir / "solid_dynamics_eki_mf_eki_summary.json").open("w", encoding="utf-8") as handle:
+    with (
+        figures_dir / "solid_dynamics_eki_mf_eki_summary.json"
+    ).open("w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
 
     print(json.dumps(summary, indent=2))
@@ -571,12 +559,28 @@ def main(smoke: bool = False, work_dir: str | None = None, output_dir: str | Non
 
 def _parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--smoke", action="store_true", help="Run a reduced CI configuration.")
-    parser.add_argument("--work-dir", default=None, help="Directory for EKI/MF-EKI iteration data.")
-    parser.add_argument("--output-dir", default=None, help="Directory for figures and summary JSON.")
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Run a reduced CI configuration.",
+    )
+    parser.add_argument(
+        "--work-dir",
+        default=None,
+        help="Directory for EKI/MF-EKI iteration data.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Directory for figures and summary JSON.",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    main(smoke=args.smoke, work_dir=args.work_dir, output_dir=args.output_dir)
+    main(
+        smoke=args.smoke,
+        work_dir=args.work_dir,
+        output_dir=args.output_dir,
+    )
