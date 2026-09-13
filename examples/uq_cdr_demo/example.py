@@ -54,21 +54,24 @@ def main(output_directory: Optional[Path] = None) -> None:
         model=IntegratedFluxCdrModel(nx=21, ny=21),
         parameter_space=parameter_space,
         absolute_work_dir=str(output_directory / "monte_carlo"),
-        number_of_samples=12,
+        number_of_samples=40,
         random_seed=7,
     )
 
+    mfmc_directory = output_directory / "multifidelity"
     mfmc_result = run_multifidelity_monte_carlo(
         high_fidelity_model=IntegratedFluxCdrModel(nx=21, ny=21),
         low_fidelity_model=IntegratedFluxCdrModel(nx=9, ny=9),
         parameter_space=parameter_space,
-        absolute_work_dir=str(output_directory / "multifidelity"),
-        pilot_sample_count=4,
-        high_fidelity_equivalent_budget=12.0,
+        absolute_work_dir=str(mfmc_directory),
+        pilot_sample_count=30,
+        high_fidelity_equivalent_budget=40.0,
         low_to_high_fidelity_cost_ratio=0.05,
         allocation_qoi_index=0,
         random_seed=7,
     )
+    with np.load(mfmc_directory / "uq_stats.npz") as statistics:
+        pilot_correlation = float(statistics["pilot_correlations"][0])
 
     print("CDR integrated right-boundary flux")
     print(
@@ -79,7 +82,8 @@ def main(output_directory: Optional[Path] = None) -> None:
         f"MFMC: mean={mfmc_result.mean[0]:.6e}, "
         f"standard error={mfmc_result.standard_error[0]:.3e}, "
         f"N_H={mfmc_result.high_fidelity_sample_count}, "
-        f"N_L={mfmc_result.low_fidelity_sample_count}"
+        f"N_L={mfmc_result.low_fidelity_sample_count}, "
+        f"pilot correlation={pilot_correlation:.3f}"
     )
     print(f"Results written to {output_directory}")
 
