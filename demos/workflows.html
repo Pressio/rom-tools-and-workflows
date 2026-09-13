@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Model execution &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Sampling &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -59,7 +59,7 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Run your first problem!" href="your_first_problem.html" />
+    <link rel="next" title="Basic sampling tutorial" href="notebooks/basic_sampling.html" />
     <link rel="prev" title="Basic parameter space tutorial" href="notebooks/parameter_space.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -334,12 +334,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">Model execution</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="your_first_problem.html">Run your first problem!</a></li>
+<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">Sampling</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="notebooks/basic_sampling.html">Basic sampling tutorial</a></li>
-<li class="toctree-l3"><a class="reference internal" href="holdout_sampling.html">workflows</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="../remote_execution.html">Remote Execution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inverse_problems.html">Inverse problems</a></li>
@@ -413,7 +412,7 @@
     
     <li class="breadcrumb-item"><a href="workflow_concepts.html" class="nav-link">Workflows</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Model execution</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Sampling</span></li>
   </ul>
 </nav>
 </div>
@@ -430,17 +429,15 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="model-execution">
-<h1>Model execution<a class="headerlink" href="#model-execution" title="Link to this heading">#</a></h1>
-<p>Model-execution workflows coordinate evaluations of a <code class="docutils literal notranslate"><span class="pre">romtools</span></code> model over
-sets of parameter samples, including external and parallel applications.</p>
+  <section id="sampling">
+<h1>Sampling<a class="headerlink" href="#sampling" title="Link to this heading">#</a></h1>
+<p>Sampling workflows coordinate evaluations of a <code class="docutils literal notranslate"><span class="pre">romtools</span></code> model over sets of
+parameter samples, including external and parallel applications.</p>
 <section id="examples">
 <h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="your_first_problem.html">Run your first problem!</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/basic_sampling.html">Basic sampling tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="holdout_sampling.html">workflows</a></li>
 </ul>
 </div>
 </section>
@@ -452,30 +449,6 @@ sets of parameter samples, including external and parallel applications.</p>
               
               
               
-              
-                <footer class="prev-next-footer d-print-none">
-                  
-<div class="prev-next-area">
-    <a class="left-prev"
-       href="notebooks/parameter_space.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Basic parameter space tutorial</p>
-      </div>
-    </a>
-    <a class="right-next"
-       href="your_first_problem.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run your first problem!</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
-    </a>
-</div>
-                </footer>
               
             </div>
             

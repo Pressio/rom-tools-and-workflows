@@ -359,6 +359,7 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
 </ul>
   </nav></div>
     </div>
@@ -449,6 +450,30 @@ posterior mean and uncertainty at new parameter values.</p>
 <span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predict_mean_and_std</span><span class="p">(</span><span class="n">x_query</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="pod-for-vector-qois">
+<h2>POD for vector QoIs<a class="headerlink" href="#pod-for-vector-qois" title="Link to this heading">#</a></h2>
+<p>For vector-valued QoIs, <code class="docutils literal notranslate"><span class="pre">GaussianProcessQoiModel</span></code> first mean-centers the
+training QoIs and computes a proper orthogonal decomposition (POD) using an SVD.
+The POD basis is truncated according to <code class="docutils literal notranslate"><span class="pre">pod_energy_fraction</span></code> and, optionally,
+<code class="docutils literal notranslate"><span class="pre">max_pod_modes</span></code>. A separate scalar Gaussian process is then trained for each
+retained POD coefficient, and predictions are reconstructed in the original
+QoI space.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.rom.qoi_surrogates</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianProcessQoiModel</span>
+
+<span class="n">surrogate</span> <span class="o">=</span> <span class="n">GaussianProcessQoiModel</span><span class="p">(</span>
+    <span class="n">parameters</span><span class="o">=</span><span class="n">training_parameters</span><span class="p">,</span>
+    <span class="n">qois</span><span class="o">=</span><span class="n">training_qois</span><span class="p">,</span>
+    <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"mu_1"</span><span class="p">,</span> <span class="s2">"mu_2"</span><span class="p">,</span> <span class="s2">"mu_3"</span><span class="p">],</span>
+    <span class="n">pod_energy_fraction</span><span class="o">=</span><span class="mf">0.999999</span><span class="p">,</span>
+    <span class="n">max_pod_modes</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">normalize_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">normalize_targets</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>For scalar QoIs, no POD reduction is performed and a single Gaussian process is
+trained directly on the QoI.</p>
 <p>For examples where Gaussian-process surrogates are created automatically inside
 multifidelity inverse workflows, see <a class="reference internal" href="ensemble_kalman_inversion.html"><span class="doc">Ensemble Kalman inversion</span></a> and <a class="reference internal" href="variational_inference.html"><span class="doc">Variational inference</span></a>.</p>
 </section>
@@ -460,30 +485,6 @@ multifidelity inverse workflows, see <a class="reference internal" href="ensembl
               
               
               
-              
-                <footer class="prev-next-footer d-print-none">
-                  
-<div class="prev-next-area">
-    <a class="left-prev"
-       href="surrogates.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Surrogates</p>
-      </div>
-    </a>
-    <a class="right-next"
-       href="neural_network_surrogate.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Neural-network QoI surrogate</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
-    </a>
-</div>
-                </footer>
               
             </div>
             
@@ -502,6 +503,7 @@ multifidelity inverse workflows, see <a class="reference internal" href="ensembl
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pod-for-vector-qois">POD for vector QoIs</a></li>
 </ul>
   </nav></div>
 

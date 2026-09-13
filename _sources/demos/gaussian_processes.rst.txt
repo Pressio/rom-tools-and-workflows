@@ -31,6 +31,33 @@ posterior mean and uncertainty at new parameter values.
    gp.fit(x_train, y_train)
    mean, std = gp.predict_mean_and_std(x_query)
 
+POD for vector QoIs
+-------------------
+
+For vector-valued QoIs, ``GaussianProcessQoiModel`` first mean-centers the
+training QoIs and computes a proper orthogonal decomposition (POD) using an SVD.
+The POD basis is truncated according to ``pod_energy_fraction`` and, optionally,
+``max_pod_modes``. A separate scalar Gaussian process is then trained for each
+retained POD coefficient, and predictions are reconstructed in the original
+QoI space.
+
+.. code-block:: python
+
+   from romtools.rom.qoi_surrogates import GaussianProcessQoiModel
+
+   surrogate = GaussianProcessQoiModel(
+       parameters=training_parameters,
+       qois=training_qois,
+       parameter_names=["mu_1", "mu_2", "mu_3"],
+       pod_energy_fraction=0.999999,
+       max_pod_modes=20,
+       normalize_parameters=True,
+       normalize_targets=True,
+   )
+
+For scalar QoIs, no POD reduction is performed and a single Gaussian process is
+trained directly on the QoI.
+
 For examples where Gaussian-process surrogates are created automatically inside
 multifidelity inverse workflows, see :doc:`Ensemble Kalman inversion
 <ensemble_kalman_inversion>` and :doc:`Variational inference

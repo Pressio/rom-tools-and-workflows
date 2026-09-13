@@ -1,5 +1,5 @@
-EKI and MF-EKI Demo
-===================
+Convection-diffusion-reaction inverse problem
+=============================================
 
 This demo compares single-fidelity EKI with three multifidelity variants on a
 convection-diffusion-reaction (CDR) model with two inferred parameters:

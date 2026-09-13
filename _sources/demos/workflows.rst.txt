@@ -1,8 +1,8 @@
-Model execution
-===============
+Sampling
+========
 
-Model-execution workflows coordinate evaluations of a ``romtools`` model over
-sets of parameter samples, including external and parallel applications.
+Sampling workflows coordinate evaluations of a ``romtools`` model over sets of
+parameter samples, including external and parallel applications.
 
 Examples
 --------
@@ -10,6 +10,4 @@ Examples
 .. toctree::
    :maxdepth: 1
 
-   your_first_problem
    notebooks/basic_sampling.ipynb
-   holdout_sampling
