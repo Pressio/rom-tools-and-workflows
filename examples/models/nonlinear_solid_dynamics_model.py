@@ -1,4 +1,4 @@
-"""romtools QoI-model wrapper for the nonlinear solid-dynamics example."""
+"""romtools QoI-model wrapper for the solid-dynamics example."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Dict
 import numpy as np
 
 try:
-    import nonlinear_solid_dynamics as solid_dynamics
+    import solid_dynamics
 except ImportError:  # pragma: no cover
-    from . import nonlinear_solid_dynamics as solid_dynamics
+    from . import solid_dynamics
 
 
 class NonlinearSolidBeamQoiModel:
@@ -19,6 +19,8 @@ class NonlinearSolidBeamQoiModel:
     The parameter sample accepts ``young_modulus``, ``load_amplitude``, and
     ``pulse_duration``.  The full displacement and velocity snapshot histories
     are retained so the same evaluations can later be reused for ROM training.
+    ``material_model`` may be set to ``"neo_hookean"`` (default) or ``"linear"``
+    when constructing the wrapper.
     """
 
     def __init__(
@@ -32,6 +34,7 @@ class NonlinearSolidBeamQoiModel:
         dt: float = 1.0e-2,
         t_end: float = 0.6,
         snapshot_stride: int = 2,
+        material_model: str = "neo_hookean",
     ) -> None:
         self.nx = int(nx)
         self.ny = int(ny)
@@ -42,6 +45,7 @@ class NonlinearSolidBeamQoiModel:
         self.dt = float(dt)
         self.t_end = float(t_end)
         self.snapshot_stride = int(snapshot_stride)
+        self.material_model = str(material_model)
 
     def populate_run_directory(self, run_directory: str, parameter_sample: Dict) -> None:
         os.makedirs(run_directory, exist_ok=True)
@@ -59,6 +63,7 @@ class NonlinearSolidBeamQoiModel:
             poisson_ratio=self.poisson_ratio,
             density=self.density,
             mass_type="consistent",
+            material_model=self.material_model,
         )
         load_amplitude = float(parameter_sample["load_amplitude"])
         pulse_duration = float(parameter_sample["pulse_duration"])
