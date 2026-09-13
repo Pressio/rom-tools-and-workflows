@@ -26,25 +26,51 @@ jobs:
       - name: Run full solid-dynamics EKI/MF-EKI benchmark
         env:
           MPLBACKEND: Agg
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
         run: |
           mkdir -p benchmark-results
           python - <<'PY' | tee benchmark-results/full_benchmark.log
-          import runpy
           import sys
 
           sys.path.insert(0, "examples/models")
           from nonlinear_solid_dynamics import NonlinearSolid2D
-          from sparse_solid_dynamics import enable_sparse_implicit_solver
+          from sparse_solid_dynamics import (
+              acceleration_sparse,
+              solve_implicit_sparse,
+          )
 
-          enable_sparse_implicit_solver(NonlinearSolid2D)
-          sys.argv = [
-              "examples/solid_dynamics_eki_mf_eki/example.py",
-              "--work-dir", "benchmark-work",
-              "--output-dir", "benchmark-results",
-          ]
-          runpy.run_path(
-              "examples/solid_dynamics_eki_mf_eki/example.py",
-              run_name="__main__",
+          NonlinearSolid2D.acceleration = acceleration_sparse
+
+          def solve_without_line_search(self, *args, **kwargs):
+              kwargs["line_search"] = False
+              return solve_implicit_sparse(self, *args, **kwargs)
+
+          NonlinearSolid2D.solve_implicit = solve_without_line_search
+
+          sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
+          import example as benchmark
+
+          original_run_eki = benchmark.run_eki
+          original_run_mf_eki = benchmark.mf_eki_with_auto_rom
+
+          def run_eki_parallel(*args, **kwargs):
+              kwargs["evaluation_concurrency"] = 8
+              return original_run_eki(*args, **kwargs)
+
+          def run_mf_eki_parallel(*args, **kwargs):
+              kwargs["fom_evaluation_concurrency"] = 8
+              kwargs["rom_evaluation_concurrency"] = 8
+              return original_run_mf_eki(*args, **kwargs)
+
+          benchmark.run_eki = run_eki_parallel
+          benchmark.mf_eki_with_auto_rom = run_mf_eki_parallel
+          benchmark.main(
+              smoke=False,
+              work_dir="benchmark-work",
+              output_dir="benchmark-results",
           )
           PY
       - name: Upload benchmark results
