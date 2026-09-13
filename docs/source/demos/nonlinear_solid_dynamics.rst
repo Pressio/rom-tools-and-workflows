@@ -1,14 +1,15 @@
-Nonlinear solid dynamics model
-==============================
+Solid dynamics model
+====================
 
-The examples include a lightweight two-dimensional nonlinear solid-dynamics
-solver written in pure Python with NumPy and SciPy.  The model is intended as a
+The examples include a lightweight two-dimensional solid-dynamics solver
+written in pure Python with NumPy and SciPy.  The model is intended as a
 transparent reference problem for projection-based ROMs, hyper-reduction,
 surrogates, UQ, and inverse workflows.  It is not intended to replace a
 production structural-mechanics code.
 
-The core solver and romtools QoI wrapper live in ``examples/models``.  The
-user-facing examples live in ``examples/nonlinear_solid_dynamics``.
+The core Neo-Hookean solver, the common material-model facade, and the romtools
+QoI wrapper live in ``examples/models``.  The user-facing examples live in
+``examples/nonlinear_solid_dynamics``.
 
 Governing equations
 -------------------
@@ -26,12 +27,18 @@ as ``mass_matrix``, ``internal_force``, ``tangent_stiffness``, and
 ``acceleration``.  Element-level internal-force evaluation is also available
 for future hyper-reduction examples.
 
-Spatial discretization and material
------------------------------------
+Spatial discretization and materials
+------------------------------------
 
-The initial implementation uses a structured rectangular mesh of bilinear Q4
-elements, two-by-two Gauss quadrature, a total-Lagrangian formulation, and plane
-strain kinematics.  The constitutive law is the compressible Neo-Hookean model
+The implementation uses a structured rectangular mesh of bilinear Q4 elements,
+two-by-two Gauss quadrature, and plane-strain kinematics.  Two constitutive
+models are available through ``examples/models/solid_dynamics.py``.
+
+Neo-Hookean
+^^^^^^^^^^^
+
+The nonlinear model uses a total-Lagrangian formulation and the compressible
+Neo-Hookean energy
 
 .. math::
 
@@ -40,15 +47,35 @@ strain kinematics.  The constitutive law is the compressible Neo-Hookean model
    + \frac{\mu}{2}(I_C-3),
 
 where ``lambda`` and ``mu`` are the Lamé constants.  The corresponding first
-Piola stress used by the implementation is
+Piola stress is
 
 .. math::
 
    P = \mu F
    + \left[\frac{\lambda}{2}(J^2-1)-\mu\right]F^{-T}.
 
-The consistent material tangent is assembled analytically.  Both consistent
-and row-sum lumped mass matrices are supported.
+The consistent material tangent is assembled analytically.
+
+Linear elasticity
+^^^^^^^^^^^^^^^^^
+
+A small-strain isotropic linear-elastic option is also available.  It uses
+
+.. math::
+
+   \varepsilon = \frac{1}{2}\left(\nabla u + \nabla u^T\right),
+
+.. math::
+
+   \sigma = \lambda\,\mathrm{tr}(\varepsilon)I + 2\mu\varepsilon.
+
+The resulting internal force is linear in displacement and the tangent
+stiffness is constant.  The linear material reuses the same mesh, mass matrix,
+boundary-condition handling, and explicit/implicit time integrators as the
+Neo-Hookean material.  The beam and doubly clamped examples accept
+``material_model="neo_hookean"`` or ``material_model="linear"``.
+
+Both consistent and row-sum lumped mass matrices are supported.
 
 Time integration
 ----------------
@@ -83,7 +110,9 @@ with Jacobian
    = \frac{1}{\gamma\Delta t}M + C
    + \frac{\beta\Delta t}{\gamma}K_{\mathrm{tan}}.
 
-Newton iterations use a simple backtracking line search.
+Newton iterations use a simple backtracking line search.  For the linear
+material the same formulation is retained, although the residual is affine and
+one exact Newton correction is sufficient up to numerical roundoff.
 
 Examples
 --------
@@ -95,9 +124,9 @@ Cantilever beam
 rectangular beam and applies a smooth transient transverse resultant on the
 right end.  The example plots the vertical tip-displacement history and stores
 full displacement/velocity trajectories in memory for direct use as ROM
-snapshots.
+snapshots.  Its ``run`` function accepts either constitutive model.
 
-Run it with
+Run the default Neo-Hookean case with
 
 .. code-block:: bash
 
@@ -114,11 +143,46 @@ starts from a smooth transverse Gaussian displacement centered in the domain,
    u_y(X,0) = A\exp\left[-\frac{(X-X_c)^2}{2\sigma^2}\right].
 
 The amplitude, width, and center are explicit parameters of the initialization.
-This problem provides an unforced nonlinear transient that is useful for ROM
-basis construction and reduced-dynamics studies.
+The same example can use either the Neo-Hookean or linear-elastic material.
 
-Published benchmark check
--------------------------
+The **linear transverse problem is not the scalar two-way wave equation**.  A
+transverse disturbance of a clamped beam excites flexural/elastic modes; in a
+slender-beam approximation the corresponding Euler--Bernoulli equation contains
+a fourth spatial derivative and is dispersive.  In the full 2-D linear solid,
+the governing equations are the vector elastodynamic equations and support
+longitudinal and shear waves.
+
+Longitudinal two-way wave check
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``examples/nonlinear_solid_dynamics/linear_wave.py`` provides a separate
+configuration that does reduce to the scalar two-way wave equation.  It uses the
+linear material, constrains all transverse DOFs, fixes the axial displacement at
+both ends, and initializes an axial Gaussian perturbation that is uniform
+through the height.  The continuum reduction is
+
+.. math::
+
+   u_{tt} = c_p^2 u_{xx},
+
+with the plane-strain longitudinal wave speed
+
+.. math::
+
+   c_p = \sqrt{\frac{\lambda+2\mu}{\rho}}.
+
+An initially stationary Gaussian therefore splits into equal left- and
+right-traveling pulses before boundary reflections occur.  This provides a
+simple linear-dynamics sanity check independent of the nonlinear benchmark.
+
+Run it with
+
+.. code-block:: bash
+
+   python examples/nonlinear_solid_dynamics/linear_wave.py
+
+Published nonlinear benchmark check
+-----------------------------------
 
 ``examples/nonlinear_solid_dynamics/benchmark_cantilever.py`` reproduces the
 large-deformation cantilever benchmark of
@@ -150,12 +214,15 @@ Verification scope
 The initial solver keeps verification deliberately focused:
 
 * zero internal force is checked in the undeformed configuration;
-* the analytical tangent is compared with a finite-difference directional
-  derivative of the internal force;
+* the Neo-Hookean analytical tangent is compared with a finite-difference
+  directional derivative of the internal force;
+* the linear material is checked for force linearity and a constant tangent;
+* the longitudinal linear-wave configuration is checked for the expected
+  left/right symmetry;
 * a small velocity-primary Newmark solve checks constrained DOFs and nonlinear
   convergence; and
 * the first minimum of the Stickle cantilever response is used as an external
-  regression check.
+  nonlinear regression check.
 
 These checks establish confidence in the example implementation without turning
 romtools into a general solid-mechanics verification suite.
@@ -168,14 +235,21 @@ QoI wrapper
 cantilever through the standard romtools model protocol.  The sample parameters
 are ``young_modulus``, ``load_amplitude``, and ``pulse_duration``.  The QoI is
 the vertical tip-displacement history; full state snapshots are saved alongside
-the QoI for later ROM construction.
+the QoI for later ROM construction.  The wrapper constructor also accepts
+``material_model="neo_hookean"`` or ``material_model="linear"``.
 
 Implementation
 --------------
 
-Core solver:
+Neo-Hookean core solver:
 
 .. literalinclude:: ../../../examples/models/nonlinear_solid_dynamics.py
+   :language: python
+   :linenos:
+
+Material-model facade and linear elasticity:
+
+.. literalinclude:: ../../../examples/models/solid_dynamics.py
    :language: python
    :linenos:
 
