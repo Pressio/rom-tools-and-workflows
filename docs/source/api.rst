@@ -1,6 +1,14 @@
 API Reference
 =============
 
+Workflow working directories
+----------------------------
+
+Workflow drivers use ``absolute_work_dir`` for their working-directory argument.
+Previous workflow-specific keyword names remain accepted for backwards
+compatibility and emit a ``DeprecationWarning``. New code should use
+``absolute_work_dir``.
+
 .. autosummary::
    :toctree: generated
    :recursive:
