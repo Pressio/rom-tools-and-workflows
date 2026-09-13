@@ -619,6 +619,9 @@
     <span class="k">if</span> <span class="n">dp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">scales</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"dp parameter dimension must match parameter_samples"</span><span class="p">)</span>
 
+    <span class="c1"># A unit scale is only a final numerical safeguard for a parameter with</span>
+    <span class="c1"># zero mean, no finite range, and zero initial variance. Normal runs have</span>
+    <span class="c1"># a physical scale from one of the three sources above.</span>
     <span class="n">scales</span> <span class="o">=</span> <span class="n">scales</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">scales</span><span class="p">[</span><span class="n">scales</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tiny</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
     <span class="n">normalized_dp</span> <span class="o">=</span> <span class="n">dp</span> <span class="o">/</span> <span class="n">scales</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>

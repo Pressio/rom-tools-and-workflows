@@ -192,8 +192,7 @@ how a single evaluation runs, through the ``self.dispatcher`` calls you added
 above.
 
 .. note::
-   The working directory argument (``absolute_work_dir`` or
-   ``absolute_work_dir``) must be an absolute path for local runs. When you
+   The working directory argument ``absolute_work_dir`` must be an absolute path for local runs. When you
    pass a ``RemoteDispatcher``, a relative path is also accepted and is
    resolved against ``remote_root``.
 
