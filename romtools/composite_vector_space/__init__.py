@@ -104,29 +104,28 @@ class CompositeVectorSpace:
                ), "Error constructing composite vector space, not all spaces have the same spatial dimension"
 
     def __construct_global_shift_vector(self):
-        # Constructs the full shift vector
-        return np.concatenate(self.__compact_shift_vector, axis=0)
+        # Constructs the full shift vector by stacking individual shift vectors
+        global_shift_vector = self.__compact_shift_vector[0]
+        for shift_vector in self.__compact_shift_vector[1:]:
+            global_shift_vector = np.vstack((global_shift_vector, shift_vector))
+        return global_shift_vector
 
     def __construct_full_basis(self):
-        # Constructs a full block-diagonal basis from the compact bases
-        full_basis = np.zeros(self.__extent, dtype=self.__compact_basis[0].dtype)
-        var_offset = 0
-        basis_offset = 0
-        for local_basis in self.__compact_basis:
-            n_vars, _, n_basis = local_basis.shape
-            full_basis[
-                var_offset:var_offset+n_vars,
-                :,
-                basis_offset:basis_offset+n_basis,
-            ] = local_basis
-            var_offset += n_vars
-            basis_offset += n_basis
+        # Constructs a block diagonal basis from compact basis representation
+        full_basis = np.zeros(self.__extent)
+        row_start = 0
+        col_start = 0
+        for basis in self.__compact_basis:
+            n_vars, n_x, n_basis = basis.shape
+            full_basis[row_start:row_start+n_vars, :, col_start:col_start+n_basis] = basis
+            row_start += n_vars
+            col_start += n_basis
         return full_basis
 
     def __construct_compact_basis(self, list_of_vector_spaces):
-        self.__compact_basis = [
-            vector_space.get_basis() for vector_space in list_of_vector_spaces
-        ]
-        self.__compact_shift_vector = [
-            vector_space.get_shift_vector() for vector_space in list_of_vector_spaces
-        ]
+        # Save basis and shifts without constructing block diagonal arrays
+        self.__compact_basis = []
+        self.__compact_shift_vector = []
+        for vector_space in list_of_vector_spaces:
+            self.__compact_basis.append(vector_space.get_basis())
+            self.__compact_shift_vector.append(vector_space.get_shift_vector())
