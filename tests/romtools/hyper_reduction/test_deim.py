@@ -3,7 +3,10 @@ import pytest
 import scipy.linalg as scipy_linalg
 from romtools.hyper_reduction import deim
 from romtools.hyper_reduction import DEIM, QDEIM
-from romtools.vector_space.utils.truncater import BasisSizeTruncater
+from romtools.vector_space.utils.truncater import (
+    BasisSizeTruncater,
+    EnergyBasedTruncater,
+)
 
 
 def _flatten_tensor(tensor):
@@ -26,11 +29,12 @@ def test_deim_class_from_basis_uses_tensor_api_and_shared_points():
     function_basis[0, 1, 0] = 1.0
     function_basis[1, 2, 1] = 1.0
 
-    reducer = DEIM.from_basis(function_basis)
+    reducer = DEIM.from_basis(function_basis, basis_mode="global")
 
     assert reducer.function_basis.shape == (2, 3, 2)
     assert np.array_equal(reducer.sample_indices, np.array([1, 2]))
     assert reducer.sample_all_states
+    assert reducer.basis_mode == "global"
 
     function_basis_matrix = _flatten_tensor(function_basis)
     # C-order state-major layout gives rows [1, 2] for state 0 and
@@ -56,8 +60,102 @@ def test_deim_class_from_snapshots():
         truncater=BasisSizeTruncater(2),
     )
 
-    assert reducer.function_basis.shape == (1, 4, 2)
+    assert reducer.basis_mode == "per_state"
+    assert reducer.basis_sizes == (2,)
+    assert reducer.function_basis[0].shape == (4, 2)
     assert np.array_equal(reducer.sample_indices, np.array([0, 1]))
+
+
+@pytest.mark.mpi_skip
+def test_deim_per_state_unions_state_samples_and_oversamples_each_state():
+    function_basis = np.zeros((2, 4, 2))
+    function_basis[0, 0, 0] = 1.0
+    function_basis[0, 1, 1] = 1.0
+    function_basis[1, 1, 0] = 2.0
+    function_basis[1, 2, 1] = 3.0
+
+    reducer = DEIM.from_basis(function_basis)
+
+    assert reducer.basis_mode == "per_state"
+    assert reducer.basis_sizes == (2, 2)
+    assert np.array_equal(reducer.state_sample_indices[0], np.array([0, 1]))
+    assert np.array_equal(reducer.state_sample_indices[1], np.array([1, 2]))
+    assert np.array_equal(reducer.sample_indices, np.array([0, 1, 2]))
+
+    state_zero_reconstruction = (
+        function_basis[0]
+        @ np.linalg.pinv(function_basis[0, reducer.sample_indices, :])
+    )
+    state_one_reconstruction = (
+        function_basis[1]
+        @ np.linalg.pinv(function_basis[1, reducer.sample_indices, :])
+    )
+    expected = scipy_linalg.block_diag(
+        state_zero_reconstruction,
+        state_one_reconstruction,
+    )
+    assert np.allclose(reducer.reconstruction_matrix(), expected)
+
+
+@pytest.mark.mpi_skip
+def test_deim_per_state_snapshot_pod_supports_different_basis_sizes():
+    function_snapshots = np.zeros((2, 4, 3))
+    function_snapshots[0, 0, 0] = 10.0
+    function_snapshots[0, 1, 1] = 0.1
+    function_snapshots[0, 2, 2] = 0.01
+    function_snapshots[1, 0, 0] = 3.0
+    function_snapshots[1, 1, 1] = 2.0
+    function_snapshots[1, 2, 2] = 0.1
+
+    reducer = DEIM.from_snapshots(
+        function_snapshots,
+        truncater=EnergyBasedTruncater(0.99),
+    )
+
+    assert reducer.basis_sizes == (1, 2)
+    state_bases = reducer.function_basis
+    assert state_bases[0].shape == (4, 1)
+    assert state_bases[1].shape == (4, 2)
+
+    function = np.vstack((
+        state_bases[0] @ np.array([2.0]),
+        state_bases[1] @ np.array([1.5, -0.75]),
+    ))
+    reconstructed = reducer.reconstruct(
+        function[:, reducer.sample_indices]
+    )
+    assert np.allclose(reconstructed, function)
+
+
+@pytest.mark.mpi_skip
+def test_deim_per_state_selection_is_invariant_to_independent_state_scaling():
+    function_snapshots = np.zeros((2, 4, 3))
+    function_snapshots[0, 0, 0] = 10.0
+    function_snapshots[0, 1, 1] = 0.1
+    function_snapshots[0, 2, 2] = 0.01
+    function_snapshots[1, 0, 0] = 3.0
+    function_snapshots[1, 1, 1] = 2.0
+    function_snapshots[1, 2, 2] = 0.1
+
+    scaled_snapshots = function_snapshots.copy()
+    scaled_snapshots[0] *= 1.0e-9
+    scaled_snapshots[1] *= 1.0e12
+
+    reducer = DEIM.from_snapshots(
+        function_snapshots,
+        truncater=EnergyBasedTruncater(0.99),
+    )
+    scaled_reducer = DEIM.from_snapshots(
+        scaled_snapshots,
+        truncater=EnergyBasedTruncater(0.99),
+    )
+
+    assert reducer.basis_sizes == scaled_reducer.basis_sizes
+    for indices, scaled_indices in zip(
+            reducer.state_sample_indices,
+            scaled_reducer.state_sample_indices):
+        assert np.array_equal(indices, scaled_indices)
+    assert np.array_equal(reducer.sample_indices, scaled_reducer.sample_indices)
 
 
 @pytest.mark.mpi_skip
@@ -105,7 +203,40 @@ def test_qdeim_class_from_basis_reconstructs_basis_vectors():
 
 
 @pytest.mark.mpi_skip
-def test_qdeim_multistate_samples_all_states_at_selected_points():
+def test_qdeim_per_state_uses_qr_selection_for_each_state():
+    function_basis = np.array([
+        [
+            [3.0, 0.0],
+            [0.0, 2.0],
+            [0.2, 0.1],
+            [0.1, 0.2],
+        ],
+        [
+            [0.1, 0.2],
+            [0.2, 0.1],
+            [4.0, 0.0],
+            [0.0, 3.0],
+        ],
+    ])
+
+    expected_state_indices = tuple(
+        deim.qdeim_get_indices(function_basis[state_index])
+        for state_index in range(function_basis.shape[0])
+    )
+    expected_union = _unique_preserve_order(
+        np.concatenate(expected_state_indices)
+    )
+
+    reducer = QDEIM.from_basis(function_basis)
+
+    for actual, expected in zip(
+            reducer.state_sample_indices, expected_state_indices):
+        assert np.array_equal(actual, expected)
+    assert np.array_equal(reducer.sample_indices, expected_union)
+
+
+@pytest.mark.mpi_skip
+def test_qdeim_multistate_global_samples_all_states_at_selected_points():
     function_basis = np.zeros((2, 3, 2))
     function_basis[0, 0, 0] = 2.0
     function_basis[1, 2, 1] = 3.0
@@ -113,7 +244,7 @@ def test_qdeim_multistate_samples_all_states_at_selected_points():
     raw_indices = deim.qdeim_get_indices(function_basis_matrix)
     expected_points = _unique_preserve_order(raw_indices % 3)
 
-    reducer = QDEIM.from_basis(function_basis)
+    reducer = QDEIM.from_basis(function_basis, basis_mode="global")
 
     assert np.array_equal(reducer.sample_indices, expected_points)
     assert reducer.reconstruction_matrix().shape[1] == 2 * expected_points.size
@@ -128,8 +259,8 @@ def test_qdeim_class_from_snapshots():
         truncater=BasisSizeTruncater(3),
     )
 
-    assert reducer.function_basis.shape == (1, 4, 3)
-    function_basis_matrix = _flatten_tensor(reducer.function_basis)
+    assert reducer.basis_sizes == (3,)
+    function_basis_matrix = reducer.function_basis[0]
     assert np.array_equal(
         reducer.sample_indices,
         deim.qdeim_get_indices(function_basis_matrix),
@@ -194,6 +325,7 @@ def test_deim_class_uses_c_order_for_shared_state_expansion():
     reducer = DEIM.from_basis(
         function_basis,
         sample_indices=np.array([1]),
+        basis_mode="global",
     )
 
     function_basis_matrix = np.reshape(
@@ -213,7 +345,7 @@ def test_deim_class_uses_c_order_for_shared_state_expansion():
 
 
 @pytest.mark.mpi_skip
-def test_deim_class_can_opt_out_of_shared_state_sampling():
+def test_deim_class_can_opt_out_of_shared_state_sampling_in_global_mode():
     function_basis = np.array([
         [[1.0, 0.0], [0.0, 1.0], [0.5, 0.25]],
         [[0.25, 0.5], [1.0, 1.0], [2.0, -1.0]],
@@ -226,6 +358,7 @@ def test_deim_class_can_opt_out_of_shared_state_sampling():
     reducer = DEIM.from_basis(
         function_basis,
         sample_all_states=False,
+        basis_mode="global",
     )
 
     assert not reducer.sample_all_states
@@ -241,12 +374,29 @@ def test_deim_class_can_opt_out_of_shared_state_sampling():
 
 
 @pytest.mark.mpi_skip
+def test_per_state_mode_requires_shared_state_sampling():
+    function_basis = np.array([
+        [[1.0], [0.0], [0.5]],
+        [[0.0], [1.0], [0.25]],
+    ])
+    with pytest.raises(ValueError, match="incompatible"):
+        DEIM.from_basis(
+            function_basis,
+            sample_all_states=False,
+            basis_mode="per_state",
+        )
+
+
+@pytest.mark.mpi_skip
 def test_deim_class_validates_tensor_inputs():
     with pytest.raises(ValueError, match="rank-3"):
         DEIM.from_basis(np.ones((3, 2)))
 
     with pytest.raises(ValueError, match="linearly independent"):
         DEIM.from_basis(np.ones((1, 3, 2)))
+
+    with pytest.raises(ValueError, match="basis_mode"):
+        DEIM.from_basis(np.ones((1, 3, 1)), basis_mode="bad-mode")
 
     function_basis = np.zeros((2, 3, 2))
     function_basis[0, 1, 0] = 1.0
@@ -256,23 +406,31 @@ def test_deim_class_validates_tensor_inputs():
         DEIM.from_basis(
             function_basis,
             sample_indices=np.array([1.0]),
+            basis_mode="global",
         )
     with pytest.raises(ValueError, match="duplicates"):
         DEIM.from_basis(
             function_basis,
             sample_indices=np.array([1, 1]),
+            basis_mode="global",
         )
     with pytest.raises(ValueError, match="spatial index"):
         DEIM.from_basis(
             function_basis,
             sample_indices=np.array([3]),
+            basis_mode="global",
         )
     with pytest.raises(TypeError, match="bool"):
-        DEIM.from_basis(function_basis, sample_all_states="yes")
+        DEIM.from_basis(
+            function_basis,
+            sample_all_states="yes",
+            basis_mode="global",
+        )
 
     reducer = DEIM.from_basis(
         function_basis,
         sample_indices=np.array([1]),
+        basis_mode="global",
     )
     with pytest.raises(ValueError, match="leading shape"):
         reducer.reconstruct(np.ones((2, 2)))
