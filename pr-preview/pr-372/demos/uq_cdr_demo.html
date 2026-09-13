@@ -689,7 +689,7 @@ is not part of normal CI or documentation generation.</p>
 <span class="linenos">54</span>        <span class="n">model</span><span class="o">=</span><span class="n">IntegratedFluxCdrModel</span><span class="p">(</span><span class="n">nx</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">21</span><span class="p">),</span>
 <span class="linenos">55</span>        <span class="n">parameter_space</span><span class="o">=</span><span class="n">parameter_space</span><span class="p">,</span>
 <span class="linenos">56</span>        <span class="n">absolute_uq_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">output_directory</span> <span class="o">/</span> <span class="s2">"monte_carlo"</span><span class="p">),</span>
-<span class="linenos">57</span>        <span class="n">number_of_samples</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+<span class="linenos">57</span>        <span class="n">number_of_samples</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
 <span class="linenos">58</span>        <span class="n">random_seed</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
 <span class="linenos">59</span>    <span class="p">)</span>
 <span class="linenos">60</span>
@@ -699,8 +699,8 @@ is not part of normal CI or documentation generation.</p>
 <span class="linenos">64</span>        <span class="n">low_fidelity_model</span><span class="o">=</span><span class="n">IntegratedFluxCdrModel</span><span class="p">(</span><span class="n">nx</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">9</span><span class="p">),</span>
 <span class="linenos">65</span>        <span class="n">parameter_space</span><span class="o">=</span><span class="n">parameter_space</span><span class="p">,</span>
 <span class="linenos">66</span>        <span class="n">absolute_uq_directory</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mfmc_directory</span><span class="p">),</span>
-<span class="linenos">67</span>        <span class="n">pilot_sample_count</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<span class="linenos">68</span>        <span class="n">high_fidelity_equivalent_budget</span><span class="o">=</span><span class="mf">12.0</span><span class="p">,</span>
+<span class="linenos">67</span>        <span class="n">pilot_sample_count</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="linenos">68</span>        <span class="n">high_fidelity_equivalent_budget</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span>
 <span class="linenos">69</span>        <span class="n">low_to_high_fidelity_cost_ratio</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
 <span class="linenos">70</span>        <span class="n">allocation_qoi_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
 <span class="linenos">71</span>        <span class="n">random_seed</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
