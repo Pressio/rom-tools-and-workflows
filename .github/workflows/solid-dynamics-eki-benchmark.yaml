@@ -31,11 +31,14 @@ jobs:
           MKL_NUM_THREADS: "1"
           NUMEXPR_NUM_THREADS: "1"
         run: |
+          set -o pipefail
           mkdir -p benchmark-results
           python - <<'PY' | tee benchmark-results/full_benchmark.log
           import sys
+          from pathlib import Path
 
-          sys.path.insert(0, "examples/models")
+          root = Path.cwd()
+          sys.path.insert(0, str(root / "examples" / "models"))
           from nonlinear_solid_dynamics import NonlinearSolid2D
           from sparse_solid_dynamics import (
               acceleration_sparse,
@@ -50,7 +53,7 @@ jobs:
 
           NonlinearSolid2D.solve_implicit = solve_without_line_search
 
-          sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
+          sys.path.insert(0, str(root / "examples" / "solid_dynamics_eki_mf_eki"))
           import example as benchmark
 
           original_run_eki = benchmark.run_eki
@@ -69,8 +72,8 @@ jobs:
           benchmark.mf_eki_with_auto_rom = run_mf_eki_parallel
           benchmark.main(
               smoke=False,
-              work_dir="benchmark-work",
-              output_dir="benchmark-results",
+              work_dir=str((root / "benchmark-work").resolve()),
+              output_dir=str((root / "benchmark-results").resolve()),
           )
           PY
       - name: Upload benchmark results
