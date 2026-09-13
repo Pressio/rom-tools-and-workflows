@@ -646,7 +646,7 @@ wall-clock totals.</p></li>
 <span class="linenos"> 75</span>    <span class="k">if</span> <span class="n">smoke</span><span class="p">:</span>
 <span class="linenos"> 76</span>        <span class="k">return</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
 <span class="linenos"> 77</span>            <span class="n">fom</span><span class="o">=</span><span class="n">Discretization</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">),</span>
-<span class="linenos"> 78</span>            <span class="n">observation_times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">]),</span>
+<span class="linenos"> 78</span>            <span class="n">observation_times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">]),</span>
 <span class="linenos"> 79</span>            <span class="n">eki_ensemble_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 <span class="linenos"> 80</span>            <span class="n">mf_fom_ensemble_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 <span class="linenos"> 81</span>            <span class="n">mf_extra_gp_ensemble_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
@@ -659,7 +659,7 @@ wall-clock totals.</p></li>
 <span class="linenos"> 88</span>    <span class="k">return</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
 <span class="linenos"> 89</span>        <span class="c1"># Truth and inference HF deliberately use this same discretization.</span>
 <span class="linenos"> 90</span>        <span class="n">fom</span><span class="o">=</span><span class="n">Discretization</span><span class="p">(</span><span class="mi">33</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<span class="linenos"> 91</span>        <span class="n">observation_times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">1.001</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">),</span>
+<span class="linenos"> 91</span>        <span class="n">observation_times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">1.001</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span>
 <span class="linenos"> 92</span>        <span class="n">eki_ensemble_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
 <span class="linenos"> 93</span>        <span class="n">mf_fom_ensemble_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
 <span class="linenos"> 94</span>        <span class="n">mf_extra_gp_ensemble_size</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
@@ -1009,8 +1009,8 @@ wall-clock totals.</p></li>
 <span class="linenos">438</span>    <span class="n">mf_dir</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="s2">"mf_eki_gp_auto_rom"</span>
 <span class="linenos">439</span>
 <span class="linenos">440</span>    <span class="n">solver_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-<span class="linenos">441</span>        <span class="n">initial_step_size</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-<span class="linenos">442</span>        <span class="n">regularization_parameter</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+<span class="linenos">441</span>        <span class="n">initial_step_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+<span class="linenos">442</span>        <span class="n">regularization_parameter</span><span class="o">=</span><span class="mf">1.0e-8</span><span class="p">,</span>
 <span class="linenos">443</span>        <span class="n">step_size_growth_factor</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span>
 <span class="linenos">444</span>        <span class="n">step_size_decay_factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
 <span class="linenos">445</span>        <span class="n">max_step_size_decrease_trys</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
@@ -1100,61 +1100,68 @@ wall-clock totals.</p></li>
 <span class="linenos">529</span>        <span class="s2">"truth"</span><span class="p">:</span> <span class="n">TRUTH</span><span class="p">,</span>
 <span class="linenos">530</span>        <span class="s2">"noise_sigma"</span><span class="p">:</span> <span class="n">noise_sigma</span><span class="p">,</span>
 <span class="linenos">531</span>        <span class="s2">"fom_discretization"</span><span class="p">:</span> <span class="nb">vars</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">fom</span><span class="p">),</span>
-<span class="linenos">532</span>        <span class="s2">"truth_and_hf_share_discretization"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">533</span>        <span class="s2">"low_fidelity_model"</span><span class="p">:</span> <span class="s2">"Gaussian-process automatic QoI ROM"</span><span class="p">,</span>
-<span class="linenos">534</span>        <span class="s2">"gp_settings"</span><span class="p">:</span> <span class="p">{</span>
-<span class="linenos">535</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">536</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">537</span>            <span class="s2">"noise_variance_fraction"</span><span class="p">:</span> <span class="mf">1.0e-6</span><span class="p">,</span>
-<span class="linenos">538</span>            <span class="s2">"rom_tolerance"</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span>
-<span class="linenos">539</span>            <span class="s2">"max_training_history"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">max_gp_training_history</span><span class="p">,</span>
-<span class="linenos">540</span>            <span class="s2">"extra_ensemble_size"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">mf_extra_gp_ensemble_size</span><span class="p">,</span>
-<span class="linenos">541</span>            <span class="s2">"num_rom_substeps"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">num_gp_substeps</span><span class="p">,</span>
-<span class="linenos">542</span>        <span class="p">},</span>
-<span class="linenos">543</span>        <span class="s2">"eki_final_estimate"</span><span class="p">:</span> <span class="n">final_estimate</span><span class="p">(</span><span class="n">eki_parameters</span><span class="p">),</span>
-<span class="linenos">544</span>        <span class="s2">"mf_eki_final_estimate"</span><span class="p">:</span> <span class="n">final_estimate</span><span class="p">(</span><span class="n">mf_parameters</span><span class="p">),</span>
-<span class="linenos">545</span>        <span class="s2">"eki_final_error"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">eki_error</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">eki_error</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
-<span class="linenos">546</span>        <span class="s2">"mf_eki_final_error"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">mf_error</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">mf_error</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
-<span class="linenos">547</span>        <span class="s2">"eki_hf_evaluations"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">eki_cost</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">eki_cost</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
-<span class="linenos">548</span>        <span class="s2">"mf_eki_hf_evaluations"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">mf_cost</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">mf_cost</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
-<span class="linenos">549</span>        <span class="s2">"eki_hf_wallclock_seconds"</span><span class="p">:</span> <span class="n">_hf_wallclock</span><span class="p">(</span><span class="n">eki_dir</span><span class="p">),</span>
-<span class="linenos">550</span>        <span class="s2">"mf_eki_hf_wallclock_seconds"</span><span class="p">:</span> <span class="n">_hf_wallclock</span><span class="p">(</span><span class="n">mf_dir</span><span class="p">),</span>
-<span class="linenos">551</span>    <span class="p">}</span>
-<span class="linenos">552</span>    <span class="k">with</span> <span class="p">(</span>
-<span class="linenos">553</span>        <span class="n">figures_dir</span> <span class="o">/</span> <span class="s2">"solid_dynamics_eki_mf_eki_summary.json"</span>
-<span class="linenos">554</span>    <span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
-<span class="linenos">555</span>        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="linenos">556</span>
-<span class="linenos">557</span>    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-<span class="linenos">558</span>
-<span class="linenos">559</span>
-<span class="linenos">560</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
-<span class="linenos">561</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
-<span class="linenos">562</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-<span class="linenos">563</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
-<span class="linenos">564</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
-<span class="linenos">565</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run a reduced CI configuration."</span><span class="p">,</span>
-<span class="linenos">566</span>    <span class="p">)</span>
-<span class="linenos">567</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-<span class="linenos">568</span>        <span class="s2">"--work-dir"</span><span class="p">,</span>
-<span class="linenos">569</span>        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-<span class="linenos">570</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Directory for EKI/MF-EKI iteration data."</span><span class="p">,</span>
-<span class="linenos">571</span>    <span class="p">)</span>
-<span class="linenos">572</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-<span class="linenos">573</span>        <span class="s2">"--output-dir"</span><span class="p">,</span>
-<span class="linenos">574</span>        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-<span class="linenos">575</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Directory for figures and summary JSON."</span><span class="p">,</span>
-<span class="linenos">576</span>    <span class="p">)</span>
-<span class="linenos">577</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">578</span>
-<span class="linenos">579</span>
-<span class="linenos">580</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">581</span>    <span class="n">args</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
-<span class="linenos">582</span>    <span class="n">main</span><span class="p">(</span>
-<span class="linenos">583</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
-<span class="linenos">584</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
-<span class="linenos">585</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<span class="linenos">586</span>    <span class="p">)</span>
+<span class="linenos">532</span>        <span class="s2">"observation_times"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">observation_times</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+<span class="linenos">533</span>        <span class="s2">"num_sensors"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">SENSOR_X_OVER_L</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+<span class="linenos">534</span>        <span class="s2">"qoi_dimension"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">clean_observations</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+<span class="linenos">535</span>        <span class="s2">"eki_settings"</span><span class="p">:</span> <span class="p">{</span>
+<span class="linenos">536</span>            <span class="s2">"initial_step_size"</span><span class="p">:</span> <span class="n">solver_args</span><span class="p">[</span><span class="s2">"initial_step_size"</span><span class="p">],</span>
+<span class="linenos">537</span>            <span class="s2">"regularization_parameter"</span><span class="p">:</span> <span class="n">solver_args</span><span class="p">[</span><span class="s2">"regularization_parameter"</span><span class="p">],</span>
+<span class="linenos">538</span>        <span class="p">},</span>
+<span class="linenos">539</span>        <span class="s2">"truth_and_hf_share_discretization"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">540</span>        <span class="s2">"low_fidelity_model"</span><span class="p">:</span> <span class="s2">"Gaussian-process automatic QoI ROM"</span><span class="p">,</span>
+<span class="linenos">541</span>        <span class="s2">"gp_settings"</span><span class="p">:</span> <span class="p">{</span>
+<span class="linenos">542</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">543</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">544</span>            <span class="s2">"noise_variance_fraction"</span><span class="p">:</span> <span class="mf">1.0e-6</span><span class="p">,</span>
+<span class="linenos">545</span>            <span class="s2">"rom_tolerance"</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span>
+<span class="linenos">546</span>            <span class="s2">"max_training_history"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">max_gp_training_history</span><span class="p">,</span>
+<span class="linenos">547</span>            <span class="s2">"extra_ensemble_size"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">mf_extra_gp_ensemble_size</span><span class="p">,</span>
+<span class="linenos">548</span>            <span class="s2">"num_rom_substeps"</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">num_gp_substeps</span><span class="p">,</span>
+<span class="linenos">549</span>        <span class="p">},</span>
+<span class="linenos">550</span>        <span class="s2">"eki_final_estimate"</span><span class="p">:</span> <span class="n">final_estimate</span><span class="p">(</span><span class="n">eki_parameters</span><span class="p">),</span>
+<span class="linenos">551</span>        <span class="s2">"mf_eki_final_estimate"</span><span class="p">:</span> <span class="n">final_estimate</span><span class="p">(</span><span class="n">mf_parameters</span><span class="p">),</span>
+<span class="linenos">552</span>        <span class="s2">"eki_final_error"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">eki_error</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">eki_error</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+<span class="linenos">553</span>        <span class="s2">"mf_eki_final_error"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">mf_error</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">mf_error</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+<span class="linenos">554</span>        <span class="s2">"eki_hf_evaluations"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">eki_cost</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">eki_cost</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+<span class="linenos">555</span>        <span class="s2">"mf_eki_hf_evaluations"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">mf_cost</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">mf_cost</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+<span class="linenos">556</span>        <span class="s2">"eki_hf_wallclock_seconds"</span><span class="p">:</span> <span class="n">_hf_wallclock</span><span class="p">(</span><span class="n">eki_dir</span><span class="p">),</span>
+<span class="linenos">557</span>        <span class="s2">"mf_eki_hf_wallclock_seconds"</span><span class="p">:</span> <span class="n">_hf_wallclock</span><span class="p">(</span><span class="n">mf_dir</span><span class="p">),</span>
+<span class="linenos">558</span>    <span class="p">}</span>
+<span class="linenos">559</span>    <span class="k">with</span> <span class="p">(</span>
+<span class="linenos">560</span>        <span class="n">figures_dir</span> <span class="o">/</span> <span class="s2">"solid_dynamics_eki_mf_eki_summary.json"</span>
+<span class="linenos">561</span>    <span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+<span class="linenos">562</span>        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="linenos">563</span>
+<span class="linenos">564</span>    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="linenos">565</span>
+<span class="linenos">566</span>
+<span class="linenos">567</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
+<span class="linenos">568</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
+<span class="linenos">569</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+<span class="linenos">570</span>        <span class="s2">"--smoke"</span><span class="p">,</span>
+<span class="linenos">571</span>        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+<span class="linenos">572</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Run a reduced CI configuration."</span><span class="p">,</span>
+<span class="linenos">573</span>    <span class="p">)</span>
+<span class="linenos">574</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+<span class="linenos">575</span>        <span class="s2">"--work-dir"</span><span class="p">,</span>
+<span class="linenos">576</span>        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="linenos">577</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Directory for EKI/MF-EKI iteration data."</span><span class="p">,</span>
+<span class="linenos">578</span>    <span class="p">)</span>
+<span class="linenos">579</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+<span class="linenos">580</span>        <span class="s2">"--output-dir"</span><span class="p">,</span>
+<span class="linenos">581</span>        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="linenos">582</span>        <span class="n">help</span><span class="o">=</span><span class="s2">"Directory for figures and summary JSON."</span><span class="p">,</span>
+<span class="linenos">583</span>    <span class="p">)</span>
+<span class="linenos">584</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="linenos">585</span>
+<span class="linenos">586</span>
+<span class="linenos">587</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">588</span>    <span class="n">args</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
+<span class="linenos">589</span>    <span class="n">main</span><span class="p">(</span>
+<span class="linenos">590</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
+<span class="linenos">591</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+<span class="linenos">592</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+<span class="linenos">593</span>    <span class="p">)</span>
 </pre></div>
 </div>
 </section>
