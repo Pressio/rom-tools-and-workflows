@@ -10,6 +10,7 @@ exploration of a design space with exploitation of know minima of a function.
 
 import numpy as np
 import os
+import warnings
 import concurrent.futures
 import multiprocessing
 from romtools.workflows.models import QoiModel
@@ -25,13 +26,15 @@ def run_ego(model: QoiModel,
                  number_of_iterations: int,
                  parameter_mins: np.ndarray = None,
                  parameter_maxes: np.ndarray = None,
-                 absolute_ego_directory: str = os.getcwd() + "/work/",
+                 absolute_work_dir: str = None,
                  number_initial_samples: int=4,
                  random_seed: int = None,
                  evaluation_concurrency: int=1,
                  use_relative_error: bool = True,
                  restart_file: str=None,
-                 expected_improvement_epsilon: float=0.0):
+                 expected_improvement_epsilon: float=0.0,
+                 *,
+                 absolute_ego_directory: str = None):
     """
     Run a single-fidelity efficient global optimization
 
@@ -44,7 +47,7 @@ def run_ego(model: QoiModel,
             parameters.
         parameter_maxes: Optional upper bounds applied to sampled and updated
             parameters.
-        absolute_ego_directory: Absolute path to the working directory. Each
+        absolute_work_dir: Absolute path to the working directory. Each
             accepted or tested iteration writes into
             ``iteration_<k>/run_*`` subdirectories under this path.
         number_initial_samples: Optional number of model samples to train the
@@ -64,6 +67,17 @@ def run_ego(model: QoiModel,
         Tuple ``(parameter_sample_min, obj_min, qoi_min)`` containing the final input parameters and
         the corresponding minimum objective function and QoI as of the last iteration.
     """
+    if absolute_ego_directory is not None:
+        warnings.warn(
+            "'absolute_ego_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_ego_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
 
     start_time = time.time()
     mp_cntxt = multiprocessing.get_context("fork")
@@ -83,7 +97,7 @@ def run_ego(model: QoiModel,
         objs = []
         # run model at samples
         iteration = 0
-        run_directory_base = f'{absolute_ego_directory}/iteration_{0}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{0}/run_'
         if evaluation_concurrency == 1:
             for initial_sample in range(number_initial_samples):
                 run_directory = f'{run_directory_base}{initial_sample}'
@@ -106,13 +120,13 @@ def run_ego(model: QoiModel,
         qois = np.array(qois)
         errors = np.array(errors)
         objs = np.array(objs)
-        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
+        np.savez(f'{absolute_work_dir}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
     else:
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
         iteration = restart_file['iteration']
         parameter_names = parameter_space.get_names()
-        run_directory_base = f'{absolute_ego_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
         qois = restart_file['qois']
         errors = restart_file['errors']
         objs = restart_file['objs']
@@ -139,7 +153,7 @@ def run_ego(model: QoiModel,
                                                             epsilon=expected_improvement_epsilon)
 
         # evaluate function at new design point
-        run_directory = f'{absolute_ego_directory}/iteration_{iteration}/run'
+        run_directory = f'{absolute_work_dir}/iteration_{iteration}/run'
         qoi_new, error_new, _ = prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample_new)
         obj_new = np.array([objective_function(qoi_new, observations, relative=use_relative_error),])
 
@@ -155,12 +169,13 @@ def run_ego(model: QoiModel,
         parameter_sample_min = parameter_samples[i_min]
         qoi_min = qois[i_min]
         print(f'Iteration: {iteration}, Minimum Normalized L2 Error: {obj_min:.5f}, Wall time: {wall_time:.5f}')
-        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
+        np.savez(f'{absolute_work_dir}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
 
         iteration += 1
 
     # return final parameter sample and qoi
     return parameter_sample_min, obj_min, qoi_min
+
 
 def run_batch_ego(model: QoiModel,
                     parameter_space: ParameterSpace,
@@ -169,14 +184,16 @@ def run_batch_ego(model: QoiModel,
                     batch_size: int,
                     parameter_mins: np.ndarray = None,
                     parameter_maxes: np.ndarray = None,
-                    absolute_ego_directory: str = os.getcwd() + "/work/",
+                    absolute_work_dir: str = None,
                     number_initial_samples: int=4,
                     random_seed: int = None,
                     evaluation_concurrency: int=-1,
                     use_relative_error: bool = True,
                     restart_file: str=None,
                     expected_improvement_epsilon: float=0.0,
-                    constant_liar_type: str='pessimistic'):
+                    constant_liar_type: str='pessimistic',
+                    *,
+                    absolute_ego_directory: str = None):
     """
     Run a single-fidelity batch efficient global optimization
 
@@ -191,7 +208,7 @@ def run_batch_ego(model: QoiModel,
             parameters.
         parameter_maxes: Optional upper bounds applied to sampled and updated
             parameters.
-        absolute_ego_directory: Absolute path to the working directory. Each
+        absolute_work_dir: Absolute path to the working directory. Each
             accepted or tested iteration writes into
             ``iteration_<k>/run_*`` subdirectories under this path.
         number_initial_samples: Optional number of model samples to train the
@@ -209,11 +226,21 @@ def run_batch_ego(model: QoiModel,
         constant_liar_type: Optional string for type of constant liar acquisition
             function. Valid options are "pessimistic", "optimistic", and "average".
 
-
     Returns:
         Tuple ``(parameter_sample_min, obj_min, qoi_min)`` containing the final input parameters and
         the corresponding minimum objective function and QoI as of the last iteration.
     """
+    if absolute_ego_directory is not None:
+        warnings.warn(
+            "'absolute_ego_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_ego_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
 
     start_time = time.time()
     mp_cntxt = multiprocessing.get_context("fork")
@@ -237,7 +264,7 @@ def run_batch_ego(model: QoiModel,
         objs = []
         # run model at samples
         iteration = 0
-        run_directory_base = f'{absolute_ego_directory}/iteration_0/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_0/run_'
 
         if evaluation_concurrency == 1:
             for initial_sample in range(number_initial_samples):
@@ -261,13 +288,13 @@ def run_batch_ego(model: QoiModel,
         qois = np.array(qois)
         errors = np.array(errors)
         objs = np.array(objs)
-        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
+        np.savez(f'{absolute_work_dir}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
     else:
         restart_file = np.load(restart_file)
         parameter_samples = restart_file['parameter_samples']
         iteration = restart_file['iteration']
         parameter_names = parameter_space.get_names()
-        run_directory_base = f'{absolute_ego_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
         qois = restart_file['qois']
         errors = restart_file['errors']
         objs = restart_file['objs']
@@ -301,7 +328,7 @@ def run_batch_ego(model: QoiModel,
         objs_new = np.zeros((batch_size))
         qois_new = np.zeros((batch_size,n_qois))
         errors_new = np.zeros((batch_size,n_qois))
-        run_directory_base = f'{absolute_ego_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
         if evaluation_concurrency == 1:
             # evaluate function at new design point
             for i,parameter_sample_new in enumerate(parameter_samples_new):
@@ -332,7 +359,7 @@ def run_batch_ego(model: QoiModel,
         parameter_sample_min = parameter_samples[i_min]
         qoi_min = qois[i_min]
         print(f'Iteration: {iteration}, Minimum Normalized L2 Error: {obj_min:.5f}, Wall time: {wall_time:.5f}')
-        np.savez(f'{absolute_ego_directory}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
+        np.savez(f'{absolute_work_dir}/iteration_{iteration}/restart.npz',qois=qois,errors=errors,objs=objs,parameter_samples=parameter_samples,iteration=iteration)
 
         iteration += 1
 

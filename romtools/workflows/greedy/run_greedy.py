@@ -96,6 +96,7 @@ Alternatively, if `calibrated_error` is set to `False`, then the scaling factor 
 '''
 
 import time
+import warnings
 import numpy as np
 
 import romtools.linalg.linalg as la
@@ -108,18 +109,35 @@ from romtools.workflows.model_builders import QoiModelWithErrorEstimateBuilder
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
+
 def run_greedy(fom_model: QoiModel,
                rom_model_builder: QoiModelWithErrorEstimateBuilder,
                parameter_space: ParameterSpace,
-               absolute_greedy_work_directory: str,
-               tolerance: float,
+               absolute_work_dir: str = None,
+               tolerance: float = None,
                testing_sample_size: int = 10,
                random_seed: int = 1,
-               calibrated_error: bool=True):
+               calibrated_error: bool=True,
+               *,
+               absolute_greedy_work_directory: str = None):
     '''
     Main implementation of the greedy algorithm.
     '''
-    greedy_directory = absolute_greedy_work_directory
+    if absolute_greedy_work_directory is not None:
+        warnings.warn(
+            "'absolute_greedy_work_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_greedy_work_directory
+    if absolute_work_dir is None:
+        raise TypeError("'absolute_work_dir' is required")
+    if tolerance is None:
+        raise TypeError("'tolerance' is required")
+
+    greedy_directory = absolute_work_dir
     create_empty_dir(greedy_directory)
     offline_directory_prefix = 'offline_data'
 
@@ -231,7 +249,6 @@ def run_greedy(fom_model: QoiModel,
         greedy_file.write("Running FOM sample"
                           f" {sample_with_highest_error_indicator}\n")
         greedy_file.flush()
-
 
         ## Identify the sample with the highest error and run FOM
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_with_highest_error_indicator}'

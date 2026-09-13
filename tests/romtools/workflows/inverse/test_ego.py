@@ -84,7 +84,7 @@ def test_quadratic(tmp_path):
                  number_of_iterations = 40,
                  parameter_mins = my_parameter_space.parameter_mins,
                  parameter_maxes = my_parameter_space.parameter_maxes,
-                 absolute_ego_directory=tmp_path,
+                 absolute_work_dir=tmp_path,
                  number_initial_samples = 20,
                  random_seed=0,
                  use_relative_error=False)
@@ -149,7 +149,7 @@ def test_quadratic_batch(tmp_path):
                  batch_size = 4,
                  parameter_mins = my_parameter_space.parameter_mins,
                  parameter_maxes = my_parameter_space.parameter_maxes,
-                 absolute_ego_directory=tmp_path,
+                 absolute_work_dir=tmp_path,
                  number_initial_samples = 20,
                  random_seed=0,
                  evaluation_concurrency=4,

@@ -196,7 +196,7 @@ def build_observations():
     return observations.astype(float), observations_covariance.astype(float)
 
 
-def build_vi_kwargs(absolute_vi_directory: str):
+def build_vi_kwargs(absolute_work_dir: str):
     observations, observations_covariance = build_observations()
     return {
         "model": build_model(),
@@ -205,7 +205,7 @@ def build_vi_kwargs(absolute_vi_directory: str):
         "observations_covariance": observations_covariance,
         "parameter_mins": PARAMETER_MINS.copy(),
         "parameter_maxes": PARAMETER_MAXES.copy(),
-        "absolute_vi_directory": absolute_vi_directory,
+        "absolute_work_dir": absolute_work_dir,
         "sample_size": 8,
         "optimizer_method": "gradient",
         "optimizer_config": romtools.workflows.VIGradientOptimizerConfig(
@@ -234,7 +234,7 @@ def build_vi_kwargs(absolute_vi_directory: str):
     }
 
 
-def build_eki_kwargs(absolute_eki_directory: str):
+def build_eki_kwargs(absolute_work_dir: str):
     observations, observations_covariance = build_observations()
     return {
         "model": build_model(),
@@ -243,7 +243,7 @@ def build_eki_kwargs(absolute_eki_directory: str):
         "observations_covariance": observations_covariance,
         "parameter_mins": PARAMETER_MINS.copy(),
         "parameter_maxes": PARAMETER_MAXES.copy(),
-        "absolute_eki_directory": absolute_eki_directory,
+        "absolute_work_dir": absolute_work_dir,
         "ensemble_size": 8,
         "initial_step_size": 1.0e-2,
         "regularization_parameter": 1.0e-6,
@@ -259,7 +259,7 @@ def build_eki_kwargs(absolute_eki_directory: str):
     }
 
 
-def build_mf_vi_kwargs(absolute_vi_directory: str):
+def build_mf_vi_kwargs(absolute_work_dir: str):
     observations, observations_covariance = build_observations()
     return {
         "model": build_model(),
@@ -268,7 +268,7 @@ def build_mf_vi_kwargs(absolute_vi_directory: str):
         "observations_covariance": observations_covariance,
         "parameter_mins": PARAMETER_MINS.copy(),
         "parameter_maxes": PARAMETER_MAXES.copy(),
-        "absolute_vi_directory": absolute_vi_directory,
+        "absolute_work_dir": absolute_work_dir,
         "fom_sample_size": 8,
         "rom_extra_sample_size": 32,
         "rom_tolerance": 0.0,
@@ -308,7 +308,7 @@ def build_mf_vi_kwargs(absolute_vi_directory: str):
     }
 
 
-def build_mf_eki_kwargs(absolute_eki_directory: str):
+def build_mf_eki_kwargs(absolute_work_dir: str):
     observations, observations_covariance = build_observations()
     return {
         "model": build_model(),
@@ -317,7 +317,7 @@ def build_mf_eki_kwargs(absolute_eki_directory: str):
         "observations_covariance": observations_covariance,
         "parameter_mins": PARAMETER_MINS.copy(),
         "parameter_maxes": PARAMETER_MAXES.copy(),
-        "absolute_eki_directory": absolute_eki_directory,
+        "absolute_work_dir": absolute_work_dir,
         "fom_ensemble_size": 8,
         "rom_extra_ensemble_size": 32,
         "rom_tolerance": 0.0,

@@ -118,6 +118,7 @@ high-fidelity correction and step-acceptance logic remain closely related.
 
 import os
 import time
+import warnings
 from typing import Optional
 
 import numpy as np
@@ -363,7 +364,7 @@ def _run_eki_rejuvenation(
         model,
         observations,
         observations_covariance,
-        absolute_eki_directory,
+        absolute_work_dir,
         iteration,
         parameter_names,
         parameter_samples,
@@ -389,7 +390,7 @@ def _run_eki_rejuvenation(
         parameter_maxes,
     )
     run_directory_base = (
-        f'{absolute_eki_directory}/iteration_{iteration}/'
+        f'{absolute_work_dir}/iteration_{iteration}/'
         f'rejuvenation_{rejuvenation_count}/run_'
     )
     results = run_eki_iteration(
@@ -472,7 +473,7 @@ def run_eki(model: QoiModel,
             observations_covariance: np.ndarray,
             parameter_mins: np.ndarray = None,
             parameter_maxes: np.ndarray = None,
-            absolute_eki_directory: str = os.getcwd() + "/work/",
+            absolute_work_dir: str = None,
             ensemble_size: int = 30,
             initial_step_size: float = 0.05,
             regularization_parameter: float = 1e-4,
@@ -492,7 +493,9 @@ def run_eki(model: QoiModel,
             random_seed: int = 1,
             evaluation_concurrency=1,
             restart_file=None,
-            dispatcher: Optional[BaseDispatcher] = None):
+            dispatcher: Optional[BaseDispatcher] = None,
+            *,
+            absolute_eki_directory: str = None):
     """
     Run a single-fidelity ensemble Kalman inversion (EKI) workflow.
 
@@ -512,7 +515,7 @@ def run_eki(model: QoiModel,
             parameters.
         parameter_maxes: Optional upper bounds applied to sampled and updated
             parameters.
-        absolute_eki_directory: Absolute path to the working directory. Each
+        absolute_work_dir: Absolute path to the working directory. Each
             accepted or tested iteration writes into
             ``iteration_<k>/run_*`` subdirectories under this path.
         ensemble_size: Number of ensemble members used in the EKI update.
@@ -566,10 +569,22 @@ def run_eki(model: QoiModel,
         Tuple ``(parameter_samples, qois)`` containing the final ensemble and
         corresponding QoI matrix from the last accepted or rejuvenated state.
     """
+    if absolute_eki_directory is not None:
+        warnings.warn(
+            "'absolute_eki_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_eki_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     dispatcher = resolve_dispatcher(dispatcher)
     start_time = time.time()
 
-    dispatcher.require_absolute_path(absolute_eki_directory)
+    dispatcher.require_absolute_path(absolute_work_dir)
     dispatcher.require_supported_concurrency(evaluation_concurrency)
     assert step_size_growth_factor > 1.0, (
         "step_size_growth_factor must be greater than 1.0"
@@ -597,7 +612,7 @@ def run_eki(model: QoiModel,
         )
 
     np.random.seed(random_seed)
-    dispatcher.create_empty_dir(absolute_eki_directory)
+    dispatcher.create_empty_dir(absolute_work_dir)
 
     if restart_file is None:
         iteration = 0
@@ -613,7 +628,7 @@ def run_eki(model: QoiModel,
         rejuvenation_count = 0
         last_rejuvenation_iteration = -1
         parameter_names = parameter_space.get_names()
-        run_directory_base = f'{absolute_eki_directory}/iteration_0/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_0/run_'
         results = run_eki_iteration(
             model,
             observations,
@@ -708,7 +723,7 @@ def run_eki(model: QoiModel,
             model,
             observations,
             observations_covariance,
-            absolute_eki_directory,
+            absolute_work_dir,
             iteration,
             parameter_names,
             parameter_samples,
@@ -726,7 +741,7 @@ def run_eki(model: QoiModel,
 
     _save_eki_restart(
         dispatcher,
-        f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+        f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
         qois,
         mean_qoi,
         errors,
@@ -776,7 +791,7 @@ def run_eki(model: QoiModel,
                     model,
                     observations,
                     observations_covariance,
-                    absolute_eki_directory,
+                    absolute_work_dir,
                     iteration,
                     parameter_names,
                     parameter_samples,
@@ -793,7 +808,7 @@ def run_eki(model: QoiModel,
                 )
                 _save_eki_restart(
                     dispatcher,
-                    f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                    f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                     qois,
                     mean_qoi,
                     errors,
@@ -816,7 +831,7 @@ def run_eki(model: QoiModel,
             parameter_mins,
             parameter_maxes,
         )
-        run_directory_base = f'{absolute_eki_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
         test_results = run_eki_iteration(
             model,
             observations,
@@ -883,7 +898,7 @@ def run_eki(model: QoiModel,
                         model,
                         observations,
                         observations_covariance,
-                        absolute_eki_directory,
+                        absolute_work_dir,
                         iteration,
                         parameter_names,
                         parameter_samples,
@@ -925,7 +940,7 @@ def run_eki(model: QoiModel,
                             model,
                             observations,
                             observations_covariance,
-                            absolute_eki_directory,
+                            absolute_work_dir,
                             iteration,
                             parameter_names,
                             parameter_samples,
@@ -950,7 +965,7 @@ def run_eki(model: QoiModel,
             )
             _save_eki_restart(
                 dispatcher,
-                f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                 qois,
                 mean_qoi,
                 errors,

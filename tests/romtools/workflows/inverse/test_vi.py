@@ -149,7 +149,7 @@ def test_run_vi_limits_newton_mean_update(monkeypatch, tmp_path):
         prior_parameter_space=variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=6,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -187,7 +187,7 @@ def test_run_vi_independent_curvature_uses_separate_samples(tmp_path):
         prior_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=6,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -228,7 +228,7 @@ def test_run_vi_lagged_curvature_is_saved(tmp_path):
         prior_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=6,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -278,12 +278,12 @@ def test_run_vi_lagged_restart_matches_uninterrupted_run(tmp_path):
         newton_hessian_averaging_factor=0.7,
     )
     uninterrupted = romtools.workflows.run_vi(
-        absolute_vi_directory=str(tmp_path / "uninterrupted"),
+        absolute_work_dir=str(tmp_path / "uninterrupted"),
         optimizer_config=final_config,
         **common,
     )
     romtools.workflows.run_vi(
-        absolute_vi_directory=str(tmp_path / "split"),
+        absolute_work_dir=str(tmp_path / "split"),
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
             gradient_norm_tolerance=0.0,
             max_iterations=2,
@@ -293,7 +293,7 @@ def test_run_vi_lagged_restart_matches_uninterrupted_run(tmp_path):
         **common,
     )
     restarted = romtools.workflows.run_vi(
-        absolute_vi_directory=str(tmp_path / "split"),
+        absolute_work_dir=str(tmp_path / "split"),
         restart_file=str(tmp_path / "split" / "iteration_1" / "restart.npz"),
         optimizer_config=final_config,
         **common,
@@ -404,7 +404,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
         parameter_maxes=np.array([2.0]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=48,
         optimizer_method=optimizer_method,
         optimizer_config=optimizer_config,
@@ -498,7 +498,7 @@ def test_run_vi_uses_distinct_prior_and_initial_variational_spaces(tmp_path):
         initial_variational_parameter_space=initial_variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.array([[0.2**2]]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=4,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,
@@ -536,7 +536,7 @@ def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
         prior_parameter_space=variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.array([[0.2**2]]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=8,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -578,7 +578,7 @@ def test_run_vi_multivariate_newton_supported(tmp_path):
         prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=12,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -624,7 +624,7 @@ def test_run_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
         prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=8,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,
@@ -671,7 +671,7 @@ def test_run_vi_accepts_arctan_transform_map(tmp_path):
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
         parameter_maxes=np.array([2.0]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=10,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,
@@ -715,7 +715,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
         parameter_maxes=np.array([2.0]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=10,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,
@@ -745,7 +745,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
         parameter_maxes=np.array([2.0]),
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         restart_file=str(restart_file),
         sample_size=10,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
@@ -793,7 +793,7 @@ def test_run_vi_limits_number_of_restart_files(tmp_path):
         prior_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
-        absolute_vi_directory=str(tmp_path),
+        absolute_work_dir=str(tmp_path),
         sample_size=8,
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,

@@ -56,7 +56,7 @@ def run_sampler(tmp_path, dry_run=False, overwrite=True):
                                                sampler=MonteCarloSampler)
     my_model = MockModel()
     run_directories = run_sampling(my_model, my_parameter_space,
-                                   absolute_sampling_directory=tmp_path,
+                                   absolute_work_dir=tmp_path,
                                    evaluation_concurrency=2,
                                    number_of_samples=10,dry_run=dry_run,
                                    overwrite=overwrite)
@@ -85,7 +85,7 @@ def run_sampler_hetero(tmp_path):
                                              [1, 2.1, "test_string"])
     my_model = MockModel()
     run_directories = run_sampling(my_model, my_parameter_space,
-                                   absolute_sampling_directory=tmp_path,
+                                   absolute_work_dir=tmp_path,
                                    evaluation_concurrency=2,
                                    number_of_samples=4, dry_run=True,
                                    overwrite=True)
@@ -124,7 +124,7 @@ def test_sampler_qoi_stats(tmp_path):
     run_sampling(
         model,
         parameter_space,
-        absolute_sampling_directory=tmp_path,
+        absolute_work_dir=tmp_path,
         evaluation_concurrency=1,
         number_of_samples=4,
         dry_run=False,

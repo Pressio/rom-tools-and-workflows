@@ -45,11 +45,10 @@
 
 import os
 import time
+import warnings
 import numpy as np
 import concurrent.futures
 import multiprocessing
-from typing import Optional
-
 from typing import Optional
 
 from romtools.workflows.models import Model
@@ -89,18 +88,33 @@ def _compute_qoi_statistics(qoi_samples):
         "qoi_num_samples": np.array([qoi_array.shape[0]], dtype=int),
     }
 
+
 def run_sampling(model: Model,
                  parameter_space: ParameterSpace,
-                 absolute_sampling_directory: str,
-                 evaluation_concurrency = 1,
+                 absolute_work_dir: Optional[str] = None,
+                 evaluation_concurrency=1,
                  number_of_samples: int = 10,
                  random_seed: int = 1,
                  dry_run: bool = False,
                  overwrite: bool = False,
-                 dispatcher: Optional[BaseDispatcher] = None):
+                 dispatcher: Optional[BaseDispatcher] = None,
+                 *,
+                 absolute_sampling_directory: Optional[str] = None):
     '''
     Core algorithm
     '''
+    if absolute_sampling_directory is not None:
+        warnings.warn(
+            "'absolute_sampling_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_sampling_directory
+    if absolute_work_dir is None:
+        raise TypeError("'absolute_work_dir' is required")
+
     # Default to LocalDispatcher if none is provided
     dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
 
@@ -119,19 +133,19 @@ def run_sampling(model: Model,
     np.random.seed(random_seed)
 
     # Create folder if it doesn't exist
-    dispatcher.create_empty_dir(absolute_sampling_directory)
+    dispatcher.create_empty_dir(absolute_work_dir)
 
     # create parameter samples
     parameter_samples = parameter_space.generate_samples(number_of_samples)
     parameter_names = parameter_space.get_names()
 
     # Save parameter samples
-    samples_file = os.path.join(absolute_sampling_directory, 'sample_parameters.txt')
+    samples_file = os.path.join(absolute_work_dir, 'sample_parameters.txt')
     fmt = "%s "*parameter_space.get_dimensionality()
     dispatcher.np_savetxt(samples_file, parameter_samples, fmt)
 
     # Set up model directories
-    run_directory_base = f'{absolute_sampling_directory}/run_'
+    run_directory_base = f'{absolute_work_dir}/run_'
     run_directories = []
     starting_sample_index = 0
     end_sample_index = starting_sample_index + parameter_samples.shape[0]
@@ -194,7 +208,7 @@ def run_sampling(model: Model,
                         qoi_samples.append(qoi)
                 else:
                     samples_to_run.append(sample_index)
-            with concurrent.futures.ProcessPoolExecutor(max_workers = evaluation_concurrency, mp_context=mp_cntxt) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
                 these_futures = {
                     executor.submit(
                         run_sample,

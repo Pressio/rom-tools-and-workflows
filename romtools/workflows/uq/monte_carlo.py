@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from numbers import Integral
 import os
+import warnings
 from typing import Optional
 
 import numpy as np
@@ -68,7 +69,7 @@ class MultifidelityMonteCarloResult:
 
 def _require_absolute_directory(directory: str) -> None:
     if not os.path.isabs(directory):
-        raise ValueError("absolute_uq_directory must be an absolute path")
+        raise ValueError("absolute_work_dir must be an absolute path")
 
 
 def _require_sample_count(name: str, value: int, minimum: int = 2) -> None:
@@ -148,12 +149,14 @@ def _save_multifidelity_result(
 def run_monte_carlo(
     model: QoiModel,
     parameter_space: ParameterSpace,
-    absolute_uq_directory: str,
-    number_of_samples: int,
+    absolute_work_dir: Optional[str] = None,
+    number_of_samples: Optional[int] = None,
     random_seed: int = 1,
     evaluation_concurrency: int = 1,
     overwrite: bool = False,
     dispatcher: Optional[BaseDispatcher] = None,
+    *,
+    absolute_uq_directory: Optional[str] = None,
 ) -> MonteCarloResult:
     """Estimate the mean of a model QoI by Monte Carlo sampling.
 
@@ -168,7 +171,7 @@ def run_monte_carlo(
         parameter_space: Distribution used to generate independent parameter
             samples. Its parameter names define the dictionary passed to the
             model methods.
-        absolute_uq_directory: Absolute output path. Sample ``i`` is evaluated
+        absolute_work_dir: Absolute output path. Sample ``i`` is evaluated
             in ``run_i`` and aggregate results are saved to ``uq_stats.npz``.
         number_of_samples: Number of model evaluations. Must be at least two.
         random_seed: Seed forwarded to ``parameter_space.generate_samples``.
@@ -193,16 +196,30 @@ def run_monte_carlo(
         ``compute_qoi`` complete. Reused evaluations have ``NaN`` run times
         because their original timings are not reconstructed.
     """
-    _require_absolute_directory(absolute_uq_directory)
+    if absolute_uq_directory is not None:
+        warnings.warn(
+            "'absolute_uq_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_uq_directory
+    if absolute_work_dir is None:
+        raise TypeError("'absolute_work_dir' is required")
+    if number_of_samples is None:
+        raise TypeError("'number_of_samples' is required")
+
+    _require_absolute_directory(absolute_work_dir)
     _require_sample_count("number_of_samples", number_of_samples)
     dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
-    dispatcher.create_empty_dir(absolute_uq_directory)
+    dispatcher.create_empty_dir(absolute_work_dir)
     samples = parameter_space.generate_samples(number_of_samples, seed=random_seed)
     qois, run_times = evaluate_qoi_model(
         model,
         parameter_space.get_names(),
         samples,
-        os.path.join(absolute_uq_directory, "run_"),
+        os.path.join(absolute_work_dir, "run_"),
         evaluation_concurrency=evaluation_concurrency,
         overwrite=overwrite,
         dispatcher=dispatcher,
@@ -217,7 +234,7 @@ def run_monte_carlo(
         standard_error=statistics.standard_error,
         run_times=run_times,
     )
-    _save_monte_carlo_result(dispatcher, absolute_uq_directory, result, random_seed)
+    _save_monte_carlo_result(dispatcher, absolute_work_dir, result, random_seed)
     return result
 
 
@@ -315,7 +332,7 @@ def run_multifidelity_monte_carlo(
     high_fidelity_model: QoiModel,
     low_fidelity_model: QoiModel,
     parameter_space: ParameterSpace,
-    absolute_uq_directory: str,
+    absolute_work_dir: Optional[str] = None,
     number_of_high_fidelity_samples: Optional[int] = None,
     number_of_low_fidelity_samples: Optional[int] = None,
     pilot_sample_count: Optional[int] = None,
@@ -328,6 +345,8 @@ def run_multifidelity_monte_carlo(
     control_variate_coefficients: Optional[np.ndarray] = None,
     overwrite: bool = False,
     dispatcher: Optional[BaseDispatcher] = None,
+    *,
+    absolute_uq_directory: Optional[str] = None,
 ) -> MultifidelityMonteCarloResult:
     r"""Estimate a QoI mean using two-level multifidelity Monte Carlo.
 
@@ -355,7 +374,7 @@ def run_multifidelity_monte_carlo(
         low_fidelity_model: Low-fidelity ``QoiModel`` implementation. It must
             return the same flattened QoI dimension as the high-fidelity model.
         parameter_space: Distribution used to generate shared samples.
-        absolute_uq_directory: Absolute output path. Evaluations are stored in
+        absolute_work_dir: Absolute output path. Evaluations are stored in
             ``high_fidelity`` and ``low_fidelity`` subdirectories and aggregate
             results are written to ``uq_stats.npz``.
         number_of_high_fidelity_samples: Final high-fidelity count in fixed
@@ -398,7 +417,19 @@ def run_multifidelity_monte_carlo(
         use the returned mean and standard error with assumptions appropriate
         to their application.
     """
-    _require_absolute_directory(absolute_uq_directory)
+    if absolute_uq_directory is not None:
+        warnings.warn(
+            "'absolute_uq_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_uq_directory
+    if absolute_work_dir is None:
+        raise TypeError("'absolute_work_dir' is required")
+
+    _require_absolute_directory(absolute_work_dir)
     mode = _validate_multifidelity_modes(
         number_of_high_fidelity_samples,
         number_of_low_fidelity_samples,
@@ -412,12 +443,12 @@ def run_multifidelity_monte_carlo(
         raise ValueError("low_to_high_fidelity_cost_ratio must be positive")
 
     dispatcher = dispatcher if dispatcher is not None else LocalDispatcher()
-    dispatcher.create_empty_dir(absolute_uq_directory)
+    dispatcher.create_empty_dir(absolute_work_dir)
     high_directory_base = os.path.join(
-        absolute_uq_directory, "high_fidelity", "run_"
+        absolute_work_dir, "high_fidelity", "run_"
     )
     low_directory_base = os.path.join(
-        absolute_uq_directory, "low_fidelity", "run_"
+        absolute_work_dir, "low_fidelity", "run_"
     )
     parameter_names = parameter_space.get_names()
 
@@ -473,7 +504,7 @@ def run_multifidelity_monte_carlo(
         )
         _save_multifidelity_result(
             dispatcher,
-            absolute_uq_directory,
+            absolute_work_dir,
             result,
             random_seed,
             np.nan,
@@ -581,7 +612,7 @@ def run_multifidelity_monte_carlo(
     )
     _save_multifidelity_result(
         dispatcher,
-        absolute_uq_directory,
+        absolute_work_dir,
         result,
         random_seed,
         float(high_fidelity_equivalent_budget),

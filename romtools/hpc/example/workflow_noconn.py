@@ -18,7 +18,7 @@ if __name__ == '__main__':
     romtools.workflows.run_sampling(
         model = model,
         parameter_space = params,
-        absolute_sampling_directory = output_dir_name,
+        absolute_work_dir = output_dir_name,
         evaluation_concurrency = 1,
         number_of_samples = num_samples,
         random_seed = 1,

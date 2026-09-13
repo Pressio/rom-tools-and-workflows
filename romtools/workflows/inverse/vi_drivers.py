@@ -122,6 +122,7 @@ import numpy as np
 import os
 import re
 import time
+import warnings
 from scipy.stats import norm, qmc
 from typing import Optional, Tuple
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
@@ -163,7 +164,7 @@ def _resolve_restart_file(restart_file: str) -> str:
     return restart_file
 
 
-def _prune_old_restart_files(absolute_vi_directory: str,
+def _prune_old_restart_files(absolute_work_dir: str,
                              restart_files_to_keep: int,
                              dispatcher: Optional[BaseDispatcher] = None) -> None:
     if restart_files_to_keep is None:
@@ -173,11 +174,11 @@ def _prune_old_restart_files(absolute_vi_directory: str,
 
     dispatcher = resolve_dispatcher(dispatcher)
     restart_entries = []
-    for entry_name in dispatcher.list_dir(absolute_vi_directory):
+    for entry_name in dispatcher.list_dir(absolute_work_dir):
         match = re.match(r"iteration_(\d+)$", entry_name)
         if match is None:
             continue
-        restart_path = f"{absolute_vi_directory}/{entry_name}/restart.npz"
+        restart_path = f"{absolute_work_dir}/{entry_name}/restart.npz"
         if dispatcher.path_exists(restart_path):
             restart_entries.append((int(match.group(1)), restart_path))
 
@@ -716,13 +717,13 @@ def _pack_vi_history(vi_history):
     }
 
 
-def _save_vi_history(absolute_vi_directory: str,
+def _save_vi_history(absolute_work_dir: str,
                      vi_history,
                      dispatcher: Optional[BaseDispatcher] = None) -> None:
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.create_empty_dir(absolute_vi_directory)
+    dispatcher.create_empty_dir(absolute_work_dir)
     dispatcher.np_savez(
-        f'{absolute_vi_directory}/history.npz',
+        f'{absolute_work_dir}/history.npz',
         **_pack_vi_history(vi_history),
     )
 
@@ -1804,7 +1805,7 @@ def _save_vi_restart(restart_path: str,
     resolve_dispatcher(dispatcher).np_savez(restart_path, **save_data)
 
 
-def _validate_run_vi_inputs(absolute_vi_directory: str,
+def _validate_run_vi_inputs(absolute_work_dir: str,
                             sample_size: int,
                             max_step_size: float,
                             step_size_growth_factor: float,
@@ -1840,7 +1841,7 @@ def _validate_run_vi_inputs(absolute_vi_directory: str,
                             bounded_parameter_handling: str,
                             dispatcher: Optional[BaseDispatcher] = None) -> None:
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_absolute_path(absolute_vi_directory)
+    dispatcher.require_absolute_path(absolute_work_dir)
     assert sample_size > 1, "sample_size must be greater than 1"
     assert max_step_size > 0.0, "max_step_size must be positive"
     assert step_size_growth_factor >= 1.0, "step_size_growth_factor must be greater than 1.0"
@@ -1942,7 +1943,7 @@ def run_vi(model: QoiModel,
            optimizer_config=None,
            line_search_method: str = 'stochastic_nonmonotone',
            line_search_config=None,
-           absolute_vi_directory: str = os.getcwd() + "/work/",
+           absolute_work_dir: str = None,
            sample_size: int = 30,
            random_seed: int = 1,
            sampling_method: str = 'mc',
@@ -1956,7 +1957,9 @@ def run_vi(model: QoiModel,
            transform_interior_margin: float = 1e-6,
            transform_map: str = 'sigmoid',
            min_physical_variational_std_fraction: float = 1e-6,
-           dispatcher: Optional[BaseDispatcher] = None):
+           dispatcher: Optional[BaseDispatcher] = None,
+           *,
+           absolute_vi_directory: str = None):
     '''
     Run Gaussian variational inference with score-function gradients.
 
@@ -1991,7 +1994,7 @@ def run_vi(model: QoiModel,
             are `VILegacyLineSearchConfig` for line_search_method='legacy' and
             `VIStochasticNonmonotoneLineSearchConfig` for
             line_search_method='stochastic_nonmonotone'.
-        absolute_vi_directory: Absolute path to the working directory for runs.
+        absolute_work_dir: Absolute path to the working directory for runs.
         sample_size: Number of MC samples per iteration.
         random_seed: RNG seed for reproducibility.
         sampling_method: Sampling method for variational draws. Supported
@@ -1999,7 +2002,7 @@ def run_vi(model: QoiModel,
         evaluation_concurrency: Concurrent model evaluations per iteration.
         covariance_regularization: Diagonal regularization for covariance inversion.
         restart_files_to_keep: Number of most-recent restart files to retain
-            under `absolute_vi_directory`. Older restart files are removed.
+            under `absolute_work_dir`. Older restart files are removed.
         elbo_scaling_factor: Positive scalar that multiplies the ELBO objective,
             or a string mode. Supported string modes are:
             'diag_mean' (or 'auto'): mean(diag(observations_covariance)),
@@ -2027,6 +2030,18 @@ def run_vi(model: QoiModel,
     Returns:
         Tuple of (variational_mean, variational_std, parameter_samples, qois).
     '''
+    if absolute_vi_directory is not None:
+        warnings.warn(
+            "'absolute_vi_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_vi_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(evaluation_concurrency)
 
@@ -2137,7 +2152,7 @@ def run_vi(model: QoiModel,
     variational_distribution = _normalize_variational_distribution(variational_distribution)
     line_search_objective = _normalize_line_search_objective(line_search_objective)
     _validate_run_vi_inputs(
-        absolute_vi_directory=absolute_vi_directory,
+        absolute_work_dir=absolute_work_dir,
         sample_size=sample_size,
         max_step_size=max_step_size,
         step_size_growth_factor=step_size_growth_factor,
@@ -2223,7 +2238,7 @@ def run_vi(model: QoiModel,
             transform_map,
         )
 
-        run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
+        run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
         state = _evaluate_vi_state(
             model,
             observations,
@@ -2426,7 +2441,7 @@ def run_vi(model: QoiModel,
             ) if 'gradient_signal_to_noise_ratio' in restart_data else np.nan
             state['gradient_method'] = gradient_method
         else:
-            run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
+            run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
             state = _evaluate_vi_state(
                 model,
                 observations,
@@ -2506,7 +2521,7 @@ def run_vi(model: QoiModel,
 
     if restart_file is None:
         _save_vi_restart(
-            f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
+            f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
             state,
             variational_mean,
             variational_log_std,
@@ -2543,7 +2558,7 @@ def run_vi(model: QoiModel,
             accepted_elbo_history=accepted_elbo_history,
             dispatcher=dispatcher,
         )
-        _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
+        _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
 
     gradient_norm = _compute_gradient_norm(state, optimization_method)
     wall_time = time.time() - start_time
@@ -2580,7 +2595,7 @@ def run_vi(model: QoiModel,
         parameter_samples=state['parameter_samples'],
     )
     _write_iteration_stats_file(
-        f'{absolute_vi_directory}/iteration_{iteration}',
+        f'{absolute_work_dir}/iteration_{iteration}',
         variational_mean,
         variational_log_std,
         min_variational_std,
@@ -2648,7 +2663,7 @@ def run_vi(model: QoiModel,
                         observations=observations,
                         observations_covariance=observations_covariance,
                         run_directory_base=(
-                            f'{absolute_vi_directory}/iteration_{iteration}/hessian_run_'
+                            f'{absolute_work_dir}/iteration_{iteration}/hessian_run_'
                         ),
                         parameter_names=parameter_names,
                         variational_mean=variational_mean,
@@ -2722,7 +2737,7 @@ def run_vi(model: QoiModel,
                 transform_map,
             )
 
-            run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
+            run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
             test_candidate = _evaluate_vi_candidate_for_line_search(
                 model,
                 observations,
@@ -2858,7 +2873,7 @@ def run_vi(model: QoiModel,
                     parameter_samples=state['parameter_samples'],
                 )
                 _write_iteration_stats_file(
-                    f'{absolute_vi_directory}/iteration_{iteration}',
+                    f'{absolute_work_dir}/iteration_{iteration}',
                     variational_mean,
                     variational_log_std,
                     min_variational_std,
@@ -2879,7 +2894,7 @@ def run_vi(model: QoiModel,
                 )
 
                 _save_vi_restart(
-                    f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
+                    f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                     state,
                     variational_mean,
                     variational_log_std,
@@ -2911,7 +2926,7 @@ def run_vi(model: QoiModel,
                     max_mean_update_std=max_mean_update_std,
                     dispatcher=dispatcher,
                 )
-                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
+                _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
                 iteration += 1
                 if elbo_converged:
                     print(
@@ -3003,7 +3018,7 @@ def run_vi(model: QoiModel,
                     * np.dot(state['gradient_log_std'], direction_log_std)
                 )
 
-            run_directory_base = f'{absolute_vi_directory}/iteration_{iteration}/run_'
+            run_directory_base = f'{absolute_work_dir}/iteration_{iteration}/run_'
             test_candidate = _evaluate_vi_candidate_for_line_search(
                 model,
                 observations,
@@ -3142,7 +3157,7 @@ def run_vi(model: QoiModel,
                     parameter_samples=state['parameter_samples'],
                 )
                 _write_iteration_stats_file(
-                    f'{absolute_vi_directory}/iteration_{iteration}',
+                    f'{absolute_work_dir}/iteration_{iteration}',
                     variational_mean,
                     variational_log_std,
                     min_variational_std,
@@ -3163,7 +3178,7 @@ def run_vi(model: QoiModel,
                 )
 
                 _save_vi_restart(
-                    f'{absolute_vi_directory}/iteration_{iteration}/restart.npz',
+                    f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                     state,
                     variational_mean,
                     variational_log_std,
@@ -3200,7 +3215,7 @@ def run_vi(model: QoiModel,
                     accepted_elbo_history=accepted_elbo_history,
                     dispatcher=dispatcher,
                 )
-                _prune_old_restart_files(absolute_vi_directory, restart_files_to_keep, dispatcher)
+                _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
                 iteration += 1
                 if elbo_converged:
                     print(
@@ -3252,5 +3267,5 @@ def run_vi(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
-    _save_vi_history(absolute_vi_directory, vi_history, dispatcher)
+    _save_vi_history(absolute_work_dir, vi_history, dispatcher)
     return variational_mean, variational_std, state['parameter_samples'], state['qois']
