@@ -56,12 +56,12 @@ def main(smoke=False):
         model, training_states, training_parameters
     )
 
-    # QDEIM shares the tensor-native DEIM reconstruction API; only the initial
-    # scalar point selection changes to pivoted QR. Shared-state sampling remains
-    # the default, so every field is evaluated at each selected spatial point.
+    # Use a separate POD/QDEIM basis for each field. Pivoted QR is applied to
+    # each basis independently, then the selected spatial points are unioned.
     qdeim = QDEIM.from_snapshots(
         rhs_training_snapshots,
         truncater=BasisSizeTruncater(basis_dimension),
+        basis_mode="per_state",
     )
 
     test_states, _ = model.solve(*test_parameters)
@@ -79,6 +79,7 @@ def main(smoke=False):
 
     full_rhs_dimension = rhs_test_snapshots.shape[0] * rhs_test_snapshots.shape[1]
     print(f"Full RHS dimension: {full_rhs_dimension}")
+    print(f"Per-state basis sizes: {qdeim.basis_sizes}")
     print(f"QDEIM spatial sample points: {qdeim.sample_indices.size}")
     print(f"Sampled state entries: {rhs_test_snapshots.shape[0] * qdeim.sample_indices.size}")
     print(f"Mean relative RHS reconstruction error: {np.mean(relative_errors):.3e}")
