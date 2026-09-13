@@ -9,8 +9,6 @@ romtools.workflows.inverse.mf\_eki\_drivers
    .. autosummary::
    
       compute_mf_eki_update
-      mf_eki_with_auto_rom
-      run_mf_eki
    
    .. rubric:: Classes
 

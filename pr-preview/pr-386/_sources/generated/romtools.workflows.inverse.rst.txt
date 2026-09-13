@@ -13,6 +13,7 @@ romtools.workflows.inverse
    bfgs_drivers
    ego_drivers
    ego_optimization_methods
+   eki_bound_transforms
    eki_drivers
    mf_eki_drivers
    mf_vi_drivers

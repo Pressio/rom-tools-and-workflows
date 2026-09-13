@@ -10,5 +10,4 @@ romtools.workflows.inverse.eki\_drivers
    
       compute_eki_update
       compute_eki_update2
-      run_eki
    
