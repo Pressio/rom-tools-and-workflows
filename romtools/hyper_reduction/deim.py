@@ -53,6 +53,7 @@ from romtools.vector_space.utils.truncater import NoOpTruncater
 
 
 def _validate_basis(function_basis):
+    '''Validate a matrix-form basis used by the legacy DEIM helpers.'''
     basis = np.asarray(function_basis, dtype=float)
     if basis.ndim != 2:
         raise ValueError("function_basis must be a rank-2 array")
@@ -69,31 +70,99 @@ def _validate_basis(function_basis):
     return np.array(basis, copy=True)
 
 
-def _validate_sample_indices(sample_indices, function_basis):
+def _tensor_to_matrix(tensor):
+    '''Collapse the romtools ``(n_vars, n_dofs, n_cols)`` tensor in C order.'''
+    array = np.asarray(tensor)
+    return np.reshape(
+        array,
+        (array.shape[0] * array.shape[1], array.shape[2]),
+        order="C",
+    )
+
+
+def _validate_basis_tensor(function_basis):
+    basis = np.asarray(function_basis, dtype=float)
+    if basis.ndim != 3:
+        raise ValueError(
+            "function_basis must be a rank-3 array with shape "
+            "(n_vars, n_dofs, n_basis)"
+        )
+    if any(extent == 0 for extent in basis.shape):
+        raise ValueError("function_basis must have no empty extents")
+    _validate_basis(_tensor_to_matrix(basis))
+    return np.array(basis, copy=True)
+
+
+def _validate_snapshot_tensor(function_snapshots):
+    snapshots = np.asarray(function_snapshots, dtype=float)
+    if snapshots.ndim != 3:
+        raise ValueError(
+            "function_snapshots must be a rank-3 array with shape "
+            "(n_vars, n_dofs, n_snapshots)"
+        )
+    if any(extent == 0 for extent in snapshots.shape):
+        raise ValueError("function_snapshots must have no empty extents")
+    if not np.all(np.isfinite(snapshots)):
+        raise ValueError("function_snapshots must contain only finite values")
+    return np.array(snapshots, copy=True)
+
+
+def _unique_preserve_order(indices):
+    indices = np.asarray(indices, dtype=int)
+    _, first_occurrences = np.unique(indices, return_index=True)
+    return indices[np.sort(first_occurrences)]
+
+
+def _expand_spatial_sample_indices(sample_indices, n_vars, n_dofs):
+    '''Map shared spatial samples to flattened state-major C-order indices.'''
+    indices = np.asarray(sample_indices, dtype=int)
+    expanded = (
+        np.arange(n_vars, dtype=int)[:, None] * n_dofs
+        + indices[None, :]
+    )
+    return np.reshape(expanded, (-1,), order="C")
+
+
+def _validate_class_sample_indices(
+        sample_indices, function_basis, sample_all_states):
     indices = np.asarray(sample_indices)
     if indices.ndim != 1:
         raise ValueError("sample_indices must be a rank-1 array")
     if not np.issubdtype(indices.dtype, np.integer):
         raise TypeError("sample_indices must contain integers")
     indices = np.array(indices, dtype=int, copy=True)
-    if indices.size < function_basis.shape[1]:
-        raise ValueError(
-            "sample_indices must contain at least one index per basis vector"
-        )
+    if indices.size == 0:
+        raise ValueError("sample_indices must contain at least one index")
     if np.unique(indices).size != indices.size:
         raise ValueError("sample_indices must not contain duplicates")
-    if np.any(indices < 0) or np.any(indices >= function_basis.shape[0]):
-        raise ValueError("sample_indices contains an out-of-bounds index")
-    sampled_basis = function_basis[indices, :]
-    if np.linalg.matrix_rank(sampled_basis) != function_basis.shape[1]:
+
+    n_vars, n_dofs, n_basis = function_basis.shape
+    function_basis_matrix = _tensor_to_matrix(function_basis)
+    if sample_all_states:
+        if np.any(indices < 0) or np.any(indices >= n_dofs):
+            raise ValueError("sample_indices contains an out-of-bounds spatial index")
+        flat_indices = _expand_spatial_sample_indices(
+            indices, n_vars, n_dofs
+        )
+    else:
+        if np.any(indices < 0) or np.any(indices >= n_vars * n_dofs):
+            raise ValueError("sample_indices contains an out-of-bounds flattened index")
+        flat_indices = indices.copy()
+
+    if flat_indices.size < n_basis:
+        raise ValueError(
+            "sample_indices do not provide enough sampled rows for the basis"
+        )
+    sampled_basis = function_basis_matrix[flat_indices, :]
+    if np.linalg.matrix_rank(sampled_basis) != n_basis:
         raise ValueError(
             "the sampled function basis must have linearly independent columns"
         )
-    return indices
+    return indices, flat_indices
 
 
 def qdeim_get_indices(function_basis):
-    '''Select interpolation indices using QDEIM.
+    '''Select interpolation indices using QDEIM for a matrix-form basis.
 
     QDEIM applies a column-pivoted QR factorization to the transpose of the
     function basis. The first ``n_basis`` pivot indices define the
@@ -115,9 +184,15 @@ def qdeim_get_indices(function_basis):
 class DEIM:
     '''Serial discrete empirical interpolation operator.
 
-    Use :meth:`from_snapshots` for the common workflow in which a POD basis
-    must first be constructed from function snapshots. Use :meth:`from_basis`
-    when the function basis is already available.
+    The public class API follows the romtools tensor convention. Function
+    bases have shape ``(n_vars, n_dofs, n_basis)`` and function snapshots have
+    shape ``(n_vars, n_dofs, n_snapshots)``. Internally, tensors are collapsed
+    to matrices using explicit C ordering, matching the rest of romtools.
+
+    By default, DEIM selects scalar state-space rows and promotes the selected
+    locations to shared spatial sample points: if any state is selected at a
+    spatial point, every state is sampled there. Set ``sample_all_states=False``
+    to retain independent flattened state-DOF sampling.
 
     Notes:
         Function snapshots are snapshots of the quantity being approximated,
@@ -125,15 +200,26 @@ class DEIM:
         state snapshots used to construct a ROM trial basis.
     '''
 
-    def __init__(self, function_basis, sample_indices, rcond=None):
-        self.__function_basis = _validate_basis(function_basis)
-        self.__sample_indices = _validate_sample_indices(
-            sample_indices, self.__function_basis
+    def __init__(self, function_basis, sample_indices, rcond=None,
+                 sample_all_states=True):
+        self.__function_basis = _validate_basis_tensor(function_basis)
+        if not isinstance(sample_all_states, (bool, np.bool_)):
+            raise TypeError("sample_all_states must be a bool")
+        self.__sample_all_states = bool(sample_all_states)
+        (
+            self.__sample_indices,
+            self.__flat_sample_indices,
+        ) = _validate_class_sample_indices(
+            sample_indices,
+            self.__function_basis,
+            self.__sample_all_states,
         )
         if rcond is not None and (not np.isfinite(rcond) or rcond < 0):
             raise ValueError("rcond must be finite and nonnegative")
         self.__rcond = rcond
-        sampled_basis = self.__function_basis[self.__sample_indices, :]
+
+        function_basis_matrix = _tensor_to_matrix(self.__function_basis)
+        sampled_basis = function_basis_matrix[self.__flat_sample_indices, :]
         if self.__rcond is None:
             sampled_basis_pinv = np.linalg.pinv(sampled_basis)
         else:
@@ -141,7 +227,7 @@ class DEIM:
                 sampled_basis, rcond=self.__rcond
             )
         self.__reconstruction_matrix = (
-            self.__function_basis @ sampled_basis_pinv
+            function_basis_matrix @ sampled_basis_pinv
         )
 
     @staticmethod
@@ -149,109 +235,220 @@ class DEIM:
         return _deim_get_indices_sharedmem(function_basis)
 
     @classmethod
-    def from_basis(cls, function_basis, sample_indices=None, rcond=None):
-        '''Construct a serial DEIM operator from a function basis.
+    def from_basis(cls, function_basis, sample_indices=None, rcond=None,
+                   sample_all_states=True):
+        '''Construct a serial DEIM operator from a tensor-form function basis.
 
         Args:
-            function_basis: ``(n_dofs, n_basis)`` function basis.
-            sample_indices: Optional rank-1 integer array of sampling points.
-                If omitted, the operator's default point-selection algorithm
-                is used.
+            function_basis: ``(n_vars, n_dofs, n_basis)`` function basis.
+            sample_indices: Optional rank-1 integer array. With
+                ``sample_all_states=True`` these are spatial indices. With
+                ``sample_all_states=False`` these are flattened state-DOF
+                indices in C order. If omitted, DEIM selects the samples.
             rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
+            sample_all_states: If ``True`` (default), selecting any state at a
+                spatial point samples every state at that point.
 
         Returns:
             DEIM: Constructed interpolation operator.
         '''
-        basis = _validate_basis(function_basis)
+        basis = _validate_basis_tensor(function_basis)
+        if not isinstance(sample_all_states, (bool, np.bool_)):
+            raise TypeError("sample_all_states must be a bool")
+
         if sample_indices is None:
-            sample_indices = cls._select_sample_indices(basis)
-        return cls(basis, sample_indices, rcond)
+            n_dofs = basis.shape[1]
+            matrix_basis = _tensor_to_matrix(basis)
+            raw_indices = np.atleast_1d(
+                cls._select_sample_indices(matrix_basis)
+            ).astype(int, copy=False)
+            if sample_all_states:
+                sample_indices = _unique_preserve_order(raw_indices % n_dofs)
+            else:
+                sample_indices = raw_indices
+
+        return cls(
+            basis,
+            sample_indices,
+            rcond=rcond,
+            sample_all_states=sample_all_states,
+        )
 
     @classmethod
     def from_snapshots(cls, function_snapshots, truncater=None,
-                       sample_indices=None, rcond=None):
-        '''Construct a serial DEIM operator from function snapshots.
+                       sample_indices=None, rcond=None,
+                       sample_all_states=True):
+        '''Construct a serial DEIM operator from tensor-form function snapshots.
 
         Args:
-            function_snapshots: ``(n_dofs, n_snapshots)`` snapshot matrix for
+            function_snapshots: ``(n_vars, n_dofs, n_snapshots)`` snapshots of
                 the function to be approximated.
             truncater: Optional implementation of the
                 ``LeftSingularVectorTruncater`` protocol. If omitted, all
                 available POD modes are retained.
-            sample_indices: Optional rank-1 integer array of sampling points.
-                If omitted, the operator's default point-selection algorithm
-                is used.
+            sample_indices: Optional rank-1 integer array. With
+                ``sample_all_states=True`` these are spatial indices. With
+                ``sample_all_states=False`` these are flattened state-DOF
+                indices in C order.
             rcond: Relative cutoff passed to :func:`numpy.linalg.pinv`.
+            sample_all_states: If ``True`` (default), selecting any state at a
+                spatial point samples every state at that point.
 
         Returns:
             DEIM: Constructed interpolation operator.
         '''
-        snapshots = np.asarray(function_snapshots, dtype=float)
-        if snapshots.ndim != 2:
-            raise ValueError("function_snapshots must be a rank-2 array")
-        if snapshots.shape[0] == 0 or snapshots.shape[1] == 0:
-            raise ValueError(
-                "function_snapshots must have at least one row and one column"
-            )
-        if not np.all(np.isfinite(snapshots)):
-            raise ValueError("function_snapshots must contain only finite values")
+        snapshots = _validate_snapshot_tensor(function_snapshots)
         if truncater is None:
             truncater = NoOpTruncater()
-        snapshot_tensor = np.array(snapshots[None, :, :], copy=True)
         function_space = VectorSpaceFromPOD(
-            snapshot_tensor, truncater=truncater
+            snapshots, truncater=truncater
         )
-        function_basis = function_space.get_basis()[0]
+        function_basis = function_space.get_basis()
         return cls.from_basis(
             function_basis,
             sample_indices=sample_indices,
             rcond=rcond,
+            sample_all_states=sample_all_states,
         )
 
     @property
     def function_basis(self):
-        '''Return a copy of the function basis.'''
+        '''Return a copy of the tensor-form function basis.'''
         return self.__function_basis.copy()
 
     @property
     def sample_indices(self):
-        '''Return a copy of the sample indices.'''
+        '''Return the sample indices.
+
+        These are spatial indices when ``sample_all_states=True`` and flattened
+        C-order state-DOF indices otherwise.
+        '''
         return self.__sample_indices.copy()
 
+    @property
+    def sample_all_states(self):
+        '''Whether all states are sampled at every selected spatial point.'''
+        return self.__sample_all_states
+
     def reconstruction_matrix(self):
-        '''Return ``U @ pinv(U[sample_indices, :])``.'''
+        '''Return the flattened DEIM reconstruction matrix.
+
+        The row ordering follows the romtools C-order state-major convention.
+        When ``sample_all_states=True``, columns are ordered by state first and
+        then by the spatial sample ordering returned by :attr:`sample_indices`.
+        '''
         return self.__reconstruction_matrix.copy()
 
     def reconstruct(self, sampled_values):
-        '''Reconstruct full-order values from values at the sample points.'''
+        '''Reconstruct full-order tensor values from sampled values.
+
+        With ``sample_all_states=True``, ``sampled_values`` must have shape
+        ``(n_vars, n_sample_points)`` or
+        ``(n_vars, n_sample_points, n_snapshots)``. The return value has shape
+        ``(n_vars, n_dofs)`` or ``(n_vars, n_dofs, n_snapshots)``.
+
+        With ``sample_all_states=False``, sampled values have shape
+        ``(n_samples,)`` or ``(n_samples, n_snapshots)`` because the samples
+        are arbitrary flattened state-DOF entries. The reconstructed result is
+        still returned in romtools tensor form.
+        '''
         values = np.asarray(sampled_values)
+        n_vars, n_dofs, _ = self.__function_basis.shape
+
+        if self.__sample_all_states:
+            n_samples = self.__sample_indices.size
+            if values.ndim not in (2, 3):
+                raise ValueError(
+                    "sampled_values must be rank 2 or 3 when "
+                    "sample_all_states=True"
+                )
+            if values.shape[:2] != (n_vars, n_samples):
+                raise ValueError(
+                    "sampled_values must have leading shape "
+                    "(n_vars, n_sample_points)"
+                )
+            if values.ndim == 2:
+                flat_values = np.reshape(
+                    values, (n_vars * n_samples,), order="C"
+                )
+                reconstructed = self.__reconstruction_matrix @ flat_values
+                return np.reshape(
+                    reconstructed, (n_vars, n_dofs), order="C"
+                )
+
+            flat_values = np.reshape(
+                values,
+                (n_vars * n_samples, values.shape[2]),
+                order="C",
+            )
+            reconstructed = self.__reconstruction_matrix @ flat_values
+            return np.reshape(
+                reconstructed,
+                (n_vars, n_dofs, values.shape[2]),
+                order="C",
+            )
+
         if values.ndim not in (1, 2):
-            raise ValueError("sampled_values must be a rank-1 or rank-2 array")
+            raise ValueError(
+                "sampled_values must be rank 1 or 2 when "
+                "sample_all_states=False"
+            )
         if values.shape[0] != self.__sample_indices.size:
             raise ValueError(
                 "the first extent of sampled_values must equal the number "
-                "of sample indices"
+                "of flattened sample indices"
             )
-        return self.__reconstruction_matrix @ values
+        reconstructed = self.__reconstruction_matrix @ values
+        if values.ndim == 1:
+            return np.reshape(
+                reconstructed, (n_vars, n_dofs), order="C"
+            )
+        return np.reshape(
+            reconstructed,
+            (n_vars, n_dofs, values.shape[1]),
+            order="C",
+        )
 
     def project_test_basis(self, test_basis):
-        '''Construct the sampled test basis used for hyper-reduction.'''
+        '''Construct the sampled test basis used for hyper-reduction.
+
+        ``test_basis`` must have romtools tensor shape
+        ``(n_vars, n_dofs, n_test_basis)``. With shared-state sampling the
+        result has shape ``(n_vars, n_sample_points, n_test_basis)``. With
+        independent flattened sampling it has shape
+        ``(n_samples, n_test_basis)``.
+        '''
         basis = np.asarray(test_basis)
-        if basis.ndim != 2:
-            raise ValueError("test_basis must be a rank-2 array")
-        if basis.shape[0] != self.__function_basis.shape[0]:
+        if basis.ndim != 3:
             raise ValueError(
-                "test_basis and function_basis must have the same row extent"
+                "test_basis must be a rank-3 array with shape "
+                "(n_vars, n_dofs, n_test_basis)"
             )
-        return (basis.transpose() @ self.__reconstruction_matrix).transpose()
+        n_vars, n_dofs, _ = self.__function_basis.shape
+        if basis.shape[:2] != (n_vars, n_dofs):
+            raise ValueError(
+                "test_basis and function_basis must have matching "
+                "(n_vars, n_dofs) extents"
+            )
+        basis_matrix = _tensor_to_matrix(basis)
+        projected = (
+            basis_matrix.transpose() @ self.__reconstruction_matrix
+        ).transpose()
+        if not self.__sample_all_states:
+            return projected
+        return np.reshape(
+            projected,
+            (n_vars, self.__sample_indices.size, basis.shape[2]),
+            order="C",
+        )
 
 
 class QDEIM(DEIM):
-    '''Serial QDEIM operator using pivoted-QR point selection.
+    '''Tensor-native DEIM operator using pivoted-QR point selection.
 
-    Reconstruction and projection use the same operations as :class:`DEIM`;
-    only the default interpolation-point selection differs. User-provided
-    ``sample_indices`` continue to take precedence.
+    Reconstruction, tensor handling, and shared-state sampling are inherited
+    from :class:`DEIM`; only the initial scalar interpolation-point selection
+    differs.
     '''
 
     @staticmethod
@@ -375,33 +572,19 @@ def _deim_multi_state_get_indices_distributed(U, comm):
     for i in range(0, n_var):
         data_matrix = U[i]
         indices, ranks = deim_get_indices(data_matrix, comm)
-        # print(my_rank, ":::", indices, ranks)
         all_local_indices = np.append(all_local_indices, indices)
         all_ranks = np.append(all_ranks, ranks)
 
-    # from here we need to operate on ranks and indices together
-    # so stack them for convenience
     M = np.vstack((all_local_indices, all_ranks))
-
-    # first, sort based on rankID
     M = np.unique(M, axis=1)
     inds = M[1,:].argsort()
     M = M[:, inds]
 
-    # once we are here, M is sorted based on the ranks, but could look like this:
-
-    # M = [ 0 14 13  5 15  4  2  6  8 10  4  4 14  7  8  3  6]
-    #     [ 0  0  0  0  0  0  0  1  1  1  1  2  2  2  2  2  2]
-
-    # we do an additional step where we sort based on the local index within each rank
-
     rank_ids = np.unique(M[1,:])
     for rank in rank_ids:
         locs = np.where(M[1,:] == rank)
-        # only need to sort the 0-th row since we are sorting locally for each rank with same rank id
         M[0, locs] = np.sort(M[0, locs])
 
-    # return local indices and ranks separately
     return M[0,:], M[1,:]
 
 
@@ -412,7 +595,6 @@ def multi_state_deim_get_indices(U, comm=None):
     We perform DEIM on each state variable, and
     then return the union of all indices.
     Repeated indices are removed.
-
 
     Args:
          :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where
@@ -436,7 +618,6 @@ def multi_state_deim_get_indices(U, comm=None):
         return _deim_multi_state_get_indices_distributed(U, comm)
 
     return _deim_multi_state_get_indices_sharedmem(U)
-
 
 
 def deim_get_approximation_matrix(function_basis, sample_indices):
@@ -528,24 +709,19 @@ def deim_get_test_basis(test_basis, function_basis, sample_indices, comm=None):
             :math:`k` the number of basis functions. DEIM test basis matrix.
 
     '''
-    # Determine sampled_function_basis, allowing for empty ranks
     sampled_function_basis = np.empty((0, function_basis.shape[1]))
     if len(sample_indices) > 0:
         sampled_function_basis = function_basis[sample_indices]
 
-    # pinv(P^T U) ^T
     PU_pinv_transpose = la.pinv(sampled_function_basis, comm=comm)
 
-    # Phi^T U (distributed operation)
     phi_U = np.empty((test_basis.shape[1], function_basis.shape[1]))
     la.product("T", "N", 1, test_basis, function_basis, 0, phi_U, comm=comm)
 
-    # Gather pinvs if distributed
     if comm is not None:
         local_pinvs = comm.allgather(PU_pinv_transpose)
         PU_pinv_transpose = np.vstack(local_pinvs)
 
-    # phi_U pinv (local operation)
     deim_test_basis = np.empty((phi_U.shape[0], PU_pinv_transpose.shape[0]))
     la.product("N", "T", 1, phi_U, PU_pinv_transpose, 0, deim_test_basis)
 
