@@ -331,6 +331,10 @@ class AdamSolver:
             self.fisher_damping_min,
         )
 
+    def resolved_learning_rate(self, gradient: np.ndarray) -> float:
+        """Return the learning rate used for the supplied VI gradient."""
+        return self._resolved_learning_rate(np.asarray(gradient))
+
     def _prepare_gradient(self, gradient: np.ndarray, fisher_diagonal=None) -> np.ndarray:
         gradient = np.asarray(gradient, dtype=float)
         gradient = np.nan_to_num(gradient, nan=0.0, posinf=0.0, neginf=0.0)
@@ -348,6 +352,10 @@ class AdamSolver:
             if gradient_norm > self.gradient_clip_norm:
                 gradient = gradient * (self.gradient_clip_norm / gradient_norm)
         return gradient
+
+    def prepare_gradient(self, gradient: np.ndarray, fisher_diagonal=None) -> np.ndarray:
+        """Apply Fisher damping and clipping without updating Adam moments."""
+        return self._prepare_gradient(gradient, fisher_diagonal=fisher_diagonal)
 
     def step(self, gradient: np.ndarray, fisher_diagonal=None) -> np.ndarray:
         gradient = self._prepare_gradient(gradient, fisher_diagonal=fisher_diagonal)
@@ -370,6 +378,89 @@ class AdamSolver:
         return learning_rate * first_moment_hat / (
             np.sqrt(second_moment_hat) + self.epsilon
         )
+
+    def restart_state_dict(self) -> dict:
+        """Return restart-safe Adam state and configuration metadata."""
+        return {
+            'adam_iteration': int(self.iteration),
+            'adam_first_moment': (
+                np.array([], dtype=float)
+                if self.first_moment is None else self.first_moment.copy()
+            ),
+            'adam_second_moment': (
+                np.array([], dtype=float)
+                if self.second_moment is None else self.second_moment.copy()
+            ),
+            'adam_learning_rate': (
+                np.nan if self.learning_rate is None else float(self.learning_rate)
+            ),
+            'adam_learning_rate_scale': float(self.learning_rate_scale),
+            'adam_beta1': float(self.beta1),
+            'adam_beta2': float(self.beta2),
+            'adam_epsilon': float(self.epsilon),
+            'adam_fisher_damping_initial': float(self.fisher_damping_initial),
+            'adam_fisher_damping_decay_start': int(self.fisher_damping_decay_start),
+            'adam_fisher_damping_min': float(self.fisher_damping_min),
+            'adam_gradient_clip_norm': (
+                np.nan if self.gradient_clip_norm is None else float(self.gradient_clip_norm)
+            ),
+            'adam_parameter_dimension': (
+                -1 if self.parameter_dimension is None else int(self.parameter_dimension)
+            ),
+        }
+
+    def load_restart_state_dict(self, restart_data) -> None:
+        """Restore Adam state and reject incompatible optimizer configuration."""
+        required_keys = tuple(self.restart_state_dict().keys())
+        missing_keys = [key for key in required_keys if key not in restart_data]
+        if missing_keys:
+            raise ValueError(
+                "Restart file is missing Adam optimizer state: "
+                + ", ".join(missing_keys)
+            )
+
+        def _check_float(key, current_value):
+            saved_value = float(restart_data[key])
+            if current_value is None:
+                if not np.isnan(saved_value):
+                    raise ValueError(f"Restart file {key} does not match current Adam config.")
+            elif np.isnan(saved_value) or not np.isclose(saved_value, current_value):
+                raise ValueError(f"Restart file {key} does not match current Adam config.")
+
+        _check_float('adam_learning_rate', self.learning_rate)
+        _check_float('adam_learning_rate_scale', self.learning_rate_scale)
+        _check_float('adam_beta1', self.beta1)
+        _check_float('adam_beta2', self.beta2)
+        _check_float('adam_epsilon', self.epsilon)
+        _check_float('adam_fisher_damping_initial', self.fisher_damping_initial)
+        _check_float('adam_fisher_damping_min', self.fisher_damping_min)
+        _check_float('adam_gradient_clip_norm', self.gradient_clip_norm)
+        if int(restart_data['adam_fisher_damping_decay_start']) != self.fisher_damping_decay_start:
+            raise ValueError(
+                "Restart file adam_fisher_damping_decay_start does not match current Adam config."
+            )
+        saved_parameter_dimension = int(restart_data['adam_parameter_dimension'])
+        current_parameter_dimension = (
+            -1 if self.parameter_dimension is None else int(self.parameter_dimension)
+        )
+        if saved_parameter_dimension != current_parameter_dimension:
+            raise ValueError(
+                "Restart file adam_parameter_dimension does not match current Adam config."
+            )
+
+        self.iteration = int(restart_data['adam_iteration'])
+        first_moment = np.asarray(restart_data['adam_first_moment'], dtype=float)
+        second_moment = np.asarray(restart_data['adam_second_moment'], dtype=float)
+        if first_moment.size == 0 and second_moment.size == 0:
+            self.first_moment = None
+            self.second_moment = None
+        else:
+            if first_moment.shape != second_moment.shape:
+                raise ValueError("Restarted Adam moments must have matching shapes.")
+            self.first_moment = first_moment.copy()
+            self.second_moment = second_moment.copy()
+        if self.iteration > 0 and self.first_moment is None:
+            raise ValueError("Restarted Adam state has a positive iteration but no moments.")
 
     def state_dict(self) -> dict:
         return {
