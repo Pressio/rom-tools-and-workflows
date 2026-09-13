@@ -49,3 +49,9 @@ run our model for each sample.
 '''
 
 from romtools.workflows.sampling.sampling import *
+from romtools.workflows import _work_dir_compat
+from romtools.workflows.sampling import sampling as _sampling
+
+run_sampling = _work_dir_compat.patch_work_dir_argument(
+    _sampling, "run_sampling", "absolute_sampling_directory"
+)
