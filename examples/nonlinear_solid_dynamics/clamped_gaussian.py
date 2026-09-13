@@ -10,15 +10,22 @@ MODELS = Path(__file__).resolve().parents[1] / "models"
 if str(MODELS) not in sys.path:
     sys.path.insert(0, str(MODELS))
 
-from nonlinear_solid_dynamics import doubly_clamped_model  # noqa: E402
+from solid_dynamics import doubly_clamped_model, gaussian_displacement  # noqa: E402
 
 
-def run():
-    model = doubly_clamped_model(nx=12, ny=2, mass_type="consistent")
-    initial_displacement = model.gaussian_transverse_displacement(
+def run(material_model="neo_hookean"):
+    model = doubly_clamped_model(
+        nx=12,
+        ny=2,
+        mass_type="consistent",
+        material_model=material_model,
+    )
+    initial_displacement = gaussian_displacement(
+        model,
         amplitude=0.15,
         width=0.45,
         center=0.5 * model.mesh.length,
+        direction="transverse",
     )
     zero_force = lambda _time: np.zeros(model.ndof)
     state = model.initial_state(
