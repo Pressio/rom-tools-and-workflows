@@ -1,0 +1,9 @@
+{
+  "method": "high-fidelity Monte Carlo",
+  "grid": [21, 21],
+  "number_of_samples": 20000,
+  "random_seed": 314159,
+  "mean": -5.180326488396751,
+  "variance": 2.422043956455403,
+  "standard_error": 0.011004644375115905
+}
