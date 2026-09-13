@@ -1,0 +1,12 @@
+romtools.hpc.configuration
+==========================
+
+.. automodule:: romtools.hpc.configuration
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Configuration
+   
