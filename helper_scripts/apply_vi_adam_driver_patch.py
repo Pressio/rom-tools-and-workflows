@@ -8,6 +8,16 @@ def replace_once(text, old, new, label):
     return text.replace(old, new, 1)
 
 
+def replace_after(text, anchor, old, new, label):
+    anchor_index = text.find(anchor)
+    if anchor_index < 0:
+        raise RuntimeError(f"{label}: anchor not found")
+    match_index = text.find(old, anchor_index)
+    if match_index < 0:
+        raise RuntimeError(f"{label}: target not found after anchor")
+    return text[:match_index] + new + text[match_index + len(old):]
+
+
 def patch_vi(path):
     text = path.read_text()
     text = replace_once(
@@ -50,14 +60,16 @@ def patch_vi(path):
         "    steepest_descent_solver = (\n        AdamSolver.from_config(resolved_optimizer_config)\n        if optimization_method == 'adam'\n        else SteepestDescentSolver()\n    )",
         "VI solver construction",
     )
+    gradient_anchor = "        if optimization_method in ('gradient', 'adam'):\n"
     text = replace_once(
         text,
         "        if optimization_method == 'gradient':\n            gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])",
         "        if optimization_method in ('gradient', 'adam'):\n            gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])",
         "VI gradient branch",
     )
-    text = replace_once(
+    text = replace_after(
         text,
+        gradient_anchor,
         "            if line_search_objective == 'elbo':\n                test_state = test_candidate['state']\n                if line_search_method == 'legacy':",
         "            if optimization_method == 'adam':\n                test_state = test_candidate['state']\n                accept_step = True\n            elif line_search_objective == 'elbo':\n                test_state = test_candidate['state']\n                if line_search_method == 'legacy':",
         "VI Adam acceptance",
