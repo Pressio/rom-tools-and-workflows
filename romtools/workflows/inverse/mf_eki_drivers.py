@@ -18,6 +18,7 @@ update is recomputed.
 import copy
 import os
 import time
+import warnings
 from typing import Optional
 
 import numpy as np
@@ -140,7 +141,7 @@ def _apply_rom_only_substeps(rom_model,
                              regularization_parameter,
                              parameter_mins,
                              parameter_maxes,
-                             absolute_eki_directory,
+                             absolute_work_dir,
                              outer_iteration,
                              num_rom_substeps,
                              rom_evaluation_concurrency,
@@ -151,7 +152,7 @@ def _apply_rom_only_substeps(rom_model,
 
     for substep in range(num_rom_substeps):
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_{outer_iteration}/'
+            f'{absolute_work_dir}/iteration_{outer_iteration}/'
             f'rom_substep_{substep}/run_rom_'
         )
         rom_results = run_eki_iteration(
@@ -251,7 +252,7 @@ def _run_mf_eki_rejuvenation(
         rom_model,
         observations,
         observations_covariance,
-        absolute_eki_directory,
+        absolute_work_dir,
         iteration,
         parameter_names,
         parameter_sample_sets,
@@ -294,7 +295,7 @@ def _run_mf_eki_rejuvenation(
     ]
 
     event_dir = (
-        f'{absolute_eki_directory}/iteration_{iteration}/'
+        f'{absolute_work_dir}/iteration_{iteration}/'
         f'rejuvenation_{rejuvenation_count}'
     )
     fom_run_base = f'{event_dir}/run_fom_sample_set_0_'
@@ -435,7 +436,7 @@ def run_mf_eki(model: QoiModel,
                observations_covariance: np.ndarray,
                parameter_mins: np.ndarray = None,
                parameter_maxes: np.ndarray = None,
-               absolute_eki_directory: str = os.getcwd() + "/work/",
+               absolute_work_dir: str = None,
                fom_ensemble_size: int = 10,
                rom_extra_ensemble_size=30,
                rom_tolerance: float = 0.005,
@@ -463,8 +464,22 @@ def run_mf_eki(model: QoiModel,
                fom_evaluation_concurrency: int = 1,
                rom_evaluation_concurrency: int = 1,
                restart_file: str = None,
-               dispatcher: Optional[BaseDispatcher] = None):
+               dispatcher: Optional[BaseDispatcher] = None,
+               *,
+               absolute_eki_directory: str = None):
     """Run a multi-fidelity ensemble Kalman inversion workflow."""
+    if absolute_eki_directory is not None:
+        warnings.warn(
+            "'absolute_eki_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_eki_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     dispatcher = resolve_dispatcher(dispatcher)
     rom_dispatcher = resolve_local_dispatcher(dispatcher)
     max_rom_training_dirs = int(
@@ -472,7 +487,7 @@ def run_mf_eki(model: QoiModel,
     )
     start_time = time.time()
 
-    require_relative_or_absolute_path(dispatcher, absolute_eki_directory)
+    require_relative_or_absolute_path(dispatcher, absolute_work_dir)
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     assert step_size_growth_factor > 1.0, (
         "step_size_growth_factor must be greater than 1.0"
@@ -527,7 +542,7 @@ def run_mf_eki(model: QoiModel,
         parameter_names = parameter_space.get_names()
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_0/run_fom_sample_set_0_'
+            f'{absolute_work_dir}/iteration_0/run_fom_sample_set_0_'
         )
         sample_one_fom_results = run_eki_iteration(
             model,
@@ -553,7 +568,7 @@ def run_mf_eki(model: QoiModel,
         rom_training_dirs = copy.deepcopy(training_dirs)
         rom_training_parameters = training_parameters.copy()
         rom_training_qois = training_qois.copy()
-        offline_dir = f'{absolute_eki_directory}/iteration_0/'
+        offline_dir = f'{absolute_work_dir}/iteration_0/'
         rom_model = rom_model_builder.build_from_training_dirs(
             offline_dir,
             rom_training_dirs,
@@ -562,7 +577,7 @@ def run_mf_eki(model: QoiModel,
         )
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_0/run_rom_sample_set_0_'
+            f'{absolute_work_dir}/iteration_0/run_rom_sample_set_0_'
         )
         sample_one_rom_results = run_eki_iteration(
             rom_model,
@@ -580,7 +595,7 @@ def run_mf_eki(model: QoiModel,
         print(f'  ROM error = {rom_error}')
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_0/run_rom_sample_set_1_'
+            f'{absolute_work_dir}/iteration_0/run_rom_sample_set_1_'
         )
         sample_two_rom_results = run_eki_iteration(
             rom_model,
@@ -640,7 +655,7 @@ def run_mf_eki(model: QoiModel,
             'sample_one_fom_results'
         ].item()
 
-        offline_dir = f'{absolute_eki_directory}/iteration_{iteration}/'
+        offline_dir = f'{absolute_work_dir}/iteration_{iteration}/'
         print("==================Building ROM=============")
         rom_model = rom_model_builder.build_from_training_dirs(
             offline_dir,
@@ -737,7 +752,7 @@ def run_mf_eki(model: QoiModel,
             rom_model,
             observations,
             observations_covariance,
-            absolute_eki_directory,
+            absolute_work_dir,
             iteration,
             parameter_names,
             parameter_sample_sets,
@@ -765,7 +780,7 @@ def run_mf_eki(model: QoiModel,
 
     _save_mf_eki_restart(
         dispatcher,
-        f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+        f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
         sample_one_rom_results,
         sample_two_rom_results,
         sample_one_fom_results,
@@ -833,7 +848,7 @@ def run_mf_eki(model: QoiModel,
                     rom_model,
                     observations,
                     observations_covariance,
-                    absolute_eki_directory,
+                    absolute_work_dir,
                     iteration,
                     parameter_names,
                     parameter_sample_sets,
@@ -860,7 +875,7 @@ def run_mf_eki(model: QoiModel,
                 )
                 _save_mf_eki_restart(
                     dispatcher,
-                    f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                    f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                     sample_one_rom_results,
                     sample_two_rom_results,
                     sample_one_fom_results,
@@ -913,7 +928,7 @@ def run_mf_eki(model: QoiModel,
                 regularization_parameter=regularization_parameter,
                 parameter_mins=parameter_mins,
                 parameter_maxes=parameter_maxes,
-                absolute_eki_directory=absolute_eki_directory,
+                absolute_work_dir=absolute_work_dir,
                 outer_iteration=outer_iteration,
                 num_rom_substeps=num_rom_substeps,
                 rom_evaluation_concurrency=rom_evaluation_concurrency,
@@ -921,7 +936,7 @@ def run_mf_eki(model: QoiModel,
             )
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_{iteration}/'
+            f'{absolute_work_dir}/iteration_{iteration}/'
             'run_fom_sample_set_0_'
         )
         test_training_dirs = copy.deepcopy(training_dirs)
@@ -952,7 +967,7 @@ def run_mf_eki(model: QoiModel,
         ])
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_{iteration}/'
+            f'{absolute_work_dir}/iteration_{iteration}/'
             'run_rom_sample_set_0_'
         )
         test_sample_one_rom_results = run_eki_iteration(
@@ -970,7 +985,7 @@ def run_mf_eki(model: QoiModel,
         )
 
         run_directory_base = (
-            f'{absolute_eki_directory}/iteration_{iteration}/'
+            f'{absolute_work_dir}/iteration_{iteration}/'
             'run_rom_sample_set_1_'
         )
         old_sample_two_rom_results = run_eki_iteration(
@@ -992,7 +1007,7 @@ def run_mf_eki(model: QoiModel,
             print(
                 f'  ROM error = {rom_error} above tolerance, re-building ROM'
             )
-            offline_dir = f'{absolute_eki_directory}/iteration_{iteration}/'
+            offline_dir = f'{absolute_work_dir}/iteration_{iteration}/'
             test_rom_training_dirs = test_training_dirs[-max_rom_training_dirs:]
             test_rom_training_parameters = test_training_parameters[
                 -max_rom_training_dirs:
@@ -1006,7 +1021,7 @@ def run_mf_eki(model: QoiModel,
             )
             rom_rebuilt_this_iteration = True
             run_directory_base = (
-                f'{absolute_eki_directory}/iteration_{iteration}/'
+                f'{absolute_work_dir}/iteration_{iteration}/'
                 'run_rom_sample_set_0_'
             )
             test_sample_one_rom_results = run_eki_iteration(
@@ -1024,7 +1039,7 @@ def run_mf_eki(model: QoiModel,
             )
             print(f'  Updated ROM error = {rom_error}')
             run_directory_base = (
-                f'{absolute_eki_directory}/iteration_{iteration}/'
+                f'{absolute_work_dir}/iteration_{iteration}/'
                 'run_rom_sample_set_1_'
             )
             test_sample_two_rom_results = run_eki_iteration(
@@ -1135,7 +1150,7 @@ def run_mf_eki(model: QoiModel,
                         rom_model,
                         observations,
                         observations_covariance,
-                        absolute_eki_directory,
+                        absolute_work_dir,
                         iteration,
                         parameter_names,
                         parameter_sample_sets,
@@ -1171,7 +1186,7 @@ def run_mf_eki(model: QoiModel,
             )
             _save_mf_eki_restart(
                 dispatcher,
-                f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                f'{absolute_work_dir}/iteration_{iteration}/restart.npz',
                 sample_one_rom_results,
                 sample_two_rom_results,
                 sample_one_fom_results,
@@ -1228,7 +1243,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          observations_covariance: np.ndarray,
                          parameter_mins: np.ndarray = None,
                          parameter_maxes: np.ndarray = None,
-                         absolute_eki_directory: str = os.getcwd() + "/work/",
+                         absolute_work_dir: str = None,
                          fom_ensemble_size: int = 10,
                          rom_extra_ensemble_size=30,
                          rom_tolerance: float = 0.005,
@@ -1258,7 +1273,9 @@ def mf_eki_with_auto_rom(model: QoiModel,
                          restart_file: str = None,
                          rom_type: str = "gp",
                          rom_args: Optional[dict] = None,
-                         dispatcher: Optional[BaseDispatcher] = None):
+                         dispatcher: Optional[BaseDispatcher] = None,
+                         *,
+                         absolute_eki_directory: str = None):
     """Run MF-EKI with a built-in data-driven surrogate type.
 
     ``rom_type='gp'`` selects the Gaussian-process QoI surrogate.
@@ -1267,6 +1284,18 @@ def mf_eki_with_auto_rom(model: QoiModel,
     network, ``network_config`` and ``lipschitz_config`` may be supplied as
     :class:`NeuralNetworkConfig` and :class:`LipschitzConfig` instances.
     """
+    if absolute_eki_directory is not None:
+        warnings.warn(
+            "'absolute_eki_directory' is deprecated; use 'absolute_work_dir' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if absolute_work_dir is not None:
+            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
+        absolute_work_dir = absolute_eki_directory
+    if absolute_work_dir is None:
+        absolute_work_dir = os.getcwd() + "/work/"
+
     rom_args = {} if rom_args is None else dict(rom_args)
     rom_type_normalized = rom_type.strip().lower()
     if rom_type_normalized == "gp":
@@ -1308,7 +1337,7 @@ def mf_eki_with_auto_rom(model: QoiModel,
         observations_covariance=observations_covariance,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
-        absolute_eki_directory=absolute_eki_directory,
+        absolute_work_dir=absolute_work_dir,
         fom_ensemble_size=fom_ensemble_size,
         rom_extra_ensemble_size=rom_extra_ensemble_size,
         rom_tolerance=rom_tolerance,
