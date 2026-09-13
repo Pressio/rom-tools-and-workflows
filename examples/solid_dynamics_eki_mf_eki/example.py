@@ -75,7 +75,7 @@ def configuration(smoke: bool) -> BenchmarkConfig:
     if smoke:
         return BenchmarkConfig(
             fom=Discretization(4, 2, 0.05, 0.20),
-            observation_times=np.array([0.10, 0.20]),
+            observation_times=np.array([0.05, 0.10, 0.15, 0.20]),
             eki_ensemble_size=3,
             mf_fom_ensemble_size=3,
             mf_extra_gp_ensemble_size=3,
@@ -88,7 +88,7 @@ def configuration(smoke: bool) -> BenchmarkConfig:
     return BenchmarkConfig(
         # Truth and inference HF deliberately use this same discretization.
         fom=Discretization(33, 16, 0.005, 1.0),
-        observation_times=np.arange(0.10, 1.001, 0.10),
+        observation_times=np.arange(0.05, 1.001, 0.05),
         eki_ensemble_size=8,
         mf_fom_ensemble_size=8,
         mf_extra_gp_ensemble_size=24,
@@ -438,8 +438,8 @@ def main(
     mf_dir = base_dir / "mf_eki_gp_auto_rom"
 
     solver_args = dict(
-        initial_step_size=0.05,
-        regularization_parameter=1.0e-4,
+        initial_step_size=0.25,
+        regularization_parameter=1.0e-8,
         step_size_growth_factor=1.25,
         step_size_decay_factor=2.0,
         max_step_size_decrease_trys=5,
@@ -529,6 +529,13 @@ def main(
         "truth": TRUTH,
         "noise_sigma": noise_sigma,
         "fom_discretization": vars(cfg.fom),
+        "observation_times": cfg.observation_times.tolist(),
+        "num_sensors": int(SENSOR_X_OVER_L.size),
+        "qoi_dimension": int(clean_observations.size),
+        "eki_settings": {
+            "initial_step_size": solver_args["initial_step_size"],
+            "regularization_parameter": solver_args["regularization_parameter"],
+        },
         "truth_and_hf_share_discretization": True,
         "low_fidelity_model": "Gaussian-process automatic QoI ROM",
         "gp_settings": {
