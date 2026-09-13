@@ -44,50 +44,45 @@
 #
 
 '''
-# Scope, Design and Philosophy
+ROM Tools and Workflows provides algorithms for constructing and exploiting
+reduced-order models.
 
-The ROM tools and workflows Python library comprises a set of algorithms for
-constructing and exploiting ROMs.
-The library is designed internally in terms of *abstract base classes* that encapsulate
-all the information needed to run a given algorithm.
-The philosophy is that, for any given application, the user "simply" needs to create
-a class that meets the required API of the abstract base class.
-Once this class is complete, the user gains access to all of our existing algorithms.
-
-# Content
-
-The Python library, called `romtools`, contains abstract interfaces and functions required for, e.g.,
-
-- Constructing parameter spaces
-
-- Constructing vector subspaces
-  - Reduced-basis methods
-  - Proper orthogonal decomposition
-    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
-      in different inner products
-
-- Constructing and exploiting ROMs via outer loop workflows
-
-  - ROM construction via reduced-basis greedy (RB-Greedy)
-  - ROM/FOM exploitation via sampling
-  - ROM/FOM exploitation via Dakota-driven sampling
-
-# Demos/tutorials
-
-Please see the Demos section of the documentation for demos and tutorials.
-
-# License
-```plaintext
-.. include:: ../LICENSE
-```
+For the stable user-facing API, prefer imports from the domain namespaces such
+as ``romtools.vector_space``, ``romtools.hyper_reduction``, ``romtools.rom``,
+and ``romtools.workflows``. The top-level package exposes those namespaces and
+package metadata. A small set of historical flat aliases remains available for
+backwards compatibility but is intentionally not part of ``__all__``.
 '''
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
+from importlib.metadata import PackageNotFoundError, version
 
-__docformat__ = "restructuredtext" # required to generate the license
-
-from romtools.vector_space import *
+from romtools import composite_vector_space, hpc, hyper_reduction, linalg, rom, vector_space, workflows
+from romtools.composite_vector_space import CompositeVectorSpace
 from romtools.hyper_reduction import *
-from romtools.workflows import *
-from romtools.composite_vector_space import *
 from romtools.rom import *
+from romtools.vector_space import (
+    DictionaryVectorSpace,
+    VectorSpace,
+    VectorSpaceFromPOD,
+    VectorSpaceFromStreamingPOD,
+)
+from romtools.workflows import *
+
+try:
+    __version__ = version("romtools")
+except PackageNotFoundError:
+    # Keep source-tree imports usable before the package has been installed.
+    __version__ = "0+unknown"
+
+__docformat__ = "restructuredtext"
+
+__all__ = [
+    "__version__",
+    "vector_space",
+    "composite_vector_space",
+    "hyper_reduction",
+    "linalg",
+    "rom",
+    "workflows",
+    "hpc",
+]
