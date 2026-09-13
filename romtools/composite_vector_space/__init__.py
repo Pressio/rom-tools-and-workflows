@@ -104,28 +104,26 @@ class CompositeVectorSpace:
                ), "Error constructing composite vector space, not all spaces have the same spatial dimension"
 
     def __construct_global_shift_vector(self):
-        # Constructs the full shift vector
+        # Constructs a full shift vector
         shift_vector = self.__compact_shift_vector[0]
         for local_shift_vector in self.__compact_shift_vector[1:]:
             shift_vector = np.append(shift_vector, local_shift_vector, axis=0)
         return shift_vector
 
     def __construct_full_basis(self):
-        # Constructs the full basis
+        # Constructs a dense basis for the composite vector space
         basis = np.zeros((self.__extent[0], self.__extent[1], self.__extent[2]))
         start_var_index = 0
         start_basis_index = 0
         for local_basis in self.__compact_basis:
-            local_basis_shape = local_basis.shape
-            end_var_index = start_var_index + local_basis_shape[0]
-            end_basis_index = start_basis_index + local_basis_shape[2]
-            basis[start_var_index:end_var_index,
-                  :,
-                  start_basis_index:end_basis_index] = local_basis
-            start_var_index = end_var_index
-            start_basis_index = end_basis_index
+            dim = local_basis.shape
+            basis[start_var_index:start_var_index+dim[0], :, start_basis_index:start_basis_index+dim[2]] = local_basis
+            start_var_index += dim[0]
+            start_basis_index += dim[2]
         return basis
 
     def __construct_compact_basis(self, list_of_vector_spaces):
+        # Constructs a list of bases.
+        # This is much more efficient in terms of memory
         self.__compact_basis = [space.get_basis() for space in list_of_vector_spaces]
         self.__compact_shift_vector = [space.get_shift_vector() for space in list_of_vector_spaces]
