@@ -452,30 +452,30 @@ solid-dynamics solver.</p>
 <h2>Cantilever beam<a class="headerlink" href="#cantilever-beam" title="Link to this heading">#</a></h2>
 <p>The cantilever example clamps the left boundary and applies a smooth transient
 transverse resultant on the right boundary.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/cantilever_setup.png"><img alt="Cantilever beam problem setup" class="align-center" src="_static/solid_dynamics/cantilever_setup.png" style="width: 90%;" />
+<a class="reference internal image-reference" href="../_images/cantilever_setup.png"><img alt="Cantilever beam problem setup" class="align-center" src="../_images/cantilever_setup.png" style="width: 90%;" />
 </a>
 <p>The vertical displacement history at the midpoint of the free end is computed
 with the default Neo-Hookean model and velocity-primary implicit Newmark solver.
 No artificial damping is enabled in the default example.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/cantilever_response.png"><img alt="Cantilever beam tip-displacement response" class="align-center" src="_static/solid_dynamics/cantilever_response.png" style="width: 75%;" />
+<a class="reference internal image-reference" href="../_images/cantilever_response.png"><img alt="Cantilever beam tip-displacement response" class="align-center" src="../_images/cantilever_response.png" style="width: 75%;" />
 </a>
 <p>The full displacement snapshots can also be viewed as a deformed-mesh
 animation.  The displayed deformation is magnified when needed for visibility;
 the magnification factor is shown in the animation.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/cantilever_deformation.gif"><img alt="Animated cantilever beam deformation" class="align-center" src="_static/solid_dynamics/cantilever_deformation.gif" style="width: 90%;" />
+<a class="reference internal image-reference" href="../_images/cantilever_deformation.gif"><img alt="Animated cantilever beam deformation" class="align-center" src="../_images/cantilever_deformation.gif" style="width: 90%;" />
 </a>
 </section>
 <section id="doubly-clamped-gaussian-perturbation">
 <h2>Doubly clamped Gaussian perturbation<a class="headerlink" href="#doubly-clamped-gaussian-perturbation" title="Link to this heading">#</a></h2>
 <p>The second example fixes both ends and initializes a centered transverse
 Gaussian displacement.  It is unforced after release.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/clamped_gaussian_setup.png"><img alt="Doubly clamped Gaussian perturbation setup" class="align-center" src="_static/solid_dynamics/clamped_gaussian_setup.png" style="width: 90%;" />
+<a class="reference internal image-reference" href="../_images/clamped_gaussian_setup.png"><img alt="Doubly clamped Gaussian perturbation setup" class="align-center" src="../_images/clamped_gaussian_setup.png" style="width: 90%;" />
 </a>
 <p>The following curve is the center-point vertical displacement produced by the
 Neo-Hookean solver.  Because the example has no Rayleigh damping, changes in
 the center-point amplitude reflect nonlinear and multimode dynamics rather than
 an imposed damping model.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/clamped_gaussian_response.png"><img alt="Doubly clamped Gaussian response" class="align-center" src="_static/solid_dynamics/clamped_gaussian_response.png" style="width: 75%;" />
+<a class="reference internal image-reference" href="../_images/clamped_gaussian_response.png"><img alt="Doubly clamped Gaussian response" class="align-center" src="../_images/clamped_gaussian_response.png" style="width: 75%;" />
 </a>
 </section>
 <section id="longitudinal-two-way-wave">
@@ -483,15 +483,15 @@ an imposed damping model.</p>
 <p>For the linear-wave verification problem, all transverse degrees of freedom are
 constrained and an axial Gaussian displacement is released from rest.  Before
 boundary reflections, the solution reduces to the scalar two-way wave equation.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/linear_wave_setup.png"><img alt="Longitudinal two-way wave setup" class="align-center" src="_static/solid_dynamics/linear_wave_setup.png" style="width: 90%;" />
+<a class="reference internal image-reference" href="../_images/linear_wave_setup.png"><img alt="Longitudinal two-way wave setup" class="align-center" src="../_images/linear_wave_setup.png" style="width: 90%;" />
 </a>
 <p>The finite-element solution is compared directly with the analytic D’Alembert
 solution at the same time.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/linear_wave_solution.png"><img alt="Finite-element and analytic two-way wave solutions" class="align-center" src="_static/solid_dynamics/linear_wave_solution.png" style="width: 75%;" />
+<a class="reference internal image-reference" href="../_images/linear_wave_solution.png"><img alt="Finite-element and analytic two-way wave solutions" class="align-center" src="../_images/linear_wave_solution.png" style="width: 75%;" />
 </a>
 <p>A coupled spatial/temporal refinement study with <span class="math notranslate nohighlight">\(\Delta t\propto\Delta x\)</span>
 shows the expected near-second-order convergence.</p>
-<a class="reference internal image-reference" href="_static/solid_dynamics/linear_wave_convergence.png"><img alt="Two-way wave convergence study" class="align-center" src="_static/solid_dynamics/linear_wave_convergence.png" style="width: 70%;" />
+<a class="reference internal image-reference" href="../_images/linear_wave_convergence.png"><img alt="Two-way wave convergence study" class="align-center" src="../_images/linear_wave_convergence.png" style="width: 70%;" />
 </a>
 </section>
 <section id="generation">
