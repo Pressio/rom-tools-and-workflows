@@ -99,6 +99,30 @@ def _run_eki_smoke_test() -> None:
         )
 
 
+def _run_air_flame_eki_smoke_test() -> None:
+    example = REPOSITORY_ROOT / "examples/h2_air_flame_eki_mf_eki/example.py"
+    print("Running reduced H2-air flame EKI rejuvenation smoke test", flush=True)
+
+    with tempfile.TemporaryDirectory(prefix="romtools-docs-air-flame-eki-") as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        env = os.environ.copy()
+        env.setdefault("MPLBACKEND", "Agg")
+        subprocess.run(
+            [
+                sys.executable,
+                str(example),
+                "--smoke",
+                "--work-dir",
+                str(tmp_path / "work"),
+                "--output-dir",
+                str(tmp_path / "results"),
+            ],
+            cwd=REPOSITORY_ROOT,
+            env=env,
+            check=True,
+        )
+
+
 def _run_mf_vi_smoke_test() -> None:
     example = REPOSITORY_ROOT / "examples/vi_mf_vi_demo/example.py"
     print("Running reduced VI/MF-VI documentation smoke test", flush=True)
@@ -131,6 +155,7 @@ def main() -> None:
         _execute_notebook(notebook)
 
     _run_eki_smoke_test()
+    _run_air_flame_eki_smoke_test()
     _run_mf_vi_smoke_test()
     print("Documentation example validation passed.", flush=True)
 
