@@ -741,18 +741,74 @@ def run_eki(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if (
-                normalized_dp_norm <= delta_params_tolerance
-                and not _adaptive_rejuvenation_cooldown_active(
+        if normalized_dp_norm <= delta_params_tolerance:
+            cooldown_active = _adaptive_rejuvenation_cooldown_active(
+                rejuvenation_strategy,
+                iteration,
+                rejuvenation_count,
+                max_rejuvenations,
+                rejuvenation_cooldown,
+                last_rejuvenation_iteration,
+            )
+            if _should_rejuvenate(
                     rejuvenation_strategy,
                     iteration,
+                    normalized_dp_norm,
+                    error_norm,
+                    delta_params_tolerance,
+                    error_norm_tolerance,
                     rejuvenation_count,
                     max_rejuvenations,
+                    rejuvenation_interval,
                     rejuvenation_cooldown,
+                    last_rejuvenation_iteration):
+                (
+                    parameter_samples,
+                    qois,
+                    mean_qoi,
+                    errors,
+                    error_norm,
+                    dp,
+                    normalized_dp_norm,
+                    rejuvenation_count,
+                    last_rejuvenation_iteration,
+                ) = _run_eki_rejuvenation(
+                    model,
+                    observations,
+                    observations_covariance,
+                    absolute_eki_directory,
+                    iteration,
+                    parameter_names,
+                    parameter_samples,
+                    rejuvenation_reference_covariance,
+                    rejuvenation_count,
+                    rejuvenation_inflation,
+                    rejuvenation_prior_weight,
+                    random_seed,
+                    parameter_mins,
+                    parameter_maxes,
+                    evaluation_concurrency,
+                    regularization_parameter,
+                    dispatcher,
+                )
+                _save_eki_restart(
+                    dispatcher,
+                    f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                    qois,
+                    mean_qoi,
+                    errors,
+                    parameter_samples,
+                    iteration,
+                    step_size,
+                    rejuvenation_reference_covariance,
+                    rejuvenation_count,
                     last_rejuvenation_iteration,
                 )
-        ):
-            break
+                iteration += 1
+                step_failed_counter = 0
+                continue
+            if not cooldown_active:
+                break
 
         test_parameter_samples = parameter_samples + step_size * dp
         test_parameter_samples = bound_samples(

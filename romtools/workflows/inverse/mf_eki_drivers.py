@@ -789,18 +789,102 @@ def run_mf_eki(model: QoiModel,
     iteration += 1
     step_failed_counter = 0
     while iteration < max_iterations and error_norm > error_norm_tolerance:
-        if (
-                normalized_dp_norm <= delta_params_tolerance
-                and not _adaptive_rejuvenation_cooldown_active(
+        if normalized_dp_norm <= delta_params_tolerance:
+            cooldown_active = _adaptive_rejuvenation_cooldown_active(
+                rejuvenation_strategy,
+                iteration,
+                rejuvenation_count,
+                max_rejuvenations,
+                rejuvenation_cooldown,
+                last_rejuvenation_iteration,
+            )
+            if _should_rejuvenate(
                     rejuvenation_strategy,
                     iteration,
+                    normalized_dp_norm,
+                    error_norm,
+                    delta_params_tolerance,
+                    error_norm_tolerance,
                     rejuvenation_count,
                     max_rejuvenations,
+                    rejuvenation_interval,
                     rejuvenation_cooldown,
+                    last_rejuvenation_iteration):
+                (
+                    parameter_sample_sets,
+                    sample_one_fom_results,
+                    sample_one_rom_results,
+                    sample_two_rom_results,
+                    error_norm,
+                    dps,
+                    normalized_dp_norm,
+                    rejuvenation_count,
+                    last_rejuvenation_iteration,
+                    rom_model,
+                    training_dirs,
+                    training_parameters,
+                    training_qois,
+                    rom_training_dirs,
+                    rom_training_parameters,
+                    rom_training_qois,
+                ) = _run_mf_eki_rejuvenation(
+                    model,
+                    rom_model_builder,
+                    rom_model,
+                    observations,
+                    observations_covariance,
+                    absolute_eki_directory,
+                    iteration,
+                    parameter_names,
+                    parameter_sample_sets,
+                    rejuvenation_reference_covariance,
+                    rejuvenation_count,
+                    rejuvenation_inflation,
+                    rejuvenation_prior_weight,
+                    random_seed,
+                    parameter_mins,
+                    parameter_maxes,
+                    fom_evaluation_concurrency,
+                    rom_evaluation_concurrency,
+                    dispatcher,
+                    rom_dispatcher,
+                    rom_tolerance,
+                    max_rom_training_dirs,
+                    training_dirs,
+                    training_parameters,
+                    training_qois,
+                    rom_training_dirs,
+                    rom_training_parameters,
+                    rom_training_qois,
+                    regularization_parameter,
+                )
+                _save_mf_eki_restart(
+                    dispatcher,
+                    f'{absolute_eki_directory}/iteration_{iteration}/restart.npz',
+                    sample_one_rom_results,
+                    sample_two_rom_results,
+                    sample_one_fom_results,
+                    parameter_sample_sets,
+                    iteration,
+                    step_size,
+                    training_dirs,
+                    rom_training_dirs,
+                    training_parameters,
+                    training_qois,
+                    rom_training_parameters,
+                    rom_training_qois,
+                    rom_substep_start_iteration,
+                    rom_substep_end_iteration,
+                    num_rom_substeps,
+                    rejuvenation_reference_covariance,
+                    rejuvenation_count,
                     last_rejuvenation_iteration,
                 )
-        ):
-            break
+                iteration += 1
+                step_failed_counter = 0
+                continue
+            if not cooldown_active:
+                break
 
         test_parameter_sample_sets = copy.deepcopy(parameter_sample_sets)
         for i in range(len(dps)):
@@ -1024,6 +1108,8 @@ def run_mf_eki(model: QoiModel,
                         rejuvenation_count,
                         max_rejuvenations,
                         rejuvenation_interval,
+                        rejuvenation_cooldown,
+                        last_rejuvenation_iteration,
                     )
                 ):
                     (

@@ -39,14 +39,6 @@ The benchmark records three diagnostics at every saved outer iteration:
 * range-scaled ensemble spread. For MF-EKI, the spread uses the combined FOM
   and ROM-only parameter ensembles.
 
-.. figure:: ../_static/h2_air_flame_eki_rejuvenation_benchmark.svg
-   :alt: H2-air flame EKI and MF-EKI rejuvenation benchmark
-   :align: center
-   :width: 100%
-
-   Observation residual, parameter error, and ensemble spread for
-   single-fidelity EKI and MF-EKI, each with and without adaptive rejuvenation.
-
 Run the example
 ---------------
 

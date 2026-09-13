@@ -3,10 +3,11 @@
 This example benchmarks ensemble collapse and adaptive rejuvenation on the four-parameter H2-air flame inverse problem. It compares:
 
 - single-fidelity EKI,
+- single-fidelity EKI with `rejuvenation_strategy="adaptive"`,
 - GP auto-ROM MF-EKI with rejuvenation disabled, and
 - GP auto-ROM MF-EKI with `rejuvenation_strategy="adaptive"`.
 
-The two MF-EKI runs use the same seed, ensemble sizes, ROM settings, parameter bounds, and solver controls. The only intended algorithmic difference is adaptive rejuvenation. The full benchmark uses a `64 x 32` flame model, four FOM ensemble members, 32 additional ROM-only members, and up to 30 outer iterations.
+Each baseline/rejuvenated pair uses the same seed, ensemble sizes, ROM settings, parameter bounds, and solver controls. The only intended algorithmic difference within each pair is adaptive rejuvenation. The full benchmark uses a `64 x 32` flame model, four FOM ensemble members, 32 additional ROM-only members, and up to 30 outer iterations.
 
 The benchmark writes a JSON history plus SVG/PNG figures for the observation residual, RMS relative parameter error, and range-scaled ensemble spread.
 

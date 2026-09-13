@@ -382,3 +382,28 @@ def test_adaptive_rejuvenation_is_restart_reproducible(tmp_path):
     np.testing.assert_allclose(restarted_samples, uninterrupted_samples)
     restarted_state = np.load(restarted_dir / "iteration_0" / "restart.npz")
     assert int(restarted_state["rejuvenation_count"]) == 2
+
+
+@pytest.mark.mpi_skip
+def test_adaptive_rejuvenation_runs_again_when_cooldown_expires(tmp_path):
+    romtools.workflows.run_eki(
+        model=ConstantQoiModel(),
+        parameter_space=DeterministicTwoParameterSpace(),
+        observations=np.array([1.0]),
+        observations_covariance=np.eye(1),
+        absolute_eki_directory=str(tmp_path),
+        ensemble_size=6,
+        max_iterations=4,
+        random_seed=13,
+        rejuvenation_strategy="adaptive",
+        max_rejuvenations=2,
+        rejuvenation_cooldown=2,
+        delta_params_tolerance=1e-12,
+        error_norm_tolerance=1e-8,
+    )
+
+    state_during_cooldown = np.load(tmp_path / "iteration_1" / "restart.npz")
+    state_after_cooldown = np.load(tmp_path / "iteration_2" / "restart.npz")
+    assert int(state_during_cooldown["rejuvenation_count"]) == 1
+    assert int(state_after_cooldown["rejuvenation_count"]) == 2
+    assert int(state_after_cooldown["last_rejuvenation_iteration"]) == 2

@@ -138,3 +138,35 @@ def test_mf_eki_periodic_rejuvenation_records_restart_state(tmp_path):
     restart = np.load(tmp_path / "iteration_1" / "restart.npz", allow_pickle=True)
     assert int(restart["rejuvenation_count"]) == 1
     assert restart["rejuvenation_reference_covariance"].shape == (2, 2)
+
+
+@pytest.mark.mpi_skip
+def test_mf_eki_adaptive_rejuvenation_runs_again_after_cooldown(tmp_path):
+    mf_eki_drivers.run_mf_eki(
+        model=LinearQoiModel(),
+        rom_model_builder=ExactRomBuilder(),
+        parameter_space=TwoParameterSpace(),
+        observations=np.array([0.7, -0.2]),
+        observations_covariance=np.eye(2),
+        absolute_eki_directory=str(tmp_path),
+        fom_ensemble_size=4,
+        rom_extra_ensemble_size=4,
+        rom_tolerance=1e-8,
+        max_iterations=4,
+        random_seed=5,
+        rejuvenation_strategy="adaptive",
+        max_rejuvenations=2,
+        rejuvenation_cooldown=2,
+        delta_params_tolerance=1e12,
+        error_norm_tolerance=1e-12,
+    )
+
+    state_during_cooldown = np.load(
+        tmp_path / "iteration_1" / "restart.npz", allow_pickle=True
+    )
+    state_after_cooldown = np.load(
+        tmp_path / "iteration_2" / "restart.npz", allow_pickle=True
+    )
+    assert int(state_during_cooldown["rejuvenation_count"]) == 1
+    assert int(state_after_cooldown["rejuvenation_count"]) == 2
+    assert int(state_after_cooldown["last_rejuvenation_iteration"]) == 2
