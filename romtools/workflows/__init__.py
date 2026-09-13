@@ -51,9 +51,27 @@ We currently support:
 - Coupling classes to Dakota for
   - Random sampling
 '''
+from importlib import import_module as _import_module
+
 from romtools.workflows.dakota import *
 from romtools.workflows.greedy import *
 from romtools.workflows.sampling import *
 from romtools.workflows.inverse import *
 from romtools.workflows.formatting import *
 from romtools.workflows.uq import *
+from romtools.workflows._work_dir_compat import patch_work_dir_argument as _patch_work_dir
+
+for _module_name, _functions, _old_name in (
+    ("sampling.sampling", ("run_sampling",), "absolute_sampling_directory"),
+    ("sampling_with_holdout.sampling_with_holdout", ("run_sampling_with_holdout",), "absolute_work_directory"),
+    ("greedy.run_greedy", ("run_greedy",), "absolute_greedy_work_directory"),
+    ("uq.monte_carlo", ("run_monte_carlo", "run_multifidelity_monte_carlo"), "absolute_uq_directory"),
+    ("inverse.ego_drivers", ("run_ego",), "absolute_ego_directory"),
+    ("inverse.eki_drivers", ("run_eki",), "absolute_eki_directory"),
+    ("inverse.mf_eki_drivers", ("run_mf_eki", "mf_eki_with_auto_rom"), "absolute_eki_directory"),
+    ("inverse.vi_drivers", ("run_vi",), "absolute_vi_directory"),
+    ("inverse.mf_vi_drivers", ("run_mf_vi", "mf_vi_with_auto_rom"), "absolute_vi_directory"),
+):
+    _module = _import_module(f"romtools.workflows.{_module_name}")
+    for _function in _functions:
+        globals()[_function] = _patch_work_dir(_module, _function, _old_name)
