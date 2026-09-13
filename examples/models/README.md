@@ -41,6 +41,21 @@ python h2_air_flame_model.py
 
 See `docs/source/demos/h2_air_flame.rst` for the model description and usage.
 
+### Nonlinear solid dynamics model
+
+A lightweight 2-D nonlinear solid dynamics reference model is also provided:
+
+- `nonlinear_solid_dynamics.py`: structured Q4 total-Lagrangian finite-element
+  solver with a compressible Neo-Hookean material, explicit velocity-Verlet and
+  implicit velocity-primary Newmark integration.
+- `nonlinear_solid_dynamics_model.py`: parameterized cantilever QoI wrapper for
+  romtools workflows.
+
+User-facing beam, doubly clamped Gaussian-perturbation, and published benchmark
+examples live in `examples/nonlinear_solid_dynamics`. See
+`docs/source/demos/nonlinear_solid_dynamics.rst` for the formulation and
+validation notes.
+
 ## Notes
 
 - Notebooks: `docs/source/demos/notebooks/basic_model.ipynb`, `external_model.ipynb`, `external_qoi_model.ipynb`.
