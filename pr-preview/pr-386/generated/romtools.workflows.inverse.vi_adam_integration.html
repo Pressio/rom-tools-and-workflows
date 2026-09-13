@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.workflows.inverse.ego_optimization_methods &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.workflows.inverse.vi_adam_integration &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.ego_optimization_methods';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.vi_adam_integration';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.inverse.eki_drivers" href="romtools.workflows.inverse.eki_drivers.html" />
-    <link rel="prev" title="romtools.workflows.inverse.ego_drivers" href="romtools.workflows.inverse.ego_drivers.html" />
+    <link rel="next" title="romtools.workflows.inverse.vi_drivers" href="romtools.workflows.inverse.vi_drivers.html" />
+    <link rel="prev" title="romtools.workflows.inverse.mf_vi_drivers" href="romtools.workflows.inverse.mf_vi_drivers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -367,11 +367,11 @@
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.bfgs_drivers.html">romtools.workflows.inverse.bfgs_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_drivers.html">romtools.workflows.inverse.ego_drivers</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.ego_optimization_methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_optimization_methods.html">romtools.workflows.inverse.ego_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html">romtools.workflows.inverse.eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_adam_integration.html">romtools.workflows.inverse.vi_adam_integration</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.vi_adam_integration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
 </ul>
@@ -414,6 +414,17 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support"><code class="docutils literal notranslate"><span class="pre">install_adam_optimizer_support()</span></code></a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -463,7 +474,7 @@
     
     <li class="breadcrumb-item"><a href="romtools.workflows.inverse.html" class="nav-link">romtools.workflows.inverse</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.ego_optimization_methods</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_adam_integration</span></li>
   </ul>
 </nav>
 </div>
@@ -480,24 +491,33 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.workflows.inverse.ego_optimization_methods">
-<span id="romtools-workflows-inverse-ego-optimization-methods"></span><h1>romtools.workflows.inverse.ego_optimization_methods<a class="headerlink" href="#module-romtools.workflows.inverse.ego_optimization_methods" title="Link to this heading">#</a></h1>
-<p>Optimization methods and configs used by inverse EGO workflows.</p>
+  <section id="module-romtools.workflows.inverse.vi_adam_integration">
+<span id="romtools-workflows-inverse-vi-adam-integration"></span><h1>romtools.workflows.inverse.vi_adam_integration<a class="headerlink" href="#module-romtools.workflows.inverse.vi_adam_integration" title="Link to this heading">#</a></h1>
+<p>Adam integration for the VI and MF-VI workflow drivers.</p>
+<p>The existing VI drivers share a line-search based gradient path.  Adam does
+not need that line search, so this module adapts the public <code class="docutils literal notranslate"><span class="pre">run_vi</span></code> and
+<code class="docutils literal notranslate"><span class="pre">run_mf_vi</span></code> entry points to reuse the existing state-evaluation machinery
+while replacing the steepest-descent direction with a stateful Adam direction.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">argmax_expected_improvement</span></code>(gp_regressor, ...)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">objective_function</span></code>(qoi, observations[, relative])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">q_point_expected_improvement_constant_liar</span></code>(...)</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support" title="romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support"><code class="xref py py-obj docutils literal notranslate"><span class="pre">install_adam_optimizer_support</span></code></a>(...)</p></td>
+<td><p>Install Adam dispatch on the VI and MF-VI public driver functions.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_adam_integration.</span></span><span class="sig-name descname"><span class="pre">install_adam_optimizer_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vi_drivers_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mf_vi_drivers_module</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_adam_integration.html#install_adam_optimizer_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support" title="Link to this definition">#</a></dt>
+<dd><p>Install Adam dispatch on the VI and MF-VI public driver functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -516,9 +536,21 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_adam_integration.install_adam_optimizer_support"><code class="docutils literal notranslate"><span class="pre">install_adam_optimizer_support()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.workflows.inverse.ego_optimization_methods.rst.txt">
+    <a href="../_sources/generated/romtools.workflows.inverse.vi_adam_integration.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
