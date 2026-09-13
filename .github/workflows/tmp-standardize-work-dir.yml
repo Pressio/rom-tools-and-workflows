@@ -1,0 +1,163 @@
+name: temporary work-dir migration
+
+on:
+  push:
+    branches:
+      - issue-369-standardize-work-dir-v2
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: issue-369-standardize-work-dir-v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply direct source migration
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          def add_compatibility_block(path, function_names, old_name):
+              path = Path(path)
+              text = path.read_text()
+              text = text.replace(old_name, 'absolute_work_dir')
+              if 'import warnings\n' not in text:
+                  if 'import time\n' in text:
+                      text = text.replace('import time\n', 'import time\nimport warnings\n', 1)
+                  elif 'import os\n' in text:
+                      text = text.replace('import os\n', 'import os\nimport warnings\n', 1)
+
+              for function_name in function_names:
+                  tree = ast.parse(text)
+                  function = next(
+                      node for node in tree.body
+                      if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                      and node.name == function_name
+                  )
+                  lines = text.splitlines(keepends=True)
+                  start = function.lineno - 1
+                  depth = 0
+                  end = None
+                  for index in range(start, len(lines)):
+                      depth += lines[index].count('(') - lines[index].count(')')
+                      if index > start and depth == 0 and lines[index].rstrip().endswith(':'):
+                          end = index
+                          break
+                  if end is None:
+                      raise RuntimeError(f'Could not locate signature for {function_name}')
+
+                  signature = ''.join(lines[start:end + 1])
+                  signature = signature.replace(
+                      'absolute_work_dir: str = os.getcwd() + "/work/",',
+                      'absolute_work_dir: str = None,',
+                  )
+                  signature = signature.replace(
+                      'absolute_work_dir: str = os.getcwd() + \'/work/\',',
+                      'absolute_work_dir: str = None,',
+                  )
+                  if old_name not in signature:
+                      close = signature.rfind('):')
+                      prefix = signature[:close].rstrip()
+                      if not prefix.endswith(','):
+                          prefix += ','
+                      indent = ' ' * (len(function_name) + 5)
+                      signature = (
+                          prefix
+                          + f'\n{indent}*,\n{indent}{old_name}: str = None):'
+                          + signature[close + 2:]
+                      )
+                  lines[start:end + 1] = [signature]
+                  text = ''.join(lines)
+
+                  tree = ast.parse(text)
+                  function = next(
+                      node for node in tree.body
+                      if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                      and node.name == function_name
+                  )
+                  doc = function.body[0]
+                  insert_after = getattr(doc, 'end_lineno', doc.lineno)
+                  lines = text.splitlines(keepends=True)
+                  block = (
+                      f'    if {old_name} is not None:\n'
+                      f'        warnings.warn(\n'
+                      f'            "\'{old_name}\' is deprecated; use \'absolute_work_dir\' instead.",\n'
+                      f'            DeprecationWarning,\n'
+                      f'            stacklevel=2,\n'
+                      f'        )\n'
+                      f'        if absolute_work_dir is not None:\n'
+                      f'            raise TypeError("Specify only \'absolute_work_dir\', not both directory arguments.")\n'
+                      f'        absolute_work_dir = {old_name}\n'
+                      f'    if absolute_work_dir is None:\n'
+                      f'        absolute_work_dir = os.getcwd() + "/work/"\n\n'
+                  )
+                  lines.insert(insert_after, block)
+                  text = ''.join(lines)
+
+              path.write_text(text)
+
+          add_compatibility_block(
+              'romtools/workflows/inverse/vi_drivers.py',
+              ['run_vi'],
+              'absolute_vi_directory',
+          )
+          add_compatibility_block(
+              'romtools/workflows/inverse/mf_vi_drivers.py',
+              ['run_mf_vi', 'mf_vi_with_auto_rom'],
+              'absolute_vi_directory',
+          )
+
+          # Update outward-facing call sites to the canonical keyword.
+          legacy_names = (
+              'absolute_sampling_directory',
+              'absolute_work_directory',
+              'absolute_greedy_work_directory',
+              'absolute_uq_directory',
+              'absolute_ego_directory',
+              'absolute_eki_directory',
+              'absolute_vi_directory',
+          )
+          roots = [Path('examples'), Path('docs/source'), Path('romtools/hpc/example')]
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob('*'):
+                  if path.suffix not in {'.py', '.rst', '.ipynb'}:
+                      continue
+                  text = path.read_text()
+                  updated = text
+                  for old in legacy_names:
+                      updated = updated.replace(old, 'absolute_work_dir')
+                  if updated != text:
+                      path.write_text(updated)
+          PY
+
+          # Fix required greedy tolerance without changing its API semantics.
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('romtools/workflows/greedy/run_greedy.py')
+          text = path.read_text()
+          text = text.replace('tolerance: float = 1e-5,', 'tolerance: float = None,', 1)
+          needle = "    if absolute_work_dir is None:\n        raise TypeError(\"'absolute_work_dir' is required\")\n"
+          replacement = needle + "    if tolerance is None:\n        raise TypeError(\"'tolerance' is required\")\n"
+          if replacement not in text:
+              text = text.replace(needle, replacement, 1)
+          path.write_text(text)
+          PY
+
+          python -m compileall -q romtools/workflows
+          git rm .github/workflows/tmp-standardize-work-dir.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add romtools examples docs
+          git commit -m "Finish direct workflow work-directory rename"
+          git push origin HEAD:issue-369-standardize-work-dir-v2
