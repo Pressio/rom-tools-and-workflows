@@ -147,6 +147,21 @@ def _run_mf_vi_smoke_test() -> None:
         )
 
 
+def _run_hyper_reduction_smoke_tests() -> None:
+    examples = [
+        "examples/h2_air_flame_deim/example.py",
+        "examples/h2_air_flame_qdeim/example.py",
+    ]
+    for relative_path in examples:
+        example = REPOSITORY_ROOT / relative_path
+        print(f"Running reduced hyper-reduction example: {relative_path}", flush=True)
+        subprocess.run(
+            [sys.executable, str(example), "--smoke"],
+            cwd=REPOSITORY_ROOT,
+            check=True,
+        )
+
+
 def main() -> None:
     os.environ.setdefault("MPLBACKEND", "Agg")
 
@@ -157,6 +172,7 @@ def main() -> None:
     _run_eki_smoke_test()
     _run_air_flame_eki_smoke_test()
     _run_mf_vi_smoke_test()
+    _run_hyper_reduction_smoke_tests()
     print("Documentation example validation passed.", flush=True)
 
 

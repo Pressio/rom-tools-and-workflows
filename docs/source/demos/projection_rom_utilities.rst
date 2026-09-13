@@ -9,3 +9,4 @@ spaces used by projection-based reduced-order models.
 
    vector_space
    basis_construction
+   hyper_reduction
