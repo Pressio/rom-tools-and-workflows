@@ -44,16 +44,35 @@
 #
 
 '''
-The workflows module contains all of our "outerloop" workflows used for ROM construction and ROM exploitation.
-We currently support:
-- Greedy sampling for construction of reduced-basis ROMs
-- Random sampling for model exploitation
-- Coupling classes to Dakota for
-  - Random sampling
+The workflows module contains the outer-loop workflows used for ROM construction,
+model exploitation, inverse problems, and uncertainty quantification.
+
+The names in ``__all__`` define the supported public API at this package level.
+More specialized functionality should be imported from its domain subpackage.
 '''
+
+from romtools.workflows import dakota, formatting, greedy, inverse, sampling, uq
 from romtools.workflows.dakota import *
 from romtools.workflows.greedy import *
 from romtools.workflows.sampling import *
 from romtools.workflows.inverse import *
 from romtools.workflows.formatting import *
 from romtools.workflows.uq import *
+from romtools.workflows.inverse import __all__ as _inverse_all
+from romtools.workflows.uq import __all__ as _uq_all
+
+__all__ = [
+    "dakota",
+    "formatting",
+    "greedy",
+    "inverse",
+    "sampling",
+    "uq",
+    "run_greedy",
+    "QoIvsErrorIndicatorRegressor",
+    "run_sampling",
+    "run_sample",
+    "format_text",
+    "format_file",
+    "format_files",
+] + list(_inverse_all) + list(_uq_all)
