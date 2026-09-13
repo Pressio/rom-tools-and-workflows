@@ -23,6 +23,9 @@ jobs:
       - name: Time one production FOM evaluation
         env:
           MPLBACKEND: Agg
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
         run: |
           python - <<'PY'
           import sys
@@ -30,8 +33,15 @@ jobs:
 
           sys.path.insert(0, "examples/models")
           from nonlinear_solid_dynamics import NonlinearSolid2D
-          from sparse_solid_dynamics import enable_sparse_implicit_solver
-          enable_sparse_implicit_solver(NonlinearSolid2D)
+          from sparse_solid_dynamics import acceleration_sparse, solve_implicit_sparse
+
+          NonlinearSolid2D.acceleration = acceleration_sparse
+
+          def solve_without_line_search(self, *args, **kwargs):
+              kwargs["line_search"] = False
+              return solve_implicit_sparse(self, *args, **kwargs)
+
+          NonlinearSolid2D.solve_implicit = solve_without_line_search
 
           sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
           import example as mod
