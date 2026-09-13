@@ -56,12 +56,13 @@ def main(smoke=False):
         model, training_states, training_parameters
     )
 
-    # The public DEIM API uses the native romtools tensor convention:
-    # (n_vars, n_dofs, n_snapshots). By default, selecting any state at a
-    # spatial point includes every state at that point in the sample mesh.
+    # Use a separate POD/DEIM basis for each field. The state-specific sample
+    # points are unioned into one spatial sample mesh and all fields are
+    # evaluated at every selected point.
     deim = DEIM.from_snapshots(
         rhs_training_snapshots,
         truncater=BasisSizeTruncater(basis_dimension),
+        basis_mode="per_state",
     )
 
     test_states, _ = model.solve(*test_parameters)
@@ -79,6 +80,7 @@ def main(smoke=False):
 
     full_rhs_dimension = rhs_test_snapshots.shape[0] * rhs_test_snapshots.shape[1]
     print(f"Full RHS dimension: {full_rhs_dimension}")
+    print(f"Per-state basis sizes: {deim.basis_sizes}")
     print(f"DEIM spatial sample points: {deim.sample_indices.size}")
     print(f"Sampled state entries: {rhs_test_snapshots.shape[0] * deim.sample_indices.size}")
     print(f"Mean relative RHS reconstruction error: {np.mean(relative_errors):.3e}")
