@@ -1,0 +1,44 @@
+name: apply-adam-review-fixes
+
+on:
+  push:
+    branches:
+      - feature-vi-mfvi-adam-natural-gradient
+    paths:
+      - helper_scripts/address_adam_review.py
+      - .github/workflows/apply-adam-review-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature-vi-mfvi-adam-natural-gradient
+      - name: Apply Adam review fixes
+        run: python helper_scripts/address_adam_review.py
+      - name: Compile changed Python files
+        run: |
+          python -m py_compile \
+            romtools/workflows/inverse/vi_optimization_methods.py \
+            romtools/workflows/inverse/vi_drivers.py \
+            romtools/workflows/inverse/mf_vi_drivers.py \
+            tests/romtools/workflows/inverse/test_vi_adam.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            romtools/workflows/inverse/vi_optimization_methods.py \
+            romtools/workflows/inverse/vi_drivers.py \
+            romtools/workflows/inverse/mf_vi_drivers.py \
+            tests/romtools/workflows/inverse/test_vi_adam.py
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Address Adam restart and diagnostics review"
+          git push origin HEAD:feature-vi-mfvi-adam-natural-gradient
