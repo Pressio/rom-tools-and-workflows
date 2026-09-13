@@ -45,3 +45,9 @@
 '''Implementation of the greedy workflow.'''
 
 from romtools.workflows.greedy.run_greedy import *
+from romtools.workflows._work_dir_compat import patch_work_dir_argument
+from romtools.workflows.greedy import run_greedy as _run_greedy_module
+
+run_greedy = patch_work_dir_argument(
+    _run_greedy_module, "run_greedy", "absolute_greedy_work_directory"
+)
