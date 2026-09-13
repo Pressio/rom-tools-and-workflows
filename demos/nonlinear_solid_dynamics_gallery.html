@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Parameter spaces &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Solid dynamics example gallery &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,15 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/parameter_space';</script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/nonlinear_solid_dynamics_gallery';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Basic parameter space tutorial" href="notebooks/parameter_space.html" />
-    <link rel="prev" title="Solid dynamics example gallery" href="nonlinear_solid_dynamics_gallery.html" />
+    <link rel="next" title="Parameter spaces" href="parameter_space.html" />
+    <link rel="prev" title="Solid dynamics model" href="nonlinear_solid_dynamics.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -332,11 +334,17 @@
 <li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">Parameter spaces</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="notebooks/parameter_space.html">Basic parameter space tutorial</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="models.html">Models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="notebooks/basic_model.html">Basic model tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/external_model.html">External model tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/external_qoi_model.html">External QoiModel tutorial</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steady_cdr.html">Steady convection-diffusion-reaction model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="h2_air_flame.html">H2-air flame model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nonlinear_solid_dynamics.html">Solid dynamics model</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">Solid dynamics example gallery</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflows.html">Model execution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
@@ -365,7 +373,10 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cantilever-beam">Cantilever beam</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#doubly-clamped-gaussian-perturbation">Doubly clamped Gaussian perturbation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#longitudinal-two-way-wave">Longitudinal two-way wave</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generation">Generation</a></li>
 </ul>
   </nav></div>
     </div>
@@ -411,7 +422,10 @@
     
     <li class="breadcrumb-item"><a href="workflow_concepts.html" class="nav-link">Workflows</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Parameter spaces</span></li>
+    
+    <li class="breadcrumb-item"><a href="models.html" class="nav-link">Models</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Solid dynamics example gallery</span></li>
   </ul>
 </nav>
 </div>
@@ -428,17 +442,64 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="parameter-spaces">
-<h1>Parameter spaces<a class="headerlink" href="#parameter-spaces" title="Link to this heading">#</a></h1>
-<p>Parameter spaces define the parameter domain used by <code class="docutils literal notranslate"><span class="pre">romtools</span></code> workflows and
-provide the sampling interface used to generate model evaluations.</p>
-<section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="notebooks/parameter_space.html">Basic parameter space tutorial</a></li>
-</ul>
-</div>
+  <section id="solid-dynamics-example-gallery">
+<h1>Solid dynamics example gallery<a class="headerlink" href="#solid-dynamics-example-gallery" title="Link to this heading">#</a></h1>
+<p>The figures on this page are generated from the example implementations during
+the documentation build.  The setup schematics are drawn programmatically and
+the response figures and animation use trajectories produced by the actual
+solid-dynamics solver.</p>
+<section id="cantilever-beam">
+<h2>Cantilever beam<a class="headerlink" href="#cantilever-beam" title="Link to this heading">#</a></h2>
+<p>The cantilever example clamps the left boundary and applies a smooth transient
+transverse resultant on the right boundary.</p>
+<a class="reference internal image-reference" href="../_images/cantilever_setup.png"><img alt="Cantilever beam problem setup" class="align-center" src="../_images/cantilever_setup.png" style="width: 90%;" />
+</a>
+<p>The vertical displacement history at the midpoint of the free end is computed
+with the default Neo-Hookean model and velocity-primary implicit Newmark solver.
+No artificial damping is enabled in the default example.</p>
+<a class="reference internal image-reference" href="../_images/cantilever_response.png"><img alt="Cantilever beam tip-displacement response" class="align-center" src="../_images/cantilever_response.png" style="width: 75%;" />
+</a>
+<p>The full displacement snapshots can also be viewed as a deformed-mesh
+animation.  The displayed deformation is magnified when needed for visibility;
+the magnification factor is shown in the animation.</p>
+<a class="reference internal image-reference" href="../_images/cantilever_deformation.gif"><img alt="Animated cantilever beam deformation" class="align-center" src="../_images/cantilever_deformation.gif" style="width: 90%;" />
+</a>
+</section>
+<section id="doubly-clamped-gaussian-perturbation">
+<h2>Doubly clamped Gaussian perturbation<a class="headerlink" href="#doubly-clamped-gaussian-perturbation" title="Link to this heading">#</a></h2>
+<p>The second example fixes both ends and initializes a centered transverse
+Gaussian displacement.  It is unforced after release.</p>
+<a class="reference internal image-reference" href="../_images/clamped_gaussian_setup.png"><img alt="Doubly clamped Gaussian perturbation setup" class="align-center" src="../_images/clamped_gaussian_setup.png" style="width: 90%;" />
+</a>
+<p>The following curve is the center-point vertical displacement produced by the
+Neo-Hookean solver.  Because the example has no Rayleigh damping, changes in
+the center-point amplitude reflect nonlinear and multimode dynamics rather than
+an imposed damping model.</p>
+<a class="reference internal image-reference" href="../_images/clamped_gaussian_response.png"><img alt="Doubly clamped Gaussian response" class="align-center" src="../_images/clamped_gaussian_response.png" style="width: 75%;" />
+</a>
+</section>
+<section id="longitudinal-two-way-wave">
+<h2>Longitudinal two-way wave<a class="headerlink" href="#longitudinal-two-way-wave" title="Link to this heading">#</a></h2>
+<p>For the linear-wave verification problem, all transverse degrees of freedom are
+constrained and an axial Gaussian displacement is released from rest.  Before
+boundary reflections, the solution reduces to the scalar two-way wave equation.</p>
+<a class="reference internal image-reference" href="../_images/linear_wave_setup.png"><img alt="Longitudinal two-way wave setup" class="align-center" src="../_images/linear_wave_setup.png" style="width: 90%;" />
+</a>
+<p>The finite-element solution is compared directly with the analytic D’Alembert
+solution at the same time.</p>
+<a class="reference internal image-reference" href="../_images/linear_wave_solution.png"><img alt="Finite-element and analytic two-way wave solutions" class="align-center" src="../_images/linear_wave_solution.png" style="width: 75%;" />
+</a>
+<p>A coupled spatial/temporal refinement study with <span class="math notranslate nohighlight">\(\Delta t\propto\Delta x\)</span>
+shows the expected near-second-order convergence.</p>
+<a class="reference internal image-reference" href="../_images/linear_wave_convergence.png"><img alt="Two-way wave convergence study" class="align-center" src="../_images/linear_wave_convergence.png" style="width: 70%;" />
+</a>
+</section>
+<section id="generation">
+<h2>Generation<a class="headerlink" href="#generation" title="Link to this heading">#</a></h2>
+<p>All media on this page are regenerated by
+<code class="docutils literal notranslate"><span class="pre">examples/nonlinear_solid_dynamics/generate_docs_media.py</span></code> during the
+Sphinx build.  This keeps the visualizations tied to the current solver rather
+than maintaining hand-generated result images.</p>
 </section>
 </section>
 
@@ -453,20 +514,20 @@ provide the sampling interface used to generate model evaluations.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="nonlinear_solid_dynamics_gallery.html"
+       href="nonlinear_solid_dynamics.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Solid dynamics example gallery</p>
+        <p class="prev-next-title">Solid dynamics model</p>
       </div>
     </a>
     <a class="right-next"
-       href="notebooks/parameter_space.html"
+       href="parameter_space.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Basic parameter space tutorial</p>
+        <p class="prev-next-title">Parameter spaces</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -489,14 +550,17 @@ provide the sampling interface used to generate model evaluations.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cantilever-beam">Cantilever beam</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#doubly-clamped-gaussian-perturbation">Doubly clamped Gaussian perturbation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#longitudinal-two-way-wave">Longitudinal two-way wave</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generation">Generation</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/demos/parameter_space.rst.txt">
+    <a href="../_sources/demos/nonlinear_solid_dynamics_gallery.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

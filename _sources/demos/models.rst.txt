@@ -8,9 +8,9 @@ cluster. Workflow algorithms operate on this common model abstraction.
 Examples
 --------
 
-The first examples demonstrate the model interfaces. The CDR and hydrogen-air
-flame examples document reusable application models used throughout the
-workflow demonstrations.
+The first examples demonstrate the model interfaces. The CDR, hydrogen-air
+flame, and nonlinear solid-dynamics examples document reusable application
+models used throughout the workflow demonstrations.
 
 .. toctree::
    :maxdepth: 1
@@ -20,3 +20,5 @@ workflow demonstrations.
    notebooks/external_qoi_model.ipynb
    steady_cdr
    h2_air_flame
+   nonlinear_solid_dynamics
+   nonlinear_solid_dynamics_gallery
