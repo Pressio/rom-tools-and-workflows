@@ -20,11 +20,11 @@ class VIGradientOptimizerConfig:
 class VIAdamOptimizerConfig:
     """Configuration for Adam-based stochastic ELBO maximization.
 
-    By default Adam is applied to the natural gradient. For the Gaussian
-    variational parameterization used by the VI drivers this corresponds to
-    preconditioning the mean gradient by ``std**2`` and the log-standard-
-    deviation gradient by ``1/2``. When ``learning_rate`` is ``None``, the
-    ABRIS convention ``0.1 / parameter_dimension`` is used.
+    By default Adam is applied to the mean-field Gaussian natural gradient.
+    Following the ABRIS setup, the Fisher matrix is damped early in the
+    optimization and the preconditioned gradient is clipped by its L2 norm.
+    When ``learning_rate`` is ``None``, the ABRIS convention
+    ``0.1 / parameter_dimension`` is used.
     """
 
     gradient_method: str = 'natural'
@@ -33,6 +33,10 @@ class VIAdamOptimizerConfig:
     beta1: float = 0.9
     beta2: float = 0.999
     epsilon: float = 1e-8
+    fisher_damping_initial: float = 1e-2
+    fisher_damping_decay_start: int = 50
+    fisher_damping_min: float = 1e-6
+    gradient_clip_norm: float = 1e6
     gradient_norm_tolerance: float = 1e-5
     max_iterations: int = 1000
     max_log_std_update: float = 0.5
@@ -246,6 +250,10 @@ class AdamSolver:
                  beta1: float = 0.9,
                  beta2: float = 0.999,
                  epsilon: float = 1e-8,
+                 fisher_damping_initial: float = 1e-2,
+                 fisher_damping_decay_start: int = 50,
+                 fisher_damping_min: float = 1e-6,
+                 gradient_clip_norm: float = 1e6,
                  parameter_dimension: int = None):
         if learning_rate is not None and learning_rate <= 0.0:
             raise ValueError("learning_rate must be positive when provided.")
@@ -257,6 +265,18 @@ class AdamSolver:
             raise ValueError("beta2 must be in [0, 1).")
         if epsilon <= 0.0:
             raise ValueError("epsilon must be positive.")
+        if fisher_damping_initial < 0.0:
+            raise ValueError("fisher_damping_initial must be nonnegative.")
+        if fisher_damping_decay_start < 1:
+            raise ValueError("fisher_damping_decay_start must be positive.")
+        if fisher_damping_min < 0.0:
+            raise ValueError("fisher_damping_min must be nonnegative.")
+        if fisher_damping_min > fisher_damping_initial:
+            raise ValueError(
+                "fisher_damping_min cannot exceed fisher_damping_initial."
+            )
+        if gradient_clip_norm is not None and gradient_clip_norm <= 0.0:
+            raise ValueError("gradient_clip_norm must be positive or None.")
         if parameter_dimension is not None and parameter_dimension < 1:
             raise ValueError("parameter_dimension must be positive when provided.")
 
@@ -265,6 +285,10 @@ class AdamSolver:
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
+        self.fisher_damping_initial = fisher_damping_initial
+        self.fisher_damping_decay_start = int(fisher_damping_decay_start)
+        self.fisher_damping_min = fisher_damping_min
+        self.gradient_clip_norm = gradient_clip_norm
         self.parameter_dimension = parameter_dimension
         self.first_moment = None
         self.second_moment = None
@@ -278,6 +302,10 @@ class AdamSolver:
             beta1=config.beta1,
             beta2=config.beta2,
             epsilon=config.epsilon,
+            fisher_damping_initial=config.fisher_damping_initial,
+            fisher_damping_decay_start=config.fisher_damping_decay_start,
+            fisher_damping_min=config.fisher_damping_min,
+            gradient_clip_norm=config.gradient_clip_norm,
         )
 
     def _resolved_learning_rate(self, gradient: np.ndarray) -> float:
@@ -292,9 +320,37 @@ class AdamSolver:
             parameter_dimension = gradient.size // 2
         return self.learning_rate_scale / parameter_dimension
 
-    def step(self, gradient: np.ndarray) -> np.ndarray:
+    def _current_fisher_damping(self) -> float:
+        if self.iteration < self.fisher_damping_decay_start:
+            return self.fisher_damping_initial
+        decay_exponent = -(
+            self.iteration - self.fisher_damping_decay_start
+        ) / self.fisher_damping_decay_start
+        return max(
+            self.fisher_damping_initial * np.exp(decay_exponent),
+            self.fisher_damping_min,
+        )
+
+    def _prepare_gradient(self, gradient: np.ndarray, fisher_diagonal=None) -> np.ndarray:
         gradient = np.asarray(gradient, dtype=float)
         gradient = np.nan_to_num(gradient, nan=0.0, posinf=0.0, neginf=0.0)
+        if fisher_diagonal is not None:
+            fisher_diagonal = np.asarray(fisher_diagonal, dtype=float)
+            if fisher_diagonal.shape != gradient.shape:
+                raise ValueError("Fisher diagonal must have the same shape as gradient.")
+            if np.any(fisher_diagonal < 0.0):
+                raise ValueError("Fisher diagonal entries must be nonnegative.")
+            gradient = gradient / (
+                fisher_diagonal + self._current_fisher_damping()
+            )
+        if self.gradient_clip_norm is not None:
+            gradient_norm = np.linalg.norm(gradient)
+            if gradient_norm > self.gradient_clip_norm:
+                gradient = gradient * (self.gradient_clip_norm / gradient_norm)
+        return gradient
+
+    def step(self, gradient: np.ndarray, fisher_diagonal=None) -> np.ndarray:
+        gradient = self._prepare_gradient(gradient, fisher_diagonal=fisher_diagonal)
         if self.first_moment is None:
             self.first_moment = np.zeros_like(gradient)
             self.second_moment = np.zeros_like(gradient)

@@ -82,6 +82,30 @@ def test_adam_solver_accumulates_bias_corrected_moments():
     np.testing.assert_allclose(second_step, expected)
 
 
+def test_adam_solver_applies_abris_fisher_damping_before_moments():
+    solver = AdamSolver(learning_rate=0.01)
+    gradient = np.array([4.0, 6.0])
+    fisher_diagonal = np.array([2.0, 3.0])
+
+    solver.step(gradient, fisher_diagonal=fisher_diagonal)
+
+    expected_preconditioned = gradient / (fisher_diagonal + 1e-2)
+    np.testing.assert_allclose(
+        solver.first_moment,
+        (1.0 - solver.beta1) * expected_preconditioned,
+    )
+
+
+def test_adam_solver_clips_preconditioned_gradient_norm():
+    solver = AdamSolver(learning_rate=0.01, gradient_clip_norm=5.0)
+    gradient = np.array([30.0, 40.0])
+
+    solver.step(gradient)
+
+    prepared_gradient = solver.first_moment / (1.0 - solver.beta1)
+    assert np.isclose(np.linalg.norm(prepared_gradient), 5.0)
+
+
 @pytest.mark.mpi_skip
 def test_run_vi_supports_adam_natural_gradient(tmp_path):
     means, stds, parameter_samples, qois = vi_drivers.run_vi(

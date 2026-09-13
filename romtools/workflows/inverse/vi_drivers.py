@@ -53,10 +53,11 @@ Carlo samples from the current variational distribution. Because only
 :math:`\nabla_{\zeta}\log q` is needed, the forward model itself is treated as
 derivative-free.
 
-When ``optimizer_method="adam"``, the selected score gradient (standard or
-natural/Fisher-preconditioned) is passed to a stateful Adam ascent update.
-The Adam default uses the natural gradient and the ABRIS initial learning-rate
-convention :math:`0.1/d`, where :math:`d` is the parameter dimension.
+When ``optimizer_method="adam"``, the selected score gradient is passed to a
+stateful Adam ascent update. By default, the raw score gradient is
+preconditioned with the damped mean-field Gaussian Fisher matrix before Adam,
+matching the ABRIS setup; the default initial learning rate is :math:`0.1/d`,
+where :math:`d` is the parameter dimension.
 
 When ``optimizer_method="newton"``, the routine also forms a second-order
 score-function estimator for curvature:
@@ -2736,8 +2737,27 @@ def run_vi(model: QoiModel,
                 )
 
         if optimization_method in ('gradient', 'adam'):
-            gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
-            step = steepest_descent_solver.step(gradient)
+            if optimization_method == 'adam':
+                gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
+                fisher_diagonal = None
+                if gradient_method == 'natural':
+                    variational_std_for_fisher, _ = _compute_variational_std(
+                        variational_log_std,
+                        min_variational_std,
+                        max_variational_std,
+                    )
+                    fisher_diagonal = np.concatenate([
+                        1.0 / (variational_std_for_fisher ** 2),
+                        2.0 * np.ones_like(variational_std_for_fisher),
+                    ])
+                step = steepest_descent_solver.step(
+                    gradient, fisher_diagonal=fisher_diagonal
+                )
+            else:
+                gradient = np.concatenate([
+                    state['update_direction_mean'], state['update_direction_log_std']
+                ])
+                step = steepest_descent_solver.step(gradient)
             dimensionality = state['update_direction_mean'].size
             direction_mean = step[:dimensionality]
             direction_log_std = step[dimensionality:]

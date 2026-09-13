@@ -2488,8 +2488,27 @@ def run_mf_vi(model: QoiModel,
 
         line_search_predicted_slope = 0.0
         if optimization_method in ('gradient', 'adam'):
-            gradient = np.concatenate([state['update_direction_mean'], state['update_direction_log_std']])
-            step = steepest_descent_solver.step(gradient)
+            if optimization_method == 'adam':
+                gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
+                fisher_diagonal = None
+                if gradient_method == 'natural':
+                    variational_std_for_fisher, _ = _compute_variational_std(
+                        variational_log_std,
+                        min_variational_std,
+                        max_variational_std,
+                    )
+                    fisher_diagonal = np.concatenate([
+                        1.0 / (variational_std_for_fisher ** 2),
+                        2.0 * np.ones_like(variational_std_for_fisher),
+                    ])
+                step = steepest_descent_solver.step(
+                    gradient, fisher_diagonal=fisher_diagonal
+                )
+            else:
+                gradient = np.concatenate([
+                    state['update_direction_mean'], state['update_direction_log_std']
+                ])
+                step = steepest_descent_solver.step(gradient)
             dimensionality = state['update_direction_mean'].size
             direction_mean = step[:dimensionality]
             direction_log_std = step[dimensionality:]
