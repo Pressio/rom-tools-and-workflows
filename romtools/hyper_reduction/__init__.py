@@ -54,5 +54,16 @@ The hyper_reduction module provides these functionalities. Note that certain asp
 problem-dependent. Implementations of these aspects, including the generation of residual snapshots and the construction
 of a sample mesh, are left to the user.
 '''
+
+from romtools.hyper_reduction import deim, ecsw
 from romtools.hyper_reduction.ecsw import *
 from romtools.hyper_reduction.deim import DEIM, QDEIM
+
+__all__ = [
+    "deim",
+    "ecsw",
+    "DEIM",
+    "QDEIM",
+    "ECSWsolver",
+    "ECSWsolverNNLS",
+]
