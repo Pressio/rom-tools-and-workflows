@@ -21,3 +21,4 @@ models used throughout the workflow demonstrations.
    steady_cdr
    h2_air_flame
    nonlinear_solid_dynamics
+   nonlinear_solid_dynamics_gallery
