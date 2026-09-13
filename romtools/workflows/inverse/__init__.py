@@ -62,6 +62,9 @@ from romtools.workflows.inverse.vi_sample_reuse import (
 )
 
 _sample_reuse_module = _import_module("romtools.workflows.inverse.vi_sample_reuse")
+# Add score-function Hessian reuse for the existing Newton optimizer and keep a
+# separate archive when the user requests independent curvature samples.
+_import_module("romtools.workflows.inverse.vi_sample_reuse_hessian")
 
 
 def _add_sample_reuse_signature(wrapper, original):
