@@ -69,6 +69,7 @@ html_theme_options = {
     "show_nav_level": 1,
     "navigation_depth": 3,
     "collapse_navigation": True,
+    "show_prev_next": False,
 }
 html_sidebars = {
     "**": ["sidebar-nav-bs", "page-toc"],
