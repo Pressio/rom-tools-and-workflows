@@ -3,10 +3,10 @@ Solid-dynamics EKI and MF-EKI benchmark
 
 This example uses the nonlinear cantilever in the :doc:`solid dynamics model <nonlinear_solid_dynamics>` as a controlled inverse problem for comparing
 single-fidelity ensemble Kalman inversion (EKI) and multifidelity EKI (MF-EKI).
-The first benchmark intentionally changes only numerical resolution between the
-high- and low-fidelity models; both use the same compressible Neo-Hookean
-physics.  This makes it possible to study the effect of fidelity correlation
-without introducing model-form error at the same time.
+Synthetic truth and the inference high-fidelity model intentionally use the
+same finite-element mesh and time step.  MF-EKI then constructs a
+Gaussian-process QoI surrogate automatically from the high-fidelity evaluations
+and uses that GP as the low-fidelity model.
 
 Inverse parameters
 ------------------
@@ -53,24 +53,25 @@ vector concatenates transverse-displacement histories at
    x/L = 0.50,\ 0.75,\ 1.00,
 
 sampled every ``0.1 s`` from ``0.1`` through ``1.0 s``.  Synthetic data are
-generated on the truth discretization and perturbed with reproducible Gaussian
-noise.  A single standard deviation equal to one percent of the largest clean
-observed displacement is used for the initial benchmark,
+generated with the same high-fidelity model used during inversion and perturbed
+with reproducible Gaussian noise.  A single standard deviation equal to one
+percent of the largest clean observed displacement is used,
 
 .. math::
 
-   y = \mathcal G_{\mathrm{truth}}(\theta^*) + \eta,
+   y = \mathcal G_H(\theta^*) + \eta,
    \qquad
    \eta\sim\mathcal N(0,\sigma_{\mathrm{obs}}^2 I).
 
-The truth discretization is finer than the inference high-fidelity model, so
-the inverse problem does not use exactly the same discrete model to generate and
-fit the observations.
+This is intentionally a controlled algorithmic benchmark rather than a study of
+discretization mismatch: truth and high fidelity share the same discrete
+forward model.
 
-Fidelity hierarchy
-------------------
+High-fidelity model
+-------------------
 
-The default non-smoke configuration uses
+The default non-smoke benchmark uses the same discretization for synthetic truth
+and every high-fidelity evaluation:
 
 .. list-table::
    :header-rows: 1
@@ -79,52 +80,48 @@ The default non-smoke configuration uses
      - Q4 mesh
      - Time step
      - Time horizon
-   * - Synthetic truth
-     - ``12 x 4``
+   * - Synthetic truth / high fidelity
+     - ``33 x 16``
      - ``0.005 s``
      - ``1.0 s``
-   * - High fidelity
-     - ``8 x 2``
-     - ``0.01 s``
-     - ``1.0 s``
-   * - Low fidelity
-     - ``4 x 2``
-     - ``0.02 s``
-     - ``1.0 s``
 
-The MF-EKI low-fidelity model is passed through the normal
-``QoiModelBuilderWithTrainingData``-style interface, but the builder returns a
-fixed coarse discretization rather than learning a ROM from the high-fidelity
-snapshots.  This is deliberate: the benchmark first asks how MF-EKI behaves
-when the low-fidelity error is ordinary spatial/temporal discretization error.
-A later experiment can replace the coarse Neo-Hookean model with linear
-elasticity to introduce controlled model-form error.
+Both EKI and MF-EKI therefore query the same ``33 x 16`` Neo-Hookean FOM.  The
+``--smoke`` path uses a much smaller discretization solely to keep CI validation
+lightweight.
+
+Automatic GP low-fidelity model
+--------------------------------
+
+MF-EKI is run through ``mf_eki_with_auto_rom`` with ``rom_type="gp"``.  The GP
+maps the three transformed parameters
+
+.. math::
+
+   (\log E,\nu,\log F_0)
+
+onto the concatenated sensor time histories.  It is rebuilt from accumulated
+high-fidelity parameter/QoI pairs when its error exceeds the MF-EKI ROM
+tolerance.  Parameters and QoIs are normalized before GP construction.
+
+The default benchmark uses
+
+* 8 shared FOM ensemble members;
+* 24 additional GP-only ensemble members;
+* up to 4 GP-only EKI substeps after each outer high-fidelity update;
+* a relative ROM tolerance of ``0.005``; and
+* at most 5 recent high-fidelity training batches when rebuilding the GP.
+
+This setup isolates the benefit of an automatically constructed data-driven
+surrogate: there is no separate coarse finite-element model to tune.
 
 Cost metric
 -----------
 
-Every model evaluation stores both its wall-clock time and a deterministic work
-proxy
-
-.. math::
-
-   W \propto N_{\mathrm{elem}}N_{\mathrm{step}}.
-
-The high-fidelity model has unit cost and the low-fidelity evaluations are
-weighted by their ratio to the high-fidelity work proxy.  The main comparison
-therefore plots observation error against cumulative **HF-equivalent work**.
-Wall-clock totals are also written to the summary JSON for reference, but they
-are not used as the primary algorithmic metric because they are machine
-dependent.
-
-Pilot correlation
------------------
-
-Before the full solve, the example can evaluate a small pilot ensemble on the
-high- and low-fidelity models and report componentwise HF/LF QoI correlations.
-This provides a direct diagnostic for whether the coarse model is useful to
-MF-EKI.  The example reports the minimum, median, and maximum correlation across
-all sensor/time components.
+The dominant cost is the ``33 x 16`` nonlinear finite-element solve.  The main
+comparison therefore plots observation error against cumulative high-fidelity
+model evaluations.  GP evaluations are treated as negligible in this primary
+cost metric.  The example also records cumulative high-fidelity wall-clock time
+for both EKI and MF-EKI in the summary JSON.
 
 Running the benchmark
 ---------------------
@@ -144,12 +141,13 @@ A reduced configuration is available for CI:
 The script writes
 
 * ``solid_dynamics_observations.png`` for the clean/noisy sensor histories;
-* ``solid_dynamics_parameter_convergence.png`` for the EKI and MF-EKI parameter
-  estimates;
-* ``solid_dynamics_error_vs_cost.png`` for convergence versus HF-equivalent
-  work; and
-* ``solid_dynamics_eki_mf_eki_summary.json`` containing the truth, final
-  estimates, pilot correlations, nominal costs, and wall-clock totals.
+* ``solid_dynamics_parameter_convergence.png`` for the EKI and GP MF-EKI
+  parameter estimates;
+* ``solid_dynamics_error_vs_cost.png`` for convergence versus cumulative
+  high-fidelity evaluations; and
+* ``solid_dynamics_eki_mf_eki_summary.json`` containing the truth, FOM and GP
+  settings, final estimates, high-fidelity evaluation counts, and high-fidelity
+  wall-clock totals.
 
 Implementation
 --------------
