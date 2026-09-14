@@ -329,7 +329,15 @@ def _hessian_reuse_quality(archive,
             baseline_method,
         )
         standard_error = _batch_aware_hessian_standard_error(terms, archive)
-        hessian_norm = float(np.linalg.norm(hessian_full, ord="fro"))
+        # Normalize by the same recycled HF curvature contribution whose
+        # uncertainty is measured above. In MFVI, using the full multifidelity
+        # Hessian here can spuriously inflate the relative error when the ROM
+        # control-variate correction cancels part of the HF curvature.
+        recycled_hessian = np.mean(terms, axis=0)
+        recycled_hessian = 0.5 * (
+            recycled_hessian + recycled_hessian.transpose()
+        )
+        hessian_norm = float(np.linalg.norm(recycled_hessian, ord="fro"))
         denominator = max(hessian_norm, np.sqrt(np.finfo(float).eps))
         relative_standard_error = standard_error / denominator
         diagnostics["sample_reuse_hessian_standard_error"] = standard_error
