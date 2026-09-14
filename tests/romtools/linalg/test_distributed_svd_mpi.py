@@ -5,7 +5,8 @@ import pytest
 
 from mpi4py import MPI
 
-from romtools.linalg import DistributedSvd
+import romtools.linalg.linalg as linalg_module
+from romtools.linalg import DEFAULT_TSQR_TREE_THRESHOLD, DistributedSvd
 
 
 def _matrix_for_case(case, comm_size):
@@ -253,8 +254,9 @@ def _positive_singular_value_clusters(singular_values, matrix_shape):
     return clusters
 
 
-def _assert_distributed_factors_match_numpy(global_matrix, local_matrix,
-                                            local_slice, comm):
+def _assert_distributed_factors_match_numpy(
+        global_matrix, local_matrix, local_slice, comm,
+        tree_threshold=DEFAULT_TSQR_TREE_THRESHOLD):
     """Validate one distributed SVD against a serial NumPy reference SVD.
 
     This helper is called collectively: every rank holds the same small
@@ -285,7 +287,9 @@ def _assert_distributed_factors_match_numpy(global_matrix, local_matrix,
 
     # Compute the distributed result. U remains row-distributed, whereas the
     # singular values and Vh are replicated on every rank.
-    actual_u, actual_s, actual_vh = DistributedSvd(comm)(
+    actual_u, actual_s, actual_vh = DistributedSvd(
+        comm, tree_threshold=tree_threshold
+    )(
         local_matrix,
         full_matrices=False,
         compute_uv=True,
@@ -414,6 +418,33 @@ def test_distributed_svd_matches_numpy_for_uneven_partitions(case):
 
 
 @pytest.mark.mpi(min_size=1)
+@pytest.mark.parametrize(
+    "case",
+    [
+        "tall-real",
+        "wide-real",
+        "tall-complex",
+        "wide-complex64",
+        "rank-deficient",
+        "repeated-singular-values",
+    ],
+)
+def test_tree_tsqr_matches_numpy_for_uneven_partitions(case):
+    comm = MPI.COMM_WORLD
+    global_matrix = _matrix_for_case(case, comm.Get_size())
+    local_matrix, local_slice, _ = _uneven_partition(global_matrix, comm)
+
+    # A threshold of one forces the tree path at every CI communicator size.
+    _assert_distributed_factors_match_numpy(
+        global_matrix,
+        local_matrix,
+        local_slice,
+        comm,
+        tree_threshold=1,
+    )
+
+
+@pytest.mark.mpi(min_size=1)
 def test_distributed_svd_supports_zero_local_rows():
     comm = MPI.COMM_WORLD
     comm_size = comm.Get_size()
@@ -441,21 +472,56 @@ def test_distributed_svd_supports_zero_local_rows():
 
 
 @pytest.mark.mpi(min_size=1)
-def test_distributed_svd_supports_zero_global_columns():
+def test_tree_tsqr_supports_zero_local_rows():
+    comm = MPI.COMM_WORLD
+    comm_size = comm.Get_size()
+    rank = comm.Get_rank()
+    rng = np.random.default_rng(314271)
+
+    if comm_size == 1:
+        global_matrix = np.empty((0, 5))
+        counts = np.array([0])
+    else:
+        global_matrix = rng.normal(size=(2*comm_size + 3, 5))
+        counts = np.zeros(comm_size, dtype=int)
+        counts[1:] = global_matrix.shape[0] // (comm_size - 1)
+        counts[1:1 + global_matrix.shape[0] % (comm_size - 1)] += 1
+
+    offsets = np.concatenate(([0], np.cumsum(counts)))
+    local_slice = slice(offsets[rank], offsets[rank + 1])
+    local_matrix = global_matrix[local_slice].copy()
+    _assert_distributed_factors_match_numpy(
+        global_matrix,
+        local_matrix,
+        local_slice,
+        comm,
+        tree_threshold=1,
+    )
+
+
+@pytest.mark.mpi(min_size=1)
+@pytest.mark.parametrize("tree_threshold", [1, 1000000])
+def test_distributed_svd_supports_zero_global_columns(tree_threshold):
     comm = MPI.COMM_WORLD
     global_matrix = np.empty((2*comm.Get_size() + 1, 0))
     local_matrix, local_slice, _ = _uneven_partition(global_matrix, comm)
 
     _assert_distributed_factors_match_numpy(
-        global_matrix, local_matrix, local_slice, comm
+        global_matrix,
+        local_matrix,
+        local_slice,
+        comm,
+        tree_threshold=tree_threshold,
     )
 
 
 @pytest.mark.mpi(min_size=1)
+@pytest.mark.parametrize("tree_threshold", [1, 1000000])
 @pytest.mark.parametrize("full_matrices", [False, True])
 @pytest.mark.parametrize("complex_input", [False, True])
 def test_distributed_compute_uv_false_matches_numpy(full_matrices,
-                                                    complex_input):
+                                                    complex_input,
+                                                    tree_threshold):
     comm = MPI.COMM_WORLD
     rng = np.random.default_rng(173205)
     shape = (2*comm.Get_size() + 5, 6)
@@ -470,7 +536,7 @@ def test_distributed_compute_uv_false_matches_numpy(full_matrices,
         compute_uv=False,
         hermitian=False,
     )
-    actual = DistributedSvd(comm)(
+    actual = DistributedSvd(comm, tree_threshold=tree_threshold)(
         local_matrix,
         full_matrices=full_matrices,
         compute_uv=False,
@@ -712,6 +778,46 @@ def test_distributed_inconsistent_options_raise_collectively():
             np.ones((3, 4)),
             full_matrices=False,
             compute_uv=compute_uv,
+        )
+
+
+@pytest.mark.mpi(min_size=1)
+def test_tree_threshold_selects_reduction_path(monkeypatch):
+    comm = MPI.COMM_WORLD
+    original_tree_tsqr = linalg_module._tree_tsqr_svd
+    tree_calls = []
+
+    def recording_tree_tsqr(*args, **kwargs):
+        tree_calls.append(True)
+        return original_tree_tsqr(*args, **kwargs)
+
+    monkeypatch.setattr(
+        linalg_module, "_tree_tsqr_svd", recording_tree_tsqr
+    )
+    local_matrix = np.arange(28.0).reshape(7, 4)
+    local_matrix += 100.0*comm.Get_rank()
+
+    DistributedSvd(
+        comm, tree_threshold=comm.Get_size() + 1
+    )(local_matrix, full_matrices=False)
+    assert tree_calls == []
+
+    DistributedSvd(
+        comm, tree_threshold=comm.Get_size()
+    )(local_matrix, full_matrices=False)
+    assert tree_calls == [True]
+
+
+@pytest.mark.mpi(min_size=1)
+def test_distributed_inconsistent_tree_thresholds_raise_collectively():
+    comm = MPI.COMM_WORLD
+    if comm.Get_size() == 1:
+        pytest.skip("threshold inconsistency requires multiple ranks")
+
+    tree_threshold = 1 if comm.Get_rank() == 0 else 2
+    with pytest.raises(ValueError, match="same SVD options"):
+        DistributedSvd(comm, tree_threshold=tree_threshold)(
+            np.ones((3, 4)), full_matrices=False
         )
 
 
