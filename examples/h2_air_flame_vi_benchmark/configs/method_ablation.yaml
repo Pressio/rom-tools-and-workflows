@@ -1,0 +1,156 @@
+benchmark:
+  mode: ablation
+  max_iterations: 50
+  # Common matched-work analysis cap. The workflow is allowed to finish its
+  # current VI iteration; plots/results are truncated to this cumulative FOM cost.
+  fom_budget: 400
+  restart_files_to_keep: 50
+  algorithm_seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  fom_evaluation_concurrency: 4
+  rom_evaluation_concurrency: 4
+
+model:
+  nx: 64
+  ny: 32
+  dt: 1.0e-3
+  t_end: 6.0e-2
+  snapshot_stride: 10
+  spatial_sensor_stride: 4
+  temporal_sensor_stride: 1
+
+parameters:
+  names: [kappa, scaled_activation_energy, beta_x, beta_y]
+  mins: [0.5, 4.0, 20.0, 1.0]
+  maxes: [4.0, 12.0, 60.0, 20.0]
+  truth: [2.0, 8.0, 40.0, 7.0]
+  prior_mean: [2.25, 8.0, 40.0, 10.5]
+  prior_std: [0.875, 2.0, 10.0, 4.75]
+  # Deliberately offset from the truth.
+  initial_mean: [1.2, 6.0, 30.0, 12.0]
+  initial_std: [0.45, 1.0, 5.0, 2.5]
+
+observations:
+  global_rms_noise_ratio: 0.05
+  seed: 2718
+
+vi:
+  sample_size: 8
+  baseline_method: loo
+  sampling_method: mc
+  covariance_regularization: 1.0e-8
+  bounded_parameter_handling: transform
+  transform_interior_margin: 1.0e-8
+  transform_map: sigmoid
+  min_physical_variational_std_fraction: 1.0e-8
+  elbo_scaling_factor: auto
+
+optimization:
+  adam:
+    gradient_method: natural
+    learning_rate: null
+    learning_rate_scale: 0.1
+    beta1: 0.9
+    beta2: 0.999
+    epsilon: 1.0e-8
+    fisher_damping_initial: 1.0e-2
+    fisher_damping_decay_start: 50
+    fisher_damping_min: 1.0e-6
+    gradient_clip_norm: 1.0e6
+    gradient_norm_tolerance: 0.0
+    max_log_std_update: 0.5
+    min_variational_std: 1.0e-6
+    max_variational_std: 1.0e6
+
+  newton:
+    gradient_norm_tolerance: 0.0
+    max_log_std_update: 0.5
+    max_mean_update_std: 2.0
+    min_variational_std: 1.0e-8
+    max_variational_std: 1.0e6
+    newton_metric: standard
+    newton_regularization: 1.0e-2
+    newton_hessian_type: full
+    newton_curvature_strategy: lagged
+    newton_hessian_num_samples: null
+    newton_hessian_averaging_factor: 0.5
+
+  line_search:
+    initial_step_size: 1.0e-2
+    max_step_size: 1.0
+    step_size_growth_factor: 1.05
+    step_size_decay_factor: 2.0
+    max_step_size_decrease_trys: 5
+    relaxation_parameter: 3.05
+    line_search_objective: elbo
+    line_search_nonmonotone_window: 5
+    line_search_armijo_coefficient: 1.0e-6
+    line_search_uncertainty_sigma: 4.0
+    line_search_sample_growth_factor: 1.0
+    log_std_learning_rate_factor: 1.0
+
+sample_reuse:
+  history_batches: 10
+  ess_threshold: 4.0
+  use_score_diagnostic: true
+  score_error_scale: 2.0
+  periodic_refresh: 10
+
+multifidelity:
+  fom_sample_size: 8
+  rom_extra_sample_size: 64
+  rom_tolerance: 0.005
+  max_rom_training_history: 5
+  rom:
+    pod_energy_fraction: 0.9999
+    max_pod_modes: null
+    noise_variance_fraction: 1.0e-6
+    tune_hyperparameters: false
+    normalize_parameters: true
+    normalize_targets: true
+
+methods:
+  bbvi_adam:
+    label: BBVI (Adam)
+    fidelity: single
+    optimizer: adam
+    sample_reuse: false
+    entropy_strategy: analytic
+
+  arbis:
+    label: ARBIS
+    fidelity: single
+    optimizer: adam
+    sample_reuse: true
+    entropy_strategy: analytic
+
+  arbis_mf:
+    label: ARBIS + MF
+    fidelity: mf
+    optimizer: adam
+    sample_reuse: true
+    entropy_strategy: analytic
+
+  bbvi_newton:
+    label: BBVI (Newton)
+    fidelity: single
+    optimizer: newton
+    sample_reuse: false
+    entropy_strategy: analytic
+
+  mf_bbvi_newton_analytic:
+    label: MF-BBVI (Newton, analytic)
+    fidelity: mf
+    optimizer: newton
+    sample_reuse: false
+    entropy_strategy: analytic
+
+  mf_bbvi_newton_joint:
+    label: MF-BBVI (Newton, joint)
+    fidelity: mf
+    optimizer: newton
+    sample_reuse: false
+    entropy_strategy: joint
+
+sweep:
+  fom_sample_sizes: [4, 8, 16, 32]
+  mf_rom_extra_sample_sizes: [64, 128]
