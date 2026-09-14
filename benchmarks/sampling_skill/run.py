@@ -181,7 +181,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=600, help="Seconds per session")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--executable", help="Provider CLI path")
-    parser.add_argument("--skill", type=Path, default=REPO / ".agents/skills/workflow/SKILL.md")
+    parser.add_argument("--skill", type=Path, default=REPO / ".claude/skills/workflow/SKILL.md")
     parser.add_argument("--output", type=Path, default=HERE / "results")
     parser.add_argument("--dry-run", action="store_true", help="Prepare prompts and manifest; never call a model")
     args = parser.parse_args()
