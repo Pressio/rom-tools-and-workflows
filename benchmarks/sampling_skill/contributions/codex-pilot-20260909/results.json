@@ -1,0 +1,416 @@
+[
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "existing-0-baseline",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "existing",
+    "condition": "baseline",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "4612e37ac2162a2962a076a66df84304a09b3f1401c87ee5051ad6f630819faf",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 78.41384920899873,
+    "usage": {
+      "input_tokens": 111534,
+      "output_tokens": 1775,
+      "cache_read_tokens": 93440,
+      "cache_write_tokens": 0,
+      "total_tokens": 113309
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "model.py_unchanged": true,
+        "workflow.py_unchanged": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  },
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "existing-0-skill",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "existing",
+    "condition": "skill",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "53837a08adfb1f7fd0c0e673d682d586b290a5eaad98ae7f57158bb0b593f571",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 51.587963916012086,
+    "usage": {
+      "input_tokens": 97877,
+      "output_tokens": 1113,
+      "cache_read_tokens": 84608,
+      "cache_write_tokens": 0,
+      "total_tokens": 98990
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "model.py_unchanged": true,
+        "workflow.py_unchanged": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  },
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "reuse-0-skill",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "reuse",
+    "condition": "skill",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "f2d40e46b870d5f0f3e835bc4188bdbf6ee0fbc64a99a4c0f9969bbcc57546c4",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 65.90956708299927,
+    "usage": {
+      "input_tokens": 83771,
+      "output_tokens": 1659,
+      "cache_read_tokens": 51328,
+      "cache_write_tokens": 0,
+      "total_tokens": 85430
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "model.py_unchanged": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  },
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "reuse-0-baseline",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "reuse",
+    "condition": "baseline",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "e7f78b2ccf029d34adbe95ae5c0386e93a3879e9aef7a427c05a277d4edf8358",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 105.64404729098896,
+    "usage": {
+      "input_tokens": 135078,
+      "output_tokens": 2457,
+      "cache_read_tokens": 112384,
+      "cache_write_tokens": 0,
+      "total_tokens": 137535
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "model.py_unchanged": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  },
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "generate-0-baseline",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "generate",
+    "condition": "baseline",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "6299cbeafd7d79cc6510d0327cebb26b6f387dbb58408b015845d79a479753be",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 91.9345332920202,
+    "usage": {
+      "input_tokens": 109175,
+      "output_tokens": 2396,
+      "cache_read_tokens": 83456,
+      "cache_write_tokens": 0,
+      "total_tokens": 111571
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  },
+  {
+    "schema_version": 1,
+    "run_id": "20260909T124732-e6989bb0",
+    "trial_id": "generate-0-skill",
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium",
+    "cli_version": "codex-cli 0.153.4",
+    "task": "generate",
+    "condition": "skill",
+    "repeat": 0,
+    "skill_sha256": "8f8904624364eb0d40da9eb4dd59a1c4feac2a0572d6c6e54e1ef29b6138d7ea",
+    "source_sha256": "5dd940aa3d976732b6df370a79b23b36da1f879a63941bf0d1c04ac35a9563c3",
+    "prompt_sha256": "8534f1d1aeffd4d4ac168191a9c369c008d2b288d5734e25957e2fad0a207a7f",
+    "delivery": "explicit-file",
+    "authorization": "preauthorized-local",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "timeout": 240,
+    "repository_commit": "8750772d5cad89467553d995790e52ac291a71b6",
+    "dependencies": {
+      "python": "3.13.5",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.9"
+    },
+    "harness_sha256": "519aa2c6aa2ac256aed36e8d2659ee810971e0733dd2867a72362af2b57658e6",
+    "exit_code": 0,
+    "status": "finished",
+    "seconds": 77.74533862498356,
+    "usage": {
+      "input_tokens": 84675,
+      "output_tokens": 2019,
+      "cache_read_tokens": 62208,
+      "cache_write_tokens": 0,
+      "total_tokens": 86694
+    },
+    "provider_completed": true,
+    "quality": {
+      "checks": {
+        "sample_shape": true,
+        "finite_and_bounds": true,
+        "nonconstant_parameters": true,
+        "eight_runs": true,
+        "numerical_outputs": true,
+        "audit_present": true,
+        "replay_exit_zero": true,
+        "sampling_configuration": true,
+        "reproducible_samples": true,
+        "library_unchanged": true
+      },
+      "passed": true,
+      "observed_sampling_calls": [
+        {
+          "number_of_samples": 8,
+          "evaluation_concurrency": 1,
+          "random_seed": 42,
+          "dry_run": false,
+          "names": [
+            "alpha",
+            "beta"
+          ],
+          "dispatcher": "LocalDispatcher"
+        }
+      ]
+    },
+    "successful": true
+  }
+]
