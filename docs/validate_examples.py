@@ -147,6 +147,49 @@ def _run_mf_vi_smoke_test() -> None:
         )
 
 
+def _run_air_flame_vi_smoke_test() -> None:
+    example = REPOSITORY_ROOT / "examples/h2_air_flame_vi_benchmark/benchmark.py"
+    print("Running reduced H2-air flame VI benchmark smoke test", flush=True)
+
+    with tempfile.TemporaryDirectory(prefix="romtools-docs-air-flame-vi-") as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        env = os.environ.copy()
+        env.setdefault("MPLBACKEND", "Agg")
+        subprocess.run(
+            [
+                sys.executable,
+                str(example),
+                "--smoke",
+                "--work-dir",
+                str(tmp_path / "work"),
+                "--output-dir",
+                str(tmp_path / "results"),
+            ],
+            cwd=REPOSITORY_ROOT,
+            env=env,
+            check=True,
+        )
+        subprocess.run(
+            [
+                sys.executable,
+                str(example),
+                "--smoke",
+                "--mode",
+                "sweep",
+                "--methods",
+                "bbvi_adam",
+                "arbis_mf",
+                "--work-dir",
+                str(tmp_path / "sweep-work"),
+                "--output-dir",
+                str(tmp_path / "sweep-results"),
+            ],
+            cwd=REPOSITORY_ROOT,
+            env=env,
+            check=True,
+        )
+
+
 def _run_hyper_reduction_smoke_tests() -> None:
     examples = [
         "examples/h2_air_flame_deim/example.py",
@@ -172,6 +215,7 @@ def main() -> None:
     _run_eki_smoke_test()
     _run_air_flame_eki_smoke_test()
     _run_mf_vi_smoke_test()
+    _run_air_flame_vi_smoke_test()
     _run_hyper_reduction_smoke_tests()
     print("Documentation example validation passed.", flush=True)
 
