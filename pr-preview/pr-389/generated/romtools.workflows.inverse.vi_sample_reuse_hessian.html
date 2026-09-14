@@ -416,6 +416,17 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><code class="docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -485,15 +496,48 @@
   <section id="module-romtools.workflows.inverse.vi_sample_reuse_hessian">
 <span id="romtools-workflows-inverse-vi-sample-reuse-hessian"></span><h1>romtools.workflows.inverse.vi_sample_reuse_hessian<a class="headerlink" href="#module-romtools.workflows.inverse.vi_sample_reuse_hessian" title="Link to this heading">#</a></h1>
 <p>Newton/Hessian support for importance-sampling VI sample reuse.</p>
-<p>This module extends <code class="xref py py-mod docutils literal notranslate"><span class="pre">vi_sample_reuse</span></code> without changing the first-pass
-archive implementation. Reused FOM evaluations are combined with current
-score-function Hessian factors using the same deterministic-mixture importance
-weights as the gradient. The existing VI/MFVI Newton solvers, curvature
-strategies, absolute-Hessian treatment, and multifidelity gain machinery remain
-responsible for constructing the optimization step.</p>
-<p>The extension is installed for side effects by <code class="docutils literal notranslate"><span class="pre">inverse.__init__</span></code>. Keeping
-it separate makes the Hessian-specific assumptions explicit while the sample
-reuse API is still experimental.</p>
+<p>This module extends <code class="xref py py-mod docutils literal notranslate"><span class="pre">vi_sample_reuse</span></code> with score-function Hessian reuse
+and Newton-specific archive quality checks. Reused FOM evaluations are combined
+with current score-function Hessian factors using the same deterministic-mixture
+importance weights as the gradient. The existing VI/MFVI Newton solvers,
+curvature strategies, absolute-Hessian treatment, and multifidelity gain
+machinery remain responsible for constructing the optimization step.</p>
+<p>Two additional safeguards are applied only to Newton runs: a second-order score
+identity diagnostic and a batch-aware relative standard-error estimate for the
+importance-sampled Hessian contribution.</p>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig" title="romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></a>([enabled, ...])</p></td>
+<td><p>Sample-reuse configuration including Newton/Hessian safeguards.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_sample_reuse_hessian.</span></span><span class="sig-name descname"><span class="pre">VISampleReuseConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">history_batches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ess_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_score_diagnostic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_error_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">periodic_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_hessian_score_diagnostic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hessian_score_error_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hessian_relative_standard_error_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_sample_reuse_hessian.html#VISampleReuseConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></p>
+<p>Sample-reuse configuration including Newton/Hessian safeguards.</p>
+<p>The Hessian checks are only evaluated for Newton runs. First-order VI and
+MFVI therefore retain the original sample-reuse behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enabled</strong> (<em>bool</em>)</p></li>
+<li><p><strong>history_batches</strong> (<em>int</em>)</p></li>
+<li><p><strong>ess_threshold</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>use_score_diagnostic</strong> (<em>bool</em>)</p></li>
+<li><p><strong>score_error_scale</strong> (<em>float</em>)</p></li>
+<li><p><strong>periodic_refresh</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>use_hessian_score_diagnostic</strong> (<em>bool</em>)</p></li>
+<li><p><strong>hessian_score_error_scale</strong> (<em>float</em>)</p></li>
+<li><p><strong>hessian_relative_standard_error_threshold</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -510,6 +554,18 @@ reuse API is still experimental.</p>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><code class="docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

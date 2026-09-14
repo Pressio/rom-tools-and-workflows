@@ -12,9 +12,3 @@ romtools.workflows.inverse.vi\_sample\_reuse
       run_mf_vi
       run_vi
    
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      VISampleReuseConfig
-   

@@ -413,8 +413,6 @@
 <span class="p">)</span>
 
 
-<div class="viewcode-block" id="VISampleReuseConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_sample_reuse.html#romtools.workflows.inverse.vi_sample_reuse.VISampleReuseConfig">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VISampleReuseConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Configuration for importance-sampling reuse of previous VI samples."""</span>
@@ -434,8 +432,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_error_scale</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_error_scale</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"score_error_scale must be finite and non-negative"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">periodic_refresh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">periodic_refresh</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"periodic_refresh must be at least 1 when provided"</span><span class="p">)</span></div>
-
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"periodic_refresh must be at least 1 when provided"</span><span class="p">)</span>
 
 
 <span class="nd">@dataclass</span>
