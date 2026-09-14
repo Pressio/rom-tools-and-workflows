@@ -30,7 +30,32 @@ def count_fom_work(method_dir: Path) -> np.ndarray:
     return np.asarray(counts, dtype=int)
 
 
-def collect_history(method_dir: Path, truth: np.ndarray, reuse_enabled: bool) -> dict:
+def count_rom_work(method_dir: Path) -> np.ndarray:
+    """Count low-fidelity model evaluations from their per-sample run directories."""
+    cumulative = 0
+    counts = []
+    iteration = 0
+    while True:
+        iteration_dir = method_dir / f"iteration_{iteration}"
+        if not iteration_dir.exists():
+            break
+        cumulative += sum(
+            1
+            for path in iteration_dir.rglob("run_rom*")
+            if path.is_dir()
+        )
+        counts.append(cumulative)
+        iteration += 1
+    return np.asarray(counts, dtype=int)
+
+
+def collect_history(
+    method_dir: Path,
+    truth: np.ndarray,
+    reuse_enabled: bool,
+    reuse_batch_size: int = None,
+    reuse_history_batches: int = None,
+) -> dict:
     history_path = method_dir / "history.npz"
     if not history_path.exists():
         raise RuntimeError(f"VI history not found: {history_path}")
@@ -70,27 +95,52 @@ def collect_history(method_dir: Path, truth: np.ndarray, reuse_enabled: bool) ->
             )
         iteration += 1
 
-    work = count_fom_work(method_dir)
-    count = min(len(means), len(elbo), len(work))
+    fom_work = count_fom_work(method_dir)
+    rom_work = count_rom_work(method_dir)
+    count = min(len(means), len(elbo), len(fom_work), len(rom_work))
     if count == 0:
         raise RuntimeError(f"No completed VI iterations found in {method_dir}")
-    means, covariance, work = means[:count], covariance[:count], work[:count]
+    means = means[:count]
+    covariance = covariance[:count]
+    fom_work = fom_work[:count]
+    rom_work = rom_work[:count]
     elbo = np.asarray(elbo[:count], dtype=float)
     relative_mse = np.asarray(relative_mse[:count], dtype=float)
     reuse = reuse[:count]
 
     if reuse_enabled:
-        previous_work = 0
-        for diagnostic, cumulative_work in zip(reuse, work):
+        previous_fom_work = 0
+        refresh_count = 0
+        for iteration, (diagnostic, cumulative_fom_work) in enumerate(
+            zip(reuse, fom_work)
+        ):
+            new_fom_work = int(cumulative_fom_work) - previous_fom_work
             if diagnostic["used"] is None:
-                used = int(cumulative_work) == previous_work
+                used = new_fom_work == 0
                 diagnostic["used"] = used
-                diagnostic["refresh_reason"] = (
-                    "inferred_reuse_no_new_fom"
-                    if used
-                    else "inferred_refresh_new_fom"
+                if used:
+                    diagnostic["refresh_reason"] = "reuse"
+                elif iteration == 0:
+                    diagnostic["refresh_reason"] = "empty"
+                else:
+                    diagnostic["refresh_reason"] = "inferred_refresh_new_fom"
+            if not bool(diagnostic["used"]):
+                refresh_count += 1
+            if diagnostic["archive_batches"] is None and reuse_history_batches is not None:
+                diagnostic["archive_batches"] = min(
+                    refresh_count, int(reuse_history_batches)
                 )
-            previous_work = int(cumulative_work)
+            if (
+                diagnostic["archive_samples"] is None
+                and diagnostic["archive_batches"] is not None
+                and reuse_batch_size is not None
+            ):
+                diagnostic["archive_samples"] = (
+                    int(diagnostic["archive_batches"]) * int(reuse_batch_size)
+                )
+            diagnostic["cumulative_fresh_fom_evaluations"] = int(cumulative_fom_work)
+            diagnostic["ess_available_in_restart"] = diagnostic["ess"] is not None
+            previous_fom_work = int(cumulative_fom_work)
 
     parameter_error = np.sqrt(
         np.mean(((means - truth[None, :]) / truth[None, :]) ** 2, axis=1)
@@ -99,7 +149,8 @@ def collect_history(method_dir: Path, truth: np.ndarray, reuse_enabled: bool) ->
         np.maximum(np.diagonal(covariance, axis1=1, axis2=2), 0.0)
     )
     return {
-        "cumulative_fom_evaluations": work,
+        "cumulative_fom_evaluations": fom_work,
+        "cumulative_rom_evaluations": rom_work,
         "elbo": elbo,
         "mean_relative_mse": relative_mse,
         "parameter_relative_error": parameter_error,
@@ -193,7 +244,9 @@ def aggregate_runs(results: list[dict], method_order: list[str]) -> dict:
                 }
             )
         entry["posterior_mean"] = posterior_mean
-        wall_times = np.asarray([run["wall_time_seconds"] for run in runs], dtype=float)
+        wall_times = np.asarray(
+            [run["wall_time_seconds"] for run in runs], dtype=float
+        )
         entry["wall_time_seconds"] = {
             "median": float(np.median(wall_times)),
             "q25": float(np.quantile(wall_times, 0.25)),
@@ -311,8 +364,8 @@ def write_sweep_plots(results: list[dict], output_dir: Path) -> None:
     ):
         figure, axis = plt.subplots(figsize=(7.2, 4.6))
         for (_, rom_size), by_fom_size in groups.items():
-            first_result = next(iter(next(iter(by_fom_size.values()))))
-            label = first_result["label"]
+            first_runs = next(iter(by_fom_size.values()))
+            label = first_runs[0]["label"]
             if rom_size is not None:
                 label += f" (ROM extra={rom_size})"
             x = np.asarray(sorted(by_fom_size), dtype=float)
