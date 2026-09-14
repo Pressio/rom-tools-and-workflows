@@ -19,10 +19,11 @@ def require_relative_or_absolute_path(dispatcher: BaseDispatcher, directory: str
     dispatcher.require_absolute_path(directory)
     dispatcher.require_relative_path(directory)
 
-def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample, dispatcher: Optional[BaseDispatcher] = None):
+def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample, dispatcher: Optional[BaseDispatcher] = None, create_run_directory: bool = True):
     """Prepare the model run and compute the QoI and error."""
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.create_empty_dir(run_directory)
+    if create_run_directory:
+        dispatcher.create_empty_dir(run_directory)
     parameter_dict = _create_parameter_dict(parameter_names, parameter_sample)
     model.populate_run_directory(run_directory, parameter_dict)
     ts = time.time()
@@ -104,7 +105,7 @@ def run_eki_iteration(model, observations, run_directory_base, parameter_names, 
     return results
 
 
-def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
+def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None, create_run_directories: bool = True):
     """Run a VI iteration for sampled parameters only (no explicit mean run)."""
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(evaluation_concurrency)
@@ -121,6 +122,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
             parameter_names,
             parameter_samples[0],
             dispatcher,
+            create_run_directories,
         )
         qois = np.zeros((first_qoi.size, ensemble_size))
         errors = np.zeros((first_qoi.size, ensemble_size))
@@ -135,6 +137,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
                 parameter_names,
                 parameter_samples[ensemble_member],
                 dispatcher,
+                create_run_directories,
             )
     else:
         samples_to_run = list(range(ensemble_size))
@@ -151,6 +154,7 @@ def run_vi_iteration(model, observations, run_directory_base, parameter_names, p
                     parameter_names,
                     parameter_samples[ensemble_member],
                     dispatcher,
+                    create_run_directories,
                 )
                 for ensemble_member in samples_to_run
             ]

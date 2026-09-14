@@ -54,28 +54,26 @@ _mf_eki_drivers_module.mf_eki_with_auto_rom = mf_eki_with_auto_rom
 # Install the opt-in VI/MFVI sample-reuse layer after the original drivers have
 # loaded. With sample_reuse_config=None the wrappers delegate directly to the
 # original implementations, preserving the existing behavior and API.
-from romtools.workflows.inverse.vi_sample_reuse import (
-    VISampleReuseConfig,
-    run_vi as _sample_reuse_run_vi,
-    run_mf_vi as _sample_reuse_run_mf_vi,
-    mf_vi_with_auto_rom as _sample_reuse_mf_vi_with_auto_rom,
-)
+from romtools.workflows.inverse.vi_sample_reuse import VISampleReuseConfig
 
 _sample_reuse_module = _import_module("romtools.workflows.inverse.vi_sample_reuse")
 # Add score-function Hessian reuse for the existing Newton optimizer and keep a
 # separate archive when the user requests independent curvature samples.
 _import_module("romtools.workflows.inverse.vi_sample_reuse_hessian")
 
+# Add the run-directory policy outside the sample-reuse layer so the same
+# create_run_directories option applies to ordinary VI/MFVI, sample reuse, and
+# auto-ROM MFVI without changing the underlying driver signatures.
+from romtools.workflows.inverse.vi_run_directory_policy import (
+    run_vi as _directory_policy_run_vi,
+    run_mf_vi as _directory_policy_run_mf_vi,
+    mf_vi_with_auto_rom as _directory_policy_mf_vi_with_auto_rom,
+)
 
-def _add_sample_reuse_signature(wrapper, original):
+
+def _add_vi_wrapper_signature(wrapper, original):
     signature = _inspect.signature(original)
     parameters = list(signature.parameters.values())
-    reuse_parameter = _inspect.Parameter(
-        "sample_reuse_config",
-        kind=_inspect.Parameter.KEYWORD_ONLY,
-        default=None,
-        annotation=VISampleReuseConfig,
-    )
     insertion_index = next(
         (
             index for index, parameter in enumerate(parameters)
@@ -83,16 +81,29 @@ def _add_sample_reuse_signature(wrapper, original):
         ),
         len(parameters),
     )
-    parameters.insert(insertion_index, reuse_parameter)
+    directory_parameter = _inspect.Parameter(
+        "create_run_directories",
+        kind=_inspect.Parameter.KEYWORD_ONLY,
+        default=True,
+        annotation=bool,
+    )
+    reuse_parameter = _inspect.Parameter(
+        "sample_reuse_config",
+        kind=_inspect.Parameter.KEYWORD_ONLY,
+        default=None,
+        annotation=VISampleReuseConfig,
+    )
+    parameters.insert(insertion_index, directory_parameter)
+    parameters.insert(insertion_index + 1, reuse_parameter)
     wrapper.__signature__ = signature.replace(parameters=parameters)
 
 
-run_vi = _sample_reuse_run_vi
-run_mf_vi = _sample_reuse_run_mf_vi
-mf_vi_with_auto_rom = _sample_reuse_mf_vi_with_auto_rom
-_add_sample_reuse_signature(run_vi, _sample_reuse_module._ORIGINAL_RUN_VI)
-_add_sample_reuse_signature(run_mf_vi, _sample_reuse_module._ORIGINAL_RUN_MF_VI)
-_add_sample_reuse_signature(
+run_vi = _directory_policy_run_vi
+run_mf_vi = _directory_policy_run_mf_vi
+mf_vi_with_auto_rom = _directory_policy_mf_vi_with_auto_rom
+_add_vi_wrapper_signature(run_vi, _sample_reuse_module._ORIGINAL_RUN_VI)
+_add_vi_wrapper_signature(run_mf_vi, _sample_reuse_module._ORIGINAL_RUN_MF_VI)
+_add_vi_wrapper_signature(
     mf_vi_with_auto_rom,
     _sample_reuse_module._ORIGINAL_MF_VI_WITH_AUTO_ROM,
 )
