@@ -707,7 +707,15 @@
             <span class="n">baseline_method</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">standard_error</span> <span class="o">=</span> <span class="n">_batch_aware_hessian_standard_error</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">archive</span><span class="p">)</span>
-        <span class="n">hessian_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">hessian_full</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="s2">"fro"</span><span class="p">))</span>
+        <span class="c1"># Normalize by the same recycled HF curvature contribution whose</span>
+        <span class="c1"># uncertainty is measured above. In MFVI, using the full multifidelity</span>
+        <span class="c1"># Hessian here can spuriously inflate the relative error when the ROM</span>
+        <span class="c1"># control-variate correction cancels part of the HF curvature.</span>
+        <span class="n">recycled_hessian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">recycled_hessian</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">recycled_hessian</span> <span class="o">+</span> <span class="n">recycled_hessian</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">hessian_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">recycled_hessian</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="s2">"fro"</span><span class="p">))</span>
         <span class="n">denominator</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">hessian_norm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">))</span>
         <span class="n">relative_standard_error</span> <span class="o">=</span> <span class="n">standard_error</span> <span class="o">/</span> <span class="n">denominator</span>
         <span class="n">diagnostics</span><span class="p">[</span><span class="s2">"sample_reuse_hessian_standard_error"</span><span class="p">]</span> <span class="o">=</span> <span class="n">standard_error</span>
