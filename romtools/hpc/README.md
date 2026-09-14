@@ -1,7 +1,7 @@
-# hpc
+# romtools.hpc: Remote Execute Capability
 
-Execution layer for running Pressio-based ROM workflows on HPC clusters from
-your local environment.
+This module contains an execution layer for running Pressio-based
+ROM workflows on HPC clusters from your local environment.
 
 Everything goes through a single `Dispatcher` class, which manages the SSH
 connection, file transfers, job submission, monitoring, and result collection
