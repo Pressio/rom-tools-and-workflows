@@ -29,7 +29,7 @@ with synthetic truth
 
 The initial variational distribution is deliberately not centered on the
 truth. Observations are the existing regularly strided nondimensional
--temperature sensors from ``H2AirFlameQoiModel``.
+temperature sensors from ``H2AirFlameQoiModel``.
 
 A single noisy observation realization is generated once and reused for every
 algorithmic method and random seed. The independent Gaussian noise standard
@@ -117,8 +117,10 @@ The ablation writes machine-readable histories and plots of parameter error,
 ELBO, observation-space error, and per-parameter posterior means against
 cumulative FOM evaluations. Repeated-seed results are summarized with medians
 and interquartile bands, and the two MF-Newton entropy strategies receive a
-direct matched-work comparison. Final posterior moments, wall time, observation
-metadata, and sample-reuse diagnostics are retained in JSON.
+direct matched-work comparison. The sample-size sweep additionally plots final
+matched-work parameter error, ELBO, and observation error against the FOM sample
+size. Final posterior moments, wall time, observation metadata, and sample-reuse
+diagnostics are retained in JSON.
 
 Implementation
 --------------
