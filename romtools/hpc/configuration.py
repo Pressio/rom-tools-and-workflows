@@ -1,11 +1,16 @@
 import os
 import argparse
+import difflib
 import warnings
+from typing import Optional
 
 try:
     import yaml
 except ImportError:
     yaml = None
+
+# Prefix owned by this schema, so the dispatcher never reads its host's switches.
+OPTION_PREFIX = "--hpc-"
 
 # -----------------------------------------------------------------------------
 # Core configuration schema (defaults specified in the Configuration class)
@@ -52,16 +57,14 @@ class _RaisingParser(argparse.ArgumentParser):
     """
     An ArgumentParser that raises instead of exiting the process.
 
-    parse_known_args() returns the surrounding program's own arguments as
-    extras, so error() is reached only for an option this schema owns: a long
-    option, or the single short switch -c. A program that must not have its
-    command line read at all builds its Configuration with argv=[].
+    parse_known_args() hands the surrounding program's own arguments back as
+    extras, so error() is reached only for a switch this schema owns.
     """
 
     def error(self, message):
         raise ConfigurationError(
-            f"{message}. Run 'python -m romtools.hpc' to see the "
-            "dispatcher's configuration arguments."
+            f"{message}. Run 'python -m romtools.hpc' to see the dispatcher's "
+            "configuration arguments."
         )
 
 # -----------------------------------------------------------------------------
@@ -104,10 +107,21 @@ def _normalize_file_patterns(value):
         f"Invalid collect value {value!r}; expected a string or list of strings."
     )
 
+def option_name(arg_name: str) -> str:
+    """The command-line switch for a schema argument, e.g. "--hpc-remote-root"."""
+    return OPTION_PREFIX + arg_name.replace("_", "-")
+
+def _schema_option_names() -> list:
+    """Every switch this schema owns, for suggesting a correction to a typo."""
+    names = [option_name("config")]
+    for items in SCHEMA.values():
+        names.extend(option_name(name) for name in items)
+    return names
+
 def _add_config_file_arg(parser, default=argparse.SUPPRESS):
-    """The config file, and the one short switch this schema claims."""
+    """The config file, and the one switch this schema claims without the prefix."""
     parser.add_argument(
-        "-c", "--config",
+        "-c", option_name("config"),
         dest="config",
         type=str,
         default=default,
@@ -116,7 +130,7 @@ def _add_config_file_arg(parser, default=argparse.SUPPRESS):
 
 def _add_value_param(grp, arg_name, arg):
     grp.add_argument(
-        f"--{arg_name}",
+        option_name(arg_name),
         dest=arg_name,
         type=arg["type"],
         default=argparse.SUPPRESS,
@@ -125,7 +139,7 @@ def _add_value_param(grp, arg_name, arg):
 
 def _add_flag_param(grp, arg_name, arg):
     grp.add_argument(
-        f"--{arg_name}",
+        option_name(arg_name),
         dest=arg_name,
         action="store_true",
         default=argparse.SUPPRESS,
@@ -142,7 +156,7 @@ def _add_schema_arg(grp, item):
 def _build_parser() -> _RaisingParser:
     """The parser for SCHEMA, used both to read the command line and to print help."""
     # add_help=False: building a dispatcher must not claim -h from the surrounding program
-    # allow_abbrev=False: its "--part" must not be read as this schema's "--partition"
+    # allow_abbrev=False: "--hpc-part" must not be read as "--hpc-partition"
     parser = _RaisingParser(
         description="Configure the HPC dispatcher.",
         argument_default=argparse.SUPPRESS,
@@ -167,6 +181,35 @@ def print_help() -> None:
     """Print the dispatcher's configuration arguments."""
     _build_parser().print_help()
 
+def _reject_unknown_options(extras: list) -> None:
+    """
+    Fail on a switch in this schema's namespace that the parser did not accept.
+
+    Anything outside the namespace belongs to the surrounding program and is
+    left alone, but a "--hpc-" switch can only have been meant for us, so a
+    typo is an error rather than a setting that silently goes missing.
+    """
+    for token in extras:
+        if not token.startswith(OPTION_PREFIX) and token != "--hpc":
+            continue
+
+        name = token.split("=", 1)[0]
+        message = f"unrecognized dispatcher option '{name}'"
+        suggestions = difflib.get_close_matches(name, _schema_option_names(), n=1)
+        if suggestions:
+            message += f"; did you mean '{suggestions[0]}'?"
+        raise ConfigurationError(
+            f"{message}. Run 'python -m romtools.hpc' to see the dispatcher's "
+            "configuration arguments."
+        )
+
+def _cli_config_path() -> Optional[str]:
+    """The YAML path given by -c or --hpc-config on this program's command line."""
+    pre = _RaisingParser(add_help=False, allow_abbrev=False)
+    _add_config_file_arg(pre, default=None)
+    namespace, _ = pre.parse_known_args()
+    return namespace.config
+
 # -----------------------------------------------------------------------------
 # Main class holding configuration for dispatchers
 # -----------------------------------------------------------------------------
@@ -181,15 +224,28 @@ class Configuration:
       3. Class defaults
 
     Arguments:
-        argv: Argument list to parse instead of the real process argv
-            (sys.argv[1:]). Pass an explicit list (e.g. []) to build a
-            Configuration without reading the host process's CLI args --
-            useful for embedding a dispatcher in a program whose own
-            command line is not meant to configure it.
+        config_path: Path to the YAML file to load. When omitted, the path is
+            taken from -c or --hpc-config on this program's command line.
     """
-    def __init__(self, argv: list = None):
-        self._argv = argv
+    def __init__(self, config_path: Optional[str] = None):
+        self._apply_defaults()
 
+        from_cli = not config_path
+        path = _cli_config_path() if from_cli else config_path
+
+        # Parse YAML first, then CLI overwrites YAML
+        self.__parse_yaml(path, from_cli)
+        self.__parse_args()
+
+    @classmethod
+    def defaults(cls) -> "Configuration":
+        """Schema defaults, reading neither a YAML file nor the command line."""
+        config = cls.__new__(cls)
+        config._apply_defaults()
+        return config
+
+    def _apply_defaults(self) -> None:
+        """The value of every setting before YAML and the command line are read."""
         # SSH configuration
         self.remote = None
         self.user = None
@@ -224,16 +280,25 @@ class Configuration:
         # User-defined fields loaded only from YAML "user-defined"
         self.user_defined = {}
 
-        # Parse YAML first, then CLI overwrites YAML
-        self.__parse_yaml()
-        self.__parse_args()
+    @staticmethod
+    def _config_path_source(from_cli: bool) -> str:
+        """Where the YAML path came from, for an error the user has to act on."""
+        if not from_cli:
+            return "It was passed to the dispatcher directly."
+        return (
+            "It came from '-c' on this program's own command line, the one switch the "
+            "dispatcher reads without the '--hpc-' prefix. If '-c' belongs to your "
+            "program, use '--hpc-config' instead, or pass the dispatcher its YAML in "
+            "code with config=."
+        )
 
-    def __parse_yaml(self) -> None:
+    def __parse_yaml(self, config_path: Optional[str], from_cli: bool) -> None:
         """
         Loads configuration from a YAML file if one is specified on the command line.
 
         Accepted ways to specify YAML:
-          - --config / -c PATH
+          - the config_path argument
+          - --hpc-config / -c PATH
 
         YAML may be either:
           - a flat mapping (keys match attribute names), or
@@ -243,11 +308,6 @@ class Configuration:
         as-is in self.user_defined. Its contents are not interpreted as individual
         configuration attributes.
         """
-        pre = _RaisingParser(add_help=False, allow_abbrev=False)
-        _add_config_file_arg(pre, default=None)
-        ns, _ = pre.parse_known_args(self._argv)
-        config_path = ns.config
-
         if not config_path:
             return
 
@@ -257,13 +317,24 @@ class Configuration:
             )
 
         if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Config file not found: {config_path}")
+            raise FileNotFoundError(
+                f"Config file not found: {config_path}. {self._config_path_source(from_cli)}"
+            )
 
         with open(config_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+            try:
+                data = yaml.safe_load(f) or {}
+            except yaml.YAMLError as e:
+                raise ValueError(
+                    f"Could not parse {config_path} as YAML: {e}. "
+                    f"{self._config_path_source(from_cli)}"
+                ) from e
 
         if not isinstance(data, dict):
-            raise ValueError("YAML config must be a mapping/dictionary at the top level.")
+            raise ValueError(
+                f"{config_path} must be a mapping/dictionary at the top level to be a "
+                f"dispatcher config. {self._config_path_source(from_cli)}"
+            )
 
         section_names = set(SCHEMA.keys()) | {"user-defined"}
         is_nested = any(k in data for k in section_names)
@@ -313,7 +384,8 @@ class Configuration:
                     self._apply_setting(k, v, f"YAML key '{k}'")
 
     def __parse_args(self) -> None:
-        args, _ = _build_parser().parse_known_args(self._argv)
+        args, extras = _build_parser().parse_known_args()
+        _reject_unknown_options(extras)
 
         for name, value in vars(args).items():
             if name != "config":

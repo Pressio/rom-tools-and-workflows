@@ -10,15 +10,16 @@ from typing import Callable, Optional, Tuple
 
 from romtools.hpc.connection import Result
 from romtools.hpc.logger import Logger
-from romtools.hpc.components.component import Component
+from romtools.hpc.components.component import CampaignComponent
 from romtools.hpc.components.file_manager import BaseFileManager
 from romtools.hpc.components.slurm import (SLURM_TERMINAL_STATES, DEFAULT_SLURM_ERRFILE,
                                            DEFAULT_SLURM_OUTFILE, FAILED_EXIT_CODE,
-                                           create_slurm_script, parse_sbatch_out_args,
+                                           create_slurm_script, is_slurm_exitcode,
+                                           parse_sbatch_out_args,
                                            slurm_exitcode_to_python_style)
 
 
-class SlurmJobManager(Component):
+class SlurmJobManager(CampaignComponent):
     """
     Generates and submits SLURM scripts, then polls the job until it finishes.
 
@@ -34,15 +35,10 @@ class SlurmJobManager(Component):
 
     def __init__(self, run_cmd: Callable[[str], Result], *, files: BaseFileManager, config: dict = None,
                  logger: Logger = None, campaign_directory: str = None):
-        super().__init__(config=config, logger=logger)
+        super().__init__(config=config, logger=logger, campaign_directory=campaign_directory)
         self.run_cmd = run_cmd
-        self.campaign_directory = campaign_directory
         self.files = files
         self._script_outputs = None
-
-    def _job_directory(self, run_directory: str = None) -> str:
-        """Where a job runs: the directory given, otherwise this campaign's."""
-        return run_directory or self.campaign_directory
 
     def _script_outputs_from_config(self) -> Tuple[Optional[str], Optional[str]]:
         """What the configured script names for stdout and stderr, or (None, None)."""
@@ -89,7 +85,7 @@ class SlurmJobManager(Component):
 
         if script:
             script_name = os.path.basename(script)
-            remote_script_path = ppath.join(self._job_directory(run_directory), script_name)
+            remote_script_path = ppath.join(self.job_directory(run_directory), script_name)
             self.files.put(script, remote_script_path)
             self.logger.debug(f"Staged SLURM script {script} at {remote_script_path}")
             return remote_script_path
@@ -106,7 +102,7 @@ class SlurmJobManager(Component):
         self.logger.debug(f"Generated SLURM script:\n{script_content}", local=True)
 
         remote_script_name = f"{self.config.get('job_name')}_slurm.sh"
-        remote_script_path = ppath.join(self._job_directory(run_directory), remote_script_name)
+        remote_script_path = ppath.join(self.job_directory(run_directory), remote_script_name)
 
         self.files.write_text(remote_script_path, script_content)
 
@@ -123,7 +119,7 @@ class SlurmJobManager(Component):
             output_cmd += " "
 
         script_name = ppath.basename(remote_script_path)
-        run_dir = shlex.quote(self.files.resolve_path(self._job_directory(run_directory)))
+        run_dir = shlex.quote(self.files.resolve_path(self.job_directory(run_directory)))
         result = self.run_cmd(
             f"cd {run_dir} && sbatch {output_cmd}{shlex.quote(script_name)}"
         )
@@ -189,19 +185,42 @@ class SlurmJobManager(Component):
                 continue
 
             sacct_job_id = parts[0].strip()
-            state = parts[1].strip().split()[0].upper()
+            state_field = parts[1].strip().split()
+            if not state_field:
+                continue
+
+            state = state_field[0].upper()
             exit_code = parts[2].strip()
             derived_exit_code = parts[3].strip()
 
             if sacct_job_id == str(job_id):
-                # Default to exit_code, return derived_exit_code if exit_code is 0 and derived is not.
-                if exit_code == "0:0" and derived_exit_code != "0:0":
+                # A blank derived column is not a step failure.
+                if (exit_code == "0:0"
+                        and is_slurm_exitcode(derived_exit_code)
+                        and derived_exit_code != "0:0"):
                     return state, derived_exit_code
-                else:
-                    return state, exit_code
+
+                if not is_slurm_exitcode(exit_code):
+                    self.logger.debug(f"sacct gave job {job_id} no readable exit code")
+                    return state, None
+
+                return state, exit_code
 
         self.logger.debug(f"sacct did not find job {job_id}")
         return None, None
+
+    def _still_queued(self, job_id: str) -> Optional[bool]:
+        """Whether the job is still in the queue, or None when squeue could not answer."""
+        result = self.run_cmd(f"squeue -j {shlex.quote(str(job_id))} -h")
+        if result.ok:
+            return bool(result.stdout.strip())
+
+        # A purged job is genuinely gone; anything else is a failed query, not an answer.
+        if "invalid job id" in result.stderr.lower():
+            return False
+
+        self.logger.debug(f"squeue failed for job {job_id}: {result.stderr.strip()}")
+        return None
 
     def _wait_for_status(self, job_id: str):
         timeout = self.config.get("timeout")
@@ -235,13 +254,14 @@ class SlurmJobManager(Component):
                 time.sleep(sacct_poll_interval)
                 continue
 
-            if state == "COMPLETED" and exit_code == "0:0":
-                return exit_code
+            # sacct saying COMPLETED is authoritative; a blank code is not a failure.
+            if state == "COMPLETED" and exit_code in ("0:0", None):
+                return "0:0"
 
             self.logger.log(
                 f"Job {job_id} failed: state={state}, exit_code={exit_code}"
             )
-            return FAILED_EXIT_CODE if exit_code == "0:0" else exit_code
+            return FAILED_EXIT_CODE if exit_code in ("0:0", None) else exit_code
 
     def wait(self, job_id: str) -> str:
         """
@@ -249,13 +269,26 @@ class SlurmJobManager(Component):
         Python style (negative for a signal), or None if sacct never reported.
         """
         poll_interval = self.config.get("poll_interval")
+        timeout = self.config.get("timeout")
         try:
+            first_failure = None
             while True:
-                result = self.run_cmd(f"squeue -j {shlex.quote(str(job_id))} -h")
-                if not result.stdout.strip():
+                queued = self._still_queued(job_id)
+                if queued is False:
                     # Job no longer appears in the queue — it has finished.
                     break
-                self.logger.debug(f"Job {job_id} still running...")
+
+                if queued is None:
+                    first_failure = first_failure if first_failure is not None else time.time()
+                    if time.time() - first_failure > timeout:
+                        self.logger.log(
+                            f"squeue has not answered for job {job_id} in {timeout}s; asking sacct."
+                        )
+                        break
+                else:
+                    first_failure = None
+                    self.logger.debug(f"Job {job_id} still running...")
+
                 time.sleep(poll_interval)
 
             self.logger.log(f"Job {job_id} finished.")
@@ -278,7 +311,7 @@ class SlurmJobManager(Component):
 
         jid = str(job_id)
 
-        out_dir = self._job_directory(run_directory)
+        out_dir = self.job_directory(run_directory)
 
         out_name, err_name = self._output_files()
 

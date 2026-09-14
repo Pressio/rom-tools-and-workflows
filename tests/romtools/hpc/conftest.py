@@ -1,4 +1,7 @@
 import io
+import os
+import shutil
+import subprocess
 import sys
 import tarfile
 import time
@@ -48,6 +51,41 @@ class FakeConnection:
         self.closed = True
 
 
+class LocalShellConnection(FakeConnection):
+    """
+    FakeConnection that runs commands and transfers files against a local
+    directory standing in for the remote host's login directory, so the whole
+    call() round trip can be exercised without a real remote host.
+    """
+
+    def __init__(self, root, **kwargs):
+        super().__init__(**kwargs)
+        self.root = str(root)
+
+    def run(self, command):
+        self.calls.append(command)
+        res = subprocess.run(
+            ["bash", "-c", command],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+        )
+        return Result(res.stdout, res.stderr, res.returncode)
+
+    def put(self, local, remote):
+        self.put_calls.append((local, remote))
+        target = self.__resolve(remote)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copy2(local, target)
+
+    def get(self, remote, local):
+        self.get_calls.append((remote, local))
+        shutil.copy2(self.__resolve(remote), local)
+
+    def __resolve(self, remote):
+        return remote if os.path.isabs(remote) else os.path.join(self.root, remote)
+
+
 class ArchiveFakeConnection(FakeConnection):
     """
     FakeConnection whose get() writes a real (small, valid) tar.gz archive to
@@ -72,11 +110,12 @@ def fake_connection():
 @pytest.fixture
 def make_config():
     def _make(**overrides):
-        config = Configuration().to_dict()
-        config['remote'] = "test-host"
-        config['user'] = 'test-user'
-        config['timeout'] = 0
-        config.update(overrides)
+        config = Configuration.defaults()
+        config.remote = "test-host"
+        config.user = "test-user"
+        config.timeout = 0
+        for key, value in overrides.items():
+            setattr(config, key, value)
         return config
 
     return _make

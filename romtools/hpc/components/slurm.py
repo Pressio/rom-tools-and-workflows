@@ -1,3 +1,4 @@
+import re
 import textwrap
 import shlex
 from typing import Optional, Tuple
@@ -19,6 +20,13 @@ DEFAULT_SLURM_ERRFILE = "slurm.err"
 
 # Job ended but not successfully
 FAILED_EXIT_CODE = "1:0"
+
+# sacct reports an exit code as "<status>:<signal>"
+_EXITCODE_PATTERN = re.compile(r"^\d+:\d+$")
+
+def is_slurm_exitcode(value: Optional[str]) -> bool:
+    """Whether sacct gave us a code we can read; its columns are often blank."""
+    return bool(value) and _EXITCODE_PATTERN.match(value) is not None
 
 def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall_time: str, wcid: str, partition: str, command: str) -> str:
     """
@@ -50,6 +58,8 @@ def create_slurm_script(job_name: str, num_nodes: int, tasks_per_node: int, wall
 def slurm_exitcode_to_python_style(exitcode: str) -> int:
     if exitcode is None:
         return None
+    if not is_slurm_exitcode(exitcode):
+        raise ValueError(f"Malformed SLURM exit code {exitcode!r}; expected '<status>:<signal>'.")
     status_str, signal_str = exitcode.split(":")
     status = int(status_str)
     signal = int(signal_str)

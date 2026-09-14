@@ -73,7 +73,8 @@ Construct your model with the dispatcher as a member variable:
 .. tip::
    ``resolve_dispatcher()`` falls back to a ``LocalDispatcher``, so the model
    works with no remote capability if needed. Prefer it over building one
-   yourself: the fallback it returns ignores your program's command line.
+   yourself: the fallback it returns reads no configuration at all, so a
+   workflow you never handed a dispatcher keeps the schema defaults.
 
 Step 2: Set up the run directory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,7 +115,7 @@ Step 3: Define ``run_model()``
 There are two primary ways to run the model through the dispatcher.
 
 **SLURM script.** Create a SLURM script locally that executes your model and
-configure the dispatcher with that script (using ``--script``, see
+configure the dispatcher with that script (using ``--hpc-script``, see
 `Configuring the dispatcher`_). Then ``run_model()`` can be as simple as:
 
 .. code-block:: python
@@ -171,6 +172,11 @@ and remotely, as a subdirectory of your local current directory and your remote
 ``remote_root``. This mirrored directory structure simplifies sending files
 back and forth between hosts, and gives each run its own subdirectory.
 
+Because it names the same directory on both machines, a ``RemoteDispatcher``
+requires a relative path. A nested one such as ``runs/sample_00`` is kept
+whole; an absolute path, or one climbing out with ``..``, is rejected when the
+dispatcher is built.
+
 Supported workflows
 -------------------
 
@@ -181,9 +187,7 @@ Each of these workflows accepts a ``dispatcher`` argument:
 - ``run_vi()``, ``run_mf_vi()``, ``mf_vi_with_auto_rom()``
 
 Every one of them falls back to a ``LocalDispatcher`` when you pass nothing, so
-existing workflows and models keep running unchanged. That fallback is built
-with ``argv=[]``: a workflow you never handed a dispatcher keeps its own
-command line, and the dispatcher takes the schema defaults.
+existing workflows and models keep running unchanged.
 
 Inverse workflows
 ~~~~~~~~~~~~~~~~~
@@ -255,16 +259,20 @@ configure the dispatcher:
 There are three ways to configure:
 
 1. **YAML.** Define a YAML file with all configurable params and pass it with
-   ``-c path/to/your/config.yaml``.
-2. **CLI.** Set params on the command line. For example, set the
-   ``remote_root`` by passing ``--remote_root /path/to/remote/root``.
+   ``--hpc-config path/to/your/config.yaml`` (or ``-c``, see below).
+2. **CLI.** Set params on the command line. Every argument is a long option
+   named after it, under an ``--hpc-`` prefix: set the ``remote_root`` by
+   passing ``--hpc-remote-root /path/to/remote/root``.
 3. **Combination.** CLI arguments override YAML parameters, so you can use a
    YAML file for the bulk of configuration and CLI args to vary settings from
    run to run:
 
    .. code-block:: bash
 
-      python my_workflow.py -c path/to/config.yaml --collect '*.log'
+      python my_workflow.py -c path/to/config.yaml --hpc-collect '*.log'
+
+Both dispatchers read configuration the same way, so a ``LocalDispatcher``
+takes the same YAML and the same switches as a ``RemoteDispatcher``.
 
 .. tip::
    Run ``python -m romtools.hpc``, or refer to the ``SCHEMA`` in
@@ -275,8 +283,19 @@ There are three ways to configure:
 Core configuration arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every argument is available as a long option named after it, such as
-``--num_nodes``. One argument also has a short alias:
+The dispatcher parses your workflow's own command line, so every switch it
+claims carries an ``--hpc-`` prefix and it ignores everything else. The
+argument named ``remote_root`` in the YAML is ``--hpc-remote-root`` on the
+command line, ``num_nodes`` is ``--hpc-num-nodes``, and so on. Your workflow
+keeps every switch of its own, ``-h`` included.
+
+A misspelled prefixed switch is an error rather than a setting that quietly
+goes missing:
+
+.. code-block:: text
+
+   $ python my_workflow.py --hpc-remot my_cluster
+   unrecognized dispatcher option '--hpc-remot'; did you mean '--hpc-remote'?
 
 .. list-table::
    :header-rows: 1
@@ -285,22 +304,23 @@ Every argument is available as a long option named after it, such as
      - Long
      - Meaning
    * - ``-c``
-     - ``--config``
+     - ``--hpc-config``
      - Path to the YAML configuration file
 
-.. note::
-   Your workflow's own command line is what the dispatcher parses, so any
-   switch the schema claims is one your workflow can no longer use for itself.
-   That is why ``-c`` is the only single-letter switch claimed; ``-h`` is never
-   claimed either, so your workflow keeps its own ``--help``.
+.. warning::
+   ``-c`` is a convenience, and the one switch the dispatcher reads without the
+   ``--hpc-`` prefix. If you nest a dispatcher inside a program that already
+   uses ``-c`` for something of its own, the two collide and the dispatcher
+   reads your program's value as a YAML path. Use ``--hpc-config`` instead, or
+   pass the YAML to the dispatcher in code:
 
-.. note::
-   To keep the dispatcher away from your command line entirely, construct it
-   with an explicit argument list: ``LocalDispatcher(argv=[])`` reads no
-   switches at all, so it takes the schema defaults. Since ``-c`` is among the
-   switches it no longer sees, no YAML is loaded either; pass the settings you
-   need to the constructor. A workflow you call without a dispatcher at all
-   gets exactly that fallback.
+   .. code-block:: python
+
+      with RemoteDispatcher(campaign_dir, config="my_hpc_config.yaml") as dispatcher:
+          ...
+
+   ``config`` also accepts a ``Configuration`` object, for a workflow that
+   builds its settings itself rather than reading them from a file.
 
 **ssh** — establish the connection with the remote host:
 
@@ -326,6 +346,9 @@ Every argument is available as a long option named after it, such as
   patterns to place in the run directory before work starts. A
   ``RemoteDispatcher`` sends them to the remote host; a ``LocalDispatcher``
   copies them from the current directory. If omitted, nothing is uploaded.
+  Both ``collect`` and ``upload`` name what lives under the directory they are
+  read from, so an absolute pattern or one containing ``..`` is rejected when
+  the dispatcher is built.
 - ``python_setup``: Shell commands that set up the environment before
   invoking Python, such as loading modules or activating a virtual
   environment. Used by ``call()``.
@@ -400,7 +423,7 @@ Run the example workflow with:
 
 .. code-block:: bash
 
-   python romtools/hpc/example/workflow.py --remote <remote-host> --user <username> --account <account/wcid>
+   python romtools/hpc/example/workflow.py --hpc-remote <remote-host> --hpc-user <username> --hpc-account <account/wcid>
 
 See all available arguments with:
 

@@ -2,14 +2,14 @@
 
 from typing import Optional
 
+from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatchers.base_dispatcher import BaseDispatcher
 from romtools.hpc.dispatchers.local_dispatcher import LocalDispatcher
 
 
-# argv=[] because nobody asked for this dispatcher: reading the host program's
-# command line would take its own switches as configuration.
+# Nobody asked for this dispatcher, so it reads no command line at all.
 def _default_dispatcher() -> LocalDispatcher:
-    return LocalDispatcher(argv=[])
+    return LocalDispatcher(config=Configuration.defaults())
 
 
 def resolve_dispatcher(dispatcher: Optional[BaseDispatcher] = None) -> BaseDispatcher:

@@ -39,6 +39,14 @@ def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
                 f"Invalid collect pattern {p!r}: contains forbidden characters."
             )
 
+        # Patterns name what lives under the working directory, so one that
+        # points outside it has no meaning on either end of a transfer.
+        if p.startswith("/") or ".." in p.split("/"):
+            raise ValueError(
+                f"Invalid collect pattern {p!r}: patterns are relative to the "
+                "working directory and may not be absolute or contain '..'."
+            )
+
         # Restrict patterns to path and glob characters to avoid shell injection.
         if not re.fullmatch(r"[A-Za-z0-9_./*?\[\]\-]+", p):
             raise ValueError(

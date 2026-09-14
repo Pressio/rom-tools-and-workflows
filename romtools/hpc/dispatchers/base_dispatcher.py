@@ -1,4 +1,6 @@
 
+import os
+
 import numpy as np
 
 from romtools.hpc.components.caller import BaseCaller
@@ -8,6 +10,19 @@ from romtools.hpc.components.transfer_manager import BaseTransferManager
 from romtools.hpc.logger import Logger
 from romtools.hpc.configuration import Configuration
 from romtools.hpc.connection import Result
+
+
+def _resolve_configuration(config) -> Configuration:
+    """Turn the constructor's config argument into a Configuration."""
+    if config is None:
+        return Configuration()
+    if isinstance(config, Configuration):
+        return config
+    if isinstance(config, (str, os.PathLike)):
+        return Configuration(config_path=os.fspath(config))
+    raise TypeError(
+        f"config must be a YAML path or a Configuration (received: {type(config).__name__})."
+    )
 
 
 class BaseDispatcher:
@@ -22,8 +37,8 @@ class BaseDispatcher:
     """
 
     def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
-                 argv: list = None):
-        self.config = Configuration(argv=argv).to_dict()
+                 config=None):
+        self.config = _resolve_configuration(config).to_dict()
         self.logger = logger if logger is not None else Logger(self.config["debug"])
         self.campaign_directory = campaign_directory
 
@@ -142,8 +157,11 @@ class BaseDispatcher:
     def np_savez(self, path: str, **arrays) -> None:
         self.files.np_savez(path, **arrays)
 
-    def upload(self, run_directory) -> None:
-        """Put the configured upload patterns into the run directory."""
+    def upload(self, run_directory: str = None) -> None:
+        """
+        Put the configured upload patterns into run_directory, which defaults to
+        the campaign directory, as submit_job() does.
+        """
         self.transfer.upload(run_directory)
 
     # ------------------------------------------------------------------
