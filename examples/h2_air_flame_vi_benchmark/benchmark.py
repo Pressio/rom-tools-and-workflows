@@ -125,27 +125,31 @@ def run_one_method(
 
     start = time.perf_counter()
     if method["fidelity"] == "single":
+        fom_sample_size = int(
+            sample_overrides.get("fom_sample_size", config["vi"]["sample_size"])
+        )
+        rom_extra_sample_size = 0
         run_vi(
             **common,
-            sample_size=int(
-                sample_overrides.get("fom_sample_size", config["vi"]["sample_size"])
-            ),
+            sample_size=fom_sample_size,
             evaluation_concurrency=concurrency,
             sample_reuse_config=reuse,
         )
     elif method["fidelity"] == "mf":
         mf = config["multifidelity"]
         rom = mf.get("rom", {})
+        fom_sample_size = int(
+            sample_overrides.get("fom_sample_size", mf["fom_sample_size"])
+        )
+        rom_extra_sample_size = int(
+            sample_overrides.get(
+                "rom_extra_sample_size", mf["rom_extra_sample_size"]
+            )
+        )
         mf_vi_with_auto_rom(
             **common,
-            fom_sample_size=int(
-                sample_overrides.get("fom_sample_size", mf["fom_sample_size"])
-            ),
-            rom_extra_sample_size=int(
-                sample_overrides.get(
-                    "rom_extra_sample_size", mf["rom_extra_sample_size"]
-                )
-            ),
+            fom_sample_size=fom_sample_size,
+            rom_extra_sample_size=rom_extra_sample_size,
             fom_evaluation_concurrency=concurrency,
             rom_evaluation_concurrency=int(
                 config["benchmark"].get("rom_evaluation_concurrency", 1)
@@ -173,10 +177,35 @@ def run_one_method(
         raise ValueError(f"Unsupported fidelity '{method['fidelity']}'.")
     wall_time = time.perf_counter() - start
 
-    history = collect_history(run_dir, truth, reuse_enabled)
+    reuse_settings = config.get("sample_reuse", {})
+    history = collect_history(
+        run_dir,
+        truth,
+        reuse_enabled,
+        reuse_batch_size=fom_sample_size if reuse_enabled else None,
+        reuse_history_batches=(
+            int(reuse_settings.get("history_batches", 10))
+            if reuse_enabled
+            else None
+        ),
+    )
     history = truncate_to_budget(history, config["benchmark"].get("fom_budget"))
     final_mean = history["variational_mean"][-1]
     final_covariance = history["variational_covariance"][-1]
+    reuse_summary = None
+    if reuse_enabled:
+        diagnostics = history["sample_reuse"]
+        reuse_summary = {
+            "reuse_iterations": int(sum(bool(item["used"]) for item in diagnostics)),
+            "refresh_iterations": int(
+                sum(not bool(item["used"]) for item in diagnostics)
+            ),
+            "ess_available_iterations": int(
+                sum(item["ess"] is not None for item in diagnostics)
+            ),
+            "final_archive_samples": diagnostics[-1]["archive_samples"],
+            "final_archive_batches": diagnostics[-1]["archive_batches"],
+        }
     return {
         "method": method_key,
         "label": method.get("label", method_key),
@@ -184,7 +213,10 @@ def run_one_method(
         "fidelity": method["fidelity"],
         "optimizer": optimizer_name,
         "sample_reuse_enabled": reuse_enabled,
+        "sample_reuse_summary": reuse_summary,
         "entropy_strategy": entropy,
+        "fom_sample_size": fom_sample_size,
+        "rom_extra_sample_size": rom_extra_sample_size,
         "sample_overrides": sample_overrides,
         "wall_time_seconds": float(wall_time),
         "history": history,
@@ -192,6 +224,9 @@ def run_one_method(
             "iterations": int(len(history["elbo"])),
             "final_cumulative_fom_evaluations": int(
                 history["cumulative_fom_evaluations"][-1]
+            ),
+            "final_cumulative_rom_evaluations": int(
+                history["cumulative_rom_evaluations"][-1]
             ),
             "final_parameter_relative_error": float(
                 history["parameter_relative_error"][-1]
