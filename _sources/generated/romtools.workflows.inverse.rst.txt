@@ -19,3 +19,5 @@ romtools.workflows.inverse
    mf_vi_drivers
    vi_drivers
    vi_optimization_methods
+   vi_sample_reuse
+   vi_sample_reuse_hessian
