@@ -2,6 +2,7 @@
 
 import glob
 import os
+import tempfile
 
 import posixpath as ppath
 
@@ -11,13 +12,13 @@ from romtools.hpc.components.archive import (
     safe_extract_tar,
     validate_file_patterns,
 )
-from romtools.hpc.components.component import Component
+from romtools.hpc.components.component import CampaignComponent
 from romtools.hpc.components.file_manager import BaseFileManager, RemoteFileManager
 from romtools.hpc.connection import Connection, run_local_bash
 from romtools.hpc.logger import Logger
 
 
-class BaseTransferManager(Component):
+class BaseTransferManager(CampaignComponent):
     """
     Stages the files a campaign needs into its run directory, and brings its
     results back afterwards.
@@ -38,9 +39,8 @@ class BaseTransferManager(Component):
 
     def __init__(self, *, files: BaseFileManager, config: dict = None,
                  logger: Logger = None, campaign_directory: str = None):
-        super().__init__(config=config, logger=logger)
+        super().__init__(config=config, logger=logger, campaign_directory=campaign_directory)
         self.files = files
-        self.campaign_directory = campaign_directory
 
         # Patterns are this component's concern, so it validates its own
         self.collect_patterns = validate_file_patterns(self.config.get("collect"))
@@ -49,7 +49,7 @@ class BaseTransferManager(Component):
     def _archive_name(self) -> str:
         return f"dispatcher-transfer-{self.config.get('job_name')}.tar.gz"
 
-    def upload(self, run_directory) -> None:
+    def upload(self, run_directory: str = None) -> None:
         """Put the configured upload patterns into the run directory."""
 
     def collect_results(self) -> None:
@@ -65,11 +65,11 @@ class LocalTransferManager(BaseTransferManager):
     to pack up and nothing to bring back: only upload does anything.
     """
 
-    def upload(self, run_directory) -> None:
+    def upload(self, run_directory: str = None) -> None:
         if not self.upload_patterns:
             return
 
-        destination = self.files.resolve_path(run_directory)
+        destination = self.files.resolve_path(self.job_directory(run_directory))
         sources = [s for s in self._expand_patterns() if not self._contains(s, destination)]
         if not sources:
             return
@@ -152,20 +152,33 @@ class RemoteTransferManager(BaseTransferManager):
         else:
             self.logger.log(f"Results collected in {self.campaign_directory}", local=True)
 
-    def upload(self, run_directory) -> None:
+    def upload(self, run_directory: str = None) -> None:
         if not self.upload_patterns:
             return
 
+        run_directory = self.job_directory(run_directory)
         tar_name = self._archive_name()
-        create_tarball(lambda msg: self.logger.log(msg, local=True), run_local_bash, ".", tar_name, self.upload_patterns)
         remote_tar_path = ppath.join(run_directory, tar_name) if run_directory else tar_name
-        try:
-            self.files.put(tar_name, remote_tar_path)
-            self.logger.debug(f"Uploaded local file {tar_name} to {self.conn.host}:{remote_tar_path}")
-        except Exception as e:
-            raise RuntimeError(f"File transfer failed on upload: {e}")
-        finally:
-            os.remove(tar_name)
+
+        # The archive is staged outside the directory it packs: tar reading the
+        # archive it is still writing fails an upload of everything.
+        with tempfile.TemporaryDirectory() as staging:
+            local_tar_path = os.path.join(staging, tar_name)
+            try:
+                create_tarball(lambda msg: self.logger.log(msg, local=True), run_local_bash, ".",
+                               local_tar_path, self.upload_patterns)
+            except FileNotFoundError as e:
+                # Matching nothing is a warning locally, so it is one here too
+                self.logger.log(f"Warning: nothing to upload: {e}", local=True)
+                return
+
+            try:
+                self.files.create_empty_dir(run_directory)
+                self.files.put(local_tar_path, remote_tar_path)
+                self.logger.debug(f"Uploaded local file {tar_name} to {self.conn.host}:{remote_tar_path}")
+            except Exception as e:
+                raise RuntimeError(f"File transfer failed on upload: {e}") from e
+
         res = safe_extract_tar(lambda cmd: self.conn.run(cmd),
                                self.files.resolve_path(remote_tar_path),
                                self.files.resolve_path(run_directory))

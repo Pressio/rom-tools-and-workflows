@@ -1,5 +1,6 @@
 """File operations for the dispatchers, in local and remote flavors."""
 
+import base64
 import io
 import os
 import posixpath as ppath
@@ -12,6 +13,9 @@ import numpy as np
 from romtools.hpc.components.component import Component
 from romtools.hpc.connection import Connection
 from romtools.hpc.logger import Logger
+
+# base64 inflates the ssh command 4/3 and one argv element is capped near 128 KiB
+REMOTE_INLINE_WRITE_LIMIT = 32 * 1024
 
 
 class BaseFileManager(Component):
@@ -112,10 +116,14 @@ class LocalFileManager(BaseFileManager):
             raise RuntimeError(f"Failed to remove directory {path}: {e}") from e
         self.logger.debug(f"Removed directory {path}", local=True)
 
-    def write_text(self, path: str, content: str) -> None:
+    def _make_parent_dir(self, path: str) -> None:
+        """Every writer creates the directory it writes into, on both hosts."""
         parent_dir = os.path.dirname(path)
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
+
+    def write_text(self, path: str, content: str) -> None:
+        self._make_parent_dir(path)
         with open(path, "w", encoding="utf-8") as text_file:
             text_file.write(content)
         self.logger.debug(f"Wrote file {path}", local=True)
@@ -126,6 +134,7 @@ class LocalFileManager(BaseFileManager):
             return text_file.read()
 
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
+        self._make_parent_dir(path)
         np.savetxt(path, arr, fmt=fmt)
         self.logger.debug(f"Saved array to path {path}", local=True)
 
@@ -138,6 +147,7 @@ class LocalFileManager(BaseFileManager):
         if not local_path.endswith(".npz"):
             local_path += ".npz"
 
+        self._make_parent_dir(local_path)
         np.savez(local_path, **arrays)
         self.logger.debug(f"Saved arrays to path {local_path}", local=True)
 
@@ -158,6 +168,11 @@ class RemoteFileManager(BaseFileManager):
         super().__init__(config=config, logger=logger)
         self.conn = connection
 
+    def _make_parent_dir_cmd(self, resolved_path: str) -> str:
+        """Every writer creates the directory it writes into, on both hosts."""
+        parent_dir = ppath.dirname(resolved_path)
+        return f"mkdir -p {shlex.quote(parent_dir)} && " if parent_dir else ""
+
     def resolve_path(self, path: str = None) -> str:
         """
         Resolve a remote path: absolute paths pass through, relative ones are
@@ -170,13 +185,37 @@ class RemoteFileManager(BaseFileManager):
             return path
         return ppath.join(remote_root, path)
 
+    def _write_staged(self, remote_path: str, data: bytes) -> None:
+        """Content too large for one ssh command goes up as a staged file."""
+        parent_dir = ppath.dirname(remote_path)
+        if parent_dir:
+            res = self.conn.run(f"mkdir -p {shlex.quote(parent_dir)}")
+            if not res.ok:
+                raise RuntimeError(f"Failed to create remote directory {parent_dir}: {res.stderr}")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = os.path.join(tmpdir, ppath.basename(remote_path))
+            with open(local_path, "wb") as staged:
+                staged.write(data)
+            self.conn.put(local_path, remote_path)
+
     def write_text(self, remote_path: str, content: str) -> None:
         remote_path = self.resolve_path(remote_path)
-        outer = "__HPCTOOLS_FILE_EOF__"
-        cmd = f"cat > {shlex.quote(remote_path)} << '{outer}'\n{content}\n{outer}\n"
-        res = self.conn.run(cmd)
-        if not res.ok:
-            raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
+        data = content.encode("utf-8")
+
+        if len(data) > REMOTE_INLINE_WRITE_LIMIT:
+            self._write_staged(remote_path, data)
+        else:
+            # base64 so the content survives verbatim, whatever it contains
+            payload = base64.b64encode(data).decode("ascii")
+            cmd = (
+                f"{self._make_parent_dir_cmd(remote_path)}"
+                f"printf %s {shlex.quote(payload)} | base64 -d > {shlex.quote(remote_path)}"
+            )
+            res = self.conn.run(cmd)
+            if not res.ok:
+                raise RuntimeError(f"Failed to write remote file {remote_path}: {res.stderr}")
+
         self.logger.debug(f"Wrote remote file: {remote_path}")
 
     def put(self, local_path: str, remote_path: str) -> None:
@@ -243,11 +282,9 @@ class RemoteFileManager(BaseFileManager):
         if not remote_path.endswith(".npz"):
             remote_path += ".npz"
 
-        remote_dir = ppath.dirname(remote_path) or "."
-        if not self.path_exists(remote_dir):
-            raise FileNotFoundError(
-                f"Cannot write {remote_path}: remote directory {remote_dir} does not exist."
-            )
+        remote_dir = ppath.dirname(remote_path)
+        if remote_dir:
+            self.create_empty_dir(remote_dir)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             local_path = os.path.join(tmpdir, ppath.basename(remote_path))

@@ -26,7 +26,7 @@ def test_defaults_with_no_args_or_yaml(monkeypatch):
 
 
 def test_cli_args_override_defaults(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--user", "alice", "--port", "2222"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-remote", "myhost", "--hpc-user", "alice", "--hpc-port", "2222"])
 
     config = Configuration()
 
@@ -36,7 +36,7 @@ def test_cli_args_override_defaults(monkeypatch):
 
 
 def test_every_schema_argument_has_a_long_option(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--job_name", "longjob", "--partition", "batch"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-job-name", "longjob", "--hpc-partition", "batch"])
 
     config = Configuration()
 
@@ -54,24 +54,27 @@ def test_host_process_valueless_short_flag_does_not_raise(monkeypatch):
     assert Configuration().script is None
 
 
-def test_explicit_argv_ignores_the_host_process_command_line(monkeypatch):
-    """An embedder configures a dispatcher from its own list, not from sys.argv."""
-    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value", "--port", "not-a-port"])
+def test_defaults_reads_neither_yaml_nor_the_command_line(monkeypatch):
+    """The dispatcher nobody asked for takes the schema defaults."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-remote", "host-value", "-c", "/nonexistent.yaml"])
 
-    config = Configuration(argv=["--remote", "explicit"])
+    config = Configuration.defaults()
 
-    assert config.remote == "explicit"
-    assert config.port == 22
+    assert config.remote is None
+    assert config.job_name == "hpctools_job"
 
 
-def test_empty_argv_reads_nothing(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "host-value"])
+def test_config_path_argument_is_used_instead_of_the_command_line(tmp_path, monkeypatch):
+    """A program that owns -c hands the dispatcher its YAML in code."""
+    yaml_path = tmp_path / "config.yaml"
+    yaml_path.write_text("remote: from-argument\n")
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", "mycase.deck"])
 
-    assert Configuration(argv=[]).remote is None
+    assert Configuration(config_path=str(yaml_path)).remote == "from-argument"
 
 
 def test_long_options_are_not_abbreviated(monkeypatch):
-    """A host process's "--part" must not be read as this schema's "--partition"."""
+    """A host process's "--hpc-part" must not be read as "--hpc-partition"."""
     monkeypatch.setattr(sys, "argv", ["prog", "--part", "host-value"])
 
     assert Configuration().partition == "short"
@@ -80,19 +83,58 @@ def test_long_options_are_not_abbreviated(monkeypatch):
 def test_bad_value_for_a_schema_argument_raises(monkeypatch):
     """
     Regression test: a value that fails type conversion used to warn and drop
-    the whole command line, so "--remote myhost" was silently lost with it.
+    the whole command line, so "--hpc-remote myhost" was silently lost with it.
     """
-    monkeypatch.setattr(sys, "argv", ["prog", "--remote", "myhost", "--port", "not-a-port"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-remote", "myhost", "--hpc-port", "not-a-port"])
 
-    with pytest.raises(ConfigurationError, match="--port"):
+    with pytest.raises(ConfigurationError, match="--hpc-port"):
         Configuration()
 
 
 def test_missing_value_for_a_schema_argument_raises(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--wall_time"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-wall-time"])
 
-    with pytest.raises(ConfigurationError, match="--wall_time"):
+    with pytest.raises(ConfigurationError, match="--hpc-wall-time"):
         Configuration()
+
+
+@pytest.mark.parametrize("name", [n for section in SCHEMA.values() for n in section])
+def test_a_bare_schema_name_is_left_to_the_host_program(monkeypatch, name):
+    """
+    Regression test: every schema argument was a bare long option, so a
+    workflow's own --timeout, --debug or --script reconfigured the dispatcher.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", f"--{name}", "host-value"])
+
+    assert getattr(Configuration(), name) == getattr(Configuration.defaults(), name)
+
+
+def test_misspelled_dispatcher_option_raises_with_a_suggestion(monkeypatch):
+    """
+    Regression test: a switch in this schema's namespace that the parser did
+    not recognize was swallowed as an extra, so the run proceeded unconfigured.
+    """
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-remot", "myhost"])
+
+    with pytest.raises(ConfigurationError, match="--hpc-remote"):
+        Configuration()
+
+
+def test_retired_short_flags_are_left_to_the_host_program(monkeypatch):
+    """
+    Regression test: "-i cfg -r host -u alice -o '*.log'" was silently dropped,
+    leaving collect unset and results never retrieved. They are the host's now.
+    """
+    monkeypatch.setattr(
+        sys, "argv",
+        ["prog", "-i", "cfg.yaml", "-r", "host", "-u", "alice", "-o", "*.log"],
+    )
+
+    config = Configuration()
+
+    assert config.remote is None
+    assert config.user is None
+    assert config.collect is None
 
 
 def test_missing_value_for_config_raises(monkeypatch):
@@ -122,7 +164,7 @@ def test_host_process_arguments_do_not_raise(monkeypatch):
 def test_remote_python_args_parse_from_cli(monkeypatch):
     monkeypatch.setattr(
         sys, "argv",
-        ["prog", "--python_setup", "module load python", "--python_command", "srun python3"],
+        ["prog", "--hpc-python-setup", "module load python", "--hpc-python-command", "srun python3"],
     )
 
     config = Configuration()
@@ -145,7 +187,7 @@ def test_remote_python_defaults(monkeypatch):
 
 
 def test_debug_flag_is_a_store_true_switch(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--debug"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-debug"])
     assert Configuration().debug is True
 
     monkeypatch.setattr(sys, "argv", ["prog"])
@@ -153,7 +195,7 @@ def test_debug_flag_is_a_store_true_switch(monkeypatch):
 
 
 def test_collect_normalized_from_cli(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["prog", "--collect", "a.txt,b.log"])
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-collect", "a.txt,b.log"])
 
     config = Configuration()
 
@@ -212,7 +254,7 @@ def test_yaml_nested_mapping_with_user_defined(tmp_path, monkeypatch):
 def test_cli_overrides_yaml(tmp_path, monkeypatch):
     yaml_path = tmp_path / "config.yaml"
     yaml_path.write_text("remote: yamlhost\n")
-    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path), "--remote", "clihost"])
+    monkeypatch.setattr(sys, "argv", ["prog", "-c", str(yaml_path), "--hpc-remote", "clihost"])
 
     config = Configuration()
 
@@ -235,6 +277,50 @@ def test_missing_yaml_file_raises(monkeypatch):
         Configuration()
 
 
+def test_config_switch_taken_from_the_host_command_line_says_so(monkeypatch):
+    """
+    Regression test: a program with a '-c' of its own (say a core count) had its
+    value read as a YAML path, and the error explained neither where the path
+    came from nor how to stop the dispatcher reading that command line.
+    """
+    monkeypatch.setattr(sys, "argv", ["driver.py", "-c", "4"])
+
+    with pytest.raises(FileNotFoundError, match="--hpc-config"):
+        Configuration()
+
+
+def test_a_non_mapping_config_file_says_where_the_path_came_from(tmp_path, monkeypatch):
+    """
+    Regression test: a program whose own -c named a real file that was not a
+    dispatcher config failed with "must be a mapping" and no hint that the
+    dispatcher had read the switch off its command line.
+    """
+    deck = tmp_path / "mycase.deck"
+    deck.write_text("just some text\n")
+    monkeypatch.setattr(sys, "argv", ["driver.py", "-c", str(deck)])
+
+    with pytest.raises(ValueError, match="--hpc-config"):
+        Configuration()
+
+
+def test_unparseable_config_file_says_where_the_path_came_from(tmp_path, monkeypatch):
+    deck = tmp_path / "mycase.deck"
+    deck.write_text("key: [unclosed\n")
+    monkeypatch.setattr(sys, "argv", ["driver.py", "-c", str(deck)])
+
+    with pytest.raises(ValueError, match="--hpc-config"):
+        Configuration()
+
+
+def test_config_is_also_spelled_with_the_prefix(tmp_path, monkeypatch):
+    """--hpc-config is the collision-free spelling of -c."""
+    yaml_path = tmp_path / "config.yaml"
+    yaml_path.write_text("remote: yamlhost\n")
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-config", str(yaml_path)])
+
+    assert Configuration().remote == "yamlhost"
+
+
 def test_to_dict_returns_independent_copy(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["prog"])
     config = Configuration()
@@ -243,7 +329,7 @@ def test_to_dict_returns_independent_copy(monkeypatch):
     as_dict["job_name"] = "mutated"
 
     assert config.job_name == "hpctools_job"
-    assert "_argv" not in as_dict  # private parsing state is not configuration
+    assert not [k for k in as_dict if k.startswith("_")]  # no private state
 
 
 @pytest.mark.parametrize(

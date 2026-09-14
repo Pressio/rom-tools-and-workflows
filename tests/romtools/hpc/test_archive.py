@@ -42,6 +42,23 @@ def test_pattern_with_unsupported_characters_is_rejected():
         validate_file_patterns(["bad; rm -rf /"])
 
 
+@pytest.mark.parametrize("pattern", ["/etc/passwd", "..", "../results", "results/../../escape"])
+def test_pattern_outside_the_working_directory_is_rejected(pattern):
+    """
+    Patterns name what lives under the directory they are read from: an
+    absolute one silently defeated the local copy's destination join, and
+    safe_extract_tar refuses such members on the remote end anyway.
+    """
+    with pytest.raises(ValueError, match="relative to the working directory"):
+        validate_file_patterns([pattern])
+
+
+def test_nested_relative_patterns_are_kept():
+    patterns = validate_file_patterns(["sub/dir/*.txt", "..hidden", "a..b"])
+
+    assert patterns == ["sub/dir/*.txt", "..hidden", "a..b"]
+
+
 def test_all_blank_patterns_raises():
     with pytest.raises(ValueError, match="no valid patterns"):
         validate_file_patterns(["   ", ""])
@@ -102,7 +119,7 @@ def test_create_tarball_with_specific_patterns(tmp_path, monkeypatch):
     assert "results.txt" in pack_cmd
 
 
-def test_create_tarball_raises_if_no_patterns_matched(tmp_path, monkeypatch, make_config):
+def test_create_tarball_raises_if_no_patterns_matched(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     conn = FakeConnection(responses=[("test -e", Result("", "", 1))])
 
@@ -110,7 +127,7 @@ def test_create_tarball_raises_if_no_patterns_matched(tmp_path, monkeypatch, mak
         create_tarball(lambda _: None, lambda cmd: conn.run(cmd), "campaigns", "myjob.tar.gz", ["results.txt"])
 
 
-def test_create_tarball_raises_when_pack_command_fails(tmp_path, monkeypatch, make_config):
+def test_create_tarball_raises_when_pack_command_fails(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     conn = FakeConnection(responses=[("tar -czf", Result("", "disk full", 1))])
 

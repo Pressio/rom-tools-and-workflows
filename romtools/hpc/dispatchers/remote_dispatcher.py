@@ -1,4 +1,3 @@
-import os
 import posixpath as ppath
 import shlex
 from typing import Optional
@@ -10,6 +9,23 @@ from romtools.hpc.components.caller import RemoteCaller
 from romtools.hpc.components.file_manager import RemoteFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
 from romtools.hpc.components.transfer_manager import RemoteTransferManager
+
+
+def _normalize_campaign_directory(campaign_directory: str) -> str:
+    """The campaign directory as a clean relative path, mirrored on both hosts."""
+    cleaned = ppath.normpath((campaign_directory or "").strip())
+
+    if not cleaned or cleaned == ".":
+        raise ValueError("The campaign directory must name a directory.")
+
+    if ppath.isabs(cleaned) or cleaned == ".." or cleaned.startswith("../"):
+        raise ValueError(
+            f"The campaign directory must be relative to the remote root (received: "
+            f"{campaign_directory}). This workflow also creates the same directory "
+            "on the local machine."
+        )
+
+    return cleaned
 
 
 class RemoteDispatcher(BaseDispatcher):
@@ -24,18 +40,17 @@ class RemoteDispatcher(BaseDispatcher):
     Arguments:
         logger: An instance of the Logger class for logging
         campaign_directory: An optional string naming the directory this campaign
-            runs in. It is mirrored locally and under the remote root.
-        argv: Argument list to configure from instead of the real process argv.
-            Pass [] to ignore the surrounding program's command line.
+            runs in, relative to the remote root. It is mirrored locally and
+            under the remote root.
+        config: A YAML path or a Configuration. Defaults to reading the command line.
     """
     def __init__(self, campaign_directory: str = "hpctools", logger: Logger = None,
-                 connection: Optional[Connection] = None, argv: list = None):
-        # Initialize the base Dispatcher class (sets up config and logger)
-        super().__init__(campaign_directory, logger, argv=argv)
+                 connection: Optional[Connection] = None, config=None):
+        # Normalized before super() so every component is built with the same value
+        super().__init__(_normalize_campaign_directory(campaign_directory), logger, config=config)
 
         # Core members
         self.conn : Optional[Connection] = None
-        self.campaign_directory = os.path.basename(campaign_directory)
 
         # Confirm that connection is possible
         if not self.config.get("remote") or not self.config.get("user"):

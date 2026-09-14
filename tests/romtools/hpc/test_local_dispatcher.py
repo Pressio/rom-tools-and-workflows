@@ -9,7 +9,16 @@ import sys
 import numpy as np
 import pytest
 
+from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatchers import LocalDispatcher
+
+
+def _configured(**settings):
+    """A Configuration with the given settings and defaults for everything else."""
+    config = Configuration.defaults()
+    for key, value in settings.items():
+        setattr(config, key, value)
+    return config
 
 
 @pytest.fixture
@@ -37,7 +46,8 @@ def fake_scheduler(tmp_path, monkeypatch):
     exercises that path end to end without needing a cluster. Returns the file
     the stand-in sbatch records its invocations in.
     """
-    def install(job_id="123", state="COMPLETED", exit_code="0:0", write_output=False):
+    def install(job_id="123", state="COMPLETED", exit_code="0:0", write_output=False,
+                derived_exit_code=None):
         bin_dir = tmp_path / "slurm-bin"
         bin_dir.mkdir(exist_ok=True)
         sbatch_log = tmp_path / "sbatch.log"
@@ -56,7 +66,8 @@ def fake_scheduler(tmp_path, monkeypatch):
                       f'{write_body}'
                       f'echo "Submitted batch job {job_id}"\n',
             "squeue": "",  # a finished job is no longer in the queue
-            "sacct": f'echo "{job_id}|{state}|{exit_code}|{exit_code}"\n',
+            "sacct": f'echo "{job_id}|{state}|{exit_code}|'
+                     f'{exit_code if derived_exit_code is None else derived_exit_code}"\n',
         }
         for name, body in bodies.items():
             command = bin_dir / name
@@ -266,8 +277,8 @@ def test_submit_job_uses_a_configured_slurm_script_unmodified(tmp_path, monkeypa
     (campaign / "custom-123.out").write_text("from the custom outfile\n")
     (campaign / "custom-123.err").write_text("")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign),
+                                 config=_configured(script=str(script)))
 
     result = dispatcher.submit_job()
 
@@ -288,8 +299,8 @@ def test_submit_job_accepts_a_slurm_script_already_in_the_job_directory(tmp_path
     script = campaign / "job.sh"
     script.write_text("#!/bin/bash\nsrun ./my_app\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign),
+                                 config=_configured(script=str(script)))
 
     dispatcher.submit_job()
 
@@ -299,20 +310,31 @@ def test_submit_job_accepts_a_slurm_script_already_in_the_job_directory(tmp_path
     assert submission.endswith("job.sh")
 
 
-def test_construction_is_immune_to_host_process_argv(tmp_path, monkeypatch):
+def test_construction_ignores_switches_outside_the_hpc_namespace(tmp_path, monkeypatch):
     """
-    A dispatcher given an explicit argv ignores the surrounding program's
-    command line, so a workflow keeps its own switches whatever they mean here.
+    Regression test: the dispatcher read the host program's own switches, so
+    "workflow.py --script host.sh --port not-a-port" reconfigured it by accident.
     """
     monkeypatch.setattr(
         sys, "argv",
         ["prog", "--script", "host.sh", "--job_name", "host-job", "--port", "not-a-port"],
     )
 
-    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path), argv=[])
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path))
 
     assert dispatcher.config["script"] is None
     assert dispatcher.config["job_name"] == "hpctools_job"
+    assert dispatcher.config["port"] == 22
+
+
+def test_construction_reads_the_hpc_namespace_like_a_remote_dispatcher(tmp_path, monkeypatch):
+    """A LocalDispatcher takes YAML and CLI overrides exactly as a remote one does."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--hpc-job-name", "mine", "--hpc-num-nodes", "4"])
+
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path))
+
+    assert dispatcher.config["job_name"] == "mine"
+    assert dispatcher.config["num_nodes"] == 4
 
 
 def test_submit_job_leaves_results_in_place_without_archiving_them(tmp_path, monkeypatch, fake_scheduler):
@@ -322,8 +344,8 @@ def test_submit_job_leaves_results_in_place_without_archiving_them(tmp_path, mon
     """
     fake_scheduler()
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(sys, "argv", ["prog", "--collect", "all"])
-    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"),
+                                 config=_configured(collect=["all"]))
 
     dispatcher.submit_job("./my_app")
 
@@ -354,6 +376,37 @@ def test_submit_job_reports_a_terminal_state_that_is_not_completed(tmp_path, fak
 
     assert not result.ok
     assert result.exit_code != 0
+
+
+def test_submit_job_succeeds_when_sacct_leaves_derived_exit_code_blank(tmp_path, fake_scheduler):
+    """
+    Regression test: many sites leave DerivedExitCode empty, and "" != "0:0"
+    made the blank column authoritative. A successful job was reported failed,
+    and slurm_exitcode_to_python_style("") then raised ValueError.
+    """
+    fake_scheduler(state="COMPLETED", exit_code="0:0", derived_exit_code="")
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+
+    result = dispatcher.submit_job("./my_app")
+
+    assert result.ok
+    assert result.exit_code == 0
+
+
+def test_submit_job_reports_a_step_failure_from_the_derived_exit_code(tmp_path, fake_scheduler):
+    """A populated derived code still wins when the batch script itself exited 0."""
+    fake_scheduler(state="COMPLETED", exit_code="0:0", derived_exit_code="2:0")
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+
+    assert dispatcher.submit_job("./my_app").exit_code == 2
+
+
+def test_submit_job_keeps_a_failure_when_the_derived_column_is_blank(tmp_path, fake_scheduler):
+    """A blank derived column must not mask the batch script's own failure."""
+    fake_scheduler(state="FAILED", exit_code="1:0", derived_exit_code="")
+    dispatcher = LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+
+    assert dispatcher.submit_job("./my_app").exit_code == 1
 
 
 def test_submit_job_keeps_the_signal_from_a_killed_job(tmp_path, fake_scheduler):
@@ -392,8 +445,8 @@ def test_submit_job_with_a_script_naming_only_an_output_file(tmp_path, monkeypat
     campaign.mkdir()
     (campaign / "custom-123.out").write_text("both streams\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign),
+                                 config=_configured(script=str(script)))
 
     result = dispatcher.submit_job()
 
@@ -412,8 +465,8 @@ def test_submit_job_with_a_script_naming_only_an_error_file(tmp_path, monkeypatc
     (campaign / "slurm.out").write_text("job stdout\n")
     (campaign / "custom-123.err").write_text("job stderr\n")
     sbatch_log = fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--script", str(script)])
-    dispatcher = LocalDispatcher(campaign_directory=str(campaign))
+    dispatcher = LocalDispatcher(campaign_directory=str(campaign),
+                                 config=_configured(script=str(script)))
 
     result = dispatcher.submit_job()
 
@@ -462,8 +515,12 @@ def test_submit_job_raises_when_given_neither_a_command_nor_a_script(dispatcher)
 
 
 def test_submit_job_describes_the_job_from_the_configuration(tmp_path, monkeypatch, fake_scheduler):
+    """The one end-to-end check that a command-line switch reaches a component."""
     fake_scheduler()
-    monkeypatch.setattr(sys, "argv", ["prog", "--job_name", "myjob", "--num_nodes", "4", "--wall_time", "02:00:00"])
+    monkeypatch.setattr(
+        sys, "argv",
+        ["prog", "--hpc-job-name", "myjob", "--hpc-num-nodes", "4", "--hpc-wall-time", "02:00:00"],
+    )
     campaign = tmp_path / "campaign"
     dispatcher = LocalDispatcher(campaign_directory=str(campaign))
 
@@ -564,8 +621,8 @@ def test_require_supported_concurrency_allows_concurrent_evaluation(dispatcher):
 def _upload_dispatcher(tmp_path, monkeypatch, patterns):
     """A LocalDispatcher configured with upload patterns, running from tmp_path."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(sys, "argv", ["prog", "--upload", patterns])
-    return LocalDispatcher(campaign_directory=str(tmp_path / "campaign"))
+    return LocalDispatcher(campaign_directory=str(tmp_path / "campaign"),
+                           config=_configured(upload=patterns.split(",")))
 
 
 def test_upload_copies_named_files_into_the_run_directory(tmp_path, monkeypatch):
@@ -632,3 +689,28 @@ def test_upload_warns_but_does_not_raise_when_a_pattern_matches_nothing(tmp_path
     dispatcher.upload(str(run_directory))
 
     assert not run_directory.exists()
+
+
+def test_upload_without_a_run_directory_targets_the_campaign_directory(tmp_path, monkeypatch):
+    """
+    Regression test: upload() staged into the current directory while
+    submit_job() runs in the campaign directory, so a job submitted with
+    neither directory named could not see its own inputs.
+    """
+    (tmp_path / "input.yaml").write_text("mesh: 10")
+    dispatcher = _upload_dispatcher(tmp_path, monkeypatch, "input.yaml")
+
+    dispatcher.upload()
+
+    assert (tmp_path / "campaign" / "input.yaml").read_text() == "mesh: 10"
+
+
+@pytest.mark.parametrize("pattern", ["/etc/input.yaml", "../input.yaml", "mesh/../../input.yaml"])
+def test_upload_pattern_outside_the_working_directory_is_rejected(tmp_path, monkeypatch, pattern):
+    """
+    Regression test: an absolute pattern made os.path.join() collapse to the
+    source itself, so the copy was skipped and the run directory stayed empty
+    while the log reported files copied.
+    """
+    with pytest.raises(ValueError, match="relative to the working directory"):
+        _upload_dispatcher(tmp_path, monkeypatch, pattern)

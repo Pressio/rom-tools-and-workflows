@@ -31,3 +31,18 @@ def test_components_log_without_being_handed_a_logger(build):
 
     assert isinstance(component.logger, Logger)
     component.logger.debug("no logger was supplied")
+
+
+@pytest.mark.parametrize("build", [
+    lambda campaign: SlurmJobManager(run_local_bash, files=LocalFileManager(), campaign_directory=campaign),
+    lambda campaign: BaseTransferManager(files=LocalFileManager(), campaign_directory=campaign),
+])
+def test_campaign_components_agree_on_the_default_directory(build):
+    """
+    Submitting a job and staging its inputs have to mean the same directory, or
+    the job runs where its inputs are not.
+    """
+    component = build("campaign")
+
+    assert component.job_directory("run_0") == "run_0"
+    assert component.job_directory() == "campaign"

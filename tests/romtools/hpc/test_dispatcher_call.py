@@ -8,8 +8,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-import romtools.hpc.dispatchers.base_dispatcher as base_dispatcher_module
-from romtools.hpc.connection import Result
+from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatchers import LocalDispatcher, RemoteDispatcher
 from romtools.hpc.components.call_runner import (
     build_call_runner,
@@ -19,7 +18,7 @@ from romtools.hpc.components.call_runner import (
 )
 from romtools.hpc.components.caller import BaseCaller, build_call_command
 
-from conftest import FakeConnection
+from conftest import FakeConnection, LocalShellConnection
 
 MODEL_SOURCE = '''
 import numpy as np
@@ -40,46 +39,8 @@ class Model:
 '''
 
 
-class LocalShellConnection(FakeConnection):
-    """
-    FakeConnection that runs commands and transfers files against a local
-    directory standing in for the remote host's login directory, so the whole
-    call() round trip can be exercised without a real remote host.
-    """
-
-    def __init__(self, root, **kwargs):
-        super().__init__(**kwargs)
-        self.root = str(root)
-
-    def run(self, command):
-        self.calls.append(command)
-        res = subprocess.run(
-            ["bash", "-c", command],
-            cwd=self.root,
-            capture_output=True,
-            text=True,
-        )
-        return Result(res.stdout, res.stderr, res.returncode)
-
-    def put(self, local, remote):
-        self.put_calls.append((local, remote))
-        target = self.__resolve(remote)
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-        shutil.copy2(local, target)
-
-    def get(self, remote, local):
-        self.get_calls.append((remote, local))
-        shutil.copy2(self.__resolve(remote), local)
-
-    def __resolve(self, remote):
-        return remote if os.path.isabs(remote) else os.path.join(self.root, remote)
-
-
-def _make_remote_dispatcher(monkeypatch, config, connection):
-    stub_config = MagicMock()
-    stub_config.to_dict.return_value = dict(config)
-    monkeypatch.setattr(base_dispatcher_module, "Configuration", MagicMock(return_value=stub_config))
-    return RemoteDispatcher(connection=connection)
+def _make_remote_dispatcher(config, connection):
+    return RemoteDispatcher(connection=connection, config=config)
 
 
 @pytest.fixture
@@ -215,10 +176,12 @@ def test_local_call_rejects_a_malformed_target(tmp_path):
 # LocalDispatcher.call under a configured interpreter
 # ----------------------------------------------------------------------
 
-def _local_dispatcher_with_python(monkeypatch, tmp_path, *flags):
+def _local_dispatcher_with_python(monkeypatch, tmp_path, **settings):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(sys, "argv", ["prog", *flags])
-    return LocalDispatcher()
+    config = Configuration.defaults()
+    for key, value in settings.items():
+        setattr(config, key, value)
+    return LocalDispatcher(config=config)
 
 
 def test_local_call_uses_a_configured_python_command(tmp_path, monkeypatch, staged_model):
@@ -227,7 +190,7 @@ def test_local_call_uses_a_configured_python_command(tmp_path, monkeypatch, stag
     configured interpreter was ignored on a cluster node that needs one.
     """
     dispatcher = _local_dispatcher_with_python(
-        monkeypatch, tmp_path, "--python_command", sys.executable)
+        monkeypatch, tmp_path, python_command=sys.executable)
 
     result = dispatcher.call(f"{staged_model}:scale", np.array([1.0, 2.0]),
                              factor=3.0, run_directory=str(tmp_path))
@@ -238,8 +201,8 @@ def test_local_call_uses_a_configured_python_command(tmp_path, monkeypatch, stag
 def test_local_call_runs_the_python_setup_first(tmp_path, monkeypatch, staged_model):
     dispatcher = _local_dispatcher_with_python(
         monkeypatch, tmp_path,
-        "--python_command", "$CALL_PYTHON",
-        "--python_setup", f"export CALL_PYTHON={sys.executable}")
+        python_command="$CALL_PYTHON",
+        python_setup=f"export CALL_PYTHON={sys.executable}")
 
     assert dispatcher.call(f"{staged_model}:Model.double", 3, run_directory=str(tmp_path)) == 6
 
@@ -247,7 +210,7 @@ def test_local_call_runs_the_python_setup_first(tmp_path, monkeypatch, staged_mo
 def test_a_python_setup_alone_stages_the_call_out_of_this_process(tmp_path, monkeypatch):
     """A setup with no command is meaningless in-process, so it stages out too."""
     dispatcher = _local_dispatcher_with_python(
-        monkeypatch, tmp_path, "--python_setup", "module load python/3.11")
+        monkeypatch, tmp_path, python_setup="module load python/3.11")
 
     assert dispatcher.caller.staged is not None
     assert dispatcher.caller.staged.python_command == "python3"
@@ -255,7 +218,7 @@ def test_a_python_setup_alone_stages_the_call_out_of_this_process(tmp_path, monk
 
 def test_local_call_in_a_subprocess_cleans_up_its_staging_directory(tmp_path, monkeypatch, staged_model):
     dispatcher = _local_dispatcher_with_python(
-        monkeypatch, tmp_path, "--python_command", sys.executable)
+        monkeypatch, tmp_path, python_command=sys.executable)
 
     dispatcher.call(f"{staged_model}:Model.double", 1, run_directory=str(tmp_path))
 
@@ -264,7 +227,7 @@ def test_local_call_in_a_subprocess_cleans_up_its_staging_directory(tmp_path, mo
 
 def test_local_call_in_a_subprocess_surfaces_the_traceback(tmp_path, monkeypatch, staged_model):
     dispatcher = _local_dispatcher_with_python(
-        monkeypatch, tmp_path, "--python_command", sys.executable)
+        monkeypatch, tmp_path, python_command=sys.executable)
 
     with pytest.raises(RuntimeError, match="model blew up"):
         dispatcher.call(f"{staged_model}:explode", run_directory=str(tmp_path))
@@ -331,7 +294,7 @@ def test_remote_call_round_trips_arrays_through_a_relative_remote_root(monkeypat
     """
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     result = dispatcher.call(
         f"{staged_model}:scale",
@@ -346,7 +309,7 @@ def test_remote_call_round_trips_arrays_through_a_relative_remote_root(monkeypat
 def test_remote_call_round_trips_tuples_and_scalars(monkeypatch, make_config, remote_host, staged_model):
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     result = dispatcher.call(f"{staged_model}:summarize", np.array([1.0, 3.0]), run_directory="run_00")
 
@@ -361,7 +324,7 @@ def test_remote_call_imports_modules_staged_in_the_run_directory(monkeypatch, ma
     """
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     assert dispatcher.call(f"{staged_model}:Model.double", 21, run_directory="run_00") == 42
 
@@ -370,7 +333,7 @@ def test_remote_call_without_a_run_directory_uses_the_remote_root(monkeypatch, m
     shutil.copy2(remote_host / f"{staged_model}.py", remote_host / "campaigns")
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     assert dispatcher.call(f"{staged_model}:Model.double", 5) == 10
 
@@ -378,7 +341,7 @@ def test_remote_call_without_a_run_directory_uses_the_remote_root(monkeypatch, m
 def test_remote_call_cleans_up_its_staging_directory(monkeypatch, make_config, remote_host, staged_model):
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     dispatcher.call(f"{staged_model}:Model.double", 1, run_directory="run_00")
 
@@ -393,7 +356,7 @@ def test_remote_call_cleans_up_when_the_target_fails(monkeypatch, make_config, r
     """
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     with pytest.raises(RuntimeError):
         dispatcher.call(f"{staged_model}:explode", run_directory="run_00")
@@ -409,7 +372,7 @@ def test_remote_call_failure_surfaces_the_remote_traceback(monkeypatch, make_con
     """
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command=sys.executable)
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     with pytest.raises(RuntimeError, match="model blew up"):
         dispatcher.call(f"{staged_model}:explode", run_directory="run_00")
@@ -418,7 +381,7 @@ def test_remote_call_failure_surfaces_the_remote_traceback(monkeypatch, make_con
 def test_remote_call_reports_a_missing_python_command(monkeypatch, make_config, remote_host, staged_model):
     conn = LocalShellConnection(remote_host)
     config = make_config(remote_root="campaigns", python_command="no_such_python")
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     with pytest.raises(RuntimeError, match="no_such_python"):
         dispatcher.call(f"{staged_model}:scale", np.array([1.0]), run_directory="run_00")
@@ -431,7 +394,7 @@ def test_remote_call_runs_the_python_setup_first(monkeypatch, make_config, remot
         python_command="$CALL_PYTHON",
         python_setup=f"export CALL_PYTHON={sys.executable}",
     )
-    dispatcher = _make_remote_dispatcher(monkeypatch, config, conn)
+    dispatcher = _make_remote_dispatcher(config, conn)
 
     assert dispatcher.call(f"{staged_model}:Model.double", 3, run_directory="run_00") == 6
 
@@ -447,7 +410,7 @@ def test_base_caller_has_no_execution_strategy():
 
 def test_dispatchers_delegate_to_their_own_caller(monkeypatch, make_config):
     local = LocalDispatcher()
-    remote = _make_remote_dispatcher(monkeypatch, make_config(), FakeConnection())
+    remote = _make_remote_dispatcher(make_config(), FakeConnection())
 
     local.caller = MagicMock()
     remote.caller = MagicMock()
