@@ -287,7 +287,7 @@ def _hessian_reuse_quality(archive,
                            importance_weights: np.ndarray,
                            origin_weights: np.ndarray,
                            baseline_method: str,
-                           hessian_full: np.ndarray,
+                           _hessian_full: np.ndarray,
                            reference_sample_count: int):
     """Evaluate Newton-specific reuse diagnostics without new model calls."""
     config = archive.config
