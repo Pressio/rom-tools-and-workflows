@@ -152,10 +152,13 @@ def aggregate_runs(results: list[dict], method_order: list[str]) -> dict:
         runs = [result for result in results if result["method"] == method]
         if not runs:
             continue
+        min_work = min(
+            int(run["history"]["cumulative_fom_evaluations"][0]) for run in runs
+        )
         max_work = max(
             int(run["history"]["cumulative_fom_evaluations"][-1]) for run in runs
         )
-        grid = np.arange(1, max_work + 1, dtype=float)
+        grid = np.arange(min_work, max_work + 1, dtype=float)
         entry = {
             "label": runs[0]["label"],
             "fom_grid": grid,
@@ -190,10 +193,11 @@ def aggregate_runs(results: list[dict], method_order: list[str]) -> dict:
                 }
             )
         entry["posterior_mean"] = posterior_mean
+        wall_times = np.asarray([run["wall_time_seconds"] for run in runs], dtype=float)
         entry["wall_time_seconds"] = {
-            "median": float(np.median([run["wall_time_seconds"] for run in runs])),
-            "q25": float(np.quantile([run["wall_time_seconds"] for run in runs], 0.25)),
-            "q75": float(np.quantile([run["wall_time_seconds"] for run in runs], 0.75)),
+            "median": float(np.median(wall_times)),
+            "q25": float(np.quantile(wall_times, 0.25)),
+            "q75": float(np.quantile(wall_times, 0.75)),
         }
         aggregate[method] = entry
     return aggregate
@@ -285,5 +289,61 @@ def write_plots(
         )
         figure.savefig(
             output_dir / f"h2_air_flame_vi_{suffix}_mf_newton_entropy.svg"
+        )
+        plt.close(figure)
+
+
+def write_sweep_plots(results: list[dict], output_dir: Path) -> None:
+    """Plot final matched-work metrics against the FOM sample size."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    groups = {}
+    for result in results:
+        overrides = result.get("sample_overrides", {})
+        fom_size = int(overrides["fom_sample_size"])
+        rom_size = overrides.get("rom_extra_sample_size")
+        key = (result["method"], None if rom_size is None else int(rom_size))
+        groups.setdefault(key, {}).setdefault(fom_size, []).append(result)
+
+    for summary_key, ylabel in (
+        ("final_parameter_relative_error", "Final RMS relative parameter error"),
+        ("final_elbo", "Final ELBO"),
+        ("final_mean_relative_mse", "Final mean relative observation MSE"),
+    ):
+        figure, axis = plt.subplots(figsize=(7.2, 4.6))
+        for (_, rom_size), by_fom_size in groups.items():
+            first_result = next(iter(next(iter(by_fom_size.values()))))
+            label = first_result["label"]
+            if rom_size is not None:
+                label += f" (ROM extra={rom_size})"
+            x = np.asarray(sorted(by_fom_size), dtype=float)
+            medians, q25s, q75s = [], [], []
+            for fom_size in x.astype(int):
+                values = np.asarray(
+                    [
+                        run["summary"][summary_key]
+                        for run in by_fom_size[int(fom_size)]
+                    ],
+                    dtype=float,
+                )
+                medians.append(np.median(values))
+                q25s.append(np.quantile(values, 0.25))
+                q75s.append(np.quantile(values, 0.75))
+            medians = np.asarray(medians)
+            q25s = np.asarray(q25s)
+            q75s = np.asarray(q75s)
+            axis.plot(x, medians, marker="o", label=label)
+            axis.fill_between(x, q25s, q75s, alpha=0.18)
+        axis.set_xlabel("FOM samples per VI iteration")
+        axis.set_ylabel(ylabel)
+        if summary_key != "final_elbo":
+            axis.set_yscale("log")
+        axis.grid(True, alpha=0.3)
+        axis.legend(fontsize="small")
+        figure.tight_layout()
+        figure.savefig(
+            output_dir / f"h2_air_flame_vi_sweep_{summary_key}.png", dpi=180
+        )
+        figure.savefig(
+            output_dir / f"h2_air_flame_vi_sweep_{summary_key}.svg"
         )
         plt.close(figure)
