@@ -72,6 +72,19 @@ def _reuse_config():
         ess_threshold=1.0e-12,
         use_score_diagnostic=False,
         periodic_refresh=None,
+        use_hessian_score_diagnostic=False,
+        hessian_relative_standard_error_threshold=None,
+    )
+
+
+def _strict_hessian_variance_config():
+    return VISampleReuseConfig(
+        history_batches=4,
+        ess_threshold=1.0e-12,
+        use_score_diagnostic=False,
+        periodic_refresh=None,
+        use_hessian_score_diagnostic=False,
+        hessian_relative_standard_error_threshold=1.0e-12,
     )
 
 
@@ -95,6 +108,27 @@ def _small_newton_line_search():
         max_step_size_decrease_trys=2,
         relaxation_parameter=3.0,
     )
+
+
+def _reuse_batch(samples, iteration=0):
+    samples = np.asarray(samples, dtype=float).reshape(-1, 1)
+    return vi_sample_reuse._ReuseBatch(
+        optimizer_samples=samples,
+        parameter_samples=samples.copy(),
+        qois=samples.T.copy(),
+        errors=samples.T.copy(),
+        variational_mean=np.array([0.0]),
+        variational_log_std=np.array([0.0]),
+        variational_correlation_cholesky=None,
+        iteration=iteration,
+    )
+
+
+def test_newton_hessian_reuse_safeguards_are_enabled_by_default():
+    config = VISampleReuseConfig()
+    assert config.use_hessian_score_diagnostic
+    assert np.isclose(config.hessian_score_error_scale, 2.0)
+    assert np.isclose(config.hessian_relative_standard_error_threshold, 0.25)
 
 
 def test_deterministic_mixture_weights_are_one_for_current_proposal():
@@ -130,6 +164,19 @@ def test_weighted_loo_reduces_to_standard_loo_for_unit_weights():
     expected = vi_drivers._compute_leave_one_out_baseline(values)
     actual = vi_sample_reuse._weighted_loo_baseline(values, np.ones(values.size))
     np.testing.assert_allclose(actual, expected)
+
+
+def test_batch_aware_hessian_standard_error_uses_archive_strata():
+    archive = vi_sample_reuse._ReuseArchive(_reuse_config())
+    archive.append(_reuse_batch([-1.0, 1.0], iteration=0))
+    archive.append(_reuse_batch([-2.0, 2.0], iteration=1))
+    sample_terms = np.array([1.0, 3.0, 2.0, 6.0]).reshape(-1, 1, 1)
+
+    actual = vi_sample_reuse_hessian._batch_aware_hessian_standard_error(
+        sample_terms, archive
+    )
+    expected = np.sqrt(1.25)
+    assert np.isclose(actual, expected)
 
 
 def test_reused_hessian_reduces_to_standard_hessian_for_unit_weights():
@@ -284,6 +331,31 @@ def test_run_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
 
 
 @pytest.mark.mpi_skip
+def test_run_vi_newton_hessian_variance_can_force_refresh(tmp_path):
+    model = CountingLinearQoiModel()
+    result = vi_drivers.run_vi(
+        model=model,
+        prior_parameter_space=_parameter_space(),
+        observations=np.array([0.5]),
+        observations_covariance=np.array([[0.25]]),
+        absolute_work_dir=str(tmp_path / "vi_newton_variance_refresh"),
+        sample_size=6,
+        optimizer_method="newton",
+        optimizer_config=_newton_config(),
+        line_search_method="legacy",
+        line_search_config=_small_newton_line_search(),
+        bounded_parameter_handling="clip",
+        random_seed=7,
+        evaluation_concurrency=1,
+        sample_reuse_config=_strict_hessian_variance_config(),
+    )
+
+    assert model.run_model_calls > 6
+    assert np.all(np.isfinite(result[0]))
+    assert np.all(np.isfinite(result[1]))
+
+
+@pytest.mark.mpi_skip
 def test_run_vi_newton_independent_curvature_uses_separate_reuse_archive(tmp_path):
     model = CountingLinearQoiModel()
     result = vi_drivers.run_vi(
@@ -336,6 +408,35 @@ def test_run_mf_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
     )
 
     assert fom.run_model_calls == 5
+    assert np.all(np.isfinite(result[0]))
+    assert np.all(np.isfinite(result[1]))
+
+
+@pytest.mark.mpi_skip
+def test_run_mf_vi_newton_hessian_variance_can_force_refresh(tmp_path):
+    fom = CountingLinearQoiModel()
+    result = mf_vi_drivers.run_mf_vi(
+        model=fom,
+        rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
+        prior_parameter_space=_parameter_space(),
+        observations=np.array([0.5]),
+        observations_covariance=np.array([[0.25]]),
+        absolute_work_dir=str(tmp_path / "mf_vi_newton_variance_refresh"),
+        fom_sample_size=5,
+        rom_extra_sample_size=7,
+        rom_tolerance=1.0,
+        optimizer_method="newton",
+        optimizer_config=_newton_config(),
+        line_search_method="legacy",
+        line_search_config=_small_newton_line_search(),
+        bounded_parameter_handling="clip",
+        random_seed=8,
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+        sample_reuse_config=_strict_hessian_variance_config(),
+    )
+
+    assert fom.run_model_calls > 5
     assert np.all(np.isfinite(result[0]))
     assert np.all(np.isfinite(result[1]))
 
