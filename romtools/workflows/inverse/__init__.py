@@ -18,6 +18,7 @@ romtools currently supports:
 """
 
 from importlib import import_module as _import_module
+import inspect as _inspect
 
 #from romtools.workflows.inverse.bfgs_drivers import *
 from romtools.workflows.inverse.eki_drivers import *
@@ -49,6 +50,58 @@ _mf_eki_drivers_module = _import_module("romtools.workflows.inverse.mf_eki_drive
 _eki_drivers_module.run_eki = run_eki
 _mf_eki_drivers_module.run_mf_eki = run_mf_eki
 _mf_eki_drivers_module.mf_eki_with_auto_rom = mf_eki_with_auto_rom
+
+# Install the opt-in VI/MFVI sample-reuse layer after the original drivers have
+# loaded. With sample_reuse_config=None the wrappers delegate directly to the
+# original implementations, preserving the existing behavior and API.
+from romtools.workflows.inverse.vi_sample_reuse import (
+    VISampleReuseConfig,
+    run_vi as _sample_reuse_run_vi,
+    run_mf_vi as _sample_reuse_run_mf_vi,
+    mf_vi_with_auto_rom as _sample_reuse_mf_vi_with_auto_rom,
+)
+
+_sample_reuse_module = _import_module("romtools.workflows.inverse.vi_sample_reuse")
+# Add score-function Hessian reuse for the existing Newton optimizer and keep a
+# separate archive when the user requests independent curvature samples.
+_import_module("romtools.workflows.inverse.vi_sample_reuse_hessian")
+
+
+def _add_sample_reuse_signature(wrapper, original):
+    signature = _inspect.signature(original)
+    parameters = list(signature.parameters.values())
+    reuse_parameter = _inspect.Parameter(
+        "sample_reuse_config",
+        kind=_inspect.Parameter.KEYWORD_ONLY,
+        default=None,
+        annotation=VISampleReuseConfig,
+    )
+    insertion_index = next(
+        (
+            index for index, parameter in enumerate(parameters)
+            if parameter.kind == _inspect.Parameter.VAR_KEYWORD
+        ),
+        len(parameters),
+    )
+    parameters.insert(insertion_index, reuse_parameter)
+    wrapper.__signature__ = signature.replace(parameters=parameters)
+
+
+run_vi = _sample_reuse_run_vi
+run_mf_vi = _sample_reuse_run_mf_vi
+mf_vi_with_auto_rom = _sample_reuse_mf_vi_with_auto_rom
+_add_sample_reuse_signature(run_vi, _sample_reuse_module._ORIGINAL_RUN_VI)
+_add_sample_reuse_signature(run_mf_vi, _sample_reuse_module._ORIGINAL_RUN_MF_VI)
+_add_sample_reuse_signature(
+    mf_vi_with_auto_rom,
+    _sample_reuse_module._ORIGINAL_MF_VI_WITH_AUTO_ROM,
+)
+
+_vi_drivers_module = _import_module("romtools.workflows.inverse.vi_drivers")
+_mf_vi_drivers_module = _import_module("romtools.workflows.inverse.mf_vi_drivers")
+_vi_drivers_module.run_vi = run_vi
+_mf_vi_drivers_module.run_mf_vi = run_mf_vi
+_mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
 
 # Expose submodules as attributes so `import romtools.workflows.inverse.mf_eki_drivers as m`
 # binds to the module instead of the function imported above.
