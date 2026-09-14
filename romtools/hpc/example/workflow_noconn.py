@@ -11,7 +11,7 @@ if __name__ == '__main__':
     output_dir_name = "sample_00"
 
     logger = Logger()
-    model = ExampleModelNoConn()
+    model  = ExampleModelNoConn()
     params = ExampleParameterSpace()
     num_samples = 1
 

@@ -6,15 +6,17 @@ from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 class ExampleModel:
 
     def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-        # A LocalDispatcher reaches SLURM directly when this process runs on a
-        # cluster node, so submit_job() works with or without a connection.
+        # Resolves to a LocalDispatcher if none is provided
         self.dispatcher = resolve_dispatcher(dispatcher)
 
     def populate_run_directory(self, run_directory: str, parameter_sample: dict) -> None:
+        # Here's where you would use the file management methods of the Dispatcher
         pass
 
     def run_model(self, run_directory: str, parameter_sample: dict) -> int:
-
+        # The core method of the model. You can configure dispatcher to use
+        # a pre-written SLURM script, or you can build one with the Dispatcher
+        # like we do here
         file_name = "output-$(hostname).txt"
         cmd = textwrap.dedent(f"""\
             srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 bash -c '
