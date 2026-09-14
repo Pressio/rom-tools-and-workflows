@@ -1,0 +1,18 @@
+romtools.workflows.inverse.mf\_eki\_drivers
+===========================================
+
+.. automodule:: romtools.workflows.inverse.mf_eki_drivers
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_mf_eki_update
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GaussianProcessQoiModelBuilderWithTrainingData
+   
