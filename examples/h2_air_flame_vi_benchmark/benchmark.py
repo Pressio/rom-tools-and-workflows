@@ -27,6 +27,7 @@ from benchmark_results import (
     collect_history,
     truncate_to_budget,
     write_plots,
+    write_sweep_plots,
 )
 from romtools.workflows.inverse import mf_vi_with_auto_rom, run_vi
 
@@ -319,6 +320,7 @@ def run_sweep(
                 result["sweep_case"] = case
                 _write_run(result, run_dir, config)
                 results.append(result)
+    write_sweep_plots(results, output_dir)
     payload = {"runs": results}
     write_json(output_dir / "h2_air_flame_vi_sample_size_sweep.json", payload)
     return payload
