@@ -1,18 +1,21 @@
 """Newton/Hessian support for importance-sampling VI sample reuse.
 
-This module extends :mod:`vi_sample_reuse` without changing the first-pass
-archive implementation. Reused FOM evaluations are combined with current
-score-function Hessian factors using the same deterministic-mixture importance
-weights as the gradient. The existing VI/MFVI Newton solvers, curvature
-strategies, absolute-Hessian treatment, and multifidelity gain machinery remain
-responsible for constructing the optimization step.
+This module extends :mod:`vi_sample_reuse` with score-function Hessian reuse
+and Newton-specific archive quality checks. Reused FOM evaluations are combined
+with current score-function Hessian factors using the same deterministic-mixture
+importance weights as the gradient. The existing VI/MFVI Newton solvers,
+curvature strategies, absolute-Hessian treatment, and multifidelity gain
+machinery remain responsible for constructing the optimization step.
 
-The extension is installed for side effects by ``inverse.__init__``. Keeping
-it separate makes the Hessian-specific assumptions explicit while the sample
-reuse API is still experimental.
+Two additional safeguards are applied only to Newton runs: a second-order score
+identity diagnostic and a batch-aware relative standard-error estimate for the
+importance-sampled Hessian contribution.
 """
 
+from dataclasses import dataclass
 import inspect
+import sys
+from typing import Optional
 
 import numpy as np
 
@@ -25,6 +28,47 @@ _ORIGINAL_BUILD_REUSED_VI_STATE = _reuse._build_reused_vi_state
 _ORIGINAL_MF_BUILD_REUSED_STATE = _reuse._MFReuseController._build_reused_state
 _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE = _reuse._VIReuseController.evaluate_state
 _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE = _reuse._MFReuseController.evaluate_state
+_BASE_SAMPLE_REUSE_CONFIG = _reuse.VISampleReuseConfig
+_OPTIMIZATION_METHOD_BY_CONFIG_ID = {}
+
+
+@dataclass(frozen=True)
+class VISampleReuseConfig(_BASE_SAMPLE_REUSE_CONFIG):
+    """Sample-reuse configuration including Newton/Hessian safeguards.
+
+    The Hessian checks are only evaluated for Newton runs. First-order VI and
+    MFVI therefore retain the original sample-reuse behavior.
+    """
+
+    use_hessian_score_diagnostic: bool = True
+    hessian_score_error_scale: float = 2.0
+    hessian_relative_standard_error_threshold: Optional[float] = 0.25
+
+    def __post_init__(self):
+        super().__post_init__()
+        if (
+            not np.isfinite(self.hessian_score_error_scale)
+            or self.hessian_score_error_scale < 0.0
+        ):
+            raise ValueError(
+                "hessian_score_error_scale must be finite and non-negative"
+            )
+        threshold = self.hessian_relative_standard_error_threshold
+        if threshold is not None and (
+            not np.isfinite(threshold) or threshold <= 0.0
+        ):
+            raise ValueError(
+                "hessian_relative_standard_error_threshold must be positive "
+                "and finite when provided"
+            )
+
+
+# Replace the first-pass config class before inverse.__init__ finishes wiring
+# the public API. The base wrapper resolves this module global at call time.
+_reuse.VISampleReuseConfig = VISampleReuseConfig
+_parent_inverse_module = sys.modules.get("romtools.workflows.inverse")
+if _parent_inverse_module is not None:
+    setattr(_parent_inverse_module, "VISampleReuseConfig", VISampleReuseConfig)
 
 
 def _compute_hessian_score_blocks(samples: np.ndarray,
@@ -94,6 +138,15 @@ def _compute_hessian_score_blocks(samples: np.ndarray,
     )
 
 
+def _assemble_hessian_score_matrices(score_blocks) -> np.ndarray:
+    mean_scores, log_std_scores, cross_scores = score_blocks
+    top = np.concatenate([mean_scores, cross_scores], axis=2)
+    bottom = np.concatenate(
+        [np.swapaxes(cross_scores, 1, 2), log_std_scores], axis=2
+    )
+    return np.concatenate([top, bottom], axis=1)
+
+
 def _center_reused_hessian_values(values: np.ndarray,
                                   origin_weights: np.ndarray,
                                   baseline_method: str) -> np.ndarray:
@@ -107,6 +160,29 @@ def _center_reused_hessian_values(values: np.ndarray,
     )
 
 
+def _hessian_sample_terms(samples: np.ndarray,
+                          values: np.ndarray,
+                          mean: np.ndarray,
+                          log_std: np.ndarray,
+                          correlation_cholesky,
+                          importance_weights: np.ndarray,
+                          origin_weights: np.ndarray,
+                          baseline_method: str) -> np.ndarray:
+    score_matrices = _assemble_hessian_score_matrices(
+        _compute_hessian_score_blocks(
+            samples, mean, log_std, correlation_cholesky
+        )
+    )
+    centered = _center_reused_hessian_values(
+        np.asarray(values, dtype=float), origin_weights, baseline_method
+    )
+    return (
+        np.asarray(importance_weights)[:, None, None]
+        * centered[:, None, None]
+        * score_matrices
+    )
+
+
 def _hessian_from_archive(samples: np.ndarray,
                           values: np.ndarray,
                           mean: np.ndarray,
@@ -116,26 +192,160 @@ def _hessian_from_archive(samples: np.ndarray,
                           origin_weights: np.ndarray,
                           baseline_method: str) -> np.ndarray:
     """Estimate the score-function Hessian from a heterogeneous MIS archive."""
-    mean_scores, log_std_scores, cross_scores = _compute_hessian_score_blocks(
-        samples, mean, log_std, correlation_cholesky
+    terms = _hessian_sample_terms(
+        samples,
+        values,
+        mean,
+        log_std,
+        correlation_cholesky,
+        importance_weights,
+        origin_weights,
+        baseline_method,
     )
-    centered = _center_reused_hessian_values(
-        np.asarray(values, dtype=float), origin_weights, baseline_method
-    )
-    weighted_values = importance_weights * centered
-    hessian_mean = np.mean(weighted_values[:, None, None] * mean_scores, axis=0)
-    hessian_log_std = np.mean(
-        weighted_values[:, None, None] * log_std_scores, axis=0
-    )
-    hessian_cross = np.mean(
-        weighted_values[:, None, None] * cross_scores, axis=0
-    )
-    hessian_full = np.block([
-        [hessian_mean, hessian_cross],
-        [hessian_cross.transpose(), hessian_log_std],
-    ])
+    hessian_full = np.mean(terms, axis=0)
     hessian_full = 0.5 * (hessian_full + hessian_full.transpose())
     return np.nan_to_num(hessian_full, nan=0.0, posinf=0.0, neginf=0.0)
+
+
+def _second_order_score_diagnostics(archive,
+                                    mean: np.ndarray,
+                                    log_std: np.ndarray,
+                                    correlation_cholesky,
+                                    importance_weights: np.ndarray,
+                                    reference_sample_count: int):
+    """Compare recycled and fresh estimates of the zero second-order score moment."""
+    samples = _reuse._archive_arrays(archive)[0]
+    recycled_scores = _assemble_hessian_score_matrices(
+        _compute_hessian_score_blocks(
+            samples, mean, log_std, correlation_cholesky
+        )
+    )
+    recycled_error_matrix = np.mean(
+        importance_weights[:, None, None] * recycled_scores, axis=0
+    )
+
+    reference_samples = _reuse._draw_optimizer_only(
+        mean,
+        log_std,
+        reference_sample_count,
+        correlation_cholesky,
+    )
+    reference_scores = _assemble_hessian_score_matrices(
+        _compute_hessian_score_blocks(
+            reference_samples, mean, log_std, correlation_cholesky
+        )
+    )
+    reference_error_matrix = np.mean(reference_scores, axis=0)
+    return (
+        float(np.linalg.norm(recycled_error_matrix, ord="fro")),
+        float(np.linalg.norm(reference_error_matrix, ord="fro")),
+    )
+
+
+def _batch_aware_hessian_standard_error(sample_terms: np.ndarray, archive) -> float:
+    """Return the Frobenius aggregate SE for a deterministic-mixture archive.
+
+    Each retained batch is treated as an independent stratum. For batch ``b``
+    with fraction ``beta_b`` and sample covariance ``S_b``, the covariance of
+    the deterministic-mixture mean contributes ``beta_b**2 S_b / N_b``. Only
+    the trace of that covariance is required for the Frobenius aggregate.
+    """
+    sample_terms = np.asarray(sample_terms, dtype=float)
+    total_count = int(sample_terms.shape[0])
+    if total_count <= 1:
+        return np.inf
+
+    variance_sum = 0.0
+    offset = 0
+    used_batch_variance = False
+    for batch in archive.batches:
+        batch_count = int(batch.size)
+        sl = slice(offset, offset + batch_count)
+        flat_terms = sample_terms[sl].reshape(batch_count, -1)
+        if batch_count > 1:
+            beta = batch_count / float(total_count)
+            component_variances = np.var(flat_terms, axis=0, ddof=1)
+            variance_sum += (
+                beta ** 2 * float(np.sum(component_variances)) / batch_count
+            )
+            used_batch_variance = True
+        offset += batch_count
+
+    if not used_batch_variance:
+        flat_terms = sample_terms.reshape(total_count, -1)
+        variance_sum = float(np.sum(np.var(flat_terms, axis=0, ddof=1))) / total_count
+
+    return float(np.sqrt(max(variance_sum, 0.0)))
+
+
+def _hessian_reuse_quality(archive,
+                           samples: np.ndarray,
+                           values: np.ndarray,
+                           mean: np.ndarray,
+                           log_std: np.ndarray,
+                           correlation_cholesky,
+                           importance_weights: np.ndarray,
+                           origin_weights: np.ndarray,
+                           baseline_method: str,
+                           hessian_full: np.ndarray,
+                           reference_sample_count: int):
+    """Evaluate Newton-specific reuse diagnostics without new model calls."""
+    config = archive.config
+    diagnostics = {
+        "sample_reuse_hessian_score_error": np.nan,
+        "sample_reuse_hessian_score_reference_error": np.nan,
+        "sample_reuse_hessian_standard_error": np.nan,
+        "sample_reuse_hessian_relative_standard_error": np.nan,
+    }
+
+    if getattr(config, "use_hessian_score_diagnostic", False):
+        recycled_error, reference_error = _second_order_score_diagnostics(
+            archive,
+            mean,
+            log_std,
+            correlation_cholesky,
+            importance_weights,
+            reference_sample_count,
+        )
+        diagnostics["sample_reuse_hessian_score_error"] = recycled_error
+        diagnostics["sample_reuse_hessian_score_reference_error"] = reference_error
+        reference_scale = max(reference_error, np.sqrt(np.finfo(float).eps))
+        error_scale = float(getattr(config, "hessian_score_error_scale", 2.0))
+        if recycled_error > error_scale * reference_scale:
+            return False, "hessian_score", diagnostics
+
+    threshold = getattr(
+        config, "hessian_relative_standard_error_threshold", None
+    )
+    if threshold is not None:
+        terms = _hessian_sample_terms(
+            samples,
+            values,
+            mean,
+            log_std,
+            correlation_cholesky,
+            importance_weights,
+            origin_weights,
+            baseline_method,
+        )
+        standard_error = _batch_aware_hessian_standard_error(terms, archive)
+        hessian_norm = float(np.linalg.norm(hessian_full, ord="fro"))
+        denominator = max(hessian_norm, np.sqrt(np.finfo(float).eps))
+        relative_standard_error = standard_error / denominator
+        diagnostics["sample_reuse_hessian_standard_error"] = standard_error
+        diagnostics[
+            "sample_reuse_hessian_relative_standard_error"
+        ] = relative_standard_error
+        if not np.isfinite(relative_standard_error) or relative_standard_error > threshold:
+            return False, "hessian_variance", diagnostics
+
+    return True, "reuse", diagnostics
+
+
+def _attach_hessian_diagnostics(state, diagnostics):
+    for key, value in diagnostics.items():
+        state[key] = value
+    return state
 
 
 def _mf_hessian_from_reuse(optimizer_samples_fom: np.ndarray,
@@ -317,8 +527,11 @@ def _build_reused_mf_state_with_hessian(self, a, weights, origin_weights, ess):
     return state
 
 
+def _is_newton_reuse(archive) -> bool:
+    return _OPTIMIZATION_METHOD_BY_CONFIG_ID.get(id(archive.config)) == "newton"
+
+
 def _validate_common_reuse_request_with_newton(call_args, config):
-    _ = config
     if _vi._normalize_sampling_method(call_args.get("sampling_method", "mc")) != "mc":
         raise NotImplementedError("Sample reuse currently supports sampling_method='mc' only.")
     baseline = call_args.get("baseline_method")
@@ -327,6 +540,59 @@ def _validate_common_reuse_request_with_newton(call_args, config):
         raise NotImplementedError(
             "Sample reuse currently supports baseline_method='none' or 'loo'."
         )
+    optimization_method = _reuse._normalize_optimization_method(
+        call_args.get("optimizer_method", "gradient")
+    )
+    _OPTIMIZATION_METHOD_BY_CONFIG_ID[id(config)] = optimization_method
+
+
+def _evaluate_vi_current_archive(self, *args, **kwargs):
+    bound = inspect.signature(_reuse._ORIGINAL_EVALUATE_VI_STATE).bind(*args, **kwargs)
+    bound.apply_defaults()
+    a = bound.arguments
+    state = _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+    if not state.get("sample_reuse_used", False) or not _is_newton_reuse(self.archive):
+        return state
+
+    weights = np.asarray(state["importance_weights"])
+    origin_weights = np.asarray(state["importance_origin_weights"])
+    _, clipped_log_std = _vi._compute_variational_std(
+        np.asarray(a["variational_log_std"]),
+        a["min_variational_std"],
+        a["max_variational_std"],
+    )
+    quality_ok, reason, diagnostics = _hessian_reuse_quality(
+        self.archive,
+        np.asarray(state["optimizer_samples"]),
+        float(a["elbo_scaling_factor"]) * np.asarray(state["raw_log_joint_terms"]),
+        np.asarray(a["variational_mean"]),
+        clipped_log_std,
+        a.get("variational_correlation_cholesky"),
+        weights,
+        origin_weights,
+        a["baseline_method"],
+        np.asarray(state["hessian_full"]),
+        int(a["sample_size"]),
+    )
+    if quality_ok:
+        return _attach_hessian_diagnostics(state, diagnostics)
+
+    fresh_state = _reuse._ORIGINAL_EVALUATE_VI_STATE(*args, **kwargs)
+    iteration = _reuse._iteration_from_path(a["run_directory_base"])
+    self.archive.append(
+        _reuse._batch_from_vi_state(
+            fresh_state,
+            a["variational_mean"],
+            a["variational_log_std"],
+            a.get("variational_correlation_cholesky"),
+            iteration,
+        )
+    )
+    fresh_state["sample_reuse_used"] = False
+    fresh_state["sample_reuse_refresh_reason"] = reason
+    fresh_state["sample_reuse_archive_samples"] = self.archive.sample_count
+    fresh_state["sample_reuse_archive_batches"] = len(self.archive.batches)
+    return _attach_hessian_diagnostics(fresh_state, diagnostics)
 
 
 def _evaluate_vi_state_with_independent_archive(self, *args, **kwargs):
@@ -334,16 +600,68 @@ def _evaluate_vi_state_with_independent_archive(self, *args, **kwargs):
     bound.apply_defaults()
     run_directory_base = str(bound.arguments["run_directory_base"])
     if "hessian_run_" not in run_directory_base:
-        return _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+        return _evaluate_vi_current_archive(self, *args, **kwargs)
 
     if not hasattr(self, "_independent_hessian_archive"):
         self._independent_hessian_archive = _reuse._ReuseArchive(self.archive.config)
     primary_archive = self.archive
     self.archive = self._independent_hessian_archive
     try:
-        return _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+        return _evaluate_vi_current_archive(self, *args, **kwargs)
     finally:
         self.archive = primary_archive
+
+
+def _evaluate_mf_current_archive(self, *args, **kwargs):
+    bound = inspect.signature(_reuse._ORIGINAL_EVALUATE_MF_VI_STATE).bind(*args, **kwargs)
+    bound.apply_defaults()
+    a = bound.arguments
+    state = _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+    if not state.get("sample_reuse_used", False) or not _is_newton_reuse(self.archive):
+        return state
+
+    optimizer_fom = _reuse._archive_arrays(self.archive)[0]
+    weights = np.asarray(state["importance_weights"])
+    origin_weights = np.asarray(state["importance_origin_weights"])
+    _, clipped_log_std = _vi._compute_variational_std(
+        np.asarray(a["variational_log_std"]),
+        a["min_variational_std"],
+        a["max_variational_std"],
+    )
+    # The variance trigger intentionally monitors the IS-reused HF curvature
+    # contribution. Fresh ROM-only enrichment and the existing MF gain are left
+    # unchanged; this isolates the quality of the recycled expensive samples.
+    quality_ok, reason, diagnostics = _hessian_reuse_quality(
+        self.archive,
+        optimizer_fom,
+        float(a["elbo_scaling_factor"])
+        * np.asarray(state["raw_log_joint_terms_fom"]),
+        np.asarray(a["variational_mean"]),
+        clipped_log_std,
+        a.get("variational_correlation_cholesky"),
+        weights,
+        origin_weights,
+        a["baseline_method"],
+        np.asarray(state["hessian_full"]),
+        int(a["fom_sample_size"]),
+    )
+    if quality_ok:
+        return _attach_hessian_diagnostics(state, diagnostics)
+
+    fresh_state = _reuse._ORIGINAL_EVALUATE_MF_VI_STATE(*args, **kwargs)
+    iteration = _reuse._iteration_from_path(a["iteration_directory"])
+    self._append_from_state(
+        fresh_state,
+        a["variational_mean"],
+        a["variational_log_std"],
+        a.get("variational_correlation_cholesky"),
+        iteration,
+    )
+    fresh_state["sample_reuse_used"] = False
+    fresh_state["sample_reuse_refresh_reason"] = reason
+    fresh_state["sample_reuse_archive_samples"] = self.archive.sample_count
+    fresh_state["sample_reuse_archive_batches"] = len(self.archive.batches)
+    return _attach_hessian_diagnostics(fresh_state, diagnostics)
 
 
 def _evaluate_mf_state_with_independent_archive(self, *args, **kwargs):
@@ -351,14 +669,14 @@ def _evaluate_mf_state_with_independent_archive(self, *args, **kwargs):
     bound.apply_defaults()
     iteration_directory = str(bound.arguments["iteration_directory"]).rstrip("/")
     if not iteration_directory.endswith("/hessian"):
-        return _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+        return _evaluate_mf_current_archive(self, *args, **kwargs)
 
     if not hasattr(self, "_independent_hessian_archive"):
         self._independent_hessian_archive = _reuse._ReuseArchive(self.archive.config)
     primary_archive = self.archive
     self.archive = self._independent_hessian_archive
     try:
-        return _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
+        return _evaluate_mf_current_archive(self, *args, **kwargs)
     finally:
         self.archive = primary_archive
 
