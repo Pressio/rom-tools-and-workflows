@@ -64,11 +64,14 @@ def main(
     )
     optimizer = VINewtonOptimizerConfig(
         newton_metric="natural",
-        newton_regularization=1e-4,
+        newton_hessian_type="full",
+        newton_curvature_strategy="same_sample",
+        newton_regularization=5e-4,
         gradient_norm_tolerance=0.0,
         max_iterations=max_iterations,
     )
     line_search = VIStochasticNonmonotoneLineSearchConfig(
+        initial_step_size=0.25,
         max_step_size=1.0,
     )
 
@@ -94,7 +97,8 @@ def main(
         baseline_method="loo",
         score_function_entropy_strategy="joint",
         bounded_parameter_handling="clip",
-        random_seed=19,
+        covariance_regularization=0.0,
+        random_seed=7,
         restart_files_to_keep=max_iterations + 1,
     )
 
