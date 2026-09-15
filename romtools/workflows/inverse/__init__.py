@@ -114,10 +114,11 @@ _vi_drivers_module.run_vi = run_vi
 _mf_vi_drivers_module.run_mf_vi = run_mf_vi
 _mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
 
-# Add the true full-covariance Gaussian family as an explicit outer routing
-# layer.  Omitting ``variational_distribution`` preserves the historical
-# multivariate fixed-correlation path; callers opt into freely evolving
-# covariance with ``variational_distribution='full_covariance'``.
+# Add the true full-covariance Gaussian family as an outer routing layer. The
+# required ``initial_variational_parameter_space`` now defines both the
+# variational family and its initial moments. GaussianParameterSpace routes to
+# diagonal VI; MultivariateGaussianParameterSpace routes to true freely
+# evolving full-covariance VI. The prior family is independent.
 from romtools.workflows.inverse.full_covariance_router import (
     run_vi as _full_covariance_run_vi,
     run_mf_vi as _full_covariance_run_mf_vi,
@@ -127,21 +128,26 @@ from romtools.workflows.inverse.full_covariance_router import (
 
 def _add_full_covariance_signature(wrapper, legacy_wrapper):
     signature = _inspect.signature(legacy_wrapper)
-    parameters = list(signature.parameters.values())
+    parameters = [
+        parameter
+        for parameter in signature.parameters.values()
+        if parameter.name != "initial_variational_parameter_space"
+    ]
     insertion_index = next(
         (
-            index for index, parameter in enumerate(parameters)
-            if parameter.kind == _inspect.Parameter.VAR_KEYWORD
+            index
+            for index, parameter in enumerate(parameters)
+            if parameter.kind
+            in (_inspect.Parameter.KEYWORD_ONLY, _inspect.Parameter.VAR_KEYWORD)
         ),
         len(parameters),
     )
     parameters.insert(
         insertion_index,
         _inspect.Parameter(
-            "variational_distribution",
+            "initial_variational_parameter_space",
             kind=_inspect.Parameter.KEYWORD_ONLY,
-            default=None,
-            annotation=str,
+            default=_inspect.Parameter.empty,
         ),
     )
     parameters.insert(
