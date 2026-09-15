@@ -16,6 +16,7 @@ romtools.workflows.inverse
    eki_bound_transforms
    eki_drivers
    full_covariance_mf_vi_drivers
+   full_covariance_router
    full_covariance_vi
    full_covariance_vi_drivers
    mf_eki_drivers

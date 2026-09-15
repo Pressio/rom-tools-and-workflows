@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.workflows.inverse.vi_sample_reuse &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.workflows.inverse.full_covariance_router &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.vi_sample_reuse';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.full_covariance_router';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.inverse.vi_sample_reuse_hessian" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html" />
-    <link rel="prev" title="romtools.workflows.inverse.vi_run_directory_policy" href="romtools.workflows.inverse.vi_run_directory_policy.html" />
+    <link rel="next" title="romtools.workflows.inverse.full_covariance_vi" href="romtools.workflows.inverse.full_covariance_vi.html" />
+    <link rel="prev" title="romtools.workflows.inverse.full_covariance_mf_vi_drivers" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -371,7 +371,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_bound_transforms.html">romtools.workflows.inverse.eki_bound_transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html">romtools.workflows.inverse.eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html">romtools.workflows.inverse.full_covariance_mf_vi_drivers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html">romtools.workflows.inverse.full_covariance_router</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.full_covariance_router</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html">romtools.workflows.inverse.full_covariance_vi</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html">romtools.workflows.inverse.full_covariance_vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
@@ -379,7 +379,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html">romtools.workflows.inverse.vi_run_directory_policy</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.vi_sample_reuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse.html">romtools.workflows.inverse.vi_sample_reuse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html">romtools.workflows.inverse.vi_sample_reuse_hessian</a></li>
 </ul>
 </details></li>
@@ -421,19 +421,6 @@
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -483,7 +470,7 @@
     
     <li class="breadcrumb-item"><a href="romtools.workflows.inverse.html" class="nav-link">romtools.workflows.inverse</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_sample_reuse</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.full_covariance_router</span></li>
   </ul>
 </nav>
 </div>
@@ -500,63 +487,30 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.workflows.inverse.vi_sample_reuse">
-<span id="romtools-workflows-inverse-vi-sample-reuse"></span><h1>romtools.workflows.inverse.vi_sample_reuse<a class="headerlink" href="#module-romtools.workflows.inverse.vi_sample_reuse" title="Link to this heading">#</a></h1>
-<p>Importance-sampling sample reuse for VI and MFVI.</p>
-<p>This module implements an opt-in, first-pass ABRIS-style reuse layer around
-ROMTools’ existing VI drivers. Expensive high-fidelity evaluations are cached
-in batches together with the variational distribution that generated them.
-Later iterations reuse those evaluations with deterministic-mixture importance
-weights. RQMC, Newton/Hessian reuse, and a new multifidelity gain derivation are
-intentionally left to follow-on work.</p>
+  <section id="module-romtools.workflows.inverse.full_covariance_router">
+<span id="romtools-workflows-inverse-full-covariance-router"></span><h1>romtools.workflows.inverse.full_covariance_router<a class="headerlink" href="#module-romtools.workflows.inverse.full_covariance_router" title="Link to this heading">#</a></h1>
+<p>Public routing for the opt-in full-covariance Gaussian VI family.</p>
+<p>The pre-existing multivariate parameter-space behavior is retained when
+<code class="docutils literal notranslate"><span class="pre">variational_distribution</span></code> is omitted so existing callers and restart files
+remain backward compatible.  True full covariance is selected explicitly with
+<code class="docutils literal notranslate"><span class="pre">variational_distribution='full_covariance'</span></code>.  The old fixed-correlation
+multivariate path can therefore be deprecated separately without making this
+feature release a silent behavior change.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom" title="romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom</span></code></a>(*args[, sample_reuse_config])</p></td>
-<td><p>Auto-ROM MFVI wrapper with the same sample-reuse configuration.</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom</span></code>(*args[, ...])</p></td>
+<td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_sample_reuse.run_mf_vi" title="romtools.workflows.inverse.vi_sample_reuse.run_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_vi</span></code></a>(*args[, sample_reuse_config])</p></td>
-<td><p>Run MFVI with optional importance-sampling reuse of the HF archive.</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_vi</span></code>(*args[, variational_distribution, ...])</p></td>
+<td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_sample_reuse.run_vi" title="romtools.workflows.inverse.vi_sample_reuse.run_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_vi</span></code></a>(*args[, sample_reuse_config])</p></td>
-<td><p>Run VI, optionally reusing historical model evaluations through MIS.</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_vi</span></code>(*args[, variational_distribution, ...])</p></td>
+<td><p></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_sample_reuse.</span></span><span class="sig-name descname"><span class="pre">mf_vi_with_auto_rom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_reuse_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_sample_reuse.html#mf_vi_with_auto_rom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom" title="Link to this definition">#</a></dt>
-<dd><p>Auto-ROM MFVI wrapper with the same sample-reuse configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample_reuse_config</strong> (<a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig" title="romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><em>VISampleReuseConfig</em></a><em> | </em><em>None</em>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_sample_reuse.run_mf_vi">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_sample_reuse.</span></span><span class="sig-name descname"><span class="pre">run_mf_vi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_reuse_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_sample_reuse.html#run_mf_vi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_sample_reuse.run_mf_vi" title="Link to this definition">#</a></dt>
-<dd><p>Run MFVI with optional importance-sampling reuse of the HF archive.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample_reuse_config</strong> (<a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig" title="romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><em>VISampleReuseConfig</em></a><em> | </em><em>None</em>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_sample_reuse.run_vi">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_sample_reuse.</span></span><span class="sig-name descname"><span class="pre">run_vi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_reuse_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_sample_reuse.html#run_vi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_sample_reuse.run_vi" title="Link to this definition">#</a></dt>
-<dd><p>Run VI, optionally reusing historical model evaluations through MIS.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample_reuse_config</strong> (<a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html#romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig" title="romtools.workflows.inverse.vi_sample_reuse_hessian.VISampleReuseConfig"><em>VISampleReuseConfig</em></a><em> | </em><em>None</em>)</p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 
 
@@ -575,23 +529,9 @@ intentionally left to follow-on work.</p>
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.mf_vi_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_sample_reuse.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
-</ul>
-  </nav></div>
-
-  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.workflows.inverse.vi_sample_reuse.rst.txt">
+    <a href="../_sources/generated/romtools.workflows.inverse.full_covariance_router.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
