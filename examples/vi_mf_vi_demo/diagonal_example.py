@@ -16,7 +16,10 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import romtools.workflows as workflows
-from romtools.workflows.inverse.vi_optimization_methods import VIAdamOptimizerConfig
+from romtools.workflows.inverse.vi_optimization_methods import (
+    VINewtonOptimizerConfig,
+    VIStochasticNonmonotoneLineSearchConfig,
+)
 from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
 
 from examples.vi_mf_vi_demo.analytic_sine_support import (
@@ -55,11 +58,14 @@ def main(
         stds=np.full(problem.prior_mean.size, PRIOR_STD),
         sampler=MonteCarloSampler,
     )
-    optimizer = VIAdamOptimizerConfig(
-        gradient_method="natural",
-        learning_rate_scale=0.2,
+    optimizer = VINewtonOptimizerConfig(
+        newton_metric="natural",
+        newton_regularization=5e-4,
         gradient_norm_tolerance=0.0,
         max_iterations=max_iterations,
+    )
+    line_search = VIStochasticNonmonotoneLineSearchConfig(
+        max_step_size=1.0,
     )
 
     root = (
@@ -77,8 +83,10 @@ def main(
         initial_variational_parameter_space=initial_variational_parameter_space,
         observations=problem.observations,
         observations_covariance=problem.observation_covariance,
-        optimizer_method="adam",
+        optimizer_method="newton",
         optimizer_config=optimizer,
+        line_search_method="stochastic_nonmonotone",
+        line_search_config=line_search,
         baseline_method="loo",
         score_function_entropy_strategy="joint",
         bounded_parameter_handling="clip",
@@ -99,6 +107,7 @@ def main(
         rom_extra_sample_size=rom_extra_sample_size,
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
+        max_rom_training_history=4,
         rom_type="gp",
         rom_args={
             "normalize_parameters": True,
