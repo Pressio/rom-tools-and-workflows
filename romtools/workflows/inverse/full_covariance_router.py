@@ -91,17 +91,17 @@ _mf_vi_drivers._validate_gaussian_parameter_spaces = (
 )
 
 
-def _required_initializer(function, args, kwargs):
-    """Return the explicitly supplied variational initializer."""
+def _supplied_initializer(function, args, kwargs):
+    """Return the explicitly supplied variational initializer, if any.
+
+    Missing-initializer validation is intentionally left to the underlying VI
+    driver. This preserves validation ordering for earlier argument checks
+    (for example, conflicting deprecated/new work-directory keywords) while
+    still enforcing that an initializer is required once VI input validation
+    is reached.
+    """
     bound = inspect.signature(function).bind_partial(*args, **kwargs)
-    initializer = bound.arguments.get("initial_variational_parameter_space")
-    if initializer is None:
-        raise TypeError(
-            "initial_variational_parameter_space is required. Use "
-            "GaussianParameterSpace for diagonal VI or "
-            "MultivariateGaussianParameterSpace for full-covariance VI."
-        )
-    return initializer
+    return bound.arguments.get("initial_variational_parameter_space")
 
 
 def _variational_family(initial_variational_parameter_space) -> str:
@@ -130,7 +130,9 @@ def _require_coupled_mf_base(function, args, kwargs):
 
 
 def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
-    initializer = _required_initializer(_legacy_run_vi, args, kwargs)
+    initializer = _supplied_initializer(_legacy_run_vi, args, kwargs)
+    if initializer is None:
+        return _legacy_run_vi(*args, **kwargs)
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_run_vi(*args, **kwargs)
@@ -142,7 +144,9 @@ def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
 
 
 def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
-    initializer = _required_initializer(_legacy_run_mf_vi, args, kwargs)
+    initializer = _supplied_initializer(_legacy_run_mf_vi, args, kwargs)
+    if initializer is None:
+        return _legacy_run_mf_vi(*args, **kwargs)
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_run_mf_vi(*args, **kwargs)
@@ -155,7 +159,9 @@ def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
 
 
 def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
-    initializer = _required_initializer(_legacy_auto_mf_vi, args, kwargs)
+    initializer = _supplied_initializer(_legacy_auto_mf_vi, args, kwargs)
+    if initializer is None:
+        return _legacy_auto_mf_vi(*args, **kwargs)
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_auto_mf_vi(*args, **kwargs)
