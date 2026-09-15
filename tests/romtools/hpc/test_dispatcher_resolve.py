@@ -7,7 +7,7 @@ from romtools.hpc.dispatchers import (
     resolve_local_dispatcher,
 )
 
-from conftest import FakeConnection
+from hpc_fakes import FakeConnection
 
 
 def _make_remote_dispatcher(make_config):

@@ -9,7 +9,7 @@ import pytest
 from romtools.hpc.connection import Result
 from romtools.hpc.dispatchers import RemoteDispatcher
 
-from conftest import ArchiveFakeConnection, FakeConnection
+from hpc_fakes import ArchiveFakeConnection, FakeConnection
 
 
 def _make_dispatcher(config, connection, campaign_directory="hpctools"):

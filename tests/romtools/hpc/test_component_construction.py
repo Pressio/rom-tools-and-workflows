@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import FakeConnection
+from hpc_fakes import FakeConnection
 from romtools.hpc.components.caller import BaseCaller
 from romtools.hpc.components.file_manager import BaseFileManager, LocalFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
