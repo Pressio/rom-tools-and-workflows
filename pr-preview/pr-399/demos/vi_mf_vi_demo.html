@@ -383,7 +383,7 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-optimization-configuration">Shared optimization configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vi-paper-benchmark-configuration">VI-paper benchmark configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
@@ -501,24 +501,31 @@ form,</p>
   \left(C_0^{-1}m_0+G^T\Gamma_{\rm obs}^{-1}y\right).\]</div>
 <p>This lets both examples measure convergence directly against the exact
 posterior.</p>
-<section id="shared-optimization-configuration">
-<h2>Shared optimization configuration<a class="headerlink" href="#shared-optimization-configuration" title="Link to this heading">#</a></h2>
-<p>Both examples compare single-fidelity VI with MF-VI using the automatic
-Gaussian-process ROM. The production runs use the same optimizer settings:</p>
+<section id="vi-paper-benchmark-configuration">
+<h2>VI-paper benchmark configuration<a class="headerlink" href="#vi-paper-benchmark-configuration" title="Link to this heading">#</a></h2>
+<p>The diagonal example reproduces the Newton and multifidelity settings used by
+the VI-paper analytic-sine benchmark. In particular, the production run uses a
+full Hessian, lagged stochastic curvature, natural coordinates, and the same
+Hessian averaging and line-search scales:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
     <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+    <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
+    <span class="n">newton_curvature_strategy</span><span class="o">=</span><span class="s2">"lagged"</span><span class="p">,</span>
+    <span class="n">newton_hessian_averaging_factor</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
     <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
+    <span class="n">max_iterations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">line_search</span> <span class="o">=</span> <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">(</span>
+    <span class="n">initial_step_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
     <span class="n">max_step_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>The shared VI/MF-VI arguments explicitly use the joint entropy estimator and a
-leave-one-out baseline:</p>
+<p>The shared VI/MF-VI arguments use the joint entropy estimator, a leave-one-out
+baseline, zero observation-covariance regularization, and the same inference
+seed as the paper:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">common_arguments</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"newton"</span><span class="p">,</span>
@@ -527,16 +534,24 @@ leave-one-out baseline:</p>
     <span class="n">line_search_config</span><span class="o">=</span><span class="n">line_search</span><span class="p">,</span>
     <span class="n">baseline_method</span><span class="o">=</span><span class="s2">"loo"</span><span class="p">,</span>
     <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="s2">"joint"</span><span class="p">,</span>
+    <span class="n">covariance_regularization</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">random_seed</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>The full runs use 16 FOM samples per iteration. MF-VI uses the automatic GP ROM
-with four iterations of training history:</p>
+<p>The full diagonal run uses 16 FOM samples per iteration. MF-VI uses 64
+additional ROM samples, the automatic GP ROM, and four iterations of ROM
+training history, matching the paper benchmark:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">fom_sample_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
     <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
     <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+    <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -554,7 +569,9 @@ family and supplies its initial moments.</p>
 also diagonal, the exact posterior covariance is diagonal to numerical
 precision.</p>
 <p>The variational initializer is a <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code>. This selects the
-diagonal/mean-field VI implementation.</p>
+diagonal/mean-field VI implementation. This is the case that corresponds
+directly to the VI-paper analytic-sine benchmark and therefore uses the exact
+configuration listed above.</p>
 <p>Run the example with</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/diagonal_example.py
 </pre></div>
@@ -783,8 +800,11 @@ initializer is instead a <code class="docutils literal notranslate"><span class=
 with the same diagonal prior covariance. Its <em>type</em> selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
 optimization.</p>
-<p>This case uses the same natural-coordinate Newton configuration as the diagonal
-case. For the full-covariance family, Newton curvature is formed in
+<p>This case uses the same natural Newton metric, full Hessian, regularization,
+line-search scales, FOM/ROM sample allocation, GP configuration, and random
+seed as the paper-matched diagonal case. Full-covariance Newton currently uses
+same-sample curvature rather than the diagonal implementation’s lagged
+curvature averaging. Newton curvature is formed in
 <span class="math notranslate nohighlight">\((\mu,\operatorname{svec}(\Sigma))\)</span> coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
@@ -1488,7 +1508,7 @@ utilities are shared by both examples:</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-optimization-configuration">Shared optimization configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vi-paper-benchmark-configuration">VI-paper benchmark configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
