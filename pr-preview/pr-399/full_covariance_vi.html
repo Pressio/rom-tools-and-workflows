@@ -357,6 +357,8 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizer-coordinate-gaussian">Optimizer-coordinate Gaussian</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#natural-score">Natural score</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#entropy-estimators">Entropy estimators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#full-covariance-natural-newton">Full-covariance natural Newton</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-newton-curvature">MF-VI Newton curvature</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spd-preserving-covariance-update">SPD-preserving covariance update</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adam-semantics">Adam semantics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-control-variate">MF-VI control variate</a></li>
@@ -420,34 +422,34 @@
   <section id="full-covariance-variational-inference">
 <h1>Full-covariance variational inference<a class="headerlink" href="#full-covariance-variational-inference" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> distinguishes the Bayesian prior from the variational family.
-Both VI and MF-VI require an <code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code>.  Its type
+Both VI and MF-VI require an <code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code>. Its type
 selects the variational family and its moments provide the initial variational
 state:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> selects diagonal/mean-field VI;</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> selects true full-covariance VI.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines only the prior.  It may independently be
+<p>The <code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines only the prior. It may independently be
 diagonal or multivariate, provided it uses the same parameter names in the same
-order as the variational initializer.  There is no separate
+order as the variational initializer. There is no separate public
 <code class="docutils literal notranslate"><span class="pre">variational_distribution</span></code> argument.</p>
 <p>A multivariate initializer with a diagonal covariance still selects the
 full-covariance family, so correlations are free to develop during
-optimization.  The historical fixed-correlation interpretation of a
+optimization. The historical fixed-correlation interpretation of a
 multivariate variational initializer is not part of the public API.</p>
 <section id="optimizer-coordinate-gaussian">
 <h2>Optimizer-coordinate Gaussian<a class="headerlink" href="#optimizer-coordinate-gaussian" title="Link to this heading">#</a></h2>
 <p>The full-covariance family is defined in optimizer coordinates,</p>
 <div class="math notranslate nohighlight">
 \[q(x)=\mathcal N(\mu,\Sigma), \qquad \Sigma=LL^T,\]</div>
-<p>where <code class="docutils literal notranslate"><span class="pre">L</span></code> is lower triangular with positive diagonal.  If bounded-parameter
+<p>where <code class="docutils literal notranslate"><span class="pre">L</span></code> is lower triangular with positive diagonal. If bounded-parameter
 transforms are active, the model parameters are obtained from</p>
 <div class="math notranslate nohighlight">
 \[\theta=T(x).\]</div>
-<p>The Gaussian score is always formed with <code class="docutils literal notranslate"><span class="pre">x</span></code> rather than the transformed
-physical parameters.  <code class="docutils literal notranslate"><span class="pre">L</span></code> is used for stable sampling, density evaluation,
-and restart persistence; the optimization geometry is defined in mean and
-covariance coordinates.</p>
+<p>The Gaussian score is formed with <code class="docutils literal notranslate"><span class="pre">x</span></code> rather than the transformed physical
+parameters. <code class="docutils literal notranslate"><span class="pre">L</span></code> is used for stable sampling, density evaluation, and restart
+persistence; the optimization geometry is defined in mean and covariance
+coordinates.</p>
 </section>
 <section id="natural-score">
 <h2>Natural score<a class="headerlink" href="#natural-score" title="Link to this heading">#</a></h2>
@@ -465,37 +467,91 @@ to the per-sample natural score</p>
 \[\widetilde G_\Sigma
 = \frac{1}{N}\sum_i w_i
   (\delta_i\delta_i^T-\Sigma).\]</div>
-<p>This avoids assembling or inverting the full Fisher matrix and avoids
-reconstructing a covariance gradient from a projected Cholesky gradient.
-Symmetric covariance tangents are packed with an isometric <code class="docutils literal notranslate"><span class="pre">svec</span></code> mapping,
+<p>Symmetric covariance tangents are packed with an isometric <code class="docutils literal notranslate"><span class="pre">svec</span></code> mapping,
 which scales off-diagonal entries by <span class="math notranslate nohighlight">\(\sqrt{2}\)</span> so Euclidean vector
 inner products match Frobenius matrix inner products.</p>
 </section>
 <section id="entropy-estimators">
 <h2>Entropy estimators<a class="headerlink" href="#entropy-estimators" title="Link to this heading">#</a></h2>
-<p>Both VI entropy strategies are supported.  The <code class="docutils literal notranslate"><span class="pre">joint</span></code> strategy includes
-<code class="docutils literal notranslate"><span class="pre">-log</span> <span class="pre">q</span></code> in the sampled ELBO signal.  With a suitable baseline it retains
-the exact fixed-point property: when the variational distribution equals the
-target posterior, the sampled score contribution vanishes.</p>
+<p>Both VI entropy strategies are supported. The <code class="docutils literal notranslate"><span class="pre">joint</span></code> strategy includes
+<code class="docutils literal notranslate"><span class="pre">-log</span> <span class="pre">q</span></code> in the sampled ELBO signal. With a suitable baseline it retains the
+fixed-point property: when the variational distribution equals the target
+posterior, the sampled gradient contribution vanishes.</p>
 <p>For <code class="docutils literal notranslate"><span class="pre">score_function_entropy_strategy=&quot;analytic&quot;</span></code>, the Gaussian entropy is
-handled exactly.  Its covariance natural gradient is</p>
+handled exactly. Its covariance natural gradient is</p>
 <div class="math notranslate nohighlight">
 \[\widetilde G_{\Sigma,H}=\Sigma,\]</div>
-<p>with no mean contribution.  In MF-VI this exact entropy contribution is added
+<p>with no mean contribution. In MF-VI this exact entropy contribution is added
 once after the stochastic multifidelity control-variate estimator; it is not
 included in the HF/LF control-variate fit.</p>
 </section>
+<section id="full-covariance-natural-newton">
+<h2>Full-covariance natural Newton<a class="headerlink" href="#full-covariance-natural-newton" title="Link to this heading">#</a></h2>
+<p>Full-covariance Newton uses the ordinary score-function Hessian in
+<span class="math notranslate nohighlight">\((\mu,\operatorname{svec}(\Sigma))\)</span> coordinates. Writing
+<span class="math notranslate nohighlight">\(P=\Sigma^{-1}\)</span> and <span class="math notranslate nohighlight">\(a=P(x-\mu)\)</span>, the ordinary Gaussian scores are</p>
+<div class="math notranslate nohighlight">
+\[s_\mu=a,
+\qquad
+S_\Sigma=\frac{1}{2}(aa^T-P).\]</div>
+<p>For the log-joint contribution, the curvature estimator uses the same
+second-order score identity as diagonal VI,</p>
+<div class="math notranslate nohighlight">
+\[H_{\log p}
+=\mathbb E_q\left[
+   \log p(y,x)
+   \left(ss^T+\nabla^2\log q\right)
+\right].\]</div>
+<p>When the joint entropy estimator is selected, <code class="docutils literal notranslate"><span class="pre">-log</span> <span class="pre">q</span></code> remains in the
+<em>gradient</em> estimator. Newton curvature follows the existing romtools split
+estimator: the stochastic Hessian uses the log-joint contribution above and
+the Gaussian entropy Hessian is added analytically. In covariance coordinates,
+for a symmetric perturbation <span class="math notranslate nohighlight">\(E\)</span>,</p>
+<div class="math notranslate nohighlight">
+\[D\left(\nabla_\Sigma H(q)\right)[E]
+=-\frac{1}{2}P E P.\]</div>
+<p>Natural coordinates are introduced by locally whitening the exact Gaussian
+Fisher metric. If <span class="math notranslate nohighlight">\(A\)</span> is a symmetric tangent coordinate, the whitening
+map is</p>
+<div class="math notranslate nohighlight">
+\[\delta\mu = L a,
+\qquad
+\delta\Sigma = \sqrt{2}\,L A L^T.\]</div>
+<p>With the corresponding linear map <span class="math notranslate nohighlight">\(S\)</span>, the local Newton system is</p>
+<div class="math notranslate nohighlight">
+\[g_N=S^Tg,
+\qquad
+H_N=S^T H S,\]</div>
+<p>followed by the same regularized Newton solve used by diagonal VI. The step is
+mapped back with <span class="math notranslate nohighlight">\(S\)</span>. This is a local Fisher-whitened Newton method; it
+does not add Christoffel-symbol terms from a full Riemannian Hessian.</p>
+<p>The current full-covariance Newton path supports
+<code class="docutils literal notranslate"><span class="pre">newton_metric=&quot;natural&quot;</span></code> with <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy=&quot;same_sample&quot;</span></code>.
+Both diagonal and full projected Hessian solves can be selected through the
+existing <code class="docutils literal notranslate"><span class="pre">newton_hessian_type</span></code> option. The standard-coordinate
+full-covariance Newton route remains unsupported.</p>
+</section>
+<section id="mf-vi-newton-curvature">
+<h2>MF-VI Newton curvature<a class="headerlink" href="#mf-vi-newton-curvature" title="Link to this heading">#</a></h2>
+<p>For full-covariance MF-VI, the high- and low-fidelity second-order
+score-function contributions are packed as complete matrices and passed
+through the existing multifidelity control-variate estimator. The analytic
+entropy Hessian is added once after the multifidelity correction. This mirrors
+the treatment of the full packed gradient and preserves the HF/LF coupling of
+mean and covariance directions.</p>
+</section>
 <section id="spd-preserving-covariance-update">
 <h2>SPD-preserving covariance update<a class="headerlink" href="#spd-preserving-covariance-update" title="Link to this heading">#</a></h2>
-<p>Given a symmetric covariance tangent direction <span class="math notranslate nohighlight">\(V_\Sigma\)</span>, define</p>
+<p>Given the symmetric covariance block of the Newton or gradient direction,
+<span class="math notranslate nohighlight">\(V_\Sigma\)</span>, define</p>
 <div class="math notranslate nohighlight">
 \[A=L^{-1}V_\Sigma L^{-T}.\]</div>
 <p>The covariance update uses</p>
 <div class="math notranslate nohighlight">
 \[\Sigma_+ = L\exp(\alpha A)L^T,\]</div>
-<p>followed by a Cholesky factorization of <span class="math notranslate nohighlight">\(\Sigma_+\)</span>.  This preserves
+<p>followed by a Cholesky factorization of <span class="math notranslate nohighlight">\(\Sigma_+\)</span>. This preserves
 positive definiteness by construction and has first-order direction
-<span class="math notranslate nohighlight">\(V_\Sigma\)</span>.  A configurable <code class="docutils literal notranslate"><span class="pre">max_covariance_log_step</span></code> uniformly limits
+<span class="math notranslate nohighlight">\(V_\Sigma\)</span>. A configurable <code class="docutils literal notranslate"><span class="pre">max_covariance_log_step</span></code> uniformly limits
 <span class="math notranslate nohighlight">\(\max_j|\alpha\lambda_j(A)|\)</span> before exponentiation instead of clipping
 covariance eigenvalues after the update.</p>
 </section>
@@ -503,7 +559,7 @@ covariance eigenvalues after the update.</p>
 <h2>Adam semantics<a class="headerlink" href="#adam-semantics" title="Link to this heading">#</a></h2>
 <p>With <code class="docutils literal notranslate"><span class="pre">gradient_method=&quot;natural&quot;</span></code>, Adam receives the packed Gaussian natural
 gradient and applies its existing componentwise moment accumulation before the
-covariance block is mapped back to the SPD manifold.  This is a
+covariance block is mapped back to the SPD manifold. This is a
 Fisher-preconditioned/natural-gradient Adam method, not a fully
 coordinate-invariant Riemannian Adam algorithm with tangent-space moment
 transport.</p>
@@ -511,7 +567,7 @@ transport.</p>
 <section id="mf-vi-control-variate">
 <h2>MF-VI control variate<a class="headerlink" href="#mf-vi-control-variate" title="Link to this heading">#</a></h2>
 <p>For MF-VI the stochastic quantity passed to the multifidelity control variate
-is the complete packed natural-gradient contribution</p>
+for the natural gradient is the complete packed contribution</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\Xi_i = (s_i-b_i)
 \begin{bmatrix}
@@ -519,19 +575,25 @@ is the complete packed natural-gradient contribution</p>
   \operatorname{svec}(\delta_i\delta_i^T-\Sigma)
 \end{bmatrix}.\end{split}\]</div>
 <p>The existing scalar, componentwise, or matrix-valued MF control-variate
-coefficient is applied to this complete vector.  This preserves coupling
+coefficient is applied to this complete vector. This preserves coupling
 between the mean and covariance directions and keeps the baseline control
 variate distinct from the multifidelity control variate.</p>
 </section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
-<p>For example, a diagonal prior can be paired with a full-covariance
-variational family by supplying a multivariate initializer:</p>
+<p>A diagonal prior can be paired with a full-covariance variational family by
+supplying a multivariate initializer. Natural-coordinate Newton is selected
+with the standard Newton configuration:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">q0</span> <span class="o">=</span> <span class="n">MultivariateGaussianParameterSpace</span><span class="p">(</span>
     <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span>
     <span class="n">means</span><span class="o">=</span><span class="n">initial_mean</span><span class="p">,</span>
     <span class="n">covariance</span><span class="o">=</span><span class="n">initial_covariance</span><span class="p">,</span>
     <span class="n">sampler</span><span class="o">=</span><span class="n">MonteCarloSampler</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
+    <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
+    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
@@ -540,18 +602,16 @@ variational family by supplying a multivariate initializer:</p>
     <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">q0</span><span class="p">,</span>
     <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
     <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observation_covariance</span><span class="p">,</span>
-    <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span>
-    <span class="n">optimizer_config</span><span class="o">=</span><span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VIAdamOptimizerConfig</span><span class="p">(</span>
-        <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-    <span class="p">),</span>
+    <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"newton"</span><span class="p">,</span>
+    <span class="n">optimizer_config</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="s2">"joint"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 <p>Conversely, a <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> initializer selects diagonal VI even
 when the prior is multivariate.</p>
-<p>The complete covariance/Cholesky state is written to the VI history and restart
-files.  Full-covariance Newton/Hessian support is intentionally not included in
-this implementation; use gradient or Adam optimization for this family.</p>
+<p>The complete covariance/Cholesky state is written to VI history and restart
+files.</p>
 </section>
 </section>
 
@@ -581,6 +641,8 @@ this implementation; use gradient or Adam optimization for this family.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizer-coordinate-gaussian">Optimizer-coordinate Gaussian</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#natural-score">Natural score</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#entropy-estimators">Entropy estimators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#full-covariance-natural-newton">Full-covariance natural Newton</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-newton-curvature">MF-VI Newton curvature</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spd-preserving-covariance-update">SPD-preserving covariance update</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adam-semantics">Adam semantics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-control-variate">MF-VI control variate</a></li>

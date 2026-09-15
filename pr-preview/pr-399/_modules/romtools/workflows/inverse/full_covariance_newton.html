@@ -407,7 +407,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">full_covariance_mf_vi_drivers</span> <span class="k">as</span> <span class="n">_fc_mf</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">full_covariance_auto_mf_vi</span> <span class="k">as</span> <span class="n">_fc_auto</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.full_covariance_vi</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">covariance_from_cholesky</span><span class="p">,</span>
     <span class="n">svec</span><span class="p">,</span>
     <span class="n">svec_inverse</span><span class="p">,</span>
     <span class="n">svec_size</span><span class="p">,</span>
@@ -433,6 +432,17 @@
     <span class="k">return</span> <span class="n">basis</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_precision_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Compute the symmetric precision matrix from an SPD Cholesky factor."""</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+        <span class="n">cholesky</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">identity</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">precision</span> <span class="o">+</span> <span class="n">precision</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_ordinary_score_and_logq_hessian_terms</span><span class="p">(</span>
     <span class="n">optimizer_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -441,8 +451,7 @@
 <span class="w">    </span><span class="sd">"""Return Gaussian scores and log-density Hessians in ``(mu, svec(Sigma))``."""</span>
     <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-    <span class="n">covariance</span> <span class="o">=</span> <span class="n">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
-    <span class="n">precision</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">_precision_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
     <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span>
     <span class="n">covariance_size</span> <span class="o">=</span> <span class="n">svec_size</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span>
     <span class="n">total_size</span> <span class="o">=</span> <span class="n">dimensionality</span> <span class="o">+</span> <span class="n">covariance_size</span>
@@ -458,6 +467,9 @@
         <span class="n">score_mean</span> <span class="o">=</span> <span class="n">precision</span> <span class="o">@</span> <span class="n">delta</span>
         <span class="n">score_covariance_matrix</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">score_mean</span><span class="p">,</span> <span class="n">score_mean</span><span class="p">)</span> <span class="o">-</span> <span class="n">precision</span>
+        <span class="p">)</span>
+        <span class="n">score_covariance_matrix</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">score_covariance_matrix</span> <span class="o">+</span> <span class="n">score_covariance_matrix</span><span class="o">.</span><span class="n">T</span>
         <span class="p">)</span>
         <span class="n">scores</span><span class="p">[</span><span class="n">sample_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
             <span class="p">[</span><span class="n">score_mean</span><span class="p">,</span> <span class="n">svec</span><span class="p">(</span><span class="n">score_covariance_matrix</span><span class="p">)]</span>
@@ -490,9 +502,8 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_entropy_hessian</span><span class="p">(</span><span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scaling_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Return the analytic Gaussian-entropy Hessian in ordinary coordinates."""</span>
-    <span class="n">covariance</span> <span class="o">=</span> <span class="n">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
-    <span class="n">precision</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">covariance</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">covariance</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">_precision_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">precision</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">covariance_size</span> <span class="o">=</span> <span class="n">svec_size</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
         <span class="p">(</span><span class="n">dimensionality</span> <span class="o">+</span> <span class="n">covariance_size</span><span class="p">,</span> <span class="n">dimensionality</span> <span class="o">+</span> <span class="n">covariance_size</span><span class="p">),</span>

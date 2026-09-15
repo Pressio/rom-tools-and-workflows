@@ -1,7 +1,7 @@
-Analytic sine VI and MF-VI example
-==================================
+Analytic sine VI and MF-VI examples
+===================================
 
-This example uses the analytically tractable sine-series inverse problem from
+These examples use the analytically tractable sine-series inverse problem from
 the VI/MF-VI benchmark. The forward model is
 
 .. math::
@@ -27,17 +27,17 @@ The prior is
 
    \theta \sim \mathcal N(0,0.75^2 I),
 
-the synthetic truth is
+with synthetic truth
 
 .. math::
 
    \theta^\star
    =(1.00,-0.80,0.65,-0.50,0.35,-0.25,0.15)^T,
 
-and the observation noise has standard deviation
-:math:`\sigma_\eta=5\times10^{-3}`. Because the forward map is linear and
-both the prior and likelihood are Gaussian, the exact posterior is available
-in closed form,
+and observation-noise standard deviation
+:math:`\sigma_\eta=5\times10^{-3}`. Because the forward map is linear and the
+prior and likelihood are Gaussian, the exact posterior is available in closed
+form,
 
 .. math::
 
@@ -50,50 +50,14 @@ in closed form,
    = C_{\rm post}
      \left(C_0^{-1}m_0+G^T\Gamma_{\rm obs}^{-1}y\right).
 
-This makes the problem useful for demonstrating convergence directly against
-the exact posterior.
+This lets both examples measure convergence directly against the exact
+posterior.
 
-The example compares single-fidelity VI with MF-VI using the automatic
-Gaussian-process ROM. Both methods use Newton updates in natural coordinates,
-with ``newton_regularization=1e-4`` and the joint entropy estimator. The full
-run uses 16 FOM samples per iteration. The stochastic nonmonotone line search
-is capped at ``max_step_size=1.0``. MF-VI uses the automatic GP ROM with
-``max_rom_training_history=4``.
+Shared optimization configuration
+---------------------------------
 
-The example also demonstrates the revised API in which
-``prior_parameter_space`` defines the prior while the required
-``initial_variational_parameter_space`` defines the variational family and its
-initial moments.
-
-Problem setup
--------------
-
-We use :math:`N=31` equispaced interior observations,
-
-.. math::
-
-   x_i=\frac{i}{N+1}, \qquad i=1,\ldots,N.
-
-For these points the discrete sine basis is orthogonal, so
-:math:`G^T\Gamma_{\rm obs}^{-1}G` is diagonal. Since the prior covariance is
-also diagonal, the exact posterior covariance is diagonal to numerical
-precision.
-
-The variational initializer is therefore a ``GaussianParameterSpace``, which
-selects the diagonal/mean-field VI implementation.
-
-Run the example with
-
-.. code-block:: bash
-
-   python examples/vi_mf_vi_demo/diagonal_example.py
-
-A reduced CI configuration is available with ``--smoke``.
-
-Optimization configuration
---------------------------
-
-The core optimizer configuration used for both VI and MF-VI is
+Both examples compare single-fidelity VI with MF-VI using the automatic
+Gaussian-process ROM. The production runs use the same optimizer settings:
 
 .. code-block:: python
 
@@ -108,17 +72,23 @@ The core optimizer configuration used for both VI and MF-VI is
        max_step_size=1.0,
    )
 
-The shared VI/MF-VI arguments explicitly use the joint entropy estimator:
+The shared VI/MF-VI arguments explicitly use the joint entropy estimator and a
+leave-one-out baseline:
 
 .. code-block:: python
 
    common_arguments = dict(
        ...,
+       optimizer_method="newton",
+       optimizer_config=optimizer,
+       line_search_method="stochastic_nonmonotone",
+       line_search_config=line_search,
+       baseline_method="loo",
        score_function_entropy_strategy="joint",
    )
 
-The full run uses 16 FOM samples per iteration. The MF-VI call uses the
-automatic GP ROM and retains four iterations of ROM training history:
+The full runs use 16 FOM samples per iteration. MF-VI uses the automatic GP ROM
+with four iterations of training history:
 
 .. code-block:: python
 
@@ -129,8 +99,35 @@ automatic GP ROM and retains four iterations of ROM training history:
        rom_type="gp",
    )
 
+``prior_parameter_space`` defines the Bayesian prior, while the required
+``initial_variational_parameter_space`` independently selects the variational
+family and supplies its initial moments.
+
+Example 1: equispaced observations and a diagonal posterior
+------------------------------------------------------------
+
+The first example uses :math:`N=31` equispaced interior observations,
+
+.. math::
+
+   x_i=\frac{i}{N+1}, \qquad i=1,\ldots,N.
+
+For these points the discrete sine basis is orthogonal, so
+:math:`G^T\Gamma_{\rm obs}^{-1}G` is diagonal. Since the prior covariance is
+also diagonal, the exact posterior covariance is diagonal to numerical
+precision.
+
+The variational initializer is a ``GaussianParameterSpace``. This selects the
+diagonal/mean-field VI implementation.
+
+Run the example with
+
+.. code-block:: bash
+
+   python examples/vi_mf_vi_demo/diagonal_example.py
+
 Convergence
------------
+~~~~~~~~~~~
 
 The convergence plot reports the exact Gaussian
 :math:`D_{\rm KL}(q\|p_{\rm post})` for the accepted VI and MF-VI states.
@@ -143,7 +140,7 @@ The convergence plot reports the exact Gaussian
    VI and MF-VI convergence to the exact diagonal posterior.
 
 Posterior mean
---------------
+~~~~~~~~~~~~~~
 
 .. figure:: notebooks/analytic_sine_diagonal_mean.png
    :alt: Posterior mean comparison for the diagonal analytic sine problem
@@ -154,7 +151,7 @@ Posterior mean
    the synthetic truth.
 
 Posterior
----------
+~~~~~~~~~
 
 .. figure:: notebooks/analytic_sine_diagonal_posterior.png
    :alt: Posterior marginal densities for the diagonal analytic sine problem
@@ -166,9 +163,89 @@ Posterior
    truth.
 
 Implementation
---------------
+~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../../examples/vi_mf_vi_demo/diagonal_example.py
+   :language: python
+   :linenos:
+
+Example 2: non-equispaced observations and a correlated posterior
+------------------------------------------------------------------
+
+The second example keeps the same model, prior, truth, noise level, and number
+of observations, but changes only the observation locations. Starting from
+
+.. math::
+
+   t_i=\frac{i}{N+1},
+
+the locations are warped according to
+
+.. math::
+
+   x_i
+   =0.02+0.96\,\frac{t_i^3}{t_N^3}.
+
+This breaks discrete sine orthogonality. The exact posterior therefore has
+nonzero cross-covariances (the largest absolute posterior correlation is about
+0.30 for this setup).
+
+The prior remains the same diagonal ``GaussianParameterSpace``. The variational
+initializer is instead a ``MultivariateGaussianParameterSpace`` initialized
+with the same diagonal prior covariance. Its *type* selects true
+full-covariance VI, allowing off-diagonal covariance entries to develop during
+optimization.
+
+This case uses the same natural-coordinate Newton configuration as the diagonal
+case. For the full-covariance family, Newton curvature is formed in
+:math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
+the exact Gaussian Fisher metric before the regularized Newton solve. The
+covariance update is then applied with the SPD-preserving exponential
+retraction described in :doc:`../full_covariance_vi`.
+
+Run the example with
+
+.. code-block:: bash
+
+   python examples/vi_mf_vi_demo/full_covariance_example.py
+
+Convergence
+~~~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_convergence.png
+   :alt: KL convergence for full-covariance VI and MF-VI
+   :align: center
+   :width: 78%
+
+   Exact Gaussian KL convergence for full-covariance VI and MF-VI.
+
+Posterior mean
+~~~~~~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_mean.png
+   :alt: Posterior mean comparison for the non-equispaced analytic sine problem
+   :align: center
+   :width: 82%
+
+   Final full-covariance VI and MF-VI posterior means compared with the exact
+   posterior mean and truth.
+
+Posterior
+~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_posterior.png
+   :alt: Posterior correlation and two-dimensional marginal for the non-equispaced sine problem
+   :align: center
+   :width: 96%
+
+   The exact posterior correlation matrix and the strongest correlated
+   two-dimensional marginal. The ellipse panel compares one- and
+   two-standard-deviation contours from the exact posterior, VI, and MF-VI.
+
+Implementation
+~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../examples/vi_mf_vi_demo/full_covariance_example.py
    :language: python
    :linenos:
 
@@ -176,26 +253,22 @@ Shared problem definition
 -------------------------
 
 The forward model, exact posterior calculation, history processing, and plotting
-utilities are shared in
+utilities are shared by both examples:
 
 .. literalinclude:: ../../../examples/vi_mf_vi_demo/analytic_sine_support.py
    :language: python
    :linenos:
 
-The separate full-covariance implementation and its variational-family API are
-documented in :doc:`../full_covariance_vi`.
-
 Regenerating the figures
 ------------------------
 
-The documentation build regenerates these figures explicitly before Sphinx
-renders the page. The same command can be run locally:
+Run both production examples and regenerate all six figures with
 
 .. code-block:: bash
 
    python examples/vi_mf_vi_demo/generate_docs_media.py
 
-To validate the example with the reduced CI settings, run
+A reduced CI configuration exercises both examples with
 
 .. code-block:: bash
 
