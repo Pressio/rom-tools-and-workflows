@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import pytest
 
@@ -29,34 +31,68 @@ class IdentityTwoParameterModel:
         ])
 
 
-def _diagonal_prior():
+def _diagonal_space(means=None, stds=None):
+    if means is None:
+        means = np.array([0.0, 0.0])
+    if stds is None:
+        stds = np.array([1.0, 1.0])
     return GaussianParameterSpace(
         parameter_names=["theta0", "theta1"],
-        means=np.array([0.0, 0.0]),
-        stds=np.array([1.0, 1.0]),
+        means=np.asarray(means, dtype=float),
+        stds=np.asarray(stds, dtype=float),
         sampler=MonteCarloSampler,
     )
 
 
-def _correlated_prior():
+def _correlated_space(means=None, covariance=None):
+    if means is None:
+        means = np.array([0.0, 0.0])
+    if covariance is None:
+        covariance = np.array([[1.0, 0.35], [0.35, 0.8]])
     return MultivariateGaussianParameterSpace(
         parameter_names=["theta0", "theta1"],
-        means=np.array([0.0, 0.0]),
-        covariance=np.array([[1.0, 0.35], [0.35, 0.8]]),
+        means=np.asarray(means, dtype=float),
+        covariance=np.asarray(covariance, dtype=float),
         sampler=MonteCarloSampler,
     )
+
+
+def test_public_vi_signature_requires_initializer_and_has_no_family_flag():
+    signature = inspect.signature(romtools.workflows.run_vi)
+    assert "variational_distribution" not in signature.parameters
+    initializer = signature.parameters["initial_variational_parameter_space"]
+    assert initializer.default is inspect.Parameter.empty
 
 
 @pytest.mark.mpi_skip
-def test_full_covariance_vi_is_explicit_and_legacy_multivariate_remains_available(tmp_path):
-    # Omitting variational_distribution preserves the historical multivariate
-    # path, including its current Newton support.
+def test_vi_requires_initial_variational_parameter_space(tmp_path):
+    with pytest.raises(TypeError, match="initial_variational_parameter_space is required"):
+        romtools.workflows.run_vi(
+            model=IdentityTwoParameterModel(),
+            prior_parameter_space=_diagonal_space(),
+            observations=np.zeros(2),
+            observations_covariance=np.eye(2),
+            absolute_work_dir=str(tmp_path / "missing_initializer"),
+            sample_size=6,
+            optimizer_method="gradient",
+            optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
+                max_iterations=1,
+            ),
+            bounded_parameter_handling="clip",
+            evaluation_concurrency=1,
+        )
+
+
+@pytest.mark.mpi_skip
+def test_initializer_type_selects_family_independently_of_prior(tmp_path):
+    # A correlated prior with a diagonal initializer uses the diagonal VI path.
     means, stds, _, _ = romtools.workflows.run_vi(
         model=IdentityTwoParameterModel(),
-        prior_parameter_space=_correlated_prior(),
+        prior_parameter_space=_correlated_space(),
+        initial_variational_parameter_space=_diagonal_space(),
         observations=np.zeros(2),
         observations_covariance=np.eye(2),
-        absolute_work_dir=str(tmp_path / "legacy"),
+        absolute_work_dir=str(tmp_path / "diagonal_q"),
         sample_size=6,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
@@ -69,31 +105,34 @@ def test_full_covariance_vi_is_explicit_and_legacy_multivariate_remains_availabl
     assert means.shape == (2,)
     assert stds.shape == (2,)
 
-    # The new family is selected explicitly and intentionally excludes Newton.
+    # A diagonal prior with a multivariate initializer selects true full
+    # covariance. Newton is intentionally unsupported for that family.
     with pytest.raises(NotImplementedError, match="Full-covariance Newton"):
         romtools.workflows.run_vi(
             model=IdentityTwoParameterModel(),
-            prior_parameter_space=_correlated_prior(),
+            prior_parameter_space=_diagonal_space(),
+            initial_variational_parameter_space=_correlated_space(),
             observations=np.zeros(2),
             observations_covariance=np.eye(2),
-            absolute_work_dir=str(tmp_path / "full_newton"),
+            absolute_work_dir=str(tmp_path / "full_q"),
             sample_size=6,
             optimizer_method="newton",
             optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
                 max_iterations=1,
             ),
-            variational_distribution="full_covariance",
             bounded_parameter_handling="clip",
             evaluation_concurrency=1,
         )
 
 
 @pytest.mark.mpi_skip
-def test_full_covariance_natural_adam_rotates_initially_diagonal_covariance(tmp_path):
+def test_multivariate_initializer_with_diagonal_covariance_can_rotate(tmp_path):
     work_dir = tmp_path / "full_adam"
+    initial_q = _correlated_space(covariance=np.eye(2))
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=IdentityTwoParameterModel(),
-        prior_parameter_space=_diagonal_prior(),
+        prior_parameter_space=_diagonal_space(),
+        initial_variational_parameter_space=initial_q,
         observations=np.array([0.4, -0.3]),
         observations_covariance=np.array([[0.15, 0.11], [0.11, 0.18]]),
         absolute_work_dir=str(work_dir),
@@ -101,11 +140,10 @@ def test_full_covariance_natural_adam_rotates_initially_diagonal_covariance(tmp_
         optimizer_method="adam",
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
             gradient_method="natural",
-            initial_learning_rate=0.03,
+            learning_rate=0.03,
             gradient_norm_tolerance=0.0,
             max_iterations=3,
         ),
-        variational_distribution="full_covariance",
         bounded_parameter_handling="clip",
         baseline_method="loo",
         random_seed=398,
@@ -140,15 +178,16 @@ def test_full_covariance_natural_adam_rotates_initially_diagonal_covariance(tmp_
 @pytest.mark.mpi_skip
 def test_full_covariance_restart_continues_with_complete_cholesky_state(tmp_path):
     work_dir = tmp_path / "restart"
+    initial_q = _correlated_space()
     common = dict(
         model=IdentityTwoParameterModel(),
-        prior_parameter_space=_correlated_prior(),
+        prior_parameter_space=_diagonal_space(),
+        initial_variational_parameter_space=initial_q,
         observations=np.array([0.2, -0.1]),
         observations_covariance=np.array([[0.2, 0.07], [0.07, 0.25]]),
         absolute_work_dir=str(work_dir),
         sample_size=32,
         optimizer_method="adam",
-        variational_distribution="full_covariance",
         bounded_parameter_handling="clip",
         random_seed=19,
         evaluation_concurrency=1,
@@ -156,7 +195,7 @@ def test_full_covariance_restart_continues_with_complete_cholesky_state(tmp_path
     )
     romtools.workflows.run_vi(
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
-            initial_learning_rate=0.02,
+            learning_rate=0.02,
             gradient_norm_tolerance=0.0,
             max_iterations=2,
         ),
@@ -171,7 +210,7 @@ def test_full_covariance_restart_continues_with_complete_cholesky_state(tmp_path
     result = romtools.workflows.run_vi(
         restart_file=str(restart_file),
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
-            initial_learning_rate=0.02,
+            learning_rate=0.02,
             gradient_norm_tolerance=0.0,
             max_iterations=3,
         ),
