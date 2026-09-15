@@ -374,6 +374,7 @@
                   
   <h1>Source code for romtools.hpc.dispatchers.base_dispatcher</h1><div class="highlight"><pre>
 <span></span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -402,7 +403,7 @@
 
 <div class="viewcode-block" id="BaseDispatcher">
 <a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.BaseDispatcher">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">BaseDispatcher</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseDispatcher</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Shared configuration, logging, and public API for the dispatchers.</span>
 
@@ -419,16 +420,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">Logger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"debug"</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">campaign_directory</span> <span class="o">=</span> <span class="n">campaign_directory</span>
 
-        <span class="c1"># Subclasses replace these with local or remote implementations</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">caller</span><span class="p">:</span> <span class="n">BaseCaller</span> <span class="o">=</span> <span class="n">BaseCaller</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span> <span class="n">BaseFileManager</span> <span class="o">=</span> <span class="n">BaseFileManager</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">:</span> <span class="n">BaseTransferManager</span> <span class="o">=</span> <span class="n">BaseTransferManager</span><span class="p">(</span>
-            <span class="n">files</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">,</span>
-            <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
-            <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
-            <span class="n">campaign_directory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">campaign_directory</span><span class="p">)</span>
+        <span class="c1"># Installed by subclasses with their local or remote implementations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caller</span><span class="p">:</span> <span class="n">BaseCaller</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span> <span class="n">BaseFileManager</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">:</span> <span class="n">BaseTransferManager</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Installed by subclasses that can reach a batch scheduler</span>
+        <span class="c1"># Installed only by subclasses that can reach a batch scheduler</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slurm</span><span class="p">:</span> <span class="n">SlurmJobManager</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># ------------------------------------------------------------------</span>
@@ -463,6 +460,7 @@
 
 <div class="viewcode-block" id="BaseDispatcher.run">
 <a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.BaseDispatcher.run">[docs]</a>
+    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Result</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Run a command directly on the execution host.</span>
@@ -472,8 +470,7 @@
 <span class="sd">        way, so a model can be moved between them unchanged.</span>
 
 <span class="sd">        Returns a Result object (with stdout, stderr, exit_code, ok)</span>
-<span class="sd">        """</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">        """</span></div>
 
 
 <div class="viewcode-block" id="BaseDispatcher.submit_job">

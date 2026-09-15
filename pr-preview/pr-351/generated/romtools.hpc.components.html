@@ -501,7 +501,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="romtools.hpc.components.BaseCaller">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.</span></span><span class="sig-name descname"><span class="pre">BaseCaller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/caller.html#BaseCaller"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.BaseCaller" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="romtools.hpc.components.component.html#romtools.hpc.components.component.Component" title="romtools.hpc.components.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="romtools.hpc.components.component.html#romtools.hpc.components.component.Component" title="romtools.hpc.components.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Executes a Python callable named by a “module:qualname” target string.</p>
 <p>Arguments and return values may contain numpy arrays, tuples, lists, and
 dictionaries thereof.</p>
@@ -518,7 +518,7 @@ dictionaries thereof.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="romtools.hpc.components.BaseFileManager">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.</span></span><span class="sig-name descname"><span class="pre">BaseFileManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/file_manager.html#BaseFileManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.BaseFileManager" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="romtools.hpc.components.component.html#romtools.hpc.components.component.Component" title="romtools.hpc.components.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="romtools.hpc.components.component.html#romtools.hpc.components.component.Component" title="romtools.hpc.components.component.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Reads and writes files on whichever machine a dispatcher runs work on.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -530,7 +530,7 @@ dictionaries thereof.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="romtools.hpc.components.BaseFileManager.remove_dir">
-<span class="sig-name descname"><span class="pre">remove_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/file_manager.html#BaseFileManager.remove_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.BaseFileManager.remove_dir" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">remove_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/file_manager.html#BaseFileManager.remove_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.BaseFileManager.remove_dir" title="Link to this definition">#</a></dt>
 <dd><p>Remove a directory and its contents. A missing directory is not an error.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -620,7 +620,7 @@ call is staged out to a subprocess instead of imported here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>files</strong> (<a class="reference internal" href="romtools.hpc.components.file_manager.html#romtools.hpc.components.file_manager.BaseFileManager" title="romtools.hpc.components.file_manager.BaseFileManager"><em>BaseFileManager</em></a>) – The local file manager used to stage inputs and read results back</p></li>
+<li><p><strong>files</strong> (<a class="reference internal" href="romtools.hpc.components.file_manager.html#romtools.hpc.components.file_manager.LocalFileManager" title="romtools.hpc.components.file_manager.LocalFileManager"><em>LocalFileManager</em></a>) – The local file manager used to stage inputs and read results back</p></li>
 <li><p><strong>config</strong> (<em>dict</em>)</p></li>
 <li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>)</p></li>
 </ul>
@@ -777,7 +777,7 @@ to pack up and nothing to bring back: only upload does anything.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>connection</strong> (<a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Connection" title="romtools.hpc.connection.Connection"><em>Connection</em></a>) – An established Connection to the remote host</p></li>
-<li><p><strong>files</strong> (<a class="reference internal" href="romtools.hpc.components.file_manager.html#romtools.hpc.components.file_manager.BaseFileManager" title="romtools.hpc.components.file_manager.BaseFileManager"><em>BaseFileManager</em></a>) – The remote file manager used to stage inputs and read results back</p></li>
+<li><p><strong>files</strong> (<a class="reference internal" href="romtools.hpc.components.file_manager.html#romtools.hpc.components.file_manager.RemoteFileManager" title="romtools.hpc.components.file_manager.RemoteFileManager"><em>RemoteFileManager</em></a>) – The remote file manager used to stage inputs and read results back</p></li>
 <li><p><strong>config</strong> (<em>dict</em>)</p></li>
 <li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>)</p></li>
 </ul>
