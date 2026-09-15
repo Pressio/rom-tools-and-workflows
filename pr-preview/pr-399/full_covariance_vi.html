@@ -1,0 +1,617 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Full-covariance variational inference &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/thebelab-helper.js"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'full_covariance_vi';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizer-coordinate-gaussian">Optimizer-coordinate Gaussian</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#natural-score">Natural score</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#entropy-estimators">Entropy estimators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spd-preserving-covariance-update">SPD-preserving covariance update</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adam-semantics">Adam semantics</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-control-variate">MF-VI control variate</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Full-covariance variational inference</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="full-covariance-variational-inference">
+<h1>Full-covariance variational inference<a class="headerlink" href="#full-covariance-variational-inference" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> supports a true full-covariance Gaussian variational family for
+VI and MF-VI.  Select it explicitly with
+<code class="docutils literal notranslate"><span class="pre">variational_distribution=&quot;full_covariance&quot;</span></code>.  Omitting that option keeps
+the historical behavior, including the legacy fixed-correlation multivariate
+path, for backward compatibility.</p>
+<section id="optimizer-coordinate-gaussian">
+<h2>Optimizer-coordinate Gaussian<a class="headerlink" href="#optimizer-coordinate-gaussian" title="Link to this heading">#</a></h2>
+<p>The full-covariance family is defined in optimizer coordinates,</p>
+<div class="math notranslate nohighlight">
+\[q(x)=\mathcal N(\mu,\Sigma), \qquad \Sigma=LL^T,\]</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">L</span></code> is lower triangular with positive diagonal.  If bounded-parameter
+transforms are active, the model parameters are obtained from</p>
+<div class="math notranslate nohighlight">
+\[\theta=T(x).\]</div>
+<p>The Gaussian score is always formed with <code class="docutils literal notranslate"><span class="pre">x</span></code> rather than the transformed
+physical parameters.  <code class="docutils literal notranslate"><span class="pre">L</span></code> is used for stable sampling, density evaluation,
+and restart persistence; the optimization geometry is defined in mean and
+covariance coordinates.</p>
+</section>
+<section id="natural-score">
+<h2>Natural score<a class="headerlink" href="#natural-score" title="Link to this heading">#</a></h2>
+<p>For <span class="math notranslate nohighlight">\(\delta=x-\mu\)</span>, the Gaussian Fisher inverse maps the ordinary score
+to the especially simple per-sample natural score</p>
+<div class="math notranslate nohighlight">
+\[\widetilde s_\mu = \delta,
+\qquad
+\widetilde S_\Sigma = \delta\delta^T-\Sigma.\]</div>
+<p>For an ELBO signal <span class="math notranslate nohighlight">\(w_i\)</span>, the estimated natural gradient is therefore</p>
+<div class="math notranslate nohighlight">
+\[\widetilde g_\mu
+= \frac{1}{N}\sum_i w_i\delta_i,\]</div>
+<div class="math notranslate nohighlight">
+\[\widetilde G_\Sigma
+= \frac{1}{N}\sum_i w_i
+  (\delta_i\delta_i^T-\Sigma).\]</div>
+<p>This avoids assembling or inverting the full Fisher matrix and avoids
+reconstructing a covariance gradient from a projected Cholesky gradient.
+Symmetric covariance tangents are packed with an isometric <code class="docutils literal notranslate"><span class="pre">svec</span></code> mapping,
+which scales off-diagonal entries by <span class="math notranslate nohighlight">\(\sqrt{2}\)</span> so Euclidean vector
+inner products match Frobenius matrix inner products.</p>
+</section>
+<section id="entropy-estimators">
+<h2>Entropy estimators<a class="headerlink" href="#entropy-estimators" title="Link to this heading">#</a></h2>
+<p>Both VI entropy strategies are supported.  The <code class="docutils literal notranslate"><span class="pre">joint</span></code> strategy includes
+<code class="docutils literal notranslate"><span class="pre">-log</span> <span class="pre">q</span></code> in the sampled ELBO signal.  With a suitable baseline it retains
+the exact fixed-point property: when the variational distribution equals the
+target posterior, the sampled score contribution vanishes.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">score_function_entropy_strategy=&quot;analytic&quot;</span></code>, the Gaussian entropy is
+handled exactly.  Its covariance natural gradient is</p>
+<div class="math notranslate nohighlight">
+\[\widetilde G_{\Sigma,H}=\Sigma,\]</div>
+<p>with no mean contribution.  In MF-VI this exact entropy contribution is added
+once after the stochastic multifidelity control-variate estimator; it is not
+included in the HF/LF control-variate fit.</p>
+</section>
+<section id="spd-preserving-covariance-update">
+<h2>SPD-preserving covariance update<a class="headerlink" href="#spd-preserving-covariance-update" title="Link to this heading">#</a></h2>
+<p>Given a symmetric covariance tangent direction <span class="math notranslate nohighlight">\(V_\Sigma\)</span>, define</p>
+<div class="math notranslate nohighlight">
+\[A=L^{-1}V_\Sigma L^{-T}.\]</div>
+<p>The covariance update uses</p>
+<div class="math notranslate nohighlight">
+\[\Sigma_+ = L\exp(\alpha A)L^T,\]</div>
+<p>followed by a Cholesky factorization of <span class="math notranslate nohighlight">\(\Sigma_+\)</span>.  This preserves
+positive definiteness by construction and has first-order direction
+<span class="math notranslate nohighlight">\(V_\Sigma\)</span>.  A configurable <code class="docutils literal notranslate"><span class="pre">max_covariance_log_step</span></code> uniformly limits
+<span class="math notranslate nohighlight">\(\max_j|\alpha\lambda_j(A)|\)</span> before exponentiation instead of clipping
+covariance eigenvalues after the update.</p>
+</section>
+<section id="adam-semantics">
+<h2>Adam semantics<a class="headerlink" href="#adam-semantics" title="Link to this heading">#</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">gradient_method=&quot;natural&quot;</span></code>, Adam receives the packed Gaussian natural
+gradient and applies its existing componentwise moment accumulation before the
+covariance block is mapped back to the SPD manifold.  This is a
+Fisher-preconditioned/natural-gradient Adam method, not a fully
+coordinate-invariant Riemannian Adam algorithm with tangent-space moment
+transport.</p>
+</section>
+<section id="mf-vi-control-variate">
+<h2>MF-VI control variate<a class="headerlink" href="#mf-vi-control-variate" title="Link to this heading">#</a></h2>
+<p>For MF-VI the stochastic quantity passed to the multifidelity control variate
+is the complete packed natural-gradient contribution</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\Xi_i = (s_i-b_i)
+\begin{bmatrix}
+  \delta_i \\
+  \operatorname{svec}(\delta_i\delta_i^T-\Sigma)
+\end{bmatrix}.\end{split}\]</div>
+<p>The existing scalar, componentwise, or matrix-valued MF control-variate
+coefficient is applied to this complete vector.  This preserves coupling
+between the mean and covariance directions and keeps the baseline control
+variate distinct from the multifidelity control variate.</p>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
+<p>A diagonal prior can initialize a full-covariance variational family; the
+covariance is then free to develop nonzero correlations during optimization.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">prior_parameter_space</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
+    <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observation_covariance</span><span class="p">,</span>
+    <span class="n">variational_distribution</span><span class="o">=</span><span class="s2">"full_covariance"</span><span class="p">,</span>
+    <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span>
+    <span class="n">optimizer_config</span><span class="o">=</span><span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VIAdamOptimizerConfig</span><span class="p">(</span>
+        <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The complete covariance/Cholesky state is written to the VI history and restart
+files.  Full-covariance Newton/Hessian support is intentionally not included in
+this implementation; use gradient or Adam optimization for this family.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizer-coordinate-gaussian">Optimizer-coordinate Gaussian</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#natural-score">Natural score</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#entropy-estimators">Entropy estimators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spd-preserving-covariance-update">SPD-preserving covariance update</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adam-semantics">Adam semantics</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mf-vi-control-variate">MF-VI control variate</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/full_covariance_vi.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
