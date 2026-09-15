@@ -494,8 +494,9 @@ in closed form,</p>
 the exact posterior.</p>
 <p>The example compares single-fidelity VI with MF-VI using the automatic
 Gaussian-process ROM. Both methods use Newton updates in natural coordinates,
-with <code class="docutils literal notranslate"><span class="pre">newton_regularization=5e-4</span></code>. The stochastic nonmonotone line search is
-capped at <code class="docutils literal notranslate"><span class="pre">max_step_size=1.0</span></code>. MF-VI uses the automatic GP ROM with
+with <code class="docutils literal notranslate"><span class="pre">newton_regularization=1e-4</span></code> and the joint entropy estimator. The full
+run uses 16 FOM samples per iteration. The stochastic nonmonotone line search
+is capped at <code class="docutils literal notranslate"><span class="pre">max_step_size=1.0</span></code>. MF-VI uses the automatic GP ROM with
 <code class="docutils literal notranslate"><span class="pre">max_rom_training_history=4</span></code>.</p>
 <p>The example also demonstrates the revised API in which
 <code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines the prior while the required
@@ -523,7 +524,7 @@ selects the diagonal/mean-field VI implementation.</p>
 <p>The core optimizer configuration used for both VI and MF-VI is</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
     <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
+    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
     <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
     <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
 <span class="p">)</span>
@@ -533,10 +534,18 @@ selects the diagonal/mean-field VI implementation.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>The MF-VI call uses the automatic GP ROM and retains four iterations of ROM
-training history:</p>
+<p>The shared VI/MF-VI arguments explicitly use the joint entropy estimator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">common_arguments</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="s2">"joint"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The full run uses 16 FOM samples per iteration. The MF-VI call uses the
+automatic GP ROM and retains four iterations of ROM training history:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
+    <span class="n">fom_sample_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
     <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
     <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
 <span class="p">)</span>
