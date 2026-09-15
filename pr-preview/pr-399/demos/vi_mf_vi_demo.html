@@ -624,7 +624,7 @@ truth.</span><a class="headerlink" href="#id3" title="Link to this image">#</a><
 <span class="linenos"> 42</span>    <span class="n">problem</span> <span class="o">=</span> <span class="n">build_problem</span><span class="p">(</span><span class="n">equispaced</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="linenos"> 43</span>    <span class="n">model</span> <span class="o">=</span> <span class="n">AnalyticSineQoiModel</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
 <span class="linenos"> 44</span>
-<span class="linenos"> 45</span>    <span class="n">sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">24</span>
+<span class="linenos"> 45</span>    <span class="n">sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">16</span>
 <span class="linenos"> 46</span>    <span class="n">rom_extra_sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">48</span>
 <span class="linenos"> 47</span>    <span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">30</span>
 <span class="linenos"> 48</span>
@@ -642,7 +642,7 @@ truth.</span><a class="headerlink" href="#id3" title="Link to this image">#</a><
 <span class="linenos"> 60</span>    <span class="p">)</span>
 <span class="linenos"> 61</span>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
 <span class="linenos"> 62</span>        <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-<span class="linenos"> 63</span>        <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
+<span class="linenos"> 63</span>        <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
 <span class="linenos"> 64</span>        <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
 <span class="linenos"> 65</span>        <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
 <span class="linenos"> 66</span>    <span class="p">)</span>
