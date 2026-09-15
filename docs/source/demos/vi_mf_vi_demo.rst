@@ -53,27 +53,34 @@ form,
 This lets both examples measure convergence directly against the exact
 posterior.
 
-Shared optimization configuration
----------------------------------
+VI-paper benchmark configuration
+--------------------------------
 
-Both examples compare single-fidelity VI with MF-VI using the automatic
-Gaussian-process ROM. The production runs use the same optimizer settings:
+The diagonal example reproduces the Newton and multifidelity settings used by
+the VI-paper analytic-sine benchmark. In particular, the production run uses a
+full Hessian, lagged stochastic curvature, natural coordinates, and the same
+Hessian averaging and line-search scales:
 
 .. code-block:: python
 
    optimizer = VINewtonOptimizerConfig(
        newton_metric="natural",
-       newton_regularization=1e-4,
+       newton_hessian_type="full",
+       newton_curvature_strategy="lagged",
+       newton_hessian_averaging_factor=0.25,
+       newton_regularization=5e-4,
        gradient_norm_tolerance=0.0,
-       max_iterations=max_iterations,
+       max_iterations=1000,
    )
 
    line_search = VIStochasticNonmonotoneLineSearchConfig(
+       initial_step_size=0.25,
        max_step_size=1.0,
    )
 
-The shared VI/MF-VI arguments explicitly use the joint entropy estimator and a
-leave-one-out baseline:
+The shared VI/MF-VI arguments use the joint entropy estimator, a leave-one-out
+baseline, zero observation-covariance regularization, and the same inference
+seed as the paper:
 
 .. code-block:: python
 
@@ -85,18 +92,26 @@ leave-one-out baseline:
        line_search_config=line_search,
        baseline_method="loo",
        score_function_entropy_strategy="joint",
+       covariance_regularization=0.0,
+       random_seed=7,
    )
 
-The full runs use 16 FOM samples per iteration. MF-VI uses the automatic GP ROM
-with four iterations of training history:
+The full diagonal run uses 16 FOM samples per iteration. MF-VI uses 64
+additional ROM samples, the automatic GP ROM, and four iterations of ROM
+training history, matching the paper benchmark:
 
 .. code-block:: python
 
    workflows.mf_vi_with_auto_rom(
        ...,
        fom_sample_size=16,
+       rom_extra_sample_size=64,
        max_rom_training_history=4,
        rom_type="gp",
+       rom_args={
+           "normalize_parameters": True,
+           "normalize_targets": True,
+       },
    )
 
 ``prior_parameter_space`` defines the Bayesian prior, while the required
@@ -118,7 +133,9 @@ also diagonal, the exact posterior covariance is diagonal to numerical
 precision.
 
 The variational initializer is a ``GaussianParameterSpace``. This selects the
-diagonal/mean-field VI implementation.
+diagonal/mean-field VI implementation. This is the case that corresponds
+directly to the VI-paper analytic-sine benchmark and therefore uses the exact
+configuration listed above.
 
 Run the example with
 
@@ -196,8 +213,11 @@ with the same diagonal prior covariance. Its *type* selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
 optimization.
 
-This case uses the same natural-coordinate Newton configuration as the diagonal
-case. For the full-covariance family, Newton curvature is formed in
+This case uses the same natural Newton metric, full Hessian, regularization,
+line-search scales, FOM/ROM sample allocation, GP configuration, and random
+seed as the paper-matched diagonal case. Full-covariance Newton currently uses
+same-sample curvature rather than the diagonal implementation's lagged
+curvature averaging. Newton curvature is formed in
 :math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
