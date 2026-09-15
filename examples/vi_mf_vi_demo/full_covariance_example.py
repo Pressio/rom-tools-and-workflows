@@ -85,6 +85,7 @@ def main(
         optimizer_config=optimizer,
         baseline_method="loo",
         score_function_entropy_strategy="joint",
+        bounded_parameter_handling="clip",
         random_seed=19,
         restart_files_to_keep=max_iterations + 1,
     )
