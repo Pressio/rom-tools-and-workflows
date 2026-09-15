@@ -155,6 +155,7 @@ def main(
     common_arguments = {
         "model": model,
         "prior_parameter_space": prior,
+        "initial_variational_parameter_space": prior,
         "observations": observations,
         "observations_covariance": (
             np.eye(observations.size) * observation_noise_std**2
