@@ -1,0 +1,1318 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.workflows.inverse.vi_adaptive_sampling &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../_static/thebelab-helper.js"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/workflows/inverse/vi_adaptive_sampling';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_adaptive_sampling</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.workflows.inverse.vi_adaptive_sampling</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Adaptive small-batch sampling for Newton VI and MFVI.</span>
+
+<span class="sd">The public wrappers in this module are opt-in. When ``adaptive_sample_config``</span>
+<span class="sd">is ``None`` they delegate to the existing VI/MFVI wrapper stack unchanged.</span>
+<span class="sd">When enabled for Newton, the current Monte Carlo batch is enriched until a</span>
+<span class="sd">delete-one jackknife estimate of the covariance of the regularized Newton step</span>
+<span class="sd">is sufficiently small, or a configured maximum sample size is reached.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_dispatcher</span><span class="p">,</span> <span class="n">resolve_local_dispatcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">mf_vi_drivers</span> <span class="k">as</span> <span class="n">_mf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">vi_drivers</span> <span class="k">as</span> <span class="n">_vi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">VILegacyLineSearchConfig</span><span class="p">,</span>
+    <span class="n">VINewtonOptimizerConfig</span><span class="p">,</span>
+    <span class="n">_resolve_line_search_config</span><span class="p">,</span>
+    <span class="n">_resolve_optimizer_config</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_run_directory_policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">mf_vi_with_auto_rom</span> <span class="k">as</span> <span class="n">_BASE_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span>
+    <span class="n">run_mf_vi</span> <span class="k">as</span> <span class="n">_BASE_RUN_MF_VI</span><span class="p">,</span>
+    <span class="n">run_vi</span> <span class="k">as</span> <span class="n">_BASE_RUN_VI</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">vi_sample_reuse</span> <span class="k">as</span> <span class="n">_reuse</span>
+
+
+<span class="n">_ORIGINAL_RUN_VI</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_RUN_VI</span>
+<span class="n">_ORIGINAL_RUN_MF_VI</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_RUN_MF_VI</span>
+<span class="n">_ORIGINAL_MF_VI_WITH_AUTO_ROM</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_MF_VI_WITH_AUTO_ROM</span>
+<span class="n">_ORIGINAL_EVALUATE_VI_STATE</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_EVALUATE_VI_STATE</span>
+<span class="n">_ORIGINAL_EVALUATE_VI_CANDIDATE</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_EVALUATE_VI_CANDIDATE</span>
+<span class="n">_ORIGINAL_EVALUATE_MF_VI_STATE</span> <span class="o">=</span> <span class="n">_reuse</span><span class="o">.</span><span class="n">_ORIGINAL_EVALUATE_MF_VI_STATE</span>
+
+
+<div class="viewcode-block" id="VIAdaptiveSampleConfig">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_adaptive_sampling.html#romtools.workflows.inverse.vi_adaptive_sampling.VIAdaptiveSampleConfig">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VIAdaptiveSampleConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Configuration for jackknife-based adaptive Newton sample enrichment.</span>
+
+<span class="sd">    The acceptance rule is</span>
+
+<span class="sd">    ``sigma_step &lt;= absolute_tolerance + relative_tolerance * max(||step||, step_norm_floor)``.</span>
+
+<span class="sd">    The delete-one jackknife is applied to the *regularized Newton step*, so the</span>
+<span class="sd">    diagnostic includes model-dependent gradient variance, Hessian variance,</span>
+<span class="sd">    their correlation, and (for MFVI) the fitted control-variate coefficients.</span>
+<span class="sd">    """</span>
+
+    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">max_sample_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span>
+    <span class="n">growth_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">relative_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span>
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">step_norm_floor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0e-2</span>
+    <span class="n">disable_backtracking</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sample_size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"max_sample_size must be at least 2"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">growth_factor</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">growth_factor</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"growth_factor must be finite and greater than 1"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"relative_tolerance must be finite and non-negative"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"absolute_tolerance must be finite and non-negative"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_norm_floor</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step_norm_floor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"step_norm_floor must be finite and non-negative"</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_AdaptiveContext</span><span class="p">:</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">VIAdaptiveSampleConfig</span>
+    <span class="n">newton_config</span><span class="p">:</span> <span class="n">VINewtonOptimizerConfig</span>
+
+
+<span class="n">_ACTIVE_CONTEXT</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">_AdaptiveContext</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span>
+    <span class="s2">"romtools_vi_adaptive_sample_context"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bind</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">signature_source</span><span class="p">)</span>
+    <span class="n">bound</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">bind_partial</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">bound</span><span class="o">.</span><span class="n">apply_defaults</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">bound</span><span class="o">.</span><span class="n">arguments</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_newton_context</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_bind</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">optimizer_method</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"optimizer_method"</span><span class="p">,</span> <span class="s2">"gradient"</span><span class="p">)</span>
+    <span class="n">optimizer_config</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"optimizer_config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">method</span><span class="p">,</span> <span class="n">resolved</span> <span class="o">=</span> <span class="n">_resolve_optimizer_config</span><span class="p">(</span>
+        <span class="n">optimizer_method</span><span class="p">,</span>
+        <span class="n">optimizer_config</span><span class="p">,</span>
+        <span class="n">default_newton_config</span><span class="o">=</span><span class="n">VINewtonOptimizerConfig</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">"newton"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"adaptive_sample_config is currently supported only for optimizer_method='newton'"</span><span class="p">)</span>
+    <span class="n">sampling_method</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sampling_method"</span><span class="p">,</span> <span class="s2">"mc"</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sampling_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"mc"</span><span class="p">,</span> <span class="s2">"montecarlo"</span><span class="p">,</span> <span class="s2">"monte_carlo"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"Jackknife adaptive sampling currently supports sampling_method='mc' only."</span>
+        <span class="p">)</span>
+    <span class="n">sample_reuse_config</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sample_reuse_config"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sample_reuse_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sample_reuse_config</span><span class="p">,</span> <span class="s2">"enabled"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"adaptive_sample_config is for standard VI/MFVI and cannot be combined with sample_reuse_config."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_AdaptiveContext</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">newton_config</span><span class="o">=</span><span class="n">resolved</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_single_candidate_line_search</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Disable repeated Newton backtracking while retaining the next-state evaluation."""</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_bind</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"line_search_method"</span><span class="p">,</span> <span class="s2">"legacy"</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"line_search_config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">resolved</span> <span class="o">=</span> <span class="n">_resolve_line_search_config</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">permissive</span> <span class="o">=</span> <span class="n">VILegacyLineSearchConfig</span><span class="p">(</span>
+        <span class="n">initial_step_size</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">initial_step_size</span><span class="p">,</span>
+        <span class="n">max_step_size</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">max_step_size</span><span class="p">,</span>
+        <span class="n">step_size_growth_factor</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">step_size_growth_factor</span><span class="p">,</span>
+        <span class="n">step_size_decay_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">max_step_size_decrease_trys</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">relaxation_parameter</span><span class="o">=</span><span class="mf">1.0e12</span><span class="p">,</span>
+        <span class="n">line_search_objective</span><span class="o">=</span><span class="s2">"elbo"</span><span class="p">,</span>
+        <span class="n">line_search_sample_growth_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">log_std_learning_rate_factor</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">log_std_learning_rate_factor</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">kwargs</span><span class="p">[</span><span class="s2">"line_search_method"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"legacy"</span>
+    <span class="n">kwargs</span><span class="p">[</span><span class="s2">"line_search_config"</span><span class="p">]</span> <span class="o">=</span> <span class="n">permissive</span>
+    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_newton_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">variational_log_std</span><span class="p">,</span> <span class="n">min_variational_std</span><span class="p">,</span> <span class="n">max_variational_std</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+    <span class="n">variational_std</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_variational_std</span><span class="p">(</span>
+        <span class="n">variational_log_std</span><span class="p">,</span> <span class="n">min_variational_std</span><span class="p">,</span> <span class="n">max_variational_std</span>
+    <span class="p">)</span>
+    <span class="n">metric_scale</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_newton_metric_scale</span><span class="p">(</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">newton_config</span><span class="o">.</span><span class="n">newton_metric</span><span class="p">,</span> <span class="n">variational_std</span>
+    <span class="p">)</span>
+    <span class="n">mean_step</span><span class="p">,</span> <span class="n">log_std_step</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_newton_step</span><span class="p">(</span>
+        <span class="n">state</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">newton_config</span><span class="o">.</span><span class="n">newton_regularization</span><span class="p">,</span>
+        <span class="n">newton_hessian_type</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">newton_config</span><span class="o">.</span><span class="n">newton_hessian_type</span><span class="p">,</span>
+        <span class="n">metric_scale</span><span class="o">=</span><span class="n">metric_scale</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">mean_step</span><span class="p">,</span> <span class="n">log_std_step</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_jackknife_covariance</span><span class="p">(</span><span class="n">steps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Classical delete-one jackknife covariance of a vector statistic."""</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">steps</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">steps</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"jackknife steps must have shape (N, d) with N &gt;= 2"</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">steps</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">centered</span> <span class="o">=</span> <span class="n">steps</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">count</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">centered</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">centered</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_diagnostics</span><span class="p">(</span><span class="n">nominal_step</span><span class="p">,</span> <span class="n">jackknife_steps</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">_jackknife_covariance</span><span class="p">(</span><span class="n">jackknife_steps</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">covariance</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)))</span>
+    <span class="n">step_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">nominal_step</span><span class="p">))</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">step_norm</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">step_norm_floor</span><span class="p">)</span>
+    <span class="n">relative</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">absolute_tolerance</span> <span class="o">+</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">relative_tolerance</span> <span class="o">*</span> <span class="n">scale</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"jackknife_step_covariance"</span><span class="p">:</span> <span class="n">covariance</span><span class="p">,</span>
+        <span class="s2">"jackknife_step_sigma"</span><span class="p">:</span> <span class="n">sigma</span><span class="p">,</span>
+        <span class="s2">"jackknife_step_relative_uncertainty"</span><span class="p">:</span> <span class="n">relative</span><span class="p">,</span>
+        <span class="s2">"jackknife_step_threshold"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">),</span>
+        <span class="s2">"jackknife_step_accepted"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">sigma</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_attach_diagnostics</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">diagnostics</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="n">max_reached</span><span class="p">):</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">diagnostics</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">"adaptive_sample_size"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sample_size</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">"adaptive_enrichment_stages"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stages</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">"adaptive_max_sample_size_reached"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">max_reached</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">"Adaptive sampling: "</span>
+        <span class="sa">f</span><span class="s2">"N=</span><span class="si">{</span><span class="n">sample_size</span><span class="si">}</span><span class="s2">, sigma_step=</span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'jackknife_step_sigma'</span><span class="p">]</span><span class="si">:</span><span class="s2">.5e</span><span class="si">}</span><span class="s2">, "</span>
+        <span class="sa">f</span><span class="s2">"relative=</span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'jackknife_step_relative_uncertainty'</span><span class="p">]</span><span class="si">:</span><span class="s2">.5e</span><span class="si">}</span><span class="s2">, "</span>
+        <span class="sa">f</span><span class="s2">"threshold=</span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'jackknife_step_threshold'</span><span class="p">]</span><span class="si">:</span><span class="s2">.5e</span><span class="si">}</span><span class="s2">, "</span>
+        <span class="sa">f</span><span class="s2">"accepted=</span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'jackknife_step_accepted'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_append_vi_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">extra</span><span class="p">):</span>
+    <span class="n">qois</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">extra</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">]])</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span> <span class="n">extra</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"qois"</span><span class="p">:</span> <span class="n">qois</span><span class="p">,</span> <span class="s2">"mean-qoi"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">qois</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="s2">"errors"</span><span class="p">:</span> <span class="n">errors</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_subset_vi_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">keep</span><span class="p">):</span>
+    <span class="n">qois</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">][:,</span> <span class="n">keep</span><span class="p">]</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">][:,</span> <span class="n">keep</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"qois"</span><span class="p">:</span> <span class="n">qois</span><span class="p">,</span> <span class="s2">"mean-qoi"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">qois</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="s2">"errors"</span><span class="p">:</span> <span class="n">errors</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_vi_state</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_build_vi_state_from_results</span><span class="p">(</span>
+        <span class="n">optimizer_samples</span><span class="o">=</span><span class="n">optimizer_samples</span><span class="p">,</span>
+        <span class="n">parameter_samples</span><span class="o">=</span><span class="n">parameter_samples</span><span class="p">,</span>
+        <span class="n">iteration_results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+        <span class="n">observations</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+        <span class="n">observations_covariance</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"observations_covariance"</span><span class="p">],</span>
+        <span class="n">variational_mean</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+        <span class="n">variational_log_std</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+        <span class="n">prior_mean</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"prior_mean"</span><span class="p">],</span>
+        <span class="n">prior_precision_operator</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"prior_precision_operator"</span><span class="p">],</span>
+        <span class="n">prior_covariance_log_det</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"prior_covariance_log_det"</span><span class="p">],</span>
+        <span class="n">covariance_regularization</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"covariance_regularization"</span><span class="p">],</span>
+        <span class="n">baseline_method</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"baseline_method"</span><span class="p">],</span>
+        <span class="n">gradient_method</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"gradient_method"</span><span class="p">],</span>
+        <span class="n">bounded_parameter_handling</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"bounded_parameter_handling"</span><span class="p">],</span>
+        <span class="n">min_variational_std</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+        <span class="n">max_variational_std</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+        <span class="n">parameter_mins</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"parameter_mins"</span><span class="p">],</span>
+        <span class="n">parameter_maxes</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"parameter_maxes"</span><span class="p">],</span>
+        <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_interior_margin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+        <span class="n">transform_map</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_map"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">),</span>
+        <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+        <span class="n">elbo_scaling_factor</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"elbo_scaling_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+        <span class="n">log_likelihood_precision_operator</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"log_likelihood_precision_operator"</span><span class="p">),</span>
+        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"score_function_entropy_strategy"</span><span class="p">,</span> <span class="s2">"analytic"</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_vi_jackknife</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+    <span class="n">sample_count</span> <span class="o">=</span> <span class="n">optimizer_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nominal_step</span> <span class="o">=</span> <span class="n">_newton_step</span><span class="p">(</span>
+        <span class="n">state</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">deleted</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sample_count</span><span class="p">):</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">sample_count</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">keep</span><span class="p">[</span><span class="n">deleted</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">subset_state</span> <span class="o">=</span> <span class="n">_build_vi_state</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">,</span>
+            <span class="n">optimizer_samples</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">parameter_samples</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">_subset_vi_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">keep</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">_newton_step</span><span class="p">(</span>
+                <span class="n">subset_state</span><span class="p">,</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+                <span class="n">ctx</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_diagnostics</span><span class="p">(</span><span class="n">nominal_step</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span> <span class="n">ctx</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adaptive_vi_state_impl</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">standard_normal_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">sample_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">"sample_size"</span><span class="p">])</span>
+    <span class="n">max_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">sample_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_sample_size</span><span class="p">))</span>
+    <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_draw_parameter_samples</span><span class="p">(</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+        <span class="n">sample_size</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"bounded_parameter_handling"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_mins"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_maxes"</span><span class="p">],</span>
+        <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_interior_margin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+        <span class="n">transform_map</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_map"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">),</span>
+        <span class="n">standard_normal_samples</span><span class="o">=</span><span class="n">standard_normal_samples</span><span class="p">,</span>
+        <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+        <span class="n">sampling_method</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sampling_method"</span><span class="p">,</span> <span class="s2">"mc"</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_run_vi_iteration_samples</span><span class="p">(</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"run_directory_base"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+        <span class="n">parameter_samples</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"evaluation_concurrency"</span><span class="p">],</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dispatcher"</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">_build_vi_state</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+    <span class="n">stages</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">_vi_jackknife</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">diagnostics</span><span class="p">[</span><span class="s2">"jackknife_step_accepted"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sample_size</span> <span class="o">&gt;=</span> <span class="n">max_size</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">_attach_diagnostics</span><span class="p">(</span>
+                    <span class="n">state</span><span class="p">,</span>
+                    <span class="n">diagnostics</span><span class="p">,</span>
+                    <span class="n">sample_size</span><span class="p">,</span>
+                    <span class="n">stages</span><span class="p">,</span>
+                    <span class="n">sample_size</span> <span class="o">&gt;=</span> <span class="n">max_size</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">diagnostics</span><span class="p">[</span><span class="s2">"jackknife_step_accepted"</span><span class="p">],</span>
+                <span class="p">),</span>
+                <span class="n">optimizer_samples</span><span class="p">,</span>
+                <span class="n">parameter_samples</span><span class="p">,</span>
+                <span class="n">results</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">max_size</span><span class="p">,</span>
+            <span class="nb">max</span><span class="p">(</span><span class="n">sample_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">sample_size</span> <span class="o">*</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">growth_factor</span><span class="p">))),</span>
+        <span class="p">)</span>
+        <span class="n">extra_count</span> <span class="o">=</span> <span class="n">target</span> <span class="o">-</span> <span class="n">sample_size</span>
+        <span class="n">extra_optimizer</span><span class="p">,</span> <span class="n">extra_parameters</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_draw_parameter_samples</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+            <span class="n">extra_count</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"bounded_parameter_handling"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_mins"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_maxes"</span><span class="p">],</span>
+            <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_interior_margin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">transform_map</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_map"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">),</span>
+            <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+            <span class="n">sampling_method</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sampling_method"</span><span class="p">,</span> <span class="s2">"mc"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">extra_results</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_run_vi_iteration_samples</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'run_directory_base'</span><span class="p">]</span><span class="si">}</span><span class="s2">adaptive_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+            <span class="n">extra_parameters</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"evaluation_concurrency"</span><span class="p">],</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dispatcher"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">extra_optimizer</span><span class="p">])</span>
+        <span class="n">parameter_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">parameter_samples</span><span class="p">,</span> <span class="n">extra_parameters</span><span class="p">])</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">_append_vi_results</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">extra_results</span><span class="p">)</span>
+        <span class="n">sample_size</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="n">stages</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">_build_vi_state</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adaptive_vi_state</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_ORIGINAL_EVALUATE_VI_STATE</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">_bind</span><span class="p">(</span><span class="n">_ORIGINAL_EVALUATE_VI_STATE</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_adaptive_vi_state_impl</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adaptive_vi_candidate</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_ORIGINAL_EVALUATE_VI_CANDIDATE</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">_bind</span><span class="p">(</span><span class="n">_ORIGINAL_EVALUATE_VI_CANDIDATE</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"line_search_objective"</span><span class="p">,</span> <span class="s2">"elbo"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"elbo"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"adaptive_sample_config currently requires line_search_objective='elbo'."</span>
+        <span class="p">)</span>
+    <span class="n">state_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">state_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"line_search_objective"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">standard</span> <span class="o">=</span> <span class="n">state_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"standard_normal_samples"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">state_args</span><span class="p">[</span><span class="s2">"sampling_method"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"mc"</span>
+    <span class="n">state</span><span class="p">,</span> <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">parameter_samples</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">_adaptive_vi_state_impl</span><span class="p">(</span>
+        <span class="n">state_args</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">standard_normal_samples</span><span class="o">=</span><span class="n">standard</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"optimizer_samples"</span><span class="p">:</span> <span class="n">optimizer_samples</span><span class="p">,</span>
+        <span class="s2">"parameter_samples"</span><span class="p">:</span> <span class="n">parameter_samples</span><span class="p">,</span>
+        <span class="s2">"iteration_results"</span><span class="p">:</span> <span class="n">results</span><span class="p">,</span>
+        <span class="s2">"mean_relative_mse"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"mean_relative_mse"</span><span class="p">],</span>
+        <span class="s2">"state"</span><span class="p">:</span> <span class="n">state</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mf_arrays</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="n">n_fom</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_fom"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_base</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_rom_base"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_extra</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_rom_only"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"optimizer_samples"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">optimizer</span><span class="p">[:</span><span class="n">n_fom</span><span class="p">],</span>
+        <span class="n">optimizer</span><span class="p">[</span><span class="n">n_fom</span><span class="p">:</span><span class="n">n_fom</span> <span class="o">+</span> <span class="n">n_base</span><span class="p">],</span>
+        <span class="n">optimizer</span><span class="p">[</span><span class="n">n_fom</span> <span class="o">+</span> <span class="n">n_base</span><span class="p">:</span><span class="n">n_fom</span> <span class="o">+</span> <span class="n">n_base</span> <span class="o">+</span> <span class="n">n_extra</span><span class="p">],</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mf_estimator_state</span><span class="p">(</span>
+    <span class="n">a</span><span class="p">,</span>
+    <span class="n">optimizer_fom</span><span class="p">,</span>
+    <span class="n">optimizer_base</span><span class="p">,</span>
+    <span class="n">optimizer_extra</span><span class="p">,</span>
+    <span class="n">log_joint_fom</span><span class="p">,</span>
+    <span class="n">log_joint_base</span><span class="p">,</span>
+    <span class="n">log_joint_extra</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">variational_std</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_variational_std</span><span class="p">(</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">gradient</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">_compute_mfmc_reinforce_gradients</span><span class="p">(</span>
+        <span class="n">optimizer_fom</span><span class="p">,</span>
+        <span class="n">optimizer_base</span><span class="p">,</span>
+        <span class="n">optimizer_extra</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+        <span class="n">variational_std</span><span class="p">,</span>
+        <span class="n">log_joint_fom</span><span class="p">,</span>
+        <span class="n">log_joint_base</span><span class="p">,</span>
+        <span class="n">log_joint_extra</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"baseline_method"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"use_mfmc_control_variate"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"mfmc_control_variate_mode"</span><span class="p">],</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"elbo_scaling_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"score_function_entropy_strategy"</span><span class="p">,</span> <span class="s2">"analytic"</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">hessian_full</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">_compute_mfmc_reinforce_hessian_full</span><span class="p">(</span>
+        <span class="n">optimizer_fom</span><span class="p">,</span>
+        <span class="n">optimizer_base</span><span class="p">,</span>
+        <span class="n">optimizer_extra</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+        <span class="n">variational_std</span><span class="p">,</span>
+        <span class="n">log_joint_fom</span><span class="p">,</span>
+        <span class="n">log_joint_base</span><span class="p">,</span>
+        <span class="n">log_joint_extra</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"baseline_method"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"use_mfmc_control_variate"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"mfmc_control_variate_mode"</span><span class="p">],</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"elbo_scaling_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"gradient_mean"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">"gradient_log_std"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">"hessian_diagonal_mean"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hessian_full</span><span class="p">[:</span><span class="n">dimensionality</span><span class="p">,</span> <span class="p">:</span><span class="n">dimensionality</span><span class="p">]),</span>
+        <span class="s2">"hessian_diagonal_log_std"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hessian_full</span><span class="p">[</span><span class="n">dimensionality</span><span class="p">:,</span> <span class="n">dimensionality</span><span class="p">:]),</span>
+        <span class="s2">"hessian_full"</span><span class="p">:</span> <span class="n">hessian_full</span><span class="p">,</span>
+        <span class="s2">"mfmc_alpha_mean"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+        <span class="s2">"mfmc_alpha_log_std"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+        <span class="s2">"gradient_signal_to_noise_ratio"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span>
+        <span class="s2">"gradient_standard_error"</span><span class="p">:</span> <span class="n">gradient</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mf_jackknife</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+    <span class="n">optimizer_fom</span><span class="p">,</span> <span class="n">optimizer_base</span><span class="p">,</span> <span class="n">optimizer_extra</span> <span class="o">=</span> <span class="n">_mf_arrays</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">sample_count</span> <span class="o">=</span> <span class="n">optimizer_fom</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nominal_step</span> <span class="o">=</span> <span class="n">_newton_step</span><span class="p">(</span>
+        <span class="n">state</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">deleted</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sample_count</span><span class="p">):</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">sample_count</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">keep</span><span class="p">[</span><span class="n">deleted</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">subset_state</span> <span class="o">=</span> <span class="n">_mf_estimator_state</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">,</span>
+            <span class="n">optimizer_fom</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">optimizer_base</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">optimizer_extra</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"log_joint_terms_fom"</span><span class="p">][</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"log_joint_terms_rom_base"</span><span class="p">][</span><span class="n">keep</span><span class="p">],</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"log_joint_terms_rom_only"</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">_newton_step</span><span class="p">(</span>
+                <span class="n">subset_state</span><span class="p">,</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+                <span class="n">ctx</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_diagnostics</span><span class="p">(</span><span class="n">nominal_step</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span> <span class="n">ctx</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_recompute_mf_state</span><span class="p">(</span>
+    <span class="n">a</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">,</span>
+    <span class="n">optimizer_fom</span><span class="p">,</span>
+    <span class="n">parameter_fom</span><span class="p">,</span>
+    <span class="n">fom_results</span><span class="p">,</span>
+    <span class="n">optimizer_base</span><span class="p">,</span>
+    <span class="n">parameter_base</span><span class="p">,</span>
+    <span class="n">base_results</span><span class="p">,</span>
+    <span class="n">optimizer_extra</span><span class="p">,</span>
+    <span class="n">parameter_extra</span><span class="p">,</span>
+    <span class="n">extra_results</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"log_likelihood_precision_operator"</span><span class="p">)</span>
+    <span class="n">fom_ll</span><span class="p">,</span> <span class="n">fom_misfits</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_log_likelihoods</span><span class="p">(</span>
+        <span class="n">fom_results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"observations_covariance"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"covariance_regularization"</span><span class="p">],</span>
+        <span class="n">precision</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">base_ll</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_log_likelihoods</span><span class="p">(</span>
+        <span class="n">base_results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"observations_covariance"</span><span class="p">],</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"covariance_regularization"</span><span class="p">],</span>
+        <span class="n">precision</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">optimizer_extra</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">extra_ll</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_log_likelihoods</span><span class="p">(</span>
+            <span class="n">extra_results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"observations_covariance"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"covariance_regularization"</span><span class="p">],</span>
+            <span class="n">precision</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">extra_ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">joint</span><span class="p">(</span><span class="n">ll</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_log_prior_and_joint_terms</span><span class="p">(</span>
+            <span class="n">ll</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="p">,</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"prior_mean"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"prior_precision_operator"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"prior_covariance_log_det"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"bounded_parameter_handling"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_mins"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_maxes"</span><span class="p">],</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_interior_margin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_map"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">fom_prior</span><span class="p">,</span> <span class="n">fom_jac</span><span class="p">,</span> <span class="n">fom_joint</span> <span class="o">=</span> <span class="n">joint</span><span class="p">(</span><span class="n">fom_ll</span><span class="p">,</span> <span class="n">parameter_fom</span><span class="p">,</span> <span class="n">optimizer_fom</span><span class="p">)</span>
+    <span class="n">base_prior</span><span class="p">,</span> <span class="n">base_jac</span><span class="p">,</span> <span class="n">base_joint</span> <span class="o">=</span> <span class="n">joint</span><span class="p">(</span><span class="n">base_ll</span><span class="p">,</span> <span class="n">parameter_base</span><span class="p">,</span> <span class="n">optimizer_base</span><span class="p">)</span>
+    <span class="n">extra_prior</span><span class="p">,</span> <span class="n">extra_jac</span><span class="p">,</span> <span class="n">extra_joint</span> <span class="o">=</span> <span class="n">joint</span><span class="p">(</span><span class="n">extra_ll</span><span class="p">,</span> <span class="n">parameter_extra</span><span class="p">,</span> <span class="n">optimizer_extra</span><span class="p">)</span>
+    <span class="n">estimator</span> <span class="o">=</span> <span class="n">_mf_estimator_state</span><span class="p">(</span>
+        <span class="n">a</span><span class="p">,</span>
+        <span class="n">optimizer_fom</span><span class="p">,</span>
+        <span class="n">optimizer_base</span><span class="p">,</span>
+        <span class="n">optimizer_extra</span><span class="p">,</span>
+        <span class="n">fom_joint</span><span class="p">,</span>
+        <span class="n">base_joint</span><span class="p">,</span>
+        <span class="n">extra_joint</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">variational_std</span><span class="p">,</span> <span class="n">clipped_log_std</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_variational_std</span><span class="p">(</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">update_mean</span><span class="p">,</span> <span class="n">update_log</span><span class="p">,</span> <span class="n">normalized_gradient_method</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_compute_update_directions</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_mean"</span><span class="p">],</span>
+        <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_log_std"</span><span class="p">],</span>
+        <span class="n">variational_std</span><span class="p">,</span>
+        <span class="n">a</span><span class="p">[</span><span class="s2">"gradient_method"</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">entropy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">clipped_log_std</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dimensionality</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+    <span class="n">corr</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">corr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">entropy</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">corr</span><span class="p">)))</span>
+    <span class="n">entropy</span> <span class="o">*=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"elbo_scaling_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extra_joint</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">mf_mean_joint</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_joint</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">base_joint</span><span class="p">,</span> <span class="n">extra_joint</span><span class="p">]))</span>
+            <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">base_joint</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mf_mean_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_joint</span><span class="p">)</span>
+    <span class="n">elbo</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"elbo_scaling_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">mf_mean_joint</span> <span class="o">+</span> <span class="n">entropy</span>
+
+    <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">"optimizer_samples"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">optimizer_fom</span><span class="p">,</span> <span class="n">optimizer_base</span><span class="p">,</span> <span class="n">optimizer_extra</span><span class="p">]),</span>
+            <span class="s2">"parameter_samples"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">parameter_fom</span><span class="p">,</span> <span class="n">parameter_base</span><span class="p">,</span> <span class="n">parameter_extra</span><span class="p">]),</span>
+            <span class="s2">"parameter_samples_fom"</span><span class="p">:</span> <span class="n">parameter_fom</span><span class="p">,</span>
+            <span class="s2">"parameter_samples_rom_base"</span><span class="p">:</span> <span class="n">parameter_base</span><span class="p">,</span>
+            <span class="s2">"parameter_samples_rom_only"</span><span class="p">:</span> <span class="n">parameter_extra</span><span class="p">,</span>
+            <span class="s2">"qois_fom"</span><span class="p">:</span> <span class="n">fom_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span>
+            <span class="s2">"mean_qoi_fom"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="s2">"errors_fom"</span><span class="p">:</span> <span class="n">fom_results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span>
+            <span class="s2">"qois_rom_base"</span><span class="p">:</span> <span class="n">base_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span>
+            <span class="s2">"qois_rom_coupled"</span><span class="p">:</span> <span class="n">base_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span>
+            <span class="s2">"qois_rom_only"</span><span class="p">:</span> <span class="n">extra_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span>
+            <span class="s2">"log_likelihoods_fom"</span><span class="p">:</span> <span class="n">fom_ll</span><span class="p">,</span>
+            <span class="s2">"log_priors_fom"</span><span class="p">:</span> <span class="n">fom_prior</span><span class="p">,</span>
+            <span class="s2">"log_joint_terms_fom"</span><span class="p">:</span> <span class="n">fom_joint</span><span class="p">,</span>
+            <span class="s2">"log_transform_jacobian_fom"</span><span class="p">:</span> <span class="n">fom_jac</span><span class="p">,</span>
+            <span class="s2">"log_likelihoods_rom_base"</span><span class="p">:</span> <span class="n">base_ll</span><span class="p">,</span>
+            <span class="s2">"log_priors_rom_base"</span><span class="p">:</span> <span class="n">base_prior</span><span class="p">,</span>
+            <span class="s2">"log_joint_terms_rom_base"</span><span class="p">:</span> <span class="n">base_joint</span><span class="p">,</span>
+            <span class="s2">"log_transform_jacobian_rom_base"</span><span class="p">:</span> <span class="n">base_jac</span><span class="p">,</span>
+            <span class="s2">"log_likelihoods_rom_coupled"</span><span class="p">:</span> <span class="n">base_ll</span><span class="p">,</span>
+            <span class="s2">"log_likelihoods_rom_only"</span><span class="p">:</span> <span class="n">extra_ll</span><span class="p">,</span>
+            <span class="s2">"log_priors_rom_only"</span><span class="p">:</span> <span class="n">extra_prior</span><span class="p">,</span>
+            <span class="s2">"log_joint_terms_rom_only"</span><span class="p">:</span> <span class="n">extra_joint</span><span class="p">,</span>
+            <span class="s2">"log_transform_jacobian_rom_only"</span><span class="p">:</span> <span class="n">extra_jac</span><span class="p">,</span>
+            <span class="s2">"mean_misfit"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_misfits</span><span class="p">)),</span>
+            <span class="s2">"mean_relative_mse"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">_vi</span><span class="o">.</span><span class="n">_compute_relative_mse</span><span class="p">(</span><span class="n">fom_results</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">]))</span>
+            <span class="p">),</span>
+            <span class="s2">"entropy"</span><span class="p">:</span> <span class="n">entropy</span><span class="p">,</span>
+            <span class="s2">"elbo"</span><span class="p">:</span> <span class="n">elbo</span><span class="p">,</span>
+            <span class="s2">"gradient_mean"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_mean"</span><span class="p">],</span>
+            <span class="s2">"gradient_log_std"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_log_std"</span><span class="p">],</span>
+            <span class="s2">"hessian_diagonal_mean"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"hessian_diagonal_mean"</span><span class="p">],</span>
+            <span class="s2">"hessian_diagonal_log_std"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"hessian_diagonal_log_std"</span><span class="p">],</span>
+            <span class="s2">"hessian_full"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"hessian_full"</span><span class="p">],</span>
+            <span class="s2">"update_direction_mean"</span><span class="p">:</span> <span class="n">update_mean</span><span class="p">,</span>
+            <span class="s2">"update_direction_log_std"</span><span class="p">:</span> <span class="n">update_log</span><span class="p">,</span>
+            <span class="s2">"gradient_method"</span><span class="p">:</span> <span class="n">normalized_gradient_method</span><span class="p">,</span>
+            <span class="s2">"gradient_signal_to_noise_ratio"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_signal_to_noise_ratio"</span><span class="p">],</span>
+            <span class="s2">"gradient_standard_error"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"gradient_standard_error"</span><span class="p">],</span>
+            <span class="s2">"mfmc_alpha_mean"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"mfmc_alpha_mean"</span><span class="p">],</span>
+            <span class="s2">"mfmc_alpha_log_std"</span><span class="p">:</span> <span class="n">estimator</span><span class="p">[</span><span class="s2">"mfmc_alpha_log_std"</span><span class="p">],</span>
+            <span class="s2">"rom_error"</span><span class="p">:</span> <span class="n">_mf</span><span class="o">.</span><span class="n">_compute_rom_relative_error</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">base_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adaptive_mf_state</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_ORIGINAL_EVALUATE_MF_VI_STATE</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">_bind</span><span class="p">(</span><span class="n">_ORIGINAL_EVALUATE_MF_VI_STATE</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="s2">"rom_base_sampling_strategy"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"coupled"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"Adaptive MFVI currently requires rom_base_sampling_strategy='coupled'."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="s2">"correlation_estimator"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"in_sample"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"Adaptive MFVI currently requires correlation_estimator='in_sample'."</span>
+        <span class="p">)</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">_ORIGINAL_EVALUATE_MF_VI_STATE</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">sample_size</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_fom"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">max_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">sample_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_sample_size</span><span class="p">))</span>
+    <span class="n">stages</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dispatcher"</span><span class="p">))</span>
+    <span class="n">rom_dispatcher</span> <span class="o">=</span> <span class="n">resolve_local_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">_mf_jackknife</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">diagnostics</span><span class="p">[</span><span class="s2">"jackknife_step_accepted"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sample_size</span> <span class="o">&gt;=</span> <span class="n">max_size</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_attach_diagnostics</span><span class="p">(</span>
+                <span class="n">state</span><span class="p">,</span>
+                <span class="n">diagnostics</span><span class="p">,</span>
+                <span class="n">sample_size</span><span class="p">,</span>
+                <span class="n">stages</span><span class="p">,</span>
+                <span class="n">sample_size</span> <span class="o">&gt;=</span> <span class="n">max_size</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">diagnostics</span><span class="p">[</span><span class="s2">"jackknife_step_accepted"</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="n">target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">max_size</span><span class="p">,</span>
+            <span class="nb">max</span><span class="p">(</span><span class="n">sample_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">sample_size</span> <span class="o">*</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">growth_factor</span><span class="p">))),</span>
+        <span class="p">)</span>
+        <span class="n">extra_count</span> <span class="o">=</span> <span class="n">target</span> <span class="o">-</span> <span class="n">sample_size</span>
+        <span class="n">extra_optimizer</span><span class="p">,</span> <span class="n">extra_parameters</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_draw_parameter_samples</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"variational_mean"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"variational_log_std"</span><span class="p">],</span>
+            <span class="n">extra_count</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"min_variational_std"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"max_variational_std"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"bounded_parameter_handling"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_mins"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_maxes"</span><span class="p">],</span>
+            <span class="n">transform_interior_margin</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_interior_margin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">transform_map</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_map"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">),</span>
+            <span class="n">variational_correlation_cholesky</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variational_correlation_cholesky"</span><span class="p">),</span>
+            <span class="n">sampling_method</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sampling_method"</span><span class="p">,</span> <span class="s2">"mc"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">fom_extra</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">run_vi_iteration</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'iteration_directory'</span><span class="p">]</span><span class="si">}</span><span class="s2">/adaptive_fom_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+            <span class="n">extra_parameters</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"fom_evaluation_concurrency"</span><span class="p">],</span>
+            <span class="n">dispatcher</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">rom_extra_coupled</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">run_vi_iteration</span><span class="p">(</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_model"</span><span class="p">],</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'iteration_directory'</span><span class="p">]</span><span class="si">}</span><span class="s2">/adaptive_rom_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+            <span class="n">extra_parameters</span><span class="p">,</span>
+            <span class="n">a</span><span class="p">[</span><span class="s2">"rom_evaluation_concurrency"</span><span class="p">],</span>
+            <span class="n">rom_dispatcher</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">optimizer_fom</span><span class="p">,</span> <span class="n">optimizer_base</span><span class="p">,</span> <span class="n">optimizer_only</span> <span class="o">=</span> <span class="n">_mf_arrays</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="n">parameter_fom</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_fom"</span><span class="p">]</span>
+        <span class="n">parameter_base</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_rom_base"</span><span class="p">]</span>
+        <span class="n">parameter_only</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples_rom_only"</span><span class="p">]</span>
+        <span class="n">fom_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"qois"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"qois_fom"</span><span class="p">],</span> <span class="n">fom_extra</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">]]),</span>
+            <span class="s2">"errors"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"errors_fom"</span><span class="p">],</span> <span class="n">fom_extra</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">]]),</span>
+        <span class="p">}</span>
+        <span class="n">fom_results</span><span class="p">[</span><span class="s2">"mean-qoi"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fom_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">base_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"qois"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"qois_rom_base"</span><span class="p">],</span> <span class="n">rom_extra_coupled</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">]]),</span>
+            <span class="s2">"errors"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">state</span><span class="p">[</span><span class="s2">"qois_rom_base"</span><span class="p">],</span>
+                    <span class="n">rom_extra_coupled</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">],</span>
+                <span class="p">]</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">base_results</span><span class="p">[</span><span class="s2">"mean-qoi"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">base_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">only_results</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"qois"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"qois_rom_only"</span><span class="p">],</span>
+            <span class="s2">"errors"</span><span class="p">:</span> <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">state</span><span class="p">[</span><span class="s2">"qois_rom_only"</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">only_results</span><span class="p">[</span><span class="s2">"mean-qoi"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">only_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">only_results</span><span class="p">[</span><span class="s2">"qois"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span> <span class="n">fom_results</span><span class="p">[</span><span class="s2">"mean-qoi"</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">optimizer_fom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">optimizer_fom</span><span class="p">,</span> <span class="n">extra_optimizer</span><span class="p">])</span>
+        <span class="n">optimizer_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">optimizer_base</span><span class="p">,</span> <span class="n">extra_optimizer</span><span class="p">])</span>
+        <span class="n">parameter_fom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">parameter_fom</span><span class="p">,</span> <span class="n">extra_parameters</span><span class="p">])</span>
+        <span class="n">parameter_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">parameter_base</span><span class="p">,</span> <span class="n">extra_parameters</span><span class="p">])</span>
+
+        <span class="n">new_dirs</span><span class="p">,</span> <span class="n">new_parameters</span><span class="p">,</span> <span class="n">new_qois</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">_build_iteration_training_data</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'iteration_directory'</span><span class="p">]</span><span class="si">}</span><span class="s2">/adaptive_fom_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+            <span class="n">extra_parameters</span><span class="p">,</span>
+            <span class="n">fom_extra</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s2">"training_dirs"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"training_dirs"</span><span class="p">])</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_dirs</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s2">"training_parameters"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"training_parameters"</span><span class="p">],</span> <span class="n">new_parameters</span><span class="p">])</span>
+        <span class="n">state</span><span class="p">[</span><span class="s2">"training_qois"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"training_qois"</span><span class="p">],</span> <span class="n">new_qois</span><span class="p">])</span>
+
+        <span class="n">state</span> <span class="o">=</span> <span class="n">_recompute_mf_state</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">,</span>
+            <span class="n">optimizer_fom</span><span class="p">,</span>
+            <span class="n">parameter_fom</span><span class="p">,</span>
+            <span class="n">fom_results</span><span class="p">,</span>
+            <span class="n">optimizer_base</span><span class="p">,</span>
+            <span class="n">parameter_base</span><span class="p">,</span>
+            <span class="n">base_results</span><span class="p">,</span>
+            <span class="n">optimizer_only</span><span class="p">,</span>
+            <span class="n">parameter_only</span><span class="p">,</span>
+            <span class="n">only_results</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"rom_error"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">a</span><span class="p">[</span><span class="s2">"rom_tolerance"</span><span class="p">]:</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_dirs"</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"training_dirs"</span><span class="p">][</span><span class="o">-</span><span class="n">a</span><span class="p">[</span><span class="s2">"max_rom_training_dirs"</span><span class="p">]:]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_parameters"</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"training_parameters"</span><span class="p">][</span>
+                <span class="o">-</span><span class="n">a</span><span class="p">[</span><span class="s2">"max_rom_training_dirs"</span><span class="p">]:</span>
+            <span class="p">]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_qois"</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"training_qois"</span><span class="p">][</span><span class="o">-</span><span class="n">a</span><span class="p">[</span><span class="s2">"max_rom_training_dirs"</span><span class="p">]:]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_model"</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="s2">"rom_model_builder"</span><span class="p">]</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"iteration_directory"</span><span class="p">],</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_dirs"</span><span class="p">],</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_parameters"</span><span class="p">],</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">"rom_training_qois"</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">base_results</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">run_vi_iteration</span><span class="p">(</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">"rom_model"</span><span class="p">],</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'iteration_directory'</span><span class="p">]</span><span class="si">}</span><span class="s2">/adaptive_rom_rebuild_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+                <span class="n">parameter_base</span><span class="p">,</span>
+                <span class="n">a</span><span class="p">[</span><span class="s2">"rom_evaluation_concurrency"</span><span class="p">],</span>
+                <span class="n">rom_dispatcher</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">parameter_only</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">only_results</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">run_vi_iteration</span><span class="p">(</span>
+                    <span class="n">state</span><span class="p">[</span><span class="s2">"rom_model"</span><span class="p">],</span>
+                    <span class="n">a</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">],</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'iteration_directory'</span><span class="p">]</span><span class="si">}</span><span class="s2">/adaptive_rom_only_rebuild_</span><span class="si">{</span><span class="n">stages</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">_"</span><span class="p">,</span>
+                    <span class="n">a</span><span class="p">[</span><span class="s2">"parameter_names"</span><span class="p">],</span>
+                    <span class="n">parameter_only</span><span class="p">,</span>
+                    <span class="n">a</span><span class="p">[</span><span class="s2">"rom_evaluation_concurrency"</span><span class="p">],</span>
+                    <span class="n">rom_dispatcher</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_recompute_mf_state</span><span class="p">(</span>
+                <span class="n">a</span><span class="p">,</span>
+                <span class="n">state</span><span class="p">,</span>
+                <span class="n">optimizer_fom</span><span class="p">,</span>
+                <span class="n">parameter_fom</span><span class="p">,</span>
+                <span class="n">fom_results</span><span class="p">,</span>
+                <span class="n">optimizer_base</span><span class="p">,</span>
+                <span class="n">parameter_base</span><span class="p">,</span>
+                <span class="n">base_results</span><span class="p">,</span>
+                <span class="n">optimizer_only</span><span class="p">,</span>
+                <span class="n">parameter_only</span><span class="p">,</span>
+                <span class="n">only_results</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"rom_rebuilt_this_iteration"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">sample_size</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="n">stages</span> <span class="o">+=</span> <span class="mi">1</span>
+
+
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_adaptive_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">yield</span>
+        <span class="k">return</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="n">previous_vi_state</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_state</span>
+    <span class="n">previous_vi_candidate</span> <span class="o">=</span> <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_candidate_for_line_search</span>
+    <span class="n">previous_mf_state</span> <span class="o">=</span> <span class="n">_mf</span><span class="o">.</span><span class="n">_evaluate_mf_vi_state</span>
+    <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_state</span> <span class="o">=</span> <span class="n">_adaptive_vi_state</span>
+    <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_candidate_for_line_search</span> <span class="o">=</span> <span class="n">_adaptive_vi_candidate</span>
+    <span class="n">_mf</span><span class="o">.</span><span class="n">_evaluate_mf_vi_state</span> <span class="o">=</span> <span class="n">_adaptive_mf_state</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_state</span> <span class="o">=</span> <span class="n">previous_vi_state</span>
+        <span class="n">_vi</span><span class="o">.</span><span class="n">_evaluate_vi_candidate_for_line_search</span> <span class="o">=</span> <span class="n">previous_vi_candidate</span>
+        <span class="n">_mf</span><span class="o">.</span><span class="n">_evaluate_mf_vi_state</span> <span class="o">=</span> <span class="n">previous_mf_state</span>
+        <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="run_vi">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_adaptive_sampling.html#romtools.workflows.inverse.vi_adaptive_sampling.run_vi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_vi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">adaptive_sample_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VIAdaptiveSampleConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Run standard VI with optional jackknife adaptive Newton sampling."""</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_resolve_newton_context</span><span class="p">(</span><span class="n">_ORIGINAL_RUN_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">adaptive_sample_config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">disable_backtracking</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_single_candidate_line_search</span><span class="p">(</span><span class="n">_ORIGINAL_RUN_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">_adaptive_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_BASE_RUN_VI</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run_mf_vi">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_adaptive_sampling.html#romtools.workflows.inverse.vi_adaptive_sampling.run_mf_vi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_mf_vi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">adaptive_sample_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VIAdaptiveSampleConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Run standard MFVI with optional jackknife adaptive Newton sampling."""</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_resolve_newton_context</span><span class="p">(</span><span class="n">_ORIGINAL_RUN_MF_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">adaptive_sample_config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">disable_backtracking</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_single_candidate_line_search</span><span class="p">(</span><span class="n">_ORIGINAL_RUN_MF_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">_adaptive_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_BASE_RUN_MF_VI</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mf_vi_with_auto_rom">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_adaptive_sampling.html#romtools.workflows.inverse.vi_adaptive_sampling.mf_vi_with_auto_rom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mf_vi_with_auto_rom</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">adaptive_sample_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VIAdaptiveSampleConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Run auto-ROM MFVI with optional jackknife adaptive Newton sampling."""</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">_resolve_newton_context</span><span class="p">(</span>
+        <span class="n">_ORIGINAL_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">adaptive_sample_config</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">disable_backtracking</span><span class="p">:</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_single_candidate_line_search</span><span class="p">(</span>
+            <span class="n">_ORIGINAL_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+        <span class="p">)</span>
+    <span class="k">with</span> <span class="n">_adaptive_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_BASE_MF_VI_WITH_AUTO_ROM</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
