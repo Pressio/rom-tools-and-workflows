@@ -22,7 +22,6 @@ def run_local_bash(cmd: str) -> Result:
     """
     res = subprocess.run(
         ["bash", "-c", cmd],
-        cwd=".",
         capture_output=True,
         text=True
     )

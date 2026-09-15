@@ -7,7 +7,7 @@ from romtools.hpc.connection import Result
 from romtools.hpc.components.archive import create_tarball, safe_extract_tar, validate_file_patterns
 from romtools.hpc.connection import run_local_bash
 
-from conftest import ArchiveFakeConnection, FakeConnection
+from hpc_fakes import ArchiveFakeConnection, FakeConnection
 
 
 # ----------------------------------------------------------------------------

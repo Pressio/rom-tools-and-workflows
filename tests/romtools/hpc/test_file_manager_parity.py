@@ -12,7 +12,7 @@ import pytest
 from romtools.hpc.components.file_manager import LocalFileManager, RemoteFileManager
 from romtools.hpc.logger import Logger
 
-from conftest import LocalShellConnection
+from hpc_fakes import LocalShellConnection
 
 
 @pytest.fixture(params=["local", "remote"])

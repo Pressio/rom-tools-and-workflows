@@ -18,7 +18,7 @@ from romtools.hpc.components.call_runner import (
 )
 from romtools.hpc.components.caller import BaseCaller, build_call_command
 
-from conftest import FakeConnection, LocalShellConnection
+from hpc_fakes import FakeConnection, LocalShellConnection
 
 MODEL_SOURCE = '''
 import numpy as np
