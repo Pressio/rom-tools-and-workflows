@@ -18,7 +18,6 @@ from romtools.workflows.inverse import full_covariance_vi_drivers as _fc_vi
 from romtools.workflows.inverse import full_covariance_mf_vi_drivers as _fc_mf
 from romtools.workflows.inverse import full_covariance_auto_mf_vi as _fc_auto
 from romtools.workflows.inverse.full_covariance_vi import (
-    covariance_from_cholesky,
     svec,
     svec_inverse,
     svec_size,
@@ -44,6 +43,17 @@ def _symmetric_basis(dimensionality: int) -> list[np.ndarray]:
     return basis
 
 
+def _precision_from_cholesky(cholesky: np.ndarray) -> np.ndarray:
+    """Compute the symmetric precision matrix from an SPD Cholesky factor."""
+    cholesky = np.asarray(cholesky, dtype=float)
+    identity = np.eye(cholesky.shape[0], dtype=float)
+    precision = np.linalg.solve(
+        cholesky.T,
+        np.linalg.solve(cholesky, identity),
+    )
+    return 0.5 * (precision + precision.T)
+
+
 def _ordinary_score_and_logq_hessian_terms(
     optimizer_samples: np.ndarray,
     mean: np.ndarray,
@@ -52,8 +62,7 @@ def _ordinary_score_and_logq_hessian_terms(
     """Return Gaussian scores and log-density Hessians in ``(mu, svec(Sigma))``."""
     optimizer_samples = np.asarray(optimizer_samples, dtype=float)
     mean = np.asarray(mean, dtype=float)
-    covariance = covariance_from_cholesky(cholesky)
-    precision = np.linalg.solve(covariance, np.eye(mean.size))
+    precision = _precision_from_cholesky(cholesky)
     dimensionality = mean.size
     covariance_size = svec_size(dimensionality)
     total_size = dimensionality + covariance_size
@@ -69,6 +78,9 @@ def _ordinary_score_and_logq_hessian_terms(
         score_mean = precision @ delta
         score_covariance_matrix = 0.5 * (
             np.outer(score_mean, score_mean) - precision
+        )
+        score_covariance_matrix = 0.5 * (
+            score_covariance_matrix + score_covariance_matrix.T
         )
         scores[sample_index] = np.concatenate(
             [score_mean, svec(score_covariance_matrix)]
@@ -101,9 +113,8 @@ def _ordinary_score_and_logq_hessian_terms(
 
 def _entropy_hessian(cholesky: np.ndarray, scaling_factor: float) -> np.ndarray:
     """Return the analytic Gaussian-entropy Hessian in ordinary coordinates."""
-    covariance = covariance_from_cholesky(cholesky)
-    precision = np.linalg.solve(covariance, np.eye(covariance.shape[0]))
-    dimensionality = covariance.shape[0]
+    precision = _precision_from_cholesky(cholesky)
+    dimensionality = precision.shape[0]
     covariance_size = svec_size(dimensionality)
     result = np.zeros(
         (dimensionality + covariance_size, dimensionality + covariance_size),
