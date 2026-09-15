@@ -10,6 +10,7 @@ feature release a silent behavior change.
 
 from __future__ import annotations
 
+import inspect
 import warnings
 
 from romtools.workflows.inverse.vi_run_directory_policy import (
@@ -51,6 +52,18 @@ def _normalize_requested_family(value):
     )
 
 
+def _require_coupled_mf_base(function, args, kwargs):
+    """Enforce sample-by-sample HF/LF coupling for the MF control variate."""
+    bound = inspect.signature(function).bind_partial(*args, **kwargs)
+    strategy = bound.arguments.get("rom_base_sampling_strategy", "coupled")
+    if str(strategy).strip().lower() != "coupled":
+        raise ValueError(
+            "Full-covariance MF-VI requires rom_base_sampling_strategy='coupled' "
+            "so the HF contribution and LF base control variate share the same "
+            "optimizer samples."
+        )
+
+
 def run_vi(*args, variational_distribution=None, max_covariance_log_step=1.0, **kwargs):
     family = _normalize_requested_family(variational_distribution)
     if family != "full_covariance":
@@ -67,6 +80,7 @@ def run_mf_vi(*args, variational_distribution=None, max_covariance_log_step=1.0,
     family = _normalize_requested_family(variational_distribution)
     if family != "full_covariance":
         return _legacy_run_mf_vi(*args, **kwargs)
+    _require_coupled_mf_base(_full_run_mf_vi, args, kwargs)
     return _full_run_mf_vi(
         *args,
         variational_distribution="full_covariance",
@@ -84,6 +98,7 @@ def mf_vi_with_auto_rom(
     family = _normalize_requested_family(variational_distribution)
     if family != "full_covariance":
         return _legacy_auto_mf_vi(*args, **kwargs)
+    _require_coupled_mf_base(_full_auto_mf_vi, args, kwargs)
     return _full_auto_mf_vi(
         *args,
         variational_distribution="full_covariance",
