@@ -55,8 +55,9 @@ the exact posterior.
 
 The example compares single-fidelity VI with MF-VI using the automatic
 Gaussian-process ROM. Both methods use Newton updates in natural coordinates,
-with ``newton_regularization=5e-4``. The stochastic nonmonotone line search is
-capped at ``max_step_size=1.0``. MF-VI uses the automatic GP ROM with
+with ``newton_regularization=1e-4`` and the joint entropy estimator. The full
+run uses 16 FOM samples per iteration. The stochastic nonmonotone line search
+is capped at ``max_step_size=1.0``. MF-VI uses the automatic GP ROM with
 ``max_rom_training_history=4``.
 
 The example also demonstrates the revised API in which
@@ -98,7 +99,7 @@ The core optimizer configuration used for both VI and MF-VI is
 
    optimizer = VINewtonOptimizerConfig(
        newton_metric="natural",
-       newton_regularization=5e-4,
+       newton_regularization=1e-4,
        gradient_norm_tolerance=0.0,
        max_iterations=max_iterations,
    )
@@ -107,13 +108,23 @@ The core optimizer configuration used for both VI and MF-VI is
        max_step_size=1.0,
    )
 
-The MF-VI call uses the automatic GP ROM and retains four iterations of ROM
-training history:
+The shared VI/MF-VI arguments explicitly use the joint entropy estimator:
+
+.. code-block:: python
+
+   common_arguments = dict(
+       ...,
+       score_function_entropy_strategy="joint",
+   )
+
+The full run uses 16 FOM samples per iteration. The MF-VI call uses the
+automatic GP ROM and retains four iterations of ROM training history:
 
 .. code-block:: python
 
    workflows.mf_vi_with_auto_rom(
        ...,
+       fom_sample_size=16,
        max_rom_training_history=4,
        rom_type="gp",
    )
