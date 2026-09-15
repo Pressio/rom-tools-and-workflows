@@ -14,9 +14,12 @@ legacy fixed-correlation family.
 from __future__ import annotations
 
 import inspect
+import sys
 
 from romtools.workflows.inverse import vi_drivers as _vi_drivers
 from romtools.workflows.inverse import mf_vi_drivers as _mf_vi_drivers
+from romtools.workflows.inverse import vi_default_policy as _vi_default_policy  # noqa: F401
+from romtools.workflows.inverse.vi_optimization_methods import VINewtonOptimizerConfig
 from romtools.workflows.inverse.vi_run_directory_policy import (
     run_vi as _legacy_run_vi,
     run_mf_vi as _legacy_run_mf_vi,
@@ -95,6 +98,60 @@ def _bound_arguments(function, args, kwargs):
     return inspect.signature(function).bind_partial(*args, **kwargs).arguments
 
 
+def _replace_argument(function, args, kwargs, name, value):
+    """Replace a positional-or-keyword argument without creating duplicates."""
+    signature = inspect.signature(function)
+    parameter_names = list(signature.parameters)
+    parameter_index = parameter_names.index(name)
+    if parameter_index < len(args):
+        args = list(args)
+        args[parameter_index] = value
+        return tuple(args), kwargs
+    kwargs = dict(kwargs)
+    kwargs[name] = value
+    return args, kwargs
+
+
+def _ensure_default_newton_config(function, args, kwargs):
+    """Materialize the shared Newton defaults before legacy driver resolution."""
+    arguments = _bound_arguments(function, args, kwargs)
+    method = str(arguments.get("optimizer_method", "gradient")).strip().lower()
+    if method != "newton" or arguments.get("optimizer_config") is not None:
+        return args, kwargs
+    return _replace_argument(
+        function,
+        args,
+        kwargs,
+        "optimizer_config",
+        VINewtonOptimizerConfig(),
+    )
+
+
+def _ensure_full_rom_training_history(function, args, kwargs):
+    """Use all accumulated FOM training data unless a history limit is supplied."""
+    arguments = _bound_arguments(function, args, kwargs)
+    if (
+        "max_rom_training_history" in arguments
+        and arguments["max_rom_training_history"] is not None
+    ):
+        return args, kwargs
+
+    signature = inspect.signature(function)
+    fom_sample_size = arguments.get(
+        "fom_sample_size",
+        signature.parameters["fom_sample_size"].default,
+    )
+    fom_sample_size = max(int(fom_sample_size), 1)
+    full_history = max(1, sys.maxsize // fom_sample_size)
+    return _replace_argument(
+        function,
+        args,
+        kwargs,
+        "max_rom_training_history",
+        full_history,
+    )
+
+
 def _supplied_initializer(function, args, kwargs):
     """Return the explicitly supplied variational initializer, if any."""
     return _bound_arguments(function, args, kwargs).get(
@@ -115,8 +172,8 @@ def _uses_natural_newton(function, args, kwargs) -> bool:
         return False
     config = arguments.get("optimizer_config")
     if config is None:
-        return False
-    return str(getattr(config, "newton_metric", "standard")).strip().lower() == "natural"
+        config = VINewtonOptimizerConfig()
+    return str(getattr(config, "newton_metric", "natural")).strip().lower() == "natural"
 
 
 def _variational_family(initial_variational_parameter_space) -> str:
@@ -145,6 +202,7 @@ def _require_coupled_mf_base(function, args, kwargs):
 
 
 def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
+    args, kwargs = _ensure_default_newton_config(_legacy_run_vi, args, kwargs)
     initializer = _supplied_initializer(_legacy_run_vi, args, kwargs)
     if initializer is None:
         return _legacy_run_vi(*args, **kwargs)
@@ -164,6 +222,8 @@ def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
 
 
 def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
+    args, kwargs = _ensure_default_newton_config(_legacy_run_mf_vi, args, kwargs)
+    args, kwargs = _ensure_full_rom_training_history(_legacy_run_mf_vi, args, kwargs)
     initializer = _supplied_initializer(_legacy_run_mf_vi, args, kwargs)
     if initializer is None:
         return _legacy_run_mf_vi(*args, **kwargs)
@@ -184,6 +244,8 @@ def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
 
 
 def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
+    args, kwargs = _ensure_default_newton_config(_legacy_auto_mf_vi, args, kwargs)
+    args, kwargs = _ensure_full_rom_training_history(_legacy_auto_mf_vi, args, kwargs)
     initializer = _supplied_initializer(_legacy_auto_mf_vi, args, kwargs)
     if initializer is None:
         return _legacy_auto_mf_vi(*args, **kwargs)
