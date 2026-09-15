@@ -147,9 +147,11 @@ def _run_eki(directory, dispatcher=None, evaluation_concurrency=1):
 
 
 def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
+    parameter_space = _gaussian_parameter_space()
     return romtools.workflows.run_vi(
         model=LinearQoiModel(),
-        prior_parameter_space=_gaussian_parameter_space(),
+        prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=directory,
@@ -163,9 +165,11 @@ def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
 
 
 def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1):
+    parameter_space = _gaussian_parameter_space()
     return mf_vi_drivers.mf_vi_with_auto_rom(
         model=LinearQoiModel(),
-        prior_parameter_space=_gaussian_parameter_space(),
+        prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=directory,
