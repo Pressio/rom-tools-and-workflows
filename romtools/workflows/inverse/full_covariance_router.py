@@ -1,18 +1,22 @@
-"""Public routing for the opt-in full-covariance Gaussian VI family.
+"""Public routing for Gaussian VI variational families.
 
-The pre-existing multivariate parameter-space behavior is retained when
-``variational_distribution`` is omitted so existing callers and restart files
-remain backward compatible. True full covariance is selected explicitly with
-``variational_distribution='full_covariance'``. The old fixed-correlation
-multivariate path can therefore be deprecated separately without making this
-feature release a silent behavior change.
+``prior_parameter_space`` defines the Bayesian prior. The required
+``initial_variational_parameter_space`` independently defines both the
+variational family and its initial moments:
+
+* ``GaussianParameterSpace`` -> diagonal/mean-field VI;
+* ``MultivariateGaussianParameterSpace`` -> true full-covariance VI.
+
+A multivariate variational initializer is therefore never interpreted as the
+legacy fixed-correlation family.
 """
 
 from __future__ import annotations
 
 import inspect
-import warnings
 
+from romtools.workflows.inverse import vi_drivers as _vi_drivers
+from romtools.workflows.inverse import mf_vi_drivers as _mf_vi_drivers
 from romtools.workflows.inverse.vi_run_directory_policy import (
     run_vi as _legacy_run_vi,
     run_mf_vi as _legacy_run_mf_vi,
@@ -29,27 +33,88 @@ from romtools.workflows.inverse.full_covariance_auto_mf_vi import (
 )
 
 
-def _normalize_requested_family(value):
-    if value is None:
-        return None
-    normalized = str(value).strip().lower().replace("-", "_")
-    if normalized in ("full", "full_covariance"):
-        return "full_covariance"
-    if normalized == "multivariate":
-        warnings.warn(
-            "variational_distribution='multivariate' is deprecated; use "
-            "'full_covariance' for freely evolving covariance. Omitting "
-            "variational_distribution retains the legacy fixed-correlation path.",
-            DeprecationWarning,
-            stacklevel=3,
+def _validate_independent_gaussian_parameter_spaces(
+    prior_parameter_space,
+    initial_variational_parameter_space=None,
+):
+    """Validate prior and variational initializer without coupling families."""
+    if initial_variational_parameter_space is None:
+        raise TypeError(
+            "initial_variational_parameter_space is required for VI and MF-VI. "
+            "Use GaussianParameterSpace for diagonal VI or "
+            "MultivariateGaussianParameterSpace for full-covariance VI."
         )
-        return "full_covariance"
-    if normalized in ("diagonal", "mean_field"):
-        return "diagonal"
-    raise ValueError(
-        f"Unsupported variational_distribution '{value}'. Supported options "
-        "are 'diagonal' and 'full_covariance'."
+
+    prior_names, prior_mean, prior_covariance, prior_distribution = (
+        _vi_drivers._extract_gaussian_parameter_space(
+            prior_parameter_space,
+            argument_name="prior_parameter_space",
+        )
     )
+    (
+        initial_names,
+        initial_mean,
+        initial_covariance,
+        variational_distribution,
+    ) = _vi_drivers._extract_gaussian_parameter_space(
+        initial_variational_parameter_space,
+        argument_name="initial_variational_parameter_space",
+    )
+
+    if list(prior_names) != list(initial_names):
+        raise ValueError(
+            "prior_parameter_space and initial_variational_parameter_space must "
+            "define the same parameter names in the same order."
+        )
+
+    return (
+        prior_names,
+        prior_mean,
+        prior_covariance,
+        prior_distribution,
+        initial_mean,
+        initial_covariance,
+        variational_distribution,
+    )
+
+
+# The historical diagonal drivers already keep the prior covariance separate
+# from the variational covariance after validation. Replace only the legacy
+# family-equality validation so a diagonal variational family can be paired
+# with a multivariate prior. mf_vi_drivers imported this helper by name, so
+# update both module globals.
+_vi_drivers._validate_gaussian_parameter_spaces = (
+    _validate_independent_gaussian_parameter_spaces
+)
+_mf_vi_drivers._validate_gaussian_parameter_spaces = (
+    _validate_independent_gaussian_parameter_spaces
+)
+
+
+def _required_initializer(function, args, kwargs):
+    """Return the explicitly supplied variational initializer."""
+    bound = inspect.signature(function).bind_partial(*args, **kwargs)
+    initializer = bound.arguments.get("initial_variational_parameter_space")
+    if initializer is None:
+        raise TypeError(
+            "initial_variational_parameter_space is required. Use "
+            "GaussianParameterSpace for diagonal VI or "
+            "MultivariateGaussianParameterSpace for full-covariance VI."
+        )
+    return initializer
+
+
+def _variational_family(initial_variational_parameter_space) -> str:
+    """Infer the variational family exclusively from the initializer type."""
+    _, _, _, distribution = _vi_drivers._extract_gaussian_parameter_space(
+        initial_variational_parameter_space,
+        argument_name="initial_variational_parameter_space",
+    )
+    if distribution == "diagonal":
+        return "diagonal"
+    if distribution == "multivariate":
+        return "full_covariance"
+    raise ValueError(f"Unsupported variational Gaussian family '{distribution}'.")
 
 
 def _require_coupled_mf_base(function, args, kwargs):
@@ -64,44 +129,39 @@ def _require_coupled_mf_base(function, args, kwargs):
         )
 
 
-def run_vi(*args, variational_distribution=None, max_covariance_log_step=1.0, **kwargs):
-    family = _normalize_requested_family(variational_distribution)
-    if family != "full_covariance":
+def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
+    initializer = _required_initializer(_legacy_run_vi, args, kwargs)
+    family = _variational_family(initializer)
+    if family == "diagonal":
         return _legacy_run_vi(*args, **kwargs)
     return _full_run_vi(
         *args,
-        variational_distribution="full_covariance",
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
     )
 
 
-def run_mf_vi(*args, variational_distribution=None, max_covariance_log_step=1.0, **kwargs):
-    family = _normalize_requested_family(variational_distribution)
-    if family != "full_covariance":
+def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
+    initializer = _required_initializer(_legacy_run_mf_vi, args, kwargs)
+    family = _variational_family(initializer)
+    if family == "diagonal":
         return _legacy_run_mf_vi(*args, **kwargs)
     _require_coupled_mf_base(_full_run_mf_vi, args, kwargs)
     return _full_run_mf_vi(
         *args,
-        variational_distribution="full_covariance",
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
     )
 
 
-def mf_vi_with_auto_rom(
-    *args,
-    variational_distribution=None,
-    max_covariance_log_step=1.0,
-    **kwargs,
-):
-    family = _normalize_requested_family(variational_distribution)
-    if family != "full_covariance":
+def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
+    initializer = _required_initializer(_legacy_auto_mf_vi, args, kwargs)
+    family = _variational_family(initializer)
+    if family == "diagonal":
         return _legacy_auto_mf_vi(*args, **kwargs)
     _require_coupled_mf_base(_full_auto_mf_vi, args, kwargs)
     return _full_auto_mf_vi(
         *args,
-        variational_distribution="full_covariance",
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
     )
