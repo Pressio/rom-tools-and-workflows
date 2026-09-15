@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.workflows.inverse.full_covariance_vi_drivers &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.workflows.inverse.vi_default_policy &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.full_covariance_vi_drivers';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.vi_default_policy';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.inverse.mf_eki_drivers" href="romtools.workflows.inverse.mf_eki_drivers.html" />
-    <link rel="prev" title="romtools.workflows.inverse.full_covariance_vi" href="romtools.workflows.inverse.full_covariance_vi.html" />
+    <link rel="next" title="romtools.workflows.inverse.vi_drivers" href="romtools.workflows.inverse.vi_drivers.html" />
+    <link rel="prev" title="romtools.workflows.inverse.mf_vi_drivers" href="romtools.workflows.inverse.mf_vi_drivers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -389,10 +389,10 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_newton.html">romtools.workflows.inverse.full_covariance_newton</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html">romtools.workflows.inverse.full_covariance_router</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html">romtools.workflows.inverse.full_covariance_vi</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.full_covariance_vi_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html">romtools.workflows.inverse.full_covariance_vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_default_policy.html">romtools.workflows.inverse.vi_default_policy</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.vi_default_policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html">romtools.workflows.inverse.vi_run_directory_policy</a></li>
@@ -438,17 +438,6 @@
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.full_covariance_vi_drivers.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -498,7 +487,7 @@
     
     <li class="breadcrumb-item"><a href="romtools.workflows.inverse.html" class="nav-link">romtools.workflows.inverse</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.full_covariance_vi_drivers</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_default_policy</span></li>
   </ul>
 </nav>
 </div>
@@ -515,65 +504,12 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.workflows.inverse.full_covariance_vi_drivers">
-<span id="romtools-workflows-inverse-full-covariance-vi-drivers"></span><h1>romtools.workflows.inverse.full_covariance_vi_drivers<a class="headerlink" href="#module-romtools.workflows.inverse.full_covariance_vi_drivers" title="Link to this heading">#</a></h1>
-<p>Full-covariance Gaussian VI wrappers.</p>
-<p>This module adds a true full-covariance Gaussian variational family without
-changing the established diagonal VI and MF-VI implementations.  The Gaussian
-lives in optimizer coordinates, <code class="docutils literal notranslate"><span class="pre">q(x)=N(mu,</span> <span class="pre">Sigma)</span></code>, with <code class="docutils literal notranslate"><span class="pre">Sigma=L</span> <span class="pre">L.T</span></code>.
-The Cholesky factor is the persisted numerical state while updates use the
-Gaussian Fisher geometry in mean/covariance coordinates.</p>
-<p class="rubric">Functions</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom</span></code>(*args[, ...])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_vi</span></code>(*args[, variational_distribution, ...])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.full_covariance_vi_drivers.run_vi" title="romtools.workflows.inverse.full_covariance_vi_drivers.run_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_vi</span></code></a>(model, prior_parameter_space, ...[, ...])</p></td>
-<td><p>Run VI, adding a true full-covariance Gaussian variational family.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.inverse.full_covariance_vi_drivers.run_vi">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.full_covariance_vi_drivers.</span></span><span class="sig-name descname"><span class="pre">run_vi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_variational_parameter_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stochastic_nonmonotone'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance_regularization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_files_to_keep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elbo_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'diag_mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elbo_relative_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounded_parameter_handling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'transform'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_interior_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sigmoid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_physical_variational_std_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_vi_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_function_entropy_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'analytic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variational_distribution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_covariance_log_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_run_directories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_reuse_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/full_covariance_vi_drivers.html#run_vi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.full_covariance_vi_drivers.run_vi" title="Link to this definition">#</a></dt>
-<dd><p>Run VI, adding a true full-covariance Gaussian variational family.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>)</p></li>
-<li><p><strong>optimizer_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>line_search_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>sample_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>sampling_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>covariance_regularization</strong> (<em>float</em>)</p></li>
-<li><p><strong>restart_files_to_keep</strong> (<em>int</em>)</p></li>
-<li><p><strong>elbo_relative_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>baseline_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>bounded_parameter_handling</strong> (<em>str</em>)</p></li>
-<li><p><strong>transform_interior_margin</strong> (<em>float</em>)</p></li>
-<li><p><strong>transform_map</strong> (<em>str</em>)</p></li>
-<li><p><strong>min_physical_variational_std_fraction</strong> (<em>float</em>)</p></li>
-<li><p><strong>absolute_vi_directory</strong> (<em>str</em>)</p></li>
-<li><p><strong>score_function_entropy_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>variational_distribution</strong> (<em>str</em>)</p></li>
-<li><p><strong>max_covariance_log_step</strong> (<em>float</em>)</p></li>
-<li><p><strong>create_run_directories</strong> (<em>bool</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
+  <section id="module-romtools.workflows.inverse.vi_default_policy">
+<span id="romtools-workflows-inverse-vi-default-policy"></span><h1>romtools.workflows.inverse.vi_default_policy<a class="headerlink" href="#module-romtools.workflows.inverse.vi_default_policy" title="Link to this heading">#</a></h1>
+<p>Centralized public defaults for VI and MF-VI optimization.</p>
+<p>This module updates the shared configuration dataclasses used by both VI and
+MF-VI.  It is imported by the public VI routing layer during inverse-package
+initialization so direct and package-level imports observe the same defaults.</p>
 </section>
 
 
@@ -592,21 +528,9 @@ Gaussian Fisher geometry in mean/covariance coordinates.</p>
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.full_covariance_vi_drivers.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
-</ul>
-  </nav></div>
-
-  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.workflows.inverse.full_covariance_vi_drivers.rst.txt">
+    <a href="../_sources/generated/romtools.workflows.inverse.vi_default_policy.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
