@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 import os
 import json
 import uuid
@@ -20,7 +22,11 @@ from .call_runner import (
     working_directory,
 )
 from romtools.hpc.components.component import Component
-from romtools.hpc.components.file_manager import BaseFileManager
+from romtools.hpc.components.file_manager import (
+    BaseFileManager,
+    LocalFileManager,
+    RemoteFileManager,
+)
 from romtools.hpc.connection import Connection, run_local_bash
 from romtools.hpc.logger import Logger
 
@@ -49,7 +55,7 @@ def build_call_command(python_setup: str, python_command: str, call_id: str, tar
     return "\n".join(lines)
 
 
-class BaseCaller(Component):
+class BaseCaller(Component, ABC):
     """
     Executes a Python callable named by a "module:qualname" target string.
 
@@ -62,8 +68,9 @@ class BaseCaller(Component):
         self.python_setup = self.config.get("python_setup")
         self.python_command = self.config.get("python_command")
 
+    @abstractmethod
     def call(self, target: str, *args, run_directory: str = None, **kwargs):
-        raise NotImplementedError
+        ...
 
 
 class StagedCaller(BaseCaller):
@@ -166,7 +173,7 @@ class LocalCaller(BaseCaller):
         files: The local file manager used to stage inputs and read results back
     """
 
-    def __init__(self, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
+    def __init__(self, *, files: LocalFileManager, config: dict = None, logger: Logger = None):
         super().__init__(config=config, logger=logger)
 
         self.staged = None
@@ -193,6 +200,6 @@ class RemoteCaller(StagedCaller):
         files: The remote file manager used to stage inputs and read results back
     """
 
-    def __init__(self, connection: Connection, *, files: BaseFileManager, config: dict = None, logger: Logger = None):
+    def __init__(self, connection: Connection, *, files: RemoteFileManager, config: dict = None, logger: Logger = None):
         super().__init__(connection.run, files=files, config=config, logger=logger)
         self.conn = connection

@@ -1,5 +1,6 @@
 """File operations for the dispatchers, in local and remote flavors."""
 
+from abc import ABC, abstractmethod
 import base64
 import io
 import os
@@ -18,45 +19,56 @@ from romtools.hpc.logger import Logger
 REMOTE_INLINE_WRITE_LIMIT = 32 * 1024
 
 
-class BaseFileManager(Component):
+class BaseFileManager(Component, ABC):
     """Reads and writes files on whichever machine a dispatcher runs work on."""
 
+    @abstractmethod
     def resolve_path(self, path: str = None) -> str:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def put(self, local_path: str, remote_path: str) -> None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def get(self, remote_path: str, local_path: str) -> None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def path_exists(self, path: str) -> bool:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def create_empty_dir(self, dir_name: str):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def list_dir(self, path: str) -> list:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def remove(self, path: str) -> None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def remove_dir(self, path: str) -> None:
         """Remove a directory and its contents. A missing directory is not an error."""
-        raise NotImplementedError
 
+    @abstractmethod
     def write_text(self, path: str, content: str) -> None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def read_text(self, path: str) -> str:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def np_savetxt(self, path: str, arr: np.ndarray, fmt: str) -> None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def np_savez(self, path: str, **arrays) -> None:
-        raise NotImplementedError
+        ...
 
 
 class LocalFileManager(BaseFileManager):

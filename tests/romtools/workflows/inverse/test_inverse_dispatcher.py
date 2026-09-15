@@ -34,6 +34,10 @@ class RecordingDispatcher(BaseDispatcher):
         self.saved_npz = []
         self.written_text = []
 
+    def run(self, cmd: str, run_directory: str = None):
+        # These drivers do their work through the file operations below
+        raise AssertionError(f"no shell command was expected (received: {cmd})")
+
     def path_exists(self, path: str) -> bool:
         return os.path.exists(path)
 

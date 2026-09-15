@@ -16,7 +16,7 @@ from romtools.hpc.components.call_runner import (
     resolve_target,
     unpack,
 )
-from romtools.hpc.components.caller import BaseCaller, build_call_command
+from romtools.hpc.components.caller import build_call_command
 
 from hpc_fakes import FakeConnection, LocalShellConnection
 
@@ -402,11 +402,6 @@ def test_remote_call_runs_the_python_setup_first(monkeypatch, make_config, remot
 # ----------------------------------------------------------------------
 # Dispatcher wiring
 # ----------------------------------------------------------------------
-
-def test_base_caller_has_no_execution_strategy():
-    with pytest.raises(NotImplementedError):
-        BaseCaller().call("mymodel:evaluate")
-
 
 def test_dispatchers_delegate_to_their_own_caller(monkeypatch, make_config):
     local = LocalDispatcher()

@@ -1,4 +1,5 @@
 
+from abc import ABC, abstractmethod
 import os
 
 import numpy as np
@@ -25,7 +26,7 @@ def _resolve_configuration(config) -> Configuration:
     )
 
 
-class BaseDispatcher:
+class BaseDispatcher(ABC):
     """
     Shared configuration, logging, and public API for the dispatchers.
 
@@ -42,16 +43,12 @@ class BaseDispatcher:
         self.logger = logger if logger is not None else Logger(self.config["debug"])
         self.campaign_directory = campaign_directory
 
-        # Subclasses replace these with local or remote implementations
-        self.caller: BaseCaller = BaseCaller(config=self.config, logger=self.logger)
-        self.files: BaseFileManager = BaseFileManager(config=self.config, logger=self.logger)
-        self.transfer: BaseTransferManager = BaseTransferManager(
-            files=self.files,
-            config=self.config,
-            logger=self.logger,
-            campaign_directory=self.campaign_directory)
+        # Installed by subclasses with their local or remote implementations
+        self.caller: BaseCaller = None
+        self.files: BaseFileManager = None
+        self.transfer: BaseTransferManager = None
 
-        # Installed by subclasses that can reach a batch scheduler
+        # Installed only by subclasses that can reach a batch scheduler
         self.slurm: SlurmJobManager = None
 
     # ------------------------------------------------------------------
@@ -81,6 +78,7 @@ class BaseDispatcher:
         """
         return self.caller.call(target, *args, run_directory=run_directory, **kwargs)
 
+    @abstractmethod
     def run(self, cmd: str, run_directory: str = None) -> Result:
         """
         Run a command directly on the execution host.
@@ -91,7 +89,6 @@ class BaseDispatcher:
 
         Returns a Result object (with stdout, stderr, exit_code, ok)
         """
-        raise NotImplementedError
 
     def submit_job(self, cmd: str = None, run_directory: str = None) -> Result:
         """
