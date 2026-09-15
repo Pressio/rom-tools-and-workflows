@@ -42,7 +42,7 @@ def main(
     problem = build_problem(equispaced=True)
     model = AnalyticSineQoiModel(problem)
 
-    sample_size = 8 if smoke else 24
+    sample_size = 8 if smoke else 16
     rom_extra_sample_size = 8 if smoke else 48
     max_iterations = 2 if smoke else 30
 
@@ -60,7 +60,7 @@ def main(
     )
     optimizer = VINewtonOptimizerConfig(
         newton_metric="natural",
-        newton_regularization=5e-4,
+        newton_regularization=1e-4,
         gradient_norm_tolerance=0.0,
         max_iterations=max_iterations,
     )
