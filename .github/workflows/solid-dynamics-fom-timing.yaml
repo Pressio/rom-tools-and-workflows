@@ -1,0 +1,56 @@
+name: solid-dynamics-fom-timing
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/solid-dynamics-fom-timing.yaml"
+      - "examples/models/sparse_solid_dynamics.py"
+
+jobs:
+  timing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install romtools
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+      - name: Time one production FOM evaluation
+        env:
+          MPLBACKEND: Agg
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+        run: |
+          python - <<'PY'
+          import sys
+          import time
+
+          sys.path.insert(0, "examples/models")
+          from nonlinear_solid_dynamics import NonlinearSolid2D
+          from sparse_solid_dynamics import acceleration_sparse, solve_implicit_sparse
+
+          NonlinearSolid2D.acceleration = acceleration_sparse
+
+          def solve_without_line_search(self, *args, **kwargs):
+              kwargs["line_search"] = False
+              return solve_implicit_sparse(self, *args, **kwargs)
+
+          NonlinearSolid2D.solve_implicit = solve_without_line_search
+
+          sys.path.insert(0, "examples/solid_dynamics_eki_mf_eki")
+          import example as mod
+
+          cfg = mod.configuration(False)
+          model = mod.CantileverInverseQoiModel(cfg.fom, cfg.observation_times)
+          start = time.perf_counter()
+          qoi = model.evaluate_qoi(mod.transformed_sample(**mod.TRUTH))
+          elapsed = time.perf_counter() - start
+          print(f"PRODUCTION_FOM_SECONDS={elapsed:.6f}")
+          print(f"QOI_NORM={float((qoi @ qoi) ** 0.5):.12e}")
+          PY
