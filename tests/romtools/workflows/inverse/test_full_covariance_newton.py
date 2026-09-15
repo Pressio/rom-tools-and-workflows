@@ -5,6 +5,7 @@ import romtools.workflows
 from romtools.workflows.inverse.full_covariance_newton import (
     _fisher_whitening_map,
     _ordinary_score_and_logq_hessian_terms,
+    _precision_from_cholesky,
     _symmetric_basis,
 )
 from romtools.workflows.inverse.full_covariance_vi import (
@@ -97,6 +98,24 @@ def test_full_covariance_logq_hessian_matches_finite_difference():
         ) / (2.0 * epsilon)
 
     assert np.allclose(analytic, finite_difference, rtol=2e-6, atol=2e-7)
+
+
+def test_full_covariance_precision_remains_symmetric_when_ill_conditioned():
+    dimensionality = 7
+    indices = np.arange(dimensionality)
+    covariance = 1.0 / (indices[:, None] + indices[None, :] + 1.0)
+    cholesky = np.linalg.cholesky(covariance)
+    precision = _precision_from_cholesky(cholesky)
+
+    assert np.array_equal(precision, precision.T)
+    scores, hessians = _ordinary_score_and_logq_hessian_terms(
+        np.linspace(-0.3, 0.4, dimensionality)[None, :],
+        np.zeros(dimensionality),
+        cholesky,
+    )
+    assert np.all(np.isfinite(scores))
+    assert np.all(np.isfinite(hessians))
+    assert np.allclose(hessians[0], hessians[0].T)
 
 
 def test_full_covariance_fisher_whitening_is_identity():
