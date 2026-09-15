@@ -1,4 +1,4 @@
-"""Run the analytic-sine VI/MF-VI documentation example."""
+"""Run both analytic-sine VI/MF-VI documentation examples."""
 
 from __future__ import annotations
 
@@ -13,6 +13,9 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from examples.vi_mf_vi_demo.diagonal_example import main as run_diagonal_example
+from examples.vi_mf_vi_demo.full_covariance_example import (
+    main as run_full_covariance_example,
+)
 
 
 def main(
@@ -25,6 +28,11 @@ def main(
     run_diagonal_example(
         smoke=smoke,
         work_dir=str(root / "diagonal"),
+        output_dir=str(output),
+    )
+    run_full_covariance_example(
+        smoke=smoke,
+        work_dir=str(root / "correlated"),
         output_dir=str(output),
     )
 
