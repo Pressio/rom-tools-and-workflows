@@ -12,9 +12,9 @@ romtools currently supports:
 - Multifidelity EKI with control variates and adaptive reduced-order model
   refresh strategies.
 - Variational inference (VI) with gradient, Adam, and Newton optimizers for
-  Gaussian variational families.
+  Gaussian variational families, including diagonal and full-covariance VI.
 - Multifidelity VI with control variates and adaptive reduced-order model
-  updates.
+  updates, including full-covariance gradient/Adam optimization.
 """
 
 from importlib import import_module as _import_module
@@ -110,6 +110,28 @@ _add_vi_wrapper_signature(
 
 _vi_drivers_module = _import_module("romtools.workflows.inverse.vi_drivers")
 _mf_vi_drivers_module = _import_module("romtools.workflows.inverse.mf_vi_drivers")
+_vi_drivers_module.run_vi = run_vi
+_mf_vi_drivers_module.run_mf_vi = run_mf_vi
+_mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
+
+# Add the true full-covariance Gaussian family as an outer routing layer.  The
+# wrappers infer full covariance for MultivariateGaussianParameterSpace inputs
+# or accept variational_distribution="full_covariance" explicitly.  Diagonal
+# calls delegate to the already-installed sample-reuse/directory-policy stack.
+from romtools.workflows.inverse.full_covariance_vi_drivers import (
+    run_vi as _full_covariance_run_vi,
+)
+from romtools.workflows.inverse.full_covariance_mf_vi_drivers import (
+    run_mf_vi as _full_covariance_run_mf_vi,
+    mf_vi_with_auto_rom as _full_covariance_auto_mf_vi,
+)
+
+run_vi = _full_covariance_run_vi
+run_mf_vi = _full_covariance_run_mf_vi
+mf_vi_with_auto_rom = _full_covariance_auto_mf_vi
+
+# Keep direct imports from the historical defining modules aligned with the
+# public package-level API.
 _vi_drivers_module.run_vi = run_vi
 _mf_vi_drivers_module.run_mf_vi = run_mf_vi
 _mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
