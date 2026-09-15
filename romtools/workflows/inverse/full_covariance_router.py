@@ -108,6 +108,17 @@ def _optimizer_method(function, args, kwargs) -> str:
     return str(arguments.get("optimizer_method", "gradient")).strip().lower()
 
 
+def _uses_natural_newton(function, args, kwargs) -> bool:
+    """Return whether the request is specifically full-covariance natural Newton."""
+    arguments = _bound_arguments(function, args, kwargs)
+    if str(arguments.get("optimizer_method", "gradient")).strip().lower() != "newton":
+        return False
+    config = arguments.get("optimizer_config")
+    if config is None:
+        return False
+    return str(getattr(config, "newton_metric", "standard")).strip().lower() == "natural"
+
+
 def _variational_family(initial_variational_parameter_space) -> str:
     """Infer the variational family exclusively from the initializer type."""
     _, _, _, distribution = _vi_drivers._extract_gaussian_parameter_space(
@@ -142,7 +153,7 @@ def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
         return _legacy_run_vi(*args, **kwargs)
     implementation = (
         _full_newton_run_vi
-        if _optimizer_method(_legacy_run_vi, args, kwargs) == "newton"
+        if _uses_natural_newton(_legacy_run_vi, args, kwargs)
         else _full_run_vi
     )
     return implementation(
@@ -162,7 +173,7 @@ def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
     _require_coupled_mf_base(_full_run_mf_vi, args, kwargs)
     implementation = (
         _full_newton_run_mf_vi
-        if _optimizer_method(_legacy_run_mf_vi, args, kwargs) == "newton"
+        if _uses_natural_newton(_legacy_run_mf_vi, args, kwargs)
         else _full_run_mf_vi
     )
     return implementation(
@@ -182,7 +193,7 @@ def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
     _require_coupled_mf_base(_full_auto_mf_vi, args, kwargs)
     implementation = (
         _full_newton_auto_mf_vi
-        if _optimizer_method(_legacy_auto_mf_vi, args, kwargs) == "newton"
+        if _uses_natural_newton(_legacy_auto_mf_vi, args, kwargs)
         else _full_auto_mf_vi
     )
     return implementation(
