@@ -2,8 +2,8 @@
 
 The pre-existing multivariate parameter-space behavior is retained when
 ``variational_distribution`` is omitted so existing callers and restart files
-remain backward compatible.  True full covariance is selected explicitly with
-``variational_distribution='full_covariance'``.  The old fixed-correlation
+remain backward compatible. True full covariance is selected explicitly with
+``variational_distribution='full_covariance'``. The old fixed-correlation
 multivariate path can therefore be deprecated separately without making this
 feature release a silent behavior change.
 """
@@ -22,6 +22,9 @@ from romtools.workflows.inverse.full_covariance_vi_drivers import (
 )
 from romtools.workflows.inverse.full_covariance_mf_vi_drivers import (
     run_mf_vi as _full_run_mf_vi,
+)
+from romtools.workflows.inverse.full_covariance_auto_mf_vi import (
+    mf_vi_with_auto_rom as _full_auto_mf_vi,
 )
 
 
@@ -81,7 +84,9 @@ def mf_vi_with_auto_rom(
     family = _normalize_requested_family(variational_distribution)
     if family != "full_covariance":
         return _legacy_auto_mf_vi(*args, **kwargs)
-    raise NotImplementedError(
-        "Full-covariance MF-VI currently requires an explicit ROM builder; "
-        "call run_mf_vi(..., variational_distribution='full_covariance')."
+    return _full_auto_mf_vi(
+        *args,
+        variational_distribution="full_covariance",
+        max_covariance_log_step=max_covariance_log_step,
+        **kwargs,
     )
