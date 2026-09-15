@@ -14,7 +14,7 @@ romtools currently supports:
 - Variational inference (VI) with gradient, Adam, and Newton optimizers for
   Gaussian variational families, including diagonal and full-covariance VI.
 - Multifidelity VI with control variates and adaptive reduced-order model
-  updates, including full-covariance gradient/Adam optimization.
+  updates, including full-covariance natural-coordinate Newton optimization.
 """
 
 from importlib import import_module as _import_module
@@ -162,10 +162,31 @@ def _add_full_covariance_signature(wrapper, legacy_wrapper):
     wrapper.__signature__ = signature.replace(parameters=parameters)
 
 
+def _set_signature_default(wrapper, parameter_name, default):
+    signature = _inspect.signature(wrapper)
+    parameters = [
+        parameter.replace(default=default)
+        if parameter.name == parameter_name
+        else parameter
+        for parameter in signature.parameters.values()
+    ]
+    wrapper.__signature__ = signature.replace(parameters=parameters)
+
+
 _add_full_covariance_signature(_full_covariance_run_vi, _directory_policy_run_vi)
 _add_full_covariance_signature(_full_covariance_run_mf_vi, _directory_policy_run_mf_vi)
 _add_full_covariance_signature(
     _full_covariance_auto_mf_vi, _directory_policy_mf_vi_with_auto_rom
+)
+_set_signature_default(
+    _full_covariance_run_mf_vi,
+    "max_rom_training_history",
+    None,
+)
+_set_signature_default(
+    _full_covariance_auto_mf_vi,
+    "max_rom_training_history",
+    None,
 )
 
 run_vi = _full_covariance_run_vi
