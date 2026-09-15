@@ -31,6 +31,11 @@ from romtools.workflows.inverse.full_covariance_mf_vi_drivers import (
 from romtools.workflows.inverse.full_covariance_auto_mf_vi import (
     mf_vi_with_auto_rom as _full_auto_mf_vi,
 )
+from romtools.workflows.inverse.full_covariance_newton import (
+    run_vi as _full_newton_run_vi,
+    run_mf_vi as _full_newton_run_mf_vi,
+    mf_vi_with_auto_rom as _full_newton_auto_mf_vi,
+)
 
 
 def _validate_independent_gaussian_parameter_spaces(
@@ -78,11 +83,6 @@ def _validate_independent_gaussian_parameter_spaces(
     )
 
 
-# The historical diagonal drivers already keep the prior covariance separate
-# from the variational covariance after validation. Replace only the legacy
-# family-equality validation so a diagonal variational family can be paired
-# with a multivariate prior. mf_vi_drivers imported this helper by name, so
-# update both module globals.
 _vi_drivers._validate_gaussian_parameter_spaces = (
     _validate_independent_gaussian_parameter_spaces
 )
@@ -91,17 +91,21 @@ _mf_vi_drivers._validate_gaussian_parameter_spaces = (
 )
 
 
-def _supplied_initializer(function, args, kwargs):
-    """Return the explicitly supplied variational initializer, if any.
+def _bound_arguments(function, args, kwargs):
+    return inspect.signature(function).bind_partial(*args, **kwargs).arguments
 
-    Missing-initializer validation is intentionally left to the underlying VI
-    driver. This preserves validation ordering for earlier argument checks
-    (for example, conflicting deprecated/new work-directory keywords) while
-    still enforcing that an initializer is required once VI input validation
-    is reached.
-    """
-    bound = inspect.signature(function).bind_partial(*args, **kwargs)
-    return bound.arguments.get("initial_variational_parameter_space")
+
+def _supplied_initializer(function, args, kwargs):
+    """Return the explicitly supplied variational initializer, if any."""
+    return _bound_arguments(function, args, kwargs).get(
+        "initial_variational_parameter_space"
+    )
+
+
+def _optimizer_method(function, args, kwargs) -> str:
+    """Return the requested optimizer method using the public driver's defaults."""
+    arguments = _bound_arguments(function, args, kwargs)
+    return str(arguments.get("optimizer_method", "gradient")).strip().lower()
 
 
 def _variational_family(initial_variational_parameter_space) -> str:
@@ -119,8 +123,8 @@ def _variational_family(initial_variational_parameter_space) -> str:
 
 def _require_coupled_mf_base(function, args, kwargs):
     """Enforce sample-by-sample HF/LF coupling for the MF control variate."""
-    bound = inspect.signature(function).bind_partial(*args, **kwargs)
-    strategy = bound.arguments.get("rom_base_sampling_strategy", "coupled")
+    arguments = _bound_arguments(function, args, kwargs)
+    strategy = arguments.get("rom_base_sampling_strategy", "coupled")
     if str(strategy).strip().lower() != "coupled":
         raise ValueError(
             "Full-covariance MF-VI requires rom_base_sampling_strategy='coupled' "
@@ -136,7 +140,12 @@ def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_run_vi(*args, **kwargs)
-    return _full_run_vi(
+    implementation = (
+        _full_newton_run_vi
+        if _optimizer_method(_legacy_run_vi, args, kwargs) == "newton"
+        else _full_run_vi
+    )
+    return implementation(
         *args,
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
@@ -151,7 +160,12 @@ def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
     if family == "diagonal":
         return _legacy_run_mf_vi(*args, **kwargs)
     _require_coupled_mf_base(_full_run_mf_vi, args, kwargs)
-    return _full_run_mf_vi(
+    implementation = (
+        _full_newton_run_mf_vi
+        if _optimizer_method(_legacy_run_mf_vi, args, kwargs) == "newton"
+        else _full_run_mf_vi
+    )
+    return implementation(
         *args,
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
@@ -166,7 +180,12 @@ def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
     if family == "diagonal":
         return _legacy_auto_mf_vi(*args, **kwargs)
     _require_coupled_mf_base(_full_auto_mf_vi, args, kwargs)
-    return _full_auto_mf_vi(
+    implementation = (
+        _full_newton_auto_mf_vi
+        if _optimizer_method(_legacy_auto_mf_vi, args, kwargs) == "newton"
+        else _full_auto_mf_vi
+    )
+    return implementation(
         *args,
         max_covariance_log_step=max_covariance_log_step,
         **kwargs,
