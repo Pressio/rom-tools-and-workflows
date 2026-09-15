@@ -71,7 +71,7 @@ from romtools.workflows.inverse.vi_run_directory_policy import (
 )
 
 # Add jackknife-based adaptive sample enrichment as the outermost optional
-# VI/MFVI policy.  This keeps the standard drivers unchanged when disabled and
+# VI/MFVI policy. This keeps the standard drivers unchanged when disabled and
 # lets the adaptive evaluator see the same run-directory and sample-reuse
 # wrapper stack.
 from romtools.workflows.inverse.vi_adaptive_sampling import (
@@ -80,6 +80,33 @@ from romtools.workflows.inverse.vi_adaptive_sampling import (
     run_mf_vi as _adaptive_run_mf_vi,
     mf_vi_with_auto_rom as _adaptive_mf_vi_with_auto_rom,
 )
+_adaptive_sampling_module = _import_module("romtools.workflows.inverse.vi_adaptive_sampling")
+
+
+# The adaptive policy introspects the underlying legacy driver signatures, while
+# the public wrapper stack also carries policy-only keywords such as
+# create_run_directories and sample_reuse_config. Filter those wrapper keywords
+# when binding a legacy signature; evaluator signatures continue to receive all
+# of their native arguments unchanged.
+def _bind_adaptive_signature(signature_source, args, kwargs):
+    signature = _inspect.signature(signature_source)
+    accepts_var_kwargs = any(
+        parameter.kind == _inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
+    if accepts_var_kwargs:
+        bind_kwargs = kwargs
+    else:
+        bind_kwargs = {
+            key: value for key, value in kwargs.items()
+            if key in signature.parameters
+        }
+    bound = signature.bind_partial(*args, **bind_kwargs)
+    bound.apply_defaults()
+    return bound.arguments
+
+
+_adaptive_sampling_module._bind = _bind_adaptive_signature
 
 
 def _add_vi_wrapper_signature(wrapper, original):
