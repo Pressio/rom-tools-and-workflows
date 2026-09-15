@@ -114,16 +114,52 @@ _vi_drivers_module.run_vi = run_vi
 _mf_vi_drivers_module.run_mf_vi = run_mf_vi
 _mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
 
-# Add the true full-covariance Gaussian family as an outer routing layer.  The
-# wrappers infer full covariance for MultivariateGaussianParameterSpace inputs
-# or accept variational_distribution="full_covariance" explicitly.  Diagonal
-# calls delegate to the already-installed sample-reuse/directory-policy stack.
-from romtools.workflows.inverse.full_covariance_vi_drivers import (
+# Add the true full-covariance Gaussian family as an explicit outer routing
+# layer.  Omitting ``variational_distribution`` preserves the historical
+# multivariate fixed-correlation path; callers opt into freely evolving
+# covariance with ``variational_distribution='full_covariance'``.
+from romtools.workflows.inverse.full_covariance_router import (
     run_vi as _full_covariance_run_vi,
-)
-from romtools.workflows.inverse.full_covariance_mf_vi_drivers import (
     run_mf_vi as _full_covariance_run_mf_vi,
     mf_vi_with_auto_rom as _full_covariance_auto_mf_vi,
+)
+
+
+def _add_full_covariance_signature(wrapper, legacy_wrapper):
+    signature = _inspect.signature(legacy_wrapper)
+    parameters = list(signature.parameters.values())
+    insertion_index = next(
+        (
+            index for index, parameter in enumerate(parameters)
+            if parameter.kind == _inspect.Parameter.VAR_KEYWORD
+        ),
+        len(parameters),
+    )
+    parameters.insert(
+        insertion_index,
+        _inspect.Parameter(
+            "variational_distribution",
+            kind=_inspect.Parameter.KEYWORD_ONLY,
+            default=None,
+            annotation=str,
+        ),
+    )
+    parameters.insert(
+        insertion_index + 1,
+        _inspect.Parameter(
+            "max_covariance_log_step",
+            kind=_inspect.Parameter.KEYWORD_ONLY,
+            default=1.0,
+            annotation=float,
+        ),
+    )
+    wrapper.__signature__ = signature.replace(parameters=parameters)
+
+
+_add_full_covariance_signature(_full_covariance_run_vi, _directory_policy_run_vi)
+_add_full_covariance_signature(_full_covariance_run_mf_vi, _directory_policy_run_mf_vi)
+_add_full_covariance_signature(
+    _full_covariance_auto_mf_vi, _directory_policy_mf_vi_with_auto_rom
 )
 
 run_vi = _full_covariance_run_vi
