@@ -5,6 +5,15 @@ Both use the seven-parameter analytic sine-series inverse problem from the
 VI/MF-VI paper benchmark and compare single-fidelity VI with automatic-GP
 MF-VI.
 
+Both production examples use the same core settings:
+
+- Newton in natural coordinates;
+- `newton_regularization=1e-4`;
+- joint entropy estimator with a leave-one-out baseline;
+- 16 FOM samples per iteration;
+- stochastic nonmonotone line search with `max_step_size=1.0`;
+- automatic GP ROM for MF-VI with `max_rom_training_history=4`.
+
 ## 1. Diagonal posterior
 
 `diagonal_example.py` uses 31 equispaced interior observations. Discrete sine
@@ -22,7 +31,8 @@ python examples/vi_mf_vi_demo/diagonal_example.py
 number of observations, but warps the observation locations so they are not
 equispaced. The exact posterior is correlated. A
 `MultivariateGaussianParameterSpace` initializer starts from the diagonal prior
-covariance and selects true full-covariance VI.
+covariance and selects true full-covariance VI. This example uses the
+full-covariance natural-coordinate Newton implementation.
 
 ```bash
 python examples/vi_mf_vi_demo/full_covariance_example.py
