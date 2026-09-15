@@ -504,13 +504,16 @@
                   
   <section id="module-romtools.workflows.inverse.full_covariance_router">
 <span id="romtools-workflows-inverse-full-covariance-router"></span><h1>romtools.workflows.inverse.full_covariance_router<a class="headerlink" href="#module-romtools.workflows.inverse.full_covariance_router" title="Link to this heading">#</a></h1>
-<p>Public routing for the opt-in full-covariance Gaussian VI family.</p>
-<p>The pre-existing multivariate parameter-space behavior is retained when
-<code class="docutils literal notranslate"><span class="pre">variational_distribution</span></code> is omitted so existing callers and restart files
-remain backward compatible. True full covariance is selected explicitly with
-<code class="docutils literal notranslate"><span class="pre">variational_distribution='full_covariance'</span></code>. The old fixed-correlation
-multivariate path can therefore be deprecated separately without making this
-feature release a silent behavior change.</p>
+<p>Public routing for Gaussian VI variational families.</p>
+<p><code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines the Bayesian prior. The required
+<code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code> independently defines both the
+variational family and its initial moments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> -&gt; diagonal/mean-field VI;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> -&gt; true full-covariance VI.</p></li>
+</ul>
+<p>A multivariate variational initializer is therefore never interpreted as the
+legacy fixed-correlation family.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>

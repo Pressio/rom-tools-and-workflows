@@ -419,11 +419,22 @@
                   
   <section id="full-covariance-variational-inference">
 <h1>Full-covariance variational inference<a class="headerlink" href="#full-covariance-variational-inference" title="Link to this heading">#</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> supports a true full-covariance Gaussian variational family for
-VI and MF-VI.  Select it explicitly with
-<code class="docutils literal notranslate"><span class="pre">variational_distribution=&quot;full_covariance&quot;</span></code>.  Omitting that option keeps
-the historical behavior, including the legacy fixed-correlation multivariate
-path, for backward compatibility.</p>
+<p><code class="docutils literal notranslate"><span class="pre">romtools</span></code> distinguishes the Bayesian prior from the variational family.
+Both VI and MF-VI require an <code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code>.  Its type
+selects the variational family and its moments provide the initial variational
+state:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> selects diagonal/mean-field VI;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> selects true full-covariance VI.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines only the prior.  It may independently be
+diagonal or multivariate, provided it uses the same parameter names in the same
+order as the variational initializer.  There is no separate
+<code class="docutils literal notranslate"><span class="pre">variational_distribution</span></code> argument.</p>
+<p>A multivariate initializer with a diagonal covariance still selects the
+full-covariance family, so correlations are free to develop during
+optimization.  The historical fixed-correlation interpretation of a
+multivariate variational initializer is not part of the public API.</p>
 <section id="optimizer-coordinate-gaussian">
 <h2>Optimizer-coordinate Gaussian<a class="headerlink" href="#optimizer-coordinate-gaussian" title="Link to this heading">#</a></h2>
 <p>The full-covariance family is defined in optimizer coordinates,</p>
@@ -441,7 +452,7 @@ covariance coordinates.</p>
 <section id="natural-score">
 <h2>Natural score<a class="headerlink" href="#natural-score" title="Link to this heading">#</a></h2>
 <p>For <span class="math notranslate nohighlight">\(\delta=x-\mu\)</span>, the Gaussian Fisher inverse maps the ordinary score
-to the especially simple per-sample natural score</p>
+to the per-sample natural score</p>
 <div class="math notranslate nohighlight">
 \[\widetilde s_\mu = \delta,
 \qquad
@@ -514,15 +525,21 @@ variate distinct from the multifidelity control variate.</p>
 </section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
-<p>A diagonal prior can initialize a full-covariance variational family; the
-covariance is then free to develop nonzero correlations during optimization.
-For example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
+<p>For example, a diagonal prior can be paired with a full-covariance
+variational family by supplying a multivariate initializer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">q0</span> <span class="o">=</span> <span class="n">MultivariateGaussianParameterSpace</span><span class="p">(</span>
+    <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span>
+    <span class="n">means</span><span class="o">=</span><span class="n">initial_mean</span><span class="p">,</span>
+    <span class="n">covariance</span><span class="o">=</span><span class="n">initial_covariance</span><span class="p">,</span>
+    <span class="n">sampler</span><span class="o">=</span><span class="n">MonteCarloSampler</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
     <span class="n">prior_parameter_space</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span>
+    <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">q0</span><span class="p">,</span>
     <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
     <span class="n">observations_covariance</span><span class="o">=</span><span class="n">observation_covariance</span><span class="p">,</span>
-    <span class="n">variational_distribution</span><span class="o">=</span><span class="s2">"full_covariance"</span><span class="p">,</span>
     <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span>
     <span class="n">optimizer_config</span><span class="o">=</span><span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VIAdamOptimizerConfig</span><span class="p">(</span>
         <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
@@ -530,6 +547,8 @@ For example:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
+<p>Conversely, a <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> initializer selects diagonal VI even
+when the prior is multivariate.</p>
 <p>The complete covariance/Cholesky state is written to the VI history and restart
 files.  Full-covariance Newton/Hessian support is intentionally not included in
 this implementation; use gradient or Adam optimization for this family.</p>

@@ -1,11 +1,23 @@
 Full-covariance variational inference
-====================================
+=====================================
 
-``romtools`` supports a true full-covariance Gaussian variational family for
-VI and MF-VI.  Select it explicitly with
-``variational_distribution="full_covariance"``.  Omitting that option keeps
-the historical behavior, including the legacy fixed-correlation multivariate
-path, for backward compatibility.
+``romtools`` distinguishes the Bayesian prior from the variational family.
+Both VI and MF-VI require an ``initial_variational_parameter_space``.  Its type
+selects the variational family and its moments provide the initial variational
+state:
+
+* ``GaussianParameterSpace`` selects diagonal/mean-field VI;
+* ``MultivariateGaussianParameterSpace`` selects true full-covariance VI.
+
+The ``prior_parameter_space`` defines only the prior.  It may independently be
+diagonal or multivariate, provided it uses the same parameter names in the same
+order as the variational initializer.  There is no separate
+``variational_distribution`` argument.
+
+A multivariate initializer with a diagonal covariance still selects the
+full-covariance family, so correlations are free to develop during
+optimization.  The historical fixed-correlation interpretation of a
+multivariate variational initializer is not part of the public API.
 
 Optimizer-coordinate Gaussian
 -----------------------------
@@ -32,7 +44,7 @@ Natural score
 -------------
 
 For :math:`\delta=x-\mu`, the Gaussian Fisher inverse maps the ordinary score
-to the especially simple per-sample natural score
+to the per-sample natural score
 
 .. math::
 
@@ -131,21 +143,30 @@ variate distinct from the multifidelity control variate.
 Usage
 -----
 
-A diagonal prior can initialize a full-covariance variational family; the
-covariance is then free to develop nonzero correlations during optimization.
-For example::
+For example, a diagonal prior can be paired with a full-covariance
+variational family by supplying a multivariate initializer::
+
+   q0 = MultivariateGaussianParameterSpace(
+       parameter_names=parameter_names,
+       means=initial_mean,
+       covariance=initial_covariance,
+       sampler=MonteCarloSampler,
+   )
 
    mean, std, samples, qois = romtools.workflows.run_vi(
        model=model,
        prior_parameter_space=prior,
+       initial_variational_parameter_space=q0,
        observations=observations,
        observations_covariance=observation_covariance,
-       variational_distribution="full_covariance",
        optimizer_method="adam",
        optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
            gradient_method="natural",
        ),
    )
+
+Conversely, a ``GaussianParameterSpace`` initializer selects diagonal VI even
+when the prior is multivariate.
 
 The complete covariance/Cholesky state is written to the VI history and restart
 files.  Full-covariance Newton/Hessian support is intentionally not included in
