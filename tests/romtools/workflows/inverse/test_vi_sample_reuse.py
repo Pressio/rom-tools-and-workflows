@@ -250,9 +250,11 @@ def test_reused_mf_hessian_reduces_to_standard_mf_hessian_for_unit_weights():
 @pytest.mark.mpi_skip
 def test_run_vi_reuses_high_fidelity_model_evaluations(tmp_path):
     model = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = vi_drivers.run_vi(
         model=model,
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "vi_reuse"),
@@ -277,10 +279,12 @@ def test_run_vi_reuses_high_fidelity_model_evaluations(tmp_path):
 @pytest.mark.mpi_skip
 def test_run_mf_vi_reuses_fom_and_keeps_fresh_rom_enrichment(tmp_path):
     fom = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = mf_vi_drivers.run_mf_vi(
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "mf_vi_reuse"),
@@ -308,9 +312,11 @@ def test_run_mf_vi_reuses_fom_and_keeps_fresh_rom_enrichment(tmp_path):
 @pytest.mark.mpi_skip
 def test_run_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
     model = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = vi_drivers.run_vi(
         model=model,
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "vi_newton_reuse"),
@@ -333,9 +339,11 @@ def test_run_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
 @pytest.mark.mpi_skip
 def test_run_vi_newton_hessian_variance_can_force_refresh(tmp_path):
     model = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = vi_drivers.run_vi(
         model=model,
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "vi_newton_variance_refresh"),
@@ -358,9 +366,11 @@ def test_run_vi_newton_hessian_variance_can_force_refresh(tmp_path):
 @pytest.mark.mpi_skip
 def test_run_vi_newton_independent_curvature_uses_separate_reuse_archive(tmp_path):
     model = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = vi_drivers.run_vi(
         model=model,
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "vi_newton_independent_reuse"),
@@ -386,10 +396,12 @@ def test_run_vi_newton_independent_curvature_uses_separate_reuse_archive(tmp_pat
 @pytest.mark.mpi_skip
 def test_run_mf_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
     fom = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = mf_vi_drivers.run_mf_vi(
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "mf_vi_newton_reuse"),
@@ -415,10 +427,12 @@ def test_run_mf_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
 @pytest.mark.mpi_skip
 def test_run_mf_vi_newton_hessian_variance_can_force_refresh(tmp_path):
     fom = CountingLinearQoiModel()
+    prior_parameter_space = _parameter_space()
     result = mf_vi_drivers.run_mf_vi(
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=prior_parameter_space,
         observations=np.array([0.5]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "mf_vi_newton_variance_refresh"),
@@ -442,9 +456,11 @@ def test_run_mf_vi_newton_hessian_variance_can_force_refresh(tmp_path):
 
 
 def test_sample_reuse_rejects_rqmc(tmp_path):
+    parameter_space = _parameter_space()
     common = dict(
         model=LinearQoiModel(),
-        prior_parameter_space=_parameter_space(),
+        prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=str(tmp_path / "unsupported"),
