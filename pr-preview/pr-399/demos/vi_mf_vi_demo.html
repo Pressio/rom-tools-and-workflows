@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Analytic sine VI and MF-VI examples &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Analytic sine VI and MF-VI example &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -383,20 +383,12 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior">Posterior</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-2-non-equispaced-observations-and-a-full-covariance">Example 2: non-equispaced observations and a full covariance</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Convergence</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Posterior mean</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Posterior</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Implementation</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-setup">Problem setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimization-configuration">Optimization configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior">Posterior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-problem-definition">Shared problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerating-the-figures">Regenerating the figures</a></li>
 </ul>
@@ -450,7 +442,7 @@
     
     <li class="breadcrumb-item"><a href="variational_inference.html" class="nav-link">Variational inference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Analytic sine VI and MF-VI examples</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Analytic sine VI and MF-VI example</span></li>
   </ul>
 </nav>
 </div>
@@ -467,10 +459,10 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="analytic-sine-vi-and-mf-vi-examples">
-<h1>Analytic sine VI and MF-VI examples<a class="headerlink" href="#analytic-sine-vi-and-mf-vi-examples" title="Link to this heading">#</a></h1>
-<p>These examples use the analytically tractable sine-series inverse problem from
-the VI/MF-VI benchmark.  The forward model is</p>
+  <section id="analytic-sine-vi-and-mf-vi-example">
+<h1>Analytic sine VI and MF-VI example<a class="headerlink" href="#analytic-sine-vi-and-mf-vi-example" title="Link to this heading">#</a></h1>
+<p>This example uses the analytically tractable sine-series inverse problem from
+the VI/MF-VI benchmark. The forward model is</p>
 <div class="math notranslate nohighlight">
 \[u''(x)=f(x;\theta), \qquad u(0)=u(1)=0,\]</div>
 <p>with</p>
@@ -488,7 +480,7 @@ the VI/MF-VI benchmark.  The forward model is</p>
 \[\theta^\star
 =(1.00,-0.80,0.65,-0.50,0.35,-0.25,0.15)^T,\]</div>
 <p>and the observation noise has standard deviation
-<span class="math notranslate nohighlight">\(\sigma_\eta=5\times10^{-3}\)</span>.  Because the forward map is linear and
+<span class="math notranslate nohighlight">\(\sigma_\eta=5\times10^{-3}\)</span>. Because the forward map is linear and
 both the prior and likelihood are Gaussian, the exact posterior is available
 in closed form,</p>
 <div class="math notranslate nohighlight">
@@ -498,66 +490,96 @@ in closed form,</p>
 \[m_{\rm post}
 = C_{\rm post}
   \left(C_0^{-1}m_0+G^T\Gamma_{\rm obs}^{-1}y\right).\]</div>
-<p>This gives a useful documentation problem: convergence can be measured against
-the exact posterior rather than against a reference Monte Carlo calculation.</p>
-<p>Both examples compare single-fidelity VI with MF-VI using the automatic
-Gaussian-process ROM.  They also demonstrate the revised API in which
+<p>This makes the problem useful for demonstrating convergence directly against
+the exact posterior.</p>
+<p>The example compares single-fidelity VI with MF-VI using the automatic
+Gaussian-process ROM. Both methods use Newton updates in natural coordinates,
+with <code class="docutils literal notranslate"><span class="pre">newton_regularization=5e-4</span></code>. The stochastic nonmonotone line search is
+capped at <code class="docutils literal notranslate"><span class="pre">max_step_size=1.0</span></code>. MF-VI uses the automatic GP ROM with
+<code class="docutils literal notranslate"><span class="pre">max_rom_training_history=4</span></code>.</p>
+<p>The example also demonstrates the revised API in which
 <code class="docutils literal notranslate"><span class="pre">prior_parameter_space</span></code> defines the prior while the required
 <code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code> defines the variational family and its
 initial moments.</p>
-<section id="example-1-equispaced-observations-and-a-diagonal-posterior">
-<h2>Example 1: equispaced observations and a diagonal posterior<a class="headerlink" href="#example-1-equispaced-observations-and-a-diagonal-posterior" title="Link to this heading">#</a></h2>
-<p>The first example uses <span class="math notranslate nohighlight">\(N=31\)</span> equispaced interior observations,</p>
+<section id="problem-setup">
+<h2>Problem setup<a class="headerlink" href="#problem-setup" title="Link to this heading">#</a></h2>
+<p>We use <span class="math notranslate nohighlight">\(N=31\)</span> equispaced interior observations,</p>
 <div class="math notranslate nohighlight">
 \[x_i=\frac{i}{N+1}, \qquad i=1,\ldots,N.\]</div>
 <p>For these points the discrete sine basis is orthogonal, so
-<span class="math notranslate nohighlight">\(G^T\Gamma_{\rm obs}^{-1}G\)</span> is diagonal.  Since the prior covariance is
+<span class="math notranslate nohighlight">\(G^T\Gamma_{\rm obs}^{-1}G\)</span> is diagonal. Since the prior covariance is
 also diagonal, the exact posterior covariance is diagonal to numerical
 precision.</p>
-<p>The variational initializer is therefore a <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code>.  This
+<p>The variational initializer is therefore a <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code>, which
 selects the diagonal/mean-field VI implementation.</p>
 <p>Run the example with</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/diagonal_example.py
 </pre></div>
 </div>
 <p>A reduced CI configuration is available with <code class="docutils literal notranslate"><span class="pre">--smoke</span></code>.</p>
+</section>
+<section id="optimization-configuration">
+<h2>Optimization configuration<a class="headerlink" href="#optimization-configuration" title="Link to this heading">#</a></h2>
+<p>The core optimizer configuration used for both VI and MF-VI is</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
+    <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
+    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
+    <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">line_search</span> <span class="o">=</span> <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">(</span>
+    <span class="n">max_step_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The MF-VI call uses the automatic GP ROM and retains four iterations of ROM
+training history:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
 <section id="convergence">
-<h3>Convergence<a class="headerlink" href="#convergence" title="Link to this heading">#</a></h3>
+<h2>Convergence<a class="headerlink" href="#convergence" title="Link to this heading">#</a></h2>
 <p>The convergence plot reports the exact Gaussian
 <span class="math notranslate nohighlight">\(D_{\rm KL}(q\|p_{\rm post})\)</span> for the accepted VI and MF-VI states.</p>
-<figure class="align-center" id="id5">
+<figure class="align-center" id="id1">
 <a class="reference internal image-reference" href="../_images/analytic_sine_diagonal_convergence.png"><img alt="KL convergence for VI and MF-VI on the equispaced analytic sine problem" src="../_images/analytic_sine_diagonal_convergence.png" style="width: 78%;" />
 </a>
 <figcaption>
-<p><span class="caption-text">VI and MF-VI convergence to the exact diagonal posterior.</span><a class="headerlink" href="#id5" title="Link to this image">#</a></p>
+<p><span class="caption-text">VI and MF-VI convergence to the exact diagonal posterior.</span><a class="headerlink" href="#id1" title="Link to this image">#</a></p>
 </figcaption>
 </figure>
 </section>
 <section id="posterior-mean">
-<h3>Posterior mean<a class="headerlink" href="#posterior-mean" title="Link to this heading">#</a></h3>
-<figure class="align-center" id="id6">
+<h2>Posterior mean<a class="headerlink" href="#posterior-mean" title="Link to this heading">#</a></h2>
+<figure class="align-center" id="id2">
 <a class="reference internal image-reference" href="../_images/analytic_sine_diagonal_mean.png"><img alt="Posterior mean comparison for the diagonal analytic sine problem" src="../_images/analytic_sine_diagonal_mean.png" style="width: 82%;" />
 </a>
 <figcaption>
 <p><span class="caption-text">Final VI and MF-VI posterior means compared with the exact posterior mean and
-the synthetic truth.</span><a class="headerlink" href="#id6" title="Link to this image">#</a></p>
+the synthetic truth.</span><a class="headerlink" href="#id2" title="Link to this image">#</a></p>
 </figcaption>
 </figure>
 </section>
 <section id="posterior">
-<h3>Posterior<a class="headerlink" href="#posterior" title="Link to this heading">#</a></h3>
-<figure class="align-center" id="id7">
+<h2>Posterior<a class="headerlink" href="#posterior" title="Link to this heading">#</a></h2>
+<figure class="align-center" id="id3">
 <a class="reference internal image-reference" href="../_images/analytic_sine_diagonal_posterior.png"><img alt="Posterior marginal densities for the diagonal analytic sine problem" src="../_images/analytic_sine_diagonal_posterior.png" style="width: 96%;" />
 </a>
 <figcaption>
 <p><span class="caption-text">Exact, VI, and MF-VI marginal posterior densities for the seven sine
-coefficients.  The vertical dashed line in each panel is the synthetic
-truth.</span><a class="headerlink" href="#id7" title="Link to this image">#</a></p>
+coefficients. The vertical dashed line in each panel is the synthetic
+truth.</span><a class="headerlink" href="#id3" title="Link to this image">#</a></p>
 </figcaption>
 </figure>
 </section>
 <section id="implementation">
-<h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h3>
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">  1</span><span class="sd">"""VI versus MF-VI for the diagonal analytic sine posterior."""</span>
 <span class="linenos">  2</span>
 <span class="linenos">  3</span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -721,232 +743,10 @@ truth.</span><a class="headerlink" href="#id7" title="Link to this image">#</a><
 </pre></div>
 </div>
 </section>
-</section>
-<section id="example-2-non-equispaced-observations-and-a-full-covariance">
-<h2>Example 2: non-equispaced observations and a full covariance<a class="headerlink" href="#example-2-non-equispaced-observations-and-a-full-covariance" title="Link to this heading">#</a></h2>
-<p>The second example keeps the same seven coefficients, prior, noise level, and
-number of observations but changes only the observation locations.  Starting
-from</p>
-<div class="math notranslate nohighlight">
-\[t_i=\frac{i}{N+1},\]</div>
-<p>the locations are warped according to</p>
-<div class="math notranslate nohighlight">
-\[x_i
-=0.02
- +0.96\,\frac{t_i^3}{t_N^3}.\]</div>
-<p>The observations now cluster toward the left side of the interval.  This
-breaks discrete sine orthogonality, so the likelihood precision and exact
-posterior covariance contain off-diagonal terms.</p>
-<p>The prior remains diagonal.  The variational initializer is instead a
-<code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> whose initial covariance is the same
-diagonal prior covariance.  The <em>type</em> of the initializer selects true
-full-covariance VI, so off-diagonal covariance terms are free to develop during
-optimization even though the initial covariance itself is diagonal.</p>
-<p>Run the example with</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/full_covariance_example.py
-</pre></div>
-</div>
-<p>The full-covariance implementation currently uses natural-gradient Adam; full
-covariance Newton/Hessian optimization is intentionally outside the scope of
-this implementation.</p>
-<section id="id1">
-<h3>Convergence<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
-<figure class="align-center" id="id8">
-<a class="reference internal image-reference" href="demos/notebooks/analytic_sine_correlated_convergence.png"><img alt="KL convergence for full-covariance VI and MF-VI" src="demos/notebooks/analytic_sine_correlated_convergence.png" style="width: 78%;" />
-</a>
-<figcaption>
-<p><span class="caption-text">Exact Gaussian KL convergence for full-covariance VI and MF-VI.</span><a class="headerlink" href="#id8" title="Link to this image">#</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="id2">
-<h3>Posterior mean<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
-<figure class="align-center" id="id9">
-<a class="reference internal image-reference" href="demos/notebooks/analytic_sine_correlated_mean.png"><img alt="Posterior mean comparison for the non-equispaced analytic sine problem" src="demos/notebooks/analytic_sine_correlated_mean.png" style="width: 82%;" />
-</a>
-<figcaption>
-<p><span class="caption-text">Final full-covariance VI and MF-VI posterior means compared with the exact
-posterior mean and truth.</span><a class="headerlink" href="#id9" title="Link to this image">#</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="id3">
-<h3>Posterior<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
-<figure class="align-center" id="id10">
-<a class="reference internal image-reference" href="demos/notebooks/analytic_sine_correlated_posterior.png"><img alt="Posterior correlation and two-dimensional marginal for the non-equispaced sine problem" src="demos/notebooks/analytic_sine_correlated_posterior.png" style="width: 96%;" />
-</a>
-<figcaption>
-<p><span class="caption-text">The exact posterior correlation matrix and the strongest correlated
-two-dimensional marginal.  The ellipse panel compares one- and
-two-standard-deviation contours from the exact posterior, VI, and MF-VI.</span><a class="headerlink" href="#id10" title="Link to this image">#</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="id4">
-<h3>Implementation<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">  1</span><span class="sd">"""Full-covariance VI versus MF-VI for non-equispaced sine observations."""</span>
-<span class="linenos">  2</span>
-<span class="linenos">  3</span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-<span class="linenos">  4</span>
-<span class="linenos">  5</span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
-<span class="linenos">  6</span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="linenos">  7</span><span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-<span class="linenos">  8</span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="linenos">  9</span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
-<span class="linenos"> 10</span>
-<span class="linenos"> 11</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="linenos"> 12</span>
-<span class="linenos"> 13</span>
-<span class="linenos"> 14</span><span class="n">REPOSITORY_ROOT</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-<span class="linenos"> 15</span><span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">REPOSITORY_ROOT</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
-<span class="linenos"> 16</span>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">REPOSITORY_ROOT</span><span class="p">))</span>
-<span class="linenos"> 17</span>
-<span class="linenos"> 18</span><span class="kn">import</span><span class="w"> </span><span class="nn">romtools.workflows</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">workflows</span>
-<span class="linenos"> 19</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">VIAdamOptimizerConfig</span>
-<span class="linenos"> 20</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.parameter_spaces</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<span class="linenos"> 21</span>    <span class="n">GaussianParameterSpace</span><span class="p">,</span>
-<span class="linenos"> 22</span>    <span class="n">MonteCarloSampler</span><span class="p">,</span>
-<span class="linenos"> 23</span>    <span class="n">MultivariateGaussianParameterSpace</span><span class="p">,</span>
-<span class="linenos"> 24</span><span class="p">)</span>
-<span class="linenos"> 25</span>
-<span class="linenos"> 26</span><span class="kn">from</span><span class="w"> </span><span class="nn">examples.vi_mf_vi_demo.analytic_sine_support</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<span class="linenos"> 27</span>    <span class="n">AnalyticSineQoiModel</span><span class="p">,</span>
-<span class="linenos"> 28</span>    <span class="n">PRIOR_STD</span><span class="p">,</span>
-<span class="linenos"> 29</span>    <span class="n">build_problem</span><span class="p">,</span>
-<span class="linenos"> 30</span>    <span class="n">collect_history</span><span class="p">,</span>
-<span class="linenos"> 31</span>    <span class="n">write_convergence_plot</span><span class="p">,</span>
-<span class="linenos"> 32</span>    <span class="n">write_correlated_posterior_plot</span><span class="p">,</span>
-<span class="linenos"> 33</span>    <span class="n">write_mean_plot</span><span class="p">,</span>
-<span class="linenos"> 34</span><span class="p">)</span>
-<span class="linenos"> 35</span>
-<span class="linenos"> 36</span>
-<span class="linenos"> 37</span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span>
-<span class="linenos"> 38</span>    <span class="n">smoke</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="linenos"> 39</span>    <span class="n">work_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="linenos"> 40</span>    <span class="n">output_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="linenos"> 41</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="linenos"> 42</span><span class="w">    </span><span class="sd">"""Run the non-equispaced full-covariance example."""</span>
-<span class="linenos"> 43</span>    <span class="n">problem</span> <span class="o">=</span> <span class="n">build_problem</span><span class="p">(</span><span class="n">equispaced</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="linenos"> 44</span>    <span class="n">model</span> <span class="o">=</span> <span class="n">AnalyticSineQoiModel</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
-<span class="linenos"> 45</span>
-<span class="linenos"> 46</span>    <span class="n">sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">32</span>
-<span class="linenos"> 47</span>    <span class="n">rom_extra_sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">64</span>
-<span class="linenos"> 48</span>    <span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">40</span>
-<span class="linenos"> 49</span>
-<span class="linenos"> 50</span>    <span class="n">prior</span> <span class="o">=</span> <span class="n">GaussianParameterSpace</span><span class="p">(</span>
-<span class="linenos"> 51</span>        <span class="n">parameter_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">),</span>
-<span class="linenos"> 52</span>        <span class="n">means</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">prior_mean</span><span class="p">,</span>
-<span class="linenos"> 53</span>        <span class="n">stds</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">prior_mean</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">PRIOR_STD</span><span class="p">),</span>
-<span class="linenos"> 54</span>        <span class="n">sampler</span><span class="o">=</span><span class="n">MonteCarloSampler</span><span class="p">,</span>
-<span class="linenos"> 55</span>    <span class="p">)</span>
-<span class="linenos"> 56</span>    <span class="n">initial_variational_parameter_space</span> <span class="o">=</span> <span class="n">MultivariateGaussianParameterSpace</span><span class="p">(</span>
-<span class="linenos"> 57</span>        <span class="n">parameter_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">),</span>
-<span class="linenos"> 58</span>        <span class="n">means</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">prior_mean</span><span class="p">,</span>
-<span class="linenos"> 59</span>        <span class="n">covariance</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">prior_covariance</span><span class="p">,</span>
-<span class="linenos"> 60</span>        <span class="n">sampler</span><span class="o">=</span><span class="n">MonteCarloSampler</span><span class="p">,</span>
-<span class="linenos"> 61</span>    <span class="p">)</span>
-<span class="linenos"> 62</span>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">VIAdamOptimizerConfig</span><span class="p">(</span>
-<span class="linenos"> 63</span>        <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-<span class="linenos"> 64</span>        <span class="n">learning_rate_scale</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
-<span class="linenos"> 65</span>        <span class="n">gradient_norm_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<span class="linenos"> 66</span>        <span class="n">max_iterations</span><span class="o">=</span><span class="n">max_iterations</span><span class="p">,</span>
-<span class="linenos"> 67</span>    <span class="p">)</span>
-<span class="linenos"> 68</span>
-<span class="linenos"> 69</span>    <span class="n">root</span> <span class="o">=</span> <span class="p">(</span>
-<span class="linenos"> 70</span>        <span class="n">Path</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="linenos"> 71</span>        <span class="k">if</span> <span class="n">work_dir</span>
-<span class="linenos"> 72</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"correlated_work"</span>
-<span class="linenos"> 73</span>    <span class="p">)</span>
-<span class="linenos"> 74</span>    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="linenos"> 75</span>    <span class="n">vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"vi"</span>
-<span class="linenos"> 76</span>    <span class="n">mf_vi_dir</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"mf_vi"</span>
-<span class="linenos"> 77</span>
-<span class="linenos"> 78</span>    <span class="n">common_arguments</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-<span class="linenos"> 79</span>        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-<span class="linenos"> 80</span>        <span class="n">prior_parameter_space</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span>
-<span class="linenos"> 81</span>        <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">initial_variational_parameter_space</span><span class="p">,</span>
-<span class="linenos"> 82</span>        <span class="n">observations</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">observations</span><span class="p">,</span>
-<span class="linenos"> 83</span>        <span class="n">observations_covariance</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">observation_covariance</span><span class="p">,</span>
-<span class="linenos"> 84</span>        <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span>
-<span class="linenos"> 85</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
-<span class="linenos"> 86</span>        <span class="n">baseline_method</span><span class="o">=</span><span class="s2">"loo"</span><span class="p">,</span>
-<span class="linenos"> 87</span>        <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="s2">"joint"</span><span class="p">,</span>
-<span class="linenos"> 88</span>        <span class="n">bounded_parameter_handling</span><span class="o">=</span><span class="s2">"clip"</span><span class="p">,</span>
-<span class="linenos"> 89</span>        <span class="n">random_seed</span><span class="o">=</span><span class="mi">19</span><span class="p">,</span>
-<span class="linenos"> 90</span>        <span class="n">restart_files_to_keep</span><span class="o">=</span><span class="n">max_iterations</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-<span class="linenos"> 91</span>    <span class="p">)</span>
-<span class="linenos"> 92</span>
-<span class="linenos"> 93</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
-<span class="linenos"> 94</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos"> 95</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">),</span>
-<span class="linenos"> 96</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos"> 97</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos"> 98</span>    <span class="p">)</span>
-<span class="linenos"> 99</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
-<span class="linenos">100</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">101</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">),</span>
-<span class="linenos">102</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos">103</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
-<span class="linenos">104</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">105</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">106</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
-<span class="linenos">107</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
-<span class="linenos">108</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">109</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">110</span>        <span class="p">},</span>
-<span class="linenos">111</span>    <span class="p">)</span>
-<span class="linenos">112</span>
-<span class="linenos">113</span>    <span class="n">vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">114</span>    <span class="n">mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">115</span>    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
-<span class="linenos">116</span>        <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="linenos">117</span>        <span class="k">if</span> <span class="n">output_dir</span>
-<span class="linenos">118</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
-<span class="linenos">119</span>    <span class="p">)</span>
-<span class="linenos">120</span>    <span class="n">write_convergence_plot</span><span class="p">(</span>
-<span class="linenos">121</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_convergence.png"</span><span class="p">,</span>
-<span class="linenos">122</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">123</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">124</span>        <span class="s2">"Non-equispaced observations: full-covariance convergence"</span><span class="p">,</span>
-<span class="linenos">125</span>    <span class="p">)</span>
-<span class="linenos">126</span>    <span class="n">write_mean_plot</span><span class="p">(</span>
-<span class="linenos">127</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_mean.png"</span><span class="p">,</span>
-<span class="linenos">128</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">129</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">130</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">131</span>        <span class="s2">"Non-equispaced observations: posterior mean"</span><span class="p">,</span>
-<span class="linenos">132</span>    <span class="p">)</span>
-<span class="linenos">133</span>    <span class="n">write_correlated_posterior_plot</span><span class="p">(</span>
-<span class="linenos">134</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_posterior.png"</span><span class="p">,</span>
-<span class="linenos">135</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">136</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">137</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">138</span>    <span class="p">)</span>
-<span class="linenos">139</span>
-<span class="linenos">140</span>
-<span class="linenos">141</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
-<span class="linenos">142</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
-<span class="linenos">143</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--smoke"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
-<span class="linenos">144</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">)</span>
-<span class="linenos">145</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">)</span>
-<span class="linenos">146</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">147</span>
-<span class="linenos">148</span>
-<span class="linenos">149</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">150</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
-<span class="linenos">151</span>    <span class="n">main</span><span class="p">(</span>
-<span class="linenos">152</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
-<span class="linenos">153</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
-<span class="linenos">154</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<span class="linenos">155</span>    <span class="p">)</span>
-</pre></div>
-</div>
-</section>
-</section>
 <section id="shared-problem-definition">
 <h2>Shared problem definition<a class="headerlink" href="#shared-problem-definition" title="Link to this heading">#</a></h2>
 <p>The forward model, exact posterior calculation, history processing, and plotting
-utilities are shared by both examples:</p>
+utilities are shared in</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">  1</span><span class="sd">"""Shared analytic sine inverse problem and plotting utilities for VI examples."""</span>
 <span class="linenos">  2</span>
 <span class="linenos">  3</span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -1394,15 +1194,17 @@ utilities are shared by both examples:</p>
 <span class="linenos">445</span>    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">figure</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>The separate full-covariance implementation and its variational-family API are
+documented in <a class="reference internal" href="../full_covariance_vi.html"><span class="doc">Full-covariance variational inference</span></a>.</p>
 </section>
 <section id="regenerating-the-figures">
 <h2>Regenerating the figures<a class="headerlink" href="#regenerating-the-figures" title="Link to this heading">#</a></h2>
 <p>The documentation build regenerates these figures explicitly before Sphinx
-renders the page.  The same command can be run locally:</p>
+renders the page. The same command can be run locally:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/generate_docs_media.py
 </pre></div>
 </div>
-<p>To validate both examples with the reduced CI settings, run</p>
+<p>To validate the example with the reduced CI settings, run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/example.py<span class="w"> </span>--smoke
 </pre></div>
 </div>
@@ -1432,20 +1234,12 @@ renders the page.  The same command can be run locally:</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior">Posterior</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-2-non-equispaced-observations-and-a-full-covariance">Example 2: non-equispaced observations and a full covariance</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Convergence</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Posterior mean</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Posterior</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Implementation</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-setup">Problem setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimization-configuration">Optimization configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior">Posterior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-problem-definition">Shared problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerating-the-figures">Regenerating the figures</a></li>
 </ul>
