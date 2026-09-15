@@ -101,7 +101,7 @@ def test_full_covariance_natural_adam_rotates_initially_diagonal_covariance(tmp_
         optimizer_method="adam",
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
             gradient_method="natural",
-            learning_rate=0.03,
+            initial_learning_rate=0.03,
             gradient_norm_tolerance=0.0,
             max_iterations=3,
         ),
@@ -156,7 +156,7 @@ def test_full_covariance_restart_continues_with_complete_cholesky_state(tmp_path
     )
     romtools.workflows.run_vi(
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
-            learning_rate=0.02,
+            initial_learning_rate=0.02,
             gradient_norm_tolerance=0.0,
             max_iterations=2,
         ),
@@ -171,7 +171,7 @@ def test_full_covariance_restart_continues_with_complete_cholesky_state(tmp_path
     result = romtools.workflows.run_vi(
         restart_file=str(restart_file),
         optimizer_config=romtools.workflows.VIAdamOptimizerConfig(
-            learning_rate=0.02,
+            initial_learning_rate=0.02,
             gradient_norm_tolerance=0.0,
             max_iterations=3,
         ),
