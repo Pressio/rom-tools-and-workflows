@@ -376,8 +376,8 @@
 <span></span><span class="sd">"""Run-directory policy for VI and MFVI model evaluations.</span>
 
 <span class="sd">The VI drivers historically create a separate run directory for every model</span>
-<span class="sd">sample.  That remains the default because many file-backed models depend on</span>
-<span class="sd">those directories.  Lightweight in-memory models can opt out through the</span>
+<span class="sd">sample. That remains the default because many file-backed models depend on</span>
+<span class="sd">those directories. Lightweight in-memory models can opt out through the</span>
 <span class="sd">public ``create_run_directories`` keyword without disabling VI restart,</span>
 <span class="sd">history, or iteration-level output directories.</span>
 <span class="sd">"""</span>
@@ -386,11 +386,17 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_dispatcher</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">mf_vi_drivers</span> <span class="k">as</span> <span class="n">_mf</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">vi_drivers</span> <span class="k">as</span> <span class="n">_vi</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_sample_reuse</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_ORIGINAL_MF_VI_WITH_AUTO_ROM</span> <span class="k">as</span> <span class="n">_LEGACY_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span>
+    <span class="n">_ORIGINAL_RUN_MF_VI</span> <span class="k">as</span> <span class="n">_LEGACY_RUN_MF_VI</span><span class="p">,</span>
+    <span class="n">_ORIGINAL_RUN_VI</span> <span class="k">as</span> <span class="n">_LEGACY_RUN_VI</span><span class="p">,</span>
     <span class="n">mf_vi_with_auto_rom</span> <span class="k">as</span> <span class="n">_BASE_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span>
     <span class="n">run_mf_vi</span> <span class="k">as</span> <span class="n">_BASE_RUN_MF_VI</span><span class="p">,</span>
     <span class="n">run_vi</span> <span class="k">as</span> <span class="n">_BASE_RUN_VI</span><span class="p">,</span>
@@ -437,6 +443,41 @@
         <span class="n">_ACTIVE_CREATE_RUN_DIRECTORIES</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_prepare_initial_iteration_directory</span><span class="p">(</span><span class="n">signature_source</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">resolved_policy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Create iteration_0 when per-sample directories are disabled.</span>
+
+<span class="sd">    Normally the first model evaluation creates ``iteration_0`` as a parent of</span>
+<span class="sd">    its per-sample run directory. When ``create_run_directories=False`` that</span>
+<span class="sd">    side effect intentionally disappears, but restart/history output still</span>
+<span class="sd">    requires the iteration-level directory. Create only that directory here,</span>
+<span class="sd">    once at the outermost policy layer, before the driver writes its first</span>
+<span class="sd">    restart file.</span>
+<span class="sd">    """</span>
+    <span class="n">inherited</span> <span class="o">=</span> <span class="n">_ACTIVE_CREATE_RUN_DIRECTORIES</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">inherited</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">resolved_policy</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">signature_source</span><span class="p">)</span>
+    <span class="n">bind_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span>
+    <span class="p">}</span>
+    <span class="n">bound</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">bind_partial</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">bind_kwargs</span><span class="p">)</span>
+    <span class="n">bound</span><span class="o">.</span><span class="n">apply_defaults</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">bound</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"restart_file"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">bound</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"absolute_work_dir"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">bound</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"absolute_vi_directory"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">absolute_work_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">absolute_work_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"/work/"</span>
+
+    <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">bound</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dispatcher"</span><span class="p">))</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">create_empty_dir</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">absolute_work_dir</span><span class="si">}</span><span class="s2">/iteration_0"</span><span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_directory_aware_vi_iteration</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
         <span class="s2">"create_run_directories"</span><span class="p">,</span>
@@ -466,7 +507,9 @@
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_run_directory_policy.html#romtools.workflows.inverse.vi_run_directory_policy.run_vi">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_vi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">create_run_directories</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run VI with optional per-evaluation run-directory creation."""</span>
-    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">):</span>
+    <span class="n">resolved</span> <span class="o">=</span> <span class="n">_resolve_create_run_directories</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">)</span>
+    <span class="n">_prepare_initial_iteration_directory</span><span class="p">(</span><span class="n">_LEGACY_RUN_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">resolved</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">resolved</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">_BASE_RUN_VI</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
@@ -475,7 +518,9 @@
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_run_directory_policy.html#romtools.workflows.inverse.vi_run_directory_policy.run_mf_vi">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_mf_vi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">create_run_directories</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run MFVI with optional per-evaluation run-directory creation."""</span>
-    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">):</span>
+    <span class="n">resolved</span> <span class="o">=</span> <span class="n">_resolve_create_run_directories</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">)</span>
+    <span class="n">_prepare_initial_iteration_directory</span><span class="p">(</span><span class="n">_LEGACY_RUN_MF_VI</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">resolved</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">resolved</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">_BASE_RUN_MF_VI</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
@@ -484,7 +529,14 @@
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_run_directory_policy.html#romtools.workflows.inverse.vi_run_directory_policy.mf_vi_with_auto_rom">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">mf_vi_with_auto_rom</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">create_run_directories</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run auto-ROM MFVI with the same run-directory policy."""</span>
-    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">):</span>
+    <span class="n">resolved</span> <span class="o">=</span> <span class="n">_resolve_create_run_directories</span><span class="p">(</span><span class="n">create_run_directories</span><span class="p">)</span>
+    <span class="n">_prepare_initial_iteration_directory</span><span class="p">(</span>
+        <span class="n">_LEGACY_MF_VI_WITH_AUTO_ROM</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">,</span>
+        <span class="n">kwargs</span><span class="p">,</span>
+        <span class="n">resolved</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">_run_directory_policy</span><span class="p">(</span><span class="n">resolved</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">_BASE_MF_VI_WITH_AUTO_ROM</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 </pre></div>
