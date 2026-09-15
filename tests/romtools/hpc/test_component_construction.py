@@ -1,7 +1,7 @@
 import pytest
 
 from hpc_fakes import FakeConnection
-from romtools.hpc.components.caller import BaseCaller
+from romtools.hpc.components.caller import BaseCaller, LocalCaller
 from romtools.hpc.components.file_manager import BaseFileManager, LocalFileManager
 from romtools.hpc.components.slurm_job_manager import SlurmJobManager
 from romtools.hpc.components.transfer_manager import (
@@ -14,8 +14,8 @@ from romtools.hpc.logger import Logger
 
 
 @pytest.mark.parametrize("build", [
-    lambda: BaseFileManager(),
-    lambda: BaseCaller(),
+    lambda: LocalFileManager(),
+    lambda: LocalCaller(files=LocalFileManager()),
     lambda: SlurmJobManager(run_local_bash, files=LocalFileManager()),
     lambda: BaseTransferManager(files=LocalFileManager()),
     lambda: LocalTransferManager(files=LocalFileManager()),
@@ -46,3 +46,18 @@ def test_campaign_components_agree_on_the_default_directory(build):
 
     assert component.job_directory("run_0") == "run_0"
     assert component.job_directory() == "campaign"
+
+
+@pytest.mark.parametrize("base, missing", [
+    (BaseFileManager, "resolve_path"),
+    (BaseCaller, "call"),
+])
+def test_an_incomplete_component_is_rejected_at_construction(base, missing):
+    """
+    A helper that forgets one of its base's methods has to fail when the
+    dispatcher is built, not part-way through a job that has already queued.
+    """
+    incomplete = type("Incomplete", (base,), {})
+
+    with pytest.raises(TypeError, match=missing):
+        incomplete()
