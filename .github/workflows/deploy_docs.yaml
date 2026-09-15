@@ -121,7 +121,6 @@ jobs:
           sudo apt-get install -y pandoc
           pip install .[docs]
           python examples/nonlinear_solid_dynamics/generate_docs_media.py
-          python examples/vi_mf_vi_demo/generate_docs_media.py
           sphinx-build -b html docs/source docs/build/html
           touch docs/build/html/.nojekyll
 
@@ -152,7 +151,6 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Remove pull-request preview
