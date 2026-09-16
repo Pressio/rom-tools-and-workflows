@@ -1901,6 +1901,7 @@ def run_mf_vi(model: QoiModel,
     max_step_size_decrease_trys = resolved_line_search_config.max_step_size_decrease_trys
     relaxation_parameter = resolved_line_search_config.relaxation_parameter
     line_search_sample_growth_factor = resolved_line_search_config.line_search_sample_growth_factor
+    log_std_learning_rate_factor = resolved_line_search_config.log_std_learning_rate_factor
     line_search_nonmonotone_window = 1
     line_search_armijo_coefficient = 0.0
     line_search_uncertainty_sigma = 0.0
@@ -2670,11 +2671,12 @@ def run_mf_vi(model: QoiModel,
             direction_log_std = step[dimensionality:]
             line_search_predicted_slope = float(
                 np.dot(state['gradient_mean'], direction_mean)
-                + np.dot(state['gradient_log_std'], direction_log_std)
+                + log_std_learning_rate_factor
+                * np.dot(state['gradient_log_std'], direction_log_std)
             )
             test_variational_mean = variational_mean + step_size * direction_mean
             log_std_update = np.clip(
-                step_size * direction_log_std,
+                step_size * log_std_learning_rate_factor * direction_log_std,
                 -max_log_std_update,
                 max_log_std_update,
             )
@@ -2712,7 +2714,7 @@ def run_mf_vi(model: QoiModel,
             )
             test_variational_mean = variational_mean + mean_update
             log_std_update = np.clip(
-                step_size * direction_log_std,
+                step_size * log_std_learning_rate_factor * direction_log_std,
                 -max_log_std_update,
                 max_log_std_update,
             )
@@ -2747,7 +2749,8 @@ def run_mf_vi(model: QoiModel,
             else:
                 line_search_predicted_slope = float(
                     np.dot(state['gradient_mean'], direction_mean)
-                    + np.dot(state['gradient_log_std'], direction_log_std)
+                    + log_std_learning_rate_factor
+                    * np.dot(state['gradient_log_std'], direction_log_std)
                 )
 
         test_state = _evaluate_mf_vi_state(
