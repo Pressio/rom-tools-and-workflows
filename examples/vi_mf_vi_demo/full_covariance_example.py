@@ -65,7 +65,8 @@ def main(
     optimizer = VINewtonOptimizerConfig(
         newton_metric="natural",
         newton_hessian_type="full",
-        newton_curvature_strategy="same_sample",
+        newton_curvature_strategy="lagged",
+        newton_hessian_averaging_factor=0.25,
         newton_regularization=5e-4,
         gradient_norm_tolerance=0.0,
         max_iterations=max_iterations,
