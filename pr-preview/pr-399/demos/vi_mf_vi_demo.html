@@ -503,10 +503,10 @@ form,</p>
 posterior.</p>
 <section id="vi-paper-benchmark-configuration">
 <h2>VI-paper benchmark configuration<a class="headerlink" href="#vi-paper-benchmark-configuration" title="Link to this heading">#</a></h2>
-<p>Both examples use the Newton and multifidelity settings from the VI-paper
-analytic-sine benchmark. In particular, the production runs use a full Hessian,
+<p>The diagonal example uses the Newton and multifidelity settings from the
+VI-paper analytic-sine benchmark. The production run uses a full Hessian,
 lagged stochastic curvature with averaging factor <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, natural
-coordinates, and the same line-search scales:</p>
+coordinates, and the paper line-search scales:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
     <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
     <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
@@ -524,8 +524,8 @@ coordinates, and the same line-search scales:</p>
 </pre></div>
 </div>
 <p>The shared VI/MF-VI arguments use the joint entropy estimator, a leave-one-out
-baseline, zero observation-covariance regularization, and the same inference
-seed as the paper:</p>
+baseline, zero observation-covariance regularization, and inference seed 7.
+MF-VI uses a scalar multifidelity control-variate coefficient in both examples:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">common_arguments</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"newton"</span><span class="p">,</span>
@@ -541,12 +541,13 @@ seed as the paper:</p>
 </div>
 <p>The full diagonal run uses 16 FOM samples per iteration. MF-VI uses 64
 additional ROM samples, the automatic GP ROM, and four iterations of ROM
-training history, matching the paper benchmark:</p>
+training history:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">fom_sample_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
     <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
     <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
     <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
     <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
@@ -801,10 +802,14 @@ initializer is instead a <code class="docutils literal notranslate"><span class=
 with the same diagonal prior covariance. Its <em>type</em> selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
 optimization.</p>
-<p>This case uses the same natural Newton metric, full Hessian, lagged curvature
-with <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, regularization, line-search scales, FOM/ROM sample
-allocation, GP configuration, and random seed as the paper-matched diagonal
-case. Newton curvature is formed in
+<p>The multivariate case retains the same natural Newton metric, full Hessian,
+lagged curvature with <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, line-search scales, GP configuration,
+scalar MF control variate, and random seed. Because the full-covariance family
+has substantially more stochastic gradient and curvature degrees of freedom,
+the production run doubles the sampling relative to the diagonal benchmark:
+32 FOM samples per iteration and 128 additional ROM samples for MF-VI. Its
+Newton regularization is reduced by a factor of five to
+<span class="math notranslate nohighlight">\(1\times10^{-4}\)</span>. Newton curvature is formed in
 <span class="math notranslate nohighlight">\((\mu,\operatorname{svec}(\Sigma))\)</span> coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
