@@ -1,7 +1,7 @@
-romtools.hpc.dispatchers.caller
-===============================
+romtools.hpc.components.caller
+==============================
 
-.. automodule:: romtools.hpc.dispatchers.caller
+.. automodule:: romtools.hpc.components.caller
 
    
    .. rubric:: Functions
@@ -17,4 +17,5 @@ romtools.hpc.dispatchers.caller
       BaseCaller
       LocalCaller
       RemoteCaller
+      StagedCaller
    

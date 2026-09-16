@@ -59,7 +59,7 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.hpc.configuration" href="romtools.hpc.configuration.html" />
+    <link rel="next" title="romtools.hpc.components" href="romtools.hpc.components.html" />
     <link rel="prev" title="romtools.composite_vector_space" href="romtools.composite_vector_space.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -346,9 +346,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">romtools.hpc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.components.html">romtools.hpc.components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.configuration.html">romtools.hpc.configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.connection.html">romtools.hpc.connection</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.logger.html">romtools.hpc.logger</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -390,6 +392,49 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.call"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.call()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.collect_results"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.collect_results()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.run"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.run()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.submit_job"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.submit_job()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.upload"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.upload()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Configuration.defaults"><code class="docutils literal notranslate"><span class="pre">Configuration.defaults()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection"><code class="docutils literal notranslate"><span class="pre">Connection</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.close"><code class="docutils literal notranslate"><span class="pre">Connection.close()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.get"><code class="docutils literal notranslate"><span class="pre">Connection.get()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.local"><code class="docutils literal notranslate"><span class="pre">Connection.local()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.put"><code class="docutils literal notranslate"><span class="pre">Connection.put()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.run"><code class="docutils literal notranslate"><span class="pre">Connection.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.LocalDispatcher"><code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.LocalDispatcher.run"><code class="docutils literal notranslate"><span class="pre">LocalDispatcher.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.RemoteDispatcher.run"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Result"><code class="docutils literal notranslate"><span class="pre">Result</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.resolve_dispatcher"><code class="docutils literal notranslate"><span class="pre">resolve_dispatcher()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.resolve_local_dispatcher"><code class="docutils literal notranslate"><span class="pre">resolve_local_dispatcher()</span></code></a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -452,16 +497,344 @@
                   
   <section id="module-romtools.hpc">
 <span id="romtools-hpc"></span><h1>romtools.hpc<a class="headerlink" href="#module-romtools.hpc" title="Link to this heading">#</a></h1>
+<p>Tools for running ROM workflows on HPC resources.</p>
+<p>Workflows take a dispatcher, which decides where model evaluations run:
+LocalDispatcher keeps them in place, RemoteDispatcher sends them to a cluster
+over SSH and brings the results back.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">BaseDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">campaign_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hpctools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Shared configuration, logging, and public API for the dispatchers.</p>
+<p>The public methods here are a flat facade over composed helpers, so that
+workflows and models depend on one stable interface rather than on how the
+work is split up internally. Subclasses install the local or remote
+implementation of each helper, and only override a method when the
+behavior genuinely differs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>campaign_directory</strong> (<em>str</em>)</p></li>
+<li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher.call">
+<span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher.call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher.call" title="Link to this definition">#</a></dt>
+<dd><p>Run a Python callable named as “module:qualname” (e.g. “my_model:evaluate”)
+and return its result, forwarding the remaining arguments to it.</p>
+<p>Modules staged in run_directory are importable; it defaults to the
+dispatcher’s own default directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher.collect_results">
+<span class="sig-name descname"><span class="pre">collect_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher.collect_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher.collect_results" title="Link to this definition">#</a></dt>
+<dd><p>Bring a finished job’s output back to the local machine. Work that ran
+here leaves its results in place, so only remote dispatchers act.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher.run">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher.run" title="Link to this definition">#</a></dt>
+<dd><p>Run a command directly on the execution host.</p>
+<p>A command that exits non-zero is reported, not raised: check
+<code class="docutils literal notranslate"><span class="pre">result.ok</span></code> or <code class="docutils literal notranslate"><span class="pre">result.exit_code</span></code>. Every dispatcher behaves this
+way, so a model can be moved between them unchanged.</p>
+<p>Returns a Result object (with stdout, stderr, exit_code, ok)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher.submit_job">
+<span class="sig-name descname"><span class="pre">submit_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher.submit_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher.submit_job" title="Link to this definition">#</a></dt>
+<dd><p>Submit work to SLURM, wait for it to finish, and read back its output.</p>
+<p>cmd runs from run_directory, which defaults to the campaign directory;
+omit cmd only when a configured SLURM script carries the command itself.</p>
+<p>Returns a Result object (with stdout, stderr, exit_code, ok)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.BaseDispatcher.upload">
+<span class="sig-name descname"><span class="pre">upload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/base_dispatcher.html#BaseDispatcher.upload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.BaseDispatcher.upload" title="Link to this definition">#</a></dt>
+<dd><p>Put the configured upload patterns into run_directory, which defaults to
+the campaign directory, as submit_job() does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>run_directory</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.Configuration">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">Configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#Configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Configuration" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handles parsing a yaml file and any supplied command-line args.</p>
+<dl class="simple">
+<dt>Precedence:</dt><dd><ol class="arabic simple">
+<li><p>CLI args (overwrite YAML)</p></li>
+<li><p>YAML file values (if provided)</p></li>
+<li><p>Class defaults</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<em>str</em><em> | </em><em>None</em>) – Path to the YAML file to load. When omitted, the path is
+taken from -c or –hpc-config on this program’s command line.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Configuration.defaults">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">defaults</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#Configuration.defaults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Configuration.defaults" title="Link to this definition">#</a></dt>
+<dd><p>Schema defaults, reading neither a YAML file nor the command line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="romtools.hpc.configuration.html#romtools.hpc.configuration.Configuration" title="romtools.hpc.configuration.Configuration"><em>Configuration</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="romtools.hpc.ConfigurationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">ConfigurationError</span></span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#ConfigurationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.ConfigurationError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the command line cannot be parsed against SCHEMA.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.Connection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">Connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persist_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">600</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A simple SSH connection class that uses subprocess to execute SSH and SCP commands.</p>
+<p>This uses connection multiplexing (ControlMaster) to reuse an existing connection
+per SSH session (thus only requiring authentication &amp; handshakes once).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Connection.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection.close" title="Link to this definition">#</a></dt>
+<dd><p>Close the SSH connection</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Connection.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">remote</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection.get" title="Link to this definition">#</a></dt>
+<dd><p>Download a file from the remote host</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Connection.local">
+<span class="sig-name descname"><span class="pre">local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection.local"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection.local" title="Link to this definition">#</a></dt>
+<dd><p>Execute a command locally</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Connection.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection.put"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection.put" title="Link to this definition">#</a></dt>
+<dd><p>Upload a file to the remote host</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.Connection.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Connection.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Connection.run" title="Link to this definition">#</a></dt>
+<dd><p>Execute a command on the remote host</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.LocalDispatcher">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">LocalDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">campaign_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hpctools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/local_dispatcher.html#LocalDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.LocalDispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></a></p>
+<p>Runs ROM workflows on the machine this process runs on.</p>
+<p>Paths address the local filesystem and commands run in a local bash shell
+rather than over SSH. That machine may itself be a cluster node, in which
+case submit_job() reaches the scheduler directly and results need no
+transferring; upload() copies the configured files into the run directory
+rather than sending them anywhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>campaign_directory</strong> (<em>str</em>) – The directory jobs run in when given no run_directory</p></li>
+<li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>) – An instance of the Logger class for logging</p></li>
+<li><p><strong>config</strong> – A YAML path or a Configuration. Defaults to reading the command line.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.LocalDispatcher.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/local_dispatcher.html#LocalDispatcher.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.LocalDispatcher.run" title="Link to this definition">#</a></dt>
+<dd><p>Run a command on the local machine, from run_directory if given and the
+current working directory otherwise.</p>
+<p>Returns a Result object (with stdout, stderr, exit_code, ok)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.Logger">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">Logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/logger.html#Logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Logger" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Prints dispatcher output, tagging remote messages with the hostname.</p>
+<p>Messages logged through debug() appear only when debug logging is enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>debug</strong> (<em>bool</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.RemoteDispatcher">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">campaign_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hpctools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.RemoteDispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></a></p>
+<p>Runs ROM workflows on a remote host over SSH, connecting as <a class="reference external" href="mailto:user&#37;&#52;&#48;remote">user<span>&#64;</span>remote</a>:port.</p>
+<p>Coordinates composed helpers rather than doing the work itself: files go through
+RemoteFileManager, Python calls through RemoteCaller, batch jobs through
+SlurmJobManager, and archives through RemoteTransferManager. Paths are taken relative
+to the configured remote root.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>) – An instance of the Logger class for logging</p></li>
+<li><p><strong>campaign_directory</strong> (<em>str</em>) – An optional string naming the directory this campaign
+runs in, relative to the remote root. It is mirrored locally and
+under the remote root.</p></li>
+<li><p><strong>config</strong> – A YAML path or a Configuration. Defaults to reading the command line.</p></li>
+<li><p><strong>connection</strong> (<a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Connection" title="romtools.hpc.connection.Connection"><em>Connection</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.RemoteDispatcher.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.RemoteDispatcher.run" title="Link to this definition">#</a></dt>
+<dd><p>Run a command directly on the remote host, without SLURM.</p>
+<p>This lands wherever the SSH session does, which on a cluster is the login
+node, so it suits quick staging or preprocessing; anything long or
+parallel belongs in submit_job(). run_directory is relative to the remote
+root, and defaults to the root itself.</p>
+<p>Returns a Result object (with stdout, stderr, exit_code, ok)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.hpc.Result">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">Result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stdout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stderr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_code</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#Result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.Result" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple class to encapsulate the result of a command execution.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.hpc.resolve_dispatcher">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">resolve_dispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/resolve.html#resolve_dispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.resolve_dispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Fall back to local execution when the caller supplies no dispatcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.hpc.resolve_local_dispatcher">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.</span></span><span class="sig-name descname"><span class="pre">resolve_local_dispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/resolve.html#resolve_local_dispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.resolve_local_dispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Return a local dispatcher, reusing the supplied one when it is already local.</p>
+<p>Keeps in-process work on this machine even when the rest of the workflow is
+dispatched to a remote host.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.local_dispatcher.LocalDispatcher" title="romtools.hpc.dispatchers.local_dispatcher.LocalDispatcher"><em>LocalDispatcher</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.hpc.configuration.html#module-romtools.hpc.configuration" title="romtools.hpc.configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configuration</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.hpc.components.html#module-romtools.hpc.components" title="romtools.hpc.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Focused helpers that the dispatchers compose.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.hpc.configuration.html#module-romtools.hpc.configuration" title="romtools.hpc.configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configuration</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.hpc.connection.html#module-romtools.hpc.connection" title="romtools.hpc.connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connection</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.hpc.connection.html#module-romtools.hpc.connection" title="romtools.hpc.connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connection</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.hpc.dispatchers.html#module-romtools.hpc.dispatchers" title="romtools.hpc.dispatchers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dispatchers</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.hpc.dispatchers.html#module-romtools.hpc.dispatchers" title="romtools.hpc.dispatchers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dispatchers</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.hpc.logger.html#module-romtools.hpc.logger" title="romtools.hpc.logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -483,6 +856,50 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.call"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.call()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.collect_results"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.collect_results()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.run"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.run()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.submit_job"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.submit_job()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.BaseDispatcher.upload"><code class="docutils literal notranslate"><span class="pre">BaseDispatcher.upload()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Configuration.defaults"><code class="docutils literal notranslate"><span class="pre">Configuration.defaults()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection"><code class="docutils literal notranslate"><span class="pre">Connection</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.close"><code class="docutils literal notranslate"><span class="pre">Connection.close()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.get"><code class="docutils literal notranslate"><span class="pre">Connection.get()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.local"><code class="docutils literal notranslate"><span class="pre">Connection.local()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.put"><code class="docutils literal notranslate"><span class="pre">Connection.put()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Connection.run"><code class="docutils literal notranslate"><span class="pre">Connection.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.LocalDispatcher"><code class="docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.LocalDispatcher.run"><code class="docutils literal notranslate"><span class="pre">LocalDispatcher.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.RemoteDispatcher.run"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.Result"><code class="docutils literal notranslate"><span class="pre">Result</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.resolve_dispatcher"><code class="docutils literal notranslate"><span class="pre">resolve_dispatcher()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.resolve_local_dispatcher"><code class="docutils literal notranslate"><span class="pre">resolve_local_dispatcher()</span></code></a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

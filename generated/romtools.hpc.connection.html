@@ -346,9 +346,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.components.html">romtools.hpc.components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.configuration.html">romtools.hpc.configuration</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.hpc.connection</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.logger.html">romtools.hpc.logger</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -407,6 +409,7 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.connection.Result"><code class="docutils literal notranslate"><span class="pre">Result</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.connection.run_local_bash"><code class="docutils literal notranslate"><span class="pre">run_local_bash()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -474,6 +477,15 @@
                   
   <section id="module-romtools.hpc.connection">
 <span id="romtools-hpc-connection"></span><h1>romtools.hpc.connection<a class="headerlink" href="#module-romtools.hpc.connection" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.connection.run_local_bash" title="romtools.hpc.connection.run_local_bash"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_local_bash</span></code></a>(cmd)</p></td>
+<td><p>Run a shell command on this machine.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -532,6 +544,23 @@ per SSH session (thus only requiring authentication &amp; handshakes once).</p>
 <p>Simple class to encapsulate the result of a command execution.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.hpc.connection.run_local_bash">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.connection.</span></span><span class="sig-name descname"><span class="pre">run_local_bash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/connection.html#run_local_bash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.connection.run_local_bash" title="Link to this definition">#</a></dt>
+<dd><p>Run a shell command on this machine.</p>
+<p>Components that only need to issue shell commands take a run_cmd callable
+rather than a Connection, so the same logic serves either machine. This is
+the local half; Connection.run is the remote one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cmd</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -566,6 +595,7 @@ per SSH session (thus only requiring authentication &amp; handshakes once).</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.connection.Result"><code class="docutils literal notranslate"><span class="pre">Result</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.connection.run_local_bash"><code class="docutils literal notranslate"><span class="pre">run_local_bash()</span></code></a></li>
 </ul>
   </nav></div>
 

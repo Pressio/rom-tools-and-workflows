@@ -11,8 +11,6 @@ romtools.hpc.dispatchers
    :recursive:
 
    base_dispatcher
-   call_runner
-   caller
    local_dispatcher
    remote_dispatcher
    resolve

@@ -391,127 +391,70 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.caller</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalCaller</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.util.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">Logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.connection</span><span class="w"> </span><span class="kn">import</span> <span class="n">Result</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers.base_dispatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.connection</span><span class="w"> </span><span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">run_local_bash</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.components.caller</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalCaller</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.components.file_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalFileManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.components.slurm_job_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlurmJobManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.components.transfer_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalTransferManager</span>
+
 
 <div class="viewcode-block" id="LocalDispatcher">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.LocalDispatcher">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.LocalDispatcher">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LocalDispatcher</span><span class="p">(</span><span class="n">BaseDispatcher</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    LocalDispatcher is a subclass of BaseDispatcher that implements the core functionality</span>
-<span class="sd">    for dispatching ROM workflows on the local machine. It overrides methods to set up</span>
-<span class="sd">    directories and execute commands without SSH, making it suitable for local execution.</span>
+<span class="sd">    Runs ROM workflows on the machine this process runs on.</span>
+
+<span class="sd">    Paths address the local filesystem and commands run in a local bash shell</span>
+<span class="sd">    rather than over SSH. That machine may itself be a cluster node, in which</span>
+<span class="sd">    case submit_job() reaches the scheduler directly and results need no</span>
+<span class="sd">    transferring; upload() copies the configured files into the run directory</span>
+<span class="sd">    rather than sending them anywhere.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        campaign_directory: The directory jobs run in when given no run_directory</span>
+<span class="sd">        logger: An instance of the Logger class for logging</span>
+<span class="sd">        config: A YAML path or a Configuration. Defaults to reading the command line.</span>
 <span class="sd">    """</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sampling_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hpctools"</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># Local execution has no use for remote/SLURM CLI flags, and reading</span>
-        <span class="c1"># the real process argv here would pick up whatever CLI args the</span>
-        <span class="c1"># embedding process was started with (e.g. pytest's own flags).</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sampling_directory</span><span class="o">=</span><span class="n">sampling_directory</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span> <span class="n">argv</span><span class="o">=</span><span class="p">[])</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">campaign_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hpctools"</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">campaign_directory</span><span class="o">=</span><span class="n">campaign_directory</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">caller</span> <span class="o">=</span> <span class="n">LocalCaller</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">LocalFileManager</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caller</span> <span class="o">=</span> <span class="n">LocalCaller</span><span class="p">(</span><span class="n">files</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">__copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span>
-        <span class="n">dst_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">dst_dir</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dst_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="o">=</span> <span class="n">LocalTransferManager</span><span class="p">(</span>
+            <span class="n">files</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
+            <span class="n">campaign_directory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">campaign_directory</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
-            <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">dirs_exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Copied </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="c1"># ------------------------------------------------------------------</span>
-    <span class="c1"># Public API</span>
-    <span class="c1"># ------------------------------------------------------------------</span>
-
-<div class="viewcode-block" id="LocalDispatcher.get">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.LocalDispatcher.get">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">local_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Local 'get' is just a copy from remote_path to local_path."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__copy</span><span class="p">(</span><span class="n">remote_path</span><span class="p">,</span> <span class="n">local_path</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="LocalDispatcher.put">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.LocalDispatcher.put">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Local 'put' is just a copy from local_path to remote_path."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__copy</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">path_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slurm</span> <span class="o">=</span> <span class="n">SlurmJobManager</span><span class="p">(</span>
+            <span class="n">run_cmd</span><span class="o">=</span><span class="n">run_local_bash</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
+            <span class="n">campaign_directory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">campaign_directory</span><span class="p">,</span>
+            <span class="n">files</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">require_absolute_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># Only LocalDispatcher needs absolute paths (for now)</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"You must provide an absolute path (received: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="c1"># Local run directories are addressed as given, and concurrent</span>
+        <span class="c1"># evaluations run in worker processes that may change directory.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"You must provide an absolute path (received: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">create_empty_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dir_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dir_name</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">list_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">[]</span>
-        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Removed </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">parent_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">parent_dir</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
-            <span class="n">text_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wrote file </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<div class="viewcode-block" id="LocalDispatcher.dispatch">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.LocalDispatcher.dispatch">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Result</span><span class="p">:</span>
+<div class="viewcode-block" id="LocalDispatcher.run">
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.LocalDispatcher.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Result</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            sacct format string of job exit code + linux signal number (always 0 in local)</span>
-<span class="sd">            example: '0:0'</span>
+<span class="sd">        Run a command on the local machine, from run_directory if given and the</span>
+<span class="sd">        current working directory otherwise.</span>
+
+<span class="sd">        Returns a Result object (with stdout, stderr, exit_code, ok)</span>
 <span class="sd">        """</span>
         <span class="n">full_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"cd </span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">run_directory</span><span class="p">)</span><span class="si">}</span><span class="s2"> &amp;&amp; </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">run_directory</span> <span class="k">else</span> <span class="n">cmd</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-            <span class="n">full_cmd</span><span class="p">,</span>
-            <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">Result</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">np_savetxt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">arr</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saved array to path </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<div class="viewcode-block" id="LocalDispatcher.np_savez">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.local_dispatcher.html#romtools.hpc.dispatchers.LocalDispatcher.np_savez">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">np_savez</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">arrays</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Write multiple arrays to a .npz file.</span>
-<span class="sd">        The .npz file is written directly to the specified path.</span>
-<span class="sd">        """</span>
-        <span class="n">local_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">local_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".npz"</span><span class="p">):</span>
-            <span class="n">local_path</span> <span class="o">+=</span> <span class="s2">".npz"</span>
-
-        <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="o">**</span><span class="n">arrays</span><span class="p">)</span>
-        <span class="n">final_path</span> <span class="o">=</span> <span class="n">local_path</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saved arrays to path </span><span class="si">{</span><span class="n">final_path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">run_local_bash</span><span class="p">(</span><span class="n">full_cmd</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

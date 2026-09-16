@@ -391,30 +391,36 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">Configuration</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers.base_dispatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers.local_dispatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalDispatcher</span>
 
 
+<span class="c1"># Nobody asked for this dispatcher, so it reads no command line at all.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_dispatcher</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">LocalDispatcher</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">LocalDispatcher</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">Configuration</span><span class="o">.</span><span class="n">defaults</span><span class="p">())</span>
+
+
 <div class="viewcode-block" id="resolve_dispatcher">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.resolve.html#romtools.hpc.dispatchers.resolve_dispatcher">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.resolve.html#romtools.hpc.resolve_dispatcher">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseDispatcher</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Fall back to local execution when the caller supplies no dispatcher."""</span>
-    <span class="k">return</span> <span class="n">dispatcher</span> <span class="k">if</span> <span class="n">dispatcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">LocalDispatcher</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">dispatcher</span> <span class="k">if</span> <span class="n">dispatcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_dispatcher</span><span class="p">()</span></div>
 
 
 
 <div class="viewcode-block" id="resolve_local_dispatcher">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.resolve.html#romtools.hpc.dispatchers.resolve_local_dispatcher">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.resolve.html#romtools.hpc.resolve_local_dispatcher">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_local_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LocalDispatcher</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Return a local dispatcher, reusing the supplied one when it is already local.</span>
 
-<span class="sd">    Use this for work that always runs in-process, so that it stays on the local</span>
-<span class="sd">    machine even when the rest of the workflow is dispatched to a remote host.</span>
+<span class="sd">    Keeps in-process work on this machine even when the rest of the workflow is</span>
+<span class="sd">    dispatched to a remote host.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">,</span> <span class="n">LocalDispatcher</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">dispatcher</span>
-    <span class="k">return</span> <span class="n">LocalDispatcher</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">_default_dispatcher</span><span class="p">()</span></div>
 
 </pre></div>
 

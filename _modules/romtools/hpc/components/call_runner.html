@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>romtools.hpc.dispatchers.call_runner &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.hpc.components.call_runner &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -53,7 +53,7 @@
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/hpc/dispatchers/call_runner';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/hpc/components/call_runner';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../../../../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
@@ -369,7 +369,7 @@
     
     <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.hpc.dispatchers.call_runner</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.hpc.components.call_runner</span></li>
   </ul>
 </nav>
 </div>
@@ -386,7 +386,7 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for romtools.hpc.dispatchers.call_runner</h1><div class="highlight"><pre>
+  <h1>Source code for romtools.hpc.components.call_runner</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
 <span class="sd">The wire contract behind dispatcher.call(): resolving a "module:qualname"</span>
 <span class="sd">target, packing arguments and results into a JSON + .npz pair, and building the</span>
@@ -413,7 +413,7 @@
 
 
 <div class="viewcode-block" id="pack">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.call_runner.html#romtools.hpc.dispatchers.call_runner.pack">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.components.call_runner.html#romtools.hpc.components.call_runner.pack">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">arrays</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Replace ndarrays with references into `arrays` so `obj` is JSON-safe."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
@@ -438,7 +438,7 @@
 
 
 <div class="viewcode-block" id="unpack">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.call_runner.html#romtools.hpc.dispatchers.call_runner.unpack">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.components.call_runner.html#romtools.hpc.components.call_runner.unpack">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">arrays</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Inverse of pack(): restore ndarrays and tuples from their references."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -456,7 +456,7 @@
 
 
 <div class="viewcode-block" id="resolve_target">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.call_runner.html#romtools.hpc.dispatchers.call_runner.resolve_target">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.components.call_runner.html#romtools.hpc.components.call_runner.resolve_target">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_target</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Resolve a "module:qualname" string to the object it names."""</span>
     <span class="n">module_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">qualname</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
@@ -481,7 +481,7 @@
 
 
 <div class="viewcode-block" id="working_directory">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.call_runner.html#romtools.hpc.dispatchers.call_runner.working_directory">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.components.call_runner.html#romtools.hpc.components.call_runner.working_directory">[docs]</a>
 <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">working_directory</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run in `path`, with `path` importable ahead of the rest of sys.path."""</span>
@@ -543,7 +543,7 @@
 
 
 <div class="viewcode-block" id="build_call_runner">
-<a class="viewcode-back" href="../../../../generated/romtools.hpc.dispatchers.call_runner.html#romtools.hpc.dispatchers.call_runner.build_call_runner">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.hpc.components.call_runner.html#romtools.hpc.components.call_runner.build_call_runner">[docs]</a>
 <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_call_runner</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>

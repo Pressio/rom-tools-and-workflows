@@ -1,7 +1,7 @@
-romtools.hpc.dispatchers.call\_runner
-=====================================
+romtools.hpc.components.call\_runner
+====================================
 
-.. automodule:: romtools.hpc.dispatchers.call_runner
+.. automodule:: romtools.hpc.components.call_runner
 
    
    .. rubric:: Functions

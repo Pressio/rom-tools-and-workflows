@@ -60,7 +60,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="romtools.hpc.connection" href="romtools.hpc.connection.html" />
-    <link rel="prev" title="romtools.hpc" href="romtools.hpc.html" />
+    <link rel="prev" title="romtools.hpc.components.transfer_manager" href="romtools.hpc.components.transfer_manager.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -346,9 +346,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.components.html">romtools.hpc.components</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.hpc.configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.connection.html">romtools.hpc.connection</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.logger.html">romtools.hpc.logger</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -398,7 +400,13 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration.defaults"><code class="docutils literal notranslate"><span class="pre">Configuration.defaults()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.option_name"><code class="docutils literal notranslate"><span class="pre">option_name()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.print_help"><code class="docutils literal notranslate"><span class="pre">print_help()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -466,35 +474,96 @@
                   
   <section id="module-romtools.hpc.configuration">
 <span id="romtools-hpc-configuration"></span><h1>romtools.hpc.configuration<a class="headerlink" href="#module-romtools.hpc.configuration" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.configuration.option_name" title="romtools.hpc.configuration.option_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">option_name</span></code></a>(arg_name)</p></td>
+<td><p>The command-line switch for a schema argument, e.g. &quot;--hpc-remote-root&quot;.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.hpc.configuration.print_help" title="romtools.hpc.configuration.print_help"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_help</span></code></a>()</p></td>
+<td><p>Print the dispatcher's configuration arguments.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.configuration.Configuration" title="romtools.hpc.configuration.Configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Configuration</span></code></a>([argv])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.configuration.Configuration" title="romtools.hpc.configuration.Configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Configuration</span></code></a>([config_path])</p></td>
 <td><p>Handles parsing a yaml file and any supplied command-line args.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Exceptions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.configuration.ConfigurationError" title="romtools.hpc.configuration.ConfigurationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></p></td>
+<td><p>Raised when the command line cannot be parsed against SCHEMA.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="romtools.hpc.configuration.Configuration">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.configuration.</span></span><span class="sig-name descname"><span class="pre">Configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#Configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.Configuration" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.configuration.</span></span><span class="sig-name descname"><span class="pre">Configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#Configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.Configuration" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Handles parsing a yaml file and any supplied command-line args.</p>
 <dl class="simple">
 <dt>Precedence:</dt><dd><ol class="arabic simple">
 <li><p>CLI args (overwrite YAML)</p></li>
 <li><p>YAML file values (if provided)</p></li>
-<li><p>class defaults</p></li>
+<li><p>Class defaults</p></li>
 </ol>
 </dd>
 </dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>argv</strong> (<em>list</em>) – Argument list to parse instead of the real process argv
-(sys.argv[1:]). Pass an explicit list (e.g. []) to build a
-Configuration without reading the host process’s CLI args –
-useful for embedding (e.g. LocalDispatcher) where those args
-aren’t meant to apply.</p>
+<dd class="field-odd"><p><strong>config_path</strong> (<em>str</em><em> | </em><em>None</em>) – Path to the YAML file to load. When omitted, the path is
+taken from -c or –hpc-config on this program’s command line.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.hpc.configuration.Configuration.defaults">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">defaults</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#Configuration.defaults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.Configuration.defaults" title="Link to this definition">#</a></dt>
+<dd><p>Schema defaults, reading neither a YAML file nor the command line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#romtools.hpc.configuration.Configuration" title="romtools.hpc.configuration.Configuration"><em>Configuration</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="romtools.hpc.configuration.ConfigurationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.configuration.</span></span><span class="sig-name descname"><span class="pre">ConfigurationError</span></span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#ConfigurationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.ConfigurationError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the command line cannot be parsed against SCHEMA.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.hpc.configuration.option_name">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.configuration.</span></span><span class="sig-name descname"><span class="pre">option_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#option_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.option_name" title="Link to this definition">#</a></dt>
+<dd><p>The command-line switch for a schema argument, e.g. “–hpc-remote-root”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>arg_name</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.hpc.configuration.print_help">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.configuration.</span></span><span class="sig-name descname"><span class="pre">print_help</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/configuration.html#print_help"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.configuration.print_help" title="Link to this definition">#</a></dt>
+<dd><p>Print the dispatcher’s configuration arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -524,7 +593,13 @@ aren’t meant to apply.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.Configuration.defaults"><code class="docutils literal notranslate"><span class="pre">Configuration.defaults()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.option_name"><code class="docutils literal notranslate"><span class="pre">option_name()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.configuration.print_help"><code class="docutils literal notranslate"><span class="pre">print_help()</span></code></a></li>
 </ul>
   </nav></div>
 

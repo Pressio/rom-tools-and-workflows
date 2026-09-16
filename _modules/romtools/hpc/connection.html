@@ -392,7 +392,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 
 <div class="viewcode-block" id="Result">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Result">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Result">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Result</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Simple class to encapsulate the result of a command execution.</span>
@@ -404,8 +404,26 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ok</span> <span class="o">=</span> <span class="n">exit_code</span> <span class="o">==</span> <span class="mi">0</span></div>
 
 
+<div class="viewcode-block" id="run_local_bash">
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.run_local_bash">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_local_bash</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Result</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run a shell command on this machine.</span>
+
+<span class="sd">    Components that only need to issue shell commands take a run_cmd callable</span>
+<span class="sd">    rather than a Connection, so the same logic serves either machine. This is</span>
+<span class="sd">    the local half; Connection.run is the remote one.</span>
+<span class="sd">    """</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">"bash"</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="n">cmd</span><span class="p">],</span>
+        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">text</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Result</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="Connection">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Connection</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A simple SSH connection class that uses subprocess to execute SSH and SCP commands.</span>
@@ -440,7 +458,7 @@
             <span class="p">])</span>
 
 <div class="viewcode-block" id="Connection.run">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.run">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Execute a command on the remote host"""</span>
         <span class="n">ssh_cmd</span> <span class="o">=</span> <span class="p">[</span>
@@ -461,7 +479,7 @@
 
 
 <div class="viewcode-block" id="Connection.get">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.get">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Download a file from the remote host"""</span>
         <span class="n">remote_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">remote</span><span class="si">}</span><span class="s2">"</span>
@@ -483,7 +501,7 @@
 
 
 <div class="viewcode-block" id="Connection.put">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.put">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.put">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Upload a file to the remote host"""</span>
         <span class="n">remote_path</span> <span class="o">=</span> <span class="n">remote</span> <span class="k">if</span> <span class="n">remote</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
@@ -502,7 +520,7 @@
 
 
 <div class="viewcode-block" id="Connection.local">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.local">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.local">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Execute a command locally"""</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -515,7 +533,7 @@
 
 
 <div class="viewcode-block" id="Connection.close">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.close">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.close">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Close the SSH connection"""</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span>

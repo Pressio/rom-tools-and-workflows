@@ -586,7 +586,7 @@ spawn-based process pool is used above one, so the model and
 dispatcher must be pickleable.</p></li>
 <li><p><strong>overwrite</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, reuse run directories containing
 <code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, populate and evaluate every sample.</p></li>
-<li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
+<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
 <a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
 <li><p><strong>absolute_uq_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
 </ul>
@@ -665,7 +665,7 @@ for fixed mode. If omitted, paired samples estimate them. Pilot
 mode always estimates and freezes its coefficients.</p></li>
 <li><p><strong>overwrite</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, reuse successful evaluations marked by
 <code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>; otherwise rerun them.</p></li>
-<li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
+<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
 <a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
 <li><p><strong>absolute_uq_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
 </ul>

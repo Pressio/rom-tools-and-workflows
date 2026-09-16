@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.hpc.dispatchers.call_runner &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.hpc.components.call_runner &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,13 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.hpc.dispatchers.call_runner';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.hpc.components.call_runner';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.hpc.dispatchers.caller" href="romtools.hpc.dispatchers.caller.html" />
-    <link rel="prev" title="romtools.hpc.dispatchers.base_dispatcher" href="romtools.hpc.dispatchers.base_dispatcher.html" />
+    <link rel="next" title="romtools.hpc.components.caller" href="romtools.hpc.components.caller.html" />
+    <link rel="prev" title="romtools.hpc.components.archive" href="romtools.hpc.components.archive.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -346,9 +346,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active"><a class="reference internal" href="romtools.hpc.components.html">romtools.hpc.components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.configuration.html">romtools.hpc.configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.connection.html">romtools.hpc.connection</a></li>
-<li class="toctree-l3 current active"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.logger.html">romtools.hpc.logger</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -398,11 +400,11 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.build_call_runner"><code class="docutils literal notranslate"><span class="pre">build_call_runner()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.pack"><code class="docutils literal notranslate"><span class="pre">pack()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.resolve_target"><code class="docutils literal notranslate"><span class="pre">resolve_target()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.working_directory"><code class="docutils literal notranslate"><span class="pre">working_directory()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.build_call_runner"><code class="docutils literal notranslate"><span class="pre">build_call_runner()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.pack"><code class="docutils literal notranslate"><span class="pre">pack()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.resolve_target"><code class="docutils literal notranslate"><span class="pre">resolve_target()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.working_directory"><code class="docutils literal notranslate"><span class="pre">working_directory()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -452,9 +454,9 @@
     <li class="breadcrumb-item"><a href="romtools.hpc.html" class="nav-link">romtools.hpc</a></li>
     
     
-    <li class="breadcrumb-item"><a href="romtools.hpc.dispatchers.html" class="nav-link">romtools.hpc.dispatchers</a></li>
+    <li class="breadcrumb-item"><a href="romtools.hpc.components.html" class="nav-link">romtools.hpc.components</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.hpc.dispatchers.call_runner</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.hpc.components.call_runner</span></li>
   </ul>
 </nav>
 </div>
@@ -471,8 +473,8 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.hpc.dispatchers.call_runner">
-<span id="romtools-hpc-dispatchers-call-runner"></span><h1>romtools.hpc.dispatchers.call_runner<a class="headerlink" href="#module-romtools.hpc.dispatchers.call_runner" title="Link to this heading">#</a></h1>
+  <section id="module-romtools.hpc.components.call_runner">
+<span id="romtools-hpc-components-call-runner"></span><h1>romtools.hpc.components.call_runner<a class="headerlink" href="#module-romtools.hpc.components.call_runner" title="Link to this heading">#</a></h1>
 <p>The wire contract behind dispatcher.call(): resolving a “module:qualname”
 target, packing arguments and results into a JSON + .npz pair, and building the
 standalone runner script that executes the target under a remote interpreter.</p>
@@ -481,27 +483,27 @@ source to keep both ends of the transfer on the same format.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.call_runner.build_call_runner" title="romtools.hpc.dispatchers.call_runner.build_call_runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_call_runner</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.components.call_runner.build_call_runner" title="romtools.hpc.components.call_runner.build_call_runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_call_runner</span></code></a>()</p></td>
 <td><p>Build the standalone script that runs a call target on the remote host.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.call_runner.pack" title="romtools.hpc.dispatchers.call_runner.pack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pack</span></code></a>(obj, arrays)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.hpc.components.call_runner.pack" title="romtools.hpc.components.call_runner.pack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pack</span></code></a>(obj, arrays)</p></td>
 <td><p>Replace ndarrays with references into <cite>arrays</cite> so <cite>obj</cite> is JSON-safe.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.call_runner.resolve_target" title="romtools.hpc.dispatchers.call_runner.resolve_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_target</span></code></a>(target)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.components.call_runner.resolve_target" title="romtools.hpc.components.call_runner.resolve_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_target</span></code></a>(target)</p></td>
 <td><p>Resolve a &quot;module:qualname&quot; string to the object it names.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.call_runner.unpack" title="romtools.hpc.dispatchers.call_runner.unpack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpack</span></code></a>(obj, arrays)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.hpc.components.call_runner.unpack" title="romtools.hpc.components.call_runner.unpack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpack</span></code></a>(obj, arrays)</p></td>
 <td><p>Inverse of pack(): restore ndarrays and tuples from their references.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.call_runner.working_directory" title="romtools.hpc.dispatchers.call_runner.working_directory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">working_directory</span></code></a>(path)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.components.call_runner.working_directory" title="romtools.hpc.components.call_runner.working_directory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">working_directory</span></code></a>(path)</p></td>
 <td><p>Run in <cite>path</cite>, with <cite>path</cite> importable ahead of the rest of sys.path.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py function">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.call_runner.build_call_runner">
-<span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.call_runner.</span></span><span class="sig-name descname"><span class="pre">build_call_runner</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/call_runner.html#build_call_runner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.call_runner.build_call_runner" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="romtools.hpc.components.call_runner.build_call_runner">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.call_runner.</span></span><span class="sig-name descname"><span class="pre">build_call_runner</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/call_runner.html#build_call_runner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.call_runner.build_call_runner" title="Link to this definition">#</a></dt>
 <dd><p>Build the standalone script that runs a call target on the remote host.</p>
 <p>The wire-format helpers are injected from this module’s own source so the
 two ends of the transfer cannot drift apart.</p>
@@ -513,26 +515,26 @@ two ends of the transfer cannot drift apart.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.call_runner.pack">
-<span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.call_runner.</span></span><span class="sig-name descname"><span class="pre">pack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/call_runner.html#pack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.call_runner.pack" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="romtools.hpc.components.call_runner.pack">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.call_runner.</span></span><span class="sig-name descname"><span class="pre">pack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/call_runner.html#pack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.call_runner.pack" title="Link to this definition">#</a></dt>
 <dd><p>Replace ndarrays with references into <cite>arrays</cite> so <cite>obj</cite> is JSON-safe.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.call_runner.resolve_target">
-<span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.call_runner.</span></span><span class="sig-name descname"><span class="pre">resolve_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/call_runner.html#resolve_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.call_runner.resolve_target" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="romtools.hpc.components.call_runner.resolve_target">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.call_runner.</span></span><span class="sig-name descname"><span class="pre">resolve_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/call_runner.html#resolve_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.call_runner.resolve_target" title="Link to this definition">#</a></dt>
 <dd><p>Resolve a “module:qualname” string to the object it names.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.call_runner.unpack">
-<span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.call_runner.</span></span><span class="sig-name descname"><span class="pre">unpack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/call_runner.html#unpack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.call_runner.unpack" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="romtools.hpc.components.call_runner.unpack">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.call_runner.</span></span><span class="sig-name descname"><span class="pre">unpack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/call_runner.html#unpack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.call_runner.unpack" title="Link to this definition">#</a></dt>
 <dd><p>Inverse of pack(): restore ndarrays and tuples from their references.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.call_runner.working_directory">
-<span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.call_runner.</span></span><span class="sig-name descname"><span class="pre">working_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/call_runner.html#working_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.call_runner.working_directory" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="romtools.hpc.components.call_runner.working_directory">
+<span class="sig-prename descclassname"><span class="pre">romtools.hpc.components.call_runner.</span></span><span class="sig-name descname"><span class="pre">working_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/components/call_runner.html#working_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.components.call_runner.working_directory" title="Link to this definition">#</a></dt>
 <dd><p>Run in <cite>path</cite>, with <cite>path</cite> importable ahead of the rest of sys.path.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -566,18 +568,18 @@ two ends of the transfer cannot drift apart.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.build_call_runner"><code class="docutils literal notranslate"><span class="pre">build_call_runner()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.pack"><code class="docutils literal notranslate"><span class="pre">pack()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.resolve_target"><code class="docutils literal notranslate"><span class="pre">resolve_target()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.call_runner.working_directory"><code class="docutils literal notranslate"><span class="pre">working_directory()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.build_call_runner"><code class="docutils literal notranslate"><span class="pre">build_call_runner()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.pack"><code class="docutils literal notranslate"><span class="pre">pack()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.resolve_target"><code class="docutils literal notranslate"><span class="pre">resolve_target()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.components.call_runner.working_directory"><code class="docutils literal notranslate"><span class="pre">working_directory()</span></code></a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.hpc.dispatchers.call_runner.rst.txt">
+    <a href="../_sources/generated/romtools.hpc.components.call_runner.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

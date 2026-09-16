@@ -4,12 +4,6 @@ romtools.hpc.dispatchers.remote\_dispatcher
 .. automodule:: romtools.hpc.dispatchers.remote_dispatcher
 
    
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      run_local_bash
-   
    .. rubric:: Classes
 
    .. autosummary::
