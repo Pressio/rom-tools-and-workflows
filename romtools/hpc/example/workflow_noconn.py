@@ -1,6 +1,6 @@
 import romtools.workflows
 
-from romtools.hpc.util.logger import Logger
+from romtools.hpc.logger import Logger
 
 from romtools.hpc.example.ExampleModelNoConn import ExampleModelNoConn
 from romtools.hpc.example.ExampleParameterSpace import ExampleParameterSpace
@@ -11,7 +11,7 @@ if __name__ == '__main__':
     output_dir_name = "sample_00"
 
     logger = Logger()
-    model = ExampleModelNoConn()
+    model  = ExampleModelNoConn()
     params = ExampleParameterSpace()
     num_samples = 1
 

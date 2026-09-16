@@ -4,7 +4,7 @@ import re
 
 from typing import Optional, List, Callable
 
-from ..connection import Result
+from romtools.hpc.connection import Result
 
 def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
     """
@@ -39,6 +39,14 @@ def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
                 f"Invalid collect pattern {p!r}: contains forbidden characters."
             )
 
+        # Patterns name what lives under the working directory, so one that
+        # points outside it has no meaning on either end of a transfer.
+        if p.startswith("/") or ".." in p.split("/"):
+            raise ValueError(
+                f"Invalid collect pattern {p!r}: patterns are relative to the "
+                "working directory and may not be absolute or contain '..'."
+            )
+
         # Restrict patterns to path and glob characters to avoid shell injection.
         if not re.fullmatch(r"[A-Za-z0-9_./*?\[\]\-]+", p):
             raise ValueError(
@@ -51,6 +59,11 @@ def validate_file_patterns(collect_patterns: List[str]) -> Optional[List[str]]:
         raise ValueError("PATTERN VALIDATE: no valid patterns were provided.")
 
     return cleaned_patterns
+
+def matches_everything(patterns: Optional[List[str]]) -> bool:
+    """True if the patterns ask for the whole working directory."""
+    everything = ["*", "all", "everything", "any"]
+    return bool(patterns) and any(p.lower() in everything for p in patterns)
 
 def create_tarball(log: Callable[[str], None], run_cmd: Callable[[str], Result], working_dir: str, archive_path: str, patterns: Optional[List[str]]) -> None:
     """
@@ -75,8 +88,7 @@ def create_tarball(log: Callable[[str], None], run_cmd: Callable[[str], Result],
             "No files, directories, or glob patterns to bundle have been specified.")
 
     # Collect everything
-    collect_all = ["*", "all", "everything", "any"]
-    if any(p.lower() in collect_all for p in patterns):
+    if matches_everything(patterns):
         pack_cmd = (
             f"tar -czf {shlex.quote(archive_path)} "
             f"-C {shlex.quote(working_dir)} ."

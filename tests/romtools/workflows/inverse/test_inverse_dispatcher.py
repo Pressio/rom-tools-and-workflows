@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 import romtools.workflows
+from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
 from romtools.rom.qoi_surrogates import GaussianProcessQoiModel
 from romtools.workflows.inverse import mf_eki_drivers, mf_vi_drivers
@@ -28,10 +29,14 @@ class RecordingDispatcher(BaseDispatcher):
     """
 
     def __init__(self):
-        super().__init__(argv=[])
+        super().__init__(config=Configuration.defaults())
         self.created_dirs = []
         self.saved_npz = []
         self.written_text = []
+
+    def run(self, cmd: str, run_directory: str = None):
+        # These drivers do their work through the file operations below
+        raise AssertionError(f"no shell command was expected (received: {cmd})")
 
     def path_exists(self, path: str) -> bool:
         return os.path.exists(path)
@@ -217,7 +222,7 @@ def test_run_eki_without_dispatcher_writes_local_run_directories(tmp_path):
 def test_run_eki_without_dispatcher_still_requires_an_absolute_directory(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(AssertionError, match="must provide an absolute path"):
+    with pytest.raises(ValueError, match="must provide an absolute path"):
         _run_eki("relative_work")
 
 
@@ -234,7 +239,7 @@ def test_mf_eki_with_auto_rom_without_dispatcher_builds_a_gp_rom(tmp_path):
 # ----------------------------------------------------------------------
 
 @pytest.mark.mpi_skip
-@pytest.mark.parametrize("dispatcher", [None, LocalDispatcher(), RecordingDispatcher()])
+@pytest.mark.parametrize("dispatcher", [None, LocalDispatcher(config=Configuration.defaults()), RecordingDispatcher()])
 def test_mf_eki_with_auto_rom_builds_a_rom_for_every_dispatcher(tmp_path, dispatcher):
     """
     Regression test: the GP builder used to return None whenever a dispatcher was
@@ -316,7 +321,7 @@ def test_run_eki_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path
     run_eki_iteration submits prepare_and_run to a ProcessPoolExecutor, so the
     dispatcher has to survive being pickled into the workers.
     """
-    _run_eki(str(tmp_path), dispatcher=LocalDispatcher(), evaluation_concurrency=2)
+    _run_eki(str(tmp_path), dispatcher=LocalDispatcher(config=Configuration.defaults()), evaluation_concurrency=2)
 
     assert (tmp_path / "iteration_0" / "run_mean").is_dir()
 
@@ -324,7 +329,7 @@ def test_run_eki_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path
 @pytest.mark.mpi_skip
 def test_run_vi_with_a_local_dispatcher_survives_concurrent_evaluation(tmp_path):
     """Same as above, but run_vi_iteration uses a 'spawn' context rather than 'fork'."""
-    _run_vi(str(tmp_path), dispatcher=LocalDispatcher(), evaluation_concurrency=2)
+    _run_vi(str(tmp_path), dispatcher=LocalDispatcher(config=Configuration.defaults()), evaluation_concurrency=2)
 
     assert (tmp_path / "iteration_0" / "run_0").is_dir()
 
