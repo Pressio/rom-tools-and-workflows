@@ -1,0 +1,856 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>romtools.workflows.inverse.full_covariance_vi &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../_static/thebelab-helper.js"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/romtools/workflows/inverse/full_covariance_vi';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../demos/index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.full_covariance_vi</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for romtools.workflows.inverse.full_covariance_vi</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Utilities for full-covariance Gaussian variational inference.</span>
+
+<span class="sd">The full-covariance variational family is represented in optimizer coordinates</span>
+<span class="sd">as ``q(x) = N(mu, Sigma)`` with ``Sigma = L L.T``.  The Cholesky factor is a</span>
+<span class="sd">numerical representation; natural-gradient directions are expressed in the</span>
+<span class="sd">mean and covariance tangent spaces.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<div class="viewcode-block" id="svec_size">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.svec_size">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">svec_size</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the number of independent entries in a symmetric matrix."""</span>
+    <span class="k">if</span> <span class="n">dimensionality</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"dimensionality must be positive"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dimensionality</span> <span class="o">*</span> <span class="p">(</span><span class="n">dimensionality</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
+
+
+
+<div class="viewcode-block" id="infer_svec_dimension">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.infer_svec_dimension">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">infer_svec_dimension</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Infer the matrix dimension associated with an ``svec`` length."""</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svec size must be positive"</span><span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">svec_size</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span> <span class="o">!=</span> <span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2"> is not a valid symmetric-vector size"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dimensionality</span></div>
+
+
+
+<div class="viewcode-block" id="svec">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.svec">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">svec</span><span class="p">(</span><span class="n">matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Isometrically vectorize a symmetric matrix.</span>
+
+<span class="sd">    Lower-triangular entries are stored in NumPy's ``tril_indices`` order.</span>
+<span class="sd">    Off-diagonal entries are multiplied by ``sqrt(2)`` so Euclidean inner</span>
+<span class="sd">    products of packed vectors equal Frobenius inner products of the matrices.</span>
+<span class="sd">    """</span>
+    <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">matrix</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svec expects a square 2D matrix"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">matrix</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-14</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svec expects a symmetric matrix"</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril_indices</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">packed</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">packed</span><span class="p">[</span><span class="n">rows</span> <span class="o">!=</span> <span class="n">cols</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">packed</span></div>
+
+
+
+<div class="viewcode-block" id="svec_inverse">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.svec_inverse">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">svec_inverse</span><span class="p">(</span><span class="n">vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Invert :func:`svec`."""</span>
+    <span class="n">vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vector</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"svec_inverse expects a 1D vector"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dimensionality</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">infer_svec_dimension</span><span class="p">(</span><span class="n">vector</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">svec_size</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span> <span class="o">!=</span> <span class="n">vector</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"vector size does not match dimensionality"</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril_indices</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">vector</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">values</span><span class="p">[</span><span class="n">rows</span> <span class="o">!=</span> <span class="n">cols</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dimensionality</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">matrix</span><span class="p">[</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span>
+    <span class="n">matrix</span><span class="p">[</span><span class="n">cols</span><span class="p">,</span> <span class="n">rows</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span>
+    <span class="k">return</span> <span class="n">matrix</span></div>
+
+
+
+<div class="viewcode-block" id="covariance_from_cholesky">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.covariance_from_cholesky">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the symmetric covariance represented by a lower Cholesky factor."""</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"cholesky must be a square 2D array"</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">cholesky</span> <span class="o">@</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">covariance</span> <span class="o">+</span> <span class="n">covariance</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="robust_cholesky">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.robust_cholesky">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">robust_cholesky</span><span class="p">(</span>
+    <span class="n">covariance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">initial_jitter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_jitter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Compute a Cholesky factor, adding only roundoff-scale jitter if needed."""</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">covariance</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">covariance</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">covariance</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"covariance must be square"</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">covariance</span> <span class="o">+</span> <span class="n">covariance</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">covariance</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">jitter</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">initial_jitter</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">covariance</span> <span class="o">+</span> <span class="n">jitter</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">jitter</span> <span class="o">&gt;=</span> <span class="n">max_jitter</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"covariance must be positive definite"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+            <span class="n">jitter</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-14</span><span class="p">,</span> <span class="mf">10.0</span> <span class="o">*</span> <span class="n">jitter</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="marginal_std_from_cholesky">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.marginal_std_from_cholesky">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">marginal_std_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return marginal standard deviations for a covariance Cholesky factor."""</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">covariance</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="correlation_cholesky_from_covariance">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.correlation_cholesky_from_covariance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">correlation_cholesky_from_covariance</span><span class="p">(</span><span class="n">covariance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Return marginal standard deviations and a correlation Cholesky factor."""</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">covariance</span> <span class="o">+</span> <span class="n">covariance</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">covariance</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">std</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"full-covariance Gaussian requires positive marginal variances"</span><span class="p">)</span>
+    <span class="n">correlation</span> <span class="o">=</span> <span class="n">covariance</span> <span class="o">/</span> <span class="p">(</span><span class="n">std</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">std</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">correlation</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">correlation</span> <span class="o">+</span> <span class="n">correlation</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">correlation</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">std</span><span class="p">,</span> <span class="n">robust_cholesky</span><span class="p">(</span><span class="n">correlation</span><span class="p">,</span> <span class="n">initial_jitter</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_jitter</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rescale_cholesky_marginals">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.rescale_cholesky_marginals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rescale_cholesky_marginals</span><span class="p">(</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">minimum_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">maximum_std</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Rescale covariance marginals while preserving its correlation matrix."""</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">current_std</span> <span class="o">=</span> <span class="n">marginal_std_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
+    <span class="n">minimum_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">minimum_std</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">current_std</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">maximum_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">maximum_std</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">current_std</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">minimum_std</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"minimum_std must be positive"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">maximum_std</span> <span class="o">&lt;</span> <span class="n">minimum_std</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"maximum_std must be &gt;= minimum_std"</span><span class="p">)</span>
+    <span class="n">target_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">current_std</span><span class="p">,</span> <span class="n">minimum_std</span><span class="p">,</span> <span class="n">maximum_std</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">target_std</span> <span class="o">/</span> <span class="n">current_std</span>
+    <span class="c1"># D @ L is lower triangular and represents D Sigma D.</span>
+    <span class="k">return</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">cholesky</span></div>
+
+
+
+<div class="viewcode-block" id="log_density">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.log_density">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_density</span><span class="p">(</span>
+    <span class="n">optimizer_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Evaluate a full-covariance Gaussian log density in optimizer coordinates."""</span>
+    <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">centered</span> <span class="o">=</span> <span class="n">optimizer_samples</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">whitened</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">centered</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">quadratic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">whitened</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">log_det_covariance</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)))</span>
+    <span class="n">normalizer</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_det_covariance</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">quadratic</span> <span class="o">+</span> <span class="n">normalizer</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="entropy">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.entropy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">entropy</span><span class="p">(</span><span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return Gaussian entropy, optionally scaled with the ELBO."""</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">log_det_covariance</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)))</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">dimensionality</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span> <span class="o">+</span> <span class="n">log_det_covariance</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">scaling_factor</span> <span class="o">*</span> <span class="n">value</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="natural_score_terms">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.natural_score_terms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">natural_score_terms</span><span class="p">(</span>
+    <span class="n">optimizer_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Return per-sample natural scores for mean and covariance.</span>
+
+<span class="sd">    The covariance scores are returned in ``svec`` coordinates.</span>
+<span class="sd">    """</span>
+    <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">optimizer_samples</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">covariance_terms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">optimizer_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">svec_size</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">sample_index</span><span class="p">,</span> <span class="n">delta_i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">delta</span><span class="p">):</span>
+        <span class="n">covariance_terms</span><span class="p">[</span><span class="n">sample_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">svec</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">delta_i</span><span class="p">,</span> <span class="n">delta_i</span><span class="p">)</span> <span class="o">-</span> <span class="n">covariance</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">delta</span><span class="p">,</span> <span class="n">covariance_terms</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_leave_one_out_baseline</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="n">values</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_optimal_component_baseline</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="n">numerator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">scores</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">baseline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">nonzero</span> <span class="o">=</span> <span class="n">denominator</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+    <span class="n">baseline</span><span class="p">[</span><span class="n">nonzero</span><span class="p">]</span> <span class="o">=</span> <span class="n">numerator</span><span class="p">[</span><span class="n">nonzero</span><span class="p">]</span> <span class="o">/</span> <span class="n">denominator</span><span class="p">[</span><span class="n">nonzero</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">baseline</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_component_standard_error</span><span class="p">(</span><span class="n">terms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">terms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="estimate_natural_gradient">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.estimate_natural_gradient">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_natural_gradient</span><span class="p">(</span>
+    <span class="n">optimizer_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scaled_log_joint_terms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">baseline_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">elbo_scaling_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">entropy_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"analytic"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Estimate full-Gaussian natural and ordinary ELBO gradients.</span>
+
+<span class="sd">    ``scaled_log_joint_terms`` must already include the ELBO scaling factor and,</span>
+<span class="sd">    for transformed bounded parameters, the transform-Jacobian contribution.</span>
+<span class="sd">    Analytic entropy is added exactly after the stochastic log-joint estimate.</span>
+<span class="sd">    """</span>
+    <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">scaled_log_joint_terms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scaled_log_joint_terms</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">scaled_log_joint_terms</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">optimizer_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"scaled_log_joint_terms shape must match the sample count"</span><span class="p">)</span>
+    <span class="n">mean_scores</span><span class="p">,</span> <span class="n">covariance_scores</span> <span class="o">=</span> <span class="n">natural_score_terms</span><span class="p">(</span>
+        <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">cholesky</span>
+    <span class="p">)</span>
+    <span class="n">entropy_strategy</span> <span class="o">=</span> <span class="n">entropy_strategy</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"analytic"</span><span class="p">,</span> <span class="s2">"joint"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"entropy_strategy must be 'analytic' or 'joint'"</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">scaled_log_joint_terms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s2">"joint"</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">-=</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">log_density</span><span class="p">(</span>
+            <span class="n">optimizer_samples</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">cholesky</span>
+        <span class="p">)</span>
+
+    <span class="n">baseline_method</span> <span class="o">=</span> <span class="n">baseline_method</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s2">"optimal"</span><span class="p">:</span>
+        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">_optimal_component_baseline</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">mean_scores</span><span class="p">)</span>
+        <span class="n">baseline_covariance</span> <span class="o">=</span> <span class="n">_optimal_component_baseline</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">covariance_scores</span><span class="p">)</span>
+        <span class="n">centered_mean</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">centered_covariance</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">baseline_covariance</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="k">elif</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s2">"loo"</span><span class="p">:</span>
+        <span class="n">loo</span> <span class="o">=</span> <span class="n">_leave_one_out_baseline</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mean_scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">baseline_covariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">covariance_scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">centered_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">weights</span> <span class="o">-</span> <span class="n">loo</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_covariance</span> <span class="o">=</span> <span class="n">centered_mean</span>
+    <span class="k">elif</span> <span class="n">baseline_method</span> <span class="o">==</span> <span class="s2">"none"</span><span class="p">:</span>
+        <span class="n">baseline_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mean_scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">baseline_covariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">covariance_scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">centered_mean</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">centered_covariance</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"baseline_method must be 'none', 'loo', or 'optimal'"</span><span class="p">)</span>
+
+    <span class="n">mean_terms</span> <span class="o">=</span> <span class="n">centered_mean</span> <span class="o">*</span> <span class="n">mean_scores</span>
+    <span class="n">covariance_terms</span> <span class="o">=</span> <span class="n">centered_covariance</span> <span class="o">*</span> <span class="n">covariance_scores</span>
+    <span class="n">natural_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mean_terms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">natural_covariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">covariance_terms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">covariance_from_cholesky</span><span class="p">(</span><span class="n">cholesky</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">entropy_strategy</span> <span class="o">==</span> <span class="s2">"analytic"</span><span class="p">:</span>
+        <span class="n">natural_covariance</span> <span class="o">+=</span> <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">svec</span><span class="p">(</span><span class="n">covariance</span><span class="p">)</span>
+
+    <span class="n">natural_standard_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+        <span class="n">_component_standard_error</span><span class="p">(</span><span class="n">mean_terms</span><span class="p">),</span>
+        <span class="n">_component_standard_error</span><span class="p">(</span><span class="n">covariance_terms</span><span class="p">),</span>
+    <span class="p">])</span>
+    <span class="n">natural_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">natural_mean</span><span class="p">,</span> <span class="n">natural_covariance</span><span class="p">])</span>
+    <span class="n">noise_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">natural_standard_error</span><span class="p">))</span>
+    <span class="n">signal_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">natural_vector</span><span class="p">))</span>
+    <span class="n">snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="k">if</span> <span class="n">noise_norm</span> <span class="o">==</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">signal_norm</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="p">(</span>
+        <span class="mf">0.0</span> <span class="k">if</span> <span class="n">noise_norm</span> <span class="o">==</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="n">signal_norm</span> <span class="o">/</span> <span class="n">noise_norm</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Recover ordinary gradients for directional-derivative diagnostics and</span>
+    <span class="c1"># line-search slope calculations.  Never form Sigma^{-1} explicitly.</span>
+    <span class="n">ordinary_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">natural_mean</span><span class="p">)</span>
+    <span class="n">natural_covariance_matrix</span> <span class="o">=</span> <span class="n">svec_inverse</span><span class="p">(</span><span class="n">natural_covariance</span><span class="p">,</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">left_solve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">covariance</span><span class="p">,</span> <span class="n">natural_covariance_matrix</span><span class="p">)</span>
+    <span class="n">ordinary_covariance_matrix</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+        <span class="n">covariance</span><span class="p">,</span> <span class="n">left_solve</span><span class="o">.</span><span class="n">T</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">ordinary_covariance_matrix</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">ordinary_covariance_matrix</span> <span class="o">+</span> <span class="n">ordinary_covariance_matrix</span><span class="o">.</span><span class="n">T</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"natural_mean"</span><span class="p">:</span> <span class="n">natural_mean</span><span class="p">,</span>
+        <span class="s2">"natural_covariance_svec"</span><span class="p">:</span> <span class="n">natural_covariance</span><span class="p">,</span>
+        <span class="s2">"ordinary_mean"</span><span class="p">:</span> <span class="n">ordinary_mean</span><span class="p">,</span>
+        <span class="s2">"ordinary_covariance_svec"</span><span class="p">:</span> <span class="n">svec</span><span class="p">(</span><span class="n">ordinary_covariance_matrix</span><span class="p">),</span>
+        <span class="s2">"baseline_mean"</span><span class="p">:</span> <span class="n">baseline_mean</span><span class="p">,</span>
+        <span class="s2">"baseline_covariance_svec"</span><span class="p">:</span> <span class="n">baseline_covariance</span><span class="p">,</span>
+        <span class="s2">"gradient_standard_error"</span><span class="p">:</span> <span class="n">natural_standard_error</span><span class="p">,</span>
+        <span class="s2">"gradient_signal_to_noise_ratio"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">snr</span><span class="p">),</span>
+        <span class="s2">"mean_terms"</span><span class="p">:</span> <span class="n">mean_terms</span><span class="p">,</span>
+        <span class="s2">"covariance_terms"</span><span class="p">:</span> <span class="n">covariance_terms</span><span class="p">,</span>
+        <span class="s2">"weights"</span><span class="p">:</span> <span class="n">weights</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="retract_covariance">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.retract_covariance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">retract_covariance</span><span class="p">(</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">covariance_direction</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">step_size</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">max_covariance_log_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Apply an SPD-preserving covariance retraction.</span>
+
+<span class="sd">    The requested log-step is uniformly rescaled, rather than clipping</span>
+<span class="sd">    individual eigenvalues, so the tangent direction is preserved.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    new_cholesky, applied_scale</span>
+<span class="sd">        ``applied_scale`` multiplies ``step_size`` after log-step limiting.</span>
+<span class="sd">    """</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">covariance_direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">covariance_direction</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">covariance_direction</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"covariance_direction shape must match cholesky"</span><span class="p">)</span>
+    <span class="n">covariance_direction</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">covariance_direction</span> <span class="o">+</span> <span class="n">covariance_direction</span><span class="o">.</span><span class="n">T</span>
+    <span class="p">)</span>
+    <span class="n">left</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">covariance_direction</span><span class="p">)</span>
+    <span class="n">whitened</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">left</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">whitened</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">whitened</span> <span class="o">+</span> <span class="n">whitened</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">eigenvectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">whitened</span><span class="p">)</span>
+    <span class="n">applied_scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">if</span> <span class="n">max_covariance_log_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">max_covariance_log_step</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"max_covariance_log_step must be positive or None"</span><span class="p">)</span>
+        <span class="n">maximum_requested</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">step_size</span> <span class="o">*</span> <span class="n">eigenvalues</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">maximum_requested</span> <span class="o">&gt;</span> <span class="n">max_covariance_log_step</span><span class="p">:</span>
+            <span class="n">applied_scale</span> <span class="o">=</span> <span class="n">max_covariance_log_step</span> <span class="o">/</span> <span class="n">maximum_requested</span>
+    <span class="n">log_eigenvalues</span> <span class="o">=</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">applied_scale</span> <span class="o">*</span> <span class="n">eigenvalues</span>
+    <span class="n">exponential</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">eigenvectors</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_eigenvalues</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="p">)</span> <span class="o">@</span> <span class="n">eigenvectors</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">covariance_new</span> <span class="o">=</span> <span class="n">cholesky</span> <span class="o">@</span> <span class="n">exponential</span> <span class="o">@</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">covariance_new</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">covariance_new</span> <span class="o">+</span> <span class="n">covariance_new</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">robust_cholesky</span><span class="p">(</span><span class="n">covariance_new</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">applied_scale</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="packed_direction_to_covariance">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.full_covariance_vi.html#romtools.workflows.inverse.full_covariance_vi.packed_direction_to_covariance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">packed_direction_to_covariance</span><span class="p">(</span>
+    <span class="n">packed_direction</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Convert an ``svec`` covariance direction back to matrix form."""</span>
+    <span class="k">return</span> <span class="n">svec_inverse</span><span class="p">(</span><span class="n">packed_direction</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
