@@ -79,6 +79,7 @@ jobs:
           pip install .[test]
 
       - name: Run tests (Serial)
+        if: matrix.mpi == 'openmpi'
         run: |
           pytest --timeout=300
 
