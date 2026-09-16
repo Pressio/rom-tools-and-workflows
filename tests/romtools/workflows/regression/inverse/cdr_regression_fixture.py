@@ -279,6 +279,8 @@ def build_mf_vi_kwargs(absolute_work_dir: str):
             gradient_norm_tolerance=0.0,
             newton_metric="standard",
             newton_regularization=1.0e-8,
+            newton_hessian_type="diagonal",
+            newton_curvature_strategy="same_sample",
         ),
         "line_search_method": "stochastic_nonmonotone",
         "line_search_config": romtools.workflows.VIStochasticNonmonotoneLineSearchConfig(

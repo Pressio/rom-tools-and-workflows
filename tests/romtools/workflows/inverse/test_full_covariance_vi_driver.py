@@ -106,23 +106,27 @@ def test_initializer_type_selects_family_independently_of_prior(tmp_path):
     assert stds.shape == (2,)
 
     # A diagonal prior with a multivariate initializer selects true full
-    # covariance. Newton is intentionally unsupported for that family.
-    with pytest.raises(NotImplementedError, match="Full-covariance Newton"):
-        romtools.workflows.run_vi(
-            model=IdentityTwoParameterModel(),
-            prior_parameter_space=_diagonal_space(),
-            initial_variational_parameter_space=_correlated_space(),
-            observations=np.zeros(2),
-            observations_covariance=np.eye(2),
-            absolute_work_dir=str(tmp_path / "full_q"),
-            sample_size=6,
-            optimizer_method="newton",
-            optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
-                max_iterations=1,
-            ),
-            bounded_parameter_handling="clip",
-            evaluation_concurrency=1,
-        )
+    # covariance, including the now-supported natural Newton implementation.
+    full_work_dir = tmp_path / "full_q"
+    full_means, full_stds, _, _ = romtools.workflows.run_vi(
+        model=IdentityTwoParameterModel(),
+        prior_parameter_space=_diagonal_space(),
+        initial_variational_parameter_space=_correlated_space(),
+        observations=np.zeros(2),
+        observations_covariance=np.eye(2),
+        absolute_work_dir=str(full_work_dir),
+        sample_size=6,
+        optimizer_method="newton",
+        optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+            max_iterations=1,
+        ),
+        bounded_parameter_handling="clip",
+        evaluation_concurrency=1,
+    )
+    assert full_means.shape == (2,)
+    assert full_stds.shape == (2,)
+    with np.load(full_work_dir / "history.npz") as history:
+        assert str(history["variational_family"].item()) == "full_covariance"
 
 
 @pytest.mark.mpi_skip
