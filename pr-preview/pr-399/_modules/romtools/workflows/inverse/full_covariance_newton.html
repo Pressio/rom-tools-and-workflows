@@ -592,6 +592,47 @@
     <span class="k">return</span> <span class="n">result</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_exponential_retraction_hessian_correction</span><span class="p">(</span>
+    <span class="n">covariance_gradient_svec</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the covariance pullback-Hessian correction for the SPD retraction.</span>
+
+<span class="sd">    Natural Newton uses local symmetric coordinates ``z`` whose covariance map</span>
+<span class="sd">    is</span>
+
+<span class="sd">    ``Sigma(z) = L exp(sqrt(2) * sum_a z_a B_a) L.T``,</span>
+
+<span class="sd">    where ``B_a`` is the Frobenius-orthonormal basis induced by ``svec``.</span>
+<span class="sd">    Because this map is nonlinear, the local Hessian is not only ``S.T H S``.</span>
+<span class="sd">    The missing chain-rule term is</span>
+
+<span class="sd">    ``C_ab = &lt;G_Sigma, L (B_a B_b + B_b B_a) L.T&gt;_F``.</span>
+
+<span class="sd">    This term is essential even for a Gaussian target: the expected log joint</span>
+<span class="sd">    is linear in ``Sigma`` but has nonzero curvature in the exponential local</span>
+<span class="sd">    coordinates used by the actual covariance update.</span>
+<span class="sd">    """</span>
+    <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">covariance_gradient</span> <span class="o">=</span> <span class="n">svec_inverse</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">covariance_gradient_svec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="n">dimensionality</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">basis</span> <span class="o">=</span> <span class="n">_symmetric_basis</span><span class="p">(</span><span class="n">dimensionality</span><span class="p">)</span>
+    <span class="n">correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">basis</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">basis</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">row_basis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">basis</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">column_basis</span> <span class="o">=</span> <span class="n">basis</span><span class="p">[</span><span class="n">column</span><span class="p">]</span>
+            <span class="n">second_derivative</span> <span class="o">=</span> <span class="n">cholesky</span> <span class="o">@</span> <span class="p">(</span>
+                <span class="n">row_basis</span> <span class="o">@</span> <span class="n">column_basis</span> <span class="o">+</span> <span class="n">column_basis</span> <span class="o">@</span> <span class="n">row_basis</span>
+            <span class="p">)</span> <span class="o">@</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">covariance_gradient</span> <span class="o">*</span> <span class="n">second_derivative</span><span class="p">))</span>
+            <span class="n">correction</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">correction</span><span class="p">[</span><span class="n">column</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">correction</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_newton_step_from_hessian</span><span class="p">(</span>
     <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">cholesky</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -609,6 +650,17 @@
     <span class="p">)</span>
     <span class="n">transformed_gradient</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">gradient</span>
     <span class="n">transformed_hessian</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">hessian</span> <span class="o">@</span> <span class="n">transform</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">"natural"</span><span class="p">:</span>
+        <span class="n">dimensionality</span> <span class="o">=</span> <span class="n">cholesky</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">transformed_hessian</span><span class="p">[</span><span class="n">dimensionality</span><span class="p">:,</span> <span class="n">dimensionality</span><span class="p">:]</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">_exponential_retraction_hessian_correction</span><span class="p">(</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">"gradient_covariance_svec"</span><span class="p">],</span>
+                <span class="n">cholesky</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">transformed_hessian</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">transformed_hessian</span> <span class="o">+</span> <span class="n">transformed_hessian</span><span class="o">.</span><span class="n">T</span>
+        <span class="p">)</span>
     <span class="n">hessian_type</span> <span class="o">=</span> <span class="n">_normalize_newton_hessian_type</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">newton_hessian_type</span><span class="p">)</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="n">NewtonSolver</span><span class="p">(</span>
         <span class="n">regularization</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">newton_regularization</span><span class="p">,</span>
