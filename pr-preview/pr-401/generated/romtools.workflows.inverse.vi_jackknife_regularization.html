@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>romtools.workflows.inverse.vi_drivers &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>romtools.workflows.inverse.vi_jackknife_regularization &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -54,15 +54,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.vi_drivers';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.inverse.vi_jackknife_regularization';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.inverse.vi_jackknife_regularization" href="romtools.workflows.inverse.vi_jackknife_regularization.html" />
-    <link rel="prev" title="romtools.workflows.inverse.vi_adaptive_sampling" href="romtools.workflows.inverse.vi_adaptive_sampling.html" />
+    <link rel="next" title="romtools.workflows.inverse.vi_optimization_methods" href="romtools.workflows.inverse.vi_optimization_methods.html" />
+    <link rel="prev" title="romtools.workflows.inverse.vi_drivers" href="romtools.workflows.inverse.vi_drivers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -375,8 +373,8 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_adaptive_sampling.html">romtools.workflows.inverse.vi_adaptive_sampling</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.vi_drivers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_jackknife_regularization.html">romtools.workflows.inverse.vi_jackknife_regularization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse.vi_jackknife_regularization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html">romtools.workflows.inverse.vi_run_directory_policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse.html">romtools.workflows.inverse.vi_sample_reuse</a></li>
@@ -415,12 +413,27 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Variational Inference</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><code class="docutils literal notranslate"><span class="pre">VIJackknifeRegularizationConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -470,7 +483,7 @@
     
     <li class="breadcrumb-item"><a href="romtools.workflows.inverse.html" class="nav-link">romtools.workflows.inverse</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_drivers</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.inverse.vi_jackknife_regularization</span></li>
   </ul>
 </nav>
 </div>
@@ -487,110 +500,114 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-romtools.workflows.inverse.vi_drivers">
-<span id="romtools-workflows-inverse-vi-drivers"></span><h1>romtools.workflows.inverse.vi_drivers<a class="headerlink" href="#module-romtools.workflows.inverse.vi_drivers" title="Link to this heading">#</a></h1>
-<p>Variational inference drivers for Gaussian posterior approximations.</p>
-<p>This module provides derivative-free variational inference (VI) routines for
-black-box forward models. An approximate posterior is represented by a
-Gaussian variational family, and the optimizer updates the variational
-parameters to maximize the evidence lower bound (ELBO).</p>
-<p class="rubric">Theory</p>
-<p><code class="docutils literal notranslate"><span class="pre">run_vi</span></code> solves a Gaussian variational inference problem by maximizing</p>
-<div class="math notranslate nohighlight">
-\[\max_{\zeta}\;
-\mathbb{E}_{\theta \sim q(\theta;\zeta)}
-\left[
-\log p(y,\theta) - \log q(\theta;\zeta)
-\right],\]</div>
-<p>where <span class="math notranslate nohighlight">\(q(\theta;\zeta)\)</span> is the variational search distribution and
-<span class="math notranslate nohighlight">\(\zeta\)</span> denotes its parameters. In this implementation, the variational
-family is Gaussian in either diagonal form or fixed-correlation multivariate
-form, with the optimizer state stored as the variational mean and log standard
-deviation.</p>
-<p>For black-box forward models, the code uses the score-function
-(REINFORCE/log-likelihood-trick) estimator instead of reparameterization
-gradients through the PDE model:</p>
-<div class="math notranslate nohighlight">
-\[\nabla_{\zeta}
-\mathbb{E}_{\theta \sim q(\theta;\zeta)}
-\left[\mathcal{L}(\theta;\zeta)\right]
-=
-\mathbb{E}_{\theta \sim q(\theta;\zeta)}
-\left[
-\mathcal{L}(\theta;\zeta)\,
-\nabla_{\zeta}\log q(\theta;\zeta)
-\right],\]</div>
-<p>with</p>
-<div class="math notranslate nohighlight">
-\[\mathcal{L}(\theta;\zeta)
-=
-\log p(y,\theta) - \log q(\theta;\zeta).\]</div>
-<p>The expectation is approximated with Monte Carlo or randomized quasi-Monte
-Carlo samples from the current variational distribution. Because only
-<span class="math notranslate nohighlight">\(\nabla_{\zeta}\log q\)</span> is needed, the forward model itself is treated as
-derivative-free.</p>
-<p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;adam&quot;</span></code>, the selected score gradient is passed to a
-stateful Adam ascent update. By default, the raw score gradient is
-preconditioned with the damped mean-field Gaussian Fisher matrix before Adam,
-matching the ABRIS setup; the default initial learning rate is <span class="math notranslate nohighlight">\(0.1/d\)</span>,
-where <span class="math notranslate nohighlight">\(d\)</span> is the parameter dimension.</p>
-<p>When <code class="docutils literal notranslate"><span class="pre">optimizer_method=&quot;newton&quot;</span></code>, the routine also forms a second-order
-score-function estimator for curvature:</p>
-<div class="math notranslate nohighlight">
-\[\nabla_{\zeta}^2
-\mathbb{E}_{\theta \sim q(\theta;\zeta)}
-\left[\mathcal{L}(\theta;\zeta)\right]
-=
-\mathbb{E}_{\theta \sim q(\theta;\zeta)}
-\left[
-\mathcal{L}(\theta;\zeta)
-\left(
-\nabla_{\zeta}\log q\,\nabla_{\zeta}\log q^{\top}
-+ \nabla_{\zeta}^2 \log q
-\right)
-\right].\]</div>
-<p>This is the curvature model used by the Newton update path. The implementation
-supports a metric rescaling via <code class="docutils literal notranslate"><span class="pre">newton_metric</span></code> and either diagonal or full
-projected Hessian solves via <code class="docutils literal notranslate"><span class="pre">newton_hessian_type</span></code>. The
-<code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy</span></code> option controls stochastic coupling: the default
-<code class="docutils literal notranslate"><span class="pre">&quot;same_sample&quot;</span></code> reuses the gradient samples, <code class="docutils literal notranslate"><span class="pre">&quot;independent&quot;</span></code> evaluates a
-separate batch (whose size is set by <code class="docutils literal notranslate"><span class="pre">newton_hessian_num_samples</span></code>), and
-<code class="docutils literal notranslate"><span class="pre">&quot;lagged&quot;</span></code> preconditions with the previous exponentially averaged Hessian.
-The lagged averaging weight is set by <code class="docutils literal notranslate"><span class="pre">newton_hessian_averaging_factor</span></code>.</p>
-<p class="rubric">Variance Reduction</p>
-<p><code class="docutils literal notranslate"><span class="pre">score_function_entropy_strategy=&quot;analytic&quot;</span></code> (the default) estimates the
-log-joint score contribution and adds the Gaussian entropy gradient exactly.
-The <code class="docutils literal notranslate"><span class="pre">&quot;joint&quot;</span></code> strategy instead keeps <span class="math notranslate nohighlight">\(-\log q\)</span> inside the sampled ELBO
-integrand. The analytic strategy can have lower variance far from the optimum;
-with a suitable baseline, the joint strategy has zero per-sample contribution
-when the posterior belongs to the variational family. Both choices are
-score-function estimators, not pathwise estimators.</p>
-<p>The gradient estimator optionally supports a baseline through
-<code class="docutils literal notranslate"><span class="pre">baseline_method</span></code>. In particular, the leave-one-out option subtracts a
-sample mean baseline that is independent of the current score term,
-preserving unbiasedness while reducing Monte Carlo variance:</p>
-<div class="math notranslate nohighlight">
-\[\widehat g_{\mathrm{LOO}}
-=
-\frac{1}{N}\sum_{i=1}^{N}
-\left(
-\mathcal{L}(\theta^{(i)};\zeta) - b^{(-i)}
-\right)
-\nabla_{\zeta}\log q(\theta^{(i)};\zeta),\]</div>
-<p>where <span class="math notranslate nohighlight">\(b^{(-i)}\)</span> is the mean ELBO over all samples except
-<span class="math notranslate nohighlight">\(\theta^{(i)}\)</span>.</p>
-<p class="rubric">Gaussian Structure</p>
-<p>For Gaussian priors and Gaussian variational families, the ELBO integrand
-decomposes into</p>
-<div class="math notranslate nohighlight">
-\[\log p(y,\theta)
-=
-\log p(y\mid\theta) + \log p_0(\theta),\]</div>
-<p>so the forward-model dependence enters through the log-likelihood term, while
-the prior and variational-density terms are handled analytically. This is why
-the routine can remain derivative-free with respect to the forward model while
-still using gradient- and Hessian-based updates in the variational
-parameters.</p>
+  <section id="module-romtools.workflows.inverse.vi_jackknife_regularization">
+<span id="romtools-workflows-inverse-vi-jackknife-regularization"></span><h1>romtools.workflows.inverse.vi_jackknife_regularization<a class="headerlink" href="#module-romtools.workflows.inverse.vi_jackknife_regularization" title="Link to this heading">#</a></h1>
+<p>Jackknife-driven adaptive regularization for independent-Hessian Newton VI.</p>
+<p>This module provides an experimental wrapper around the existing VI and MFVI
+Newton drivers.  The gradient and Hessian estimators remain statistically
+independent via <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy='independent'</span></code>.  The independent
+Hessian batch is delete-one jackknifed, each replicate is mapped into the same
+natural/standard metric coordinates used by the Newton solve, and the
+regularization is set from the resulting spectral-norm curvature uncertainty.</p>
+<p>The adaptive rule is</p>
+<blockquote>
+<div><p>lambda = clip(scale * sigma_H, minimum, maximum),</p>
+</div></blockquote>
+<p>where</p>
+<blockquote>
+<div><p>sigma_H^2 = (N-1)/N * sum_i ||H_{(-i)} - mean(H_{(-j)})||_2^2.</p>
+</div></blockquote>
+<p>The Hessians in this expression are sign-projected (absolute eigenvalues) but
+<em>not</em> regularized, so the statistical uncertainty is measured before damping.
+No extra model evaluations are required beyond the independent Hessian batch.</p>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history</span></code></a>()</p></td>
+<td><p>Return Hessian uncertainty values from the most recent wrapper run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history</span></code></a>()</p></td>
+<td><p>Return regularization values selected by the most recent wrapper run.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi" title="romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_vi</span></code></a>(*args[, ...])</p></td>
+<td><p>Run MFVI with optional independent-Hessian jackknife regularization.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi" title="romtools.workflows.inverse.vi_jackknife_regularization.run_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_vi</span></code></a>(*args[, jackknife_regularization_config])</p></td>
+<td><p>Run VI with optional independent-Hessian jackknife regularization.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig" title="romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VIJackknifeRegularizationConfig</span></code></a>([enabled, ...])</p></td>
+<td><p>Configuration for independent-Hessian jackknife regularization.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">VIJackknifeRegularizationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maximum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#VIJackknifeRegularizationConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for independent-Hessian jackknife regularization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enabled</strong> (<em>bool</em>)</p></li>
+<li><p><strong>scale</strong> (<em>float</em>)</p></li>
+<li><p><strong>minimum</strong> (<em>float</em>)</p></li>
+<li><p><strong>maximum</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_hessian_sigma_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_hessian_sigma_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history" title="Link to this definition">#</a></dt>
+<dd><p>Return Hessian uncertainty values from the most recent wrapper run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_regularization_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_regularization_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history" title="Link to this definition">#</a></dt>
+<dd><p>Return regularization values selected by the most recent wrapper run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">run_mf_vi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jackknife_regularization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#run_mf_vi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi" title="Link to this definition">#</a></dt>
+<dd><p>Run MFVI with optional independent-Hessian jackknife regularization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>jackknife_regularization_config</strong> (<a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig" title="romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><em>VIJackknifeRegularizationConfig</em></a><em> | </em><em>None</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.run_vi">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">run_vi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jackknife_regularization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#run_vi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi" title="Link to this definition">#</a></dt>
+<dd><p>Run VI with optional independent-Hessian jackknife regularization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>jackknife_regularization_config</strong> (<a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig" title="romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><em>VIJackknifeRegularizationConfig</em></a><em> | </em><em>None</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -609,9 +626,25 @@ parameters.</p>
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><code class="docutils literal notranslate"><span class="pre">VIJackknifeRegularizationConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/romtools.workflows.inverse.vi_drivers.rst.txt">
+    <a href="../_sources/generated/romtools.workflows.inverse.vi_jackknife_regularization.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

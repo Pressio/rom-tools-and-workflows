@@ -19,6 +19,7 @@ romtools.workflows.inverse
    mf_vi_drivers
    vi_adaptive_sampling
    vi_drivers
+   vi_jackknife_regularization
    vi_optimization_methods
    vi_run_directory_policy
    vi_sample_reuse

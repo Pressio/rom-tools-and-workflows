@@ -1,0 +1,21 @@
+romtools.workflows.inverse.vi\_jackknife\_regularization
+========================================================
+
+.. automodule:: romtools.workflows.inverse.vi_jackknife_regularization
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_last_jackknife_hessian_sigma_history
+      get_last_jackknife_regularization_history
+      run_mf_vi
+      run_vi
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      VIJackknifeRegularizationConfig
+   
