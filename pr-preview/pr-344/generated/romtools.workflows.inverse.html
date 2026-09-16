@@ -153,6 +153,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../formatting.html">
     Formatting Utility
   </a>
@@ -267,6 +274,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../formatting.html">
     Formatting Utility
   </a>
@@ -370,8 +384,16 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_optimization_methods.html">romtools.workflows.inverse.ego_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_bound_transforms.html">romtools.workflows.inverse.eki_bound_transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html">romtools.workflows.inverse.eki_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_auto_mf_vi.html">romtools.workflows.inverse.full_covariance_auto_mf_vi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_lagged_newton.html">romtools.workflows.inverse.full_covariance_lagged_newton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html">romtools.workflows.inverse.full_covariance_mf_vi_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_newton.html">romtools.workflows.inverse.full_covariance_newton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html">romtools.workflows.inverse.full_covariance_router</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html">romtools.workflows.inverse.full_covariance_vi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html">romtools.workflows.inverse.full_covariance_vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_default_policy.html">romtools.workflows.inverse.vi_default_policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html">romtools.workflows.inverse.vi_run_directory_policy</a></li>
@@ -493,9 +515,9 @@ the model predictions consistent with the observations.</p>
 <li><p>Multifidelity EKI with control variates and adaptive reduced-order model
 refresh strategies.</p></li>
 <li><p>Variational inference (VI) with gradient, Adam, and Newton optimizers for
-Gaussian variational families.</p></li>
+Gaussian variational families, including diagonal and full-covariance VI.</p></li>
 <li><p>Multifidelity VI with control variates and adaptive reduced-order model
-updates.</p></li>
+updates, including full-covariance natural-coordinate Newton optimization.</p></li>
 </ul>
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
@@ -515,11 +537,35 @@ updates.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html#module-romtools.workflows.inverse.eki_drivers" title="romtools.workflows.inverse.eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eki_drivers</span></code></a></p></td>
 <td><p>Single-fidelity ensemble Kalman inversion drivers.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html#module-romtools.workflows.inverse.mf_eki_drivers" title="romtools.workflows.inverse.mf_eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_eki_drivers</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_auto_mf_vi.html#module-romtools.workflows.inverse.full_covariance_auto_mf_vi" title="romtools.workflows.inverse.full_covariance_auto_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_auto_mf_vi</span></code></a></p></td>
+<td><p>Auto-ROM convenience wrapper for full-covariance MF-VI.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_lagged_newton.html#module-romtools.workflows.inverse.full_covariance_lagged_newton" title="romtools.workflows.inverse.full_covariance_lagged_newton"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_lagged_newton</span></code></a></p></td>
+<td><p>Lagged-curvature support for full-covariance natural Newton VI/MF-VI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_mf_vi_drivers" title="romtools.workflows.inverse.full_covariance_mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_mf_vi_drivers</span></code></a></p></td>
+<td><p>Full-covariance multifidelity variational inference.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_newton.html#module-romtools.workflows.inverse.full_covariance_newton" title="romtools.workflows.inverse.full_covariance_newton"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_newton</span></code></a></p></td>
+<td><p>Natural-coordinate Newton support for full-covariance Gaussian VI/MF-VI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html#module-romtools.workflows.inverse.full_covariance_router" title="romtools.workflows.inverse.full_covariance_router"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_router</span></code></a></p></td>
+<td><p>Public routing for Gaussian VI variational families.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html#module-romtools.workflows.inverse.full_covariance_vi" title="romtools.workflows.inverse.full_covariance_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_vi</span></code></a></p></td>
+<td><p>Utilities for full-covariance Gaussian variational inference.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_vi_drivers" title="romtools.workflows.inverse.full_covariance_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_vi_drivers</span></code></a></p></td>
+<td><p>Full-covariance Gaussian VI wrappers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html#module-romtools.workflows.inverse.mf_eki_drivers" title="romtools.workflows.inverse.mf_eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_eki_drivers</span></code></a></p></td>
 <td><p>Multifidelity ensemble Kalman inversion drivers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html#module-romtools.workflows.inverse.mf_vi_drivers" title="romtools.workflows.inverse.mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_drivers</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html#module-romtools.workflows.inverse.mf_vi_drivers" title="romtools.workflows.inverse.mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_drivers</span></code></a></p></td>
 <td><p>Multifidelity variational inference drivers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_default_policy.html#module-romtools.workflows.inverse.vi_default_policy" title="romtools.workflows.inverse.vi_default_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_default_policy</span></code></a></p></td>
+<td><p>Centralized public defaults for VI and MF-VI optimization.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html#module-romtools.workflows.inverse.vi_drivers" title="romtools.workflows.inverse.vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_drivers</span></code></a></p></td>
 <td><p>Variational inference drivers for Gaussian posterior approximations.</p></td>
