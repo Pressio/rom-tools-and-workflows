@@ -200,6 +200,47 @@ def _fisher_whitening_map(cholesky: np.ndarray) -> np.ndarray:
     return result
 
 
+def _exponential_retraction_hessian_correction(
+    covariance_gradient_svec: np.ndarray,
+    cholesky: np.ndarray,
+) -> np.ndarray:
+    """Return the covariance pullback-Hessian correction for the SPD retraction.
+
+    Natural Newton uses local symmetric coordinates ``z`` whose covariance map
+    is
+
+    ``Sigma(z) = L exp(sqrt(2) * sum_a z_a B_a) L.T``,
+
+    where ``B_a`` is the Frobenius-orthonormal basis induced by ``svec``.
+    Because this map is nonlinear, the local Hessian is not only ``S.T H S``.
+    The missing chain-rule term is
+
+    ``C_ab = <G_Sigma, L (B_a B_b + B_b B_a) L.T>_F``.
+
+    This term is essential even for a Gaussian target: the expected log joint
+    is linear in ``Sigma`` but has nonzero curvature in the exponential local
+    coordinates used by the actual covariance update.
+    """
+    cholesky = np.asarray(cholesky, dtype=float)
+    dimensionality = cholesky.shape[0]
+    covariance_gradient = svec_inverse(
+        np.asarray(covariance_gradient_svec, dtype=float),
+        dimensionality,
+    )
+    basis = _symmetric_basis(dimensionality)
+    correction = np.zeros((len(basis), len(basis)), dtype=float)
+    for row, row_basis in enumerate(basis):
+        for column in range(row + 1):
+            column_basis = basis[column]
+            second_derivative = cholesky @ (
+                row_basis @ column_basis + column_basis @ row_basis
+            ) @ cholesky.T
+            value = float(np.sum(covariance_gradient * second_derivative))
+            correction[row, column] = value
+            correction[column, row] = value
+    return correction
+
+
 def _newton_step_from_hessian(
     state: dict,
     cholesky: np.ndarray,
@@ -217,6 +258,17 @@ def _newton_step_from_hessian(
     )
     transformed_gradient = transform.T @ gradient
     transformed_hessian = transform.T @ hessian @ transform
+    if metric == "natural":
+        dimensionality = cholesky.shape[0]
+        transformed_hessian[dimensionality:, dimensionality:] += (
+            _exponential_retraction_hessian_correction(
+                state["gradient_covariance_svec"],
+                cholesky,
+            )
+        )
+        transformed_hessian = 0.5 * (
+            transformed_hessian + transformed_hessian.T
+        )
     hessian_type = _normalize_newton_hessian_type(config.newton_hessian_type)
     solver = NewtonSolver(
         regularization=config.newton_regularization,
