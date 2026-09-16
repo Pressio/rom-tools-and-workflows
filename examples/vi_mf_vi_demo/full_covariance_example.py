@@ -46,9 +46,9 @@ def main(
     problem = build_problem(equispaced=False)
     model = AnalyticSineQoiModel(problem)
 
-    sample_size = 8 if smoke else 32
-    rom_extra_sample_size = 8 if smoke else 128
-    max_iterations = 2 if smoke else 40
+    sample_size = 8 if smoke else 16
+    rom_extra_sample_size = 8 if smoke else 64
+    max_iterations = 2 if smoke else 80
 
     prior = GaussianParameterSpace(
         parameter_names=list(problem.parameter_names),
