@@ -216,11 +216,11 @@ optimization.
 
 The multivariate case retains the same natural Newton metric, full Hessian,
 lagged curvature with :math:`\beta=0.25`, line-search scales, GP configuration,
-scalar MF control variate, and random seed. Because the full-covariance family
-has substantially more stochastic gradient and curvature degrees of freedom,
-the production run doubles the sampling relative to the diagonal benchmark:
-32 FOM samples per iteration and 128 additional ROM samples for MF-VI. Its
-Newton regularization is reduced by a factor of five to
+scalar MF control variate, random seed, and sample allocation as the diagonal
+benchmark: 16 FOM samples per iteration and 64 additional ROM samples for
+MF-VI. To give the higher-dimensional full-covariance optimization more room to
+converge, its production optimization budget is doubled from 40 to 80
+iterations. Its Newton regularization is reduced by a factor of five to
 :math:`1\times10^{-4}`. Newton curvature is formed in
 :math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
