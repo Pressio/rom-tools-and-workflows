@@ -9,10 +9,8 @@ Both production examples use the same core settings:
 
 - Newton in natural coordinates;
 - full Hessian with lagged curvature and `newton_hessian_averaging_factor=0.25`;
-- `newton_regularization=5e-4`;
 - joint entropy estimator with a leave-one-out baseline;
-- 16 FOM samples per iteration;
-- 64 additional ROM samples for MF-VI;
+- scalar MF control variate;
 - stochastic nonmonotone line search with `initial_step_size=0.25` and `max_step_size=1.0`;
 - inference seed 7;
 - automatic GP ROM for MF-VI with `max_rom_training_history=4`.
@@ -22,7 +20,8 @@ Both production examples use the same core settings:
 `diagonal_example.py` uses 31 equispaced interior observations. Discrete sine
 orthogonality makes the exact posterior covariance diagonal. The required
 `initial_variational_parameter_space` is a `GaussianParameterSpace`, selecting
-mean-field VI.
+mean-field VI. The production configuration uses 16 FOM samples per iteration,
+64 additional ROM samples for MF-VI, and `newton_regularization=5e-4`.
 
 ```bash
 python examples/vi_mf_vi_demo/diagonal_example.py
@@ -35,8 +34,10 @@ number of observations, but warps the observation locations so they are not
 equispaced. The exact posterior is correlated. A
 `MultivariateGaussianParameterSpace` initializer starts from the diagonal prior
 covariance and selects true full-covariance VI. This example uses the same
-lagged-Hessian Newton configuration as the diagonal case, including
-`newton_hessian_averaging_factor=0.25`.
+lagged-Hessian Newton geometry as the diagonal case, including
+`newton_hessian_averaging_factor=0.25`, but doubles the production sampling to
+32 FOM samples per iteration and 128 additional ROM samples for MF-VI. Its
+Newton regularization is reduced to `1e-4`.
 
 ```bash
 python examples/vi_mf_vi_demo/full_covariance_example.py
