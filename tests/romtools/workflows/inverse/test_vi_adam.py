@@ -143,6 +143,7 @@ def test_run_vi_supports_adam_natural_gradient(tmp_path):
     means, stds, parameter_samples, qois = vi_drivers.run_vi(
         model=LinearQoiModel(),
         prior_parameter_space=_parameter_space(),
+        initial_variational_parameter_space=_parameter_space(),
         observations=np.array([1.0]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "vi_adam"),
@@ -170,6 +171,7 @@ def test_run_mf_vi_supports_adam_natural_gradient(tmp_path):
         model=LinearQoiModel(),
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=_parameter_space(),
+        initial_variational_parameter_space=_parameter_space(),
         observations=np.array([1.0]),
         observations_covariance=np.array([[0.25]]),
         absolute_work_dir=str(tmp_path / "mf_vi_adam"),
@@ -199,6 +201,7 @@ def test_adam_rejects_non_adam_config():
         romtools.workflows.run_vi(
             model=LinearQoiModel(),
             prior_parameter_space=_parameter_space(),
+            initial_variational_parameter_space=_parameter_space(),
             observations=np.array([0.0]),
             observations_covariance=np.eye(1),
             optimizer_method="adam",
@@ -211,6 +214,7 @@ def test_run_vi_adam_restart_matches_uninterrupted_run(tmp_path):
     common = dict(
         model=LinearQoiModel(),
         prior_parameter_space=_parameter_space(),
+        initial_variational_parameter_space=_parameter_space(),
         observations=np.array([0.4]),
         observations_covariance=np.array([[0.2]]),
         sample_size=8,
@@ -255,6 +259,7 @@ def test_run_mf_vi_adam_restart_matches_uninterrupted_run(tmp_path):
         model=LinearQoiModel(),
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=_parameter_space(),
+        initial_variational_parameter_space=_parameter_space(),
         observations=np.array([0.4]),
         observations_covariance=np.array([[0.2]]),
         fom_sample_size=4,
@@ -297,26 +302,38 @@ def test_run_mf_vi_adam_restart_matches_uninterrupted_run(tmp_path):
 
 
 @pytest.mark.mpi_skip
-def test_adam_natural_gradient_rejects_correlated_multivariate_vi(tmp_path):
-    parameter_space = MultivariateGaussianParameterSpace(
+def test_adam_natural_gradient_supports_full_covariance_initializer(tmp_path):
+    prior = GaussianParameterSpace(
+        parameter_names=["theta0", "theta1"],
+        means=np.array([0.0, 0.0]),
+        stds=np.array([1.0, 1.0]),
+        sampler=MonteCarloSampler,
+    )
+    initializer = MultivariateGaussianParameterSpace(
         parameter_names=["theta0", "theta1"],
         means=np.array([0.0, 0.0]),
         covariance=np.array([[1.0, 0.4], [0.4, 1.0]]),
         sampler=MonteCarloSampler,
     )
-    with pytest.raises(NotImplementedError, match="correlated multivariate"):
-        vi_drivers.run_vi(
-            model=TwoParameterLinearQoiModel(),
-            prior_parameter_space=parameter_space,
-            observations=np.array([0.0]),
-            observations_covariance=np.eye(1),
-            absolute_work_dir=str(tmp_path / "multivariate"),
-            sample_size=4,
-            optimizer_method="adam",
-            optimizer_config=VIAdamOptimizerConfig(),
-            bounded_parameter_handling="clip",
-            evaluation_concurrency=1,
-        )
+    means, stds, _, _ = vi_drivers.run_vi(
+        model=TwoParameterLinearQoiModel(),
+        prior_parameter_space=prior,
+        initial_variational_parameter_space=initializer,
+        observations=np.array([0.0]),
+        observations_covariance=np.eye(1),
+        absolute_work_dir=str(tmp_path / "multivariate"),
+        sample_size=8,
+        optimizer_method="adam",
+        optimizer_config=VIAdamOptimizerConfig(
+            learning_rate=0.01,
+            gradient_norm_tolerance=0.0,
+            max_iterations=1,
+        ),
+        bounded_parameter_handling="clip",
+        evaluation_concurrency=1,
+    )
+    assert np.all(np.isfinite(means))
+    assert np.all(np.isfinite(stds))
 
 
 @pytest.mark.mpi_skip
@@ -325,6 +342,7 @@ def test_adam_rejects_explicit_line_search_config(tmp_path):
         vi_drivers.run_vi(
             model=LinearQoiModel(),
             prior_parameter_space=_parameter_space(),
+            initial_variational_parameter_space=_parameter_space(),
             observations=np.array([0.0]),
             observations_covariance=np.eye(1),
             absolute_work_dir=str(tmp_path / "line_search"),
@@ -339,6 +357,7 @@ def test_adam_diagnostics_report_learning_rate_not_dummy_step_size(tmp_path, cap
     vi_drivers.run_vi(
         model=LinearQoiModel(),
         prior_parameter_space=_parameter_space(),
+        initial_variational_parameter_space=_parameter_space(),
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=str(tmp_path / "diagnostics"),

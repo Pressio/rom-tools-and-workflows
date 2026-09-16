@@ -1,50 +1,62 @@
-# VI and MF-VI demo
+# Analytic sine VI and MF-VI examples
 
-This example compares single-fidelity variational inference with multifidelity
-variational inference using automatic Gaussian-process ROM construction.
+This directory contains the two VI/MF-VI examples used by the documentation.
+Both use the seven-parameter analytic sine-series inverse problem from the
+VI/MF-VI paper benchmark and compare single-fidelity VI with automatic-GP
+MF-VI.
 
-The forward problem is a steady linear convection-diffusion-reaction equation
-on the unit square,
+Both production examples use the same core settings:
 
-\[
--\nu \nabla^2 u + \mathbf{b}\cdot\nabla u + \sigma u = 1,
-\qquad \mathbf{b}=(1,1),
-\]
+- Newton in natural coordinates;
+- full Hessian with lagged curvature and `newton_hessian_averaging_factor=0.25`;
+- joint entropy estimator with a leave-one-out baseline;
+- scalar MF control variate;
+- stochastic nonmonotone line search with `initial_step_size=0.25` and `max_step_size=1.0`;
+- inference seed 7;
+- automatic GP ROM for MF-VI with `max_rom_training_history=4`.
 
-with homogeneous Dirichlet boundary conditions. The uncertain parameters are
-the diffusion coefficient `nu` and reaction coefficient `sigma`. Synthetic data
-are generated at the truth
+## 1. Diagonal posterior
 
-- `nu = 0.04`
-- `sigma = 0.30`
+`diagonal_example.py` uses 31 equispaced interior observations. Discrete sine
+orthogonality makes the exact posterior covariance diagonal. The required
+`initial_variational_parameter_space` is a `GaussianParameterSpace`, selecting
+mean-field VI. The production configuration uses 16 FOM samples per iteration,
+64 additional ROM samples for MF-VI, and `newton_regularization=5e-4`.
 
-from the scalar quantity of interest used by the CDR model, which approximates
-the integral of the normal derivative on the right boundary. No random noise
-realization is added to the synthetic observation. The likelihood assumes
-Gaussian observation noise with standard deviation `5e-3`, corresponding to a
-scalar observation covariance of `2.5e-5`.
+```bash
+python examples/vi_mf_vi_demo/diagonal_example.py
+```
 
-The inference bounds are deliberately not centered on the truth:
+## 2. Full-covariance posterior
 
-- `nu` is restricted to `[0.01, 0.10]`
-- `sigma` is restricted to `[0.10, 0.80]`
+`full_covariance_example.py` uses the same model, prior, noise level, truth, and
+number of observations, but warps the observation locations so they are not
+equispaced. The exact posterior is correlated. A
+`MultivariateGaussianParameterSpace` initializer starts from the diagonal prior
+covariance and selects true full-covariance VI. This example uses the same
+16 FOM samples per iteration and 64 additional ROM samples for MF-VI as the
+diagonal case, while doubling the production optimization budget from 40 to 80
+iterations. Its Newton regularization is reduced to `1e-4`.
 
-The Gaussian prior uses the midpoint of these intervals as its mean and one
-quarter of each interval width as its standard deviation, so its mean is
-`(0.055, 0.45)` rather than the true parameter vector `(0.04, 0.30)`.
+```bash
+python examples/vi_mf_vi_demo/full_covariance_example.py
+```
 
-Run the full example from the repository root:
+Each example writes three figures: exact-KL convergence, the posterior mean,
+and the posterior distribution. The full-covariance posterior figure includes
+the exact correlation matrix and a two-dimensional marginal for the most
+strongly correlated coefficient pair.
+
+Run both examples together with
 
 ```bash
 python examples/vi_mf_vi_demo/example.py
 ```
 
-Run the reduced CI configuration:
+Use `--smoke` for the reduced configuration exercised by documentation CI.
+
+Documentation figures are regenerated with
 
 ```bash
-python examples/vi_mf_vi_demo/example.py --smoke
+python examples/vi_mf_vi_demo/generate_docs_media.py
 ```
-
-The example writes separate ELBO and posterior-parameter convergence figures.
-Use `--work-dir` to place workflow data elsewhere and `--output-dir` to select
-the figure destination.

@@ -1,118 +1,299 @@
-VI and MF-VI Demo
-=================
+Analytic sine VI and MF-VI examples
+===================================
 
-This example compares single-fidelity variational inference with multifidelity
-variational inference for a steady convection-diffusion-reaction model. Both
-methods approximate the posterior over the diffusion coefficient ``nu`` and
-reaction coefficient ``sigma`` with a Gaussian distribution.
-
-Problem definition
-------------------
-
-The forward model solves the steady linear convection-diffusion-reaction
-problem on the unit square,
+These examples use the analytically tractable sine-series inverse problem from
+the VI/MF-VI benchmark. The forward model is
 
 .. math::
 
-   -\nu \nabla^2 u + \mathbf{b}\cdot\nabla u + \sigma u = 1,
-   \qquad \mathbf{b}=(1,1),
+   u''(x)=f(x;\theta), \qquad u(0)=u(1)=0,
 
-with homogeneous Dirichlet boundary conditions. The diffusion coefficient
-:math:`\nu` and reaction coefficient :math:`\sigma` are treated as uncertain
-parameters. The scalar quantity of interest approximates the integral of the
-normal derivative on the right boundary,
+with
 
 .. math::
 
-   Q(u) = \int_{x=1} \frac{\partial u}{\partial x}\,dy.
+   f(x;\theta)=\sum_{j=1}^{7}\theta_j\sin(j\pi x),
 
-Synthetic observations are generated from the full-order model at
-
-.. math::
-
-   \nu_{\mathrm{true}} = 0.04,
-   \qquad
-   \sigma_{\mathrm{true}} = 0.30.
-
-No random perturbation is added to the synthetic observation itself. The
-likelihood assumes independent Gaussian observation noise with standard
-deviation :math:`5\times 10^{-3}`, corresponding to covariance
-:math:`2.5\times 10^{-5}` for the scalar observation.
-
-The admissible parameter ranges are deliberately chosen so that their midpoint
-is not the true parameter vector:
+so the exact solution is
 
 .. math::
 
-   0.01 \leq \nu \leq 0.10,
-   \qquad
-   0.10 \leq \sigma \leq 0.80.
+   u(x;\theta)
+   =-\sum_{j=1}^{7}\frac{\theta_j}{(j\pi)^2}\sin(j\pi x).
 
-The Gaussian prior is initialized with the midpoint of these intervals as its
-mean and one quarter of each interval width as its standard deviation. Thus,
-its mean is :math:`(0.055, 0.45)`, rather than the truth
-:math:`(0.04, 0.30)`. This avoids giving the inference problem an artificially
-favorable initialization centered on the data-generating parameters.
+The prior is
 
-The multifidelity method supplements its full-order-model samples with
-additional evaluations of a Gaussian-process surrogate. The surrogate is
-constructed automatically from the full-order-model parameter and QoI data,
-with both inputs and targets normalized before fitting.
+.. math::
 
-Run the example
----------------
+   \theta \sim \mathcal N(0,0.75^2 I),
 
-The canonical implementation lives under ``examples/`` and is exercised
-against the current romtools checkout in CI.
+with synthetic truth
+
+.. math::
+
+   \theta^\star
+   =(1.00,-0.80,0.65,-0.50,0.35,-0.25,0.15)^T,
+
+and observation-noise standard deviation
+:math:`\sigma_\eta=5\times10^{-3}`. Because the forward map is linear and the
+prior and likelihood are Gaussian, the exact posterior is available in closed
+form,
+
+.. math::
+
+   C_{\rm post}^{-1}
+   = C_0^{-1}+G^T\Gamma_{\rm obs}^{-1}G,
+
+.. math::
+
+   m_{\rm post}
+   = C_{\rm post}
+     \left(C_0^{-1}m_0+G^T\Gamma_{\rm obs}^{-1}y\right).
+
+This lets both examples measure convergence directly against the exact
+posterior.
+
+VI-paper benchmark configuration
+--------------------------------
+
+The diagonal example uses the Newton and multifidelity settings from the
+VI-paper analytic-sine benchmark. The production run uses a full Hessian,
+lagged stochastic curvature with averaging factor :math:`\beta=0.25`, natural
+coordinates, and the paper line-search scales:
+
+.. code-block:: python
+
+   optimizer = VINewtonOptimizerConfig(
+       newton_metric="natural",
+       newton_hessian_type="full",
+       newton_curvature_strategy="lagged",
+       newton_hessian_averaging_factor=0.25,
+       newton_regularization=5e-4,
+       gradient_norm_tolerance=0.0,
+       max_iterations=1000,
+   )
+
+   line_search = VIStochasticNonmonotoneLineSearchConfig(
+       initial_step_size=0.25,
+       max_step_size=1.0,
+   )
+
+The shared VI/MF-VI arguments use the joint entropy estimator, a leave-one-out
+baseline, zero observation-covariance regularization, and inference seed 7.
+MF-VI uses a scalar multifidelity control-variate coefficient in both examples:
+
+.. code-block:: python
+
+   common_arguments = dict(
+       ...,
+       optimizer_method="newton",
+       optimizer_config=optimizer,
+       line_search_method="stochastic_nonmonotone",
+       line_search_config=line_search,
+       baseline_method="loo",
+       score_function_entropy_strategy="joint",
+       covariance_regularization=0.0,
+       random_seed=7,
+   )
+
+The full diagonal run uses 16 FOM samples per iteration. MF-VI uses 64
+additional ROM samples, the automatic GP ROM, and four iterations of ROM
+training history:
+
+.. code-block:: python
+
+   workflows.mf_vi_with_auto_rom(
+       ...,
+       fom_sample_size=16,
+       rom_extra_sample_size=64,
+       max_rom_training_history=4,
+       mfmc_control_variate_mode="scalar",
+       rom_type="gp",
+       rom_args={
+           "normalize_parameters": True,
+           "normalize_targets": True,
+       },
+   )
+
+``prior_parameter_space`` defines the Bayesian prior, while the required
+``initial_variational_parameter_space`` independently selects the variational
+family and supplies its initial moments.
+
+Example 1: equispaced observations and a diagonal posterior
+------------------------------------------------------------
+
+The first example uses :math:`N=31` equispaced interior observations,
+
+.. math::
+
+   x_i=\frac{i}{N+1}, \qquad i=1,\ldots,N.
+
+For these points the discrete sine basis is orthogonal, so
+:math:`G^T\Gamma_{\rm obs}^{-1}G` is diagonal. Since the prior covariance is
+also diagonal, the exact posterior covariance is diagonal to numerical
+precision.
+
+The variational initializer is a ``GaussianParameterSpace``. This selects the
+diagonal/mean-field VI implementation. This is the case that corresponds
+directly to the VI-paper analytic-sine benchmark and therefore uses the exact
+configuration listed above.
+
+Run the example with
 
 .. code-block:: bash
 
-   python examples/vi_mf_vi_demo/example.py
+   python examples/vi_mf_vi_demo/diagonal_example.py
 
-A reduced configuration is available for quick validation:
+Convergence
+~~~~~~~~~~~
+
+The convergence plot reports the exact Gaussian
+:math:`D_{\rm KL}(q\|p_{\rm post})` for the accepted VI and MF-VI states.
+
+.. figure:: notebooks/analytic_sine_diagonal_convergence.png
+   :alt: KL convergence for VI and MF-VI on the equispaced analytic sine problem
+   :align: center
+   :width: 78%
+
+   VI and MF-VI convergence to the exact diagonal posterior.
+
+Posterior mean
+~~~~~~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_diagonal_mean.png
+   :alt: Posterior mean comparison for the diagonal analytic sine problem
+   :align: center
+   :width: 82%
+
+   Final VI and MF-VI posterior means compared with the exact posterior mean and
+   the synthetic truth.
+
+Posterior
+~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_diagonal_posterior.png
+   :alt: Posterior marginal densities for the diagonal analytic sine problem
+   :align: center
+   :width: 96%
+
+   Exact, VI, and MF-VI marginal posterior densities for the seven sine
+   coefficients. The vertical dashed line in each panel is the synthetic
+   truth.
+
+Implementation
+~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../examples/vi_mf_vi_demo/diagonal_example.py
+   :language: python
+   :linenos:
+
+Example 2: non-equispaced observations and a correlated posterior
+------------------------------------------------------------------
+
+The second example keeps the same model, prior, truth, noise level, and number
+of observations, but changes only the observation locations. Starting from
+
+.. math::
+
+   t_i=\frac{i}{N+1},
+
+the locations are warped according to
+
+.. math::
+
+   x_i
+   =0.02+0.96\,\frac{t_i^3}{t_N^3}.
+
+This breaks discrete sine orthogonality. The exact posterior therefore has
+nonzero cross-covariances (the largest absolute posterior correlation is about
+0.30 for this setup).
+
+The prior remains the same diagonal ``GaussianParameterSpace``. The variational
+initializer is instead a ``MultivariateGaussianParameterSpace`` initialized
+with the same diagonal prior covariance. Its *type* selects true
+full-covariance VI, allowing off-diagonal covariance entries to develop during
+optimization.
+
+The multivariate case retains the same natural Newton metric, full Hessian,
+lagged curvature with :math:`\beta=0.25`, line-search scales, GP configuration,
+scalar MF control variate, random seed, and sample allocation as the diagonal
+benchmark: 16 FOM samples per iteration and 64 additional ROM samples for
+MF-VI. To give the higher-dimensional full-covariance optimization more room to
+converge, its production optimization budget is doubled from 40 to 80
+iterations. Its Newton regularization is reduced by a factor of five to
+:math:`1\times10^{-4}`. Newton curvature is formed in
+:math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
+the exact Gaussian Fisher metric before the regularized Newton solve. The
+covariance update is then applied with the SPD-preserving exponential
+retraction described in :doc:`../full_covariance_vi`.
+
+Run the example with
+
+.. code-block:: bash
+
+   python examples/vi_mf_vi_demo/full_covariance_example.py
+
+Convergence
+~~~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_convergence.png
+   :alt: KL convergence for full-covariance VI and MF-VI
+   :align: center
+   :width: 78%
+
+   Exact Gaussian KL convergence for full-covariance VI and MF-VI.
+
+Posterior mean
+~~~~~~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_mean.png
+   :alt: Posterior mean comparison for the non-equispaced analytic sine problem
+   :align: center
+   :width: 82%
+
+   Final full-covariance VI and MF-VI posterior means compared with the exact
+   posterior mean and truth.
+
+Posterior
+~~~~~~~~~
+
+.. figure:: notebooks/analytic_sine_correlated_posterior.png
+   :alt: Posterior correlation and two-dimensional marginal for the non-equispaced sine problem
+   :align: center
+   :width: 96%
+
+   The exact posterior correlation matrix and the strongest correlated
+   two-dimensional marginal. The ellipse panel compares one- and
+   two-standard-deviation contours from the exact posterior, VI, and MF-VI.
+
+Implementation
+~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../examples/vi_mf_vi_demo/full_covariance_example.py
+   :language: python
+   :linenos:
+
+Shared problem definition
+-------------------------
+
+The forward model, exact posterior calculation, history processing, and plotting
+utilities are shared by both examples:
+
+.. literalinclude:: ../../../examples/vi_mf_vi_demo/analytic_sine_support.py
+   :language: python
+   :linenos:
+
+Regenerating the figures
+------------------------
+
+Run both production examples and regenerate all six figures with
+
+.. code-block:: bash
+
+   python examples/vi_mf_vi_demo/generate_docs_media.py
+
+A reduced CI configuration exercises both examples with
 
 .. code-block:: bash
 
    python examples/vi_mf_vi_demo/example.py --smoke
-
-The full run uses 50 optimization iterations, eight FOM samples per iteration,
-and 64 additional GP-ROM samples for MF-VI. The smoke configuration reduces
-the grid, sample counts, and optimization iterations without changing the
-workflow API being tested.
-
-Regenerate the published figures
---------------------------------
-
-The Sphinx build does not execute scientific examples implicitly. Regenerate
-the checked-in figures explicitly after changes that affect this benchmark:
-
-.. code-block:: bash
-
-   python examples/vi_mf_vi_demo/example.py \
-       --output-dir docs/source/demos/notebooks
-
-Results
--------
-
-.. figure:: notebooks/vi_mf_vi_elbo_convergence.png
-   :alt: ELBO convergence for single-fidelity VI and multifidelity VI
-   :align: center
-   :width: 80%
-
-   ELBO histories for single-fidelity VI and MF-VI with automatic GP-ROM
-   construction.
-
-.. figure:: notebooks/vi_mf_vi_parameter_convergence.png
-   :alt: Posterior parameter convergence for VI and multifidelity VI
-   :align: center
-   :width: 95%
-
-   Variational means and one-standard-deviation bands for the inferred
-   diffusion coefficient and reaction coefficient.
-
-Implementation
---------------
-
-.. literalinclude:: ../../../examples/vi_mf_vi_demo/example.py
-   :language: python
-   :linenos:

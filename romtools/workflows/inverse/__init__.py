@@ -12,9 +12,9 @@ romtools currently supports:
 - Multifidelity EKI with control variates and adaptive reduced-order model
   refresh strategies.
 - Variational inference (VI) with gradient, Adam, and Newton optimizers for
-  Gaussian variational families.
+  Gaussian variational families, including diagonal and full-covariance VI.
 - Multifidelity VI with control variates and adaptive reduced-order model
-  updates.
+  updates, including full-covariance natural-coordinate Newton optimization.
 """
 
 from importlib import import_module as _import_module
@@ -110,6 +110,91 @@ _add_vi_wrapper_signature(
 
 _vi_drivers_module = _import_module("romtools.workflows.inverse.vi_drivers")
 _mf_vi_drivers_module = _import_module("romtools.workflows.inverse.mf_vi_drivers")
+_vi_drivers_module.run_vi = run_vi
+_mf_vi_drivers_module.run_mf_vi = run_mf_vi
+_mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
+
+# Add the true full-covariance Gaussian family as an outer routing layer. The
+# required ``initial_variational_parameter_space`` now defines both the
+# variational family and its initial moments. GaussianParameterSpace routes to
+# diagonal VI; MultivariateGaussianParameterSpace routes to true freely
+# evolving full-covariance VI. The prior family is independent.
+from romtools.workflows.inverse.full_covariance_router import (
+    run_vi as _full_covariance_run_vi,
+    run_mf_vi as _full_covariance_run_mf_vi,
+    mf_vi_with_auto_rom as _full_covariance_auto_mf_vi,
+)
+
+
+def _add_full_covariance_signature(wrapper, legacy_wrapper):
+    signature = _inspect.signature(legacy_wrapper)
+    parameters = [
+        parameter
+        for parameter in signature.parameters.values()
+        if parameter.name != "initial_variational_parameter_space"
+    ]
+    insertion_index = next(
+        (
+            index
+            for index, parameter in enumerate(parameters)
+            if parameter.kind
+            in (_inspect.Parameter.KEYWORD_ONLY, _inspect.Parameter.VAR_KEYWORD)
+        ),
+        len(parameters),
+    )
+    parameters.insert(
+        insertion_index,
+        _inspect.Parameter(
+            "initial_variational_parameter_space",
+            kind=_inspect.Parameter.KEYWORD_ONLY,
+            default=_inspect.Parameter.empty,
+        ),
+    )
+    parameters.insert(
+        insertion_index + 1,
+        _inspect.Parameter(
+            "max_covariance_log_step",
+            kind=_inspect.Parameter.KEYWORD_ONLY,
+            default=1.0,
+            annotation=float,
+        ),
+    )
+    wrapper.__signature__ = signature.replace(parameters=parameters)
+
+
+def _set_signature_default(wrapper, parameter_name, default):
+    signature = _inspect.signature(wrapper)
+    parameters = [
+        parameter.replace(default=default)
+        if parameter.name == parameter_name
+        else parameter
+        for parameter in signature.parameters.values()
+    ]
+    wrapper.__signature__ = signature.replace(parameters=parameters)
+
+
+_add_full_covariance_signature(_full_covariance_run_vi, _directory_policy_run_vi)
+_add_full_covariance_signature(_full_covariance_run_mf_vi, _directory_policy_run_mf_vi)
+_add_full_covariance_signature(
+    _full_covariance_auto_mf_vi, _directory_policy_mf_vi_with_auto_rom
+)
+_set_signature_default(
+    _full_covariance_run_mf_vi,
+    "max_rom_training_history",
+    None,
+)
+_set_signature_default(
+    _full_covariance_auto_mf_vi,
+    "max_rom_training_history",
+    None,
+)
+
+run_vi = _full_covariance_run_vi
+run_mf_vi = _full_covariance_run_mf_vi
+mf_vi_with_auto_rom = _full_covariance_auto_mf_vi
+
+# Keep direct imports from the historical defining modules aligned with the
+# public package-level API.
 _vi_drivers_module.run_vi = run_vi
 _mf_vi_drivers_module.run_mf_vi = run_mf_vi
 _mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom

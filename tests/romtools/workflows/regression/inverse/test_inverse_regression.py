@@ -40,11 +40,17 @@ def _assert_matches_gold(result, gold_name: str):
         assert np.allclose(qois, gold["qois"], atol=REGRESSION_ATOL, rtol=REGRESSION_RTOL)
 
 
+def _with_variational_initializer(kwargs):
+    kwargs = dict(kwargs)
+    kwargs["initial_variational_parameter_space"] = kwargs["prior_parameter_space"]
+    return kwargs
+
+
 @pytest.mark.mpi_skip
 @pytest.mark.regression
 def test_vi_inverse_workflow_regression(tmp_path):
     result = romtools.workflows.run_vi(
-        **build_vi_kwargs(str(tmp_path / "vi")),
+        **_with_variational_initializer(build_vi_kwargs(str(tmp_path / "vi"))),
     )
     _assert_matches_gold(result, "vi_cdr_inverse_regression_gold.npz")
 
@@ -53,7 +59,7 @@ def test_vi_inverse_workflow_regression(tmp_path):
 @pytest.mark.regression
 def test_mf_vi_inverse_workflow_regression(tmp_path):
     result = romtools.workflows.mf_vi_with_auto_rom(
-        **build_mf_vi_kwargs(str(tmp_path / "mf_vi")),
+        **_with_variational_initializer(build_mf_vi_kwargs(str(tmp_path / "mf_vi"))),
     )
     _assert_matches_gold(result, "mf_vi_cdr_inverse_regression_gold.npz")
 
