@@ -5,6 +5,7 @@ from romtools.workflows.inverse.vi_jackknife_regularization import (
     VIJackknifeRegularizationConfig,
     _jackknife_spectral_sigma,
     _project_unregularized_hessian,
+    _relative_hessian_uncertainty,
 )
 
 
@@ -23,6 +24,10 @@ def test_unregularized_projection_uses_absolute_eigenvalues():
     hessian = np.array([[-2.0, 0.0], [0.0, 0.5]])
     projected = _project_unregularized_hessian(hessian)
     np.testing.assert_allclose(projected, np.diag([2.0, 0.5]))
+
+
+def test_relative_hessian_uncertainty_is_dimensionless_ratio():
+    np.testing.assert_allclose(_relative_hessian_uncertainty(0.25, 2.0), 0.125)
 
 
 def test_jackknife_regularization_config_validation():
