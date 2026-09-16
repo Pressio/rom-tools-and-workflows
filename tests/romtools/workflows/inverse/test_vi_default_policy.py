@@ -4,11 +4,13 @@ import romtools.workflows.inverse as inverse
 from romtools.workflows.inverse import full_covariance_router as router
 
 
-def test_newton_defaults_are_natural_full_and_regularized():
+def test_newton_defaults_are_natural_full_lagged_and_regularized():
     config = inverse.VINewtonOptimizerConfig()
     assert config.newton_metric == "natural"
     assert config.newton_hessian_type == "full"
     assert config.newton_regularization == 5.0e-4
+    assert config.newton_curvature_strategy == "lagged"
+    assert config.newton_hessian_averaging_factor == 0.25
 
 
 def test_line_search_initial_step_defaults_to_point_one():
@@ -44,6 +46,8 @@ def test_router_materializes_default_newton_config():
     assert config.newton_metric == "natural"
     assert config.newton_hessian_type == "full"
     assert config.newton_regularization == 5.0e-4
+    assert config.newton_curvature_strategy == "lagged"
+    assert config.newton_hessian_averaging_factor == 0.25
 
 
 def test_router_uses_effectively_full_mf_training_history_by_default():
