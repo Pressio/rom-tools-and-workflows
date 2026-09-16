@@ -62,7 +62,16 @@ def main(
         covariance=problem.prior_covariance,
         sampler=MonteCarloSampler,
     )
-    optimizer = VINewtonOptimizerConfig(
+    vi_optimizer = VINewtonOptimizerConfig(
+        newton_metric="natural",
+        newton_hessian_type="full",
+        newton_curvature_strategy="lagged",
+        newton_hessian_averaging_factor=0.25,
+        newton_regularization=5e-4,
+        gradient_norm_tolerance=0.0,
+        max_iterations=max_iterations,
+    )
+    mf_vi_optimizer = VINewtonOptimizerConfig(
         newton_metric="natural",
         newton_hessian_type="full",
         newton_curvature_strategy="lagged",
@@ -92,7 +101,6 @@ def main(
         observations=problem.observations,
         observations_covariance=problem.observation_covariance,
         optimizer_method="newton",
-        optimizer_config=optimizer,
         line_search_method="stochastic_nonmonotone",
         line_search_config=line_search,
         baseline_method="loo",
@@ -108,6 +116,7 @@ def main(
         absolute_work_dir=str(vi_dir),
         sample_size=sample_size,
         evaluation_concurrency=1,
+        optimizer_config=vi_optimizer,
     )
     workflows.mf_vi_with_auto_rom(
         **common_arguments,
@@ -123,6 +132,7 @@ def main(
             "normalize_parameters": True,
             "normalize_targets": True,
         },
+        optimizer_config=mf_vi_optimizer,
     )
 
     vi_history = collect_history(vi_dir, problem)
