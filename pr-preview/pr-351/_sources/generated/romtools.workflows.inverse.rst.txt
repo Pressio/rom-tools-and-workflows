@@ -15,8 +15,16 @@ romtools.workflows.inverse
    ego_optimization_methods
    eki_bound_transforms
    eki_drivers
+   full_covariance_auto_mf_vi
+   full_covariance_lagged_newton
+   full_covariance_mf_vi_drivers
+   full_covariance_newton
+   full_covariance_router
+   full_covariance_vi
+   full_covariance_vi_drivers
    mf_eki_drivers
    mf_vi_drivers
+   vi_default_policy
    vi_drivers
    vi_optimization_methods
    vi_run_directory_policy

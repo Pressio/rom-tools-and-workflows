@@ -101,16 +101,18 @@ Construct your model with the dispatcher as a member variable:
 .. code-block:: python
 
    from typing import Optional
-   from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
+   from romtools.hpc.dispatchers import RemoteDispatcher
 
    class MyModel:
 
-      def __init__(self, dispatcher: Optional[BaseDispatcher] = None):
-         self.dispatcher = resolve_dispatcher(dispatcher)
+      def __init__(self, dispatcher: RemoteDispatcher):
+         self.dispatcher = dispatcher
 
 .. tip::
-   ``resolve_dispatcher()`` falls back to a ``LocalDispatcher`` if none is
-   provided.
+   You may see some sample models where the ``dispatcher`` argument is optional, defaulting to
+   ``None``. In these cases, the model calls ``resolve_dispatcher(dispatcher)`` (imported
+   from ``romtools.hpc.dispatchers``), which falls back to a basic
+   ``LocalDispatcher`` if none is provided.
 
 Step 2: Set up the run directory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,8 +154,8 @@ Step 3: Define ``run_model()``
 There are two primary ways to run the model through the dispatcher.
 
 **SLURM script (RECOMMENDED).** Create a SLURM script locally that executes
-your model and configure the dispatcher with that script (using
-``--hpc-script``, see `Configuring the dispatcher`_). Then ``run_model()`` can
+your model and configure the dispatcher with that script (see
+`Configuring the dispatcher`_). Then ``run_model()`` can
 be as simple as:
 
 .. code-block:: python
@@ -165,7 +167,7 @@ This copies your local SLURM script onto the remote host, submits it, and polls
 it until it completes.
 
 .. note::
-   ``submit_job()`` returns a ``Result`` carrying the job's exit code and its
+   ``submit_job()`` returns a ``Result`` carrying the job's exit code and
    captured output. The workflows in ``rom-tools`` treat a non-zero
    ``run_model()`` return as a failed sample, so pass the exit code through
    rather than returning 0.
@@ -180,8 +182,10 @@ in a SLURM script and submit it:
        cmd = "srun --ntasks=$SLURM_NNODES --ntasks-per-node=1 my_app"
        return self.dispatcher.submit_job(cmd, run_directory).exit_code
 
-The dispatcher creates a SLURM script that executes this command (configured at
-runtime), submits it, and polls the job until it completes.
+The dispatcher creates a SLURM script that executes this command,
+submits it, and polls the job until it completes. Details of the
+SLURM script, like the user account, number of nodes, etc., are
+configured as explained in `Configuring the dispatcher`_.
 
 Step 4: Update other methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,7 +195,8 @@ same core dispatcher functionality.
 
 For a :class:`~romtools.workflows.models.QoiModel` that executes a functor, the
 ``call()`` method may be useful to dispatch Python functions to the execution
-host.
+host. Note that any Callable objects passed to ``call`` must be
+importable on the execution host.
 
 Updating your workflow
 ~~~~~~~~~~~~~~~~~~~~~~
