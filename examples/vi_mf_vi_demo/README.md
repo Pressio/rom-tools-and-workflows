@@ -34,10 +34,9 @@ number of observations, but warps the observation locations so they are not
 equispaced. The exact posterior is correlated. A
 `MultivariateGaussianParameterSpace` initializer starts from the diagonal prior
 covariance and selects true full-covariance VI. This example uses the same
-lagged-Hessian Newton geometry as the diagonal case, including
-`newton_hessian_averaging_factor=0.25`, but doubles the production sampling to
-32 FOM samples per iteration and 128 additional ROM samples for MF-VI. Its
-Newton regularization is reduced to `1e-4`.
+16 FOM samples per iteration and 64 additional ROM samples for MF-VI as the
+diagonal case, while doubling the production optimization budget from 40 to 80
+iterations. Its Newton regularization is reduced to `1e-4`.
 
 ```bash
 python examples/vi_mf_vi_demo/full_covariance_example.py
