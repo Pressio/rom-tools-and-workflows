@@ -34,6 +34,12 @@ def _set_dataclass_default(cls, field_name: str, value) -> None:
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_metric", "natural")
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_regularization", 5.0e-4)
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_hessian_type", "full")
+_set_dataclass_default(VINewtonOptimizerConfig, "newton_curvature_strategy", "lagged")
+_set_dataclass_default(
+    VINewtonOptimizerConfig,
+    "newton_hessian_averaging_factor",
+    0.25,
+)
 
 # Use a useful nonzero initial line-search scale by default.  The maximum step
 # remains unconstrained unless the caller specifies it explicitly.
