@@ -233,6 +233,7 @@ def test_run_vi_limits_newton_mean_update(monkeypatch, tmp_path):
     means, _, _, _ = romtools.workflows.run_vi(
         model=LinearQoiModel(slope=1.0),
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=str(tmp_path),
@@ -271,6 +272,7 @@ def test_run_vi_independent_curvature_uses_separate_samples(tmp_path):
     romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=str(tmp_path),
@@ -312,6 +314,7 @@ def test_run_vi_lagged_curvature_is_saved(tmp_path):
     romtools.workflows.run_vi(
         model=LinearQoiModel(slope=1.0),
         prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
         absolute_work_dir=str(tmp_path),
@@ -342,6 +345,7 @@ def test_run_vi_lagged_restart_matches_uninterrupted_run(tmp_path):
     common = dict(
         model=LinearQoiModel(slope=1.5),
         prior_parameter_space=parameter_space,
+        initial_variational_parameter_space=parameter_space,
         observations=np.array([0.4]),
         observations_covariance=np.array([[0.2 ** 2]]),
         sample_size=8,
@@ -402,6 +406,7 @@ def test_run_vi_rejects_removed_legacy_kwargs():
         romtools.workflows.run_vi(
             model=model,
             prior_parameter_space=variational_parameter_space,
+            initial_variational_parameter_space=variational_parameter_space,
             observations=np.array([0.0]),
             observations_covariance=np.eye(1),
             max_iterations=10,
@@ -486,6 +491,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
     means, stds, _, qois = romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
@@ -627,6 +633,7 @@ def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.array([[0.2**2]]),
         absolute_work_dir=str(tmp_path),
@@ -655,12 +662,18 @@ def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
 
 
 @pytest.mark.mpi_skip
-def test_run_vi_multivariate_newton_supported(tmp_path):
+def test_run_vi_multivariate_prior_with_diagonal_newton_supported(tmp_path):
     model = TwoParameterLinearQoiModel()
-    variational_parameter_space = MultivariateGaussianParameterSpace(
+    prior_parameter_space = MultivariateGaussianParameterSpace(
         parameter_names=["theta0", "theta1"],
         means=np.array([0.0, 0.0]),
         covariance=np.array([[0.4, 0.1], [0.1, 0.3]]),
+        sampler=MonteCarloSampler,
+    )
+    initial_variational_parameter_space = GaussianParameterSpace(
+        parameter_names=["theta0", "theta1"],
+        means=np.array([0.0, 0.0]),
+        stds=np.sqrt(np.array([0.4, 0.3])),
         sampler=MonteCarloSampler,
     )
     observations = np.array([0.2, -0.1])
@@ -668,7 +681,8 @@ def test_run_vi_multivariate_newton_supported(tmp_path):
 
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=model,
-        prior_parameter_space=variational_parameter_space,
+        prior_parameter_space=prior_parameter_space,
+        initial_variational_parameter_space=initial_variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_work_dir=str(tmp_path),
@@ -715,6 +729,7 @@ def test_run_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
     romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_work_dir=str(tmp_path),
@@ -760,6 +775,7 @@ def test_run_vi_accepts_arctan_transform_map(tmp_path):
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
@@ -804,6 +820,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
     romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
@@ -834,6 +851,7 @@ def test_run_vi_restart_continues_optimization_with_physical_restart_mean(tmp_pa
     means, stds, parameter_samples, qois = romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         parameter_mins=np.array([-2.0]),
@@ -884,6 +902,7 @@ def test_run_vi_limits_number_of_restart_files(tmp_path):
     romtools.workflows.run_vi(
         model=model,
         prior_parameter_space=variational_parameter_space,
+        initial_variational_parameter_space=variational_parameter_space,
         observations=observations,
         observations_covariance=observations_covariance,
         absolute_work_dir=str(tmp_path),
