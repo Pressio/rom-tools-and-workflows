@@ -503,10 +503,10 @@ form,</p>
 posterior.</p>
 <section id="vi-paper-benchmark-configuration">
 <h2>VI-paper benchmark configuration<a class="headerlink" href="#vi-paper-benchmark-configuration" title="Link to this heading">#</a></h2>
-<p>The diagonal example reproduces the Newton and multifidelity settings used by
-the VI-paper analytic-sine benchmark. In particular, the production run uses a
-full Hessian, lagged stochastic curvature, natural coordinates, and the same
-Hessian averaging and line-search scales:</p>
+<p>Both examples use the Newton and multifidelity settings from the VI-paper
+analytic-sine benchmark. In particular, the production runs use a full Hessian,
+lagged stochastic curvature with averaging factor <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, natural
+coordinates, and the same line-search scales:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
     <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
     <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
@@ -800,11 +800,10 @@ initializer is instead a <code class="docutils literal notranslate"><span class=
 with the same diagonal prior covariance. Its <em>type</em> selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
 optimization.</p>
-<p>This case uses the same natural Newton metric, full Hessian, regularization,
-line-search scales, FOM/ROM sample allocation, GP configuration, and random
-seed as the paper-matched diagonal case. Full-covariance Newton currently uses
-same-sample curvature rather than the diagonal implementation’s lagged
-curvature averaging. Newton curvature is formed in
+<p>This case uses the same natural Newton metric, full Hessian, lagged curvature
+with <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, regularization, line-search scales, FOM/ROM sample
+allocation, GP configuration, and random seed as the paper-matched diagonal
+case. Newton curvature is formed in
 <span class="math notranslate nohighlight">\((\mu,\operatorname{svec}(\Sigma))\)</span> coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential

@@ -552,8 +552,15 @@ Gaussian target: the expected log joint is linear in <span class="math notransla
 has nonzero second derivative after composition with the exponential
 covariance map. The resulting direction is then mapped back through the
 first-order tangent map and applied with the SPD exponential retraction.</p>
-<p>The current full-covariance Newton path supports
-<code class="docutils literal notranslate"><span class="pre">newton_metric=&quot;natural&quot;</span></code> with <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy=&quot;same_sample&quot;</span></code>.
+<p>Full-covariance natural Newton supports both <code class="docutils literal notranslate"><span class="pre">same_sample</span></code> and <code class="docutils literal notranslate"><span class="pre">lagged</span></code>
+curvature strategies. The public Newton default is <code class="docutils literal notranslate"><span class="pre">lagged</span></code> with
+<code class="docutils literal notranslate"><span class="pre">newton_hessian_averaging_factor=0.25</span></code>. For lagged curvature, the raw
+ordinary-coordinate Hessian is exponentially averaged across accepted states,</p>
+<div class="math notranslate nohighlight">
+\[\bar H_k = \beta \bar H_{k-1} + (1-\beta) H_k,
+\qquad \beta=0.25,\]</div>
+<p>before Fisher whitening and the exponential-map pullback correction are
+applied. Rejected line-search candidates do not update <span class="math notranslate nohighlight">\(\bar H_k\)</span>.
 Both diagonal and full projected Hessian solves can be selected through the
 existing <code class="docutils literal notranslate"><span class="pre">newton_hessian_type</span></code> option. The standard-coordinate
 full-covariance Newton route remains unsupported.</p>
@@ -611,8 +618,8 @@ variate distinct from the multifidelity control variate.</p>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
 <p>A diagonal prior can be paired with a full-covariance variational family by
-supplying a multivariate initializer. Natural-coordinate Newton is selected
-with the standard Newton configuration:</p>
+supplying a multivariate initializer. Natural-coordinate Newton with full,
+lagged curvature is now the public Newton default:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">q0</span> <span class="o">=</span> <span class="n">MultivariateGaussianParameterSpace</span><span class="p">(</span>
     <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span>
     <span class="n">means</span><span class="o">=</span><span class="n">initial_mean</span><span class="p">,</span>
@@ -620,10 +627,7 @@ with the standard Newton configuration:</p>
     <span class="n">sampler</span><span class="o">=</span><span class="n">MonteCarloSampler</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">optimizer</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
-    <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
-    <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">VINewtonOptimizerConfig</span><span class="p">()</span>
 
 <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">qois</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>

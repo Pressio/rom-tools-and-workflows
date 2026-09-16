@@ -56,10 +56,10 @@ posterior.
 VI-paper benchmark configuration
 --------------------------------
 
-The diagonal example reproduces the Newton and multifidelity settings used by
-the VI-paper analytic-sine benchmark. In particular, the production run uses a
-full Hessian, lagged stochastic curvature, natural coordinates, and the same
-Hessian averaging and line-search scales:
+Both examples use the Newton and multifidelity settings from the VI-paper
+analytic-sine benchmark. In particular, the production runs use a full Hessian,
+lagged stochastic curvature with averaging factor :math:`\beta=0.25`, natural
+coordinates, and the same line-search scales:
 
 .. code-block:: python
 
@@ -213,11 +213,10 @@ with the same diagonal prior covariance. Its *type* selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
 optimization.
 
-This case uses the same natural Newton metric, full Hessian, regularization,
-line-search scales, FOM/ROM sample allocation, GP configuration, and random
-seed as the paper-matched diagonal case. Full-covariance Newton currently uses
-same-sample curvature rather than the diagonal implementation's lagged
-curvature averaging. Newton curvature is formed in
+This case uses the same natural Newton metric, full Hessian, lagged curvature
+with :math:`\beta=0.25`, regularization, line-search scales, FOM/ROM sample
+allocation, GP configuration, and random seed as the paper-matched diagonal
+case. Newton curvature is formed in
 :math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
