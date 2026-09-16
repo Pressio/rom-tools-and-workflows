@@ -260,6 +260,7 @@ def test_run_mf_vi_accepts_full_newton_hessian_option(tmp_path):
             gradient_norm_tolerance=0.0,
             max_iterations=1,
             newton_hessian_type="full",
+            newton_regularization_strategy="hessian_norm",
         ),
         line_search_method="legacy",
         line_search_config=romtools.workflows.VILegacyLineSearchConfig(

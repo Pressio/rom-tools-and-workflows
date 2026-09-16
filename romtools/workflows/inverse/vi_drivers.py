@@ -80,6 +80,9 @@ score-function estimator for curvature:
 This is the curvature model used by the Newton update path. The implementation
 supports a metric rescaling via ``newton_metric`` and either diagonal or full
 projected Hessian solves via ``newton_hessian_type``. The
+``newton_regularization_strategy`` option selects either the default absolute
+eigenvalue floor or a floor proportional to the Hessian spectral norm. For the
+natural metric, that norm is evaluated after metric rescaling. The
 ``newton_curvature_strategy`` option controls stochastic coupling: the default
 ``"same_sample"`` reuses the gradient samples, ``"independent"`` evaluates a
 separate batch (whose size is set by ``newton_hessian_num_samples``), and
@@ -161,6 +164,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     _normalize_newton_hessian_type,
     _normalize_newton_curvature_strategy,
     _normalize_newton_metric,
+    _normalize_newton_regularization_strategy,
     _normalize_optimization_method,
     _resolve_line_search_config,
     _resolve_optimizer_config,
@@ -1445,6 +1449,7 @@ def _compute_adam_diagnostics(adam_solver: AdamSolver,
 def _compute_newton_step(state,
                          newton_regularization: float,
                          newton_hessian_type: str = 'diagonal',
+                         newton_regularization_strategy: str = 'absolute',
                          metric_scale: np.ndarray = None,
                          hessian: np.ndarray = None):
     gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
@@ -1463,6 +1468,7 @@ def _compute_newton_step(state,
     solver = NewtonSolver(
         regularization=newton_regularization,
         hessian_type=newton_hessian_type,
+        regularization_strategy=newton_regularization_strategy,
     )
     step = solver.step(transformed_gradient, transformed_hessian)
     if metric_scale is not None:
@@ -2028,6 +2034,7 @@ def _validate_run_vi_inputs(absolute_work_dir: str,
                             max_log_std_update: float,
                             max_mean_update_std: float,
                             newton_regularization: float,
+                            newton_regularization_strategy: str,
                             newton_hessian_type: str,
                             covariance_regularization: float,
                             restart_files_to_keep: int,
@@ -2076,6 +2083,7 @@ def _validate_run_vi_inputs(absolute_work_dir: str,
     if max_mean_update_std is not None:
         assert max_mean_update_std > 0.0, "max_mean_update_std must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
+    _normalize_newton_regularization_strategy(newton_regularization_strategy)
     _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
@@ -2309,6 +2317,9 @@ def run_vi(model: QoiModel,
     newton_defaults = VINewtonOptimizerConfig()
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
     newton_regularization = newton_defaults.newton_regularization
+    newton_regularization_strategy = _normalize_newton_regularization_strategy(
+        newton_defaults.newton_regularization_strategy
+    )
     newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     newton_curvature_strategy = _normalize_newton_curvature_strategy(
         newton_defaults.newton_curvature_strategy
@@ -2319,6 +2330,9 @@ def run_vi(model: QoiModel,
         max_mean_update_std = resolved_optimizer_config.max_mean_update_std
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
+        newton_regularization_strategy = _normalize_newton_regularization_strategy(
+            resolved_optimizer_config.newton_regularization_strategy
+        )
         newton_hessian_type = _normalize_newton_hessian_type(
             resolved_optimizer_config.newton_hessian_type
         )
@@ -2412,6 +2426,7 @@ def run_vi(model: QoiModel,
         max_log_std_update=max_log_std_update,
         max_mean_update_std=max_mean_update_std,
         newton_regularization=newton_regularization,
+        newton_regularization_strategy=newton_regularization_strategy,
         newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
@@ -3313,6 +3328,7 @@ def run_vi(model: QoiModel,
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
                 newton_regularization,
+                newton_regularization_strategy=newton_regularization_strategy,
                 newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
                 hessian=curvature_hessian,

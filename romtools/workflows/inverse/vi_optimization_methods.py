@@ -58,6 +58,7 @@ class VINewtonOptimizerConfig:
     newton_curvature_strategy: str = 'same_sample'
     newton_hessian_num_samples: int = None
     newton_hessian_averaging_factor: float = 0.9
+    newton_regularization_strategy: str = 'absolute'
 
 
 @dataclass
@@ -142,6 +143,17 @@ def _normalize_newton_hessian_type(newton_hessian_type: str):
     raise ValueError(
         f"Unsupported newton_hessian_type '{newton_hessian_type}'. "
         "Supported options are 'diagonal' and 'full'."
+    )
+
+
+def _normalize_newton_regularization_strategy(strategy: str) -> str:
+    """Normalize the eigenvalue-floor scaling used by the Newton solve."""
+    normalized = strategy.strip().lower()
+    if normalized in ('absolute', 'hessian_norm'):
+        return normalized
+    raise ValueError(
+        f"Unsupported newton_regularization_strategy '{strategy}'. "
+        "Supported options are 'absolute' and 'hessian_norm'."
     )
 
 
@@ -484,21 +496,39 @@ class AdamSolver:
 class NewtonSolver:
     """Generic Newton solver supporting diagonal or dense Hessians."""
 
-    def __init__(self, regularization: float, hessian_type: str = 'diagonal'):
+    def __init__(self,
+                 regularization: float,
+                 hessian_type: str = 'diagonal',
+                 regularization_strategy: str = 'absolute'):
         self.regularization = regularization
         self.hessian_type = _normalize_newton_hessian_type(hessian_type)
+        self.regularization_strategy = _normalize_newton_regularization_strategy(
+            regularization_strategy
+        )
+
+    def _regularization_floor(self, hessian_norm: float) -> float:
+        if self.regularization_strategy == 'hessian_norm':
+            safe_hessian_norm = max(hessian_norm, np.finfo(float).eps)
+            return self.regularization * safe_hessian_norm
+        return self.regularization
 
     def _project_hessian(self, hessian) -> np.ndarray:
         hessian = np.nan_to_num(hessian, nan=0.0, posinf=0.0, neginf=0.0)
         if hessian.ndim == 1:
-            projected_diagonal = np.maximum(np.abs(hessian), self.regularization)
+            hessian_norm = float(np.max(np.abs(hessian)))
+            regularization_floor = self._regularization_floor(hessian_norm)
+            projected_diagonal = np.maximum(np.abs(hessian), regularization_floor)
             return np.diag(projected_diagonal)
         if hessian.ndim != 2 or hessian.shape[0] != hessian.shape[1]:
             raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
         sym_hessian = 0.5 * (hessian + hessian.T)
         eigenvalues, eigenvectors = np.linalg.eigh(sym_hessian)
-         
-        projected_eigenvalues = np.maximum(np.abs(eigenvalues), self.regularization)
+
+        hessian_norm = float(np.max(np.abs(eigenvalues)))
+        regularization_floor = self._regularization_floor(hessian_norm)
+        projected_eigenvalues = np.maximum(
+            np.abs(eigenvalues), regularization_floor
+        )
         return (eigenvectors @ np.diag(projected_eigenvalues)) @ eigenvectors.T
 
     def step(self,
@@ -513,9 +543,13 @@ class NewtonSolver:
                 hessian = np.diag(hessian)
             elif hessian.ndim != 1:
                 raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
+            sanitized_hessian = np.nan_to_num(
+                hessian, nan=0.0, posinf=0.0, neginf=0.0
+            )
+            hessian_norm = float(np.max(np.abs(sanitized_hessian)))
+            regularization_floor = self._regularization_floor(hessian_norm)
             projected_diagonal = np.maximum(
-                np.abs(np.nan_to_num(hessian, nan=0.0, posinf=0.0, neginf=0.0)),
-                self.regularization,
+                np.abs(sanitized_hessian), regularization_floor
             )
             print(
                 'Gradient and hessian norms:',
