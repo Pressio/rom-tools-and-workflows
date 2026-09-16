@@ -34,7 +34,7 @@ from romtools.workflows.inverse.full_covariance_mf_vi_drivers import (
 from romtools.workflows.inverse.full_covariance_auto_mf_vi import (
     mf_vi_with_auto_rom as _full_auto_mf_vi,
 )
-from romtools.workflows.inverse.full_covariance_newton import (
+from romtools.workflows.inverse.full_covariance_lagged_newton import (
     run_vi as _full_newton_run_vi,
     run_mf_vi as _full_newton_run_mf_vi,
     mf_vi_with_auto_rom as _full_newton_auto_mf_vi,
