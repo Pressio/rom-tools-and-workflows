@@ -124,8 +124,8 @@ for a symmetric perturbation :math:`E`,
    =-\frac{1}{2}P E P.
 
 Natural coordinates are introduced by locally whitening the exact Gaussian
-Fisher metric. If :math:`A` is a symmetric tangent coordinate, the whitening
-map is
+Fisher metric. If :math:`A` is a symmetric tangent coordinate, the first-order
+whitening map is
 
 .. math::
 
@@ -133,17 +133,53 @@ map is
    \qquad
    \delta\Sigma = \sqrt{2}\,L A L^T.
 
-With the corresponding linear map :math:`S`, the local Newton system is
+The covariance step is applied through the exponential local map
+
+.. math::
+
+   \Sigma(A)=L\exp(\sqrt{2}A)L^T.
+
+Because this map is nonlinear, transforming the ordinary Hessian as
+:math:`S^T H S` alone is not the Hessian of the objective in the coordinates
+used by the actual covariance update. Let :math:`B_a` denote the
+Frobenius-orthonormal symmetric basis associated with ``svec`` and let
+:math:`G_\Sigma=\nabla_\Sigma\mathcal L`. At the local origin,
+
+.. math::
+
+   \frac{\partial^2\Sigma}
+        {\partial z_a\partial z_b}
+   =L(B_aB_b+B_bB_a)L^T.
+
+The covariance-covariance block therefore receives the pullback correction
+
+.. math::
+
+   C_{ab}
+   =\left\langle
+      G_\Sigma,
+      L(B_aB_b+B_bB_a)L^T
+    \right\rangle_F.
+
+With :math:`S` denoting the first-order Fisher-whitening map, the local Newton
+system uses
 
 .. math::
 
    g_N=S^Tg,
    \qquad
-   H_N=S^T H S,
+   H_N=S^T H S+
+   \begin{bmatrix}
+      0 & 0\\
+      0 & C
+   \end{bmatrix}.
 
-followed by the same regularized Newton solve used by diagonal VI. The step is
-mapped back with :math:`S`. This is a local Fisher-whitened Newton method; it
-does not add Christoffel-symbol terms from a full Riemannian Hessian.
+This is the exact second-order pullback of the ELBO at the origin of the local
+exponential covariance coordinates. The correction is important even for a
+Gaussian target: the expected log joint is linear in :math:`\Sigma`, but it
+has nonzero second derivative after composition with the exponential
+covariance map. The resulting direction is then mapped back through the
+first-order tangent map and applied with the SPD exponential retraction.
 
 The current full-covariance Newton path supports
 ``newton_metric="natural"`` with ``newton_curvature_strategy="same_sample"``.
@@ -157,9 +193,11 @@ MF-VI Newton curvature
 For full-covariance MF-VI, the high- and low-fidelity second-order
 score-function contributions are packed as complete matrices and passed
 through the existing multifidelity control-variate estimator. The analytic
-entropy Hessian is added once after the multifidelity correction. This mirrors
-the treatment of the full packed gradient and preserves the HF/LF coupling of
-mean and covariance directions.
+entropy Hessian is added once after the multifidelity correction. After this
+ordinary-coordinate curvature is assembled, the same exponential-map
+pullback correction described above is applied using the multifidelity
+covariance gradient. This mirrors the treatment of the full packed gradient
+and preserves the HF/LF coupling of mean and covariance directions.
 
 SPD-preserving covariance update
 --------------------------------
@@ -228,7 +266,7 @@ with the standard Newton configuration::
 
    optimizer = romtools.workflows.VINewtonOptimizerConfig(
        newton_metric="natural",
-       newton_regularization=1e-4,
+       newton_regularization=5e-4,
    )
 
    mean, std, samples, qois = romtools.workflows.run_vi(
