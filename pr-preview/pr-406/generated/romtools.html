@@ -385,6 +385,20 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-design-and-philosophy">Scope, Design and Philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#content">Content</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demos-tutorials">Demos/tutorials</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license">License</a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -444,7 +458,8 @@
                   
   <section id="module-romtools">
 <span id="romtools"></span><h1>romtools<a class="headerlink" href="#module-romtools" title="Link to this heading">#</a></h1>
-<p># Scope, Design and Philosophy</p>
+<section id="scope-design-and-philosophy">
+<h2>Scope, Design and Philosophy<a class="headerlink" href="#scope-design-and-philosophy" title="Link to this heading">#</a></h2>
 <p>The ROM tools and workflows Python library comprises a set of algorithms for
 constructing and exploiting ROMs.
 The library is designed internally in terms of <em>abstract base classes</em> that encapsulate
@@ -452,34 +467,40 @@ all the information needed to run a given algorithm.
 The philosophy is that, for any given application, the user “simply” needs to create
 a class that meets the required API of the abstract base class.
 Once this class is complete, the user gains access to all of our existing algorithms.</p>
-<p># Content</p>
+</section>
+<section id="content">
+<h2>Content<a class="headerlink" href="#content" title="Link to this heading">#</a></h2>
 <p>The Python library, called <cite>romtools</cite>, contains abstract interfaces and functions required for, e.g.,</p>
-<ul>
+<ul class="simple">
 <li><p>Constructing parameter spaces</p></li>
-<li><p>Constructing vector subspaces
-- Reduced-basis methods
-- Proper orthogonal decomposition</p>
-<blockquote>
-<div><ul class="simple">
+<li><p>Constructing vector subspaces</p>
+<ul>
+<li><p>Reduced-basis methods</p></li>
+<li><p>Proper orthogonal decomposition</p>
+<ul>
 <li><p>Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
 in different inner products</p></li>
 </ul>
-</div></blockquote>
+</li>
+</ul>
 </li>
 <li><p>Constructing and exploiting ROMs via outer loop workflows</p>
-<ul class="simple">
+<ul>
 <li><p>ROM construction via reduced-basis greedy (RB-Greedy)</p></li>
 <li><p>ROM/FOM exploitation via sampling</p></li>
 <li><p>ROM/FOM exploitation via Dakota-driven sampling</p></li>
 </ul>
 </li>
 </ul>
-<p># Demos/tutorials</p>
+</section>
+<section id="demos-tutorials">
+<h2>Demos/tutorials<a class="headerlink" href="#demos-tutorials" title="Link to this heading">#</a></h2>
 <p>Please see the Demos section of the documentation for demos and tutorials.</p>
-<p># License
-<code class="docutils literal notranslate"><span class="pre">`plaintext</span>
-<span class="pre">..</span> <span class="pre">include::</span> <span class="pre">../LICENSE</span>
-<span class="pre">`</span></code></p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Link to this heading">#</a></h2>
+<p>See the <a class="reference internal" href="../demos/license.html"><span class="doc">license information</span></a>.</p>
+</section>
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -502,7 +523,7 @@ in different inner products</p></li>
 <td><p>This module defines the API to work with a vector subspace.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.html#module-romtools.workflows" title="romtools.workflows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows</span></code></a></p></td>
-<td><p>The workflows module contains all of our &quot;outerloop&quot; workflows used for ROM construction and ROM exploitation. We currently support: - Greedy sampling for construction of reduced-basis ROMs - Random sampling for model exploitation - Coupling classes to Dakota for   - Random sampling.</p></td>
+<td><p>The workflows module contains all of our &quot;outerloop&quot; workflows used for ROM construction and ROM exploitation.</p></td>
 </tr>
 </tbody>
 </table>
@@ -523,6 +544,21 @@ in different inner products</p></li>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-design-and-philosophy">Scope, Design and Philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#content">Content</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demos-tutorials">Demos/tutorials</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license">License</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

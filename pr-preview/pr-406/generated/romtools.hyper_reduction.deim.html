@@ -750,30 +750,26 @@ Basis for function to be approximated.</p></li>
 <dd><p>Implementation of the discrete empirical method as described in Algorithm 1 of
 S. Chaturantabut and D. C. Sorensen, “Discrete Empirical Interpolation for
 nonlinear model reduction,” doi: 10.1109/CDC.2009.5400045.</p>
-<dl class="simple">
-<dt>:param <span class="math notranslate nohighlight">\(\mathbf{U} \in \mathbb{R}^{m \times n}\)</span>: <span class="math notranslate nohighlight">\(m\)</span> is the number of DOFs and</dt><dd><p><span class="math notranslate nohighlight">\(n\)</span> is the number of samples.
-Function basis in matrix format.</p>
-</dd>
-</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>where</strong> – <span class="math notranslate nohighlight">\(m\)</span> is the number of DOFs and
+<li><p><strong>U</strong> – <span class="math notranslate nohighlight">\(\mathbf{U} \in \mathbb{R}^{m \times n}\)</span>, where
+<span class="math notranslate nohighlight">\(m\)</span> is the number of DOFs and
 <span class="math notranslate nohighlight">\(n\)</span> is the number of samples.
 Function basis in matrix format.</p></li>
 <li><p><strong>comm</strong> – Optional communicator object. If none, algorithm assumes shared-memory data.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p><span class="math notranslate nohighlight">\(\mathrm{indices} \in \mathbb{I}^{n}\)</span>: sample mesh indices</p>
-<dl class="simple">
-<dt>else:</dt><dd><p>sample mesh local indices and the corresponding owing ranks</p>
-</dd>
-</dl>
+<dd class="field-even"><p><p><span class="math notranslate nohighlight">\(\mathrm{indices} \in \mathbb{I}^{n}\)</span>: sample mesh indices.</p>
+<p>Otherwise:</p>
+<blockquote>
+<div><p>Sample mesh local indices and the corresponding owing ranks.</p>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>if comm==None</p>
+<dd class="field-odd"><p>If <code class="docutils literal notranslate"><span class="pre">comm</span> <span class="pre">==</span> <span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -821,29 +817,24 @@ sample indices defining <span class="math notranslate nohighlight">\(\mathbf{P}\
 <p>We perform DEIM on each state variable, and
 then return the union of all indices.
 Repeated indices are removed.</p>
-<dl class="simple">
-<dt>:param <span class="math notranslate nohighlight">\(\mathbf{U} \in \mathbb{R}^{l \times m \times n}\)</span>: <span class="math notranslate nohighlight">\(l\)</span> is the number of variables,</dt><dd><p><span class="math notranslate nohighlight">\(m\)</span> is the number of DOFs and
-<span class="math notranslate nohighlight">\(n\)</span> the number of samples.
-Multi-dimensional function basis in tensor format.</p>
-</dd>
-</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>where</strong> – <span class="math notranslate nohighlight">\(l\)</span> is the number of variables,
+<dd class="field-odd"><p><strong>U</strong> – <span class="math notranslate nohighlight">\(\mathbf{U} \in \mathbb{R}^{l \times m \times n}\)</span>, where
+<span class="math notranslate nohighlight">\(l\)</span> is the number of variables,
 <span class="math notranslate nohighlight">\(m\)</span> is the number of DOFs and
 <span class="math notranslate nohighlight">\(n\)</span> the number of samples.
 Multi-dimensional function basis in tensor format.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p><span class="math notranslate nohighlight">\(\mathrm{indices} \in \mathbb{I}^{n}\)</span>: sample mesh indices</p>
-<dl class="simple">
-<dt>else:</dt><dd><p>sample mesh local indices and the corresponding owing ranks</p>
-</dd>
-</dl>
+<dd class="field-even"><p><p><span class="math notranslate nohighlight">\(\mathrm{indices} \in \mathbb{I}^{n}\)</span>: sample mesh indices.</p>
+<p>Otherwise:</p>
+<blockquote>
+<div><p>Sample mesh local indices and the corresponding owing ranks.</p>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>if comm==None</p>
+<dd class="field-odd"><p>If <code class="docutils literal notranslate"><span class="pre">comm</span> <span class="pre">==</span> <span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>

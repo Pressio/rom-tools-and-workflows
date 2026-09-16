@@ -56,12 +56,12 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 14,
+   "execution_count": null,
    "id": "217759fb-6ec9-4488-897b-e5b4db9f4b2c",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# In this example, we make a composite vector space where each state variable in our snapshot matrix has each own basis\n",
+    "# In this example, we create a composite vector space in which each state variable in the snapshot matrix has its own basis\n",
     "# (This is often times referred to as \"vector POD\" in the literature\n",
     "\n",
     "#Like the last tutorial, let's use a truncater that controls for how we want to truncate our basis.\n",
@@ -70,7 +70,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 25,
+   "execution_count": null,
    "id": "8dddecd2-01f7-4b7c-955e-456a1974fefb",
    "metadata": {},
    "outputs": [
@@ -86,7 +86,7 @@
     "#Now, let's construct a vector space using POD for the DENSITY VARIABLE ONLY\n",
     "my_vector_space_rho = vector_space.VectorSpaceFromPOD(snapshots[0:1],truncater=my_truncater)\n",
     "\n",
-    "#Let's look a the shape of our vector space:\n",
+    "#Let's look at the shape of our vector space:\n",
     "print('The vector space for rho is of shape: ', my_vector_space_rho.extents())"
    ]
   },

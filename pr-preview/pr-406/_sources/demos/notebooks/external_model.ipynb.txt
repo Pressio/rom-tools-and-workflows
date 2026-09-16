@@ -72,7 +72,7 @@
     "    # a submission to the HPCs)\n",
     "    os.system('python adr_1d/adr_1d.py')\n",
     "\n",
-    "    #Let's take a peak at a solution\n",
+    "    # Let's take a peek at a solution\n",
     "    sol = np.load('solution.npz')\n",
     "    plt.plot(sol['x'],sol['u'])\n",
     "    plt.xlabel(r'$x$')\n",

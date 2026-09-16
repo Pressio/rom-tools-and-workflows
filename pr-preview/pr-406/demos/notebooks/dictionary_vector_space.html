@@ -501,17 +501,17 @@
 <span class="n">my_affine_vector_space</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">DictionaryVectorSpace</span><span class="p">(</span><span class="n">snapshots</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">::],</span><span class="n">shifter</span><span class="o">=</span><span class="n">my_shifter</span><span class="p">)</span>
 
 <span class="c1">##It's important to note that we do not do a deep copy of the snapshot matrix for performance reasons.</span>
-<span class="c1">##Once you pass us the snapshot tensor, we will modify the data in place. </span>
+<span class="c1">##Once you pass us the snapshot tensor, we will modify the data in place.</span>
 
 
-<span class="c1">#What if I didn't what an affine offset? We can just do:</span>
+<span class="c1"># What if I didn't want an affine offset? We can just do:</span>
 <span class="c1">#my_vector_space = vector_space.DictionaryVectorSpace(snapshots)</span>
 
 <span class="c1">#We can view the basis and shift vector:</span>
 <span class="n">basis</span> <span class="o">=</span> <span class="n">my_affine_vector_space</span><span class="o">.</span><span class="n">get_basis</span><span class="p">()</span>
 <span class="n">shift_vector</span> <span class="o">=</span> <span class="n">my_affine_vector_space</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
 
-<span class="c1">#We can look at the density compoenent of the first basis:</span>
+<span class="c1">#We can look at the density component of the first basis:</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">basis</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'Index'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\rho$'</span><span class="p">)</span>
