@@ -1,0 +1,14 @@
+romtools.workflows.inverse.full\_covariance\_vi\_drivers
+========================================================
+
+.. automodule:: romtools.workflows.inverse.full_covariance_vi_drivers
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mf_vi_with_auto_rom
+      run_mf_vi
+      run_vi
+   

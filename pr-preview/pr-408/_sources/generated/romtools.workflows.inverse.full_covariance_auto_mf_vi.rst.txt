@@ -1,0 +1,12 @@
+romtools.workflows.inverse.full\_covariance\_auto\_mf\_vi
+=========================================================
+
+.. automodule:: romtools.workflows.inverse.full_covariance_auto_mf_vi
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mf_vi_with_auto_rom
+   
