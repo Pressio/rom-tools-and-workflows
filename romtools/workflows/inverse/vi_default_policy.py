@@ -30,7 +30,8 @@ def _set_dataclass_default(cls, field_name: str, value) -> None:
     cls.__dataclass_fields__[field_name].default = value
 
 
-# Newton defaults shared by single- and multifidelity VI.
+# Newton defaults shared by single- and multifidelity VI.  Lagged curvature
+# follows the VI-paper convention beta * H_previous + (1-beta) * H_current.
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_metric", "natural")
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_regularization", 5.0e-4)
 _set_dataclass_default(VINewtonOptimizerConfig, "newton_hessian_type", "full")
