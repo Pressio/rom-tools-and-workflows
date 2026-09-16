@@ -8,8 +8,10 @@ romtools.workflows.inverse.vi\_jackknife\_regularization
 
    .. autosummary::
    
+      get_last_jackknife_hessian_magnitude_history
       get_last_jackknife_hessian_sigma_history
       get_last_jackknife_regularization_history
+      get_last_jackknife_relative_uncertainty_history
       run_mf_vi
       run_vi
    

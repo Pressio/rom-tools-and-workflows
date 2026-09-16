@@ -428,8 +428,10 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><code class="docutils literal notranslate"><span class="pre">VIJackknifeRegularizationConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_magnitude_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_relative_uncertainty_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
 </ul>
@@ -504,30 +506,39 @@
 <span id="romtools-workflows-inverse-vi-jackknife-regularization"></span><h1>romtools.workflows.inverse.vi_jackknife_regularization<a class="headerlink" href="#module-romtools.workflows.inverse.vi_jackknife_regularization" title="Link to this heading">#</a></h1>
 <p>Jackknife-driven adaptive regularization for independent-Hessian Newton VI.</p>
 <p>This module provides an experimental wrapper around the existing VI and MFVI
-Newton drivers.  The gradient and Hessian estimators remain statistically
-independent via <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy='independent'</span></code>.  The independent
+Newton drivers. The gradient and Hessian estimators remain statistically
+independent via <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy='independent'</span></code>. The independent
 Hessian batch is delete-one jackknifed, each replicate is mapped into the same
 natural/standard metric coordinates used by the Newton solve, and the
-regularization is set from the resulting spectral-norm curvature uncertainty.</p>
-<p>The adaptive rule is</p>
+regularization is expressed through the relative spectral uncertainty</p>
 <blockquote>
-<div><p>lambda = clip(scale * sigma_H, minimum, maximum),</p>
+<div><p>rho_H = sigma_H / ||H||_2.</p>
+</div></blockquote>
+<p>The applied dimensional regularization is</p>
+<blockquote>
+<div><p>lambda = clip(scale * rho_H * ||H||_2, minimum, maximum),</p>
 </div></blockquote>
 <p>where</p>
 <blockquote>
 <div><p>sigma_H^2 = (N-1)/N * sum_i ||H_{(-i)} - mean(H_{(-j)})||_2^2.</p>
 </div></blockquote>
-<p>The Hessians in this expression are sign-projected (absolute eigenvalues) but
+<p>The Hessians in these expressions are sign-projected (absolute eigenvalues) but
 <em>not</em> regularized, so the statistical uncertainty is measured before damping.
 No extra model evaluations are required beyond the independent Hessian batch.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history</span></code></a>()</p></td>
-<td><p>Return Hessian uncertainty values from the most recent wrapper run.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_magnitude_history</span></code></a>()</p></td>
+<td><p>Return projected Hessian spectral norms from the most recent wrapper run.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history</span></code></a>()</p></td>
+<td><p>Return absolute Hessian uncertainty from the most recent wrapper run.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history</span></code></a>()</p></td>
 <td><p>Return regularization values selected by the most recent wrapper run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history" title="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_jackknife_relative_uncertainty_history</span></code></a>()</p></td>
+<td><p>Return sigma_H / ||H||_2 from the most recent wrapper run.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi" title="romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_mf_vi</span></code></a>(*args[, ...])</p></td>
 <td><p>Run MFVI with optional independent-Hessian jackknife regularization.</p></td>
@@ -565,9 +576,20 @@ No extra model evaluations are required beyond the independent Hessian batch.</p
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_hessian_magnitude_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_hessian_magnitude_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history" title="Link to this definition">#</a></dt>
+<dd><p>Return projected Hessian spectral norms from the most recent wrapper run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history">
 <span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_hessian_sigma_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_hessian_sigma_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history" title="Link to this definition">#</a></dt>
-<dd><p>Return Hessian uncertainty values from the most recent wrapper run.</p>
+<dd><p>Return absolute Hessian uncertainty from the most recent wrapper run.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>ndarray</em></p>
@@ -579,6 +601,17 @@ No extra model evaluations are required beyond the independent Hessian batch.</p
 <dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history">
 <span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_regularization_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_regularization_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history" title="Link to this definition">#</a></dt>
 <dd><p>Return regularization values selected by the most recent wrapper run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.inverse.vi_jackknife_regularization.</span></span><span class="sig-name descname"><span class="pre">get_last_jackknife_relative_uncertainty_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_jackknife_regularization.html#get_last_jackknife_relative_uncertainty_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history" title="Link to this definition">#</a></dt>
+<dd><p>Return sigma_H / ||H||_2 from the most recent wrapper run.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>ndarray</em></p>
@@ -634,8 +667,10 @@ No extra model evaluations are required beyond the independent Hessian batch.</p
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.VIJackknifeRegularizationConfig"><code class="docutils literal notranslate"><span class="pre">VIJackknifeRegularizationConfig</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_magnitude_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_hessian_sigma_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_regularization_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_regularization_history()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history"><code class="docutils literal notranslate"><span class="pre">get_last_jackknife_relative_uncertainty_history()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_mf_vi"><code class="docutils literal notranslate"><span class="pre">run_mf_vi()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.inverse.vi_jackknife_regularization.run_vi"><code class="docutils literal notranslate"><span class="pre">run_vi()</span></code></a></li>
 </ul>

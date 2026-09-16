@@ -376,21 +376,23 @@
 <span></span><span class="sd">"""Jackknife-driven adaptive regularization for independent-Hessian Newton VI.</span>
 
 <span class="sd">This module provides an experimental wrapper around the existing VI and MFVI</span>
-<span class="sd">Newton drivers.  The gradient and Hessian estimators remain statistically</span>
-<span class="sd">independent via ``newton_curvature_strategy='independent'``.  The independent</span>
+<span class="sd">Newton drivers. The gradient and Hessian estimators remain statistically</span>
+<span class="sd">independent via ``newton_curvature_strategy='independent'``. The independent</span>
 <span class="sd">Hessian batch is delete-one jackknifed, each replicate is mapped into the same</span>
 <span class="sd">natural/standard metric coordinates used by the Newton solve, and the</span>
-<span class="sd">regularization is set from the resulting spectral-norm curvature uncertainty.</span>
+<span class="sd">regularization is expressed through the relative spectral uncertainty</span>
 
-<span class="sd">The adaptive rule is</span>
+<span class="sd">    rho_H = sigma_H / ||H||_2.</span>
 
-<span class="sd">    lambda = clip(scale * sigma_H, minimum, maximum),</span>
+<span class="sd">The applied dimensional regularization is</span>
+
+<span class="sd">    lambda = clip(scale * rho_H * ||H||_2, minimum, maximum),</span>
 
 <span class="sd">where</span>
 
 <span class="sd">    sigma_H^2 = (N-1)/N * sum_i ||H_{(-i)} - mean(H_{(-j)})||_2^2.</span>
 
-<span class="sd">The Hessians in this expression are sign-projected (absolute eigenvalues) but</span>
+<span class="sd">The Hessians in these expressions are sign-projected (absolute eigenvalues) but</span>
 <span class="sd">*not* regularized, so the statistical uncertainty is measured before damping.</span>
 <span class="sd">No extra model evaluations are required beyond the independent Hessian batch.</span>
 <span class="sd">"""</span>
@@ -442,8 +444,12 @@
     <span class="n">newton_config</span><span class="p">:</span> <span class="n">VINewtonOptimizerConfig</span>
     <span class="n">current_regularization</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">current_sigma</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">current_hessian_magnitude</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">current_relative_uncertainty</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
     <span class="n">sigma_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">hessian_magnitude_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">relative_uncertainty_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
 
 
 <span class="n">_ACTIVE_CONTEXT</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">_RegularizationContext</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span>
@@ -451,6 +457,8 @@
 <span class="p">)</span>
 <span class="n">_LAST_REGULARIZATION_HISTORY</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">_LAST_SIGMA_HISTORY</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">_LAST_HESSIAN_MAGNITUDE_HISTORY</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">_LAST_RELATIVE_UNCERTAINTY_HISTORY</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
 
 <div class="viewcode-block" id="get_last_jackknife_regularization_history">
@@ -464,8 +472,24 @@
 <div class="viewcode-block" id="get_last_jackknife_hessian_sigma_history">
 <a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_jackknife_regularization.html#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_sigma_history">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_last_jackknife_hessian_sigma_history</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Return Hessian uncertainty values from the most recent wrapper run."""</span>
+<span class="w">    </span><span class="sd">"""Return absolute Hessian uncertainty from the most recent wrapper run."""</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_LAST_SIGMA_HISTORY</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_last_jackknife_hessian_magnitude_history">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_jackknife_regularization.html#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_hessian_magnitude_history">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_last_jackknife_hessian_magnitude_history</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return projected Hessian spectral norms from the most recent wrapper run."""</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_LAST_HESSIAN_MAGNITUDE_HISTORY</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_last_jackknife_relative_uncertainty_history">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_jackknife_regularization.html#romtools.workflows.inverse.vi_jackknife_regularization.get_last_jackknife_relative_uncertainty_history">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_last_jackknife_relative_uncertainty_history</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return sigma_H / ||H||_2 from the most recent wrapper run."""</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_LAST_RELATIVE_UNCERTAINTY_HISTORY</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 
 
@@ -542,6 +566,11 @@
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">count</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">squared_norms</span><span class="p">)))</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_relative_hessian_uncertainty</span><span class="p">(</span><span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">hessian_magnitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">hessian_magnitude</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tiny</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span> <span class="o">/</span> <span class="n">denominator</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_vi_hessian_sigma</span><span class="p">(</span><span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="n">optimizer_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"optimizer_samples"</span><span class="p">])</span>
     <span class="n">parameter_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"parameter_samples"</span><span class="p">])</span>
@@ -601,19 +630,26 @@
     <span class="k">return</span> <span class="n">_jackknife_spectral_sigma</span><span class="p">(</span><span class="n">hessians</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_select_regularization</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_select_regularization</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">hessian_magnitude</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">relative_uncertainty</span> <span class="o">=</span> <span class="n">_relative_hessian_uncertainty</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">hessian_magnitude</span><span class="p">)</span>
+    <span class="n">dimensional_shift</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="n">relative_uncertainty</span> <span class="o">*</span> <span class="n">hessian_magnitude</span>
     <span class="n">regularization</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
-        <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">,</span>
+        <span class="n">dimensional_shift</span><span class="p">,</span>
         <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">minimum</span><span class="p">,</span>
         <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">maximum</span><span class="p">,</span>
     <span class="p">))</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">current_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">current_hessian_magnitude</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hessian_magnitude</span><span class="p">)</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">current_relative_uncertainty</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">relative_uncertainty</span><span class="p">)</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">current_regularization</span> <span class="o">=</span> <span class="n">regularization</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">sigma_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">hessian_magnitude_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">hessian_magnitude</span><span class="p">))</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">relative_uncertainty_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">relative_uncertainty</span><span class="p">))</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">regularization</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span>
         <span class="s2">"Jackknife Hessian regularization: "</span>
-        <span class="sa">f</span><span class="s2">"sigma_H=</span><span class="si">{</span><span class="n">sigma</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">, lambda=</span><span class="si">{</span><span class="n">regularization</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"sigma_H=</span><span class="si">{</span><span class="n">sigma</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">, ||H||_2=</span><span class="si">{</span><span class="n">hessian_magnitude</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">, "</span>
+        <span class="sa">f</span><span class="s2">"rho_H=</span><span class="si">{</span><span class="n">relative_uncertainty</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">, lambda=</span><span class="si">{</span><span class="n">regularization</span><span class="si">:</span><span class="s2">.6e</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">regularization</span>
 
@@ -621,6 +657,7 @@
 <span class="nd">@contextmanager</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">_regularization_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
     <span class="k">global</span> <span class="n">_LAST_REGULARIZATION_HISTORY</span><span class="p">,</span> <span class="n">_LAST_SIGMA_HISTORY</span>
+    <span class="k">global</span> <span class="n">_LAST_HESSIAN_MAGNITUDE_HISTORY</span><span class="p">,</span> <span class="n">_LAST_RELATIVE_UNCERTAINTY_HISTORY</span>
     <span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">yield</span>
         <span class="k">return</span>
@@ -637,8 +674,14 @@
         <span class="n">arguments</span> <span class="o">=</span> <span class="n">_adaptive</span><span class="o">.</span><span class="n">_bind</span><span class="p">(</span><span class="n">previous_vi_state</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">run_base</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"run_directory_base"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
         <span class="k">if</span> <span class="s2">"hessian_run_"</span> <span class="ow">in</span> <span class="n">run_base</span><span class="p">:</span>
-            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_vi_hessian_sigma</span><span class="p">(</span>
-                <span class="n">arguments</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="n">_vi_hessian_sigma</span><span class="p">(</span><span class="n">arguments</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+            <span class="n">raw_hessian</span> <span class="o">=</span> <span class="n">previous_vi_get_hessian</span><span class="p">(</span>
+                <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">newton_config</span><span class="o">.</span><span class="n">newton_hessian_type</span>
+            <span class="p">)</span>
+            <span class="n">projected</span> <span class="o">=</span> <span class="n">_metric_projected_hessian</span><span class="p">(</span><span class="n">raw_hessian</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_magnitude"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">projected</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span>
 
@@ -647,21 +690,35 @@
         <span class="n">arguments</span> <span class="o">=</span> <span class="n">_adaptive</span><span class="o">.</span><span class="n">_bind</span><span class="p">(</span><span class="n">previous_mf_state</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">iteration_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iteration_directory"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">iteration_directory</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"/hessian"</span><span class="p">):</span>
-            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mf_hessian_sigma</span><span class="p">(</span>
-                <span class="n">arguments</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="n">_mf_hessian_sigma</span><span class="p">(</span><span class="n">arguments</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+            <span class="n">raw_hessian</span> <span class="o">=</span> <span class="n">previous_mf_get_hessian</span><span class="p">(</span>
+                <span class="n">state</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">newton_config</span><span class="o">.</span><span class="n">newton_hessian_type</span>
+            <span class="p">)</span>
+            <span class="n">projected</span> <span class="o">=</span> <span class="n">_metric_projected_hessian</span><span class="p">(</span><span class="n">raw_hessian</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_magnitude"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">projected</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">vi_get_hessian</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">newton_hessian_type</span><span class="p">):</span>
         <span class="n">hessian</span> <span class="o">=</span> <span class="n">previous_vi_get_hessian</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">newton_hessian_type</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">"jackknife_hessian_sigma"</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
-            <span class="n">_select_regularization</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]))</span>
+            <span class="n">_select_regularization</span><span class="p">(</span>
+                <span class="n">ctx</span><span class="p">,</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]),</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_magnitude"</span><span class="p">]),</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">hessian</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">mf_get_hessian</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">newton_hessian_type</span><span class="p">):</span>
         <span class="n">hessian</span> <span class="o">=</span> <span class="n">previous_mf_get_hessian</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">newton_hessian_type</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">"jackknife_hessian_sigma"</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
-            <span class="n">_select_regularization</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]))</span>
+            <span class="n">_select_regularization</span><span class="p">(</span>
+                <span class="n">ctx</span><span class="p">,</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_sigma"</span><span class="p">]),</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"jackknife_hessian_magnitude"</span><span class="p">]),</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">hessian</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">vi_newton_step</span><span class="p">(</span>
@@ -723,6 +780,8 @@
         <span class="n">_ACTIVE_CONTEXT</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="n">_LAST_REGULARIZATION_HISTORY</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
         <span class="n">_LAST_SIGMA_HISTORY</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">sigma_history</span><span class="p">)</span>
+        <span class="n">_LAST_HESSIAN_MAGNITUDE_HISTORY</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">hessian_magnitude_history</span><span class="p">)</span>
+        <span class="n">_LAST_RELATIVE_UNCERTAINTY_HISTORY</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">relative_uncertainty_history</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="run_vi">
