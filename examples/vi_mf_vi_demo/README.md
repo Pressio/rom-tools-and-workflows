@@ -8,10 +8,13 @@ MF-VI.
 Both production examples use the same core settings:
 
 - Newton in natural coordinates;
-- `newton_regularization=1e-4`;
+- full Hessian with lagged curvature and `newton_hessian_averaging_factor=0.25`;
+- `newton_regularization=5e-4`;
 - joint entropy estimator with a leave-one-out baseline;
 - 16 FOM samples per iteration;
-- stochastic nonmonotone line search with `max_step_size=1.0`;
+- 64 additional ROM samples for MF-VI;
+- stochastic nonmonotone line search with `initial_step_size=0.25` and `max_step_size=1.0`;
+- inference seed 7;
 - automatic GP ROM for MF-VI with `max_rom_training_history=4`.
 
 ## 1. Diagonal posterior
@@ -31,8 +34,9 @@ python examples/vi_mf_vi_demo/diagonal_example.py
 number of observations, but warps the observation locations so they are not
 equispaced. The exact posterior is correlated. A
 `MultivariateGaussianParameterSpace` initializer starts from the diagonal prior
-covariance and selects true full-covariance VI. This example uses the
-full-covariance natural-coordinate Newton implementation.
+covariance and selects true full-covariance VI. This example uses the same
+lagged-Hessian Newton configuration as the diagonal case, including
+`newton_hessian_averaging_factor=0.25`.
 
 ```bash
 python examples/vi_mf_vi_demo/full_covariance_example.py
