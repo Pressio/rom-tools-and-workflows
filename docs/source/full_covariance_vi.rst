@@ -181,8 +181,18 @@ has nonzero second derivative after composition with the exponential
 covariance map. The resulting direction is then mapped back through the
 first-order tangent map and applied with the SPD exponential retraction.
 
-The current full-covariance Newton path supports
-``newton_metric="natural"`` with ``newton_curvature_strategy="same_sample"``.
+Full-covariance natural Newton supports both ``same_sample`` and ``lagged``
+curvature strategies. The public Newton default is ``lagged`` with
+``newton_hessian_averaging_factor=0.25``. For lagged curvature, the raw
+ordinary-coordinate Hessian is exponentially averaged across accepted states,
+
+.. math::
+
+   \bar H_k = \beta \bar H_{k-1} + (1-\beta) H_k,
+   \qquad \beta=0.25,
+
+before Fisher whitening and the exponential-map pullback correction are
+applied. Rejected line-search candidates do not update :math:`\bar H_k`.
 Both diagonal and full projected Hessian solves can be selected through the
 existing ``newton_hessian_type`` option. The standard-coordinate
 full-covariance Newton route remains unsupported.
@@ -254,8 +264,8 @@ Usage
 -----
 
 A diagonal prior can be paired with a full-covariance variational family by
-supplying a multivariate initializer. Natural-coordinate Newton is selected
-with the standard Newton configuration::
+supplying a multivariate initializer. Natural-coordinate Newton with full,
+lagged curvature is now the public Newton default::
 
    q0 = MultivariateGaussianParameterSpace(
        parameter_names=parameter_names,
@@ -264,10 +274,7 @@ with the standard Newton configuration::
        sampler=MonteCarloSampler,
    )
 
-   optimizer = romtools.workflows.VINewtonOptimizerConfig(
-       newton_metric="natural",
-       newton_regularization=5e-4,
-   )
+   optimizer = romtools.workflows.VINewtonOptimizerConfig()
 
    mean, std, samples, qois = romtools.workflows.run_vi(
        model=model,
