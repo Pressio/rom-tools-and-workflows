@@ -395,6 +395,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Posterior mean</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Posterior</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#variational-family-error">Variational-family error</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Implementation</a></li>
 </ul>
 </li>
@@ -797,19 +798,23 @@ of observations, but changes only the observation locations. Starting from</p>
 <p>This breaks discrete sine orthogonality. The exact posterior therefore has
 nonzero cross-covariances (the largest absolute posterior correlation is about
 0.30 for this setup).</p>
-<p>The prior remains the same diagonal <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code>. The variational
-initializer is instead a <code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> initialized
+<p>The prior remains the same diagonal <code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code>. The primary
+full-covariance runs use a <code class="docutils literal notranslate"><span class="pre">MultivariateGaussianParameterSpace</span></code> initialized
 with the same diagonal prior covariance. Its <em>type</em> selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
-optimization.</p>
-<p>The multivariate case retains the same natural Newton metric, full Hessian,
-lagged curvature with <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, line-search scales, GP configuration,
-scalar MF control variate, random seed, and sample allocation as the diagonal
-benchmark: 16 FOM samples per iteration and 64 additional ROM samples for
-MF-VI. To give the higher-dimensional full-covariance optimization more room to
-converge, its production optimization budget is doubled from 40 to 80
-iterations. Its Newton regularization is reduced by a factor of five to
-<span class="math notranslate nohighlight">\(1\times10^{-4}\)</span>. Newton curvature is formed in
+optimization. The same correlated target is also solved with a
+<code class="docutils literal notranslate"><span class="pre">GaussianParameterSpace</span></code> variational initializer for both VI and MF-VI. Those
+additional mean-field runs deliberately prohibit cross-covariances and expose
+the approximation error caused by the restricted variational family.</p>
+<p>All four runs retain the same natural Newton metric, full Hessian, lagged
+curvature with <span class="math notranslate nohighlight">\(\beta=0.25\)</span>, line-search scales, random seed, and sample
+allocation: 16 FOM samples per iteration and 64 additional ROM samples for
+MF-VI. MF-VI uses the same GP configuration, four iterations of ROM training
+history, and scalar multifidelity control variate for both variational
+families. The production optimization budget is 80 iterations. Regular VI uses
+Newton regularization <span class="math notranslate nohighlight">\(5\times10^{-4}\)</span>, while MF-VI uses
+<span class="math notranslate nohighlight">\(1\times10^{-4}\)</span>.</p>
+<p>For the full-covariance family, Newton curvature is formed in
 <span class="math notranslate nohighlight">\((\mu,\operatorname{svec}(\Sigma))\)</span> coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
@@ -847,7 +852,46 @@ posterior mean and truth.</span><a class="headerlink" href="#id9" title="Link to
 <figcaption>
 <p><span class="caption-text">The exact posterior correlation matrix and the strongest correlated
 two-dimensional marginal. The ellipse panel compares one- and
-two-standard-deviation contours from the exact posterior, VI, and MF-VI.</span><a class="headerlink" href="#id10" title="Link to this image">#</a></p>
+two-standard-deviation contours from the exact posterior, full-covariance
+VI, and full-covariance MF-VI.</span><a class="headerlink" href="#id10" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="variational-family-error">
+<h3>Variational-family error<a class="headerlink" href="#variational-family-error" title="Link to this heading">#</a></h3>
+<p>Because the target is Gaussian, the best possible reverse-KL mean-field
+approximation is known analytically. If
+<span class="math notranslate nohighlight">\(P_{\rm post}=C_{\rm post}^{-1}\)</span>, the optimum over diagonal Gaussian
+covariances has</p>
+<div class="math notranslate nohighlight">
+\[m_{\rm MF}^\star=m_{\rm post},
+\qquad
+D_{ii}^\star=\frac{1}{(P_{\rm post})_{ii}}.\]</div>
+<p>Its nonzero <span class="math notranslate nohighlight">\(D_{\rm KL}(q\|p_{\rm post})\)</span> therefore provides an exact
+variational-family error floor. The next plot overlays the full-covariance and
+mean-field VI/MF-VI histories and marks this floor. A mean-field method that
+converges to the horizontal line has exhausted its optimization error; the
+remaining KL discrepancy is caused by the diagonal covariance restriction.</p>
+<figure class="align-center" id="id11">
+<a class="reference internal image-reference" href="../_images/analytic_sine_correlated_family_convergence.png"><img alt="Full-covariance and mean-field VI and MF-VI KL convergence on the correlated sine problem" src="../_images/analytic_sine_correlated_family_convergence.png" style="width: 84%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Full-covariance and mean-field VI/MF-VI convergence on the same correlated
+target. The dashed horizontal reference is the exact optimal mean-field KL
+floor.</span><a class="headerlink" href="#id11" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<p>The covariance restriction is also visible directly in posterior correlation.
+The exact target and full-covariance approximations can represent the induced
+cross-correlations, whereas the optimal mean-field approximation and both
+mean-field numerical runs are diagonal by construction.</p>
+<figure class="align-center" id="id12">
+<a class="reference internal image-reference" href="../_images/analytic_sine_correlated_family_correlation.png"><img alt="Correlation matrices for exact, full-covariance, and mean-field VI and MF-VI approximations" src="../_images/analytic_sine_correlated_family_correlation.png" style="width: 96%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Posterior correlation matrices for the exact target, full-covariance VI and
+MF-VI, the analytic optimal mean-field approximation, and mean-field VI and
+MF-VI.</span><a class="headerlink" href="#id12" title="Link to this image">#</a></p>
 </figcaption>
 </figure>
 </section>
@@ -1648,7 +1692,7 @@ utilities are shared by both examples:</p>
 </section>
 <section id="regenerating-the-figures">
 <h2>Regenerating the figures<a class="headerlink" href="#regenerating-the-figures" title="Link to this heading">#</a></h2>
-<p>Run both production examples and regenerate all six figures with</p>
+<p>Run both production examples and regenerate all eight figures with</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/vi_mf_vi_demo/generate_docs_media.py
 </pre></div>
 </div>
@@ -1694,6 +1738,7 @@ utilities are shared by both examples:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Posterior mean</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Posterior</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#variational-family-error">Variational-family error</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Implementation</a></li>
 </ul>
 </li>
