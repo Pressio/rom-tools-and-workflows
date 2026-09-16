@@ -1,0 +1,14 @@
+romtools.workflows.inverse.full\_covariance\_lagged\_newton
+===========================================================
+
+.. automodule:: romtools.workflows.inverse.full_covariance_lagged_newton
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mf_vi_with_auto_rom
+      run_mf_vi
+      run_vi
+   

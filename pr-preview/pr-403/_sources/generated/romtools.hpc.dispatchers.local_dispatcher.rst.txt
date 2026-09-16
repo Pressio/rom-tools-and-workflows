@@ -1,0 +1,12 @@
+romtools.hpc.dispatchers.local\_dispatcher
+==========================================
+
+.. automodule:: romtools.hpc.dispatchers.local_dispatcher
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      LocalDispatcher
+   
