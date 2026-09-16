@@ -901,9 +901,9 @@ two-standard-deviation contours from the exact posterior, VI, and MF-VI.</span><
 <span class="linenos"> 46</span>    <span class="n">problem</span> <span class="o">=</span> <span class="n">build_problem</span><span class="p">(</span><span class="n">equispaced</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="linenos"> 47</span>    <span class="n">model</span> <span class="o">=</span> <span class="n">AnalyticSineQoiModel</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
 <span class="linenos"> 48</span>
-<span class="linenos"> 49</span>    <span class="n">sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">32</span>
-<span class="linenos"> 50</span>    <span class="n">rom_extra_sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">128</span>
-<span class="linenos"> 51</span>    <span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">40</span>
+<span class="linenos"> 49</span>    <span class="n">sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">16</span>
+<span class="linenos"> 50</span>    <span class="n">rom_extra_sample_size</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">64</span>
+<span class="linenos"> 51</span>    <span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">smoke</span> <span class="k">else</span> <span class="mi">80</span>
 <span class="linenos"> 52</span>
 <span class="linenos"> 53</span>    <span class="n">prior</span> <span class="o">=</span> <span class="n">GaussianParameterSpace</span><span class="p">(</span>
 <span class="linenos"> 54</span>        <span class="n">parameter_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">),</span>
