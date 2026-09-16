@@ -1,21 +1,23 @@
 """Jackknife-driven adaptive regularization for independent-Hessian Newton VI.
 
 This module provides an experimental wrapper around the existing VI and MFVI
-Newton drivers.  The gradient and Hessian estimators remain statistically
-independent via ``newton_curvature_strategy='independent'``.  The independent
+Newton drivers. The gradient and Hessian estimators remain statistically
+independent via ``newton_curvature_strategy='independent'``. The independent
 Hessian batch is delete-one jackknifed, each replicate is mapped into the same
 natural/standard metric coordinates used by the Newton solve, and the
-regularization is set from the resulting spectral-norm curvature uncertainty.
+regularization is expressed through the relative spectral uncertainty
 
-The adaptive rule is
+    rho_H = sigma_H / ||H||_2.
 
-    lambda = clip(scale * sigma_H, minimum, maximum),
+The applied dimensional regularization is
+
+    lambda = clip(scale * rho_H * ||H||_2, minimum, maximum),
 
 where
 
     sigma_H^2 = (N-1)/N * sum_i ||H_{(-i)} - mean(H_{(-j)})||_2^2.
 
-The Hessians in this expression are sign-projected (absolute eigenvalues) but
+The Hessians in these expressions are sign-projected (absolute eigenvalues) but
 *not* regularized, so the statistical uncertainty is measured before damping.
 No extra model evaluations are required beyond the independent Hessian batch.
 """
@@ -64,8 +66,12 @@ class _RegularizationContext:
     newton_config: VINewtonOptimizerConfig
     current_regularization: Optional[float] = None
     current_sigma: Optional[float] = None
+    current_hessian_magnitude: Optional[float] = None
+    current_relative_uncertainty: Optional[float] = None
     history: list[float] = field(default_factory=list)
     sigma_history: list[float] = field(default_factory=list)
+    hessian_magnitude_history: list[float] = field(default_factory=list)
+    relative_uncertainty_history: list[float] = field(default_factory=list)
 
 
 _ACTIVE_CONTEXT: ContextVar[Optional[_RegularizationContext]] = ContextVar(
@@ -73,6 +79,8 @@ _ACTIVE_CONTEXT: ContextVar[Optional[_RegularizationContext]] = ContextVar(
 )
 _LAST_REGULARIZATION_HISTORY: list[float] = []
 _LAST_SIGMA_HISTORY: list[float] = []
+_LAST_HESSIAN_MAGNITUDE_HISTORY: list[float] = []
+_LAST_RELATIVE_UNCERTAINTY_HISTORY: list[float] = []
 
 
 def get_last_jackknife_regularization_history() -> np.ndarray:
@@ -81,8 +89,18 @@ def get_last_jackknife_regularization_history() -> np.ndarray:
 
 
 def get_last_jackknife_hessian_sigma_history() -> np.ndarray:
-    """Return Hessian uncertainty values from the most recent wrapper run."""
+    """Return absolute Hessian uncertainty from the most recent wrapper run."""
     return np.asarray(_LAST_SIGMA_HISTORY, dtype=float).copy()
+
+
+def get_last_jackknife_hessian_magnitude_history() -> np.ndarray:
+    """Return projected Hessian spectral norms from the most recent wrapper run."""
+    return np.asarray(_LAST_HESSIAN_MAGNITUDE_HISTORY, dtype=float).copy()
+
+
+def get_last_jackknife_relative_uncertainty_history() -> np.ndarray:
+    """Return sigma_H / ||H||_2 from the most recent wrapper run."""
+    return np.asarray(_LAST_RELATIVE_UNCERTAINTY_HISTORY, dtype=float).copy()
 
 
 def _resolve_context(signature_source, args, kwargs, config):
@@ -158,6 +176,11 @@ def _jackknife_spectral_sigma(hessians: list[np.ndarray]) -> float:
     return float(np.sqrt(((count - 1.0) / count) * np.sum(squared_norms)))
 
 
+def _relative_hessian_uncertainty(sigma: float, hessian_magnitude: float) -> float:
+    denominator = max(float(hessian_magnitude), np.finfo(float).tiny)
+    return float(sigma) / denominator
+
+
 def _vi_hessian_sigma(arguments: dict, state: dict, ctx) -> float:
     optimizer_samples = np.asarray(state["optimizer_samples"])
     parameter_samples = np.asarray(state["parameter_samples"])
@@ -217,19 +240,26 @@ def _mf_hessian_sigma(arguments: dict, state: dict, ctx) -> float:
     return _jackknife_spectral_sigma(hessians)
 
 
-def _select_regularization(ctx, sigma: float) -> float:
+def _select_regularization(ctx, sigma: float, hessian_magnitude: float) -> float:
+    relative_uncertainty = _relative_hessian_uncertainty(sigma, hessian_magnitude)
+    dimensional_shift = ctx.config.scale * relative_uncertainty * hessian_magnitude
     regularization = float(np.clip(
-        ctx.config.scale * sigma,
+        dimensional_shift,
         ctx.config.minimum,
         ctx.config.maximum,
     ))
     ctx.current_sigma = float(sigma)
+    ctx.current_hessian_magnitude = float(hessian_magnitude)
+    ctx.current_relative_uncertainty = float(relative_uncertainty)
     ctx.current_regularization = regularization
     ctx.sigma_history.append(float(sigma))
+    ctx.hessian_magnitude_history.append(float(hessian_magnitude))
+    ctx.relative_uncertainty_history.append(float(relative_uncertainty))
     ctx.history.append(regularization)
     print(
         "Jackknife Hessian regularization: "
-        f"sigma_H={sigma:.6e}, lambda={regularization:.6e}"
+        f"sigma_H={sigma:.6e}, ||H||_2={hessian_magnitude:.6e}, "
+        f"rho_H={relative_uncertainty:.6e}, lambda={regularization:.6e}"
     )
     return regularization
 
@@ -237,6 +267,7 @@ def _select_regularization(ctx, sigma: float) -> float:
 @contextmanager
 def _regularization_context(ctx):
     global _LAST_REGULARIZATION_HISTORY, _LAST_SIGMA_HISTORY
+    global _LAST_HESSIAN_MAGNITUDE_HISTORY, _LAST_RELATIVE_UNCERTAINTY_HISTORY
     if ctx is None:
         yield
         return
@@ -253,8 +284,14 @@ def _regularization_context(ctx):
         arguments = _adaptive._bind(previous_vi_state, args, kwargs)
         run_base = str(arguments.get("run_directory_base", ""))
         if "hessian_run_" in run_base:
-            state["jackknife_hessian_sigma"] = _vi_hessian_sigma(
-                arguments, state, ctx
+            sigma = _vi_hessian_sigma(arguments, state, ctx)
+            raw_hessian = previous_vi_get_hessian(
+                state, ctx.newton_config.newton_hessian_type
+            )
+            projected = _metric_projected_hessian(raw_hessian, arguments, ctx)
+            state["jackknife_hessian_sigma"] = sigma
+            state["jackknife_hessian_magnitude"] = float(
+                np.linalg.norm(projected, ord=2)
             )
         return state
 
@@ -263,21 +300,35 @@ def _regularization_context(ctx):
         arguments = _adaptive._bind(previous_mf_state, args, kwargs)
         iteration_directory = str(arguments.get("iteration_directory", ""))
         if iteration_directory.rstrip("/").endswith("/hessian"):
-            state["jackknife_hessian_sigma"] = _mf_hessian_sigma(
-                arguments, state, ctx
+            sigma = _mf_hessian_sigma(arguments, state, ctx)
+            raw_hessian = previous_mf_get_hessian(
+                state, ctx.newton_config.newton_hessian_type
+            )
+            projected = _metric_projected_hessian(raw_hessian, arguments, ctx)
+            state["jackknife_hessian_sigma"] = sigma
+            state["jackknife_hessian_magnitude"] = float(
+                np.linalg.norm(projected, ord=2)
             )
         return state
 
     def vi_get_hessian(state, newton_hessian_type):
         hessian = previous_vi_get_hessian(state, newton_hessian_type)
         if "jackknife_hessian_sigma" in state:
-            _select_regularization(ctx, float(state["jackknife_hessian_sigma"]))
+            _select_regularization(
+                ctx,
+                float(state["jackknife_hessian_sigma"]),
+                float(state["jackknife_hessian_magnitude"]),
+            )
         return hessian
 
     def mf_get_hessian(state, newton_hessian_type):
         hessian = previous_mf_get_hessian(state, newton_hessian_type)
         if "jackknife_hessian_sigma" in state:
-            _select_regularization(ctx, float(state["jackknife_hessian_sigma"]))
+            _select_regularization(
+                ctx,
+                float(state["jackknife_hessian_sigma"]),
+                float(state["jackknife_hessian_magnitude"]),
+            )
         return hessian
 
     def vi_newton_step(
@@ -339,6 +390,8 @@ def _regularization_context(ctx):
         _ACTIVE_CONTEXT.reset(token)
         _LAST_REGULARIZATION_HISTORY = list(ctx.history)
         _LAST_SIGMA_HISTORY = list(ctx.sigma_history)
+        _LAST_HESSIAN_MAGNITUDE_HISTORY = list(ctx.hessian_magnitude_history)
+        _LAST_RELATIVE_UNCERTAINTY_HISTORY = list(ctx.relative_uncertainty_history)
 
 
 def run_vi(
