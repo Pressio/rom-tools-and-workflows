@@ -142,6 +142,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     _normalize_newton_hessian_type,
     _normalize_newton_curvature_strategy,
     _normalize_newton_metric,
+    _normalize_newton_regularization_strategy,
     _resolve_line_search_config,
     _resolve_optimizer_config,
 )
@@ -1582,6 +1583,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                max_log_std_update: float,
                                max_mean_update_std: float,
                                newton_regularization: float,
+                               newton_regularization_strategy: str,
                                newton_hessian_type: str,
                                covariance_regularization: float,
                                restart_files_to_keep: int,
@@ -1630,6 +1632,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     if max_mean_update_std is not None:
         assert max_mean_update_std > 0.0, "max_mean_update_std must be positive"
     assert newton_regularization > 0.0, "newton_regularization must be positive"
+    _normalize_newton_regularization_strategy(newton_regularization_strategy)
     _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
@@ -1862,6 +1865,9 @@ def run_mf_vi(model: QoiModel,
     newton_defaults = VINewtonOptimizerConfig(newton_regularization=1e-8)
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
     newton_regularization = newton_defaults.newton_regularization
+    newton_regularization_strategy = _normalize_newton_regularization_strategy(
+        newton_defaults.newton_regularization_strategy
+    )
     newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     newton_curvature_strategy = _normalize_newton_curvature_strategy(
         newton_defaults.newton_curvature_strategy
@@ -1872,6 +1878,9 @@ def run_mf_vi(model: QoiModel,
         max_mean_update_std = resolved_optimizer_config.max_mean_update_std
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
         newton_regularization = resolved_optimizer_config.newton_regularization
+        newton_regularization_strategy = _normalize_newton_regularization_strategy(
+            resolved_optimizer_config.newton_regularization_strategy
+        )
         newton_hessian_type = _normalize_newton_hessian_type(
             resolved_optimizer_config.newton_hessian_type
         )
@@ -1970,6 +1979,7 @@ def run_mf_vi(model: QoiModel,
         max_log_std_update=max_log_std_update,
         max_mean_update_std=max_mean_update_std,
         newton_regularization=newton_regularization,
+        newton_regularization_strategy=newton_regularization_strategy,
         newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
@@ -2700,6 +2710,7 @@ def run_mf_vi(model: QoiModel,
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
                 newton_regularization,
+                newton_regularization_strategy=newton_regularization_strategy,
                 newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
                 hessian=curvature_hessian,
