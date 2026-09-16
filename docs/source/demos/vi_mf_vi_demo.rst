@@ -208,20 +208,25 @@ This breaks discrete sine orthogonality. The exact posterior therefore has
 nonzero cross-covariances (the largest absolute posterior correlation is about
 0.30 for this setup).
 
-The prior remains the same diagonal ``GaussianParameterSpace``. The variational
-initializer is instead a ``MultivariateGaussianParameterSpace`` initialized
+The prior remains the same diagonal ``GaussianParameterSpace``. The primary
+full-covariance runs use a ``MultivariateGaussianParameterSpace`` initialized
 with the same diagonal prior covariance. Its *type* selects true
 full-covariance VI, allowing off-diagonal covariance entries to develop during
-optimization.
+optimization. The same correlated target is also solved with a
+``GaussianParameterSpace`` variational initializer for both VI and MF-VI. Those
+additional mean-field runs deliberately prohibit cross-covariances and expose
+the approximation error caused by the restricted variational family.
 
-The multivariate case retains the same natural Newton metric, full Hessian,
-lagged curvature with :math:`\beta=0.25`, line-search scales, GP configuration,
-scalar MF control variate, random seed, and sample allocation as the diagonal
-benchmark: 16 FOM samples per iteration and 64 additional ROM samples for
-MF-VI. To give the higher-dimensional full-covariance optimization more room to
-converge, its production optimization budget is doubled from 40 to 80
-iterations. Its Newton regularization is reduced by a factor of five to
-:math:`1\times10^{-4}`. Newton curvature is formed in
+All four runs retain the same natural Newton metric, full Hessian, lagged
+curvature with :math:`\beta=0.25`, line-search scales, random seed, and sample
+allocation: 16 FOM samples per iteration and 64 additional ROM samples for
+MF-VI. MF-VI uses the same GP configuration, four iterations of ROM training
+history, and scalar multifidelity control variate for both variational
+families. The production optimization budget is 80 iterations. Regular VI uses
+Newton regularization :math:`5\times10^{-4}`, while MF-VI uses
+:math:`1\times10^{-4}`.
+
+For the full-covariance family, Newton curvature is formed in
 :math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
@@ -264,7 +269,51 @@ Posterior
 
    The exact posterior correlation matrix and the strongest correlated
    two-dimensional marginal. The ellipse panel compares one- and
-   two-standard-deviation contours from the exact posterior, VI, and MF-VI.
+   two-standard-deviation contours from the exact posterior, full-covariance
+   VI, and full-covariance MF-VI.
+
+Variational-family error
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because the target is Gaussian, the best possible reverse-KL mean-field
+approximation is known analytically. If
+:math:`P_{\rm post}=C_{\rm post}^{-1}`, the optimum over diagonal Gaussian
+covariances has
+
+.. math::
+
+   m_{\rm MF}^\star=m_{\rm post},
+   \qquad
+   D_{ii}^\star=\frac{1}{(P_{\rm post})_{ii}}.
+
+Its nonzero :math:`D_{\rm KL}(q\|p_{\rm post})` therefore provides an exact
+variational-family error floor. The next plot overlays the full-covariance and
+mean-field VI/MF-VI histories and marks this floor. A mean-field method that
+converges to the horizontal line has exhausted its optimization error; the
+remaining KL discrepancy is caused by the diagonal covariance restriction.
+
+.. figure:: notebooks/analytic_sine_correlated_family_convergence.png
+   :alt: Full-covariance and mean-field VI and MF-VI KL convergence on the correlated sine problem
+   :align: center
+   :width: 84%
+
+   Full-covariance and mean-field VI/MF-VI convergence on the same correlated
+   target. The dashed horizontal reference is the exact optimal mean-field KL
+   floor.
+
+The covariance restriction is also visible directly in posterior correlation.
+The exact target and full-covariance approximations can represent the induced
+cross-correlations, whereas the optimal mean-field approximation and both
+mean-field numerical runs are diagonal by construction.
+
+.. figure:: notebooks/analytic_sine_correlated_family_correlation.png
+   :alt: Correlation matrices for exact, full-covariance, and mean-field VI and MF-VI approximations
+   :align: center
+   :width: 96%
+
+   Posterior correlation matrices for the exact target, full-covariance VI and
+   MF-VI, the analytic optimal mean-field approximation, and mean-field VI and
+   MF-VI.
 
 Implementation
 ~~~~~~~~~~~~~~
@@ -286,7 +335,7 @@ utilities are shared by both examples:
 Regenerating the figures
 ------------------------
 
-Run both production examples and regenerate all six figures with
+Run both production examples and regenerate all eight figures with
 
 .. code-block:: bash
 
