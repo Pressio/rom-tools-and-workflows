@@ -113,6 +113,7 @@ def main(
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         max_rom_training_history=4,
+        mfmc_control_variate_mode="scalar",
         rom_type="gp",
         rom_args={
             "normalize_parameters": True,
