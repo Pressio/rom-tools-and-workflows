@@ -769,25 +769,29 @@ def _deim_get_indices_distributed(U, comm):
 
 
 def deim_get_indices(U, comm=None):
-    '''
+    """
     Implementation of the discrete empirical method as described in Algorithm 1 of
     S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for
     nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.
 
     Args:
-        :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where
+        U:
+            :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where
             :math:`m` is the number of DOFs and
             :math:`n` is the number of samples.
             Function basis in matrix format.
-        comm: Optional communicator object. If none, algorithm assumes shared-memory data.
+        comm:
+            Optional communicator object. If none, algorithm assumes shared-memory data.
 
     Returns:
-         if comm==None:
-            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices
+        If ``comm == None``:
 
-         else:
-            sample mesh local indices and the corresponding owing ranks
-    '''
+            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices.
+
+        Otherwise:
+
+            Sample mesh local indices and the corresponding owing ranks.
+    """
 
     assert np.shape(U)[1] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
 
@@ -831,7 +835,7 @@ def _deim_multi_state_get_indices_distributed(U, comm):
 
 
 def multi_state_deim_get_indices(U, comm=None):
-    '''
+    """
     Version of DEIM for multi-state systems.
 
     We perform DEIM on each state variable, and
@@ -839,19 +843,22 @@ def multi_state_deim_get_indices(U, comm=None):
     Repeated indices are removed.
 
     Args:
-         :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where
+        U:
+            :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where
             :math:`l` is the number of variables,
             :math:`m` is the number of DOFs and
             :math:`n` the number of samples.
             Multi-dimensional function basis in tensor format.
 
     Returns:
-         if comm==None:
-            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices
+        If ``comm == None``:
 
-         else:
-            sample mesh local indices and the corresponding owing ranks
-    '''
+            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices.
+
+        Otherwise:
+
+            Sample mesh local indices and the corresponding owing ranks.
+    """
     shape = np.shape(U)
     assert len(shape) == 3
     assert shape[2] >= 1, "deim requires a basis matrix with at least one basis vector (one column)"
