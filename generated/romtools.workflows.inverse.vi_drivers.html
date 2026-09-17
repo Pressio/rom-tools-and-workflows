@@ -572,6 +572,9 @@ score-function estimator for curvature:</p>
 <p>This is the curvature model used by the Newton update path. The implementation
 supports a metric rescaling via <code class="docutils literal notranslate"><span class="pre">newton_metric</span></code> and either diagonal or full
 projected Hessian solves via <code class="docutils literal notranslate"><span class="pre">newton_hessian_type</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">newton_regularization_strategy</span></code> option selects either the default absolute
+eigenvalue floor or a floor proportional to the Hessian spectral norm. For the
+natural metric, that norm is evaluated after metric rescaling. The
 <code class="docutils literal notranslate"><span class="pre">newton_curvature_strategy</span></code> option controls stochastic coupling: the default
 <code class="docutils literal notranslate"><span class="pre">&quot;same_sample&quot;</span></code> reuses the gradient samples, <code class="docutils literal notranslate"><span class="pre">&quot;independent&quot;</span></code> evaluates a
 separate batch (whose size is set by <code class="docutils literal notranslate"><span class="pre">newton_hessian_num_samples</span></code>), and
