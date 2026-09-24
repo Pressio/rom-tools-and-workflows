@@ -1,6 +1,0 @@
-romtools.workflows.inverse.vi\_default\_policy
-==============================================
-
-.. automodule:: romtools.workflows.inverse.vi_default_policy
-
-   
