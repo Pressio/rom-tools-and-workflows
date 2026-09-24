@@ -1,0 +1,231 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "f389f465-1007-443d-873b-d27bfa74cbc7",
+   "metadata": {},
+   "source": [
+    "# Greedy training tutorial\n",
+    "\n",
+    "In this tutorial you will learn the basics of contructing a greedy training workflow using romtools\n",
+    "\n",
+    "https://pressio.github.io/rom-tools-and-workflows/romtools/workflows/greedy/run_greedy.html\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "358fb709-9c81-45a3-a871-2549de121580",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#First, let's import the relavant modules:\n",
+    "import romtools\n",
+    "import numpy as np\n",
+    "from matplotlib import pyplot as plt\n",
+    "import sys\n",
+    "import os\n",
+    "sys.path.append('adr_1d/')\n",
+    "from adr_1d import advectionDiffusionProblem"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "b1ffa4be-246c-44a9-b486-f517b9f7acb9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#First, we will import the FOM model.\n",
+    "#Here, we will just use the advection diffusion FOM we setup in the external model tutorial \n",
+    "\n",
+    "from ipynb.fs.full.external_qoi_model import adrExternalRomToolsQoiModel\n",
+    "myFom = adrExternalRomToolsQoiModel()\n",
+    "\n",
+    "# Now, let's setup our parameter space. We will use the parameter space we constructed in the parameter_space\n",
+    "from ipynb.fs.full.parameter_space import BasicParameterSpace\n",
+    "myParameterSpace = BasicParameterSpace()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "401f02c1-6121-43df-82d7-4741910b1d2f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Now, we need to setup our ROM. For greedy, we need a QoIModelWithErrorEstimate.\n",
+    "# we haven't make this type of model in our tutorial series, and will do so now.\n",
+    "\n",
+    "#As a starting point, let's import the ROM model we made in the model_builder tutorial\n",
+    "\n",
+    "from ipynb.fs.full.model_builder import adrRom\n",
+    "\n",
+    "#We now need to add a compute_qoi method and a compute_error_estimate_method:\n",
+    "class adrQoiRomWithErrorEstimate(adrRom):\n",
+    "    def compute_qoi(self, run_directory: str, parameter_sample: dict):\n",
+    "        # Note that compute_qoi is always called after run_model\n",
+    "        solution = np.load(run_directory + '/solution.npz')\n",
+    "        u = solution['u']\n",
+    "        x = solution['x']\n",
+    "        dx = x[1] - x[0] #we use a uniform grid\n",
+    "        ux_at_right_edge = (0. - u[-1])/dx\n",
+    "        return ux_at_right_edge\n",
+    "\n",
+    "    # Now we will add a method for computing an error estimate.\n",
+    "    # As an error estimate, we will use the norm of the FOM residual evaluated about the ROM solution\n",
+    "    def compute_error_estimate(self, run_directory: str, parameter_sample: dict):\n",
+    "        rom_data = np.load(self.offline_directory_ + '/rom_data.npz')\n",
+    "        solution = np.load(run_directory + '/solution.npz')\n",
+    "        u = solution['u']\n",
+    "        residual = (parameter_sample['c']*rom_data['Ac'] - parameter_sample['nu']*rom_data['Ad'])@u - rom_data['f']\n",
+    "        residual_norm = np.linalg.norm(residual)\n",
+    "        return residual_norm\n",
+    "\n",
+    "#Now we will construct a model_builder. We will use the one we initiated in the model_builder tutorial\n",
+    "from ipynb.fs.full.model_builder import AdrRomModelBuilder\n",
+    "myIntrusiveFom = advectionDiffusionProblem(nx=33)\n",
+    "myRomModelBuilder = AdrRomModelBuilder(myIntrusiveFom,adrQoiRomWithErrorEstimate)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d0dca378-7ef3-4f83-a734-69deed632c40",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[0.09874884 0.19644988 0.29297092 0.38816313 0.48185886 0.57386933\n",
+      " 0.66398197 0.75195735 0.83752586 0.92038389 1.0001895  1.07655765\n",
+      " 1.1490547  1.21719231 1.28042056 1.33812013 1.38959358 1.43405551\n",
+      " 1.47062142 1.49829524 1.51595524 1.52233821 1.51602155 1.49540322\n",
+      " 1.45867911 1.40381748 1.32853032 1.23024098 1.10604776 0.95268294\n",
+      " 0.76646655 0.54325444 0.27837963] [0.      0.03125 0.0625  0.09375 0.125   0.15625 0.1875  0.21875 0.25\n",
+      " 0.28125 0.3125  0.34375 0.375   0.40625 0.4375  0.46875 0.5     0.53125\n",
+      " 0.5625  0.59375 0.625   0.65625 0.6875  0.71875 0.75    0.78125 0.8125\n",
+      " 0.84375 0.875   0.90625 0.9375  0.96875 1.     ]\n",
+      "[0.06250604 0.12501153 0.18751619 0.25001959 0.31252111 0.3750198\n",
+      " 0.43751422 0.50000222 0.56248055 0.62494432 0.68738621 0.74979513\n",
+      " 0.81215444 0.87443909 0.93661136 0.99861449 1.06036304 1.12172844\n",
+      " 1.18251715 1.24243788 1.30105222 1.3577003  1.41138898 1.46062344\n",
+      " 1.50315389 1.5355941  1.5528475  1.54724323 1.50723587 1.41544843\n",
+      " 1.24572676 0.95870628 0.49513932] [0.      0.03125 0.0625  0.09375 0.125   0.15625 0.1875  0.21875 0.25\n",
+      " 0.28125 0.3125  0.34375 0.375   0.40625 0.4375  0.46875 0.5     0.53125\n",
+      " 0.5625  0.59375 0.625   0.65625 0.6875  0.71875 0.75    0.78125 0.8125\n",
+      " 0.84375 0.875   0.90625 0.9375  0.96875 1.     ]\n",
+      "Greedy iteration # 0\n",
+      "[0.07322466 0.14644932 0.21967397 0.29289863 0.36612329 0.43934795\n",
+      " 0.5125726  0.58579726 0.65902192 0.73224657 0.80547122 0.87869586\n",
+      " 0.95192047 1.02514502 1.09836944 1.17159355 1.24481694 1.31803864\n",
+      " 1.39125648 1.46446533 1.5376534  1.61079336 1.68382193 1.75659265\n",
+      " 1.82876642 1.89955822 1.96715072 2.02733669 2.07037623 2.07372109\n",
+      " 1.98517109 1.68388062 0.89008706] [0.      0.03125 0.0625  0.09375 0.125   0.15625 0.1875  0.21875 0.25\n",
+      " 0.28125 0.3125  0.34375 0.375   0.40625 0.4375  0.46875 0.5     0.53125\n",
+      " 0.5625  0.59375 0.625   0.65625 0.6875  0.71875 0.75    0.78125 0.8125\n",
+      " 0.84375 0.875   0.90625 0.9375  0.96875 1.     ]\n",
+      "Greedy iteration # 1\n",
+      "[0.13591109 0.26614355 0.39051337 0.5088306  0.62089912 0.72651646\n",
+      " 0.82547358 0.91755469 1.00253699 1.08019045 1.15027762 1.21255333\n",
+      " 1.26676447 1.31264973 1.34993934 1.37835479 1.39760852 1.40740369\n",
+      " 1.40743382 1.3973825  1.37692307 1.34571829 1.30341999 1.24966871\n",
+      " 1.18409336 1.10631081 1.01592552 0.91252915 0.7957001  0.66500313\n",
+      " 0.5199889  0.36019348 0.18513795] [0.      0.03125 0.0625  0.09375 0.125   0.15625 0.1875  0.21875 0.25\n",
+      " 0.28125 0.3125  0.34375 0.375   0.40625 0.4375  0.46875 0.5     0.53125\n",
+      " 0.5625  0.59375 0.625   0.65625 0.6875  0.71875 0.75    0.78125 0.8125\n",
+      " 0.84375 0.875   0.90625 0.9375  0.96875 1.     ]\n",
+      "Greedy iteration # 2\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Now we can run the greedy workflow!\n",
+    "if __name__ == \"__main__\":\n",
+    "    greedy_work_dir = os.getcwd() + '/greedy_example/'\n",
+    "    tolerance = 1.e-6 #tolerance on greedy algorithm\n",
+    "    testing_sample_size = 10 #sample size on which to evaluate greedy ROM\n",
+    "    romtools.workflows.greedy.run_greedy(myFom,myRomModelBuilder,myParameterSpace,greedy_work_dir,\n",
+    "    \ttolerance,testing_sample_size)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b483ec1e-ba11-45e9-8639-fef3544ecb09",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "    #Let's check how some statistics for the workflow.\n",
+    "    #Greedy will save out a file called greedy_stats.npz in the work directory with information on convergence\n",
+    "    stats = np.load(greedy_work_dir + '/greedy_stats.npz')\n",
+    "    print(\"Stored values are: \", list(stats.keys()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ae25084c-e74b-45d4-aa59-0a9cd3fce8fc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "    #Let's look at a plot of the max_error_indicator vs iteration:\n",
+    "    plt.plot(stats['max_error_indicators'])\n",
+    "    plt.yscale('log')\n",
+    "    plt.xlabel(r'Greedy iteration')\n",
+    "    plt.ylabel(r'ROM residual norm')\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d507a1a2-a1c6-4244-b737-3aa3f5057d22",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "    #Now lets look at the \"true QoI error\" computed after each greedy iteration and compare it to our predicted QoI error\n",
+    "    # Note that the predicted QoI error is not tabulated at the first iteration\n",
+    "    iterations_for_predicted_errors = np.arange(1,stats['predicted_qoi_errors'].size+1)\n",
+    "    plt.plot(stats['qoi_errors'],'-o',label='True error')\n",
+    "    plt.plot(iterations_for_predicted_errors,stats['predicted_qoi_errors'],'-o',label='Predicted QoI error')\n",
+    "    plt.yscale('log')\n",
+    "    plt.xlabel(r'Greedy iteration')\n",
+    "    plt.ylabel(r'QoI error')\n",
+    "    plt.legend()\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c02300cd-faa3-4dab-9fde-a65b3f893e23",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
