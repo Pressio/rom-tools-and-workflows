@@ -14,7 +14,12 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # mpich's apt package on Ubuntu 24.04 ("Noble") is known-broken and causes
+    # mpirun/hydra to intermittently crash with exit code 15 before pytest even
+    # starts (see https://bugs.launchpad.net/ubuntu/+source/mpich/+bug/2072338).
+    # Pin mpich jobs to Ubuntu 22.04, which does not carry the broken package,
+    # while openmpi jobs continue to use the latest runner image.
+    runs-on: ${{ matrix.mpi == 'mpich' && 'ubuntu-22.04' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false # true -> cancel all jobs if any fails
       matrix:
