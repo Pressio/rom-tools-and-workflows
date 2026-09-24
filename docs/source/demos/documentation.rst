@@ -1,4 +1,4 @@
 Documentation
 =======================
 
-Documentation for the APIs for rom-tools-and-workflows are located at :doc:`../api`.
+API documentation for `rom-tools-and-workflows` is available at :doc:`../api`.

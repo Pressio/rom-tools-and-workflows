@@ -21,16 +21,8 @@ Single-fidelity EKI
 .. autofunction:: romtools.workflows.inverse.eki_drivers.run_eki
    :no-index:
 
-See also:
-
-- :doc:`generated/romtools.workflows.inverse.run_eki`
-
 Multi-fidelity EKI
 ------------------
 
 .. autofunction:: romtools.workflows.inverse.mf_eki_drivers.run_mf_eki
    :no-index:
-
-See also:
-
-- :doc:`generated/romtools.workflows.inverse.run_mf_eki`

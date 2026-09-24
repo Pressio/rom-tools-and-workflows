@@ -43,8 +43,9 @@
 # ************************************************************************
 #
 
-'''
-# Scope, Design and Philosophy
+"""
+Scope, Design and Philosophy
+============================
 
 The ROM tools and workflows Python library comprises a set of algorithms for
 constructing and exploiting ROMs.
@@ -54,33 +55,37 @@ The philosophy is that, for any given application, the user "simply" needs to cr
 a class that meets the required API of the abstract base class.
 Once this class is complete, the user gains access to all of our existing algorithms.
 
-# Content
+Content
+=======
 
 The Python library, called `romtools`, contains abstract interfaces and functions required for, e.g.,
 
-- Constructing parameter spaces
+* Constructing parameter spaces
 
-- Constructing vector subspaces
-  - Reduced-basis methods
-  - Proper orthogonal decomposition
-    - Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
+* Constructing vector subspaces
+
+  * Reduced-basis methods
+  * Proper orthogonal decomposition
+
+    * Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
       in different inner products
 
-- Constructing and exploiting ROMs via outer loop workflows
+* Constructing and exploiting ROMs via outer loop workflows
 
-  - ROM construction via reduced-basis greedy (RB-Greedy)
-  - ROM/FOM exploitation via sampling
-  - ROM/FOM exploitation via Dakota-driven sampling
+  * ROM construction via reduced-basis greedy (RB-Greedy)
+  * ROM/FOM exploitation via sampling
+  * ROM/FOM exploitation via Dakota-driven sampling
 
-# Demos/tutorials
+Demos/tutorials
+===============
 
 Please see the Demos section of the documentation for demos and tutorials.
 
-# License
-```plaintext
-.. include:: ../LICENSE
-```
-'''
+License
+=======
+
+See the :doc:`license information </demos/license>`.
+"""
 
 __all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
 

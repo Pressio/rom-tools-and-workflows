@@ -15,7 +15,7 @@ https://pressio.github.io/rom-tools-and-workflows/demos/
 pip install romtools
 ```
 
-## Developers's Guide
+## Developer's Guide
 
 ### Editable Installation
 
