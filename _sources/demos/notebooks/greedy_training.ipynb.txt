@@ -9,7 +9,7 @@
     "\n",
     "In this tutorial you will learn the basics of contructing a greedy training workflow using romtools\n",
     "\n",
-    "https://pressio.github.io/rom-tools-and-workflows/romtools/workflows/greedy/run_greedy.html\n",
+    "See the {doc}`greedy-training API </generated/romtools.workflows.greedy.run_greedy>`.\n",
     "\n"
    ]
   },
@@ -38,7 +38,7 @@
    "outputs": [],
    "source": [
     "#First, we will import the FOM model.\n",
-    "#Here, we will just use the advection diffusion FOM we setup in the external model tutorial \n",
+    "#Here, we will just use the advection diffusion FOM we setup in the external model tutorial\n",
     "\n",
     "from ipynb.fs.full.external_qoi_model import adrExternalRomToolsQoiModel\n",
     "myFom = adrExternalRomToolsQoiModel()\n",

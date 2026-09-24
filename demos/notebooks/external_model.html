@@ -443,8 +443,8 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="external-model-tutorial">
 <h1>External model tutorial<a class="headerlink" href="#external-model-tutorial" title="Link to this heading">#</a></h1>
-<p>In this tutorial you will learn the basics of the model interface for running an external model. The API for the model interface is provided here:</p>
-<p>https://pressio.github.io/rom-tools-and-workflows/romtools/workflows/models.html</p>
+<p>In this tutorial you will learn the basics of the model interface for running an external model.
+See the <a class="reference internal" href="../../generated/romtools.workflows.models.html"><span class="doc">model interface API</span></a>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#First, let's import the relavant modules:</span>
@@ -466,8 +466,8 @@
 <span class="sd">c u_x - nu * u_xx = 1</span>
 
 
-<span class="sd">To run the code, a file "params.dat" is required in the run directory. </span>
-<span class="sd">This .dat file contains the parameters c,nu. </span>
+<span class="sd">To run the code, a file "params.dat" is required in the run directory.</span>
+<span class="sd">This .dat file contains the parameters c,nu.</span>
 <span class="sd">Running the code outputs a solution.npz file with the keys x (grid) and u (solution)</span>
 
 <span class="sd">'''</span>
@@ -485,7 +485,7 @@
     <span class="c1"># a submission to the HPCs)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">'python adr_1d/adr_1d.py'</span><span class="p">)</span>
 
-    <span class="c1">#Let's take a peak at a solution</span>
+    <span class="c1"># Let's take a peek at a solution</span>
     <span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'solution.npz'</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span><span class="n">sol</span><span class="p">[</span><span class="s1">'u'</span><span class="p">])</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$x$'</span><span class="p">)</span>
@@ -508,13 +508,13 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Get path to adr code</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exec_dir_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s1">'/adr_1d/'</span>
-        
+
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_run_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="c1"># Here, we need to make a params.dat file in the run_directory</span>
         <span class="n">c</span> <span class="o">=</span> <span class="n">parameter_sample</span><span class="p">[</span><span class="s1">'c'</span><span class="p">]</span>
         <span class="n">nu</span> <span class="o">=</span> <span class="n">parameter_sample</span><span class="p">[</span><span class="s1">'nu'</span><span class="p">]</span>
         <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">run_directory</span> <span class="o">+</span> <span class="s1">'/params.dat'</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="p">,</span><span class="n">nu</span><span class="p">]))</span>
-        
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="n">starting_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">run_directory</span><span class="p">)</span>
@@ -526,7 +526,7 @@
 <span class="c1">#Now let's try initializing the model</span>
 <span class="n">adr_for_romtools</span> <span class="o">=</span> <span class="n">adrExternalRomToolsModel</span><span class="p">()</span>
 
-<span class="c1">#That's it, we can use this in a sampling workflow. </span>
+<span class="c1">#That's it, we can use this in a sampling workflow.</span>
 </pre></div>
 </div>
 </div>
@@ -540,11 +540,11 @@
     <span class="n">parameter_sample</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">parameter_sample</span><span class="p">[</span><span class="s1">'c'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
     <span class="n">parameter_sample</span><span class="p">[</span><span class="s1">'nu'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-1</span>
-    
+
     <span class="c1">#Now, let's populate our run directory. In this example, we will just use the current run directory.</span>
     <span class="c1">#In a full workflow, romtools will manage creating directories</span>
     <span class="n">adr_for_romtools</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">parameter_sample</span><span class="p">)</span>
-    
+
     <span class="c1">#Now, let's run the model</span>
     <span class="n">adr_for_romtools</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">parameter_sample</span><span class="p">)</span>
 

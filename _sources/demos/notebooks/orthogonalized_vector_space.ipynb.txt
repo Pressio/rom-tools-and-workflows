@@ -58,7 +58,7 @@
     "#(https://pressio.github.io/rom-tools-and-workflows/romtools/vector_space/utils/orthogonalizer.html)\n",
     "my_orthogonalizer = vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer(w)\n",
     "\n",
-    "#Like the last tuorial, let's create a truncater that controls for how we want to truncate our basis.\n",
+    "# Like the last tutorial, let's create a truncater that controls how we truncate our basis.\n",
     "my_truncater = vector_space.utils.EnergyBasedTruncater(0.999)"
    ]
   },
@@ -84,7 +84,7 @@
     "my_vector_space = vector_space.VectorSpaceFromPOD(snapshots,truncater=my_truncater,orthogonalizer=my_orthogonalizer)\n",
     "\n",
     "##It's important to note that we do not do a deep copy of the snapshot matrix for performance reasons.\n",
-    "##Once you pass us the snapshot tensor, we will modify the data in place. \n",
+    "##Once you pass us the snapshot tensor, we will modify the data in place.\n",
     "\n",
     "#We can view the basis and shift vector:\n",
     "basis = my_vector_space.get_basis()\n",

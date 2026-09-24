@@ -476,7 +476,7 @@ In this tutorial you will learn:</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># In this example, we make a composite vector space where each state variable in our snapshot matrix has each own basis</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># In this example, we create a composite vector space in which each state variable in the snapshot matrix has its own basis</span>
 <span class="c1"># (This is often times referred to as "vector POD" in the literature</span>
 
 <span class="c1">#Like the last tutorial, let's use a truncater that controls for how we want to truncate our basis.</span>
@@ -490,7 +490,7 @@ In this tutorial you will learn:</p>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Now, let's construct a vector space using POD for the DENSITY VARIABLE ONLY</span>
 <span class="n">my_vector_space_rho</span> <span class="o">=</span> <span class="n">vector_space</span><span class="o">.</span><span class="n">VectorSpaceFromPOD</span><span class="p">(</span><span class="n">snapshots</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span><span class="n">truncater</span><span class="o">=</span><span class="n">my_truncater</span><span class="p">)</span>
 
-<span class="c1">#Let's look a the shape of our vector space:</span>
+<span class="c1">#Let's look at the shape of our vector space:</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'The vector space for rho is of shape: '</span><span class="p">,</span> <span class="n">my_vector_space_rho</span><span class="o">.</span><span class="n">extents</span><span class="p">())</span>
 </pre></div>
 </div>

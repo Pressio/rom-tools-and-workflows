@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>model_builders &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Model builders &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -351,7 +351,7 @@
 <li class="toctree-l2"><a class="reference internal" href="workflows.html">Sampling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../remote_execution.html">Remote Execution</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">model_builders</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">Model builders</a></li>
 <li class="toctree-l3"><a class="reference internal" href="greedy_training.html">Greedy Training</a></li>
 </ul>
 </details></li>
@@ -419,7 +419,7 @@
     
     <li class="breadcrumb-item"><a href="rom_construction.html" class="nav-link">ROM construction and adaptation</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">model_builders</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Model builders</span></li>
   </ul>
 </nav>
 </div>
@@ -437,13 +437,15 @@
                 <article class="bd-article">
                   
   <section id="model-builders">
-<h1>model_builders<a class="headerlink" href="#model-builders" title="Link to this heading">#</a></h1>
-<p>A model builder is a method used to build a (typically data-driven) model in a workflow like greedy.</p>
-<p>As an example, we can consider a simple training algorithm where we iteratively
-run FOM samples, use them to construct a ROM, evaluate the ROM, and then
-continue to add samples until the ROM is of a desired accuracy. In this context,
-the model_builder interface will provide context on how to construct the ROM
-given the FOM samples.</p>
+<h1>Model builders<a class="headerlink" href="#model-builders" title="Link to this heading">#</a></h1>
+<p>A model builder defines how a reduced-order model (ROM) is constructed from
+available full-order model (FOM) samples.</p>
+<p>For example, consider an iterative training workflow such as a greedy algorithm.
+The workflow runs FOM simulations, uses the resulting samples to build a ROM,
+and evaluates its accuracy. Additional FOM samples are then generated and
+incorporated until the ROM reaches the desired accuracy.</p>
+<p>In this setting, the <cite>model_builder</cite> interface defines how the ROM is
+constructed from the collected FOM samples.</p>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>

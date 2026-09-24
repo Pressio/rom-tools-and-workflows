@@ -1184,25 +1184,29 @@
 <div class="viewcode-block" id="deim_get_indices">
 <a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.deim.deim_get_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">deim_get_indices</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">'''</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Implementation of the discrete empirical method as described in Algorithm 1 of</span>
 <span class="sd">    S. Chaturantabut and D. C. Sorensen, "Discrete Empirical Interpolation for</span>
 <span class="sd">    nonlinear model reduction," doi: 10.1109/CDC.2009.5400045.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where</span>
+<span class="sd">        U:</span>
+<span class="sd">            :math:`\\mathbf{U} \\in \\mathbb{R}^{m \\times n}`, where</span>
 <span class="sd">            :math:`m` is the number of DOFs and</span>
 <span class="sd">            :math:`n` is the number of samples.</span>
 <span class="sd">            Function basis in matrix format.</span>
-<span class="sd">        comm: Optional communicator object. If none, algorithm assumes shared-memory data.</span>
+<span class="sd">        comm:</span>
+<span class="sd">            Optional communicator object. If none, algorithm assumes shared-memory data.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">         if comm==None:</span>
-<span class="sd">            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices</span>
+<span class="sd">        If ``comm == None``:</span>
 
-<span class="sd">         else:</span>
-<span class="sd">            sample mesh local indices and the corresponding owing ranks</span>
-<span class="sd">    '''</span>
+<span class="sd">            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices.</span>
+
+<span class="sd">        Otherwise:</span>
+
+<span class="sd">            Sample mesh local indices and the corresponding owing ranks.</span>
+<span class="sd">    """</span>
 
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">U</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"deim requires a basis matrix with at least one basis vector (one column)"</span>
 
@@ -1249,7 +1253,7 @@
 <div class="viewcode-block" id="multi_state_deim_get_indices">
 <a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.deim.multi_state_deim_get_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">multi_state_deim_get_indices</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">'''</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Version of DEIM for multi-state systems.</span>
 
 <span class="sd">    We perform DEIM on each state variable, and</span>
@@ -1257,19 +1261,22 @@
 <span class="sd">    Repeated indices are removed.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">         :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where</span>
+<span class="sd">        U:</span>
+<span class="sd">            :math:`\\mathbf{U} \\in \\mathbb{R}^{l \\times m \\times n}`, where</span>
 <span class="sd">            :math:`l` is the number of variables,</span>
 <span class="sd">            :math:`m` is the number of DOFs and</span>
 <span class="sd">            :math:`n` the number of samples.</span>
 <span class="sd">            Multi-dimensional function basis in tensor format.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">         if comm==None:</span>
-<span class="sd">            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices</span>
+<span class="sd">        If ``comm == None``:</span>
 
-<span class="sd">         else:</span>
-<span class="sd">            sample mesh local indices and the corresponding owing ranks</span>
-<span class="sd">    '''</span>
+<span class="sd">            :math:`\\mathrm{indices} \\in \\mathbb{I}^{n}`: sample mesh indices.</span>
+
+<span class="sd">        Otherwise:</span>
+
+<span class="sd">            Sample mesh local indices and the corresponding owing ranks.</span>
+<span class="sd">    """</span>
     <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">U</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
     <span class="k">assert</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"deim requires a basis matrix with at least one basis vector (one column)"</span>
