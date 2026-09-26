@@ -141,7 +141,8 @@ srun --ntasks=32 --cpu-bind=cores python -u \
     examples/large_distributed_svd/run_large_distributed_svd.py \
     --global-rows 10000003 \
     --columns 1000 \
-    --dtype float64
+    --dtype float64 \
+    --tree-threshold 8
 ```
 
 Submit and monitor the job:
@@ -187,6 +188,29 @@ srun --ntasks=32 python -u \
     examples/large_distributed_svd/run_large_distributed_svd.py \
     --global-rows 10000003 --columns 1000 --dtype float32
 ```
+
+## Configuring and comparing TSQR reductions
+
+The default switches from the rank-zero gather to the binary-tree TSQR
+reduction at 8 MPI ranks. Override the crossover with ``--tree-threshold``.
+For example, compare both reductions on the same 32-rank allocation:
+
+```bash
+# Force the binary tree.
+srun --ntasks=32 python -u \
+    examples/large_distributed_svd/run_large_distributed_svd.py \
+    --global-rows 10000003 --columns 1000 --tree-threshold 1
+
+# Force the rank-zero gather.
+srun --ntasks=32 python -u \
+    examples/large_distributed_svd/run_large_distributed_svd.py \
+    --global-rows 10000003 --columns 1000 --tree-threshold 33
+```
+
+The program prints the selected reduction. The tree is intended for larger MPI
+jobs; the gather normally has less latency at small rank counts. Tune the
+threshold using representative matrix dimensions and cluster placement rather
+than a small development-machine run.
 
 Use `--verify` for the initial small run. It performs additional matrix
 multiplications and is intentionally omitted from the very large timing run.
