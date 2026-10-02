@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -27,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -40,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -111,7 +110,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -148,6 +147,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -190,7 +196,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -201,15 +207,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -220,7 +226,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -229,7 +235,7 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -262,6 +268,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -306,15 +319,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -329,7 +342,7 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -371,6 +384,20 @@
 </ul>
 </div>
 </nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-design-and-philosophy">Scope, Design and Philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#content">Content</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demos-tutorials">Demos/tutorials</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license">License</a></li>
+</ul>
+  </nav></div>
     </div>
   
   
@@ -430,7 +457,8 @@
                   
   <section id="module-romtools">
 <span id="romtools"></span><h1>romtools<a class="headerlink" href="#module-romtools" title="Link to this heading">#</a></h1>
-<p># Scope, Design and Philosophy</p>
+<section id="scope-design-and-philosophy">
+<h2>Scope, Design and Philosophy<a class="headerlink" href="#scope-design-and-philosophy" title="Link to this heading">#</a></h2>
 <p>The ROM tools and workflows Python library comprises a set of algorithms for
 constructing and exploiting ROMs.
 The library is designed internally in terms of <em>abstract base classes</em> that encapsulate
@@ -438,34 +466,40 @@ all the information needed to run a given algorithm.
 The philosophy is that, for any given application, the user “simply” needs to create
 a class that meets the required API of the abstract base class.
 Once this class is complete, the user gains access to all of our existing algorithms.</p>
-<p># Content</p>
+</section>
+<section id="content">
+<h2>Content<a class="headerlink" href="#content" title="Link to this heading">#</a></h2>
 <p>The Python library, called <cite>romtools</cite>, contains abstract interfaces and functions required for, e.g.,</p>
-<ul>
+<ul class="simple">
 <li><p>Constructing parameter spaces</p></li>
-<li><p>Constructing vector subspaces
-- Reduced-basis methods
-- Proper orthogonal decomposition</p>
-<blockquote>
-<div><ul class="simple">
+<li><p>Constructing vector subspaces</p>
+<ul>
+<li><p>Reduced-basis methods</p></li>
+<li><p>Proper orthogonal decomposition</p>
+<ul>
 <li><p>Algorithms are all compatible with basis scaling, basis splitting for multistate problems, and orthogonalization
 in different inner products</p></li>
 </ul>
-</div></blockquote>
+</li>
+</ul>
 </li>
 <li><p>Constructing and exploiting ROMs via outer loop workflows</p>
-<ul class="simple">
+<ul>
 <li><p>ROM construction via reduced-basis greedy (RB-Greedy)</p></li>
 <li><p>ROM/FOM exploitation via sampling</p></li>
 <li><p>ROM/FOM exploitation via Dakota-driven sampling</p></li>
 </ul>
 </li>
 </ul>
-<p># Demos/tutorials</p>
+</section>
+<section id="demos-tutorials">
+<h2>Demos/tutorials<a class="headerlink" href="#demos-tutorials" title="Link to this heading">#</a></h2>
 <p>Please see the Demos section of the documentation for demos and tutorials.</p>
-<p># License
-<code class="docutils literal notranslate"><span class="pre">`plaintext</span>
-<span class="pre">..</span> <span class="pre">include::</span> <span class="pre">../LICENSE</span>
-<span class="pre">`</span></code></p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Link to this heading">#</a></h2>
+<p>See the <a class="reference internal" href="../demos/license.html"><span class="doc">license information</span></a>.</p>
+</section>
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -473,7 +507,7 @@ in different inner products</p></li>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="romtools.hpc.html#module-romtools.hpc" title="romtools.hpc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hpc</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Tools for running ROM workflows on HPC resources.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.hyper_reduction.html#module-romtools.hyper_reduction" title="romtools.hyper_reduction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hyper_reduction</span></code></a></p></td>
 <td><p>The hyper-reduction library comprises a set of routines for hyper-reduction.</p></td>
@@ -488,7 +522,7 @@ in different inner products</p></li>
 <td><p>This module defines the API to work with a vector subspace.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.html#module-romtools.workflows" title="romtools.workflows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows</span></code></a></p></td>
-<td><p>The workflows module contains all of our &quot;outerloop&quot; workflows used for ROM construction and ROM exploitation. We currently support: - Greedy sampling for construction of reduced-basis ROMs - Random sampling for model exploitation - Coupling classes to Dakota for   - Random sampling.</p></td>
+<td><p>The workflows module contains all of our &quot;outerloop&quot; workflows used for ROM construction and ROM exploitation.</p></td>
 </tr>
 </tbody>
 </table>
@@ -509,6 +543,21 @@ in different inner products</p></li>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-design-and-philosophy">Scope, Design and Philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#content">Content</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demos-tutorials">Demos/tutorials</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license">License</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 
@@ -532,8 +581,8 @@ in different inner products</p></li>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -554,7 +603,6 @@ in different inner products</p></li>
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -567,7 +615,7 @@ in different inner products</p></li>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

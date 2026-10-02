@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -26,8 +25,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -39,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="_static/documentation_options.js?v=938c9ccc"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
@@ -111,7 +110,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -148,6 +147,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -190,7 +196,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -201,15 +207,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -220,7 +226,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -265,6 +271,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="formatting.html">
     Formatting Utility
   </a>
@@ -304,15 +317,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -378,6 +391,51 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.html#module-romtools.hpc.components"><code class="xref">romtools.hpc.components</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.archive.html#module-romtools.hpc.components.archive"><code class="xref">romtools.hpc.components.archive</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.call_runner.html#module-romtools.hpc.components.call_runner"><code class="xref">romtools.hpc.components.call_runner</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.caller.html#module-romtools.hpc.components.caller"><code class="xref">romtools.hpc.components.caller</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.component.html#module-romtools.hpc.components.component"><code class="xref">romtools.hpc.components.component</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.file_manager.html#module-romtools.hpc.components.file_manager"><code class="xref">romtools.hpc.components.file_manager</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.slurm.html#module-romtools.hpc.components.slurm"><code class="xref">romtools.hpc.components.slurm</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.slurm_job_manager.html#module-romtools.hpc.components.slurm_job_manager"><code class="xref">romtools.hpc.components.slurm_job_manager</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.components.transfer_manager.html#module-romtools.hpc.components.transfer_manager"><code class="xref">romtools.hpc.components.transfer_manager</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
        <a href="generated/romtools.hpc.configuration.html#module-romtools.hpc.configuration"><code class="xref">romtools.hpc.configuration</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -398,16 +456,6 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="generated/romtools.hpc.dispatchers.call_runner.html#module-romtools.hpc.dispatchers.call_runner"><code class="xref">romtools.hpc.dispatchers.call_runner</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="generated/romtools.hpc.dispatchers.caller.html#module-romtools.hpc.dispatchers.caller"><code class="xref">romtools.hpc.dispatchers.caller</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="generated/romtools.hpc.dispatchers.local_dispatcher.html#module-romtools.hpc.dispatchers.local_dispatcher"><code class="xref">romtools.hpc.dispatchers.local_dispatcher</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -419,6 +467,11 @@
        <td></td>
        <td>&#160;&#160;&#160;
        <a href="generated/romtools.hpc.dispatchers.resolve.html#module-romtools.hpc.dispatchers.resolve"><code class="xref">romtools.hpc.dispatchers.resolve</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.hpc.logger.html#module-romtools.hpc.logger"><code class="xref">romtools.hpc.logger</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -573,6 +626,41 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_auto_mf_vi.html#module-romtools.workflows.inverse.full_covariance_auto_mf_vi"><code class="xref">romtools.workflows.inverse.full_covariance_auto_mf_vi</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_lagged_newton.html#module-romtools.workflows.inverse.full_covariance_lagged_newton"><code class="xref">romtools.workflows.inverse.full_covariance_lagged_newton</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_mf_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_mf_vi_drivers"><code class="xref">romtools.workflows.inverse.full_covariance_mf_vi_drivers</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_newton.html#module-romtools.workflows.inverse.full_covariance_newton"><code class="xref">romtools.workflows.inverse.full_covariance_newton</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_router.html#module-romtools.workflows.inverse.full_covariance_router"><code class="xref">romtools.workflows.inverse.full_covariance_router</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_vi.html#module-romtools.workflows.inverse.full_covariance_vi"><code class="xref">romtools.workflows.inverse.full_covariance_vi</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.full_covariance_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_vi_drivers"><code class="xref">romtools.workflows.inverse.full_covariance_vi_drivers</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
        <a href="generated/romtools.workflows.inverse.mf_eki_drivers.html#module-romtools.workflows.inverse.mf_eki_drivers"><code class="xref">romtools.workflows.inverse.mf_eki_drivers</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -583,12 +671,32 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.vi_default_policy.html#module-romtools.workflows.inverse.vi_default_policy"><code class="xref">romtools.workflows.inverse.vi_default_policy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
        <a href="generated/romtools.workflows.inverse.vi_drivers.html#module-romtools.workflows.inverse.vi_drivers"><code class="xref">romtools.workflows.inverse.vi_drivers</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
        <a href="generated/romtools.workflows.inverse.vi_optimization_methods.html#module-romtools.workflows.inverse.vi_optimization_methods"><code class="xref">romtools.workflows.inverse.vi_optimization_methods</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.vi_run_directory_policy.html#module-romtools.workflows.inverse.vi_run_directory_policy"><code class="xref">romtools.workflows.inverse.vi_run_directory_policy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.vi_sample_reuse.html#module-romtools.workflows.inverse.vi_sample_reuse"><code class="xref">romtools.workflows.inverse.vi_sample_reuse</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="generated/romtools.workflows.inverse.vi_sample_reuse_hessian.html#module-romtools.workflows.inverse.vi_sample_reuse_hessian"><code class="xref">romtools.workflows.inverse.vi_sample_reuse_hessian</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -684,8 +792,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -706,7 +814,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -719,7 +826,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

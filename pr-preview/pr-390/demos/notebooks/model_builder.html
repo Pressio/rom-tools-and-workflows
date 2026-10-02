@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -27,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -40,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -60,7 +59,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Greedy Training" href="../greedy_training.html" />
-    <link rel="prev" title="model_builders" href="../model_builders.html" />
+    <link rel="prev" title="Model builders" href="../model_builders.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -111,7 +110,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -148,6 +147,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -190,7 +196,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -201,15 +207,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -220,7 +226,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -229,7 +235,7 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -262,6 +268,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -306,15 +319,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -337,7 +350,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../workflows.html">Sampling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../remote_execution.html">Remote Execution</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../rom_construction.html">ROM construction and adaptation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3 current active"><a class="reference internal" href="../model_builders.html">model_builders</a></li>
+<li class="toctree-l3 current active"><a class="reference internal" href="../model_builders.html">Model builders</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../greedy_training.html">Greedy Training</a></li>
 </ul>
 </details></li>
@@ -406,7 +419,7 @@
     <li class="breadcrumb-item"><a href="../rom_construction.html" class="nav-link">ROM construction and adaptation</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../model_builders.html" class="nav-link">model_builders</a></li>
+    <li class="breadcrumb-item"><a href="../model_builders.html" class="nav-link">Model builders</a></li>
     
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Basic model builder tutorial</span></li>
   </ul>
@@ -427,12 +440,12 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="basic-model-builder-tutorial">
 <h1>Basic model builder tutorial<a class="headerlink" href="#basic-model-builder-tutorial" title="Link to this heading">#</a></h1>
-<p>In this tutorial you will learn the basics of contructing a model_builder interface.</p>
+<p>In this tutorial you will learn the basics of constructing a model_builder interface.</p>
 <p>In our example, we construct a model_builder for a ROM of the advection diffusion equation.</p>
 <p>We will wrap around the adr_1d.py code.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#First, let's import the relavant modules:</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#First, let's import the relevant modules:</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">romtools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -464,7 +477,7 @@
 <span class="sd">    A file "params.dat" is required in the run directory. This .dat file contains the parameters c,nu.</span>
 <span class="sd">    A "rom_data.npz" file in an "offline_data_directory" containing the basis, Phi, and reduced operators for the diffusion and reaction term</span>
 <span class="sd">    The code is run as "python adr_1d_rom.py --offline_data_dir = path_to_offline_data_directory</span>
-<span class="sd"> </span>
+
 <span class="sd">Running the code outputs a solution.npz file with the keys x (grid) and u (solution)</span>
 
 <span class="sd">'''</span>
@@ -491,7 +504,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Now, we can construct the model builder, which should return an adrRom. </span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#Now, we can construct the model builder, which should return an adrRom.</span>
 <span class="c1">#The main logic that we need to add is how to construct the basis given training directories</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AdrRomModelBuilder</span><span class="p">:</span>
@@ -499,12 +512,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span> <span class="o">=</span> <span class="n">myFom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adrRomFunctor_</span> <span class="o">=</span> <span class="n">adrRomFunctor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_dir_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
-        
+
     <span class="k">def</span><span class="w"> </span><span class="nf">build_from_training_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">offline_data_dir</span><span class="p">,</span><span class="n">training_dirs</span><span class="p">):</span>
         <span class="c1"># The offline_data_dir is a location where we should store any data required for running our ROMs</span>
         <span class="c1"># (e.g., input yamls, precomputed operators). For workflows leveraging the model builders, romtools will</span>
         <span class="c1"># create these directories</span>
-        
+
         <span class="c1">#Similar, training_dirs is a list of directories where our FOMs have been run and training data is stored.</span>
 
         <span class="c1"># The advection diffusion FOM saves a solution.npz file with a key word 'u' containing the solution for each solution</span>
@@ -520,10 +533,10 @@
         <span class="c1"># Note that ROM tools requires the snapshots to be in tensor form (n_vars, n_dofs , n_snaps)</span>
         <span class="n">my_trial_space</span> <span class="o">=</span> <span class="n">romtools</span><span class="o">.</span><span class="n">vector_space</span><span class="o">.</span><span class="n">DictionaryVectorSpace</span><span class="p">(</span><span class="n">snapshots</span><span class="p">[</span><span class="kc">None</span><span class="p">])</span>
 
-        <span class="c1"># We can now assemble our ROM. First, grab the basis for the state variable </span>
+        <span class="c1"># We can now assemble our ROM. First, grab the basis for the state variable</span>
         <span class="n">basis</span> <span class="o">=</span> <span class="n">my_trial_space</span><span class="o">.</span><span class="n">get_basis</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="c1"># We need to instatiate a realization of the FOM to get access to the FOM operators</span>
+        <span class="c1"># We need to instantiate a realization of the FOM to get access to the FOM operators</span>
         <span class="c1">#Let's assemble the ROM operators</span>
         <span class="n">Adr</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span><span class="o">.</span><span class="n">Ad_</span> <span class="o">@</span> <span class="n">basis</span>
         <span class="n">Acr</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span><span class="o">.</span><span class="n">Ac_</span> <span class="o">@</span> <span class="n">basis</span>
@@ -535,7 +548,7 @@
         <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="n">offline_data_dir</span> <span class="o">+</span> <span class="s1">'/rom_data'</span><span class="p">,</span><span class="n">Adr</span><span class="o">=</span><span class="n">Adr</span><span class="p">,</span><span class="n">Acr</span><span class="o">=</span><span class="n">Acr</span><span class="p">,</span><span class="n">fr</span><span class="o">=</span><span class="n">fr</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="n">basis</span><span class="p">,</span>
                 <span class="n">Ac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span><span class="o">.</span><span class="n">Ac_</span><span class="p">,</span><span class="n">Ad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span><span class="o">.</span><span class="n">Ad_</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">myFom_</span><span class="o">.</span><span class="n">f_</span><span class="p">)</span>
 
-        <span class="c1">#Now, we can instatiate the ROM:</span>
+        <span class="c1">#Now, we can instantiate the ROM:</span>
         <span class="n">myRom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">adrRomFunctor_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_dir_</span><span class="p">,</span><span class="n">offline_data_dir</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">myRom</span>
 
@@ -551,10 +564,10 @@
     <span class="c1">#First, let's create some training data following the basic_sampling tutorial</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">ipynb.fs.full.external_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">adrExternalRomToolsModel</span>
     <span class="n">myModel</span> <span class="o">=</span> <span class="n">adrExternalRomToolsModel</span><span class="p">()</span>
-    
+
     <span class="kn">from</span><span class="w"> </span><span class="nn">ipynb.fs.full.parameter_space</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasicParameterSpace</span>
     <span class="n">myParameterSpace</span> <span class="o">=</span> <span class="n">BasicParameterSpace</span><span class="p">()</span>
-    
+
     <span class="c1">#The sampling algorithm requires a directory argument of where to put all the generated samples, files, etc.</span>
     <span class="n">work_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s1">'/model_builder_tutorial/'</span>
 
@@ -625,13 +638,12 @@ Sample complete, run time = 0.08455801010131836
     <span class="c1">#Now let's run the FOM</span>
     <span class="n">myModel</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span><span class="n">parameter_sample</span><span class="p">)</span>
     <span class="n">myModel</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span><span class="n">parameter_sample</span><span class="p">)</span>
-    <span class="n">fom_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run_directory</span> <span class="o">+</span> <span class="s1">'/solution.npz'</span><span class="p">)</span>    
+    <span class="n">fom_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run_directory</span> <span class="o">+</span> <span class="s1">'/solution.npz'</span><span class="p">)</span>
     <span class="n">u_fom</span> <span class="o">=</span> <span class="n">fom_solution</span><span class="p">[</span><span class="s1">'u'</span><span class="p">]</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">'ROM-FOM error = '</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">u_rom</span> <span class="o">-</span> <span class="n">u_fom</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">u_fom</span><span class="p">))</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fom_solution</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span><span class="n">fom_solution</span><span class="p">[</span><span class="s1">'u'</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="s1">'green'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">'FOM'</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    
 </pre></div>
 </div>
 </div>
@@ -681,8 +693,8 @@ Sample complete, run time = 0.08455801010131836
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -703,7 +715,6 @@ Sample complete, run time = 0.08455801010131836
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -716,7 +727,7 @@ Sample complete, run time = 0.08455801010131836
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

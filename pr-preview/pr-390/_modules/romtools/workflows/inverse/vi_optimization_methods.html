@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -26,8 +25,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
@@ -39,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -108,7 +107,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -145,6 +144,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -187,7 +193,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -198,15 +204,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -217,7 +223,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -262,6 +268,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../formatting.html">
     Formatting Utility
   </a>
@@ -301,15 +314,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -440,7 +453,8 @@
     <span class="n">newton_hessian_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'diagonal'</span>
     <span class="n">newton_curvature_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'same_sample'</span>
     <span class="n">newton_hessian_num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">newton_hessian_averaging_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span></div>
+    <span class="n">newton_hessian_averaging_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
+    <span class="n">newton_regularization_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'absolute'</span></div>
 
 
 
@@ -532,6 +546,17 @@
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"Unsupported newton_hessian_type '</span><span class="si">{</span><span class="n">newton_hessian_type</span><span class="si">}</span><span class="s2">'. "</span>
         <span class="s2">"Supported options are 'diagonal' and 'full'."</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_newton_regularization_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Normalize the eigenvalue-floor scaling used by the Newton solve."""</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">normalized</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'absolute'</span><span class="p">,</span> <span class="s1">'hessian_norm'</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">normalized</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Unsupported newton_regularization_strategy '</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">'. "</span>
+        <span class="s2">"Supported options are 'absolute' and 'hessian_norm'."</span>
     <span class="p">)</span>
 
 
@@ -894,21 +919,39 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">NewtonSolver</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generic Newton solver supporting diagonal or dense Hessians."""</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">hessian_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'diagonal'</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">regularization</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                 <span class="n">hessian_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'diagonal'</span><span class="p">,</span>
+                 <span class="n">regularization_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'absolute'</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span> <span class="o">=</span> <span class="n">regularization</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hessian_type</span> <span class="o">=</span> <span class="n">_normalize_newton_hessian_type</span><span class="p">(</span><span class="n">hessian_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regularization_strategy</span> <span class="o">=</span> <span class="n">_normalize_newton_regularization_strategy</span><span class="p">(</span>
+            <span class="n">regularization_strategy</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_regularization_floor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian_norm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">regularization_strategy</span> <span class="o">==</span> <span class="s1">'hessian_norm'</span><span class="p">:</span>
+            <span class="n">safe_hessian_norm</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">hessian_norm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span> <span class="o">*</span> <span class="n">safe_hessian_norm</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_project_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">hessian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">hessian</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">hessian</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">projected_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">hessian</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span><span class="p">)</span>
+            <span class="n">hessian_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">hessian</span><span class="p">)))</span>
+            <span class="n">regularization_floor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_regularization_floor</span><span class="p">(</span><span class="n">hessian_norm</span><span class="p">)</span>
+            <span class="n">projected_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">hessian</span><span class="p">),</span> <span class="n">regularization_floor</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">projected_diagonal</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">hessian</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">hessian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">hessian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Hessian must be a 1D diagonal or a square 2D matrix."</span><span class="p">)</span>
         <span class="n">sym_hessian</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">hessian</span> <span class="o">+</span> <span class="n">hessian</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
         <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">eigenvectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">sym_hessian</span><span class="p">)</span>
-         
-        <span class="n">projected_eigenvalues</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span><span class="p">)</span>
+
+        <span class="n">hessian_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">)))</span>
+        <span class="n">regularization_floor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_regularization_floor</span><span class="p">(</span><span class="n">hessian_norm</span><span class="p">)</span>
+        <span class="n">projected_eigenvalues</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">),</span> <span class="n">regularization_floor</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">eigenvectors</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">projected_eigenvalues</span><span class="p">))</span> <span class="o">@</span> <span class="n">eigenvectors</span><span class="o">.</span><span class="n">T</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -923,9 +966,13 @@
                 <span class="n">hessian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hessian</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">hessian</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Hessian must be a 1D diagonal or a square 2D matrix."</span><span class="p">)</span>
+            <span class="n">sanitized_hessian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span>
+                <span class="n">hessian</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span>
+            <span class="p">)</span>
+            <span class="n">hessian_norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sanitized_hessian</span><span class="p">)))</span>
+            <span class="n">regularization_floor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_regularization_floor</span><span class="p">(</span><span class="n">hessian_norm</span><span class="p">)</span>
             <span class="n">projected_diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">hessian</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)),</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">regularization</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sanitized_hessian</span><span class="p">),</span> <span class="n">regularization_floor</span>
             <span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span>
                 <span class="s1">'Gradient and hessian norms:'</span><span class="p">,</span>
@@ -965,8 +1012,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -987,7 +1034,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -1000,7 +1046,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -27,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -40,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -111,7 +110,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -148,6 +147,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -190,7 +196,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -201,15 +207,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -220,7 +226,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -229,7 +235,7 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -262,6 +268,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -306,15 +319,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -332,9 +345,11 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.components.html">romtools.hpc.components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.configuration.html">romtools.hpc.configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.hpc.connection.html">romtools.hpc.connection</a></li>
 <li class="toctree-l3 current active"><a class="reference internal" href="romtools.hpc.dispatchers.html">romtools.hpc.dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.logger.html">romtools.hpc.logger</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -385,8 +400,7 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.dispatch"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.dispatch()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.np_savez"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.np_savez()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.run"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.run()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -459,84 +473,54 @@
                   
   <section id="module-romtools.hpc.dispatchers.remote_dispatcher">
 <span id="romtools-hpc-dispatchers-remote-dispatcher"></span><h1>romtools.hpc.dispatchers.remote_dispatcher<a class="headerlink" href="#module-romtools.hpc.dispatchers.remote_dispatcher" title="Link to this heading">#</a></h1>
-<p class="rubric">Functions</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_local_bash</span></code>(cmd)</p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</div>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher" title="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a>([sampling_directory, ...])</p></td>
-<td><p>Main class of ROM's HPC tools.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher" title="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a>([campaign_directory, ...])</p></td>
+<td><p>Runs ROM workflows on a remote host over SSH, connecting as <a class="reference external" href="mailto:user&#37;&#52;&#48;remote">user<span>&#64;</span>remote</a>:port.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.remote_dispatcher.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampling_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hpctools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></p>
-<p>Main class of ROM’s HPC tools. Establishes SSH connection to remote host, dispatches
-desired workflows, and transfers results back to the local machine.</p>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.hpc.dispatchers.remote_dispatcher.</span></span><span class="sig-name descname"><span class="pre">RemoteDispatcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">campaign_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hpctools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDispatcher</span></code></a></p>
+<p>Runs ROM workflows on a remote host over SSH, connecting as <a class="reference external" href="mailto:user&#37;&#52;&#48;remote">user<span>&#64;</span>remote</a>:port.</p>
+<p>Coordinates composed helpers rather than doing the work itself: files go through
+RemoteFileManager, Python calls through RemoteCaller, batch jobs through
+SlurmJobManager, and archives through RemoteTransferManager. Paths are taken relative
+to the configured remote root.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>logger</strong> (<em>Logger</em>) – An instance of the Logger class for logging</p></li>
-<li><p><strong>sampling_directory</strong> (<em>str</em>) – An optional string for your local output directory</p></li>
+<li><p><strong>logger</strong> (<a class="reference internal" href="romtools.hpc.logger.html#romtools.hpc.logger.Logger" title="romtools.hpc.logger.Logger"><em>Logger</em></a>) – An instance of the Logger class for logging</p></li>
+<li><p><strong>campaign_directory</strong> (<em>str</em>) – An optional string naming the directory this campaign
+runs in, relative to the remote root. It is mirrored locally and
+under the remote root.</p></li>
+<li><p><strong>config</strong> – A YAML path or a Configuration. Defaults to reading the command line.</p></li>
 <li><p><strong>connection</strong> (<a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Connection" title="romtools.hpc.connection.Connection"><em>Connection</em></a><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="simple">
-<dt>The basic command is therefore:</dt><dd><p>ssh <a class="reference external" href="mailto:user&#37;&#52;&#48;remote">user<span>&#64;</span>remote</a> -p port</p>
-</dd>
-</dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.dispatch">
-<span class="sig-name descname"><span class="pre">dispatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_slurm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher.dispatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.dispatch" title="Link to this definition">#</a></dt>
-<dd><p>Main method of the Dispatcher. Dispatches provided work to the
-remote host, polls the job, and collects results.</p>
+<dt class="sig sig-object py" id="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.run" title="Link to this definition">#</a></dt>
+<dd><p>Run a command directly on the remote host, without SLURM.</p>
+<p>This lands wherever the SSH session does, which on a cluster is the login
+node, so it suits quick staging or preprocessing; anything long or
+parallel belongs in submit_job(). run_directory is relative to the remote
+root, and defaults to the root itself.</p>
+<p>Returns a Result object (with stdout, stderr, exit_code, ok)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cmd</strong> (<em>str</em>) – The command to run in the SLURM job.
-Should be executable from self.config.get(“remote_root”) or the specified run_directory.
-If not provided, dispatcher must be configured with
-a SLURM script that includes the command to run.</p></li>
-<li><p><strong>run_directory</strong> (<em>str</em>) – The directory in which to execute the command or SLURM job
-on the remote host. If not provided, defaults to self.config.get(“remote_root”).</p></li>
-<li><p><strong>with_slurm</strong> (<em>bool</em>) – If True, the command will be run as a SLURM job.
-If False, the command will be executed directly without SLURM.</p></li>
+<li><p><strong>cmd</strong> (<em>str</em>)</p></li>
+<li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="romtools.hpc.connection.html#romtools.hpc.connection.Result" title="romtools.hpc.connection.Result"><em>Result</em></a></p>
-</dd>
-</dl>
-<p>Returns a Result object (with stdout, stderr, exitcode, ok)</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.np_savez">
-<span class="sig-name descname"><span class="pre">np_savez</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/hpc/dispatchers/remote_dispatcher.html#RemoteDispatcher.np_savez"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.np_savez" title="Link to this definition">#</a></dt>
-<dd><dl class="simple">
-<dt>Write multiple arrays to a .npz file.</dt><dd><ul class="simple">
-<li><p>If a connection exists, the .npz file is first written to a local temp directory and then uploaded to the remote host.</p></li>
-<li><p>If no connection exists, the .npz file is written directly to the specified path.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<em>str</em>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -569,8 +553,7 @@ If False, the command will be executed directly without SLURM.</p></li>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.dispatch"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.dispatch()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.np_savez"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.np_savez()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.hpc.dispatchers.remote_dispatcher.RemoteDispatcher.run"><code class="docutils literal notranslate"><span class="pre">RemoteDispatcher.run()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -598,8 +581,8 @@ If False, the command will be executed directly without SLURM.</p></li>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -620,7 +603,6 @@ If False, the command will be executed directly without SLURM.</p></li>
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -633,7 +615,7 @@ If False, the command will be executed directly without SLURM.</p></li>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

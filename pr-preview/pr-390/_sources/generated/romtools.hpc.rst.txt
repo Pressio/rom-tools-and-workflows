@@ -10,6 +10,8 @@ romtools.hpc
    :toctree:
    :recursive:
 
+   components
    configuration
    connection
    dispatchers
+   logger

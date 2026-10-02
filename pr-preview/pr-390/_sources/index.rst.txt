@@ -83,6 +83,7 @@ Capabilities
    :hidden:
 
    api
+   full_covariance_vi
    formatting
    demos/index
    rom_tools_at_scale

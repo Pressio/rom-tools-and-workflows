@@ -1,7 +1,8 @@
-workflows
-=======================
+Workflows
+=========
 
-This set of tutorials will show you how to use romtools to execute outerloop workflows
+This set of tutorials will show you how to use romtools to execute outerloop
+workflows.
 
 .. toctree::
    :maxdepth: 2

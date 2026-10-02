@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -26,8 +25,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -39,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -108,7 +107,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -145,6 +144,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -187,7 +193,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -198,15 +204,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -217,7 +223,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -262,6 +268,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../formatting.html">
     Formatting Utility
   </a>
@@ -301,15 +314,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -378,7 +391,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 
 <div class="viewcode-block" id="Result">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Result">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Result">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Result</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Simple class to encapsulate the result of a command execution.</span>
@@ -390,8 +403,26 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ok</span> <span class="o">=</span> <span class="n">exit_code</span> <span class="o">==</span> <span class="mi">0</span></div>
 
 
+<div class="viewcode-block" id="run_local_bash">
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.run_local_bash">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_local_bash</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Result</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run a shell command on this machine.</span>
+
+<span class="sd">    Components that only need to issue shell commands take a run_cmd callable</span>
+<span class="sd">    rather than a Connection, so the same logic serves either machine. This is</span>
+<span class="sd">    the local half; Connection.run is the remote one.</span>
+<span class="sd">    """</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">"bash"</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="n">cmd</span><span class="p">],</span>
+        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">text</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Result</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="Connection">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Connection</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A simple SSH connection class that uses subprocess to execute SSH and SCP commands.</span>
@@ -426,7 +457,7 @@
             <span class="p">])</span>
 
 <div class="viewcode-block" id="Connection.run">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.run">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Execute a command on the remote host"""</span>
         <span class="n">ssh_cmd</span> <span class="o">=</span> <span class="p">[</span>
@@ -447,7 +478,7 @@
 
 
 <div class="viewcode-block" id="Connection.get">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.get">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Download a file from the remote host"""</span>
         <span class="n">remote_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">remote</span><span class="si">}</span><span class="s2">"</span>
@@ -469,7 +500,7 @@
 
 
 <div class="viewcode-block" id="Connection.put">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.put">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.put">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Upload a file to the remote host"""</span>
         <span class="n">remote_path</span> <span class="o">=</span> <span class="n">remote</span> <span class="k">if</span> <span class="n">remote</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
@@ -488,7 +519,7 @@
 
 
 <div class="viewcode-block" id="Connection.local">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.local">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.local">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Execute a command locally"""</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -501,7 +532,7 @@
 
 
 <div class="viewcode-block" id="Connection.close">
-<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.connection.Connection.close">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hpc.connection.html#romtools.hpc.Connection.close">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Close the SSH connection"""</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span>
@@ -536,8 +567,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -558,7 +589,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -571,7 +601,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

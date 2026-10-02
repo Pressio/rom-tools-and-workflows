@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -27,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -40,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
     <script src="../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -111,7 +110,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -148,6 +147,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -190,7 +196,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -201,15 +207,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -220,7 +226,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -229,7 +235,7 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -262,6 +268,13 @@
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
   </a>
 </li>
 
@@ -306,15 +319,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
     <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
     <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
     <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -340,7 +353,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">romtools.workflows.inverse</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.inverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
@@ -364,16 +377,27 @@
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">romtools.workflows.inverse</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.inverse</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.bfgs_drivers.html">romtools.workflows.inverse.bfgs_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_drivers.html">romtools.workflows.inverse.ego_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.ego_optimization_methods.html">romtools.workflows.inverse.ego_optimization_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_bound_transforms.html">romtools.workflows.inverse.eki_bound_transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html">romtools.workflows.inverse.eki_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_auto_mf_vi.html">romtools.workflows.inverse.full_covariance_auto_mf_vi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_lagged_newton.html">romtools.workflows.inverse.full_covariance_lagged_newton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html">romtools.workflows.inverse.full_covariance_mf_vi_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_newton.html">romtools.workflows.inverse.full_covariance_newton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html">romtools.workflows.inverse.full_covariance_router</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html">romtools.workflows.inverse.full_covariance_vi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html">romtools.workflows.inverse.full_covariance_vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html">romtools.workflows.inverse.mf_eki_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">romtools.workflows.inverse.mf_vi_drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_default_policy.html">romtools.workflows.inverse.vi_default_policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">romtools.workflows.inverse.vi_drivers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html">romtools.workflows.inverse.vi_optimization_methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html">romtools.workflows.inverse.vi_run_directory_policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse.html">romtools.workflows.inverse.vi_sample_reuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html">romtools.workflows.inverse.vi_sample_reuse_hessian</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
@@ -490,9 +514,9 @@ the model predictions consistent with the observations.</p>
 <li><p>Multifidelity EKI with control variates and adaptive reduced-order model
 refresh strategies.</p></li>
 <li><p>Variational inference (VI) with gradient, Adam, and Newton optimizers for
-Gaussian variational families.</p></li>
+Gaussian variational families, including diagonal and full-covariance VI.</p></li>
 <li><p>Multifidelity VI with control variates and adaptive reduced-order model
-updates.</p></li>
+updates, including full-covariance natural-coordinate Newton optimization.</p></li>
 </ul>
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
@@ -512,17 +536,50 @@ updates.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.eki_drivers.html#module-romtools.workflows.inverse.eki_drivers" title="romtools.workflows.inverse.eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eki_drivers</span></code></a></p></td>
 <td><p>Single-fidelity ensemble Kalman inversion drivers.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html#module-romtools.workflows.inverse.mf_eki_drivers" title="romtools.workflows.inverse.mf_eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_eki_drivers</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_auto_mf_vi.html#module-romtools.workflows.inverse.full_covariance_auto_mf_vi" title="romtools.workflows.inverse.full_covariance_auto_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_auto_mf_vi</span></code></a></p></td>
+<td><p>Auto-ROM convenience wrapper for full-covariance MF-VI.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_lagged_newton.html#module-romtools.workflows.inverse.full_covariance_lagged_newton" title="romtools.workflows.inverse.full_covariance_lagged_newton"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_lagged_newton</span></code></a></p></td>
+<td><p>Lagged-curvature support for full-covariance natural Newton VI/MF-VI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_mf_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_mf_vi_drivers" title="romtools.workflows.inverse.full_covariance_mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_mf_vi_drivers</span></code></a></p></td>
+<td><p>Full-covariance multifidelity variational inference.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_newton.html#module-romtools.workflows.inverse.full_covariance_newton" title="romtools.workflows.inverse.full_covariance_newton"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_newton</span></code></a></p></td>
+<td><p>Natural-coordinate Newton support for full-covariance Gaussian VI/MF-VI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_router.html#module-romtools.workflows.inverse.full_covariance_router" title="romtools.workflows.inverse.full_covariance_router"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_router</span></code></a></p></td>
+<td><p>Public routing for Gaussian VI variational families.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi.html#module-romtools.workflows.inverse.full_covariance_vi" title="romtools.workflows.inverse.full_covariance_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_vi</span></code></a></p></td>
+<td><p>Utilities for full-covariance Gaussian variational inference.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.full_covariance_vi_drivers.html#module-romtools.workflows.inverse.full_covariance_vi_drivers" title="romtools.workflows.inverse.full_covariance_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_covariance_vi_drivers</span></code></a></p></td>
+<td><p>Full-covariance Gaussian VI wrappers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_eki_drivers.html#module-romtools.workflows.inverse.mf_eki_drivers" title="romtools.workflows.inverse.mf_eki_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_eki_drivers</span></code></a></p></td>
 <td><p>Multifidelity ensemble Kalman inversion drivers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html#module-romtools.workflows.inverse.mf_vi_drivers" title="romtools.workflows.inverse.mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_drivers</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html#module-romtools.workflows.inverse.mf_vi_drivers" title="romtools.workflows.inverse.mf_vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mf_vi_drivers</span></code></a></p></td>
 <td><p>Multifidelity variational inference drivers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_default_policy.html#module-romtools.workflows.inverse.vi_default_policy" title="romtools.workflows.inverse.vi_default_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_default_policy</span></code></a></p></td>
+<td><p>Centralized public defaults for VI and MF-VI optimization.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html#module-romtools.workflows.inverse.vi_drivers" title="romtools.workflows.inverse.vi_drivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_drivers</span></code></a></p></td>
 <td><p>Variational inference drivers for Gaussian posterior approximations.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_optimization_methods.html#module-romtools.workflows.inverse.vi_optimization_methods" title="romtools.workflows.inverse.vi_optimization_methods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_optimization_methods</span></code></a></p></td>
 <td><p>Optimization methods and configs used by inverse VI workflows.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_run_directory_policy.html#module-romtools.workflows.inverse.vi_run_directory_policy" title="romtools.workflows.inverse.vi_run_directory_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_run_directory_policy</span></code></a></p></td>
+<td><p>Run-directory policy for VI and MFVI model evaluations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse.html#module-romtools.workflows.inverse.vi_sample_reuse" title="romtools.workflows.inverse.vi_sample_reuse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_sample_reuse</span></code></a></p></td>
+<td><p>Importance-sampling sample reuse for VI and MFVI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.vi_sample_reuse_hessian.html#module-romtools.workflows.inverse.vi_sample_reuse_hessian" title="romtools.workflows.inverse.vi_sample_reuse_hessian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vi_sample_reuse_hessian</span></code></a></p></td>
+<td><p>Newton/Hessian support for importance-sampling VI sample reuse.</p></td>
 </tr>
 </tbody>
 </table>
@@ -566,8 +623,8 @@ updates.</p></li>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -588,7 +645,6 @@ updates.</p></li>
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
-    <br/>
   </p>
 </div>
       
@@ -601,7 +657,7 @@ updates.</p></li>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

@@ -1,13 +1,16 @@
-model_builders
-=======================
+Model builders
+==============
 
-A model builder is a method used to build a (typically data-driven) model in a workflow like greedy.
+A model builder defines how a reduced-order model (ROM) is constructed from
+available full-order model (FOM) samples.
 
-As an example, we can consider a simple training algorithm where we iteratively
-run FOM samples, use them to construct a ROM, evaluate the ROM, and then
-continue to add samples until the ROM is of a desired accuracy. In this context,
-the model_builder interface will provide context on how to construct the ROM
-given the FOM samples.
+For example, consider an iterative training workflow such as a greedy algorithm.
+The workflow runs FOM simulations, uses the resulting samples to build a ROM,
+and evaluates its accuracy. Additional FOM samples are then generated and
+incorporated until the ROM reaches the desired accuracy.
+
+In this setting, the `model_builder` interface defines how the ROM is
+constructed from the collected FOM samples.
 
 .. toctree::
    :maxdepth: 1

@@ -9,7 +9,7 @@
     "\n",
     "In this tutorial you will learn the basics of constructing a parameter space that can be used in the romtools workflows. Here, we will create a simple 2D parameter space that will be used in downstream examples.\n",
     "\n",
-    "The API for the parameter space is documented here: https://pressio.github.io/rom-tools-and-workflows/romtools/workflows/parameter_spaces.html\n"
+    "See the {doc}`parameter-space API </generated/romtools.workflows.parameter_spaces>`.\n"
    ]
   },
   {
