@@ -70,6 +70,44 @@ from romtools.workflows.inverse.vi_run_directory_policy import (
     mf_vi_with_auto_rom as _directory_policy_mf_vi_with_auto_rom,
 )
 
+# Add jackknife-based adaptive sample enrichment as the outermost optional
+# VI/MFVI policy. This keeps the standard drivers unchanged when disabled and
+# lets the adaptive evaluator see the same run-directory and sample-reuse
+# wrapper stack.
+from romtools.workflows.inverse.vi_adaptive_sampling import (
+    VIAdaptiveSampleConfig,
+    run_vi as _adaptive_run_vi,
+    run_mf_vi as _adaptive_run_mf_vi,
+    mf_vi_with_auto_rom as _adaptive_mf_vi_with_auto_rom,
+)
+_adaptive_sampling_module = _import_module("romtools.workflows.inverse.vi_adaptive_sampling")
+
+
+# The adaptive policy introspects the underlying legacy driver signatures, while
+# the public wrapper stack also carries policy-only keywords such as
+# create_run_directories and sample_reuse_config. Filter those wrapper keywords
+# when binding a legacy signature; evaluator signatures continue to receive all
+# of their native arguments unchanged.
+def _bind_adaptive_signature(signature_source, args, kwargs):
+    signature = _inspect.signature(signature_source)
+    accepts_var_kwargs = any(
+        parameter.kind == _inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
+    if accepts_var_kwargs:
+        bind_kwargs = kwargs
+    else:
+        bind_kwargs = {
+            key: value for key, value in kwargs.items()
+            if key in signature.parameters
+        }
+    bound = signature.bind_partial(*args, **bind_kwargs)
+    bound.apply_defaults()
+    return bound.arguments
+
+
+_adaptive_sampling_module._bind = _bind_adaptive_signature
+
 
 def _add_vi_wrapper_signature(wrapper, original):
     signature = _inspect.signature(original)
@@ -93,14 +131,21 @@ def _add_vi_wrapper_signature(wrapper, original):
         default=None,
         annotation=VISampleReuseConfig,
     )
+    adaptive_parameter = _inspect.Parameter(
+        "adaptive_sample_config",
+        kind=_inspect.Parameter.KEYWORD_ONLY,
+        default=None,
+        annotation=VIAdaptiveSampleConfig,
+    )
     parameters.insert(insertion_index, directory_parameter)
     parameters.insert(insertion_index + 1, reuse_parameter)
+    parameters.insert(insertion_index + 2, adaptive_parameter)
     wrapper.__signature__ = signature.replace(parameters=parameters)
 
 
-run_vi = _directory_policy_run_vi
-run_mf_vi = _directory_policy_run_mf_vi
-mf_vi_with_auto_rom = _directory_policy_mf_vi_with_auto_rom
+run_vi = _adaptive_run_vi
+run_mf_vi = _adaptive_run_mf_vi
+mf_vi_with_auto_rom = _adaptive_mf_vi_with_auto_rom
 _add_vi_wrapper_signature(run_vi, _sample_reuse_module._ORIGINAL_RUN_VI)
 _add_vi_wrapper_signature(run_mf_vi, _sample_reuse_module._ORIGINAL_RUN_MF_VI)
 _add_vi_wrapper_signature(
