@@ -1,7 +1,22 @@
+"""
+Approximate control variate optimization for Multi-Fidelity UQ.
+
+`MFMC` solves the hybrid ACV problem (15) of the writeup: it minimizes the
+estimator variance (1 - R^2_ACV(r, s)) / N subject to the budget constraint
+of (2), over the sample count N, the oversampling ratios r, and the trainable
+ROM basis sizes s.
+
+Model ordering and pair flattening come from `model_indices.py`, which also
+carries the writeup-to-code notation map.
+"""
+
 from math import floor
+
 import numpy as np
 import torch
 from scipy.optimize import minimize, NonlinearConstraint
+
+from romtools.workflows.hybrid_mfuq.model_indices import tril_indices
 
 
 class MFMC:
@@ -102,6 +117,17 @@ class MFMC:
             return float(value.detach().cpu().numpy())
         return float(value)
 
+    @staticmethod
+    def _split_corr_matrix(P):
+        """
+        Split a full correlation matrix P, ordered [FOM, LF_1, ..., LF_m],
+        into the HF-LF correlation vector c and the LF-LF correlation matrix
+        C, per writeup Eq. (13).
+        """
+        c = P[1:, 0]
+        C = P[1:, 1:]
+        return c, C
+
     # ------------------------------------------------------------------
     # Matrices
     # ------------------------------------------------------------------
@@ -138,7 +164,7 @@ class MFMC:
             entries = torch.stack([f(s) for f in self.lf_corr_list])
             n = floor((1 + np.sqrt(1 + 8 * len(entries))) / 2)
 
-            idx_i, idx_j = np.tril_indices(n, -1)
+            idx_i, idx_j = tril_indices(n)
             idx_i_t = torch.tensor(idx_i, dtype=torch.long, device=entries.device)
             idx_j_t = torch.tensor(idx_j, dtype=torch.long, device=entries.device)
 
@@ -152,7 +178,7 @@ class MFMC:
         n = floor((1 + np.sqrt(1 + 8 * len(entries))) / 2)
 
         C = np.eye(n)
-        idx = np.tril_indices(n, -1)
+        idx = tril_indices(n)
         C[idx] = entries
         C[(idx[1], idx[0])] = entries
 
@@ -171,9 +197,7 @@ class MFMC:
                 P = torch.as_tensor(P, dtype=torch.float64)
 
             P = P.to(dtype=s_active.dtype, device=s_active.device)
-            c = P[1:, 0]
-            C = P[1:, 1:]
-            return c, C
+            return self._split_corr_matrix(P)
 
         s = self.expand_s(s_active)
         c = torch.stack([f(s) for f in self.hf_corr_list])
@@ -187,9 +211,7 @@ class MFMC:
             if torch.is_tensor(P):
                 P = P.detach().cpu().numpy()
             P = np.asarray(P, dtype=float)
-            c = P[1:, 0]
-            C = P[1:, 1:]
-            return c, C
+            return self._split_corr_matrix(P)
 
         s = self.expand_s(s_active)
         c = np.array([f(s) for f in self.hf_corr_list], dtype=float)
@@ -202,6 +224,16 @@ class MFMC:
     # ------------------------------------------------------------------
 
     def set_objective_and_constraint(self, log=True, bounds=None):
+        """
+        Build the objective and constraint of the hybrid ACV problem (15),
+        together with their gradients.
+
+        Each quantity is written once, as a function of the split state
+        (N, r, s_active), and the value/gradient pair is derived from it:
+        under use_torch the same expression is evaluated on tensors and
+        differentiated by autograd, otherwise it is evaluated in numpy and
+        SLSQP falls back to finite differences.
+        """
         self.log = log
 
         n_lofi = len(self.cost_list)
@@ -209,116 +241,72 @@ class MFMC:
 
         self.bounds = bounds if bounds is not None else [(None, None)] * dim
 
-        def objective(x):
-            if self.use_torch:
-                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+        def split(x):
+            return x[0], x[1:n_lofi + 1], x[n_lofi + 1:]
 
-                N = x_torch[0]
-                r = x_torch[1:n_lofi + 1]
-                s_active = x_torch[n_lofi + 1:]
-
-                F = self.build_F(r)
-                c, C = self._torch_correlations(s_active)
-
-                v = torch.diag(F) * c
-                R2 = torch.linalg.solve(F * C, v).dot(v)
-
-                val = (1.0 - R2) / N
-                result = torch.log(val) if self.log else val
-
-                return float(result.detach().cpu().numpy())
-
-            N = x[0]
-            r = x[1:n_lofi + 1]
-            s_active = x[n_lofi + 1:]
+        def objective_value(x, torch_mode):
+            """log((1 - R^2_ACV) / N), the objective of (15) via (4)."""
+            N, r, s_active = split(x)
 
             F = self.build_F(r)
-            c, C = self._numpy_correlations(s_active)
-
-            v = np.diag(F) * c
-            R2 = np.linalg.solve(F * C, v).dot(v)
-
-            val = (1.0 - R2) / N
-            return np.log(val) if self.log else val
-
-        def objective_grad(x):
-            if not self.use_torch:
-                return None
-
-            x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-            N = x_torch[0]
-            r = x_torch[1:n_lofi + 1]
-            s_active = x_torch[n_lofi + 1:]
-
-            F = self.build_F(r)
-            c, C = self._torch_correlations(s_active)
-
-            v = torch.diag(F) * c
-            R2 = torch.linalg.solve(F * C, v).dot(v)
-
-            val = (1.0 - R2) / N
-            result = torch.log(val) if self.log else val
-
-            result.backward()
-
-            return x_torch.grad.detach().cpu().numpy().astype(np.float64)
-
-        def constraint(x):
-            if self.use_torch:
-                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-                N = x_torch[0]
-                r = x_torch[1:n_lofi + 1]
-                s_active = x_torch[n_lofi + 1:]
-
-                s = self.expand_s(s_active)
-                w = torch.stack([f(s) for f in self.cost_list])
-
-                result = N * (
-                    1.0 + torch.dot(r, w) + self.fac * torch.sum(s_active)
-                )
-
-                return float(result.detach().cpu().numpy())
-
-            N = x[0]
-            r = x[1:n_lofi + 1]
-            s_active = x[n_lofi + 1:]
-
-            s = self.expand_s(s_active)
-            w = np.array([f(s) for f in self.cost_list], dtype=float)
-
-            return N * (1.0 + np.dot(r, w) + self.fac * np.sum(s_active))
-
-        def constraint_grad(x):
-            if not self.use_torch:
-                return None
-
-            x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
-
-            N = x_torch[0]
-            r = x_torch[1:n_lofi + 1]
-            s_active = x_torch[n_lofi + 1:]
-
-            s = self.expand_s(s_active)
-            w = torch.stack([f(s) for f in self.cost_list])
-
-            result = N * (
-                1.0 + torch.dot(r, w) + self.fac * torch.sum(s_active)
+            c, C = (
+                self._torch_correlations(s_active)
+                if torch_mode
+                else self._numpy_correlations(s_active)
             )
 
-            result.backward()
+            if torch_mode:
+                v = torch.diag(F) * c
+                R2 = torch.linalg.solve(F * C, v).dot(v)
+            else:
+                v = np.diag(F) * c
+                R2 = np.linalg.solve(F * C, v).dot(v)
 
-            return x_torch.grad.detach().cpu().numpy().astype(np.float64)
+            val = (1.0 - R2) / N
 
-        self.objective = objective
-        self.objective_grad = objective_grad
-        self.constraint = constraint
-        self.constraint_grad = constraint_grad
+            if not self.log:
+                return val
 
-    # ------------------------------------------------------------------
-    # Solve
-    # ------------------------------------------------------------------
+            return torch.log(val) if torch_mode else np.log(val)
+
+        def constraint_value(x, torch_mode):
+            """N(1 + r . w(s)) + s . 1, the left side of (2)/(15)."""
+            N, r, s_active = split(x)
+            s = self.expand_s(s_active)
+
+            if torch_mode:
+                w = torch.stack([f(s) for f in self.cost_list])
+                return N * (1.0 + torch.dot(r, w)) + self.fac * torch.sum(s_active)
+
+            w = np.array([f(s) for f in self.cost_list], dtype=float)
+            return N * (1.0 + np.dot(r, w)) + self.fac * np.sum(s_active)
+
+        def as_value(fn):
+            def value(x):
+                if not self.use_torch:
+                    return fn(np.asarray(x, dtype=float), torch_mode=False)
+
+                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+                return float(fn(x_torch, torch_mode=True).detach().cpu().numpy())
+
+            return value
+
+        def as_gradient(fn):
+            def gradient(x):
+                if not self.use_torch:
+                    return None
+
+                x_torch = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+                fn(x_torch, torch_mode=True).backward()
+
+                return x_torch.grad.detach().cpu().numpy().astype(np.float64)
+
+            return gradient
+
+        self.objective = as_value(objective_value)
+        self.objective_grad = as_gradient(objective_value)
+        self.constraint = as_value(constraint_value)
+        self.constraint_grad = as_gradient(constraint_value)
 
     def solve(self):
         x0 = self._initial_guess()
@@ -354,6 +342,31 @@ class MFMC:
                 options={"maxiter": 500},
             )
 
+    def discretize(self, x):
+        """
+        Map a continuous solution x = [N, r, s_active] to the discrete
+        solution of writeup Eq. (16):
+
+            N_pred = floor(N*),  r_pred = r*,  s_pred = round(s*_T).
+
+        The oversampling ratios stay continuous (only N_i = ceil(r_i N) is
+        ever realized as a count). Basis sizes are rounded rather than
+        floored -- rounding is the intended behavior here; Eq. (16) says
+        floor and is being corrected in the writeup.
+
+        The objective evaluated at this point, not at the relaxed optimum, is
+        the predicted variance V_pred that Algorithm 7 line 4 reports.
+        """
+        n_lofi = len(self.cost_list)
+
+        x_disc = np.array(x, dtype=float).copy()
+        x_disc[0] = np.floor(x_disc[0])
+
+        if self.n_active:
+            x_disc[1 + n_lofi:] = np.round(x_disc[1 + n_lofi:])
+
+        return x_disc
+
     def check_gradients(self, x=None, eps=1e-6, tol=1e-5):
         """
         Compare PyTorch autograd gradients with finite-difference gradients.
@@ -362,8 +375,6 @@ class MFMC:
             raise RuntimeError("Gradient check only available with use_torch=True")
 
         if x is None:
-            n_lofi = len(self.cost_list)
-            dim = 1 + n_lofi + self.n_active
             x = self._initial_guess()
 
         grad_torch = self.objective_grad(x)
