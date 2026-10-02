@@ -55,3 +55,10 @@ make -C docs html
 ```
 
 Open `docs/build/html/index.html` in a browser to view the docs.
+
+### Sampling skill benchmark
+
+The [sampling skill benchmark](benchmarks/sampling_skill/README.md) compares fresh
+AI (Codex, Claude Code, other) sessions with and without the sampling workflow skill. It
+records token usage, checks workflow outputs, and exports measurements. Start with its dry-run command to inspect the
+tasks before making model calls.
