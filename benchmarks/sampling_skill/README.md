@@ -1,7 +1,7 @@
 # Sampling workflow skill benchmark
 
 This harness runs paired, fresh CLI sessions against small local tasks. It uses
-the single skill source at `.agents/skills/workflow/SKILL.md`.
+the single skill source at `.claude/skills/workflow/SKILL.md`.
 
 See [the completed Codex pilot](PILOT_REPORT.md) for initial measurements and
 quality-review notes. It contains one pair per task, not a full repeated study.
