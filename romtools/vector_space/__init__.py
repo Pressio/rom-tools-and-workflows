@@ -120,6 +120,27 @@ from romtools.vector_space.utils.snapshot_loader import SnapshotLoader
 import romtools.linalg.linalg as la
 
 
+# Explicit supported exports; imported NumPy/typing helpers remain internal.
+__all__ = [
+    "VectorSpace",
+    "DictionaryVectorSpace",
+    "VectorSpaceFromPOD",
+    "VectorSpaceFromStreamingPOD",
+    "utils",
+    "LeftSingularVectorTruncater",
+    "NoOpTruncater",
+    "Shifter",
+    "StreamingShifter",
+    "create_noop_shifter",
+    "Scaler",
+    "StreamingScaler",
+    "NoOpScaler",
+    "Orthogonalizer",
+    "NoOpOrthogonalizer",
+    "SnapshotLoader",
+]
+
+
 class VectorSpace(Protocol):
     '''
     Abstract base class for vector space implementations.
