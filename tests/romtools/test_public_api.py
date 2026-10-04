@@ -94,3 +94,38 @@ def test_workflow_configuration_aliases_remain_available():
         expected = getattr(vi_optimization_methods, name)
         assert getattr(romtools.workflows, name) is expected
         assert getattr(romtools.workflows.inverse, name) is expected
+
+
+def test_vector_space_exports_exclude_imported_implementation_helpers():
+    from romtools import vector_space
+    from romtools.vector_space import utils
+
+    for package in (vector_space, utils):
+        namespace = {}
+        exec("from " + package.__name__ + " import *", namespace)
+        assert set(namespace) - {"__builtins__"} == set(package.__all__)
+        for helper in ("np", "Protocol", "Callable", "Tuple", "la"):
+            assert helper not in namespace
+    assert "VectorSpaceFromStreamingPOD" in vector_space.__all__
+    assert "ScalarScaler" in utils.__all__
+    assert "create_streaming_average_shifter" in utils.__all__
+
+
+def test_historical_hyper_reduction_procedural_imports_remain_available():
+    from romtools import hyper_reduction
+
+    exports = {
+        "deim": (
+            "qdeim_get_indices", "deim_get_indices", "multi_state_deim_get_indices",
+            "deim_get_approximation_matrix", "multi_state_deim_get_test_basis",
+            "deim_get_test_basis",
+        ),
+        "ecsw": ("ecsw_fixed_test_basis", "ecsw_varying_test_basis", "ecsw_lspg_zero_residual"),
+    }
+    for module_name, names in exports.items():
+        module = getattr(hyper_reduction, module_name)
+        for name in names:
+            expected = getattr(module, name)
+            assert getattr(hyper_reduction, name) is expected
+            assert getattr(romtools, name) is expected
+            assert name in hyper_reduction.__all__
