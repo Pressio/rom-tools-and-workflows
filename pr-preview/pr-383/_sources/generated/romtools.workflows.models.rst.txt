@@ -1,14 +1,30 @@
-romtools.workflows.models
+﻿romtools.workflows.models
 =========================
 
 .. automodule:: romtools.workflows.models
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      Model
-      QoiModel
-      QoiModelWithErrorEstimate
-   
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   workflows.models.Model
+
+   workflows.models.QoiModel
+
+   workflows.models.QoiModelWithErrorEstimate
+
+
+
+
+
+
+
+

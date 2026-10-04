@@ -1,0 +1,22 @@
+romtools.vector\_space.utils.SnapshotLoader
+===========================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: SnapshotLoader
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SnapshotLoader.__init__
+   
+   
+
+   
+   
+   

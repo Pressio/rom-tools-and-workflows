@@ -53,15 +53,13 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.dakota" href="romtools.workflows.dakota.html" />
-    <link rel="prev" title="romtools.vector_space.utils.truncater" href="romtools.vector_space.utils.truncater.html" />
+    <link rel="next" title="romtools.workflows.greedy.run_greedy" href="romtools.workflows.greedy.run_greedy.html" />
+    <link rel="prev" title="romtools.vector_space.utils.SnapshotLoader" href="romtools.vector_space.utils.SnapshotLoader.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -344,54 +342,50 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.residual_evaluator.html">romtools.workflows.residual_evaluator</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
-</ul>
-</details></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.html">romtools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.residual_evaluator.html">romtools.workflows.residual_evaluator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.run_greedy.html">romtools.workflows.greedy.run_greedy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.run_sampling.html">romtools.workflows.sampling.run_sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.run_sample.html">romtools.workflows.sampling.run_sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.format_text.html">romtools.workflows.format_text</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.format_file.html">romtools.workflows.format_file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.format_files.html">romtools.workflows.format_files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">romtools.workflows.inverse.run_eki</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">romtools.workflows.inverse.run_mf_eki</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.mf_eki_with_auto_rom.html">romtools.workflows.inverse.mf_eki_with_auto_rom</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">romtools.workflows.inverse.run_vi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">romtools.workflows.inverse.run_mf_vi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_with_auto_rom.html">romtools.workflows.inverse.mf_vi_with_auto_rom</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_ego.html">romtools.workflows.inverse.run_ego</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.run_batch_ego.html">romtools.workflows.inverse.run_batch_ego</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.run_monte_carlo.html">romtools.workflows.uq.run_monte_carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.run_multifidelity_monte_carlo.html">romtools.workflows.uq.run_multifidelity_monte_carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VIAdamOptimizerConfig.html">romtools.workflows.inverse.VIAdamOptimizerConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VIGradientOptimizerConfig.html">romtools.workflows.inverse.VIGradientOptimizerConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VINewtonOptimizerConfig.html">romtools.workflows.inverse.VINewtonOptimizerConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VILegacyLineSearchConfig.html">romtools.workflows.inverse.VILegacyLineSearchConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig.html">romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.VISampleReuseConfig.html">romtools.workflows.inverse.VISampleReuseConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.ParameterSpace.html">romtools.workflows.parameter_spaces.ParameterSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.QoIvsErrorIndicatorRegressor.html">romtools.workflows.greedy.QoIvsErrorIndicatorRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MonteCarloResult.html">romtools.workflows.uq.MonteCarloResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MultifidelityMonteCarloResult.html">romtools.workflows.uq.MultifidelityMonteCarloResult</a></li>
 </ul>
 </details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -413,52 +407,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.MonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MonteCarloResult</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.MultifidelityMonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MultifidelityMonteCarloResult</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace"><code class="docutils literal notranslate"><span class="pre">ParameterSpace</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.generate_samples"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.generate_samples()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.get_dimensionality"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.get_dimensionality()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.get_names"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.get_names()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.fit"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor.fit()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.predict"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor.predict()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIAdamOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIAdamOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIGradientOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIGradientOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VILegacyLineSearchConfig"><code class="docutils literal notranslate"><span class="pre">VILegacyLineSearchConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VINewtonOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VINewtonOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VISampleReuseConfig"><code class="docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIStochasticNonmonotoneLineSearchConfig"><code class="docutils literal notranslate"><span class="pre">VIStochasticNonmonotoneLineSearchConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_file"><code class="docutils literal notranslate"><span class="pre">format_file()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_files"><code class="docutils literal notranslate"><span class="pre">format_files()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_text"><code class="docutils literal notranslate"><span class="pre">format_text()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.mf_eki_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_batch_ego"><code class="docutils literal notranslate"><span class="pre">run_batch_ego()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_ego"><code class="docutils literal notranslate"><span class="pre">run_ego()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_eki"><code class="docutils literal notranslate"><span class="pre">run_eki()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_greedy"><code class="docutils literal notranslate"><span class="pre">run_greedy()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_mf_eki"><code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_monte_carlo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_multifidelity_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_monte_carlo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_sampling"><code class="docutils literal notranslate"><span class="pre">run_sampling()</span></code></a></li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -499,9 +454,6 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows</span></li>
   </ul>
 </nav>
@@ -525,806 +477,92 @@
 model exploitation, inverse problems, and uncertainty quantification.</p>
 <p>The names in <code class="docutils literal notranslate"><span class="pre">__all__</span></code> define the supported public API at this package level.
 More specialized functionality should be imported from its domain subpackage.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.MonteCarloResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">MonteCarloResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">standard_deviation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">standard_error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/monte_carlo.html#MonteCarloResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.MonteCarloResult" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Outputs from a Monte Carlo QoI-mean estimate.</p>
-<p><code class="docutils literal notranslate"><span class="pre">variance</span></code> and <code class="docutils literal notranslate"><span class="pre">standard_deviation</span></code> describe the sampled QoI
-distribution. <code class="docutils literal notranslate"><span class="pre">standard_error</span></code> describes uncertainty in the estimated
-mean and equals <code class="docutils literal notranslate"><span class="pre">standard_deviation</span> <span class="pre">/</span> <span class="pre">sqrt(number_of_samples)</span></code>. Each
-array has one entry per flattened QoI component.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>parameter_samples</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>qoi_values</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>mean</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>variance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>standard_deviation</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>standard_error</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>run_times</strong> (<em>ndarray</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.MultifidelityMonteCarloResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">MultifidelityMonteCarloResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">standard_error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_variate_coefficients</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paired_correlations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_sample_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_sample_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pilot_sample_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_to_high_fidelity_cost_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_equivalent_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">used_multifidelity_estimator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_run_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_run_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/monte_carlo.html#MultifidelityMonteCarloResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.MultifidelityMonteCarloResult" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Outputs from a fixed or pilot-allocated two-level MFMC estimate.</p>
-<p><code class="docutils literal notranslate"><span class="pre">variance</span></code> is the estimated variance of the multifidelity <em>mean
-estimator</em>, rather than the variance of the underlying QoI distribution.
-The first <code class="docutils literal notranslate"><span class="pre">high_fidelity_sample_count</span></code> rows of
-<code class="docutils literal notranslate"><span class="pre">low_fidelity_qoi_values</span></code> are paired with the high-fidelity values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>parameter_samples</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>high_fidelity_qoi_values</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>low_fidelity_qoi_values</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>mean</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>variance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>standard_error</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>control_variate_coefficients</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>paired_correlations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>high_fidelity_sample_count</strong> (<em>int</em>)</p></li>
-<li><p><strong>low_fidelity_sample_count</strong> (<em>int</em>)</p></li>
-<li><p><strong>pilot_sample_count</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>low_to_high_fidelity_cost_ratio</strong> (<em>float</em>)</p></li>
-<li><p><strong>high_fidelity_equivalent_cost</strong> (<em>float</em>)</p></li>
-<li><p><strong>used_multifidelity_estimator</strong> (<em>bool</em>)</p></li>
-<li><p><strong>high_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>low_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.ParameterSpace">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">ParameterSpace</span></span><a class="reference internal" href="../_modules/romtools/workflows/parameter_spaces.html#ParameterSpace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.ParameterSpace" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract implementation</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.workflows.ParameterSpace.generate_samples">
-<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">generate_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/parameter_spaces.html#ParameterSpace.generate_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.ParameterSpace.generate_samples" title="Link to this definition">#</a></dt>
-<dd><p>Generates samples from the parameter space</p>
-<p>Returns np.array of shape
-(number_of_samples, self.get_dimensionality())</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>number_of_samples</strong> (<em>int</em>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><em>array</em></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.workflows.ParameterSpace.get_dimensionality">
-<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_dimensionality</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/parameter_spaces.html#ParameterSpace.get_dimensionality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.ParameterSpace.get_dimensionality" title="Link to this definition">#</a></dt>
-<dd><p>Returns an integer for the size
-of the parameter domain</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.workflows.ParameterSpace.get_names">
-<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/parameter_spaces.html#ParameterSpace.get_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.ParameterSpace.get_names" title="Link to this definition">#</a></dt>
-<dd><p>Returns a list of parameter names
-# e.g., [‘sigma’,’beta’,…]</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><em>Iterable</em>[str]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.QoIvsErrorIndicatorRegressor">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">QoIvsErrorIndicatorRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibrated_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/greedy/run_greedy.html#QoIvsErrorIndicatorRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.QoIvsErrorIndicatorRegressor" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Regressor for modeling the relationship between QoI error and error
-indicator.</p>
-<p>This class provides a simple linear regression model for estimating the
-scaling factor (c) between QoI error and the error indicator.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>calibrated_error</strong> (<em>bool</em>)</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.workflows.QoIvsErrorIndicatorRegressor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/greedy/run_greedy.html#QoIvsErrorIndicatorRegressor.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.fit" title="Link to this definition">#</a></dt>
-<dd><p>If calibrated_error was specified, this function fits the regression
-model to the provided data points (x, y) to estimate the scaling factor.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – Error indicator values.</p></li>
-<li><p><strong>y</strong> – Corresponding QoI error values.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="romtools.workflows.QoIvsErrorIndicatorRegressor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/greedy/run_greedy.html#QoIvsErrorIndicatorRegressor.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.predict" title="Link to this definition">#</a></dt>
-<dd><p>Predicts QoI error based on the error indicator using the estimated
-scaling factor.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> – Error indicator value(s) for prediction.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VIAdamOptimizerConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VIAdamOptimizerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'natural'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.999</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fisher_damping_initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fisher_damping_decay_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fisher_damping_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_clip_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_log_std_update</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_variational_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_variational_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#VIAdamOptimizerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VIAdamOptimizerConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Configuration for Adam-based stochastic ELBO maximization.</p>
-<p>By default Adam is applied to the mean-field Gaussian natural gradient.
-Following the ABRIS setup, the Fisher matrix is damped early in the
-optimization and the preconditioned gradient is clipped by its L2 norm.
-When <code class="docutils literal notranslate"><span class="pre">learning_rate</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the ABRIS convention
-<code class="docutils literal notranslate"><span class="pre">0.1</span> <span class="pre">/</span> <span class="pre">parameter_dimension</span></code> is used.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>gradient_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>learning_rate</strong> (<em>float</em>)</p></li>
-<li><p><strong>learning_rate_scale</strong> (<em>float</em>)</p></li>
-<li><p><strong>beta1</strong> (<em>float</em>)</p></li>
-<li><p><strong>beta2</strong> (<em>float</em>)</p></li>
-<li><p><strong>epsilon</strong> (<em>float</em>)</p></li>
-<li><p><strong>fisher_damping_initial</strong> (<em>float</em>)</p></li>
-<li><p><strong>fisher_damping_decay_start</strong> (<em>int</em>)</p></li>
-<li><p><strong>fisher_damping_min</strong> (<em>float</em>)</p></li>
-<li><p><strong>gradient_clip_norm</strong> (<em>float</em>)</p></li>
-<li><p><strong>gradient_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_log_std_update</strong> (<em>float</em>)</p></li>
-<li><p><strong>min_variational_std</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_variational_std</strong> (<em>float</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VIGradientOptimizerConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VIGradientOptimizerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient_method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'standard'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_norm_tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_log_std_update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_variational_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_variational_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#VIGradientOptimizerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VIGradientOptimizerConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>gradient_method</strong> (<em>str</em>)</p></li>
-<li><p><strong>gradient_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_log_std_update</strong> (<em>float</em>)</p></li>
-<li><p><strong>min_variational_std</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_variational_std</strong> (<em>float</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VILegacyLineSearchConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VILegacyLineSearchConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'elbo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_sample_growth_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_std_learning_rate_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#VILegacyLineSearchConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VILegacyLineSearchConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>line_search_objective</strong> (<em>str</em>)</p></li>
-<li><p><strong>line_search_sample_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>log_std_learning_rate_factor</strong> (<em>float</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VINewtonOptimizerConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VINewtonOptimizerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient_norm_tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_log_std_update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mean_update_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_variational_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_variational_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_metric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'standard'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_hessian_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'diagonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_curvature_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'same_sample'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_hessian_num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_hessian_averaging_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newton_regularization_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'absolute'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#VINewtonOptimizerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VINewtonOptimizerConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>gradient_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_log_std_update</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_mean_update_std</strong> (<em>float</em>)</p></li>
-<li><p><strong>min_variational_std</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_variational_std</strong> (<em>float</em>)</p></li>
-<li><p><strong>newton_metric</strong> (<em>str</em>)</p></li>
-<li><p><strong>newton_regularization</strong> (<em>float</em>)</p></li>
-<li><p><strong>newton_hessian_type</strong> (<em>str</em>)</p></li>
-<li><p><strong>newton_curvature_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>newton_hessian_num_samples</strong> (<em>int</em>)</p></li>
-<li><p><strong>newton_hessian_averaging_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>newton_regularization_strategy</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VISampleReuseConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VISampleReuseConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">history_batches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ess_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_score_diagnostic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_error_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">periodic_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_hessian_score_diagnostic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hessian_score_error_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hessian_relative_standard_error_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_sample_reuse_hessian.html#VISampleReuseConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VISampleReuseConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></p>
-<p>Sample-reuse configuration including Newton/Hessian safeguards.</p>
-<p>The Hessian checks are only evaluated for Newton runs. First-order VI and
-MFVI therefore retain the original sample-reuse behavior.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>enabled</strong> (<em>bool</em>)</p></li>
-<li><p><strong>history_batches</strong> (<em>int</em>)</p></li>
-<li><p><strong>ess_threshold</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>use_score_diagnostic</strong> (<em>bool</em>)</p></li>
-<li><p><strong>score_error_scale</strong> (<em>float</em>)</p></li>
-<li><p><strong>periodic_refresh</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>use_hessian_score_diagnostic</strong> (<em>bool</em>)</p></li>
-<li><p><strong>hessian_score_error_scale</strong> (<em>float</em>)</p></li>
-<li><p><strong>hessian_relative_standard_error_threshold</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.VIStochasticNonmonotoneLineSearchConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">VIStochasticNonmonotoneLineSearchConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'elbo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_nonmonotone_window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_armijo_coefficient</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_uncertainty_sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_search_sample_growth_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_std_learning_rate_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/vi_optimization_methods.html#VIStochasticNonmonotoneLineSearchConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.VIStochasticNonmonotoneLineSearchConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>line_search_objective</strong> (<em>str</em>)</p></li>
-<li><p><strong>line_search_nonmonotone_window</strong> (<em>int</em>)</p></li>
-<li><p><strong>line_search_armijo_coefficient</strong> (<em>float</em>)</p></li>
-<li><p><strong>line_search_uncertainty_sigma</strong> (<em>float</em>)</p></li>
-<li><p><strong>line_search_sample_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>log_std_learning_rate_factor</strong> (<em>float</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.format_file">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">format_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'utf-8'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/formatting.html#format_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.format_file" title="Link to this definition">#</a></dt>
-<dd><p>Replace RTVAR placeholders in a file and write the result.</p>
-<p>If output_path is None, the input file is modified in-place.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<em>str</em>)</p></li>
-<li><p><strong>variables</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
-<li><p><strong>output_path</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>strict</strong> (<em>bool</em>)</p></li>
-<li><p><strong>encoding</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><em>Path</em></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.format_files">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">format_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'utf-8'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/formatting.html#format_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.format_files" title="Link to this definition">#</a></dt>
-<dd><p>Replace RTVAR placeholders in multiple files.</p>
-<p>If output_dir is provided, formatted files are written there using the
-original filenames.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>paths</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>)</p></li>
-<li><p><strong>variables</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
-<li><p><strong>output_dir</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>strict</strong> (<em>bool</em>)</p></li>
-<li><p><strong>encoding</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><em>List</em>[<em>Path</em>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.format_text">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">format_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/formatting.html#format_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.format_text" title="Link to this definition">#</a></dt>
-<dd><p>Replace RTVAR placeholders in the input text with provided values.</p>
-<p>Placeholders are of the form: {RTVAR:variable_name}</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>text</strong> (<em>str</em>)</p></li>
-<li><p><strong>variables</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
-<li><p><strong>strict</strong> (<em>bool</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.mf_eki_with_auto_rom">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">mf_eki_with_auto_rom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_extra_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_updated_rom_in_update_on_rebuild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_inflation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_prior_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0025</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rejuvenations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_cooldown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rom_training_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_start_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_end_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rom_substeps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounded_parameter_handling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'clip'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_interior_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sigmoid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_eki_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/eki_bound_transforms.html#mf_eki_with_auto_rom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.mf_eki_with_auto_rom" title="Link to this definition">#</a></dt>
-<dd><p>Run automatic-ROM MF-EKI with clipping or transformed bounds.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>fom_ensemble_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>use_updated_rom_in_update_on_rebuild</strong> (<em>bool</em>)</p></li>
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>regularization_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>error_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>delta_params_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>rejuvenation_interval</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_inflation</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_prior_weight</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_rejuvenations</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_cooldown</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_rom_training_history</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_start_iteration</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_end_iteration</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>num_rom_substeps</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>fom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>)</p></li>
-<li><p><strong>rom_type</strong> (<em>str</em>)</p></li>
-<li><p><strong>rom_args</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>bounded_parameter_handling</strong> (<em>str</em>)</p></li>
-<li><p><strong>transform_interior_margin</strong> (<em>float</em>)</p></li>
-<li><p><strong>transform_map</strong> (<em>str</em>)</p></li>
-<li><p><strong>absolute_eki_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_batch_ego">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_batch_ego</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_initial_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_improvement_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_liar_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pessimistic'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_ego_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/ego_drivers.html#run_batch_ego"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_batch_ego" title="Link to this definition">#</a></dt>
-<dd><p>Run a single-fidelity batch efficient global optimization</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – QoiModel to evaluate at ensemble samples.</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – ParameterSpace used to draw the initial ensemble when
-<code class="docutils literal notranslate"><span class="pre">restart_file</span></code> is not provided.</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>) – Observed QoI vector <span class="math notranslate nohighlight">\(y\)</span>.</p></li>
-<li><p><strong>number_of_iterations</strong> (<em>int</em>) – Number of EGO iterations.</p></li>
-<li><p><strong>batch_size</strong> (<em>int</em>) – number of function evaluations per iteration.</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>) – Optional lower bounds applied to sampled and updated
-parameters.</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>) – Optional upper bounds applied to sampled and updated
-parameters.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute path to the working directory. Each
-accepted or tested iteration writes into
-<code class="docutils literal notranslate"><span class="pre">iteration_&lt;k&gt;/run_*</span></code> subdirectories under this path.</p></li>
-<li><p><strong>number_initial_samples</strong> (<em>int</em>) – Optional number of model samples to train the
-initial Gaussian process. Default is 4.</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>) – Optional seed to fix random sampling. Default is None.</p></li>
-<li><p><strong>evaluation_concurrency</strong> (<em>int</em>) – Number of concurrent model evaluations used by
-each batch EGO iteration. Default is the batch_size</p></li>
-<li><p><strong>use_relative_error</strong> (<em>bool</em>) – Optional boolean to use relative error with respect
-to observations as the objective function. Default is None.</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>) – Optional <code class="docutils literal notranslate"><span class="pre">.npz</span></code> restart file produced by a prior EGO
-run. When set, the saved samples and QoIs are restored instead of
-drawing a new sample.</p></li>
-<li><p><strong>expected_improvement_epsilon</strong> (<em>float</em>) – Optional parameter for expected improvement.
-Values greater than zero will promote design space exploration</p></li>
-<li><p><strong>constant_liar_type</strong> (<em>str</em>) – Optional string for type of constant liar acquisition
-function. Valid options are “pessimistic”, “optimistic”, and “average”.</p></li>
-<li><p><strong>absolute_ego_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Tuple <code class="docutils literal notranslate"><span class="pre">(parameter_sample_min,</span> <span class="pre">obj_min,</span> <span class="pre">qoi_min)</span></code> containing the final input parameters and
-the corresponding minimum objective function and QoI as of the last iteration.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_ego">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_ego</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_initial_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_relative_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_improvement_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_ego_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/ego_drivers.html#run_ego"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_ego" title="Link to this definition">#</a></dt>
-<dd><p>Run a single-fidelity efficient global optimization</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – QoiModel to evaluate at ensemble samples.</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – ParameterSpace used to draw the initial ensemble when
-<code class="docutils literal notranslate"><span class="pre">restart_file</span></code> is not provided.</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>) – Observed QoI vector <span class="math notranslate nohighlight">\(y\)</span>.</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>) – Optional lower bounds applied to sampled and updated
-parameters.</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>) – Optional upper bounds applied to sampled and updated
-parameters.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>) – Absolute path to the working directory. Each
-accepted or tested iteration writes into
-<code class="docutils literal notranslate"><span class="pre">iteration_&lt;k&gt;/run_*</span></code> subdirectories under this path.</p></li>
-<li><p><strong>number_initial_samples</strong> (<em>int</em>) – Optional number of model samples to train the
-initial Gaussian process. Default is 4.</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>) – Optional seed to fix random sampling. Default is None.</p></li>
-<li><p><strong>evaluation_concurrency</strong> (<em>int</em>) – Number of concurrent model evaluations used for
-initial samples. Default is 1</p></li>
-<li><p><strong>use_relative_error</strong> (<em>bool</em>) – Optional boolean to use relative error with respect
-to observations as the objective function. Default is None.</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>) – Optional <code class="docutils literal notranslate"><span class="pre">.npz</span></code> restart file produced by a prior EGO
-run. When set, the saved samples and QoIs are restored instead of
-drawing a new sample.</p></li>
-<li><p><strong>expected_improvement_epsilon</strong> (<em>float</em>) – Optional parameter for expected improvement.
-Values greater than zero will promote design space exploration</p></li>
-<li><p><strong>number_of_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>absolute_ego_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Tuple <code class="docutils literal notranslate"><span class="pre">(parameter_sample_min,</span> <span class="pre">obj_min,</span> <span class="pre">qoi_min)</span></code> containing the final input parameters and
-the corresponding minimum objective function and QoI as of the last iteration.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_eki">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_eki</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_inflation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_prior_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0025</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rejuvenations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_cooldown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounded_parameter_handling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'clip'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_interior_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sigmoid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_eki_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/eki_bound_transforms.html#run_eki"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_eki" title="Link to this definition">#</a></dt>
-<dd><p>Run EKI with historical clipping or an unconstrained bound transform.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>ensemble_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>regularization_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>error_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>delta_params_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>rejuvenation_interval</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_inflation</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_prior_weight</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_rejuvenations</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_cooldown</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>bounded_parameter_handling</strong> (<em>str</em>)</p></li>
-<li><p><strong>transform_interior_margin</strong> (<em>float</em>)</p></li>
-<li><p><strong>transform_map</strong> (<em>str</em>)</p></li>
-<li><p><strong>absolute_eki_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_greedy">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_greedy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">testing_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibrated_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_greedy_work_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/greedy/run_greedy.html#run_greedy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_greedy" title="Link to this definition">#</a></dt>
-<dd><p>Main implementation of the greedy algorithm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fom_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelWithErrorEstimateBuilder" title="romtools.workflows.model_builders.QoiModelWithErrorEstimateBuilder"><em>QoiModelWithErrorEstimateBuilder</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>testing_sample_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>calibrated_error</strong> (<em>bool</em>)</p></li>
-<li><p><strong>absolute_greedy_work_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_mf_eki">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_mf_eki</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_mins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_maxes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_extra_ensemble_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_updated_rom_in_update_on_rebuild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_growth_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size_decay_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_step_size_decrease_trys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relaxation_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_norm_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_inflation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_prior_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0025</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rejuvenations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejuvenation_cooldown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rom_training_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_start_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_substep_end_iteration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rom_substeps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounded_parameter_handling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'clip'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_interior_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sigmoid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_eki_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/inverse/eki_bound_transforms.html#run_mf_eki"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_mf_eki" title="Link to this definition">#</a></dt>
-<dd><p>Run MF-EKI with historical clipping or an unconstrained bound transform.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
-<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelBuilderWithTrainingData" title="romtools.workflows.model_builders.QoiModelBuilderWithTrainingData"><em>QoiModelBuilderWithTrainingData</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>observations</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>observations_covariance</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_mins</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>parameter_maxes</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
-<li><p><strong>fom_ensemble_size</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>use_updated_rom_in_update_on_rebuild</strong> (<em>bool</em>)</p></li>
-<li><p><strong>initial_step_size</strong> (<em>float</em>)</p></li>
-<li><p><strong>regularization_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_growth_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>step_size_decay_factor</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_step_size_decrease_trys</strong> (<em>int</em>)</p></li>
-<li><p><strong>relaxation_parameter</strong> (<em>float</em>)</p></li>
-<li><p><strong>error_norm_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>delta_params_tolerance</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_strategy</strong> (<em>str</em>)</p></li>
-<li><p><strong>rejuvenation_interval</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_inflation</strong> (<em>float</em>)</p></li>
-<li><p><strong>rejuvenation_prior_weight</strong> (<em>float</em>)</p></li>
-<li><p><strong>max_rejuvenations</strong> (<em>int</em>)</p></li>
-<li><p><strong>rejuvenation_cooldown</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_rom_training_history</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_start_iteration</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_substep_end_iteration</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>num_rom_substeps</strong> (<em>int</em>)</p></li>
-<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>fom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>rom_evaluation_concurrency</strong> (<em>int</em>)</p></li>
-<li><p><strong>restart_file</strong> (<em>str</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>bounded_parameter_handling</strong> (<em>str</em>)</p></li>
-<li><p><strong>transform_interior_margin</strong> (<em>float</em>)</p></li>
-<li><p><strong>transform_map</strong> (<em>str</em>)</p></li>
-<li><p><strong>absolute_eki_directory</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_monte_carlo">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_monte_carlo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_uq_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/monte_carlo.html#run_monte_carlo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_monte_carlo" title="Link to this definition">#</a></dt>
-<dd><p>Estimate the mean of a model QoI by Monte Carlo sampling.</p>
-<p>For every generated parameter sample, the workflow calls the three
-<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">QoiModel</span></code></a> methods in order:
-<code class="docutils literal notranslate"><span class="pre">populate_run_directory</span></code>, <code class="docutils literal notranslate"><span class="pre">run_model</span></code>, and <code class="docutils literal notranslate"><span class="pre">compute_qoi</span></code>. Scalar and
-array-valued QoIs are accepted; array-valued outputs are flattened and
-statistics are computed componentwise.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – Model implementing the <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> protocol.</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – Distribution used to generate independent parameter
-samples. Its parameter names define the dictionary passed to the
-model methods.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em><em> | </em><em>None</em>) – Absolute output path. Sample <code class="docutils literal notranslate"><span class="pre">i</span></code> is evaluated
-in <code class="docutils literal notranslate"><span class="pre">run_i</span></code> and aggregate results are saved to <code class="docutils literal notranslate"><span class="pre">uq_stats.npz</span></code>.</p></li>
-<li><p><strong>number_of_samples</strong> (<em>int</em><em> | </em><em>None</em>) – Number of model evaluations. Must be at least two.</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>) – Seed forwarded to <code class="docutils literal notranslate"><span class="pre">parameter_space.generate_samples</span></code>.</p></li>
-<li><p><strong>evaluation_concurrency</strong> (<em>int</em>) – Maximum simultaneous model evaluations. A
-spawn-based process pool is used above one, so the model and
-dispatcher must be pickleable.</p></li>
-<li><p><strong>overwrite</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, reuse run directories containing
-<code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, populate and evaluate every sample.</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
-<a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
-<li><p><strong>absolute_uq_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Samples, flattened QoI values, sample moments,
-standard errors, and measured model run times.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#romtools.workflows.MonteCarloResult" title="romtools.workflows.MonteCarloResult">MonteCarloResult</a></p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If inputs or returned QoI dimensions are invalid.</p></li>
-<li><p><strong>RuntimeError</strong> – If a model evaluation returns a nonzero status.</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>A successful marker is written only after both <code class="docutils literal notranslate"><span class="pre">run_model</span></code> and
-<code class="docutils literal notranslate"><span class="pre">compute_qoi</span></code> complete. Reused evaluations have <code class="docutils literal notranslate"><span class="pre">NaN</span></code> run times
-because their original timings are not reconstructed.</p>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_multifidelity_monte_carlo">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_multifidelity_monte_carlo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">high_fidelity_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_high_fidelity_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_low_fidelity_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pilot_sample_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_equivalent_budget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_to_high_fidelity_cost_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allocation_qoi_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_variate_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_uq_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/monte_carlo.html#run_multifidelity_monte_carlo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_multifidelity_monte_carlo" title="Link to this definition">#</a></dt>
-<dd><p>Estimate a QoI mean using two-level multifidelity Monte Carlo.</p>
-<p>The first <code class="docutils literal notranslate"><span class="pre">N_H</span></code> low-fidelity evaluations are paired with the
-high-fidelity evaluations at identical parameter samples. For each QoI
-component, the estimator is</p>
-<div class="math notranslate nohighlight">
-\[\widehat{\mu}_{MF} = \overline{Q}_H^{N_H}
-+ \alpha\left(\overline{Q}_L^{N_L}
-- \overline{Q}_L^{N_H}\right).\]</div>
-<p>Exactly one allocation mode must be selected. Fixed mode accepts explicit
-high- and low-fidelity sample counts. Pilot mode accepts a paired pilot
-count and high-fidelity-equivalent budget, then estimates correlation and
-coefficients and performs an integer search under
-<code class="docutils literal notranslate"><span class="pre">N_H</span> <span class="pre">+</span> <span class="pre">cost_ratio</span> <span class="pre">*</span> <span class="pre">N_L</span> <span class="pre">&lt;=</span> <span class="pre">budget</span></code>. Pilot evaluations count toward the
-final allocation and budget. The workflow falls back to high-fidelity
-Monte Carlo when the pilot predicts no benefit from additional
-low-fidelity samples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>high_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – High-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation.</p></li>
-<li><p><strong>low_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – Low-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation. It must
-return the same flattened QoI dimension as the high-fidelity model.</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – Distribution used to generate shared samples.</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em><em> | </em><em>None</em>) – Absolute output path. Evaluations are stored in
-<code class="docutils literal notranslate"><span class="pre">high_fidelity</span></code> and <code class="docutils literal notranslate"><span class="pre">low_fidelity</span></code> subdirectories and aggregate
-results are written to <code class="docutils literal notranslate"><span class="pre">uq_stats.npz</span></code>.</p></li>
-<li><p><strong>number_of_high_fidelity_samples</strong> (<em>int</em><em> | </em><em>None</em>) – Final high-fidelity count in fixed
-mode. Must be at least two.</p></li>
-<li><p><strong>number_of_low_fidelity_samples</strong> (<em>int</em><em> | </em><em>None</em>) – Final low-fidelity count in fixed mode.
-Must be no smaller than the high-fidelity count.</p></li>
-<li><p><strong>pilot_sample_count</strong> (<em>int</em><em> | </em><em>None</em>) – Initial paired count in pilot mode. Must be at
-least two and fit within the budget.</p></li>
-<li><p><strong>high_fidelity_equivalent_budget</strong> (<em>float</em><em> | </em><em>None</em>) – Pilot-mode budget in high-fidelity
-evaluation units.</p></li>
-<li><p><strong>low_to_high_fidelity_cost_ratio</strong> (<em>float</em><em> | </em><em>None</em>) – Positive ratio <code class="docutils literal notranslate"><span class="pre">c_L</span> <span class="pre">/</span> <span class="pre">c_H</span></code>. If
-omitted in pilot mode, paired pilot run times estimate it.</p></li>
-<li><p><strong>allocation_qoi_index</strong> (<em>int</em>) – Flattened QoI component used to select sample
-counts. Statistics and coefficients are computed for every
-component.</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>) – Seed used to generate the paired samples.</p></li>
-<li><p><strong>high_fidelity_evaluation_concurrency</strong> (<em>int</em>) – Maximum simultaneous
-high-fidelity evaluations.</p></li>
-<li><p><strong>low_fidelity_evaluation_concurrency</strong> (<em>int</em>) – Maximum simultaneous
-low-fidelity evaluations.</p></li>
-<li><p><strong>control_variate_coefficients</strong> (<em>ndarray</em><em> | </em><em>None</em>) – Optional scalar or componentwise values
-for fixed mode. If omitted, paired samples estimate them. Pilot
-mode always estimates and freezes its coefficients.</p></li>
-<li><p><strong>overwrite</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, reuse successful evaluations marked by
-<code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>; otherwise rerun them.</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
-<a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
-<li><p><strong>absolute_uq_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Ordered samples and QoIs, mean estimate,
-estimator variance and standard error, allocation metadata,
-correlations, coefficients, and run times.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#romtools.workflows.MultifidelityMonteCarloResult" title="romtools.workflows.MultifidelityMonteCarloResult">MultifidelityMonteCarloResult</a></p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If allocation inputs, costs, or QoI dimensions are invalid.</p></li>
-<li><p><strong>RuntimeError</strong> – If either model returns a nonzero status.</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Confidence intervals are intentionally not constructed. Callers can
-use the returned mean and standard error with assumptions appropriate
-to their application.</p>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.run_sampling">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.</span></span><span class="sig-name descname"><span class="pre">run_sampling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_sampling_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/sampling/sampling.html#run_sampling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.run_sampling" title="Link to this definition">#</a></dt>
-<dd><p>Core algorithm</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><em>Model</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>number_of_samples</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>dry_run</strong> (<em>bool</em>)</p></li>
-<li><p><strong>overwrite</strong> (<em>bool</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>absolute_sampling_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<p class="rubric">Modules</p>
+<p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.dakota.html#module-romtools.workflows.dakota" title="romtools.workflows.dakota"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dakota</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.greedy.run_greedy.html#romtools.workflows.greedy.run_greedy" title="romtools.workflows.greedy.run_greedy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.greedy.run_greedy</span></code></a>(fom_model, ...)</p></td>
+<td><p>Main implementation of the greedy algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling.run_sampling.html#romtools.workflows.sampling.run_sampling" title="romtools.workflows.sampling.run_sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.sampling.run_sampling</span></code></a>(model, ...)</p></td>
+<td><p>Core algorithm</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling.run_sample.html#romtools.workflows.sampling.run_sample" title="romtools.workflows.sampling.run_sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.sampling.run_sample</span></code></a>(run_directory, ...)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.formatting.html#module-romtools.workflows.formatting" title="romtools.workflows.formatting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">formatting</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.format_text.html#romtools.workflows.format_text" title="romtools.workflows.format_text"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.format_text</span></code></a>(text, variables[, strict])</p></td>
+<td><p>Replace RTVAR placeholders in the input text with provided values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.format_file.html#romtools.workflows.format_file" title="romtools.workflows.format_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.format_file</span></code></a>(path, variables[, ...])</p></td>
+<td><p>Replace RTVAR placeholders in a file and write the result.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.format_files.html#romtools.workflows.format_files" title="romtools.workflows.format_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.format_files</span></code></a>(paths, variables[, ...])</p></td>
+<td><p>Replace RTVAR placeholders in multiple files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_eki.html#romtools.workflows.inverse.run_eki" title="romtools.workflows.inverse.run_eki"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_eki</span></code></a>(model, ...[, ...])</p></td>
+<td><p>Run EKI with historical clipping or an unconstrained bound transform.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html#romtools.workflows.inverse.run_mf_eki" title="romtools.workflows.inverse.run_mf_eki"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_mf_eki</span></code></a>(model, ...[, ...])</p></td>
+<td><p>Run MF-EKI with historical clipping or an unconstrained bound transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_eki_with_auto_rom.html#romtools.workflows.inverse.mf_eki_with_auto_rom" title="romtools.workflows.inverse.mf_eki_with_auto_rom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.mf_eki_with_auto_rom</span></code></a>(...)</p></td>
+<td><p>Run automatic-ROM MF-EKI with clipping or transformed bounds.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_vi.html#romtools.workflows.inverse.run_vi" title="romtools.workflows.inverse.run_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_vi</span></code></a>(model, ...[, ...])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.greedy.html#module-romtools.workflows.greedy" title="romtools.workflows.greedy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">greedy</span></code></a></p></td>
-<td><p>Implementation of the greedy workflow.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.html#module-romtools.workflows.inverse" title="romtools.workflows.inverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse</span></code></a></p></td>
-<td><p>Inverse workflows estimate unknown model parameters from observed data.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.model_builders.html#module-romtools.workflows.model_builders" title="romtools.workflows.model_builders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_builders</span></code></a></p></td>
-<td><p>Protocol for building a model This is mainly used for constructing data-driven models in iterative workflows like greedy</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.models.html#module-romtools.workflows.models" title="romtools.workflows.models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">models</span></code></a></p></td>
-<td><p>Protocol for interfacing with external applications</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.parameter_spaces.html#module-romtools.workflows.parameter_spaces" title="romtools.workflows.parameter_spaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_spaces</span></code></a></p></td>
-<td><p>Model reduction is often focused on parameterized PDEs, where <span class="math notranslate nohighlight">\(\boldsymbol \mu\)</span> is the parameter set.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.parameters.html#module-romtools.workflows.parameters" title="romtools.workflows.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html#romtools.workflows.inverse.run_mf_vi" title="romtools.workflows.inverse.run_mf_vi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_mf_vi</span></code></a>(model, ...[, ...])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.residual_evaluator.html#module-romtools.workflows.residual_evaluator" title="romtools.workflows.residual_evaluator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residual_evaluator</span></code></a></p></td>
-<td><p>Protocol for interfacing with external application to compute residual snapshots corresponding to existing state snapshots.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling.html#module-romtools.workflows.sampling" title="romtools.workflows.sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling</span></code></a></p></td>
-<td><p>Implementation of basic sampling workflow.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling_methods.html#module-romtools.workflows.sampling_methods" title="romtools.workflows.sampling_methods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_methods</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.mf_vi_with_auto_rom.html#romtools.workflows.inverse.mf_vi_with_auto_rom" title="romtools.workflows.inverse.mf_vi_with_auto_rom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.mf_vi_with_auto_rom</span></code></a>(model, ...)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html#module-romtools.workflows.sampling_with_holdout" title="romtools.workflows.sampling_with_holdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_with_holdout</span></code></a></p></td>
-<td><p>Implementation of basic sampling workflow with a holdout set.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_ego.html#romtools.workflows.inverse.run_ego" title="romtools.workflows.inverse.run_ego"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_ego</span></code></a>(model, ...[, ...])</p></td>
+<td><p>Run a single-fidelity efficient global optimization</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.html#module-romtools.workflows.uq" title="romtools.workflows.uq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uq</span></code></a></p></td>
-<td><p>Monte Carlo uncertainty-quantification workflows.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.run_batch_ego.html#romtools.workflows.inverse.run_batch_ego" title="romtools.workflows.inverse.run_batch_ego"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.run_batch_ego</span></code></a>(model, ...)</p></td>
+<td><p>Run a single-fidelity batch efficient global optimization</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.workflow_utils.html#module-romtools.workflows.workflow_utils" title="romtools.workflows.workflow_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflow_utils</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.run_monte_carlo.html#romtools.workflows.uq.run_monte_carlo" title="romtools.workflows.uq.run_monte_carlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.uq.run_monte_carlo</span></code></a>(model, ...[, ...])</p></td>
+<td><p>Estimate the mean of a model QoI by Monte Carlo sampling.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.run_multifidelity_monte_carlo.html#romtools.workflows.uq.run_multifidelity_monte_carlo" title="romtools.workflows.uq.run_multifidelity_monte_carlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.uq.run_multifidelity_monte_carlo</span></code></a>(...)</p></td>
+<td><p>Estimate a QoI mean using two-level multifidelity Monte Carlo.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.VIAdamOptimizerConfig.html#romtools.workflows.inverse.VIAdamOptimizerConfig" title="romtools.workflows.inverse.VIAdamOptimizerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VIAdamOptimizerConfig</span></code></a>([...])</p></td>
+<td><p>Configuration for Adam-based stochastic ELBO maximization.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.VIGradientOptimizerConfig.html#romtools.workflows.inverse.VIGradientOptimizerConfig" title="romtools.workflows.inverse.VIGradientOptimizerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VIGradientOptimizerConfig</span></code></a>([...])</p></td>
 <td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.VINewtonOptimizerConfig.html#romtools.workflows.inverse.VINewtonOptimizerConfig" title="romtools.workflows.inverse.VINewtonOptimizerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VINewtonOptimizerConfig</span></code></a>([...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.VILegacyLineSearchConfig.html#romtools.workflows.inverse.VILegacyLineSearchConfig" title="romtools.workflows.inverse.VILegacyLineSearchConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VILegacyLineSearchConfig</span></code></a>([...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig.html#romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig" title="romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VIStochasticNonmonotoneLineSearchConfig</span></code></a>([...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.inverse.VISampleReuseConfig.html#romtools.workflows.inverse.VISampleReuseConfig" title="romtools.workflows.inverse.VISampleReuseConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.inverse.VISampleReuseConfig</span></code></a>([...])</p></td>
+<td><p>Sample-reuse configuration including Newton/Hessian safeguards.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.parameter_spaces.ParameterSpace.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.parameter_spaces.ParameterSpace</span></code></a>()</p></td>
+<td><p>Abstract implementation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.greedy.QoIvsErrorIndicatorRegressor.html#romtools.workflows.greedy.QoIvsErrorIndicatorRegressor" title="romtools.workflows.greedy.QoIvsErrorIndicatorRegressor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.greedy.QoIvsErrorIndicatorRegressor</span></code></a>([...])</p></td>
+<td><p>Regressor for modeling the relationship between QoI error and error indicator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.MonteCarloResult.html#romtools.workflows.uq.MonteCarloResult" title="romtools.workflows.uq.MonteCarloResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.uq.MonteCarloResult</span></code></a>(...)</p></td>
+<td><p>Outputs from a Monte Carlo QoI-mean estimate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.MultifidelityMonteCarloResult.html#romtools.workflows.uq.MultifidelityMonteCarloResult" title="romtools.workflows.uq.MultifidelityMonteCarloResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.uq.MultifidelityMonteCarloResult</span></code></a>(...)</p></td>
+<td><p>Outputs from a fixed or pilot-allocated two-level MFMC estimate.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1345,48 +583,6 @@ to their application.</p>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.MonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MonteCarloResult</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.MultifidelityMonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MultifidelityMonteCarloResult</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace"><code class="docutils literal notranslate"><span class="pre">ParameterSpace</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.generate_samples"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.generate_samples()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.get_dimensionality"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.get_dimensionality()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.ParameterSpace.get_names"><code class="docutils literal notranslate"><span class="pre">ParameterSpace.get_names()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.fit"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor.fit()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.QoIvsErrorIndicatorRegressor.predict"><code class="docutils literal notranslate"><span class="pre">QoIvsErrorIndicatorRegressor.predict()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIAdamOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIAdamOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIGradientOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VIGradientOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VILegacyLineSearchConfig"><code class="docutils literal notranslate"><span class="pre">VILegacyLineSearchConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VINewtonOptimizerConfig"><code class="docutils literal notranslate"><span class="pre">VINewtonOptimizerConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VISampleReuseConfig"><code class="docutils literal notranslate"><span class="pre">VISampleReuseConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.VIStochasticNonmonotoneLineSearchConfig"><code class="docutils literal notranslate"><span class="pre">VIStochasticNonmonotoneLineSearchConfig</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_file"><code class="docutils literal notranslate"><span class="pre">format_file()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_files"><code class="docutils literal notranslate"><span class="pre">format_files()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.format_text"><code class="docutils literal notranslate"><span class="pre">format_text()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.mf_eki_with_auto_rom"><code class="docutils literal notranslate"><span class="pre">mf_eki_with_auto_rom()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_batch_ego"><code class="docutils literal notranslate"><span class="pre">run_batch_ego()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_ego"><code class="docutils literal notranslate"><span class="pre">run_ego()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_eki"><code class="docutils literal notranslate"><span class="pre">run_eki()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_greedy"><code class="docutils literal notranslate"><span class="pre">run_greedy()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_mf_eki"><code class="docutils literal notranslate"><span class="pre">run_mf_eki()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_monte_carlo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_multifidelity_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_monte_carlo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.run_sampling"><code class="docutils literal notranslate"><span class="pre">run_sampling()</span></code></a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

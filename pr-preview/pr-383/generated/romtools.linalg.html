@@ -58,8 +58,8 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.linalg.linalg" href="romtools.linalg.linalg.html" />
-    <link rel="prev" title="romtools.hyper_reduction.ecsw" href="romtools.hyper_reduction.ecsw.html" />
+    <link rel="next" title="romtools.linalg.DistributedSvd" href="romtools.linalg.DistributedSvd.html" />
+    <link rel="prev" title="romtools.hyper_reduction.ECSWsolverNNLS" href="romtools.hyper_reduction.ECSWsolverNNLS.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -342,30 +342,25 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.linalg</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="romtools.linalg.linalg.html">romtools.linalg.linalg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.linalg.parallel_utils.html">romtools.linalg.parallel_utils</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.html">romtools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.linalg</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.linalg.html">romtools.linalg.linalg</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.parallel_utils.html">romtools.linalg.parallel_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.DistributedSvd.html">romtools.linalg.DistributedSvd</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -387,22 +382,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.linalg.DistributedSvd"><code class="docutils literal notranslate"><span class="pre">DistributedSvd</span></code></a></li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -443,9 +429,6 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.linalg</span></li>
   </ul>
 </nav>
@@ -467,37 +450,11 @@
 <span id="romtools-linalg"></span><h1>romtools.linalg<a class="headerlink" href="#module-romtools.linalg" title="Link to this heading">#</a></h1>
 <p>This module defines the linear algebra functions used throughout the romtools library.
 These functions can be run in serial or parallel.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.linalg.DistributedSvd">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.linalg.</span></span><span class="sig-name descname"><span class="pre">DistributedSvd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/linalg/linalg.html#DistributedSvd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.linalg.DistributedSvd" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>NumPy-compatible thin SVD callable for a row-distributed matrix.</p>
-<p>Bind an MPI communicator once, then pass this object anywhere a callable
-compatible with <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.linalg.svd()</span></code> is expected, including
-<a class="reference internal" href="romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD" title="romtools.vector_space.VectorSpaceFromPOD"><code class="xref py py-class docutils literal notranslate"><span class="pre">romtools.vector_space.VectorSpaceFromPOD</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>comm</strong> (<em>MPI_Comm</em>) – Communicator over which matrix rows are distributed.
-If <code class="docutils literal notranslate"><span class="pre">None</span></code>, supported calls delegate to NumPy in serial.</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">distributed_svd</span> <span class="o">=</span> <span class="n">DistributedSvd</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">U_local</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">Vh</span> <span class="o">=</span> <span class="n">distributed_svd</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">A_local</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compute_uv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hermitian</span><span class="o">=</span><span class="kc">False</span>
-<span class="gp">... </span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<p class="rubric">Modules</p>
+<p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.linalg.linalg.html#module-romtools.linalg.linalg" title="romtools.linalg.linalg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linalg</span></code></a></p></td>
-<td><p>see this for why this file exists and is done this way <a class="reference external" href="https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1">https://stackoverflow.com/questions/47599162/pybind11-how-to-package-c-and-python-code-into-a-single-package?rq=1</a></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.linalg.parallel_utils.html#module-romtools.linalg.parallel_utils" title="romtools.linalg.parallel_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parallel_utils</span></code></a></p></td>
-<td><p>Helper functions for testing and writing parallel code with the romtools.linalg module.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.linalg.DistributedSvd.html#romtools.linalg.DistributedSvd" title="romtools.linalg.DistributedSvd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linalg.DistributedSvd</span></code></a>([comm])</p></td>
+<td><p>NumPy-compatible thin SVD callable for a row-distributed matrix.</p></td>
 </tr>
 </tbody>
 </table>
@@ -518,18 +475,6 @@ If <code class="docutils literal notranslate"><span class="pre">None</span></cod
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.linalg.DistributedSvd"><code class="docutils literal notranslate"><span class="pre">DistributedSvd</span></code></a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

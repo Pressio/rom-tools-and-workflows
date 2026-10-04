@@ -1,0 +1,6 @@
+romtools.workflows.format\_text
+===============================
+
+.. currentmodule:: romtools.workflows
+
+.. autofunction:: format_text

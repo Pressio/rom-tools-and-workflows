@@ -486,14 +486,14 @@
 
 
 <div class="viewcode-block" id="Scaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.Scaler.html#romtools.vector_space.utils.Scaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Scaler</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Interface for the Scaler class.</span>
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="Scaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.Scaler.html#romtools.vector_space.utils.Scaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the snapshot matrix in place before performing SVD</span>
@@ -502,7 +502,7 @@
 
 
 <div class="viewcode-block" id="Scaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.Scaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.Scaler.html#romtools.vector_space.utils.Scaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the left singular vectors in place after performing SVD</span>
@@ -513,14 +513,14 @@
 
 
 <div class="viewcode-block" id="StreamingScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.StreamingScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.StreamingScaler.html#romtools.vector_space.utils.StreamingScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StreamingScaler</span><span class="p">(</span><span class="n">Scaler</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Scaler interface required by streaming POD vector spaces.</span>
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="StreamingScaler.initialize_scalings_from_loader">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.StreamingScaler.initialize_scalings_from_loader">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.StreamingScaler.html#romtools.vector_space.utils.StreamingScaler.initialize_scalings_from_loader">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">snapshot_loader</span><span class="p">:</span> <span class="n">SnapshotLoader</span><span class="p">,</span>
@@ -539,7 +539,7 @@
 
 
 <div class="viewcode-block" id="NoOpScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpScaler.html#romtools.vector_space.utils.NoOpScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NoOpScaler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    No op implementation</span>
@@ -547,8 +547,11 @@
 <span class="sd">    This class conforms to the :class:`Scaler` protocol.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="NoOpScaler.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpScaler.html#romtools.vector_space.utils.NoOpScaler.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -560,14 +563,14 @@
         <span class="n">_</span> <span class="o">=</span> <span class="n">snapshot_loader</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">,</span> <span class="n">comm</span>
 
 <div class="viewcode-block" id="NoOpScaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpScaler.html#romtools.vector_space.utils.NoOpScaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Does not alter the input data matrix.'''</span>
         <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="NoOpScaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.NoOpScaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpScaler.html#romtools.vector_space.utils.NoOpScaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Does not alter the input data matrix.'''</span>
         <span class="k">pass</span></div>
@@ -576,7 +579,7 @@
 
 
 <div class="viewcode-block" id="VectorScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VectorScaler.html#romtools.vector_space.utils.VectorScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorScaler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Concrete implementation designed to scale snapshot matrices by a vector.</span>
@@ -600,6 +603,8 @@
 <span class="sd">    This class conforms to the :class:`Scaler` protocol.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="VectorScaler.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VectorScaler.html#romtools.vector_space.utils.VectorScaler.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_vector</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the VectorScaler.</span>
@@ -612,7 +617,8 @@
 <span class="sd">        scaling vector.</span>
 <span class="sd">        '''</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix</span> <span class="o">=</span> <span class="n">scaling_vector</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">scaling_vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_vector_matrix_inv</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">scaling_vector</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -624,7 +630,7 @@
         <span class="n">_</span> <span class="o">=</span> <span class="n">snapshot_loader</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">,</span> <span class="n">comm</span>
 
 <div class="viewcode-block" id="VectorScaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VectorScaler.html#romtools.vector_space.utils.VectorScaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place using the inverse of the scaling vector.</span>
@@ -636,7 +642,7 @@
 
 
 <div class="viewcode-block" id="VectorScaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VectorScaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VectorScaler.html#romtools.vector_space.utils.VectorScaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place using the scaling vector.</span>
@@ -650,7 +656,7 @@
 
 
 <div class="viewcode-block" id="ScalarScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.ScalarScaler.html#romtools.vector_space.utils.ScalarScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ScalarScaler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Applies a scalar scale factor</span>
@@ -658,8 +664,11 @@
 <span class="sd">    This class conforms to the :class:`Scaler` protocol.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="ScalarScaler.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.ScalarScaler.html#romtools.vector_space.utils.ScalarScaler.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="n">factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="n">factor</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -671,7 +680,7 @@
         <span class="n">_</span> <span class="o">=</span> <span class="n">snapshot_loader</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_snapshots</span><span class="p">,</span> <span class="n">comm</span>
 
 <div class="viewcode-block" id="ScalarScaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.ScalarScaler.html#romtools.vector_space.utils.ScalarScaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place using the reciprocal of the input factor.</span>
@@ -683,7 +692,7 @@
 
 
 <div class="viewcode-block" id="ScalarScaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.ScalarScaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.ScalarScaler.html#romtools.vector_space.utils.ScalarScaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place using the input factor.</span>
@@ -697,7 +706,7 @@
 
 
 <div class="viewcode-block" id="VariableScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VariableScaler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Concrete implementation designed for snapshot matrices involving multiple</span>
@@ -721,6 +730,8 @@
 <span class="sd">    This class conforms to the :class:`Scaler` protocol.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="VariableScaler.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the VariableScaler.</span>
@@ -734,10 +745,11 @@
 <span class="sd">        '''</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__scaling_type</span> <span class="o">=</span> <span class="n">scaling_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">have_scales_been_initialized</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_scales_</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 
 <div class="viewcode-block" id="VariableScaler.initialize_scalings">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler.initialize_scalings">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Initializes the scaling factors for each state variable based on the</span>
@@ -765,7 +777,7 @@
 
 
 <div class="viewcode-block" id="VariableScaler.initialize_scalings_from_loader">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.initialize_scalings_from_loader">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler.initialize_scalings_from_loader">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">snapshot_loader</span><span class="p">:</span> <span class="n">SnapshotLoader</span><span class="p">,</span>
@@ -886,7 +898,7 @@
 
     <span class="c1"># These are all inplace operations</span>
 <div class="viewcode-block" id="VariableScaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place before processing, taking into account</span>
@@ -906,7 +918,7 @@
 
 
 <div class="viewcode-block" id="VariableScaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableScaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place using the scaling vector.</span>
@@ -923,7 +935,7 @@
 
 
 <div class="viewcode-block" id="VariableAndVectorScaler">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableAndVectorScaler.html#romtools.vector_space.utils.VariableAndVectorScaler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VariableAndVectorScaler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Concrete implementation designed to scale snapshot matrices involving</span>
@@ -936,6 +948,8 @@
 <span class="sd">    This class conforms to the :class:`Scaler` protocol.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="VariableAndVectorScaler.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableAndVectorScaler.html#romtools.vector_space.utils.VariableAndVectorScaler.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_vector</span><span class="p">,</span> <span class="n">scaling_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the VariableAndVectorScaler.</span>
@@ -950,7 +964,8 @@
 <span class="sd">        specified parameters.</span>
 <span class="sd">        '''</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__my_variable_scaler</span> <span class="o">=</span> <span class="n">VariableScaler</span><span class="p">(</span><span class="n">scaling_type</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__my_vector_scaler</span> <span class="o">=</span> <span class="n">VectorScaler</span><span class="p">(</span><span class="n">scaling_vector</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_vector_scaler</span> <span class="o">=</span> <span class="n">VectorScaler</span><span class="p">(</span><span class="n">scaling_vector</span><span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">initialize_scalings_from_loader</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -964,7 +979,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="VariableAndVectorScaler.pre_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler.pre_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableAndVectorScaler.html#romtools.vector_space.utils.VariableAndVectorScaler.pre_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place before processing, first using the</span>
@@ -978,7 +993,7 @@
 
 
 <div class="viewcode-block" id="VariableAndVectorScaler.post_scale">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.scaler.html#romtools.vector_space.utils.scaler.VariableAndVectorScaler.post_scale">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.VariableAndVectorScaler.html#romtools.vector_space.utils.VariableAndVectorScaler.post_scale">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_tensor</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Scales the input data matrix in place after processing, first using the</span>
@@ -991,6 +1006,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__my_variable_scaler</span><span class="o">.</span><span class="n">post_scale</span><span class="p">(</span><span class="n">data_tensor</span><span class="p">)</span></div>
 </div>
 
+
+<span class="c1"># Supported interfaces; imported numerical and typing helpers are internal.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Scaler"</span><span class="p">,</span>
+    <span class="s2">"StreamingScaler"</span><span class="p">,</span>
+    <span class="s2">"NoOpScaler"</span><span class="p">,</span>
+    <span class="s2">"VectorScaler"</span><span class="p">,</span>
+    <span class="s2">"ScalarScaler"</span><span class="p">,</span>
+    <span class="s2">"VariableScaler"</span><span class="p">,</span>
+    <span class="s2">"VariableAndVectorScaler"</span><span class="p">,</span>
+<span class="p">]</span>
 </pre></div>
 
                 </article>

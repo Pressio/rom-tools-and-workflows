@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.multi\_state\_deim\_get\_test\_basis
+==============================================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: multi_state_deim_get_test_basis

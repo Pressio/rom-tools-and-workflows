@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.qdeim\_get\_indices
+=============================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: qdeim_get_indices

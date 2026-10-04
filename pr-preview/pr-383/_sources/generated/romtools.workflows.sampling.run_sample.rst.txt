@@ -1,0 +1,6 @@
+romtools.workflows.sampling.run\_sample
+=======================================
+
+.. currentmodule:: romtools.workflows.sampling
+
+.. autofunction:: run_sample

@@ -1,0 +1,26 @@
+romtools.workflows.models.QoiModelWithErrorEstimate
+===================================================
+
+.. currentmodule:: romtools.workflows.models
+
+.. autoclass:: QoiModelWithErrorEstimate
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~QoiModelWithErrorEstimate.__init__
+      ~QoiModelWithErrorEstimate.compute_error_estimate
+      ~QoiModelWithErrorEstimate.compute_qoi
+      ~QoiModelWithErrorEstimate.populate_run_directory
+      ~QoiModelWithErrorEstimate.run_model
+   
+   
+
+   
+   
+   

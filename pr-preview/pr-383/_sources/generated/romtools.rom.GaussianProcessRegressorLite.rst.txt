@@ -1,0 +1,26 @@
+romtools.rom.GaussianProcessRegressorLite
+=========================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: GaussianProcessRegressorLite
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianProcessRegressorLite.__init__
+      ~GaussianProcessRegressorLite.fit
+      ~GaussianProcessRegressorLite.log_marginal_likelihood
+      ~GaussianProcessRegressorLite.predict
+      ~GaussianProcessRegressorLite.predict_mean_and_std
+   
+   
+
+   
+   
+   

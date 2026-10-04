@@ -1,15 +1,50 @@
-romtools.rom
+﻿romtools.rom
 ============
 
 .. automodule:: romtools.rom
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   neural_network_surrogate
-   projections
-   qoi_surrogates
+   rom.optimal_l2_projection
+
+   rom.estimate_pairwise_lipschitz_constant
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   rom.GaussianProcessKernel
+
+   rom.GaussianProcessRegressorLite
+
+   rom.GaussianProcessQoiModel
+
+   rom.NeuralNetworkConfig
+
+   rom.NeuralNetworkQoiModel
+
+   rom.LipschitzConfig
+
+   rom.LipschitzNeuralNetworkQoiModel
+
+   rom.NeuralNetworkQoiModelBuilderWithTrainingData
+
+
+
+
+
+
+
+

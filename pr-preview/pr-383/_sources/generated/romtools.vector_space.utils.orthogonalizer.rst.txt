@@ -1,16 +1,34 @@
-romtools.vector\_space.utils.orthogonalizer
+﻿romtools.vector\_space.utils.orthogonalizer
 ===========================================
 
 .. automodule:: romtools.vector_space.utils.orthogonalizer
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      EuclideanL2Orthogonalizer
-      EuclideanMatrixWeightedL2Orthogonalizer
-      EuclideanVectorWeightedL2Orthogonalizer
-      NoOpOrthogonalizer
-      Orthogonalizer
-   
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   vector_space.utils.Orthogonalizer
+
+   vector_space.utils.NoOpOrthogonalizer
+
+   vector_space.utils.EuclideanL2Orthogonalizer
+
+   vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer
+
+   vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer
+
+
+
+
+
+
+
+

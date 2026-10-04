@@ -1,0 +1,40 @@
+romtools.workflows.inverse.VINewtonOptimizerConfig
+==================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VINewtonOptimizerConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VINewtonOptimizerConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VINewtonOptimizerConfig.gradient_norm_tolerance
+      ~VINewtonOptimizerConfig.max_iterations
+      ~VINewtonOptimizerConfig.max_log_std_update
+      ~VINewtonOptimizerConfig.max_mean_update_std
+      ~VINewtonOptimizerConfig.max_variational_std
+      ~VINewtonOptimizerConfig.min_variational_std
+      ~VINewtonOptimizerConfig.newton_curvature_strategy
+      ~VINewtonOptimizerConfig.newton_hessian_averaging_factor
+      ~VINewtonOptimizerConfig.newton_hessian_num_samples
+      ~VINewtonOptimizerConfig.newton_hessian_type
+      ~VINewtonOptimizerConfig.newton_metric
+      ~VINewtonOptimizerConfig.newton_regularization
+      ~VINewtonOptimizerConfig.newton_regularization_strategy
+   
+   

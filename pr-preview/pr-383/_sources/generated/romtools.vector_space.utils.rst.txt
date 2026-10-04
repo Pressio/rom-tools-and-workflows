@@ -1,19 +1,86 @@
-romtools.vector\_space.utils
+﻿romtools.vector\_space.utils
 ============================
 
 .. automodule:: romtools.vector_space.utils
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   orthogonalizer
-   outputter
-   scaler
-   shifter
-   snapshot_loader
-   svd_method_of_snapshots
-   truncater
+   vector_space.utils.create_noop_shifter
+
+   vector_space.utils.create_constant_shifter
+
+   vector_space.utils.create_vector_shifter
+
+   vector_space.utils.create_average_shifter
+
+   vector_space.utils.create_firstvec_shifter
+
+   vector_space.utils.create_streaming_average_shifter
+
+   vector_space.utils.create_streaming_firstvec_shifter
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   vector_space.utils.Shifter
+
+   vector_space.utils.StreamingShifter
+
+   vector_space.utils.Scaler
+
+   vector_space.utils.StreamingScaler
+
+   vector_space.utils.NoOpScaler
+
+   vector_space.utils.VectorScaler
+
+   vector_space.utils.ScalarScaler
+
+   vector_space.utils.VariableScaler
+
+   vector_space.utils.VariableAndVectorScaler
+
+   vector_space.utils.Orthogonalizer
+
+   vector_space.utils.NoOpOrthogonalizer
+
+   vector_space.utils.EuclideanL2Orthogonalizer
+
+   vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer
+
+   vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer
+
+   vector_space.utils.LeftSingularVectorTruncater
+
+   vector_space.utils.NoOpTruncater
+
+   vector_space.utils.BasisSizeTruncater
+
+   vector_space.utils.EnergyBasedTruncater
+
+   vector_space.utils.SvdMethodOfSnapshots
+
+   vector_space.utils.SvdMethodOfSnapshotsForQr
+
+   vector_space.utils.SnapshotLoader
+
+
+
+
+
+
+
+

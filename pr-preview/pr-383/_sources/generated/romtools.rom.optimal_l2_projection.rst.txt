@@ -1,0 +1,6 @@
+romtools.rom.optimal\_l2\_projection
+====================================
+
+.. currentmodule:: romtools.rom
+
+.. autofunction:: optimal_l2_projection

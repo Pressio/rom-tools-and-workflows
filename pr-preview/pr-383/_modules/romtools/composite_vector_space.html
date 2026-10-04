@@ -439,13 +439,15 @@
 
 
 <div class="viewcode-block" id="CompositeVectorSpace">
-<a class="viewcode-back" href="../../generated/romtools.composite_vector_space.html#romtools.composite_vector_space.CompositeVectorSpace">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.composite_vector_space.CompositeVectorSpace.html#romtools.composite_vector_space.CompositeVectorSpace">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CompositeVectorSpace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Constructs a composite vector space out of a list of vector spaces</span>
 <span class="sd">    Different vector spaces need to have the same number of spatial DOFs</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="CompositeVectorSpace.__init__">
+<a class="viewcode-back" href="../../generated/romtools.composite_vector_space.CompositeVectorSpace.html#romtools.composite_vector_space.CompositeVectorSpace.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list_of_vector_spaces</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">VectorSpace</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Inputs: list_of_vector_spaces: list[VectorSpace] containing the list of vector spaces to combine</span>
@@ -454,7 +456,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__get_extent_and_check_compatability</span><span class="p">(</span><span class="n">list_of_vector_spaces</span><span class="p">)</span>
 
         <span class="c1"># Construct basis as a list of local bases</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__construct_compact_basis</span><span class="p">(</span><span class="n">list_of_vector_spaces</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__construct_compact_basis</span><span class="p">(</span><span class="n">list_of_vector_spaces</span><span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">extents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__extent</span>

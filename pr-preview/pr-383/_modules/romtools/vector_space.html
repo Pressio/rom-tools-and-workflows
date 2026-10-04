@@ -508,8 +508,29 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">romtools.linalg.linalg</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">la</span>
 
 
+<span class="c1"># Explicit supported exports; imported NumPy/typing helpers remain internal.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"VectorSpace"</span><span class="p">,</span>
+    <span class="s2">"DictionaryVectorSpace"</span><span class="p">,</span>
+    <span class="s2">"VectorSpaceFromPOD"</span><span class="p">,</span>
+    <span class="s2">"VectorSpaceFromStreamingPOD"</span><span class="p">,</span>
+    <span class="s2">"utils"</span><span class="p">,</span>
+    <span class="s2">"LeftSingularVectorTruncater"</span><span class="p">,</span>
+    <span class="s2">"NoOpTruncater"</span><span class="p">,</span>
+    <span class="s2">"Shifter"</span><span class="p">,</span>
+    <span class="s2">"StreamingShifter"</span><span class="p">,</span>
+    <span class="s2">"create_noop_shifter"</span><span class="p">,</span>
+    <span class="s2">"Scaler"</span><span class="p">,</span>
+    <span class="s2">"StreamingScaler"</span><span class="p">,</span>
+    <span class="s2">"NoOpScaler"</span><span class="p">,</span>
+    <span class="s2">"Orthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"NoOpOrthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"SnapshotLoader"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
 <div class="viewcode-block" id="VectorSpace">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpace.html#romtools.vector_space.VectorSpace">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorSpace</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Abstract base class for vector space implementations.</span>
@@ -518,7 +539,7 @@
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="VectorSpace.extents">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.extents">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpace.html#romtools.vector_space.VectorSpace.extents">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Retrieves the dimension of the vector space</span>
@@ -530,7 +551,7 @@
 
 
 <div class="viewcode-block" id="VectorSpace.get_shift_vector">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.get_shift_vector">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpace.html#romtools.vector_space.VectorSpace.get_shift_vector">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Retrieves the shift vector of the vector space.</span>
@@ -542,7 +563,7 @@
 
 
 <div class="viewcode-block" id="VectorSpace.get_basis">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpace.get_basis">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpace.html#romtools.vector_space.VectorSpace.get_basis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Retrieves the basis vectors of the vector space.</span>
@@ -556,7 +577,7 @@
 
 
 <div class="viewcode-block" id="DictionaryVectorSpace">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.DictionaryVectorSpace.html#romtools.vector_space.DictionaryVectorSpace">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DictionaryVectorSpace</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Reduced basis vector space (no truncation).</span>
@@ -573,6 +594,8 @@
 <span class="sd">    respective classes</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="DictionaryVectorSpace.__init__">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.DictionaryVectorSpace.html#romtools.vector_space.DictionaryVectorSpace.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">snapshots</span><span class="p">,</span>
                  <span class="n">shifter</span><span class="p">:</span>        <span class="n">Shifter</span>        <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -599,10 +622,11 @@
         <span class="n">snapshot_matrix</span> <span class="o">=</span> <span class="n">_tensor_to_matrix</span><span class="p">(</span><span class="n">snapshots</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">orthogonalizer</span><span class="o">.</span><span class="n">orthogonalize</span><span class="p">(</span><span class="n">snapshot_matrix</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span></div>
+
 
 <div class="viewcode-block" id="DictionaryVectorSpace.get_shift_vector">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace.get_shift_vector">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.DictionaryVectorSpace.html#romtools.vector_space.DictionaryVectorSpace.get_shift_vector">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Concrete implementation of `VectorSpace.get_shift_vector()`</span>
@@ -611,7 +635,7 @@
 
 
 <div class="viewcode-block" id="DictionaryVectorSpace.get_basis">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.DictionaryVectorSpace.get_basis">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.DictionaryVectorSpace.html#romtools.vector_space.DictionaryVectorSpace.get_basis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Concrete implementation of `VectorSpace.get_basis()`</span>
@@ -625,7 +649,7 @@
 
 
 <div class="viewcode-block" id="VectorSpaceFromPOD">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorSpaceFromPOD</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    POD vector space (constructed via SVD).</span>
@@ -649,6 +673,8 @@
 <span class="sd">    decay of singular values; please refer to the documentation for the truncater.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="VectorSpaceFromPOD.__init__">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">snapshots</span><span class="p">,</span>
                  <span class="n">truncater</span><span class="p">:</span>      <span class="n">LeftSingularVectorTruncater</span>   <span class="o">=</span> <span class="n">NoOpTruncater</span><span class="p">(),</span>
@@ -695,11 +721,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_tensor_to_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">orthogonalizer</span><span class="o">.</span><span class="n">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span> <span class="o">=</span> <span class="n">_matrix_to_tensor</span><span class="p">(</span><span class="n">n_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span></div>
+
 
 
 <div class="viewcode-block" id="VectorSpaceFromPOD.get_singular_values">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_singular_values">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD.get_singular_values">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_singular_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Returns array of singular values</span>
@@ -709,7 +736,7 @@
 
 
 <div class="viewcode-block" id="VectorSpaceFromPOD.get_shift_vector">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_shift_vector">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD.get_shift_vector">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Concrete implementation of `VectorSpace.get_shift_vector()`</span>
@@ -718,7 +745,7 @@
 
 
 <div class="viewcode-block" id="VectorSpaceFromPOD.get_basis">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD.get_basis">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD.get_basis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Concrete implementation of `VectorSpace.get_basis()`</span>
@@ -732,7 +759,7 @@
 
 
 <div class="viewcode-block" id="VectorSpaceFromStreamingPOD">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromStreamingPOD">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromStreamingPOD.html#romtools.vector_space.VectorSpaceFromStreamingPOD">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorSpaceFromStreamingPOD</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    POD vector space constructed from snapshot blocks loaded on demand.</span>
@@ -746,6 +773,8 @@
 <span class="sd">    complete shifted and pre-scaled snapshot matrix.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="VectorSpaceFromStreamingPOD.__init__">
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromStreamingPOD.html#romtools.vector_space.VectorSpaceFromStreamingPOD.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">snapshot_loader</span><span class="p">:</span> <span class="n">SnapshotLoader</span><span class="p">,</span>
                  <span class="n">block_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -822,24 +851,25 @@
         <span class="k">if</span> <span class="n">shifter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__basis</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span> <span class="o">=</span> <span class="n">shifter</span><span class="o">.</span><span class="n">get_shift_vector</span><span class="p">()</span></div>
+
 
 <div class="viewcode-block" id="VectorSpaceFromStreamingPOD.get_singular_values">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_singular_values">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromStreamingPOD.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_singular_values">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_singular_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''Returns the approximate singular values of the candidate basis.'''</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__svals</span></div>
 
 
 <div class="viewcode-block" id="VectorSpaceFromStreamingPOD.get_shift_vector">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_shift_vector">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromStreamingPOD.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_shift_vector">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_shift_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''Concrete implementation of VectorSpace.get_shift_vector().'''</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__shift_vector</span></div>
 
 
 <div class="viewcode-block" id="VectorSpaceFromStreamingPOD.get_basis">
-<a class="viewcode-back" href="../../generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_basis">[docs]</a>
+<a class="viewcode-back" href="../../generated/romtools.vector_space.VectorSpaceFromStreamingPOD.html#romtools.vector_space.VectorSpaceFromStreamingPOD.get_basis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''Concrete implementation of VectorSpace.get_basis().'''</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__basis</span></div>

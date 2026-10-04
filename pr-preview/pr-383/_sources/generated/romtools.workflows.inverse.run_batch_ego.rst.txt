@@ -1,0 +1,6 @@
+romtools.workflows.inverse.run\_batch\_ego
+==========================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autofunction:: run_batch_ego

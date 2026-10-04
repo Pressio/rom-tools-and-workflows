@@ -523,7 +523,7 @@ results back on the user’s local machine.</p>
 model and your workflow.</p>
 <section id="updating-your-model">
 <h3>Updating your model<a class="headerlink" href="#updating-your-model" title="Link to this heading">#</a></h3>
-<p>Assume your model (<a class="reference internal" href="generated/romtools.workflows.models.html#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>) has the two
+<p>Assume your model (<a class="reference internal" href="generated/romtools.workflows.models.Model.html#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>) has the two
 fundamental methods <code class="docutils literal notranslate"><span class="pre">populate_run_directory()</span></code> and <code class="docutils literal notranslate"><span class="pre">run_model()</span></code>. The same
 ideas apply to any other methods your model contains.</p>
 <section id="step-1-add-a-constructor">
@@ -617,7 +617,7 @@ configured as explained in <a class="reference internal" href="#configuring-the-
 <h4>Step 4: Update other methods<a class="headerlink" href="#step-4-update-other-methods" title="Link to this heading">#</a></h4>
 <p>Any other methods that execute commands or read files can be wired with the
 same core dispatcher functionality.</p>
-<p>For a <a class="reference internal" href="generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">QoiModel</span></code></a> that executes a functor, the
+<p>For a <a class="reference internal" href="generated/romtools.workflows.models.QoiModel.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">QoiModel</span></code></a> that executes a functor, the
 <code class="docutils literal notranslate"><span class="pre">call()</span></code> method may be useful to dispatch Python functions to the execution
 host. Note that any Callable objects passed to <code class="docutils literal notranslate"><span class="pre">call</span></code> must be
 importable on the execution host.</p>

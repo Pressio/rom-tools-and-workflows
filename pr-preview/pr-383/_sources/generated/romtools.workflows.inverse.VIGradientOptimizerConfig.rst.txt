@@ -1,0 +1,33 @@
+romtools.workflows.inverse.VIGradientOptimizerConfig
+====================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VIGradientOptimizerConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VIGradientOptimizerConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VIGradientOptimizerConfig.gradient_method
+      ~VIGradientOptimizerConfig.gradient_norm_tolerance
+      ~VIGradientOptimizerConfig.max_iterations
+      ~VIGradientOptimizerConfig.max_log_std_update
+      ~VIGradientOptimizerConfig.max_variational_std
+      ~VIGradientOptimizerConfig.min_variational_std
+   
+   

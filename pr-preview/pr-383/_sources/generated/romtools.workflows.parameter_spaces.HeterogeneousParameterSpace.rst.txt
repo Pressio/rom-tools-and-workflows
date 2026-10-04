@@ -1,0 +1,25 @@
+romtools.workflows.parameter\_spaces.HeterogeneousParameterSpace
+================================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: HeterogeneousParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HeterogeneousParameterSpace.__init__
+      ~HeterogeneousParameterSpace.generate_samples
+      ~HeterogeneousParameterSpace.get_dimensionality
+      ~HeterogeneousParameterSpace.get_names
+   
+   
+
+   
+   
+   

@@ -1,0 +1,23 @@
+romtools.vector\_space.utils.EuclideanMatrixWeightedL2Orthogonalizer
+====================================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: EuclideanMatrixWeightedL2Orthogonalizer
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~EuclideanMatrixWeightedL2Orthogonalizer.__init__
+      ~EuclideanMatrixWeightedL2Orthogonalizer.orthogonalize
+   
+   
+
+   
+   
+   

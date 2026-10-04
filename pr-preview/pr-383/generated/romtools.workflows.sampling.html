@@ -60,8 +60,8 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.sampling.sampling" href="romtools.workflows.sampling.sampling.html" />
-    <link rel="prev" title="romtools.workflows.residual_evaluator" href="romtools.workflows.residual_evaluator.html" />
+    <link rel="next" title="romtools.workflows.greedy" href="romtools.workflows.greedy.html" />
+    <link rel="prev" title="romtools.workflows.inverse" href="romtools.workflows.inverse.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -344,57 +344,26 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.residual_evaluator.html">romtools.workflows.residual_evaluator</a></li>
-<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.sampling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
-</ul>
-</details></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.html">romtools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.residual_evaluator.html">romtools.workflows.residual_evaluator</a></li>
-<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.sampling</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling.sampling.html">romtools.workflows.sampling.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.sampling</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.run_sampling.html">romtools.workflows.sampling.run_sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.run_sample.html">romtools.workflows.sampling.run_sample</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -416,22 +385,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.sampling.run_sampling"><code class="docutils literal notranslate"><span class="pre">run_sampling()</span></code></a></li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -472,12 +432,6 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
-    
-    
-    <li class="breadcrumb-item"><a href="romtools.workflows.html" class="nav-link">romtools.workflows</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.sampling</span></li>
   </ul>
 </nav>
@@ -499,31 +453,13 @@
 <span id="romtools-workflows-sampling"></span><h1>romtools.workflows.sampling<a class="headerlink" href="#module-romtools.workflows.sampling" title="Link to this heading">#</a></h1>
 <p>Implementation of basic sampling workflow. Given a parameter space <span class="math notranslate nohighlight">\(\mathcal{D}\)</span>, we draw random samples and
 run our model for each sample.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="romtools.workflows.sampling.run_sampling">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.sampling.</span></span><span class="sig-name descname"><span class="pre">run_sampling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_sampling_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/sampling/sampling.html#run_sampling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.sampling.run_sampling" title="Link to this definition">#</a></dt>
-<dd><p>Core algorithm</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><em>Model</em></a>)</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
-<li><p><strong>absolute_work_dir</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>number_of_samples</strong> (<em>int</em>)</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
-<li><p><strong>dry_run</strong> (<em>bool</em>)</p></li>
-<li><p><strong>overwrite</strong> (<em>bool</em>)</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>absolute_sampling_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<p class="rubric">Modules</p>
+<p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling.sampling.html#module-romtools.workflows.sampling.sampling" title="romtools.workflows.sampling.sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling.run_sampling.html#romtools.workflows.sampling.run_sampling" title="romtools.workflows.sampling.run_sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.sampling.run_sampling</span></code></a>(model, ...)</p></td>
+<td><p>Core algorithm</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling.run_sample.html#romtools.workflows.sampling.run_sample" title="romtools.workflows.sampling.run_sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflows.sampling.run_sample</span></code></a>(run_directory, ...)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -545,18 +481,6 @@ run our model for each sample.</p>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.sampling.run_sampling"><code class="docutils literal notranslate"><span class="pre">run_sampling()</span></code></a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

@@ -1,0 +1,36 @@
+romtools.workflows.inverse.VILegacyLineSearchConfig
+===================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VILegacyLineSearchConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VILegacyLineSearchConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VILegacyLineSearchConfig.initial_step_size
+      ~VILegacyLineSearchConfig.line_search_objective
+      ~VILegacyLineSearchConfig.line_search_sample_growth_factor
+      ~VILegacyLineSearchConfig.log_std_learning_rate_factor
+      ~VILegacyLineSearchConfig.max_step_size
+      ~VILegacyLineSearchConfig.max_step_size_decrease_trys
+      ~VILegacyLineSearchConfig.relaxation_parameter
+      ~VILegacyLineSearchConfig.step_size_decay_factor
+      ~VILegacyLineSearchConfig.step_size_growth_factor
+   
+   

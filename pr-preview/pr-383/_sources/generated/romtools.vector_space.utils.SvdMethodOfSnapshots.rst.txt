@@ -1,0 +1,22 @@
+romtools.vector\_space.utils.SvdMethodOfSnapshots
+=================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: SvdMethodOfSnapshots
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SvdMethodOfSnapshots.__init__
+   
+   
+
+   
+   
+   

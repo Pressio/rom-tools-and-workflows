@@ -1,0 +1,25 @@
+romtools.workflows.parameter\_spaces.GaussianParameterSpace
+===========================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: GaussianParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianParameterSpace.__init__
+      ~GaussianParameterSpace.generate_samples
+      ~GaussianParameterSpace.get_dimensionality
+      ~GaussianParameterSpace.get_names
+   
+   
+
+   
+   
+   

@@ -1,0 +1,29 @@
+romtools.rom.GaussianProcessKernel
+==================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: GaussianProcessKernel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianProcessKernel.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GaussianProcessKernel.length_scale
+      ~GaussianProcessKernel.signal_variance
+   
+   

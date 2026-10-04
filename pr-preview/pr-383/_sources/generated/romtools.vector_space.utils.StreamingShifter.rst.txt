@@ -1,0 +1,26 @@
+romtools.vector\_space.utils.StreamingShifter
+=============================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: StreamingShifter
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StreamingShifter.__init__
+      ~StreamingShifter.apply_inverse_shift
+      ~StreamingShifter.apply_shift
+      ~StreamingShifter.get_shift_vector
+      ~StreamingShifter.initialize_shift_vector_from_loader
+   
+   
+
+   
+   
+   

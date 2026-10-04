@@ -1,0 +1,25 @@
+romtools.workflows.models.QoiModel
+==================================
+
+.. currentmodule:: romtools.workflows.models
+
+.. autoclass:: QoiModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~QoiModel.__init__
+      ~QoiModel.compute_qoi
+      ~QoiModel.populate_run_directory
+      ~QoiModel.run_model
+   
+   
+
+   
+   
+   

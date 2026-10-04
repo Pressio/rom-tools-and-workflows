@@ -1,13 +1,28 @@
-romtools.workflows.sampling
+﻿romtools.workflows.sampling
 ===========================
 
 .. automodule:: romtools.workflows.sampling
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   sampling
+   workflows.sampling.run_sampling
+
+   workflows.sampling.run_sample
+
+
+
+
+
+
+
+
+
+

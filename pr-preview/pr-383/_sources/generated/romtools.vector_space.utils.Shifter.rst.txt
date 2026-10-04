@@ -1,0 +1,25 @@
+romtools.vector\_space.utils.Shifter
+====================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: Shifter
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Shifter.__init__
+      ~Shifter.apply_inverse_shift
+      ~Shifter.apply_shift
+      ~Shifter.get_shift_vector
+   
+   
+
+   
+   
+   

@@ -1,0 +1,26 @@
+romtools.vector\_space.VectorSpaceFromPOD
+=========================================
+
+.. currentmodule:: romtools.vector_space
+
+.. autoclass:: VectorSpaceFromPOD
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VectorSpaceFromPOD.__init__
+      ~VectorSpaceFromPOD.extents
+      ~VectorSpaceFromPOD.get_basis
+      ~VectorSpaceFromPOD.get_shift_vector
+      ~VectorSpaceFromPOD.get_singular_values
+   
+   
+
+   
+   
+   

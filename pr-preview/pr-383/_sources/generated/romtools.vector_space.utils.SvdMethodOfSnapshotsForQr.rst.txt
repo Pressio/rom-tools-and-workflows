@@ -1,0 +1,22 @@
+romtools.vector\_space.utils.SvdMethodOfSnapshotsForQr
+======================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: SvdMethodOfSnapshotsForQr
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SvdMethodOfSnapshotsForQr.__init__
+   
+   
+
+   
+   
+   

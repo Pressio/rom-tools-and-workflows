@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.deim\_get\_test\_basis
+================================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: deim_get_test_basis

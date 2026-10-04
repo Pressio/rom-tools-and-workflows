@@ -475,7 +475,7 @@
 
 
 <div class="viewcode-block" id="ECSWsolver">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ECSWsolver">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ECSWsolver.html#romtools.hyper_reduction.ECSWsolver">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ECSWsolver</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Abstract base class for ECSW solvers</span>
@@ -487,6 +487,8 @@
 <span class="sd">    Methods:</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="ECSWsolver.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ECSWsolver.html#romtools.hyper_reduction.ECSWsolver.__init__">[docs]</a>
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver_param_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''</span>
@@ -499,7 +501,8 @@
 <span class="sd">            max_iters_res_unchanged: int, maximum number of iterations without any change in the residual norm before terminating</span>
 <span class="sd">            zero_tol: int, tolerance used to check if weights or residual norm changes are near zero</span>
 <span class="sd">        '''</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
@@ -531,7 +534,7 @@
 
 
 <div class="viewcode-block" id="ECSWsolverNNLS">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ECSWsolverNNLS">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ECSWsolverNNLS.html#romtools.hyper_reduction.ECSWsolverNNLS">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ECSWsolverNNLS</span><span class="p">(</span><span class="n">ECSWsolver</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Given a linear system with left-hand side full_mesh_lhs and right-hand side full_mesh_rhs,</span>
@@ -539,6 +542,8 @@
 <span class="sd">    from Chapman et al. 2016 DOI: 10.1002/nme.5332.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="ECSWsolverNNLS.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ECSWsolverNNLS.html#romtools.hyper_reduction.ECSWsolverNNLS.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver_param_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="c1"># Set default solver parameter values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span> <span class="o">=</span> <span class="mi">10000</span>  <span class="c1"># maximum overall iterations</span>
@@ -558,7 +563,8 @@
                     <span class="s2">"max_iters_res_unchanged"</span>
                 <span class="p">]</span>
             <span class="k">if</span> <span class="s2">"zero_tol"</span> <span class="ow">in</span> <span class="n">solver_param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span><span class="s2">"zero_tol"</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zero_tol</span> <span class="o">=</span> <span class="n">solver_param_dict</span><span class="p">[</span><span class="s2">"zero_tol"</span><span class="p">]</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">full_mesh_lhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">full_mesh_rhs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span>
@@ -783,7 +789,7 @@
 
 
 <div class="viewcode-block" id="ecsw_fixed_test_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw_fixed_test_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw_fixed_test_basis.html#romtools.hyper_reduction.ecsw_fixed_test_basis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ecsw_fixed_test_basis</span><span class="p">(</span>
     <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
     <span class="n">residual_snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -821,7 +827,7 @@
 
 
 <div class="viewcode-block" id="ecsw_varying_test_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw_varying_test_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw_varying_test_basis.html#romtools.hyper_reduction.ecsw_varying_test_basis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ecsw_varying_test_basis</span><span class="p">(</span>
     <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
     <span class="n">residual_snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -879,7 +885,7 @@
 
 
 <div class="viewcode-block" id="ecsw_lspg_zero_residual">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw.html#romtools.hyper_reduction.ecsw_lspg_zero_residual">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.ecsw_lspg_zero_residual.html#romtools.hyper_reduction.ecsw_lspg_zero_residual">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ecsw_lspg_zero_residual</span><span class="p">(</span>
     <span class="n">ecsw_solver</span><span class="p">:</span> <span class="n">ECSWsolver</span><span class="p">,</span>
     <span class="n">test_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>

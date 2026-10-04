@@ -456,14 +456,14 @@
 
 
 <div class="viewcode-block" id="LeftSingularVectorTruncater">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.LeftSingularVectorTruncater">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.LeftSingularVectorTruncater.html#romtools.vector_space.utils.LeftSingularVectorTruncater">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LeftSingularVectorTruncater</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Interface for the Truncater class.</span>
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="LeftSingularVectorTruncater.truncate">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.LeftSingularVectorTruncater.truncate">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.LeftSingularVectorTruncater.html#romtools.vector_space.utils.LeftSingularVectorTruncater.truncate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">truncate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">total_energy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
@@ -479,15 +479,18 @@
 
 
 <div class="viewcode-block" id="NoOpTruncater">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.NoOpTruncater">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpTruncater.html#romtools.vector_space.utils.NoOpTruncater">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NoOpTruncater</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    No op implementation</span>
 
 <span class="sd">    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="NoOpTruncater.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpTruncater.html#romtools.vector_space.utils.NoOpTruncater.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">truncate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">total_energy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span> <span class="c1"># pylint: disable=unused-argument</span>
@@ -496,13 +499,15 @@
 
 
 <div class="viewcode-block" id="BasisSizeTruncater">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.BasisSizeTruncater">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.BasisSizeTruncater.html#romtools.vector_space.utils.BasisSizeTruncater">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BasisSizeTruncater</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Truncates to a specified number of singular vectors, as specified in the constructor</span>
 
 <span class="sd">    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="BasisSizeTruncater.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.BasisSizeTruncater.html#romtools.vector_space.utils.BasisSizeTruncater.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basis_dimension</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the BasisSizeTruncater class.</span>
@@ -516,10 +521,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__basis_dimension</span> <span class="o">=</span> <span class="n">basis_dimension</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__singular_values</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__total_energy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__total_energy</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 
 <div class="viewcode-block" id="BasisSizeTruncater.truncate">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.BasisSizeTruncater.truncate">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.BasisSizeTruncater.html#romtools.vector_space.utils.BasisSizeTruncater.truncate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">truncate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">total_energy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
@@ -546,7 +552,7 @@
 
 
 <div class="viewcode-block" id="BasisSizeTruncater.get_energy">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.BasisSizeTruncater.get_energy">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.BasisSizeTruncater.html#romtools.vector_space.utils.BasisSizeTruncater.get_energy">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Returns:</span>
@@ -566,7 +572,7 @@
 
 
 <div class="viewcode-block" id="EnergyBasedTruncater">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.EnergyBasedTruncater">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EnergyBasedTruncater.html#romtools.vector_space.utils.EnergyBasedTruncater">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EnergyBasedTruncater</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Truncates based on the decay of singular values, i.e., will define :math:`K` to</span>
@@ -575,6 +581,8 @@
 
 <span class="sd">    This class conforms to the :class:`LeftSingularVectorTruncater` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="EnergyBasedTruncater.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EnergyBasedTruncater.html#romtools.vector_space.utils.EnergyBasedTruncater.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the EnergyTruncater class.</span>
@@ -583,10 +591,11 @@
 <span class="sd">            threshold (float): The cumulative energy threshold.</span>
 <span class="sd">        '''</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__energy_threshold_</span> <span class="o">=</span> <span class="n">threshold</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__energy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__energy</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 
 <div class="viewcode-block" id="EnergyBasedTruncater.truncate">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.EnergyBasedTruncater.truncate">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EnergyBasedTruncater.html#romtools.vector_space.utils.EnergyBasedTruncater.truncate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">truncate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">singular_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">total_energy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
@@ -617,7 +626,7 @@
 
 
 <div class="viewcode-block" id="EnergyBasedTruncater.get_energy">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.truncater.html#romtools.vector_space.utils.truncater.EnergyBasedTruncater.get_energy">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EnergyBasedTruncater.html#romtools.vector_space.utils.EnergyBasedTruncater.get_energy">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Returns:</span>

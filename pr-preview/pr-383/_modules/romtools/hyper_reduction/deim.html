@@ -625,7 +625,7 @@
 
 
 <div class="viewcode-block" id="qdeim_get_indices">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.qdeim_get_indices">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.qdeim_get_indices.html#romtools.hyper_reduction.qdeim_get_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">qdeim_get_indices</span><span class="p">(</span><span class="n">function_basis</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''Select interpolation indices using QDEIM for a matrix-form basis.</span>
 
@@ -648,7 +648,7 @@
 
 
 <div class="viewcode-block" id="DEIM">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DEIM</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''Serial discrete empirical interpolation operator.</span>
 
@@ -674,6 +674,8 @@
 <span class="sd">        state snapshots used to construct a ROM trial basis.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="DEIM.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function_basis</span><span class="p">,</span> <span class="n">sample_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">sample_all_states</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">basis_mode</span><span class="o">=</span><span class="s2">"per_state"</span><span class="p">):</span>
         <span class="n">basis_mode</span> <span class="o">=</span> <span class="n">_validate_basis_mode</span><span class="p">(</span><span class="n">basis_mode</span><span class="p">)</span>
@@ -696,7 +698,8 @@
                 <span class="n">sample_indices</span><span class="o">=</span><span class="n">sample_indices</span><span class="p">,</span>
                 <span class="n">rcond</span><span class="o">=</span><span class="n">rcond</span><span class="p">,</span>
                 <span class="n">sample_all_states</span><span class="o">=</span><span class="n">sample_all_states</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="p">)</span></div>
+
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_select_sample_indices</span><span class="p">(</span><span class="n">function_basis</span><span class="p">):</span>
@@ -806,7 +809,7 @@
         <span class="k">return</span> <span class="n">obj</span>
 
 <div class="viewcode-block" id="DEIM.from_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM.from_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.from_basis">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_basis</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">function_basis</span><span class="p">,</span> <span class="n">sample_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">sample_all_states</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">basis_mode</span><span class="o">=</span><span class="s2">"per_state"</span><span class="p">):</span>
@@ -843,7 +846,7 @@
 
 
 <div class="viewcode-block" id="DEIM.from_snapshots">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM.from_snapshots">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.from_snapshots">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_snapshots</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">function_snapshots</span><span class="p">,</span> <span class="n">truncater</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                        <span class="n">sample_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -969,7 +972,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__sample_all_states</span>
 
 <div class="viewcode-block" id="DEIM.reconstruction_matrix">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM.reconstruction_matrix">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.reconstruction_matrix">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reconstruction_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Return the flattened DEIM reconstruction matrix.</span>
 
@@ -982,7 +985,7 @@
 
 
 <div class="viewcode-block" id="DEIM.reconstruct">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM.reconstruct">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.reconstruct">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reconstruct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sampled_values</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Reconstruct full-order tensor values from sampled values.</span>
 
@@ -1058,7 +1061,7 @@
 
 
 <div class="viewcode-block" id="DEIM.project_test_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.DEIM.project_test_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.DEIM.html#romtools.hyper_reduction.DEIM.project_test_basis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">project_test_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_basis</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">'''Construct the sampled test basis used for hyper-reduction.</span>
 
@@ -1095,7 +1098,7 @@
 
 
 <div class="viewcode-block" id="QDEIM">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.QDEIM">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.QDEIM.html#romtools.hyper_reduction.QDEIM">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">QDEIM</span><span class="p">(</span><span class="n">DEIM</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''Tensor-native DEIM operator using pivoted-QR point selection.</span>
 
@@ -1181,7 +1184,7 @@
 
 
 <div class="viewcode-block" id="deim_get_indices">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.deim_get_indices">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim_get_indices.html#romtools.hyper_reduction.deim_get_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">deim_get_indices</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Implementation of the discrete empirical method as described in Algorithm 1 of</span>
@@ -1250,7 +1253,7 @@
 
 
 <div class="viewcode-block" id="multi_state_deim_get_indices">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.multi_state_deim_get_indices">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.multi_state_deim_get_indices.html#romtools.hyper_reduction.multi_state_deim_get_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">multi_state_deim_get_indices</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Version of DEIM for multi-state systems.</span>
@@ -1288,7 +1291,7 @@
 
 
 <div class="viewcode-block" id="deim_get_approximation_matrix">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.deim_get_approximation_matrix">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim_get_approximation_matrix.html#romtools.hyper_reduction.deim_get_approximation_matrix">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">deim_get_approximation_matrix</span><span class="p">(</span><span class="n">function_basis</span><span class="p">,</span> <span class="n">sample_indices</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Given a function basis :math:`\\mathbf{U}` and sample indices defining :math:`\\mathbf{P}`, we compute</span>
@@ -1316,7 +1319,7 @@
 
 
 <div class="viewcode-block" id="multi_state_deim_get_test_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.multi_state_deim_get_test_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.multi_state_deim_get_test_basis.html#romtools.hyper_reduction.multi_state_deim_get_test_basis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">multi_state_deim_get_test_basis</span><span class="p">(</span><span class="n">test_basis</span><span class="p">,</span> <span class="n">function_basis</span><span class="p">,</span> <span class="n">sample_indices</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    For multistate systems. Constructs an independent DEIM basis for each state variable using uniform sample indices</span>
@@ -1355,7 +1358,7 @@
 
 
 <div class="viewcode-block" id="deim_get_test_basis">
-<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim.html#romtools.hyper_reduction.deim_get_test_basis">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.hyper_reduction.deim_get_test_basis.html#romtools.hyper_reduction.deim_get_test_basis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">deim_get_test_basis</span><span class="p">(</span><span class="n">test_basis</span><span class="p">,</span> <span class="n">function_basis</span><span class="p">,</span> <span class="n">sample_indices</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Given a test basis :math:`\\mathbf{\\Phi}`, a function basis :math:`\\mathbf{U}`, and</span>

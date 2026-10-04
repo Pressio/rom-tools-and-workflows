@@ -1,0 +1,6 @@
+romtools.workflows.inverse.mf\_vi\_with\_auto\_rom
+==================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autofunction:: mf_vi_with_auto_rom

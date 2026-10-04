@@ -1,0 +1,25 @@
+romtools.vector\_space.utils.NoOpScaler
+=======================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: NoOpScaler
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NoOpScaler.__init__
+      ~NoOpScaler.initialize_scalings_from_loader
+      ~NoOpScaler.post_scale
+      ~NoOpScaler.pre_scale
+   
+   
+
+   
+   
+   

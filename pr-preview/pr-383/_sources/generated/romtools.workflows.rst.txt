@@ -1,26 +1,82 @@
-romtools.workflows
+﻿romtools.workflows
 ==================
 
 .. automodule:: romtools.workflows
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   dakota
-   formatting
-   greedy
-   inverse
-   model_builders
-   models
-   parameter_spaces
-   parameters
-   residual_evaluator
-   sampling
-   sampling_methods
-   sampling_with_holdout
-   uq
-   workflow_utils
+   workflows.greedy.run_greedy
+
+   workflows.sampling.run_sampling
+
+   workflows.sampling.run_sample
+
+   workflows.format_text
+
+   workflows.format_file
+
+   workflows.format_files
+
+   workflows.inverse.run_eki
+
+   workflows.inverse.run_mf_eki
+
+   workflows.inverse.mf_eki_with_auto_rom
+
+   workflows.inverse.run_vi
+
+   workflows.inverse.run_mf_vi
+
+   workflows.inverse.mf_vi_with_auto_rom
+
+   workflows.inverse.run_ego
+
+   workflows.inverse.run_batch_ego
+
+   workflows.uq.run_monte_carlo
+
+   workflows.uq.run_multifidelity_monte_carlo
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   workflows.inverse.VIAdamOptimizerConfig
+
+   workflows.inverse.VIGradientOptimizerConfig
+
+   workflows.inverse.VINewtonOptimizerConfig
+
+   workflows.inverse.VILegacyLineSearchConfig
+
+   workflows.inverse.VIStochasticNonmonotoneLineSearchConfig
+
+   workflows.inverse.VISampleReuseConfig
+
+   workflows.parameter_spaces.ParameterSpace
+
+   workflows.greedy.QoIvsErrorIndicatorRegressor
+
+   workflows.uq.MonteCarloResult
+
+   workflows.uq.MultifidelityMonteCarloResult
+
+
+
+
+
+
+
+

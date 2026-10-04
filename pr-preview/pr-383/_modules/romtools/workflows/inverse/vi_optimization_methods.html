@@ -395,7 +395,7 @@
 
 
 <div class="viewcode-block" id="VIGradientOptimizerConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.VIGradientOptimizerConfig">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.VIGradientOptimizerConfig.html#romtools.workflows.inverse.VIGradientOptimizerConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VIGradientOptimizerConfig</span><span class="p">:</span>
     <span class="n">gradient_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'standard'</span>
@@ -408,7 +408,7 @@
 
 
 <div class="viewcode-block" id="VIAdamOptimizerConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.VIAdamOptimizerConfig">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.VIAdamOptimizerConfig.html#romtools.workflows.inverse.VIAdamOptimizerConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VIAdamOptimizerConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Configuration for Adam-based stochastic ELBO maximization.</span>
@@ -439,7 +439,7 @@
 
 
 <div class="viewcode-block" id="VINewtonOptimizerConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.VINewtonOptimizerConfig">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.VINewtonOptimizerConfig.html#romtools.workflows.inverse.VINewtonOptimizerConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VINewtonOptimizerConfig</span><span class="p">:</span>
     <span class="n">gradient_norm_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-5</span>
@@ -459,7 +459,7 @@
 
 
 <div class="viewcode-block" id="VILegacyLineSearchConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.VILegacyLineSearchConfig">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.VILegacyLineSearchConfig.html#romtools.workflows.inverse.VILegacyLineSearchConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VILegacyLineSearchConfig</span><span class="p">:</span>
     <span class="n">initial_step_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span>
@@ -475,7 +475,7 @@
 
 
 <div class="viewcode-block" id="VIStochasticNonmonotoneLineSearchConfig">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.VIStochasticNonmonotoneLineSearchConfig">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig.html#romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">:</span>
     <span class="n">initial_step_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span>
@@ -649,18 +649,13 @@
     <span class="k">return</span> <span class="n">normalized_line_search_method</span><span class="p">,</span> <span class="n">resolved_line_search_config</span>
 
 
-<div class="viewcode-block" id="SteepestDescentSolver">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.SteepestDescentSolver">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SteepestDescentSolver</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generic steepest-descent solver."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">neginf</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 
 
-
-<div class="viewcode-block" id="AdamSolver">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.AdamSolver">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdamSolver</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Stateful Adam ascent direction for stochastic VI gradients."""</span>
 
@@ -751,12 +746,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">fisher_damping_min</span><span class="p">,</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="AdamSolver.resolved_learning_rate">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.AdamSolver.resolved_learning_rate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">resolved_learning_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return the learning rate used for the supplied VI gradient."""</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_learning_rate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">))</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_learning_rate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -776,12 +768,9 @@
                 <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient_clip_norm</span> <span class="o">/</span> <span class="n">gradient_norm</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">gradient</span>
 
-<div class="viewcode-block" id="AdamSolver.prepare_gradient">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.AdamSolver.prepare_gradient">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Apply Fisher damping and clipping without updating Adam moments."""</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">gradient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher_diagonal</span><span class="p">)</span>
@@ -805,8 +794,6 @@
             <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">second_moment_hat</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="AdamSolver.restart_state_dict">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.AdamSolver.restart_state_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">restart_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return restart-safe Adam state and configuration metadata."""</span>
         <span class="k">return</span> <span class="p">{</span>
@@ -835,11 +822,8 @@
             <span class="s1">'adam_parameter_dimension'</span><span class="p">:</span> <span class="p">(</span>
                 <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_dimension</span><span class="p">)</span>
             <span class="p">),</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
 
-
-<div class="viewcode-block" id="AdamSolver.load_restart_state_dict">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.AdamSolver.load_restart_state_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_restart_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">restart_data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Restore Adam state and reject incompatible optimizer configuration."""</span>
         <span class="n">required_keys</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">restart_state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
@@ -891,8 +875,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="o">=</span> <span class="n">first_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="o">=</span> <span class="n">second_moment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restarted Adam state has a positive iteration but no moments."</span><span class="p">)</span></div>
-
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Restarted Adam state has a positive iteration but no moments."</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{</span>
@@ -910,12 +893,9 @@
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam first and second moments must either both be set or both be None."</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_moment</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_moment</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam first and second moments must have matching shapes."</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Adam first and second moments must have matching shapes."</span><span class="p">)</span>
 
 
-
-<div class="viewcode-block" id="NewtonSolver">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.inverse.vi_optimization_methods.html#romtools.workflows.NewtonSolver">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NewtonSolver</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generic Newton solver supporting diagonal or dense Hessians."""</span>
 
@@ -987,8 +967,7 @@
             <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gradient</span><span class="p">),</span>
             <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">projected_hessian</span><span class="p">),</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">projected_hessian</span><span class="p">,</span> <span class="n">gradient</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">projected_hessian</span><span class="p">,</span> <span class="n">gradient</span><span class="p">)</span>
 </pre></div>
 
                 </article>

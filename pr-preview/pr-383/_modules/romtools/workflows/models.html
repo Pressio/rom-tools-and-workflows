@@ -395,19 +395,22 @@
 
 
 <div class="viewcode-block" id="Model">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.Model">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.Model.html#romtools.workflows.models.Model">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Baseline model protocol</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="Model.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.Model.html#romtools.workflows.models.Model.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Initialize coupler</span>
 <span class="sd">        '''</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+
 
 <div class="viewcode-block" id="Model.populate_run_directory">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.Model.populate_run_directory">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.Model.html#romtools.workflows.models.Model.populate_run_directory">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_run_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        This function is called from the base directory and is</span>
@@ -424,7 +427,7 @@
 
 
 <div class="viewcode-block" id="Model.run_model">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.Model.run_model">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.Model.html#romtools.workflows.models.Model.run_model">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        This function is called from the base directory. It needs to execute our</span>
@@ -441,14 +444,14 @@
 
 
 <div class="viewcode-block" id="QoiModel">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.QoiModel.html#romtools.workflows.models.QoiModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">QoiModel</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Protocol for a model that has a return_qoi implementation</span>
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="QoiModel.compute_qoi">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel.compute_qoi">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.QoiModel.html#romtools.workflows.models.QoiModel.compute_qoi">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_qoi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        This function is called from a run directory</span>
@@ -460,14 +463,14 @@
 
 
 <div class="viewcode-block" id="QoiModelWithErrorEstimate">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModelWithErrorEstimate">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.QoiModelWithErrorEstimate.html#romtools.workflows.models.QoiModelWithErrorEstimate">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">QoiModelWithErrorEstimate</span><span class="p">(</span><span class="n">QoiModel</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Protocol for a model that has a return_qoi and compute_error_estimate</span>
 <span class="sd">    '''</span>
 
 <div class="viewcode-block" id="QoiModelWithErrorEstimate.compute_error_estimate">
-<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModelWithErrorEstimate.compute_error_estimate">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.QoiModelWithErrorEstimate.html#romtools.workflows.models.QoiModelWithErrorEstimate.compute_error_estimate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_error_estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        This function is called from a run directory</span>
@@ -476,6 +479,13 @@
         <span class="k">pass</span></div>
 </div>
 
+
+<span class="c1"># Supported interfaces; imported numerical and typing helpers are internal.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Model"</span><span class="p">,</span>
+    <span class="s2">"QoiModel"</span><span class="p">,</span>
+    <span class="s2">"QoiModelWithErrorEstimate"</span><span class="p">,</span>
+<span class="p">]</span>
 </pre></div>
 
                 </article>

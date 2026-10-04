@@ -1,0 +1,6 @@
+romtools.vector\_space.utils.create\_average\_shifter
+=====================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autofunction:: create_average_shifter

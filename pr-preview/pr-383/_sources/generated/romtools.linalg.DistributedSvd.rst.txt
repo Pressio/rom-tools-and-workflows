@@ -1,0 +1,22 @@
+romtools.linalg.DistributedSvd
+==============================
+
+.. currentmodule:: romtools.linalg
+
+.. autoclass:: DistributedSvd
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DistributedSvd.__init__
+   
+   
+
+   
+   
+   

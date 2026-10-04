@@ -1,0 +1,36 @@
+romtools.workflows.inverse.VISampleReuseConfig
+==============================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VISampleReuseConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VISampleReuseConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VISampleReuseConfig.enabled
+      ~VISampleReuseConfig.ess_threshold
+      ~VISampleReuseConfig.hessian_relative_standard_error_threshold
+      ~VISampleReuseConfig.hessian_score_error_scale
+      ~VISampleReuseConfig.history_batches
+      ~VISampleReuseConfig.periodic_refresh
+      ~VISampleReuseConfig.score_error_scale
+      ~VISampleReuseConfig.use_hessian_score_diagnostic
+      ~VISampleReuseConfig.use_score_diagnostic
+   
+   

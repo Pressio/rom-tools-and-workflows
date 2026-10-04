@@ -1,0 +1,23 @@
+romtools.vector\_space.utils.LeftSingularVectorTruncater
+========================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: LeftSingularVectorTruncater
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LeftSingularVectorTruncater.__init__
+      ~LeftSingularVectorTruncater.truncate
+   
+   
+
+   
+   
+   

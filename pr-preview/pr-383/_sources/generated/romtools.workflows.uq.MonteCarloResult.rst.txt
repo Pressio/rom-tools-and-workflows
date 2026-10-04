@@ -1,4 +1,4 @@
-﻿romtools.workflows.uq.MonteCarloResult
+romtools.workflows.uq.MonteCarloResult
 ======================================
 
 .. currentmodule:: romtools.workflows.uq

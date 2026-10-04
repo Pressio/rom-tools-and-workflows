@@ -1,0 +1,38 @@
+romtools.hyper\_reduction.QDEIM
+===============================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autoclass:: QDEIM
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~QDEIM.__init__
+      ~QDEIM.from_basis
+      ~QDEIM.from_snapshots
+      ~QDEIM.project_test_basis
+      ~QDEIM.reconstruct
+      ~QDEIM.reconstruction_matrix
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~QDEIM.basis_mode
+      ~QDEIM.basis_sizes
+      ~QDEIM.function_basis
+      ~QDEIM.sample_all_states
+      ~QDEIM.sample_indices
+      ~QDEIM.state_sample_indices
+   
+   

@@ -1,13 +1,34 @@
-romtools.workflows.greedy
+﻿romtools.workflows.greedy
 =========================
 
 .. automodule:: romtools.workflows.greedy
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   run_greedy
+   workflows.greedy.run_greedy
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   workflows.greedy.QoIvsErrorIndicatorRegressor
+
+
+
+
+
+
+
+

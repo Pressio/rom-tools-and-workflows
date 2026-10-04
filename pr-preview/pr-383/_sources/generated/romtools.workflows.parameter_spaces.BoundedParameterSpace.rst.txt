@@ -1,0 +1,26 @@
+romtools.workflows.parameter\_spaces.BoundedParameterSpace
+==========================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: BoundedParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BoundedParameterSpace.__init__
+      ~BoundedParameterSpace.bound_samples
+      ~BoundedParameterSpace.generate_samples
+      ~BoundedParameterSpace.get_dimensionality
+      ~BoundedParameterSpace.get_names
+   
+   
+
+   
+   
+   

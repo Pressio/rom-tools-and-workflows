@@ -439,7 +439,7 @@
 
 
 <div class="viewcode-block" id="SvdMethodOfSnapshots">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.svd_method_of_snapshots.html#romtools.vector_space.utils.svd_method_of_snapshots.SvdMethodOfSnapshots">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.SvdMethodOfSnapshots.html#romtools.vector_space.utils.SvdMethodOfSnapshots">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SvdMethodOfSnapshots</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Parallel implementation of the method of snapshots for basis construction.</span>
@@ -482,8 +482,11 @@
 <span class="sd">    eigenvalue problem in serial.</span>
 <span class="sd">    '''</span>
 
+<div class="viewcode-block" id="SvdMethodOfSnapshots.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.SvdMethodOfSnapshots.html#romtools.vector_space.utils.SvdMethodOfSnapshots.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">comm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">comm</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">full_matrices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -495,14 +498,17 @@
 
 
 <div class="viewcode-block" id="SvdMethodOfSnapshotsForQr">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.svd_method_of_snapshots.html#romtools.vector_space.utils.svd_method_of_snapshots.SvdMethodOfSnapshotsForQr">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.SvdMethodOfSnapshotsForQr.html#romtools.vector_space.utils.SvdMethodOfSnapshotsForQr">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SvdMethodOfSnapshotsForQr</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Similar to SvdMethodOfSnapshots, but call only returns two arguments to be</span>
 <span class="sd">    compatible with QR routine.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="SvdMethodOfSnapshotsForQr.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.SvdMethodOfSnapshotsForQr.html#romtools.vector_space.utils.SvdMethodOfSnapshotsForQr.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">comm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">comm</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> 
                  <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'reduced'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>

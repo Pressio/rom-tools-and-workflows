@@ -53,6 +53,8 @@
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="_static/ask-repo.js?v=c898c411"></script>
@@ -349,6 +351,15 @@
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -370,8 +381,10 @@
 <li class="toctree-l1"><a class="reference internal" href="api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
@@ -384,6 +397,7 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api-and-compatibility">Public API and compatibility</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hyper-reduction-import-compatibility">Hyper-reduction import compatibility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#workflow-working-directories">Workflow working directories</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
@@ -466,6 +480,26 @@ compatibility, but they are not the preferred import style.</p>
 names that are neither documented as public nor listed in <code class="docutils literal notranslate"><span class="pre">__all__</span></code>, are
 internal and may change without a deprecation cycle.</p>
 </section>
+<section id="hyper-reduction-import-compatibility">
+<h2>Hyper-reduction import compatibility<a class="headerlink" href="#hyper-reduction-import-compatibility" title="Link to this heading">#</a></h2>
+<p>The procedural DEIM and ECSW functions remain supported at their historical
+package and root import paths throughout the 1.x series. For example,
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">romtools</span> <span class="pre">import</span> <span class="pre">deim_get_indices</span></code> and
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">romtools.hyper_reduction</span> <span class="pre">import</span> <span class="pre">deim_get_indices</span></code> refer to the same
+function as <code class="docutils literal notranslate"><span class="pre">romtools.hyper_reduction.deim.deim_get_indices</span></code>. No migration is
+required, and no deprecation warning is emitted. New code should prefer the
+hyper-reduction namespace or the <code class="docutils literal notranslate"><span class="pre">DEIM</span></code>/<code class="docutils literal notranslate"><span class="pre">QDEIM</span></code> classes where appropriate.</p>
+<p>The retained procedural exports are <code class="docutils literal notranslate"><span class="pre">qdeim_get_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">deim_get_indices</span></code>,
+<code class="docutils literal notranslate"><span class="pre">multi_state_deim_get_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">deim_get_approximation_matrix</span></code>,
+<code class="docutils literal notranslate"><span class="pre">multi_state_deim_get_test_basis</span></code>, <code class="docutils literal notranslate"><span class="pre">deim_get_test_basis</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ecsw_fixed_test_basis</span></code>, <code class="docutils literal notranslate"><span class="pre">ecsw_varying_test_basis</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">ecsw_lspg_zero_residual</span></code>. Any future incompatible change to these supported
+imports must follow the public deprecation policy.</p>
+<p>The reference below lists explicit package exports rather than recursively
+listing implementation modules. A submodule exposed for navigation is not a
+promise that all of its helpers are public; the compatibility guarantee applies
+to its explicitly exported interfaces and interfaces documented as public.</p>
+</section>
 <section id="workflow-working-directories">
 <h2>Workflow working directories<a class="headerlink" href="#workflow-working-directories" title="Link to this heading">#</a></h2>
 <p>Workflow drivers use <code class="docutils literal notranslate"><span class="pre">absolute_work_dir</span></code> for their working-directory argument.
@@ -494,6 +528,33 @@ compatibility and emit a <code class="docutils literal notranslate"><span class=
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.html#module-romtools.workflows" title="romtools.workflows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows</span></code></a></p></td>
 <td><p>The workflows module contains the outer-loop workflows used for ROM construction, model exploitation, inverse problems, and uncertainty quantification.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.vector_space.utils.html#module-romtools.vector_space.utils" title="romtools.vector_space.utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.vector_space.utils</span></code></a></p></td>
+<td><p>There are a number of ways to construct a vector space, including affine offsets, scaling, etc.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.inverse.html#module-romtools.workflows.inverse" title="romtools.workflows.inverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.inverse</span></code></a></p></td>
+<td><p>Inverse workflows estimate unknown model parameters from observed data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.sampling.html#module-romtools.workflows.sampling" title="romtools.workflows.sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.sampling</span></code></a></p></td>
+<td><p>Implementation of basic sampling workflow.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.greedy.html#module-romtools.workflows.greedy" title="romtools.workflows.greedy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.greedy</span></code></a></p></td>
+<td><p>Implementation of the greedy workflow.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.html#module-romtools.workflows.uq" title="romtools.workflows.uq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq</span></code></a></p></td>
+<td><p>Monte Carlo uncertainty-quantification workflows.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.models.html#module-romtools.workflows.models" title="romtools.workflows.models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.models</span></code></a></p></td>
+<td><p>Protocol for interfacing with external applications</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.parameter_spaces.html#module-romtools.workflows.parameter_spaces" title="romtools.workflows.parameter_spaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.parameter_spaces</span></code></a></p></td>
+<td><p>Model reduction is often focused on parameterized PDEs, where <span class="math notranslate nohighlight">\(\boldsymbol \mu\)</span> is the parameter set.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.vector_space.utils.scaler.html#module-romtools.vector_space.utils.scaler" title="romtools.vector_space.utils.scaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.vector_space.utils.scaler</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.vector_space.utils.orthogonalizer.html#module-romtools.vector_space.utils.orthogonalizer" title="romtools.vector_space.utils.orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.vector_space.utils.orthogonalizer</span></code></a></p></td>
+<td><p>An orthogonalizer is used to orthogonalize a basis at the end of the construction of a vector space.</p></td>
 </tr>
 </tbody>
 </table>
@@ -554,6 +615,7 @@ compatibility and emit a <code class="docutils literal notranslate"><span class=
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api-and-compatibility">Public API and compatibility</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hyper-reduction-import-compatibility">Hyper-reduction import compatibility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#workflow-working-directories">Workflow working directories</a><ul class="nav section-nav flex-column">
 </ul>
 </li>

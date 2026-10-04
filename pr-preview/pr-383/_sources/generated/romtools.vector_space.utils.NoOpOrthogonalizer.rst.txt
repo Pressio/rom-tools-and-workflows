@@ -1,0 +1,23 @@
+romtools.vector\_space.utils.NoOpOrthogonalizer
+===============================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: NoOpOrthogonalizer
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NoOpOrthogonalizer.__init__
+      ~NoOpOrthogonalizer.orthogonalize
+   
+   
+
+   
+   
+   

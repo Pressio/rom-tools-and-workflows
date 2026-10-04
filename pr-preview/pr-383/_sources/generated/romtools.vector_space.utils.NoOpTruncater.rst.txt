@@ -1,0 +1,23 @@
+romtools.vector\_space.utils.NoOpTruncater
+==========================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: NoOpTruncater
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NoOpTruncater.__init__
+      ~NoOpTruncater.truncate
+   
+   
+
+   
+   
+   

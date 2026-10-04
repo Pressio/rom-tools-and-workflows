@@ -351,6 +351,15 @@
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="current nav bd-sidenav">
@@ -372,8 +381,10 @@
 <li class="toctree-l1"><a class="reference internal" href="api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
@@ -464,7 +475,7 @@ matrix is never gathered on any rank.</p>
 <p>NumPy-compatible thin SVD callable for a row-distributed matrix.</p>
 <p>Bind an MPI communicator once, then pass this object anywhere a callable
 compatible with <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.linalg.svd()</span></code> is expected, including
-<a class="reference internal" href="generated/romtools.vector_space.html#romtools.vector_space.VectorSpaceFromPOD" title="romtools.vector_space.VectorSpaceFromPOD"><code class="xref py py-class docutils literal notranslate"><span class="pre">romtools.vector_space.VectorSpaceFromPOD</span></code></a>.</p>
+<a class="reference internal" href="generated/romtools.vector_space.VectorSpaceFromPOD.html#romtools.vector_space.VectorSpaceFromPOD" title="romtools.vector_space.VectorSpaceFromPOD"><code class="xref py py-class docutils literal notranslate"><span class="pre">romtools.vector_space.VectorSpaceFromPOD</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>comm</strong> (<em>MPI_Comm</em>) – Communicator over which matrix rows are distributed.

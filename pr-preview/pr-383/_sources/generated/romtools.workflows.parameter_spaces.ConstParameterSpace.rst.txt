@@ -1,0 +1,25 @@
+romtools.workflows.parameter\_spaces.ConstParameterSpace
+========================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: ConstParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ConstParameterSpace.__init__
+      ~ConstParameterSpace.generate_samples
+      ~ConstParameterSpace.get_dimensionality
+      ~ConstParameterSpace.get_names
+   
+   
+
+   
+   
+   

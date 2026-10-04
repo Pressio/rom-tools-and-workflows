@@ -53,13 +53,15 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.vector_space.utils';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.vector_space.utils.orthogonalizer" href="romtools.vector_space.utils.orthogonalizer.html" />
-    <link rel="prev" title="romtools.vector_space" href="romtools.vector_space.html" />
+    <link rel="next" title="romtools.vector_space.utils.create_constant_shifter" href="romtools.vector_space.utils.create_constant_shifter.html" />
+    <link rel="prev" title="romtools.workflows.uq.MultifidelityMonteCarloResult" href="romtools.workflows.uq.MultifidelityMonteCarloResult.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -342,37 +344,52 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">romtools.vector_space.utils</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.html">romtools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.vector_space.utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.outputter.html">romtools.vector_space.utils.outputter</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.shifter.html">romtools.vector_space.utils.shifter</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.snapshot_loader.html">romtools.vector_space.utils.snapshot_loader</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.svd_method_of_snapshots.html">romtools.vector_space.utils.svd_method_of_snapshots</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.truncater.html">romtools.vector_space.utils.truncater</a></li>
-</ul>
-</details></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.vector_space.utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_noop_shifter.html">romtools.vector_space.utils.create_noop_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_constant_shifter.html">romtools.vector_space.utils.create_constant_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_vector_shifter.html">romtools.vector_space.utils.create_vector_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_average_shifter.html">romtools.vector_space.utils.create_average_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_firstvec_shifter.html">romtools.vector_space.utils.create_firstvec_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_streaming_average_shifter.html">romtools.vector_space.utils.create_streaming_average_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.create_streaming_firstvec_shifter.html">romtools.vector_space.utils.create_streaming_firstvec_shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.Shifter.html">romtools.vector_space.utils.Shifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.StreamingShifter.html">romtools.vector_space.utils.StreamingShifter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.Scaler.html">romtools.vector_space.utils.Scaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.StreamingScaler.html">romtools.vector_space.utils.StreamingScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.NoOpScaler.html">romtools.vector_space.utils.NoOpScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.VectorScaler.html">romtools.vector_space.utils.VectorScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.ScalarScaler.html">romtools.vector_space.utils.ScalarScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.VariableScaler.html">romtools.vector_space.utils.VariableScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.VariableAndVectorScaler.html">romtools.vector_space.utils.VariableAndVectorScaler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.Orthogonalizer.html">romtools.vector_space.utils.Orthogonalizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.NoOpOrthogonalizer.html">romtools.vector_space.utils.NoOpOrthogonalizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.EuclideanL2Orthogonalizer.html">romtools.vector_space.utils.EuclideanL2Orthogonalizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.html">romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.html">romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.LeftSingularVectorTruncater.html">romtools.vector_space.utils.LeftSingularVectorTruncater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.NoOpTruncater.html">romtools.vector_space.utils.NoOpTruncater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.BasisSizeTruncater.html">romtools.vector_space.utils.BasisSizeTruncater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.EnergyBasedTruncater.html">romtools.vector_space.utils.EnergyBasedTruncater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.SvdMethodOfSnapshots.html">romtools.vector_space.utils.SvdMethodOfSnapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.SvdMethodOfSnapshotsForQr.html">romtools.vector_space.utils.SvdMethodOfSnapshotsForQr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.vector_space.utils.SnapshotLoader.html">romtools.vector_space.utils.SnapshotLoader</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -380,20 +397,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../distributed_svd.html">Distributed SVD</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.vector_space.html">Vector Space</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">romtools.vector_space.utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.outputter.html">romtools.vector_space.utils.outputter</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.shifter.html">romtools.vector_space.utils.shifter</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.snapshot_loader.html">romtools.vector_space.utils.snapshot_loader</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.svd_method_of_snapshots.html">romtools.vector_space.utils.svd_method_of_snapshots</a></li>
-<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.utils.truncater.html">romtools.vector_space.utils.truncater</a></li>
-</ul>
-</details></li>
-</ul>
-</details></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">Vector Space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">Composite Vector Space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">Hyper Reduction</a></li>
 </ul>
@@ -406,8 +411,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
@@ -451,12 +458,6 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
-    
-    
-    <li class="breadcrumb-item"><a href="romtools.vector_space.html" class="nav-link">romtools.vector_space</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.vector_space.utils</span></li>
   </ul>
 </nav>
@@ -478,29 +479,98 @@
 <span id="romtools-vector-space-utils"></span><h1>romtools.vector_space.utils<a class="headerlink" href="#module-romtools.vector_space.utils" title="Link to this heading">#</a></h1>
 <p>There are a number of ways to construct a vector space, including affine offsets, scaling, etc.
 The vector_space.utils module provides these functionalities</p>
-<p class="rubric">Modules</p>
+<p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html#module-romtools.vector_space.utils.orthogonalizer" title="romtools.vector_space.utils.orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orthogonalizer</span></code></a></p></td>
-<td><p>An orthogonalizer is used to orthogonalize a basis at the end of the construction of a vector space.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_noop_shifter.html#romtools.vector_space.utils.create_noop_shifter" title="romtools.vector_space.utils.create_noop_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_noop_shifter</span></code></a>(my_array)</p></td>
+<td><p>No op implementation.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.outputter.html#module-romtools.vector_space.utils.outputter" title="romtools.vector_space.utils.outputter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outputter</span></code></a></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_constant_shifter.html#romtools.vector_space.utils.create_constant_shifter" title="romtools.vector_space.utils.create_constant_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_constant_shifter</span></code></a>(...)</p></td>
+<td><p>Shifts the data by a constant value.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.scaler.html#module-romtools.vector_space.utils.scaler" title="romtools.vector_space.utils.scaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scaler</span></code></a></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_vector_shifter.html#romtools.vector_space.utils.create_vector_shifter" title="romtools.vector_space.utils.create_vector_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_vector_shifter</span></code></a>(...)</p></td>
+<td><p>Shifts the data by a user-input vector.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.shifter.html#module-romtools.vector_space.utils.shifter" title="romtools.vector_space.utils.shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shifter</span></code></a></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_average_shifter.html#romtools.vector_space.utils.create_average_shifter" title="romtools.vector_space.utils.create_average_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_average_shifter</span></code></a>(...)</p></td>
+<td><p>Shifts the data by the average of a data matrix.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.snapshot_loader.html#module-romtools.vector_space.utils.snapshot_loader" title="romtools.vector_space.utils.snapshot_loader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">snapshot_loader</span></code></a></p></td>
-<td><p>Interfaces for loading snapshot blocks on demand.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_firstvec_shifter.html#romtools.vector_space.utils.create_firstvec_shifter" title="romtools.vector_space.utils.create_firstvec_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_firstvec_shifter</span></code></a>(...)</p></td>
+<td><p>Shifts the data by the first vector of a data matrix.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.svd_method_of_snapshots.html#module-romtools.vector_space.utils.svd_method_of_snapshots" title="romtools.vector_space.utils.svd_method_of_snapshots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">svd_method_of_snapshots</span></code></a></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_streaming_average_shifter.html#romtools.vector_space.utils.create_streaming_average_shifter" title="romtools.vector_space.utils.create_streaming_average_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_streaming_average_shifter</span></code></a>()</p></td>
+<td><p>Create a shifter initialized from the temporal average of streamed data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.truncater.html#module-romtools.vector_space.utils.truncater" title="romtools.vector_space.utils.truncater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">truncater</span></code></a></p></td>
-<td><p>Constructing a basis via POD typically entails computing the SVD of a snapshot matrix,</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.create_streaming_firstvec_shifter.html#romtools.vector_space.utils.create_streaming_firstvec_shifter" title="romtools.vector_space.utils.create_streaming_firstvec_shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.create_streaming_firstvec_shifter</span></code></a>()</p></td>
+<td><p>Create a shifter initialized from the first streamed snapshot.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.Shifter.html#romtools.vector_space.utils.Shifter" title="romtools.vector_space.utils.Shifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.Shifter</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Interface for the Shifter class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.StreamingShifter.html#romtools.vector_space.utils.StreamingShifter" title="romtools.vector_space.utils.StreamingShifter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.StreamingShifter</span></code></a>(*args, ...)</p></td>
+<td><p>Shifter interface required by streaming POD vector spaces.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.Scaler.html#romtools.vector_space.utils.Scaler" title="romtools.vector_space.utils.Scaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.Scaler</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Interface for the Scaler class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.StreamingScaler.html#romtools.vector_space.utils.StreamingScaler" title="romtools.vector_space.utils.StreamingScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.StreamingScaler</span></code></a>(*args, ...)</p></td>
+<td><p>Scaler interface required by streaming POD vector spaces.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.NoOpScaler.html#romtools.vector_space.utils.NoOpScaler" title="romtools.vector_space.utils.NoOpScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.NoOpScaler</span></code></a>()</p></td>
+<td><p>No op implementation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.VectorScaler.html#romtools.vector_space.utils.VectorScaler" title="romtools.vector_space.utils.VectorScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.VectorScaler</span></code></a>(scaling_vector)</p></td>
+<td><p>Concrete implementation designed to scale snapshot matrices by a vector.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.ScalarScaler.html#romtools.vector_space.utils.ScalarScaler" title="romtools.vector_space.utils.ScalarScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.ScalarScaler</span></code></a>([factor])</p></td>
+<td><p>Applies a scalar scale factor</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.VariableScaler.html#romtools.vector_space.utils.VariableScaler" title="romtools.vector_space.utils.VariableScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.VariableScaler</span></code></a>(scaling_type)</p></td>
+<td><p>Concrete implementation designed for snapshot matrices involving multiple state variables.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.VariableAndVectorScaler.html#romtools.vector_space.utils.VariableAndVectorScaler" title="romtools.vector_space.utils.VariableAndVectorScaler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.VariableAndVectorScaler</span></code></a>(...)</p></td>
+<td><p>Concrete implementation designed to scale snapshot matrices involving multiple state variables by both the variable magnitudes and an additional vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.Orthogonalizer.html#romtools.vector_space.utils.Orthogonalizer" title="romtools.vector_space.utils.Orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.Orthogonalizer</span></code></a>(*args, ...)</p></td>
+<td><p>Interface for the Orthogonalizer class.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.NoOpOrthogonalizer.html#romtools.vector_space.utils.NoOpOrthogonalizer" title="romtools.vector_space.utils.NoOpOrthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.NoOpOrthogonalizer</span></code></a>()</p></td>
+<td><p>No op class (doesn't do anything)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.EuclideanL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanL2Orthogonalizer" title="romtools.vector_space.utils.EuclideanL2Orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.EuclideanL2Orthogonalizer</span></code></a>([qrFnc])</p></td>
+<td><p>Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e., the output basis will satisfy</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer" title="romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer</span></code></a>(...)</p></td>
+<td><p>Orthogonalizes the basis in vector-weighted Euclidean L2 inner product, i.e., the output basis will satisfy</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer" title="romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer</span></code></a>(...)</p></td>
+<td><p>Orthogonalizes the basis in an SPD matrix-weighted Euclidean L2 inner product, i.e., the output basis will satisfy</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.LeftSingularVectorTruncater.html#romtools.vector_space.utils.LeftSingularVectorTruncater" title="romtools.vector_space.utils.LeftSingularVectorTruncater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.LeftSingularVectorTruncater</span></code></a>(...)</p></td>
+<td><p>Interface for the Truncater class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.NoOpTruncater.html#romtools.vector_space.utils.NoOpTruncater" title="romtools.vector_space.utils.NoOpTruncater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.NoOpTruncater</span></code></a>()</p></td>
+<td><p>No op implementation</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.BasisSizeTruncater.html#romtools.vector_space.utils.BasisSizeTruncater" title="romtools.vector_space.utils.BasisSizeTruncater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.BasisSizeTruncater</span></code></a>(...)</p></td>
+<td><p>Truncates to a specified number of singular vectors, as specified in the constructor</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.EnergyBasedTruncater.html#romtools.vector_space.utils.EnergyBasedTruncater" title="romtools.vector_space.utils.EnergyBasedTruncater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.EnergyBasedTruncater</span></code></a>(...)</p></td>
+<td><p>Truncates based on the decay of singular values, i.e., will define <span class="math notranslate nohighlight">\(K\)</span> to be the number of singular values such that the cumulative energy retained meets or exceeds a threshold.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.SvdMethodOfSnapshots.html#romtools.vector_space.utils.SvdMethodOfSnapshots" title="romtools.vector_space.utils.SvdMethodOfSnapshots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.SvdMethodOfSnapshots</span></code></a>(comm)</p></td>
+<td><p>Parallel implementation of the method of snapshots for basis construction.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.vector_space.utils.SvdMethodOfSnapshotsForQr.html#romtools.vector_space.utils.SvdMethodOfSnapshotsForQr" title="romtools.vector_space.utils.SvdMethodOfSnapshotsForQr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.SvdMethodOfSnapshotsForQr</span></code></a>(comm)</p></td>
+<td><p>Similar to SvdMethodOfSnapshots, but call only returns two arguments to be compatible with QR routine.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.vector_space.utils.SnapshotLoader.html#romtools.vector_space.utils.SnapshotLoader" title="romtools.vector_space.utils.SnapshotLoader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_space.utils.SnapshotLoader</span></code></a>(*args, ...)</p></td>
+<td><p>Interface for loading a contiguous range of snapshots.</p></td>
 </tr>
 </tbody>
 </table>

@@ -1,0 +1,25 @@
+romtools.workflows.parameter\_spaces.HomogeneousParameterSpace
+==============================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: HomogeneousParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HomogeneousParameterSpace.__init__
+      ~HomogeneousParameterSpace.generate_samples
+      ~HomogeneousParameterSpace.get_dimensionality
+      ~HomogeneousParameterSpace.get_names
+   
+   
+
+   
+   
+   

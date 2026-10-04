@@ -1,18 +1,38 @@
-romtools.vector\_space.utils.scaler
+﻿romtools.vector\_space.utils.scaler
 ===================================
 
 .. automodule:: romtools.vector_space.utils.scaler
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      NoOpScaler
-      ScalarScaler
-      Scaler
-      StreamingScaler
-      VariableAndVectorScaler
-      VariableScaler
-      VectorScaler
-   
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   vector_space.utils.Scaler
+
+   vector_space.utils.StreamingScaler
+
+   vector_space.utils.NoOpScaler
+
+   vector_space.utils.VectorScaler
+
+   vector_space.utils.ScalarScaler
+
+   vector_space.utils.VariableScaler
+
+   vector_space.utils.VariableAndVectorScaler
+
+
+
+
+
+
+
+

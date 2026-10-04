@@ -1,0 +1,25 @@
+romtools.workflows.parameter\_spaces.EmptyParameterSpace
+========================================================
+
+.. currentmodule:: romtools.workflows.parameter_spaces
+
+.. autoclass:: EmptyParameterSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~EmptyParameterSpace.__init__
+      ~EmptyParameterSpace.generate_samples
+      ~EmptyParameterSpace.get_dimensionality
+      ~EmptyParameterSpace.get_names
+   
+   
+
+   
+   
+   

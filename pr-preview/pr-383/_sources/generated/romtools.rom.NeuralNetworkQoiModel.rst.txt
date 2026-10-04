@@ -1,0 +1,25 @@
+romtools.rom.NeuralNetworkQoiModel
+==================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: NeuralNetworkQoiModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NeuralNetworkQoiModel.__init__
+      ~NeuralNetworkQoiModel.compute_qoi
+      ~NeuralNetworkQoiModel.populate_run_directory
+      ~NeuralNetworkQoiModel.run_model
+   
+   
+
+   
+   
+   

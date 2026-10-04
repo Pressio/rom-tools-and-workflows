@@ -1,0 +1,23 @@
+romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData
+=========================================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: NeuralNetworkQoiModelBuilderWithTrainingData
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NeuralNetworkQoiModelBuilderWithTrainingData.__init__
+      ~NeuralNetworkQoiModelBuilderWithTrainingData.build_from_training_dirs
+   
+   
+
+   
+   
+   

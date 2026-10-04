@@ -1,20 +1,42 @@
-romtools.workflows.parameter\_spaces
+﻿romtools.workflows.parameter\_spaces
 ====================================
 
 .. automodule:: romtools.workflows.parameter_spaces
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      BoundedParameterSpace
-      ConstParameterSpace
-      EmptyParameterSpace
-      GaussianParameterSpace
-      HeterogeneousParameterSpace
-      HomogeneousParameterSpace
-      MultivariateGaussianParameterSpace
-      ParameterSpace
-      UniformParameterSpace
-   
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   workflows.parameter_spaces.ParameterSpace
+
+   workflows.parameter_spaces.BoundedParameterSpace
+
+   workflows.parameter_spaces.HeterogeneousParameterSpace
+
+   workflows.parameter_spaces.HomogeneousParameterSpace
+
+   workflows.parameter_spaces.EmptyParameterSpace
+
+   workflows.parameter_spaces.UniformParameterSpace
+
+   workflows.parameter_spaces.GaussianParameterSpace
+
+   workflows.parameter_spaces.MultivariateGaussianParameterSpace
+
+   workflows.parameter_spaces.ConstParameterSpace
+
+
+
+
+
+
+
+

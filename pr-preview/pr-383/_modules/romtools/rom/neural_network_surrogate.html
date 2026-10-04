@@ -401,7 +401,7 @@
 
 
 <div class="viewcode-block" id="LipschitzConfig">
-<a class="viewcode-back" href="../../../generated/romtools.rom.neural_network_surrogate.html#romtools.rom.LipschitzConfig">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.rom.LipschitzConfig.html#romtools.rom.LipschitzConfig">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LipschitzConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Configuration for a hard Lipschitz constraint on the neural surrogate.</span>
@@ -438,7 +438,7 @@
 
 
 <div class="viewcode-block" id="estimate_pairwise_lipschitz_constant">
-<a class="viewcode-back" href="../../../generated/romtools.rom.neural_network_surrogate.html#romtools.rom.estimate_pairwise_lipschitz_constant">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.rom.estimate_pairwise_lipschitz_constant.html#romtools.rom.estimate_pairwise_lipschitz_constant">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">estimate_pairwise_lipschitz_constant</span><span class="p">(</span>
     <span class="n">parameters</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -476,10 +476,12 @@
 
 
 <div class="viewcode-block" id="LipschitzNeuralNetworkQoiModel">
-<a class="viewcode-back" href="../../../generated/romtools.rom.neural_network_surrogate.html#romtools.rom.LipschitzNeuralNetworkQoiModel">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.rom.LipschitzNeuralNetworkQoiModel.html#romtools.rom.LipschitzNeuralNetworkQoiModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LipschitzNeuralNetworkQoiModel</span><span class="p">(</span><span class="n">NeuralNetworkQoiModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Neural-network QoI surrogate with a spectral Lipschitz constraint."""</span>
 
+<div class="viewcode-block" id="LipschitzNeuralNetworkQoiModel.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.rom.LipschitzNeuralNetworkQoiModel.html#romtools.rom.LipschitzNeuralNetworkQoiModel.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">parameters</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">qois</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -511,7 +513,8 @@
             <span class="n">network_config</span><span class="o">=</span><span class="n">network_config</span><span class="p">,</span>
             <span class="n">normalize_parameters</span><span class="o">=</span><span class="n">normalize_parameters</span><span class="p">,</span>
             <span class="n">normalize_targets</span><span class="o">=</span><span class="n">normalize_targets</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">torch</span> <span class="o">=</span> <span class="n">_import_torch</span><span class="p">()</span>
@@ -658,7 +661,7 @@
 
 
 <div class="viewcode-block" id="NeuralNetworkQoiModelBuilderWithTrainingData">
-<a class="viewcode-back" href="../../../generated/romtools.rom.neural_network_surrogate.html#romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData">[docs]</a>
+<a class="viewcode-back" href="../../../generated/romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData.html#romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build a torch neural-network QoI surrogate from workflow training data.</span>
 
@@ -668,6 +671,8 @@
 <span class="sd">    be enabled independently with :class:`LipschitzConfig`.</span>
 <span class="sd">    """</span>
 
+<div class="viewcode-block" id="NeuralNetworkQoiModelBuilderWithTrainingData.__init__">
+<a class="viewcode-back" href="../../../generated/romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData.html#romtools.rom.NeuralNetworkQoiModelBuilderWithTrainingData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">parameter_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                  <span class="n">pod_energy_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.999999</span><span class="p">,</span>
@@ -689,7 +694,8 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lipschitz_config</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">normalize_parameters</span> <span class="o">=</span> <span class="n">normalize_parameters</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_targets</span> <span class="o">=</span> <span class="n">normalize_targets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_targets</span> <span class="o">=</span> <span class="n">normalize_targets</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build_from_training_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                  <span class="n">offline_data_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>

@@ -1,12 +1,26 @@
-romtools.composite\_vector\_space
+﻿romtools.composite\_vector\_space
 =================================
 
 .. automodule:: romtools.composite_vector_space
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      CompositeVectorSpace
-   
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   composite_vector_space.CompositeVectorSpace
+
+
+
+
+
+
+
+

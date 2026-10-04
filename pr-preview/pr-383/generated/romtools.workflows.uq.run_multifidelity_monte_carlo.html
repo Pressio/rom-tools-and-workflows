@@ -60,7 +60,7 @@
     <script src="../_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="romtools.workflows.uq.MonteCarloResult" href="romtools.workflows.uq.MonteCarloResult.html" />
+    <link rel="next" title="romtools.workflows.inverse.VIAdamOptimizerConfig" href="romtools.workflows.inverse.VIAdamOptimizerConfig.html" />
     <link rel="prev" title="romtools.workflows.uq.run_monte_carlo" href="romtools.workflows.uq.run_monte_carlo.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -343,7 +343,7 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="romtools.html">romtools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
@@ -351,6 +351,21 @@
 <li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
 <li class="toctree-l1"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.html">romtools.vector_space.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.run_monte_carlo.html">romtools.workflows.uq.run_monte_carlo</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.uq.run_multifidelity_monte_carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MonteCarloResult.html">romtools.workflows.uq.MonteCarloResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MultifidelityMonteCarloResult.html">romtools.workflows.uq.MultifidelityMonteCarloResult</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.scaler.html">romtools.vector_space.utils.scaler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.utils.orthogonalizer.html">romtools.vector_space.utils.orthogonalizer</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
 <ul class="nav bd-sidenav">
@@ -368,18 +383,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.run_monte_carlo.html">romtools.workflows.uq.run_monte_carlo</a></li>
-<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.uq.run_multifidelity_monte_carlo</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MonteCarloResult.html">romtools.workflows.uq.MonteCarloResult</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.MultifidelityMonteCarloResult.html">romtools.workflows.uq.MultifidelityMonteCarloResult</a></li>
-</ul>
-</details></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_eki.html">Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_eki.html">Multifidelity Ensemble Kalman Inversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_vi.html">Variational Inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.run_mf_vi.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
@@ -435,7 +446,7 @@
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../api_uq.html" class="nav-link">Uncertainty Quantification Workflows</a></li>
+    <li class="breadcrumb-item"><a href="romtools.workflows.html" class="nav-link">romtools.workflows</a></li>
     
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.uq.run_multifidelity_monte_carlo</span></li>
   </ul>
@@ -478,10 +489,10 @@ low-fidelity samples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>high_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – High-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation.</p></li>
-<li><p><strong>low_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – Low-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation. It must
+<li><p><strong>high_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.QoiModel.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – High-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation.</p></li>
+<li><p><strong>low_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.QoiModel.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>) – Low-fidelity <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> implementation. It must
 return the same flattened QoI dimension as the high-fidelity model.</p></li>
-<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – Distribution used to generate shared samples.</p></li>
+<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.ParameterSpace.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>) – Distribution used to generate shared samples.</p></li>
 <li><p><strong>absolute_work_dir</strong> (<em>str</em><em> | </em><em>None</em>) – Absolute output path. Evaluations are stored in
 <code class="docutils literal notranslate"><span class="pre">high_fidelity</span></code> and <code class="docutils literal notranslate"><span class="pre">low_fidelity</span></code> subdirectories and aggregate
 results are written to <code class="docutils literal notranslate"><span class="pre">uq_stats.npz</span></code>.</p></li>
@@ -508,8 +519,8 @@ for fixed mode. If omitted, paired samples estimate them. Pilot
 mode always estimates and freezes its coefficients.</p></li>
 <li><p><strong>overwrite</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, reuse successful evaluations marked by
 <code class="docutils literal notranslate"><span class="pre">passed.txt</span></code>; otherwise rerun them.</p></li>
-<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
-<a class="reference internal" href="romtools.hpc.dispatchers.html#romtools.hpc.dispatchers.LocalDispatcher" title="romtools.hpc.dispatchers.LocalDispatcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code></a>.</p></li>
+<li><p><strong>dispatcher</strong> (<em>BaseDispatcher</em><em> | </em><em>None</em>) – Filesystem/dispatch implementation. Defaults to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LocalDispatcher</span></code>.</p></li>
 <li><p><strong>absolute_uq_directory</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>

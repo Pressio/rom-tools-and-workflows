@@ -1,0 +1,39 @@
+romtools.workflows.inverse.VIStochasticNonmonotoneLineSearchConfig
+==================================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VIStochasticNonmonotoneLineSearchConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VIStochasticNonmonotoneLineSearchConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VIStochasticNonmonotoneLineSearchConfig.initial_step_size
+      ~VIStochasticNonmonotoneLineSearchConfig.line_search_armijo_coefficient
+      ~VIStochasticNonmonotoneLineSearchConfig.line_search_nonmonotone_window
+      ~VIStochasticNonmonotoneLineSearchConfig.line_search_objective
+      ~VIStochasticNonmonotoneLineSearchConfig.line_search_sample_growth_factor
+      ~VIStochasticNonmonotoneLineSearchConfig.line_search_uncertainty_sigma
+      ~VIStochasticNonmonotoneLineSearchConfig.log_std_learning_rate_factor
+      ~VIStochasticNonmonotoneLineSearchConfig.max_step_size
+      ~VIStochasticNonmonotoneLineSearchConfig.max_step_size_decrease_trys
+      ~VIStochasticNonmonotoneLineSearchConfig.relaxation_parameter
+      ~VIStochasticNonmonotoneLineSearchConfig.step_size_decay_factor
+      ~VIStochasticNonmonotoneLineSearchConfig.step_size_growth_factor
+   
+   

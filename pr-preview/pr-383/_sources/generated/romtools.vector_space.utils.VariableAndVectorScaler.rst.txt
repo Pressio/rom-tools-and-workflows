@@ -1,0 +1,25 @@
+romtools.vector\_space.utils.VariableAndVectorScaler
+====================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: VariableAndVectorScaler
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VariableAndVectorScaler.__init__
+      ~VariableAndVectorScaler.initialize_scalings_from_loader
+      ~VariableAndVectorScaler.post_scale
+      ~VariableAndVectorScaler.pre_scale
+   
+   
+
+   
+   
+   

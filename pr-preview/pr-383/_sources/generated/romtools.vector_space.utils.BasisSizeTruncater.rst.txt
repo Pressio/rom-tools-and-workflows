@@ -1,0 +1,24 @@
+romtools.vector\_space.utils.BasisSizeTruncater
+===============================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: BasisSizeTruncater
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BasisSizeTruncater.__init__
+      ~BasisSizeTruncater.get_energy
+      ~BasisSizeTruncater.truncate
+   
+   
+
+   
+   
+   

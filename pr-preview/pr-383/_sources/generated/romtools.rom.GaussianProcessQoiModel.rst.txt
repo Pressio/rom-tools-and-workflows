@@ -1,0 +1,26 @@
+romtools.rom.GaussianProcessQoiModel
+====================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: GaussianProcessQoiModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianProcessQoiModel.__init__
+      ~GaussianProcessQoiModel.compute_qoi
+      ~GaussianProcessQoiModel.compute_qoi_and_var
+      ~GaussianProcessQoiModel.populate_run_directory
+      ~GaussianProcessQoiModel.run_model
+   
+   
+
+   
+   
+   

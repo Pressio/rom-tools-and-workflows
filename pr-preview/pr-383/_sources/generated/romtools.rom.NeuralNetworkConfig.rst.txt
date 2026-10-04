@@ -1,0 +1,40 @@
+romtools.rom.NeuralNetworkConfig
+================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: NeuralNetworkConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NeuralNetworkConfig.__init__
+      ~NeuralNetworkConfig.hidden_layer_width
+      ~NeuralNetworkConfig.validate
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NeuralNetworkConfig.activation
+      ~NeuralNetworkConfig.device
+      ~NeuralNetworkConfig.dtype
+      ~NeuralNetworkConfig.hidden_neurons_per_layer
+      ~NeuralNetworkConfig.hidden_width_multiplier
+      ~NeuralNetworkConfig.learning_rate
+      ~NeuralNetworkConfig.num_hidden_layers
+      ~NeuralNetworkConfig.optimizer
+      ~NeuralNetworkConfig.random_seed
+      ~NeuralNetworkConfig.training_iterations
+      ~NeuralNetworkConfig.weight_decay
+   
+   

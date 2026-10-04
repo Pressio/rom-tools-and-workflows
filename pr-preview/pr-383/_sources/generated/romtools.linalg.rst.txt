@@ -1,14 +1,26 @@
-romtools.linalg
+﻿romtools.linalg
 ===============
 
 .. automodule:: romtools.linalg
+   :no-members:
 
-   
-.. rubric:: Modules
+.. currentmodule:: romtools
+
+
+
+
+
+.. rubric:: Classes
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   linalg
-   parallel_utils
+   linalg.DistributedSvd
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.deim\_get\_approximation\_matrix
+==========================================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: deim_get_approximation_matrix

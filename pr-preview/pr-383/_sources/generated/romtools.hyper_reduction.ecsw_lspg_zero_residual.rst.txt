@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.ecsw\_lspg\_zero\_residual
+====================================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: ecsw_lspg_zero_residual

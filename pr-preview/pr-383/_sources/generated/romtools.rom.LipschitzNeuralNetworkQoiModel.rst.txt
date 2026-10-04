@@ -1,0 +1,25 @@
+romtools.rom.LipschitzNeuralNetworkQoiModel
+===========================================
+
+.. currentmodule:: romtools.rom
+
+.. autoclass:: LipschitzNeuralNetworkQoiModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LipschitzNeuralNetworkQoiModel.__init__
+      ~LipschitzNeuralNetworkQoiModel.compute_qoi
+      ~LipschitzNeuralNetworkQoiModel.populate_run_directory
+      ~LipschitzNeuralNetworkQoiModel.run_model
+   
+   
+
+   
+   
+   

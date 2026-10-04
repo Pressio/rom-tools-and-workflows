@@ -1,0 +1,26 @@
+romtools.vector\_space.VectorSpaceFromStreamingPOD
+==================================================
+
+.. currentmodule:: romtools.vector_space
+
+.. autoclass:: VectorSpaceFromStreamingPOD
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VectorSpaceFromStreamingPOD.__init__
+      ~VectorSpaceFromStreamingPOD.extents
+      ~VectorSpaceFromStreamingPOD.get_basis
+      ~VectorSpaceFromStreamingPOD.get_shift_vector
+      ~VectorSpaceFromStreamingPOD.get_singular_values
+   
+   
+
+   
+   
+   

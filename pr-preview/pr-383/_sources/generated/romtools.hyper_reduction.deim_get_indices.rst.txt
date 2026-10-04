@@ -1,0 +1,6 @@
+romtools.hyper\_reduction.deim\_get\_indices
+============================================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autofunction:: deim_get_indices

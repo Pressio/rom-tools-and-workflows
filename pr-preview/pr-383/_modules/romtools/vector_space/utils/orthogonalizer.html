@@ -458,7 +458,7 @@
 
 
 <div class="viewcode-block" id="Orthogonalizer">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.Orthogonalizer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.Orthogonalizer.html#romtools.vector_space.utils.Orthogonalizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Orthogonalizer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Interface for the Orthogonalizer class.</span>
@@ -469,18 +469,21 @@
 
 
 <div class="viewcode-block" id="NoOpOrthogonalizer">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.NoOpOrthogonalizer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpOrthogonalizer.html#romtools.vector_space.utils.NoOpOrthogonalizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NoOpOrthogonalizer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    No op class (doesn't do anything)</span>
 
 <span class="sd">    This class conforms to the :class:`Orthogonalizer` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="NoOpOrthogonalizer.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpOrthogonalizer.html#romtools.vector_space.utils.NoOpOrthogonalizer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+
 
 <div class="viewcode-block" id="NoOpOrthogonalizer.orthogonalize">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.NoOpOrthogonalizer.orthogonalize">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.NoOpOrthogonalizer.html#romtools.vector_space.utils.NoOpOrthogonalizer.orthogonalize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''Returns the input array.'''</span>
         <span class="k">return</span> <span class="n">my_array</span></div>
@@ -489,7 +492,7 @@
 
 
 <div class="viewcode-block" id="EuclideanL2Orthogonalizer">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanL2Orthogonalizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EuclideanL2Orthogonalizer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Orthogonalizes the basis in the standard Euclidean L2 inner product, i.e.,</span>
@@ -501,6 +504,8 @@
 
 <span class="sd">    This class conforms to the :class:`Orthogonalizer` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="EuclideanL2Orthogonalizer.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanL2Orthogonalizer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qrFnc</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor</span>
@@ -514,10 +519,11 @@
 <span class="sd">                    distributed with MPI, or maybe you have a fancy qr function that you can use.</span>
 
 <span class="sd">        '''</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span></div>
+
 
 <div class="viewcode-block" id="EuclideanL2Orthogonalizer.orthogonalize">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanL2Orthogonalizer.orthogonalize">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanL2Orthogonalizer.orthogonalize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Orthogonalizes the input matrix and returns the orthogonalized matrix.</span>
@@ -535,7 +541,7 @@
 
 
 <div class="viewcode-block" id="EuclideanVectorWeightedL2Orthogonalizer">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanVectorWeightedL2Orthogonalizer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EuclideanVectorWeightedL2Orthogonalizer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Orthogonalizes the basis in vector-weighted Euclidean L2 inner product,</span>
@@ -550,6 +556,8 @@
 
 <span class="sd">    This class conforms to the :class:`Orthogonalizer` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="EuclideanVectorWeightedL2Orthogonalizer.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weighting_vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">qrFnc</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the EuclideanVectorWeightedL2Orthogonalizer that</span>
@@ -567,10 +575,11 @@
 <span class="sd">        '''</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__weighting_vector</span> <span class="o">=</span> <span class="n">weighting_vector</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span></div>
+
 
 <div class="viewcode-block" id="EuclideanVectorWeightedL2Orthogonalizer.orthogonalize">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanVectorWeightedL2Orthogonalizer.orthogonalize">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanVectorWeightedL2Orthogonalizer.orthogonalize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Orthogonalizes the input matrix using the specified weighting vector and returns the orthogonalized matrix.</span>
@@ -591,7 +600,7 @@
 
 
 <div class="viewcode-block" id="EuclideanMatrixWeightedL2Orthogonalizer">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanMatrixWeightedL2Orthogonalizer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EuclideanMatrixWeightedL2Orthogonalizer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Orthogonalizes the basis in an SPD matrix-weighted Euclidean L2 inner product,</span>
@@ -606,6 +615,8 @@
 
 <span class="sd">    This class conforms to the :class:`Orthogonalizer` protocol.</span>
 <span class="sd">    '''</span>
+<div class="viewcode-block" id="EuclideanMatrixWeightedL2Orthogonalizer.__init__">
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weighting_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">qrFnc</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Constructor for the EuclideanMatrixWeightedL2Orthogonalizer that</span>
@@ -625,10 +636,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__weighting_matrix</span> <span class="o">=</span> <span class="n">weighting_matrix</span>
         <span class="c1"># Compute the sqrt matrix such that sqrt(W)^T \sqrt(W) = W</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__weighting_matrix_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">weighting_matrix</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qr_picked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span> <span class="k">if</span> <span class="n">qrFnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">qrFnc</span></div>
+
 
 <div class="viewcode-block" id="EuclideanMatrixWeightedL2Orthogonalizer.orthogonalize">
-<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.orthogonalizer.html#romtools.vector_space.utils.orthogonalizer.EuclideanMatrixWeightedL2Orthogonalizer.orthogonalize">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.html#romtools.vector_space.utils.EuclideanMatrixWeightedL2Orthogonalizer.orthogonalize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">orthogonalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Orthogonalizes the input matrix using the specified weighting matrix and returns the orthogonalized matrix.</span>
@@ -647,6 +659,15 @@
         <span class="k">return</span> <span class="n">my_array</span></div>
 </div>
 
+
+<span class="c1"># Supported interfaces; imported numerical and typing helpers are internal.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Orthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"NoOpOrthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"EuclideanL2Orthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"EuclideanVectorWeightedL2Orthogonalizer"</span><span class="p">,</span>
+    <span class="s2">"EuclideanMatrixWeightedL2Orthogonalizer"</span><span class="p">,</span>
+<span class="p">]</span>
 </pre></div>
 
                 </article>

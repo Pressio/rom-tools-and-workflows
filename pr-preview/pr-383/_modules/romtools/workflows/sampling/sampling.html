@@ -478,7 +478,7 @@
 
 
 <div class="viewcode-block" id="run_sampling">
-<a class="viewcode-back" href="../../../../generated/romtools.workflows.sampling.sampling.html#romtools.workflows.run_sampling">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.sampling.run_sampling.html#romtools.workflows.sampling.run_sampling">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_sampling</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
                  <span class="n">parameter_space</span><span class="p">:</span> <span class="n">ParameterSpace</span><span class="p">,</span>
                  <span class="n">absolute_work_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -642,6 +642,8 @@
 
 
 
+<div class="viewcode-block" id="run_sample">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.sampling.run_sample.html#romtools.workflows.sampling.run_sample">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run_sample</span><span class="p">(</span><span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">compute_qoi</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">run_id</span> <span class="o">=</span> <span class="n">_get_run_id_from_run_dir</span><span class="p">(</span><span class="n">run_directory</span><span class="p">)</span>
@@ -662,7 +664,8 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">compute_qoi</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">run_time</span><span class="p">,</span> <span class="n">qoi</span>
-    <span class="k">return</span> <span class="n">run_time</span>
+    <span class="k">return</span> <span class="n">run_time</span></div>
+
 </pre></div>
 
                 </article>

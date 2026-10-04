@@ -1,0 +1,27 @@
+romtools.composite\_vector\_space.CompositeVectorSpace
+======================================================
+
+.. currentmodule:: romtools.composite_vector_space
+
+.. autoclass:: CompositeVectorSpace
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CompositeVectorSpace.__init__
+      ~CompositeVectorSpace.extents
+      ~CompositeVectorSpace.get_basis
+      ~CompositeVectorSpace.get_compact_basis
+      ~CompositeVectorSpace.get_compact_shift_vector
+      ~CompositeVectorSpace.get_shift_vector
+   
+   
+
+   
+   
+   

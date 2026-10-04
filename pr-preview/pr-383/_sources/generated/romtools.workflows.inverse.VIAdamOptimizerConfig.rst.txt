@@ -1,0 +1,42 @@
+romtools.workflows.inverse.VIAdamOptimizerConfig
+================================================
+
+.. currentmodule:: romtools.workflows.inverse
+
+.. autoclass:: VIAdamOptimizerConfig
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~VIAdamOptimizerConfig.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~VIAdamOptimizerConfig.beta1
+      ~VIAdamOptimizerConfig.beta2
+      ~VIAdamOptimizerConfig.epsilon
+      ~VIAdamOptimizerConfig.fisher_damping_decay_start
+      ~VIAdamOptimizerConfig.fisher_damping_initial
+      ~VIAdamOptimizerConfig.fisher_damping_min
+      ~VIAdamOptimizerConfig.gradient_clip_norm
+      ~VIAdamOptimizerConfig.gradient_method
+      ~VIAdamOptimizerConfig.gradient_norm_tolerance
+      ~VIAdamOptimizerConfig.learning_rate
+      ~VIAdamOptimizerConfig.learning_rate_scale
+      ~VIAdamOptimizerConfig.max_iterations
+      ~VIAdamOptimizerConfig.max_log_std_update
+      ~VIAdamOptimizerConfig.max_variational_std
+      ~VIAdamOptimizerConfig.min_variational_std
+   
+   

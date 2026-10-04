@@ -1,0 +1,25 @@
+romtools.vector\_space.utils.StreamingScaler
+============================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: StreamingScaler
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StreamingScaler.__init__
+      ~StreamingScaler.initialize_scalings_from_loader
+      ~StreamingScaler.post_scale
+      ~StreamingScaler.pre_scale
+   
+   
+
+   
+   
+   

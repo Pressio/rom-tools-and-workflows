@@ -1,0 +1,23 @@
+romtools.vector\_space.utils.Orthogonalizer
+===========================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autoclass:: Orthogonalizer
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Orthogonalizer.__init__
+      ~Orthogonalizer.orthogonalize
+   
+   
+
+   
+   
+   

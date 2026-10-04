@@ -1,22 +1,60 @@
-romtools.vector\_space
+﻿romtools.vector\_space
 ======================
 
 .. automodule:: romtools.vector_space
+   :no-members:
 
-   
-   .. rubric:: Classes
+.. currentmodule:: romtools
 
-   .. autosummary::
-   
-      DictionaryVectorSpace
-      VectorSpace
-      VectorSpaceFromPOD
-      VectorSpaceFromStreamingPOD
-   
-.. rubric:: Modules
+
+
+.. rubric:: Functions
 
 .. autosummary::
    :toctree:
-   :recursive:
 
-   utils
+   vector_space.utils.create_noop_shifter
+
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+   :toctree:
+
+   vector_space.VectorSpace
+
+   vector_space.DictionaryVectorSpace
+
+   vector_space.VectorSpaceFromPOD
+
+   vector_space.VectorSpaceFromStreamingPOD
+
+   vector_space.utils.LeftSingularVectorTruncater
+
+   vector_space.utils.NoOpTruncater
+
+   vector_space.utils.Shifter
+
+   vector_space.utils.StreamingShifter
+
+   vector_space.utils.Scaler
+
+   vector_space.utils.StreamingScaler
+
+   vector_space.utils.NoOpScaler
+
+   vector_space.utils.Orthogonalizer
+
+   vector_space.utils.NoOpOrthogonalizer
+
+   vector_space.utils.SnapshotLoader
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+romtools.rom.estimate\_pairwise\_lipschitz\_constant
+====================================================
+
+.. currentmodule:: romtools.rom
+
+.. autofunction:: estimate_pairwise_lipschitz_constant

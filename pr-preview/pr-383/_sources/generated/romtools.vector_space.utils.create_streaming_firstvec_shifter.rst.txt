@@ -1,0 +1,6 @@
+romtools.vector\_space.utils.create\_streaming\_firstvec\_shifter
+=================================================================
+
+.. currentmodule:: romtools.vector_space.utils
+
+.. autofunction:: create_streaming_firstvec_shifter

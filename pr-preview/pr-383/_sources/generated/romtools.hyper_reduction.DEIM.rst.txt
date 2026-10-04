@@ -1,0 +1,38 @@
+romtools.hyper\_reduction.DEIM
+==============================
+
+.. currentmodule:: romtools.hyper_reduction
+
+.. autoclass:: DEIM
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DEIM.__init__
+      ~DEIM.from_basis
+      ~DEIM.from_snapshots
+      ~DEIM.project_test_basis
+      ~DEIM.reconstruct
+      ~DEIM.reconstruction_matrix
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DEIM.basis_mode
+      ~DEIM.basis_sizes
+      ~DEIM.function_basis
+      ~DEIM.sample_all_states
+      ~DEIM.sample_indices
+      ~DEIM.state_sample_indices
+   
+   
