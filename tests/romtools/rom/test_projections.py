@@ -34,7 +34,7 @@ def test_optimal_l2_projection_single_vector():
     data = np.random.normal(size=(3,10,5))
     data_to_project = np.random.normal(size=(3,10))
 
-    my_shifter = romtools.utils.create_average_shifter(data)
+    my_shifter = romtools.vector_space.utils.create_average_shifter(data)
     rom_dim = 4
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
     trial_space = romtools.VectorSpaceFromPOD(snapshots=data,
@@ -62,7 +62,7 @@ def test_optimal_l2_projection_single_vector():
     M = np.random.normal(size=((30,30)))
     M = M @ M.transpose()
     Mchol = np.linalg.cholesky(M)
-    my_shifter = romtools.utils.create_average_shifter(data)
+    my_shifter = romtools.vector_space.utils.create_average_shifter(data)
     rom_dim = 4
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
     trial_space = romtools.VectorSpaceFromPOD(snapshots=data,
@@ -118,7 +118,7 @@ def test_optimal_l2_projection_multiple_vectors():
     data = np.random.normal(size=(3,10,5))
     data_to_project = np.random.normal(size=(3,10,n_data))
 
-    my_shifter = romtools.utils.create_average_shifter(data)
+    my_shifter = romtools.vector_space.utils.create_average_shifter(data)
     rom_dim = 4
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
     trial_space = romtools.VectorSpaceFromPOD(snapshots=data,
@@ -149,7 +149,7 @@ def test_optimal_l2_projection_multiple_vectors():
     M = np.random.normal(size=((30,30)))
     M = M @ M.transpose()
     Mchol = np.linalg.cholesky(M)
-    my_shifter = romtools.utils.create_average_shifter(data)
+    my_shifter = romtools.vector_space.utils.create_average_shifter(data)
     rom_dim = 4
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
     trial_space = romtools.VectorSpaceFromPOD(snapshots=data,
@@ -183,7 +183,7 @@ def test_optimal_l2_projection_full_return():
 
     rom_dim = 5
     my_truncater = romtools.vector_space.utils.BasisSizeTruncater(rom_dim)
-    my_shifter = romtools.utils.create_constant_shifter(0.,data)
+    my_shifter = romtools.vector_space.utils.create_constant_shifter(0.,data)
     trial_space = romtools.DictionaryVectorSpace(snapshots=data,
                                           shifter = my_shifter)
 

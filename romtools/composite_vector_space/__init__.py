@@ -47,6 +47,8 @@ from typing import List
 import numpy as np
 from romtools.vector_space import VectorSpace
 
+__all__ = ["CompositeVectorSpace"]
+
 
 class CompositeVectorSpace:
     '''

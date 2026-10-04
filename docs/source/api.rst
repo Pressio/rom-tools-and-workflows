@@ -1,6 +1,30 @@
 API Reference
 =============
 
+Public API and compatibility
+----------------------------
+
+For the 1.x release series, the supported public API consists of documented
+interfaces in this API reference and names explicitly listed in package
+``__all__`` definitions. Public interfaces should not be removed or changed
+incompatibly without a deprecation cycle.
+
+New code should prefer domain-oriented imports, for example::
+
+   from romtools.vector_space import VectorSpaceFromPOD
+   from romtools.hyper_reduction import DEIM
+   from romtools.rom import GaussianProcessQoiModel
+   from romtools.workflows import run_sampling
+   from romtools.workflows.inverse import run_eki
+
+The top-level ``romtools`` namespace primarily exposes package metadata and
+major subpackages. Historical flat aliases remain available for backwards
+compatibility, but they are not the preferred import style.
+
+Names and modules beginning with an underscore, along with implementation
+names that are neither documented as public nor listed in ``__all__``, are
+internal and may change without a deprecation cycle.
+
 Workflow working directories
 ----------------------------
 

@@ -43,9 +43,14 @@
 # ************************************************************************
 #
 
-'''
-Implementation of basic sampling workflow. Given a parameter space :math:`\\mathcal{D}`, we draw random samples and
-run our model for each sample.
-'''
+'''Implementation of basic sampling workflow. Given a parameter space :math:`\\mathcal{D}`, we draw random samples and
+run our model for each sample.'''
 
-from romtools.workflows.sampling.sampling import *
+from romtools.workflows.sampling import sampling
+from romtools.workflows.sampling.sampling import run_sample, run_sampling
+
+__all__ = [
+    "sampling",
+    "run_sampling",
+    "run_sample",
+]
