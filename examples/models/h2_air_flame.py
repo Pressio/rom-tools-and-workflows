@@ -36,6 +36,15 @@ class H2AirFlame:
         Newton convergence tolerances for each implicit time step.
     newton_max_iterations:
         Maximum Newton iterations per time step.
+    linear_solver:
+        ``"gmres"`` uses the exact Newton Jacobian with restarted GMRES and a
+        single LU factorization of the fixed linear Crank--Nicolson operator as
+        a preconditioner. ``"direct"`` factors the full Newton Jacobian at
+        every Newton iteration.
+    gmres_relative_tolerance, gmres_absolute_tolerance:
+        Linear-solve tolerances used by the GMRES path. They should be tighter
+        than the Newton tolerance so that inexact linear solves do not limit
+        nonlinear convergence.
     """
 
     field_names = ("Y_H2", "Y_O2", "Y_H2O", "theta")
@@ -51,6 +60,11 @@ class H2AirFlame:
         newton_relative_tolerance: float = 1.0e-6,
         newton_absolute_tolerance: float = 1.0e-10,
         newton_max_iterations: int = 80,
+        linear_solver: str = "gmres",
+        gmres_relative_tolerance: float = 1.0e-10,
+        gmres_absolute_tolerance: float = 0.0,
+        gmres_restart: int = 30,
+        gmres_max_iterations: int = 100,
     ) -> None:
         if nx < 4:
             raise ValueError("nx must be at least 4 for the x-upwind stencil")
@@ -68,6 +82,15 @@ class H2AirFlame:
             )
         if newton_max_iterations < 1:
             raise ValueError("newton_max_iterations must be at least 1")
+        if linear_solver not in ("gmres", "direct"):
+            raise ValueError("linear_solver must be 'gmres' or 'direct'")
+        if (
+            gmres_relative_tolerance <= 0.0
+            or gmres_absolute_tolerance < 0.0
+        ):
+            raise ValueError("GMRES tolerances must be nonnegative and rtol positive")
+        if gmres_restart < 1 or gmres_max_iterations < 1:
+            raise ValueError("GMRES iteration limits must be at least 1")
 
         n_steps_float = t_end / dt
         n_steps = int(round(n_steps_float))
@@ -82,6 +105,12 @@ class H2AirFlame:
         self.newton_relative_tolerance = float(newton_relative_tolerance)
         self.newton_absolute_tolerance = float(newton_absolute_tolerance)
         self.newton_max_iterations = int(newton_max_iterations)
+        self.linear_solver = linear_solver
+        self.gmres_relative_tolerance = float(gmres_relative_tolerance)
+        self.gmres_absolute_tolerance = float(gmres_absolute_tolerance)
+        self.gmres_restart = int(gmres_restart)
+        self.gmres_max_iterations = int(gmres_max_iterations)
+        self.linear_solver_stats = {}
         self.num_steps = n_steps
 
         self.length_x = 1.8  # cm
@@ -481,6 +510,7 @@ class H2AirFlame:
         scaled_activation_energy: float,
         beta_x: float,
         beta_y: float,
+        linear_preconditioner=None,
     ) -> np.ndarray:
         iterate = previous_state.reshape(-1).copy()
         residual = self._residual(
@@ -506,7 +536,9 @@ class H2AirFlame:
             )
             # Crank-Nicolson contributes one half of the new-state RHS Jacobian.
             jacobian = linear_jacobian - 0.5 * self.dt * reaction_jacobian
-            update = scipy.sparse.linalg.spsolve(jacobian, -residual)
+            update = self._solve_newton_linear_system(
+                jacobian, -residual, linear_preconditioner
+            )
             if not np.all(np.isfinite(update)):
                 raise RuntimeError(
                     "Newton linear solve produced non-finite values at iteration {}".format(
@@ -541,6 +573,55 @@ class H2AirFlame:
             )
         )
 
+    def _solve_newton_linear_system(
+        self,
+        jacobian: scipy.sparse.csr_matrix,
+        right_hand_side: np.ndarray,
+        linear_preconditioner,
+    ) -> np.ndarray:
+        """Solve one exact Newton system, falling back to direct LU if needed."""
+        if linear_preconditioner is not None:
+            preconditioner = scipy.sparse.linalg.LinearOperator(
+                jacobian.shape,
+                matvec=linear_preconditioner.solve,
+                dtype=float,
+            )
+            callback_iterations = [0]
+            update, info = scipy.sparse.linalg.gmres(
+                jacobian,
+                right_hand_side,
+                M=preconditioner,
+                rtol=self.gmres_relative_tolerance,
+                atol=self.gmres_absolute_tolerance,
+                restart=self.gmres_restart,
+                maxiter=self.gmres_max_iterations,
+                callback=lambda _residual: callback_iterations.__setitem__(
+                    0, callback_iterations[0] + 1
+                ),
+                callback_type="pr_norm",
+            )
+            self.linear_solver_stats["gmres_iterations"] += callback_iterations[0]
+            linear_residual = np.linalg.norm(jacobian @ update - right_hand_side)
+            linear_target = max(
+                self.gmres_absolute_tolerance,
+                self.gmres_relative_tolerance * np.linalg.norm(right_hand_side),
+            )
+            if (
+                info == 0
+                and np.all(np.isfinite(update))
+                and linear_residual <= linear_target
+            ):
+                return update
+            self.linear_solver_stats["gmres_direct_fallbacks"] += 1
+
+        self.linear_solver_stats["direct_solves"] += 1
+        return scipy.sparse.linalg.spsolve(
+            jacobian,
+            right_hand_side,
+            permc_spec="MMD_AT_PLUS_A",
+            use_umfpack=False,
+        )
+
     def solve(
         self,
         kappa: float,
@@ -560,6 +641,16 @@ class H2AirFlame:
         linear_jacobian = self._build_linear_residual_jacobian(
             kappa, beta_x, beta_y
         )
+        self.linear_solver_stats = {
+            "gmres_iterations": 0,
+            "gmres_direct_fallbacks": 0,
+            "direct_solves": 0,
+        }
+        linear_preconditioner = None
+        if self.linear_solver == "gmres":
+            linear_preconditioner = scipy.sparse.linalg.splu(
+                linear_jacobian.tocsc(), permc_spec="MMD_AT_PLUS_A"
+            )
 
         state = self.initial_state()
         states = [state.copy()]
@@ -578,6 +669,7 @@ class H2AirFlame:
                 scaled_activation_energy,
                 beta_x,
                 beta_y,
+                linear_preconditioner,
             )
             if step % self.snapshot_stride == 0 or step == self.num_steps:
                 states.append(state.copy())
