@@ -350,12 +350,6 @@ def _hessian_reuse_quality(archive,
     return True, "reuse", diagnostics
 
 
-def _attach_hessian_diagnostics(state, diagnostics):
-    for key, value in diagnostics.items():
-        state[key] = value
-    return state
-
-
 def _mf_hessian_from_reuse(optimizer_samples_fom: np.ndarray,
                            optimizer_samples_rom_extra: np.ndarray,
                            mean: np.ndarray,
@@ -554,53 +548,32 @@ def _validate_common_reuse_request_with_newton(call_args, config):
     _OPTIMIZATION_METHOD_BY_CONFIG_ID[id(config)] = optimization_method
 
 
-def _evaluate_vi_current_archive(self, *args, **kwargs):
-    bound = inspect.signature(_reuse._ORIGINAL_EVALUATE_VI_STATE).bind(*args, **kwargs)
-    bound.apply_defaults()
-    a = bound.arguments
-    state = _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
-    if not state.get("sample_reuse_used", False) or not _is_newton_reuse(self.archive):
-        return state
-
-    weights = np.asarray(state["importance_weights"])
-    origin_weights = np.asarray(state["importance_origin_weights"])
+def _vi_additional_reuse_quality(self, a, state, weights, origin_weights):
+    """Run Newton safeguards inside the controller's shared refresh loop."""
+    if not _is_newton_reuse(self.archive):
+        return True, "reuse", {}
     _, clipped_log_std = _vi._compute_variational_std(
         np.asarray(a["variational_log_std"]),
         a["min_variational_std"],
         a["max_variational_std"],
     )
-    quality_ok, reason, diagnostics = _hessian_reuse_quality(
+    return _hessian_reuse_quality(
         self.archive,
         np.asarray(state["optimizer_samples"]),
         float(a["elbo_scaling_factor"]) * np.asarray(state["raw_log_joint_terms"]),
         np.asarray(a["variational_mean"]),
         clipped_log_std,
         a.get("variational_correlation_cholesky"),
-        weights,
-        origin_weights,
+        np.asarray(weights),
+        np.asarray(origin_weights),
         a["baseline_method"],
         np.asarray(state["hessian_full"]),
         int(a["sample_size"]),
     )
-    if quality_ok:
-        return _attach_hessian_diagnostics(state, diagnostics)
 
-    fresh_state = _reuse._ORIGINAL_EVALUATE_VI_STATE(*args, **kwargs)
-    iteration = _reuse._iteration_from_path(a["run_directory_base"])
-    self.archive.append(
-        _reuse._batch_from_vi_state(
-            fresh_state,
-            a["variational_mean"],
-            a["variational_log_std"],
-            a.get("variational_correlation_cholesky"),
-            iteration,
-        )
-    )
-    fresh_state["sample_reuse_used"] = False
-    fresh_state["sample_reuse_refresh_reason"] = reason
-    fresh_state["sample_reuse_archive_samples"] = self.archive.sample_count
-    fresh_state["sample_reuse_archive_batches"] = len(self.archive.batches)
-    return _attach_hessian_diagnostics(fresh_state, diagnostics)
+
+def _evaluate_vi_current_archive(self, *args, **kwargs):
+    return _ORIGINAL_VI_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
 
 
 def _evaluate_vi_state_with_independent_archive(self, *args, **kwargs):
@@ -620,17 +593,11 @@ def _evaluate_vi_state_with_independent_archive(self, *args, **kwargs):
         self.archive = primary_archive
 
 
-def _evaluate_mf_current_archive(self, *args, **kwargs):
-    bound = inspect.signature(_reuse._ORIGINAL_EVALUATE_MF_VI_STATE).bind(*args, **kwargs)
-    bound.apply_defaults()
-    a = bound.arguments
-    state = _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
-    if not state.get("sample_reuse_used", False) or not _is_newton_reuse(self.archive):
-        return state
-
+def _mf_additional_reuse_quality(self, a, state, weights, origin_weights):
+    """Run MF-Newton safeguards inside the shared refresh loop."""
+    if not _is_newton_reuse(self.archive):
+        return True, "reuse", {}
     optimizer_fom = _reuse._archive_arrays(self.archive)[0]
-    weights = np.asarray(state["importance_weights"])
-    origin_weights = np.asarray(state["importance_origin_weights"])
     _, clipped_log_std = _vi._compute_variational_std(
         np.asarray(a["variational_log_std"]),
         a["min_variational_std"],
@@ -639,7 +606,7 @@ def _evaluate_mf_current_archive(self, *args, **kwargs):
     # The variance trigger intentionally monitors the IS-reused HF curvature
     # contribution. Fresh ROM-only enrichment and the existing MF gain are left
     # unchanged; this isolates the quality of the recycled expensive samples.
-    quality_ok, reason, diagnostics = _hessian_reuse_quality(
+    return _hessian_reuse_quality(
         self.archive,
         optimizer_fom,
         float(a["elbo_scaling_factor"])
@@ -647,29 +614,16 @@ def _evaluate_mf_current_archive(self, *args, **kwargs):
         np.asarray(a["variational_mean"]),
         clipped_log_std,
         a.get("variational_correlation_cholesky"),
-        weights,
-        origin_weights,
+        np.asarray(weights),
+        np.asarray(origin_weights),
         a["baseline_method"],
         np.asarray(state["hessian_full"]),
         int(a["fom_sample_size"]),
     )
-    if quality_ok:
-        return _attach_hessian_diagnostics(state, diagnostics)
 
-    fresh_state = _reuse._ORIGINAL_EVALUATE_MF_VI_STATE(*args, **kwargs)
-    iteration = _reuse._iteration_from_path(a["iteration_directory"])
-    self._append_from_state(
-        fresh_state,
-        a["variational_mean"],
-        a["variational_log_std"],
-        a.get("variational_correlation_cholesky"),
-        iteration,
-    )
-    fresh_state["sample_reuse_used"] = False
-    fresh_state["sample_reuse_refresh_reason"] = reason
-    fresh_state["sample_reuse_archive_samples"] = self.archive.sample_count
-    fresh_state["sample_reuse_archive_batches"] = len(self.archive.batches)
-    return _attach_hessian_diagnostics(fresh_state, diagnostics)
+
+def _evaluate_mf_current_archive(self, *args, **kwargs):
+    return _ORIGINAL_MF_CONTROLLER_EVALUATE_STATE(self, *args, **kwargs)
 
 
 def _evaluate_mf_state_with_independent_archive(self, *args, **kwargs):
@@ -694,6 +648,12 @@ def _install_newton_hessian_reuse_extension():
         return
     _reuse._build_reused_vi_state = _build_reused_vi_state_with_hessian
     _reuse._MFReuseController._build_reused_state = _build_reused_mf_state_with_hessian
+    _reuse._VIReuseController._additional_reuse_quality = (
+        _vi_additional_reuse_quality
+    )
+    _reuse._MFReuseController._additional_reuse_quality = (
+        _mf_additional_reuse_quality
+    )
     _reuse._VIReuseController.evaluate_state = _evaluate_vi_state_with_independent_archive
     _reuse._MFReuseController.evaluate_state = _evaluate_mf_state_with_independent_archive
     _reuse._validate_common_reuse_request = _validate_common_reuse_request_with_newton
