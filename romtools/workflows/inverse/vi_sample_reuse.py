@@ -1,11 +1,10 @@
 """Importance-sampling sample reuse for VI and MFVI.
 
-This module implements an opt-in, first-pass ABRIS-style reuse layer around
-ROMTools' existing VI drivers. Expensive high-fidelity evaluations are cached
-in batches together with the variational distribution that generated them.
-Later iterations reuse those evaluations with deterministic-mixture importance
-weights. RQMC, Newton/Hessian reuse, and a new multifidelity gain derivation are
-intentionally left to follow-on work.
+This module implements an opt-in ABRIS-style reuse layer around ROMTools'
+existing VI drivers. Expensive high-fidelity evaluations are cached in batches
+together with the variational distribution that generated them.  A bounded
+inner sampling loop adds fresh batches until the reuse diagnostics pass, then
+forms the update from the complete retained archive.
 """
 
 from __future__ import annotations
@@ -40,7 +39,14 @@ _ACTIVE_MF_REUSE_CONFIG: ContextVar[object] = ContextVar(
 
 @dataclass(frozen=True)
 class VISampleReuseConfig:
-    """Configuration for importance-sampling reuse of previous VI samples."""
+    """Configuration for ABRIS-style reuse of previous VI samples.
+
+    ``history_batches`` controls both the maximum moving-window size and the
+    maximum number of fresh batches allowed in one state evaluation.  During
+    zero-based iteration ``i``, both limits grow as
+    ``min(history_batches, i + 1)``.  Every returned update is formed from the
+    retained archive, including evaluations that sampled fresh batches.
+    """
 
     enabled: bool = True
     history_batches: int = 10
@@ -80,13 +86,14 @@ class _ReuseArchive:
     def __init__(self, config: VISampleReuseConfig):
         self.config = config
         self.batches: list[_ReuseBatch] = []
-        self.last_refresh_iteration: Optional[int] = None
 
-    def append(self, batch: _ReuseBatch) -> None:
+    def append(self, batch: _ReuseBatch, capacity: Optional[int] = None) -> None:
         self.batches.append(batch)
-        self.last_refresh_iteration = batch.iteration
-        if len(self.batches) > self.config.history_batches:
-            self.batches = self.batches[-self.config.history_batches :]
+        retained = self.config.history_batches if capacity is None else int(capacity)
+        if retained < 1:
+            raise ValueError("archive capacity must be at least 1")
+        if len(self.batches) > retained:
+            self.batches = self.batches[-retained:]
 
     @property
     def sample_count(self) -> int:
@@ -154,7 +161,7 @@ def _compute_importance_weights(archive: _ReuseArchive,
         )
     mixture_log_density = _logsumexp(np.vstack(component_logs), axis=0)
     log_weights = current_log_density - mixture_log_density
-    weights = np.exp(np.clip(log_weights, -745.0, 700.0))
+    weights = np.exp(np.clip(log_weights, -50.0, 50.0))
 
     origin_weights = np.empty(samples.shape[0], dtype=float)
     offset = 0
@@ -167,7 +174,7 @@ def _compute_importance_weights(archive: _ReuseArchive,
             batch.variational_correlation_cholesky,
         )
         log_origin_ratio = current_log_density[sl] - origin_log_density
-        origin_weights[sl] = np.exp(np.clip(log_origin_ratio, -745.0, 700.0))
+        origin_weights[sl] = np.exp(np.clip(log_origin_ratio, -50.0, 50.0))
         offset += batch.size
     return weights, origin_weights
 
@@ -238,7 +245,17 @@ def _score_diagnostics(archive: _ReuseArchive,
         current_correlation_cholesky,
     )
     reference_error = np.mean(np.hstack([ref_mean, ref_log_std]), axis=0)
-    return float(np.linalg.norm(recycled_error)), float(np.linalg.norm(reference_error))
+    # The inverse Fisher metric for mean-field Gaussian parameters
+    # (mean, log-standard-deviation) is diag(std**2, 1/2).
+    metric_diagonal = np.concatenate([
+        _variational_std(current_log_std) ** 2,
+        0.5 * np.ones_like(current_log_std, dtype=float),
+    ])
+
+    def metric_norm(error):
+        return float(np.sqrt(np.sum(metric_diagonal * np.asarray(error) ** 2)))
+
+    return metric_norm(recycled_error), metric_norm(reference_error)
 
 
 def _weighted_loo_baseline(values: np.ndarray, origin_weights: np.ndarray) -> np.ndarray:
@@ -301,13 +318,13 @@ def _gradient_from_archive(samples: np.ndarray,
 
 
 def _refresh_decision(archive: _ReuseArchive,
-                      iteration: int,
                       current_mean: np.ndarray,
                       current_log_std: np.ndarray,
                       current_correlation_cholesky: Optional[np.ndarray],
-                      nominal_batch_size: int):
+                      nominal_batch_size: int,
+                      periodic_due: bool = False):
     if not archive.batches:
-        return True, "empty", None, np.nan
+        return True, ("empty",), None, np.nan
 
     weights, origin_weights = _compute_importance_weights(
         archive,
@@ -316,7 +333,7 @@ def _refresh_decision(archive: _ReuseArchive,
         current_correlation_cholesky,
     )
     if not np.all(np.isfinite(weights)) or np.sum(weights) <= 0.0:
-        return True, "nonfinite_weights", (weights, origin_weights), 0.0
+        return True, ("nonfinite_weights",), (weights, origin_weights), 0.0
 
     ess = _effective_sample_size(weights)
     threshold = (
@@ -324,15 +341,12 @@ def _refresh_decision(archive: _ReuseArchive,
         if archive.config.ess_threshold is None
         else float(archive.config.ess_threshold)
     )
-    if ess < threshold:
-        return True, "ess", (weights, origin_weights), ess
+    reasons = []
+    if ess <= threshold:
+        reasons.append("ess")
 
-    if (
-        archive.config.periodic_refresh is not None
-        and archive.last_refresh_iteration is not None
-        and iteration - archive.last_refresh_iteration >= archive.config.periodic_refresh
-    ):
-        return True, "periodic", (weights, origin_weights), ess
+    if periodic_due:
+        reasons.append("periodic")
 
     if archive.config.use_score_diagnostic:
         recycled_error, reference_error = _score_diagnostics(
@@ -345,9 +359,38 @@ def _refresh_decision(archive: _ReuseArchive,
         )
         reference_scale = max(reference_error, np.sqrt(np.finfo(float).eps))
         if recycled_error > archive.config.score_error_scale * reference_scale:
-            return True, "score", (weights, origin_weights), ess
+            reasons.append("score")
 
-    return False, "reuse", (weights, origin_weights), ess
+    if reasons:
+        return True, tuple(reasons), (weights, origin_weights), ess
+    return False, (), (weights, origin_weights), ess
+
+
+def _iteration_archive_limit(config: VISampleReuseConfig, iteration: int) -> int:
+    """Return the zero-based ABRIS moving-window and sampling-loop limit."""
+    return min(config.history_batches, max(int(iteration) + 1, 1))
+
+
+def _annotate_reuse_state(state,
+                          archive: _ReuseArchive,
+                          ess: float,
+                          refresh_reasons,
+                          refresh_limit_reached: bool,
+                          diagnostics=None):
+    reasons = tuple(refresh_reasons)
+    state["sample_reuse_used"] = True
+    state["sample_reuse_refreshed"] = bool(reasons)
+    state["sample_reuse_refresh_count"] = len(reasons)
+    state["sample_reuse_refresh_reasons"] = reasons
+    state["sample_reuse_refresh_reason"] = reasons[-1] if reasons else "reuse"
+    state["sample_reuse_refresh_limit_reached"] = bool(refresh_limit_reached)
+    state["sample_reuse_final_update_used_archive"] = True
+    state["sample_reuse_ess"] = float(ess)
+    state["sample_reuse_archive_samples"] = archive.sample_count
+    state["sample_reuse_archive_batches"] = len(archive.batches)
+    if diagnostics:
+        state.update(diagnostics)
+    return state
 
 
 def _batch_from_vi_state(state,
@@ -471,36 +514,108 @@ def _build_reused_vi_state(a, archive: _ReuseArchive, weights, origin_weights,
 class _VIReuseController:
     def __init__(self, config: VISampleReuseConfig):
         self.archive = _ReuseArchive(config)
+        self._periodic_refresh_iterations = set()
+
+    def _periodic_due(self, iteration: int) -> bool:
+        period = self.archive.config.periodic_refresh
+        return (
+            period is not None
+            and iteration > 0
+            and iteration % period == 0
+            and iteration not in self._periodic_refresh_iterations
+        )
+
+    def _additional_reuse_quality(self, a, state, weights, origin_weights):
+        return True, "reuse", {}
 
     def evaluate_state(self, *args, **kwargs):
         bound = inspect.signature(_ORIGINAL_EVALUATE_VI_STATE).bind(*args, **kwargs)
         bound.apply_defaults()
         a = bound.arguments
         iteration = _iteration_from_path(a["run_directory_base"])
-        refresh, reason, weight_pair, ess = _refresh_decision(
-            self.archive,
-            iteration,
-            np.asarray(a["variational_mean"]),
-            np.asarray(a["variational_log_std"]),
-            a.get("variational_correlation_cholesky"),
-            int(a["sample_size"]),
-        )
-        if refresh:
-            state = _ORIGINAL_EVALUATE_VI_STATE(*args, **kwargs)
-            self.archive.append(_batch_from_vi_state(
-                state,
-                a["variational_mean"],
-                a["variational_log_std"],
+        limit = _iteration_archive_limit(self.archive.config, iteration)
+        refresh_reasons = []
+        refresh_limit_reached = False
+        final_diagnostics = {}
+
+        while True:
+            periodic_due = self._periodic_due(iteration)
+            refresh, reasons, weight_pair, ess = _refresh_decision(
+                self.archive,
+                np.asarray(a["variational_mean"]),
+                np.asarray(a["variational_log_std"]),
                 a.get("variational_correlation_cholesky"),
-                iteration,
-            ))
-            state["sample_reuse_used"] = False
-            state["sample_reuse_refresh_reason"] = reason
-            state["sample_reuse_archive_samples"] = self.archive.sample_count
-            state["sample_reuse_archive_batches"] = len(self.archive.batches)
-            return state
-        weights, origin_weights = weight_pair
-        return _build_reused_vi_state(a, self.archive, weights, origin_weights, ess)
+                int(a["sample_size"]),
+                periodic_due=periodic_due,
+            )
+            candidate = None
+            if not refresh:
+                weights, origin_weights = weight_pair
+                candidate = _build_reused_vi_state(
+                    a, self.archive, weights, origin_weights, ess
+                )
+                quality_ok, reason, final_diagnostics = (
+                    self._additional_reuse_quality(
+                        a, candidate, weights, origin_weights
+                    )
+                )
+                if not quality_ok:
+                    refresh = True
+                    reasons = (reason,)
+
+            if not refresh:
+                return _annotate_reuse_state(
+                    candidate,
+                    self.archive,
+                    ess,
+                    refresh_reasons,
+                    refresh_limit_reached,
+                    final_diagnostics,
+                )
+
+            if len(refresh_reasons) >= limit:
+                refresh_limit_reached = True
+                if candidate is None:
+                    weights, origin_weights = _compute_importance_weights(
+                        self.archive,
+                        np.asarray(a["variational_mean"]),
+                        np.asarray(a["variational_log_std"]),
+                        a.get("variational_correlation_cholesky"),
+                    )
+                    ess = _effective_sample_size(weights)
+                    candidate = _build_reused_vi_state(
+                        a, self.archive, weights, origin_weights, ess
+                    )
+                return _annotate_reuse_state(
+                    candidate,
+                    self.archive,
+                    ess,
+                    refresh_reasons,
+                    refresh_limit_reached,
+                    final_diagnostics,
+                )
+
+            reason = "+".join(reasons)
+            if periodic_due:
+                self._periodic_refresh_iterations.add(iteration)
+            fresh_kwargs = dict(a)
+            if refresh_reasons:
+                fresh_kwargs["run_directory_base"] = (
+                    f'{a["run_directory_base"]}abris_refresh_'
+                    f'{len(refresh_reasons)}_'
+                )
+            fresh_state = _ORIGINAL_EVALUATE_VI_STATE(**fresh_kwargs)
+            self.archive.append(
+                _batch_from_vi_state(
+                    fresh_state,
+                    a["variational_mean"],
+                    a["variational_log_std"],
+                    a.get("variational_correlation_cholesky"),
+                    iteration,
+                ),
+                capacity=limit,
+            )
+            refresh_reasons.append(reason)
 
     def evaluate_candidate(self, *args, **kwargs):
         bound = inspect.signature(_ORIGINAL_EVALUATE_VI_CANDIDATE).bind(*args, **kwargs)
@@ -706,8 +821,22 @@ def _mf_gradient_from_reuse(optimizer_samples_fom,
 class _MFReuseController:
     def __init__(self, config: VISampleReuseConfig):
         self.archive = _ReuseArchive(config)
+        self._periodic_refresh_iterations = set()
 
-    def _append_from_state(self, state, mean, log_std, corr, iteration):
+    def _periodic_due(self, iteration: int) -> bool:
+        period = self.archive.config.periodic_refresh
+        return (
+            period is not None
+            and iteration > 0
+            and iteration % period == 0
+            and iteration not in self._periodic_refresh_iterations
+        )
+
+    def _additional_reuse_quality(self, a, state, weights, origin_weights):
+        return True, "reuse", {}
+
+    def _append_from_state(self, state, mean, log_std, corr, iteration,
+                           capacity=None):
         n = state["parameter_samples_fom"].shape[0]
         self.archive.append(_ReuseBatch(
             optimizer_samples=np.asarray(state["optimizer_samples"])[:n].copy(),
@@ -720,37 +849,106 @@ class _MFReuseController:
                 None if corr is None else np.asarray(corr).copy()
             ),
             iteration=iteration,
-        ))
+        ), capacity=capacity)
 
     def evaluate_state(self, *args, **kwargs):
         bound = inspect.signature(_ORIGINAL_EVALUATE_MF_VI_STATE).bind(*args, **kwargs)
         bound.apply_defaults()
-        a = bound.arguments
+        a = dict(bound.arguments)
         iteration = _iteration_from_path(a["iteration_directory"])
-        refresh, reason, weight_pair, ess = _refresh_decision(
-            self.archive,
-            iteration,
-            np.asarray(a["variational_mean"]),
-            np.asarray(a["variational_log_std"]),
-            a.get("variational_correlation_cholesky"),
-            int(a["fom_sample_size"]),
-        )
-        if refresh or a.get("rom_model") is None:
-            state = _ORIGINAL_EVALUATE_MF_VI_STATE(*args, **kwargs)
+        limit = _iteration_archive_limit(self.archive.config, iteration)
+        refresh_reasons = []
+        refresh_limit_reached = False
+        final_diagnostics = {}
+
+        while True:
+            periodic_due = self._periodic_due(iteration)
+            refresh, reasons, weight_pair, ess = _refresh_decision(
+                self.archive,
+                np.asarray(a["variational_mean"]),
+                np.asarray(a["variational_log_std"]),
+                a.get("variational_correlation_cholesky"),
+                int(a["fom_sample_size"]),
+                periodic_due=periodic_due,
+            )
+            candidate = None
+            if not refresh and a.get("rom_model") is not None:
+                weights, origin_weights = weight_pair
+                candidate = self._build_reused_state(
+                    a, weights, origin_weights, ess
+                )
+                quality_ok, reason, final_diagnostics = (
+                    self._additional_reuse_quality(
+                        a, candidate, weights, origin_weights
+                    )
+                )
+                if not quality_ok:
+                    refresh = True
+                    reasons = (reason,)
+            elif a.get("rom_model") is None and not refresh:
+                refresh = True
+                reasons = ("missing_rom",)
+
+            if not refresh:
+                return _annotate_reuse_state(
+                    candidate,
+                    self.archive,
+                    ess,
+                    refresh_reasons,
+                    refresh_limit_reached,
+                    final_diagnostics,
+                )
+
+            if len(refresh_reasons) >= limit:
+                refresh_limit_reached = True
+                weights, origin_weights = _compute_importance_weights(
+                    self.archive,
+                    np.asarray(a["variational_mean"]),
+                    np.asarray(a["variational_log_std"]),
+                    a.get("variational_correlation_cholesky"),
+                )
+                ess = _effective_sample_size(weights)
+                candidate = self._build_reused_state(
+                    a, weights, origin_weights, ess
+                )
+                return _annotate_reuse_state(
+                    candidate,
+                    self.archive,
+                    ess,
+                    refresh_reasons,
+                    refresh_limit_reached,
+                    final_diagnostics,
+                )
+
+            reason = "+".join(reasons)
+            if periodic_due:
+                self._periodic_refresh_iterations.add(iteration)
+            fresh_args = dict(a)
+            if refresh_reasons:
+                fresh_args["iteration_directory"] = (
+                    f'{a["iteration_directory"]}/abris_refresh_'
+                    f'{len(refresh_reasons)}'
+                )
+            fresh_state = _ORIGINAL_EVALUATE_MF_VI_STATE(**fresh_args)
             self._append_from_state(
-                state,
+                fresh_state,
                 a["variational_mean"],
                 a["variational_log_std"],
                 a.get("variational_correlation_cholesky"),
                 iteration,
+                capacity=limit,
             )
-            state["sample_reuse_used"] = False
-            state["sample_reuse_refresh_reason"] = reason
-            state["sample_reuse_archive_samples"] = self.archive.sample_count
-            state["sample_reuse_archive_batches"] = len(self.archive.batches)
-            return state
-        weights, origin_weights = weight_pair
-        return self._build_reused_state(a, weights, origin_weights, ess)
+            refresh_reasons.append(reason)
+            for key in (
+                "rom_model",
+                "training_dirs",
+                "training_parameters",
+                "training_qois",
+                "rom_training_dirs",
+                "rom_training_parameters",
+                "rom_training_qois",
+            ):
+                a[key] = fresh_state[key]
 
     def _build_reused_state(self, a, weights, origin_weights, ess):
         dispatcher = resolve_dispatcher(a["dispatcher"])

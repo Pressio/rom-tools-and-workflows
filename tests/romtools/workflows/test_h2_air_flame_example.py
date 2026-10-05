@@ -66,6 +66,66 @@ def test_solution_responds_to_all_four_parameters():
         assert np.linalg.norm(qoi - base_qoi) > 1.0e-10
 
 
+def test_gmres_matches_direct_newton_solutions_across_parameter_range():
+    parameter_sets = [
+        (0.5, 4.0, 20.0, 1.0),
+        (2.0, 8.0, 40.0, 7.0),
+        (4.0, 12.0, 60.0, 20.0),
+    ]
+    for parameters in parameter_sets:
+        direct = H2AirFlame(
+            nx=8,
+            ny=6,
+            dt=1.0e-4,
+            t_end=3.0e-4,
+            snapshot_stride=1,
+            linear_solver="direct",
+        )
+        gmres = H2AirFlame(
+            nx=8,
+            ny=6,
+            dt=1.0e-4,
+            t_end=3.0e-4,
+            snapshot_stride=1,
+            linear_solver="gmres",
+        )
+        direct_states, direct_times = direct.solve(*parameters)
+        gmres_states, gmres_times = gmres.solve(*parameters)
+
+        assert np.array_equal(gmres_times, direct_times)
+        np.testing.assert_allclose(gmres_states, direct_states, rtol=2.0e-7, atol=2.0e-9)
+        assert gmres.linear_solver_stats["gmres_iterations"] > 0
+        assert gmres.linear_solver_stats["gmres_direct_fallbacks"] == 0
+
+
+def test_gmres_falls_back_to_direct_without_changing_solution():
+    parameters = (2.0, 8.0, 40.0, 7.0)
+    direct = H2AirFlame(
+        nx=8,
+        ny=6,
+        dt=1.0e-4,
+        t_end=2.0e-4,
+        snapshot_stride=1,
+        linear_solver="direct",
+    )
+    fallback = H2AirFlame(
+        nx=8,
+        ny=6,
+        dt=1.0e-4,
+        t_end=2.0e-4,
+        snapshot_stride=1,
+        linear_solver="gmres",
+        gmres_restart=1,
+        gmres_max_iterations=1,
+    )
+    direct_states, _ = direct.solve(*parameters)
+    fallback_states, _ = fallback.solve(*parameters)
+
+    np.testing.assert_allclose(fallback_states, direct_states, rtol=2.0e-7, atol=2.0e-9)
+    assert fallback.linear_solver_stats["gmres_direct_fallbacks"] > 0
+    assert fallback.linear_solver_stats["direct_solves"] > 0
+
+
 def test_crank_nicolson_jacobian_matches_finite_difference():
     model = H2AirFlame(
         nx=6, ny=5, dt=1.0e-4, t_end=1.0e-4, snapshot_stride=1
@@ -155,6 +215,10 @@ def test_invalid_inputs_raise():
         H2AirFlame(dt=-1.0e-4)
     with pytest.raises(ValueError):
         H2AirFlame(dt=1.0e-4, t_end=1.5e-4)
+    with pytest.raises(ValueError):
+        H2AirFlame(linear_solver="bicgstab")
+    with pytest.raises(ValueError):
+        H2AirFlame(gmres_relative_tolerance=0.0)
 
     model = _small_model()
     with pytest.raises(ValueError):
