@@ -51,8 +51,14 @@ A representative parameter vector is
 
 The solver uses Crank-Nicolson time integration, central differences for
 diffusion, a second-order backward upwind stencil in the x direction, and an
-upwind stencil in the y direction. Newton systems are assembled and solved as
-SciPy sparse matrices.
+upwind stencil in the y direction. Newton systems are assembled as SciPy sparse
+matrices. By default, each Newton system uses the exact assembled Jacobian and
+is solved with GMRES, using one LU factorization of the fixed linear
+Crank-Nicolson operator as a preconditioner for the whole transient solve. The
+linear tolerance is tighter than the Newton tolerance; a GMRES solve that does
+not meet its true residual tolerance automatically falls back to a direct
+full-Jacobian solve. Set
+``linear_solver="direct"`` on ``H2AirFlame`` to use direct solves throughout.
 
 Direct use
 ----------
