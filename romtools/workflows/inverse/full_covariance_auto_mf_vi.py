@@ -62,6 +62,9 @@ def mf_vi_with_auto_rom(
     max_covariance_log_step: float = 1.0,
     create_run_directories: bool = True,
     sample_reuse_config=None,
+    rom_substep_start_iteration: int = 0,
+    rom_substep_end_iteration=None,
+    num_rom_substeps: int = 0,
 ):
     """Run full-covariance MF-VI with a built-in adaptive surrogate builder."""
     if str(variational_distribution).strip().lower().replace("-", "_") not in (
@@ -152,4 +155,7 @@ def mf_vi_with_auto_rom(
         max_covariance_log_step=max_covariance_log_step,
         create_run_directories=create_run_directories,
         sample_reuse_config=None,
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
     )
