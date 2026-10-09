@@ -909,6 +909,7 @@ def _run_full_covariance_mf_vi(
                                   else optimization_method),
                     optimizer_config=(rom_substep_newton_config
                                       if rom_substep_newton_config is not None else config),
+                    outer_adam_solver=(solver if optimization_method == "adam" else None),
                     max_covariance_log_step=max_covariance_log_step,
                     min_variational_std=min_variational_std,
                     max_variational_std=max_variational_std,
