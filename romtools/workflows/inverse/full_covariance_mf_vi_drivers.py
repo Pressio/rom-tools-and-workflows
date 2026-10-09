@@ -989,6 +989,15 @@ def _run_full_covariance_mf_vi(
         effective_direction = np.concatenate(
             [direction_mean, covariance_scale * direction_covariance]
         )
+        if rom_substeps_enabled(
+            iteration - 1, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        ):
+            effective_direction = np.concatenate([
+                (candidate_mean - mean) / step_size,
+                svec(covariance_from_cholesky(candidate_cholesky)
+                     - covariance_from_cholesky(cholesky)) / step_size,
+            ])
         predicted_slope = float(
             np.dot(ordinary_gradient, effective_direction)
         )
