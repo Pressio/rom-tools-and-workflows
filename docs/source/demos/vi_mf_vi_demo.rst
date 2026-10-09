@@ -370,10 +370,15 @@ end index exclusive, counting only outer MF-VI iterations.
 **Each ROM-only substep uses the same optimization method and configuration
 as the outer MF-VI iteration.** Gradient descent uses the configured standard
 or natural gradient; Adam uses the configured learning rate, Fisher damping,
-clipping, and moment parameters. Adam initializes a **fresh optimizer at the
-start of every ROM-only sequence**, reuses its moments within that sequence,
-and never changes the outer Adam moments. Newton substeps recompute **both
-a fresh gradient and Hessian** and use the configured metric, curvature type,
+clipping, and moment parameters. At the start of a ROM-only sequence,
+Adam snapshots the **outer optimizer's first moment, second moment, and
+iteration counter** (after the outer step). Each inner gradient produces a
+hypothetical Adam update from this **same frozen snapshot**, including the
+outer iteration's bias correction and Fisher damping schedule. Neither the
+outer state nor the snapshot accumulates ROM gradients. This avoids repeated
+cold-starts while leaving outer Adam history unchanged. Newton substeps
+recompute **both a fresh gradient and Hessian** and use the configured metric,
+curvature type,
 and regularization. All inner updates respect the existing covariance and
 step-limiting safeguards.
 
