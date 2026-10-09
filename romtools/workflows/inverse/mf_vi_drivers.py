@@ -2935,10 +2935,6 @@ def run_mf_vi(model: QoiModel,
                     step_size=step_size,
                     outer_method=optimization_method,
                     optimizer_config=resolved_optimizer_config,
-                    outer_adam_solver=(
-                        steepest_descent_solver if optimization_method == 'adam'
-                        else None
-                    ),
                     max_mean_update_std=max_mean_update_std,
                     max_log_std_update=max_log_std_update,
                     min_variational_std=min_variational_std,

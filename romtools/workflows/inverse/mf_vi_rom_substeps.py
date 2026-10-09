@@ -1,11 +1,10 @@
 """ROM-only optimizer substeps for multifidelity variational inference.
 
-Substeps inherit the outer optimizer method and configuration. Adam substeps
-reuse a frozen snapshot of the outer optimizer's moments and iteration counter,
-without changing them. Every ROM gradient produces a hypothetical Adam step
-from that same snapshot. Newton substeps recompute both the gradient and
-Hessian at each variational state. No high-fidelity model calls or
-multifidelity control variates occur in these steps.
+Substeps inherit the outer optimizer method and configuration. Stateful
+optimizers (e.g., Adam) start with fresh state for each ROM-only sequence,
+without affecting the outer optimizer. Newton substeps recompute both the
+gradient and Hessian at each variational state. No high-fidelity model calls
+or multifidelity control variates occur in these steps.
 """
 from __future__ import annotations
 
@@ -50,49 +49,19 @@ def rom_substep_restart_data(start, end, count):
     )
 
 
-class _FrozenAdamOptimizer:
-    """Produce independent hypothetical Adam updates from one fixed state.
-
-    The supplied outer state is copied once; before *each* ROM-only gradient,
-    the shadow optimizer is restored to that same snapshot. Thus the ROM
-    gradients influence the parameter update but cannot change the moment
-    history or Adam iteration count used by subsequent ROM substeps.
-    """
-
-    def __init__(self, config, outer_solver, parameter_dimension=None):
-        from romtools.workflows.inverse.vi_optimization_methods import AdamSolver
-
-        if not isinstance(outer_solver, AdamSolver):
-            raise TypeError("Adam ROM substeps require the outer AdamSolver")
-        if (parameter_dimension is not None
-                and outer_solver.parameter_dimension not in (None, parameter_dimension)):
-            raise ValueError("Outer Adam parameter dimension does not match ROM")
-        self._snapshot = outer_solver.restart_state_dict()
-        self._solver = AdamSolver.from_config(config)
-        self._solver.parameter_dimension = outer_solver.parameter_dimension
-        # Validate configuration and snapshot as soon as the ROM sequence starts.
-        self._solver.load_restart_state_dict(self._snapshot)
-
-    def step(self, gradient, fisher_diagonal=None):
-        self._solver.load_restart_state_dict(self._snapshot)
-        return self._solver.step(gradient, fisher_diagonal=fisher_diagonal)
-
-
-def _rom_optimizer(outer_method, optimizer_config, *,
-                   parameter_dimension=None, outer_adam_solver=None):
-    """Use the configured method while keeping outer optimizer state intact."""
+def _rom_optimizer(outer_method, optimizer_config, *, parameter_dimension=None):
+    """Initialize an independent inner optimizer with the outer configuration."""
     from romtools.workflows.inverse.vi_optimization_methods import (
-        SteepestDescentSolver,
+        AdamSolver, SteepestDescentSolver,
     )
 
     method = outer_method.strip().lower()
     if method not in ("gradient", "adam", "newton"):
         raise ValueError(f"Unsupported ROM-only optimizer method: {outer_method}")
     if method == "adam":
-        solver = _FrozenAdamOptimizer(
-            optimizer_config, outer_adam_solver,
-            parameter_dimension=parameter_dimension,
-        )
+        solver = AdamSolver.from_config(optimizer_config)
+        if parameter_dimension is not None:
+            solver.parameter_dimension = parameter_dimension
     elif method == "gradient":
         solver = SteepestDescentSolver()
     else:
@@ -110,7 +79,6 @@ def apply_diagonal_rom_substeps(
     step_size,
     outer_method,
     optimizer_config,
-    outer_adam_solver=None,
     max_mean_update_std,
     max_log_std_update,
     min_variational_std,
@@ -142,9 +110,7 @@ def apply_diagonal_rom_substeps(
     from romtools.workflows.inverse import vi_drivers as vi
     from romtools.workflows.inverse import vi_sample_reuse as reuse
 
-    method, solver = _rom_optimizer(
-        outer_method, optimizer_config, outer_adam_solver=outer_adam_solver,
-    )
+    method, solver = _rom_optimizer(outer_method, optimizer_config)
     gradient_method = (
         optimizer_config.gradient_method.strip().lower()
         if method in ("gradient", "adam") else "standard"
@@ -206,8 +172,8 @@ def apply_diagonal_rom_substeps(
             )
         else:
             if method == "adam":
-                # Match outer mean-field Adam's Fisher preconditioning.
-                # Each gradient uses a hypothetical step from frozen moments.
+                # Match outer mean-field Adam: raw score gradient, with
+                # optional damped Fisher preconditioning. Moments are local.
                 gradient = np.r_[
                     rom_state["gradient_mean"], rom_state["gradient_log_std"]
                 ]
@@ -258,7 +224,6 @@ def apply_full_covariance_rom_substeps(
     step_size,
     outer_method,
     optimizer_config,
-    outer_adam_solver=None,
     max_covariance_log_step,
     min_variational_std,
     max_variational_std,
@@ -294,8 +259,7 @@ def apply_full_covariance_rom_substeps(
 
     mean = np.asarray(candidate_mean, dtype=float).copy()
     method, solver = _rom_optimizer(
-        outer_method, optimizer_config, parameter_dimension=mean.size,
-        outer_adam_solver=outer_adam_solver,
+        outer_method, optimizer_config, parameter_dimension=mean.size
     )
     gradient_method = (
         optimizer_config.gradient_method.strip().lower()
