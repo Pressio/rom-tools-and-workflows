@@ -453,6 +453,9 @@
     <span class="n">max_covariance_log_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="n">create_run_directories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">sample_reuse_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">rom_substep_start_iteration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">rom_substep_end_iteration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">num_rom_substeps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Run full-covariance MF-VI with a built-in adaptive surrogate builder."""</span>
     <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">variational_distribution</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
@@ -543,6 +546,9 @@
         <span class="n">max_covariance_log_step</span><span class="o">=</span><span class="n">max_covariance_log_step</span><span class="p">,</span>
         <span class="n">create_run_directories</span><span class="o">=</span><span class="n">create_run_directories</span><span class="p">,</span>
         <span class="n">sample_reuse_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">rom_substep_start_iteration</span><span class="o">=</span><span class="n">rom_substep_start_iteration</span><span class="p">,</span>
+        <span class="n">rom_substep_end_iteration</span><span class="o">=</span><span class="n">rom_substep_end_iteration</span><span class="p">,</span>
+        <span class="n">num_rom_substeps</span><span class="o">=</span><span class="n">num_rom_substeps</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 </pre></div>

@@ -24,6 +24,7 @@ romtools.workflows.inverse
    full_covariance_vi_drivers
    mf_eki_drivers
    mf_vi_drivers
+   mf_vi_rom_substeps
    vi_default_policy
    vi_drivers
    vi_optimization_methods

@@ -401,6 +401,7 @@
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-problem-definition">Shared problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerating-the-figures">Regenerating the figures</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rom-only-newton-substeps">ROM-only Newton substeps</a></li>
 </ul>
   </nav></div>
     </div>
@@ -1701,6 +1702,38 @@ utilities are shared by both examples:</p>
 </pre></div>
 </div>
 </section>
+<section id="rom-only-newton-substeps">
+<h2>ROM-only Newton substeps<a class="headerlink" href="#rom-only-newton-substeps" title="Link to this heading">#</a></h2>
+<p>MF-VI can optionally perform a fixed number of inexpensive <strong>ROM-only Newton
+updates</strong> between FOM-anchored iterations, mirroring the MF-EKI substep window.
+For example, add the following keyword arguments to <code class="docutils literal notranslate"><span class="pre">run_mf_vi</span></code> or
+<code class="docutils literal notranslate"><span class="pre">mf_vi_with_auto_rom</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rom_substep_start_iteration</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="n">rom_substep_end_iteration</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="n">num_rom_substeps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>The defaults are <code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, and <code class="docutils literal notranslate"><span class="pre">0</span></code>, respectively; therefore ROM
+substeps are disabled unless requested. The start index is inclusive and the
+end index exclusive, counting only outer MF-VI iterations.</p>
+<p><strong>Every ROM-only substep estimates a fresh gradient and Hessian</strong> of the
+single-fidelity ROM ELBO at its current variational distribution. The regularized
+Newton solve updates the variational mean and covariance (or mean and log
+standard deviation in diagonal MF-VI), using the same positivity and
+step-limiting safeguards as the existing VI Newton solvers. For outer
+Newton optimization, the chosen curvature type, metric, and regularization
+settings also govern ROM-only Newton updates; gradient/Adam outer workflows
+use a separate regularized Newton inner solve without altering Adam moments.</p>
+<p>The ROM remains frozen during substeps. The final proposed distribution is
+evaluated by the existing multifidelity FOM/ROM candidate check and rejected
+as a whole if its outer line search fails. ROM-only substeps do not perform
+FOM evaluations, refresh the ROM training set, or independently terminate
+the solve. They are distinct from the ABRIS sample-reuse batch-refresh loop.</p>
+<p>Because the inner Newton direction uses an approximate ROM objective, this
+acceleration is not guaranteed to reduce FOM work on every problem. A finite
+end iteration can disable it near convergence if ROM directional errors cause
+oscillation.</p>
+</section>
 </section>
 
 
@@ -1744,6 +1777,7 @@ utilities are shared by both examples:</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-problem-definition">Shared problem definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regenerating-the-figures">Regenerating the figures</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rom-only-newton-substeps">ROM-only Newton substeps</a></li>
 </ul>
   </nav></div>
 

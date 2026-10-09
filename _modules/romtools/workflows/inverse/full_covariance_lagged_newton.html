@@ -518,6 +518,7 @@
     <span class="n">call_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">call_kwargs</span><span class="p">[</span><span class="s2">"optimizer_method"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"gradient"</span>
     <span class="n">call_kwargs</span><span class="p">[</span><span class="s2">"optimizer_config"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_base</span><span class="o">.</span><span class="n">_gradient_config_from_newton</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">call_kwargs</span><span class="p">[</span><span class="s2">"rom_substep_newton_config"</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
     <span class="k">with</span> <span class="n">_accepted_state_hessian_averaging</span><span class="p">(</span>
         <span class="n">config</span><span class="p">,</span> <span class="s2">"estimate_mf_ordinary_hessian"</span>
     <span class="p">):</span>
