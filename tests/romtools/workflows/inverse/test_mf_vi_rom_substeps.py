@@ -348,53 +348,68 @@ def test_diagonal_rom_gradient_inherits_natural_gradient(monkeypatch):
 
 
 @pytest.mark.mpi_skip
-def test_diagonal_rom_adam_has_fresh_state_per_sequence(monkeypatch):
+def test_diagonal_rom_adam_uses_frozen_outer_moments(monkeypatch):
     from romtools.workflows.inverse import vi_sample_reuse as reuse
     from romtools.workflows.inverse.vi_optimization_methods import (
         AdamSolver, VIAdamOptimizerConfig,
     )
 
     config = VIAdamOptimizerConfig(
-        gradient_method="standard", learning_rate=0.1
+        gradient_method="standard", learning_rate=0.1, beta1=0.8, beta2=0.9
     )
-    # An existing outer optimizer must not be modified by ROM substeps.
     outer = AdamSolver.from_config(config)
-    outer.step(np.array([1.0, 0.0]))
+    outer.step(np.array([2.0, -0.5]))
+    outer.step(np.array([-0.7, 0.2]))
     outer_state = outer.restart_state_dict()
-    real_factory = AdamSolver.from_config
-    created = []
-
-    def tracked_factory(cls, cfg):
-        instance = real_factory(cfg)
-        created.append(instance)
-        return instance
-
-    monkeypatch.setattr(AdamSolver, "from_config", classmethod(tracked_factory))
-    observed = []
+    gradients = [np.array([-2.0, 0.3]), np.array([1.0, -0.4])]
+    seen = []
 
     def evaluate(**kwargs):
-        observed.append(kwargs["variational_mean"].copy())
+        seen.append(kwargs["variational_mean"].copy())
         assert kwargs["gradient_method"] == "standard"
-        return {
-            "gradient_mean": np.array([1.0]),
-            "gradient_log_std": np.array([0.0]),
-        }
+        grad = gradients[(len(seen) - 1) % len(gradients)]
+        return {"gradient_mean": grad[:1], "gradient_log_std": grad[1:]}
 
     monkeypatch.setattr(reuse, "_ORIGINAL_EVALUATE_VI_STATE", evaluate)
     args = _diagonal_inner_kwargs("adam", config)
-    first_mean, _ = substeps.apply_diagonal_rom_substeps(**args)
-    second_mean, _ = substeps.apply_diagonal_rom_substeps(**args)
-    assert first_mean[0] == pytest.approx(0.2)
-    assert second_mean[0] == pytest.approx(0.2)
-    assert len(observed) == 4
-    assert observed[0][0] == observed[2][0] == 0.0
-    assert observed[1][0] == pytest.approx(0.1)
-    assert len(created) == 2 and created[0] is not created[1]
-    assert all(solver.iteration == 2 for solver in created)
+    args["outer_adam_solver"] = outer
+    args["step_size"] = 0.2
+
+    # Each hypothetical step must be computed from the SAME original state,
+    # not from an uninitialized solver or the previous ROM gradient's moments.
+    expected_directions = []
+    for gradient in gradients:
+        shadow = AdamSolver.from_config(config)
+        shadow.load_restart_state_dict(outer_state)
+        expected_directions.append(shadow.step(gradient))
+    expected = 0.2 * np.sum(expected_directions, axis=0)
+
+    first_mean, first_log_std = substeps.apply_diagonal_rom_substeps(**args)
+    second_mean, second_log_std = substeps.apply_diagonal_rom_substeps(**args)
+    assert first_mean[0] == pytest.approx(expected[0])
+    assert first_log_std[0] == pytest.approx(expected[1])
+    np.testing.assert_allclose(second_mean, first_mean)
+    np.testing.assert_allclose(second_log_std, first_log_std)
+    assert len(seen) == 4
+    assert not np.array_equal(seen[0], seen[1])
+    assert np.array_equal(seen[0], seen[2])
     assert outer.iteration == outer_state["adam_iteration"]
     np.testing.assert_array_equal(
         outer.first_moment, outer_state["adam_first_moment"]
     )
+    np.testing.assert_array_equal(
+        outer.second_moment, outer_state["adam_second_moment"]
+    )
+
+
+@pytest.mark.mpi_skip
+def test_rom_adam_requires_outer_optimizer_state():
+    from romtools.workflows.inverse.vi_optimization_methods import VIAdamOptimizerConfig
+
+    with pytest.raises(TypeError, match="outer AdamSolver"):
+        substeps.apply_diagonal_rom_substeps(**_diagonal_inner_kwargs(
+            "adam", VIAdamOptimizerConfig(gradient_method="standard")
+        ))
 
 
 @pytest.mark.mpi_skip
@@ -426,46 +441,59 @@ def test_full_covariance_rom_gradient_inherits_natural_gradient(monkeypatch):
 
 
 @pytest.mark.mpi_skip
-def test_full_covariance_rom_adam_keeps_inner_moments_and_resets(monkeypatch):
+def test_full_covariance_rom_adam_uses_frozen_outer_moments(monkeypatch):
     from romtools.workflows.inverse import full_covariance_vi_drivers as fcvi
     from romtools.workflows.inverse.vi_optimization_methods import (
         AdamSolver, VIAdamOptimizerConfig,
     )
 
     config = VIAdamOptimizerConfig(
-        gradient_method="natural", learning_rate=0.1
+        gradient_method="natural", learning_rate=0.1, beta1=0.8, beta2=0.9
     )
-    real_factory = AdamSolver.from_config
-    created = []
-
-    def tracked_factory(cls, cfg):
-        instance = real_factory(cfg)
-        created.append(instance)
-        return instance
-
-    monkeypatch.setattr(AdamSolver, "from_config", classmethod(tracked_factory))
+    outer = AdamSolver.from_config(config)
+    outer.parameter_dimension = 1
+    outer.step(np.array([2.0, 0.0]))
+    outer.step(np.array([-0.5, 0.0]))
+    outer_state = outer.restart_state_dict()
+    gradients = [1.0, -2.0]
     observed = []
 
     def evaluate(**kwargs):
-        observed.append(kwargs["variational_mean"].copy())
         assert kwargs["gradient_method"] == "natural"
+        observed.append(kwargs["variational_mean"].copy())
+        value = gradients[(len(observed) - 1) % len(gradients)]
         return {
-            "gradient_mean": np.array([1.0]),
-            "gradient_covariance_svec": np.array([0.0]),
-            "update_direction_mean": np.array([1.0]),
-            "update_direction_covariance_svec": np.array([0.0]),
+            "gradient_mean": np.array([value]),
+            "gradient_covariance_svec": np.zeros(1),
+            "update_direction_mean": np.array([value]),
+            "update_direction_covariance_svec": np.zeros(1),
         }
 
     monkeypatch.setattr(fcvi, "_evaluate_single_fidelity_state", evaluate)
     args = _full_covariance_inner_kwargs("adam", config)
+    args["outer_adam_solver"] = outer
+    args["step_size"] = 0.2
+
+    expected = 0.0
+    for value in gradients:
+        shadow = AdamSolver.from_config(config)
+        shadow.parameter_dimension = 1
+        shadow.load_restart_state_dict(outer_state)
+        expected += 0.2 * shadow.step(np.array([value, 0.0]))[0]
+
     a, chol_a = substeps.apply_full_covariance_rom_substeps(**args)
     b, chol_b = substeps.apply_full_covariance_rom_substeps(**args)
-    assert a[0] == pytest.approx(0.2)
-    assert b[0] == pytest.approx(0.2)
+    assert a[0] == pytest.approx(expected)
+    assert b[0] == pytest.approx(expected)
     assert len(observed) == 4
-    assert observed[1][0] == pytest.approx(0.1)
-    assert len(created) == 2 and created[0] is not created[1]
-    assert all(solver.iteration == 2 for solver in created)
-    assert all(solver.parameter_dimension == 1 for solver in created)
+    assert not np.array_equal(observed[0], observed[1])
+    assert np.array_equal(observed[0], observed[2])
+    assert outer.iteration == outer_state["adam_iteration"]
+    np.testing.assert_array_equal(
+        outer.first_moment, outer_state["adam_first_moment"]
+    )
+    np.testing.assert_array_equal(
+        outer.second_moment, outer_state["adam_second_moment"]
+    )
     assert np.linalg.eigvalsh(chol_a @ chol_a.T).min() > 0.0
     assert np.linalg.eigvalsh(chol_b @ chol_b.T).min() > 0.0
