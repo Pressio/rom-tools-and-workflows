@@ -130,6 +130,10 @@ import numpy as np
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
 from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
+from romtools.workflows.inverse.mf_vi_rom_substeps import (
+    apply_diagonal_rom_substeps, validate_rom_substeps, rom_substeps_enabled,
+    restore_rom_substeps, rom_substep_restart_data,
+)
 from romtools.workflows.inverse.vi_optimization_methods import (
     AdamSolver,
     SteepestDescentSolver,
@@ -929,6 +933,9 @@ def _save_mf_vi_restart(restart_path: str,
                         accepted_elbo_history=None,
                         adam_restart_data=None,
                         adam_gradient_method: str = None,
+                        rom_substep_start_iteration: int = 0,
+                        rom_substep_end_iteration: Optional[int] = None,
+                        num_rom_substeps: int = 0,
                         dispatcher: Optional[BaseDispatcher] = None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
@@ -993,6 +1000,9 @@ def _save_mf_vi_restart(restart_path: str,
         gradient_signal_to_noise_ratio=float(state.get('gradient_signal_to_noise_ratio', np.nan)),
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
+    save_data.update(rom_substep_restart_data(
+        rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+    ))
     if running_hessian is not None:
         save_data['running_hessian'] = running_hessian
     if accepted_elbo_history is not None:
@@ -1797,7 +1807,10 @@ def run_mf_vi(model: QoiModel,
               dispatcher: Optional[BaseDispatcher] = None,
               *,
               absolute_vi_directory: str = None,
-              score_function_entropy_strategy: str = 'analytic'):
+              score_function_entropy_strategy: str = 'analytic',
+              rom_substep_start_iteration: int = 0,
+              rom_substep_end_iteration: Optional[int] = None,
+              num_rom_substeps: int = 0):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
@@ -1868,6 +1881,9 @@ def run_mf_vi(model: QoiModel,
     if absolute_work_dir is None:
         absolute_work_dir = os.getcwd() + "/work/"
 
+    validate_rom_substeps(
+        rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+    )
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     start_time = time.time()
@@ -2204,6 +2220,12 @@ def run_mf_vi(model: QoiModel,
         initial_elbo_reference = float(state['elbo'])
     else:
         restart_data = np.load(restart_file, allow_pickle=True)
+        (
+            rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+        ) = restore_rom_substeps(
+            restart_data, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        )
         vi_history = _load_vi_history_from_restart(restart_data)
         if 'rng_state' in restart_data:
             np.random.set_state(tuple(restart_data['rng_state'].tolist()))
@@ -2594,6 +2616,9 @@ def run_mf_vi(model: QoiModel,
             if optimization_method == 'adam' else None
         ),
         adam_gradient_method=(gradient_method if optimization_method == 'adam' else None),
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
         dispatcher=dispatcher,
     )
     _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
@@ -2896,6 +2921,57 @@ def run_mf_vi(model: QoiModel,
                     + np.dot(state['gradient_log_std'], direction_log_std)
                 )
 
+        if rom_substeps_enabled(
+            iteration - 1, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        ):
+            test_variational_mean, test_variational_log_std = (
+                apply_diagonal_rom_substeps(
+                    rom_model=state['rom_model'],
+                    candidate_mean=test_variational_mean,
+                    candidate_log_std=test_variational_log_std,
+                    outer_iteration=iteration - 1,
+                    num_rom_substeps=num_rom_substeps,
+                    step_size=step_size,
+                    outer_method=optimization_method,
+                    optimizer_config=resolved_optimizer_config,
+                    max_mean_update_std=max_mean_update_std,
+                    max_log_std_update=max_log_std_update,
+                    min_variational_std=min_variational_std,
+                    max_variational_std=max_variational_std,
+                    observations=observations,
+                    observations_covariance=observations_covariance,
+                    parameter_names=parameter_names,
+                    prior_mean=prior_mean,
+                    prior_precision_operator=prior_precision_operator,
+                    prior_covariance_log_det=prior_covariance_log_det,
+                    sample_size=max(current_fom_sample_size, current_rom_extra_sample_size),
+                    evaluation_concurrency=rom_evaluation_concurrency,
+                    covariance_regularization=covariance_regularization,
+                    baseline_method=baseline_method,
+                    bounded_parameter_handling=bounded_parameter_handling,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
+                    transform_map=transform_map,
+                    min_physical_variational_std_fraction=min_physical_variational_std_fraction,
+                    variational_correlation_cholesky=variational_correlation_cholesky,
+                    elbo_scaling_factor=elbo_scaling_factor,
+                    log_likelihood_precision_operator=log_likelihood_precision_operator,
+                    sampling_method=sampling_method,
+                    score_function_entropy_strategy=score_function_entropy_strategy,
+                    directory=f'{absolute_work_dir}/iteration_{iteration}',
+                    dispatcher=resolve_local_dispatcher(dispatcher),
+                )
+            )
+            # The line search must assess the entire proposed outer + ROM step.
+            line_search_predicted_slope = float(
+                np.dot(state['gradient_mean'],
+                       (test_variational_mean - variational_mean) / step_size)
+                + np.dot(state['gradient_log_std'],
+                         (test_variational_log_std - variational_log_std) / step_size)
+            )
+
         test_state = _evaluate_mf_vi_state(
             model=model,
             rom_model=state['rom_model'],
@@ -3144,6 +3220,9 @@ def run_mf_vi(model: QoiModel,
                 adam_gradient_method=(
                     gradient_method if optimization_method == 'adam' else None
                 ),
+                rom_substep_start_iteration=rom_substep_start_iteration,
+                rom_substep_end_iteration=rom_substep_end_iteration,
+                num_rom_substeps=num_rom_substeps,
                 dispatcher=dispatcher,
             )
             _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
@@ -3250,7 +3329,10 @@ def mf_vi_with_auto_rom(model: QoiModel,
                         dispatcher: Optional[BaseDispatcher] = None,
                         *,
                         absolute_vi_directory: str = None,
-                        score_function_entropy_strategy: str = 'analytic'):
+                        score_function_entropy_strategy: str = 'analytic',
+                        rom_substep_start_iteration: int = 0,
+                        rom_substep_end_iteration: Optional[int] = None,
+                        num_rom_substeps: int = 0):
     """
     Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
     Accepts the same rom_base_sampling_strategy options as run_mf_vi.
@@ -3355,4 +3437,7 @@ def mf_vi_with_auto_rom(model: QoiModel,
         min_physical_variational_std_fraction=min_physical_variational_std_fraction,
         dispatcher=dispatcher,
         score_function_entropy_strategy=score_function_entropy_strategy,
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
     )

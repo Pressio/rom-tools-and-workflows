@@ -346,3 +346,42 @@ A reduced CI configuration exercises both examples with
 .. code-block:: bash
 
    python examples/vi_mf_vi_demo/example.py --smoke
+
+
+ROM-only Newton substeps
+------------------------
+
+MF-VI can optionally perform a fixed number of inexpensive **ROM-only Newton
+updates** between FOM-anchored iterations, mirroring the MF-EKI substep window.
+For example, add the following keyword arguments to ``run_mf_vi`` or
+``mf_vi_with_auto_rom``:
+
+.. code-block:: python
+
+   rom_substep_start_iteration=0,
+   rom_substep_end_iteration=20,
+   num_rom_substeps=2,
+
+The defaults are ``0``, ``None``, and ``0``, respectively; therefore ROM
+substeps are disabled unless requested. The start index is inclusive and the
+end index exclusive, counting only outer MF-VI iterations.
+
+**Every ROM-only substep estimates a fresh gradient and Hessian** of the
+single-fidelity ROM ELBO at its current variational distribution. The regularized
+Newton solve updates the variational mean and covariance (or mean and log
+standard deviation in diagonal MF-VI), using the same positivity and
+step-limiting safeguards as the existing VI Newton solvers. For outer
+Newton optimization, the chosen curvature type, metric, and regularization
+settings also govern ROM-only Newton updates; gradient/Adam outer workflows
+use a separate regularized Newton inner solve without altering Adam moments.
+
+The ROM remains frozen during substeps. The final proposed distribution is
+evaluated by the existing multifidelity FOM/ROM candidate check and rejected
+as a whole if its outer line search fails. ROM-only substeps do not perform
+FOM evaluations, refresh the ROM training set, or independently terminate
+the solve. They are distinct from the ABRIS sample-reuse batch-refresh loop.
+
+Because the inner Newton direction uses an approximate ROM objective, this
+acceleration is not guaranteed to reduce FOM work on every problem. A finite
+end iteration can disable it near convergence if ROM directional errors cause
+oscillation.

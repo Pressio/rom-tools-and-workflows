@@ -492,6 +492,7 @@ def run_mf_vi(*args, **kwargs):
     call_kwargs = dict(kwargs)
     call_kwargs["optimizer_method"] = "gradient"
     call_kwargs["optimizer_config"] = _gradient_config_from_newton(config)
+    call_kwargs["rom_substep_newton_config"] = config
     with _patched_mf_newton(config):
         return _fc_mf.run_mf_vi(*args, **call_kwargs)
 

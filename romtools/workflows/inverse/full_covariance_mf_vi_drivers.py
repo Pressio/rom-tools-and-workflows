@@ -12,7 +12,11 @@ import warnings
 
 import numpy as np
 
-from romtools.hpc.dispatchers import resolve_dispatcher
+from romtools.hpc.dispatchers import resolve_dispatcher, resolve_local_dispatcher
+from romtools.workflows.inverse.mf_vi_rom_substeps import (
+    apply_full_covariance_rom_substeps, validate_rom_substeps,
+    rom_substeps_enabled, restore_rom_substeps, rom_substep_restart_data,
+)
 from romtools.workflows.inverse import mf_vi_drivers as _mf
 from romtools.workflows.inverse import vi_drivers as _vi
 from romtools.workflows.inverse import vi_run_directory_policy as _directory_policy
@@ -405,6 +409,9 @@ def _save_mf_restart(
     max_covariance_log_step,
     adam_solver,
     dispatcher,
+    rom_substep_start_iteration=0,
+    rom_substep_end_iteration=None,
+    num_rom_substeps=0,
 ):
     data = {
         "variational_mean": _vi._get_persisted_variational_mean(
@@ -439,6 +446,9 @@ def _save_mf_restart(
         "rom_training_parameters": state["rom_training_parameters"],
         "rom_training_qois": state["rom_training_qois"],
     }
+    data.update(rom_substep_restart_data(
+        rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+    ))
     if adam_solver is not None:
         data.update(adam_solver.restart_state_dict())
         data["adam_gradient_method"] = gradient_method
@@ -528,7 +538,14 @@ def _run_full_covariance_mf_vi(
     dispatcher,
     score_function_entropy_strategy,
     max_covariance_log_step,
+    rom_substep_start_iteration=0,
+    rom_substep_end_iteration=None,
+    num_rom_substeps=0,
+    rom_substep_newton_config=None,
 ):
+    validate_rom_substeps(
+        rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+    )
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
     if absolute_work_dir is None:
@@ -672,6 +689,12 @@ def _run_full_covariance_mf_vi(
         cholesky = robust_cholesky(optimizer_covariance)
     else:
         restart_data = np.load(restart_file, allow_pickle=True)
+        (
+            rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
+        ) = restore_rom_substeps(
+            restart_data, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        )
         if str(restart_data["variational_distribution"].item()) != "full_covariance":
             raise ValueError("restart_file is not a full-covariance MF-VI restart")
         if "rng_state" in restart_data:
@@ -815,6 +838,9 @@ def _run_full_covariance_mf_vi(
         max_covariance_log_step=max_covariance_log_step,
         adam_solver=adam_solver,
         dispatcher=dispatcher,
+        rom_substep_start_iteration=rom_substep_start_iteration,
+        rom_substep_end_iteration=rom_substep_end_iteration,
+        num_rom_substeps=num_rom_substeps,
     )
     _vi._prune_old_restart_files(
         absolute_work_dir, restart_files_to_keep, dispatcher
@@ -867,6 +893,50 @@ def _run_full_covariance_mf_vi(
             min_physical_variational_std_fraction,
             transform_map,
         )
+        if rom_substeps_enabled(
+            iteration - 1, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        ):
+            candidate_mean, candidate_cholesky = (
+                apply_full_covariance_rom_substeps(
+                    rom_model=state['rom_model'],
+                    candidate_mean=candidate_mean,
+                    candidate_cholesky=candidate_cholesky,
+                    outer_iteration=iteration - 1,
+                    num_rom_substeps=num_rom_substeps,
+                    step_size=step_size,
+                    outer_method=('newton' if rom_substep_newton_config is not None
+                                  else optimization_method),
+                    optimizer_config=(rom_substep_newton_config
+                                      if rom_substep_newton_config is not None else config),
+                    max_covariance_log_step=max_covariance_log_step,
+                    min_variational_std=min_variational_std,
+                    max_variational_std=max_variational_std,
+                    min_physical_variational_std_fraction=min_physical_variational_std_fraction,
+                    observations=observations,
+                    observations_covariance=observations_covariance,
+                    parameter_names=parameter_names,
+                    prior_mean=prior_mean,
+                    prior_precision_operator=prior_precision,
+                    prior_covariance_log_det=prior_log_det,
+                    sample_size=max(current_fom_size, current_rom_extra),
+                    evaluation_concurrency=rom_evaluation_concurrency,
+                    covariance_regularization=covariance_regularization,
+                    baseline_method=baseline_method,
+                    bounded_parameter_handling=bounded_parameter_handling,
+                    parameter_mins=parameter_mins,
+                    parameter_maxes=parameter_maxes,
+                    transform_interior_margin=transform_interior_margin,
+                    transform_map=transform_map,
+                    elbo_scaling_factor=elbo_scaling_factor,
+                    log_likelihood_precision_operator=log_likelihood_precision,
+                    sampling_method=sampling_method,
+                    score_function_entropy_strategy=score_function_entropy_strategy,
+                    directory=f'{absolute_work_dir}/iteration_{iteration}',
+                    dispatcher=resolve_local_dispatcher(dispatcher),
+                )
+            )
+
         candidate = _evaluate_mf_state(
             model=model,
             rom_model=state["rom_model"],
@@ -919,6 +989,15 @@ def _run_full_covariance_mf_vi(
         effective_direction = np.concatenate(
             [direction_mean, covariance_scale * direction_covariance]
         )
+        if rom_substeps_enabled(
+            iteration - 1, rom_substep_start_iteration,
+            rom_substep_end_iteration, num_rom_substeps,
+        ):
+            effective_direction = np.concatenate([
+                (candidate_mean - mean) / step_size,
+                svec(covariance_from_cholesky(candidate_cholesky)
+                     - covariance_from_cholesky(cholesky)) / step_size,
+            ])
         predicted_slope = float(
             np.dot(ordinary_gradient, effective_direction)
         )
@@ -998,6 +1077,9 @@ def _run_full_covariance_mf_vi(
                 max_covariance_log_step=max_covariance_log_step,
                 adam_solver=adam_solver,
                 dispatcher=dispatcher,
+                rom_substep_start_iteration=rom_substep_start_iteration,
+                rom_substep_end_iteration=rom_substep_end_iteration,
+                num_rom_substeps=num_rom_substeps,
             )
             _vi._prune_old_restart_files(
                 absolute_work_dir, restart_files_to_keep, dispatcher
@@ -1081,6 +1163,10 @@ def run_mf_vi(
     max_covariance_log_step: float = 1.0,
     create_run_directories: bool = True,
     sample_reuse_config=None,
+    rom_substep_start_iteration: int = 0,
+    rom_substep_end_iteration=None,
+    num_rom_substeps: int = 0,
+    rom_substep_newton_config=None,
 ):
     """Run MF-VI with an optional true full-covariance Gaussian family."""
     distribution = _resolve_variational_distribution(
@@ -1131,6 +1217,9 @@ def run_mf_vi(
             score_function_entropy_strategy=score_function_entropy_strategy,
             create_run_directories=create_run_directories,
             sample_reuse_config=sample_reuse_config,
+            rom_substep_start_iteration=rom_substep_start_iteration,
+            rom_substep_end_iteration=rom_substep_end_iteration,
+            num_rom_substeps=num_rom_substeps,
         )
     if sample_reuse_config is not None:
         raise NotImplementedError(
@@ -1188,6 +1277,10 @@ def run_mf_vi(
             dispatcher=dispatcher,
             score_function_entropy_strategy=score_function_entropy_strategy,
             max_covariance_log_step=max_covariance_log_step,
+            rom_substep_start_iteration=rom_substep_start_iteration,
+            rom_substep_end_iteration=rom_substep_end_iteration,
+            num_rom_substeps=num_rom_substeps,
+            rom_substep_newton_config=rom_substep_newton_config,
         )
 
 
