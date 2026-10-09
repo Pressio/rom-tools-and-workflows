@@ -1,0 +1,19 @@
+romtools.hpc.connection
+=======================
+
+.. automodule:: romtools.hpc.connection
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      run_local_bash
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Connection
+      Result
+   

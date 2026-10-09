@@ -1,0 +1,273 @@
+.demos-landing {
+  margin-top: 0.5rem;
+}
+
+.demos-hero-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 3rem 3rem 2.8rem;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(circle at 85% 20%, rgba(249, 115, 22, 0.24), transparent 28%),
+    radial-gradient(circle at 10% 90%, rgba(14, 116, 144, 0.16), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+}
+
+html[data-theme="dark"] .demos-hero-panel {
+  border-color: rgba(148, 163, 184, 0.16);
+  background:
+    radial-gradient(circle at 85% 20%, rgba(249, 115, 22, 0.22), transparent 28%),
+    radial-gradient(circle at 10% 90%, rgba(56, 189, 248, 0.12), transparent 30%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(8, 13, 25, 0.98));
+}
+
+.demos-hero-eyebrow,
+.demos-start-eyebrow {
+  margin-bottom: 0.75rem;
+  color: var(--docs-accent-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.demos-hero-heading {
+  margin: 0;
+  max-width: 46rem;
+  font-family: "Source Serif 4", "Times New Roman", serif;
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.demos-hero-copy {
+  max-width: 45rem;
+  margin: 1.15rem 0 0;
+  color: var(--docs-muted);
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+
+.demos-area-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.demos-area-card {
+  position: relative;
+  display: flex;
+  min-height: 23rem;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--docs-ink) !important;
+  text-decoration: none !important;
+  background: var(--docs-card);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.demos-area-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -16% -28% 28%;
+  height: 48%;
+  border-radius: 999px;
+  opacity: 0.12;
+  filter: blur(6px);
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.demos-area-rom::after {
+  background: #f97316;
+}
+
+.demos-area-surrogates::after {
+  background: #0e7490;
+}
+
+.demos-area-workflows::after {
+  background: #7c3aed;
+}
+
+.demos-area-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(15, 23, 42, 0.28);
+  box-shadow: 0 26px 54px rgba(15, 23, 42, 0.14);
+}
+
+.demos-area-card:hover::after {
+  transform: scale(1.08);
+  opacity: 0.18;
+}
+
+html[data-theme="dark"] .demos-area-card {
+  border-color: rgba(148, 163, 184, 0.16);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.5);
+}
+
+html[data-theme="dark"] .demos-area-card:hover {
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 28px 58px rgba(2, 6, 23, 0.7);
+}
+
+.demos-area-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+
+.demos-area-index {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--docs-muted);
+}
+
+.demos-area-arrow {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  font-size: 1.05rem;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.demos-area-card:hover .demos-area-arrow {
+  transform: translate(2px, -2px);
+  background: rgba(148, 163, 184, 0.11);
+}
+
+.demos-area-card h2 {
+  margin: 0 0 0.8rem;
+  font-family: "Source Serif 4", "Times New Roman", serif;
+  font-size: 1.8rem;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.demos-area-card p {
+  margin: 0;
+  color: var(--docs-muted);
+  line-height: 1.6;
+}
+
+.demos-area-tags {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.demos-area-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(248, 250, 252, 0.74);
+  color: var(--docs-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .demos-area-tags span {
+  border-color: rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.demos-start-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 1.25rem;
+  margin: 0 0 2rem;
+  padding: 1.5rem;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(248, 250, 252, 0.68);
+}
+
+html[data-theme="dark"] .demos-start-panel {
+  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.demos-start-copy h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.18;
+}
+
+.demos-start-links {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.demos-start-links a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--docs-card);
+  color: var(--docs-ink) !important;
+  text-decoration: none !important;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.demos-start-links a:hover {
+  transform: translateX(4px);
+  border-color: rgba(249, 115, 22, 0.42);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.demos-start-links span {
+  color: var(--docs-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .demos-area-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demos-area-card {
+    min-height: 0;
+  }
+
+  .demos-area-tags {
+    margin-top: 1.5rem;
+    padding-top: 0;
+  }
+
+  .demos-start-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .demos-hero-panel {
+    padding: 2.2rem 1.5rem;
+  }
+
+  .demos-area-card {
+    padding: 1.25rem;
+  }
+}
