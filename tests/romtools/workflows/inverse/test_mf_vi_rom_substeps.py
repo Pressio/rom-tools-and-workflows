@@ -266,6 +266,47 @@ def test_mfvi_substep_schedule_calls_only_requested_outer_iterations(
     )
     assert seen == [1]
 
+@pytest.mark.mpi_skip
+def test_mfvi_passes_updated_outer_adam_state_to_rom_substeps(
+    tmp_path, monkeypatch
+):
+    from romtools.workflows.inverse import mf_vi_drivers
+    from romtools.workflows.inverse.vi_optimization_methods import VIAdamOptimizerConfig
+
+    received = []
+
+    def fake_substeps(**kwargs):
+        solver = kwargs["outer_adam_solver"]
+        assert solver is not None
+        received.append((
+            solver.iteration,
+            solver.first_moment.copy(),
+            solver.second_moment.copy(),
+        ))
+        assert kwargs["outer_method"] == "adam"
+        # Return unchanged: this tests the outer-to-inner optimizer wiring.
+        return kwargs["candidate_mean"], kwargs["candidate_log_std"]
+
+    monkeypatch.setattr(mf_vi_drivers, "apply_diagonal_rom_substeps", fake_substeps)
+    options = _mfvi_kwargs(tmp_path / "adam_frozen")
+    options["optimizer_method"] = "adam"
+    options["optimizer_config"] = VIAdamOptimizerConfig(
+        gradient_method="standard", learning_rate=0.01,
+        max_iterations=3, gradient_norm_tolerance=0.0,
+    )
+    options["line_search_config"] = None
+    mf_vi_drivers.run_mf_vi(
+        **options,
+        rom_substep_start_iteration=0,
+        rom_substep_end_iteration=2,
+        num_rom_substeps=2,
+    )
+    assert len(received) == 2
+    assert [step[0] for step in received] == [1, 2]
+    assert all(np.any(step[1] != 0.0) for step in received)
+    assert all(np.any(step[2] != 0.0) for step in received)
+
+
 def _diagonal_inner_kwargs(method, config):
     """Arguments for fast mocked ROM-only unit tests."""
     return dict(
