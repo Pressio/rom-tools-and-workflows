@@ -189,7 +189,7 @@ class _Builder:
 
 
 def _mfvi_kwargs(tmp_path):
-    from romtools.workflows.parameter_spaces import GaussianParameterSpace
+    from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
     from romtools.workflows.inverse.vi_optimization_methods import (
         VIGradientOptimizerConfig, VILegacyLineSearchConfig,
     )
@@ -197,6 +197,7 @@ def _mfvi_kwargs(tmp_path):
         parameter_names=["theta"],
         means=np.zeros(1),
         stds=np.ones(1),
+        sampler=MonteCarloSampler,
     )
     return dict(
         model=_LinearModel(),
