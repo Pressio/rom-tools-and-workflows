@@ -2964,6 +2964,13 @@ def run_mf_vi(model: QoiModel,
                     dispatcher=resolve_local_dispatcher(dispatcher),
                 )
             )
+            # The line search must assess the entire proposed outer + ROM step.
+            line_search_predicted_slope = float(
+                np.dot(state['gradient_mean'],
+                       (test_variational_mean - variational_mean) / step_size)
+                + np.dot(state['gradient_log_std'],
+                         (test_variational_log_std - variational_log_std) / step_size)
+            )
 
         test_state = _evaluate_mf_vi_state(
             model=model,
