@@ -519,10 +519,12 @@
                   
   <section id="module-romtools.workflows.inverse.mf_vi_rom_substeps">
 <span id="romtools-workflows-inverse-mf-vi-rom-substeps"></span><h1>romtools.workflows.inverse.mf_vi_rom_substeps<a class="headerlink" href="#module-romtools.workflows.inverse.mf_vi_rom_substeps" title="Link to this heading">#</a></h1>
-<p>ROM-only Newton substeps for multifidelity variational inference.</p>
-<p>Each substep estimates BOTH the ROM ELBO gradient and Hessian at its own
-variational state. The surrogate is frozen for the duration of the substeps.
-No high-fidelity model calls or multifidelity control variates occur here.</p>
+<p>ROM-only optimizer substeps for multifidelity variational inference.</p>
+<p>Substeps inherit the outer optimizer method and configuration. Stateful
+optimizers (e.g., Adam) start with fresh state for each ROM-only sequence,
+without affecting the outer optimizer. Newton substeps recompute both the
+gradient and Hessian at each variational state. No high-fidelity model calls
+or multifidelity control variates occur in these steps.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>

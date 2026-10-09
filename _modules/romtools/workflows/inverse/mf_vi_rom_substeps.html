@@ -387,11 +387,13 @@
                 <article class="bd-article">
                   
   <h1>Source code for romtools.workflows.inverse.mf_vi_rom_substeps</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""ROM-only Newton substeps for multifidelity variational inference.</span>
+<span></span><span class="sd">"""ROM-only optimizer substeps for multifidelity variational inference.</span>
 
-<span class="sd">Each substep estimates BOTH the ROM ELBO gradient and Hessian at its own</span>
-<span class="sd">variational state. The surrogate is frozen for the duration of the substeps.</span>
-<span class="sd">No high-fidelity model calls or multifidelity control variates occur here.</span>
+<span class="sd">Substeps inherit the outer optimizer method and configuration. Stateful</span>
+<span class="sd">optimizers (e.g., Adam) start with fresh state for each ROM-only sequence,</span>
+<span class="sd">without affecting the outer optimizer. Newton substeps recompute both the</span>
+<span class="sd">gradient and Hessian at each variational state. No high-fidelity model calls</span>
+<span class="sd">or multifidelity control variates occur in these steps.</span>
 <span class="sd">"""</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -439,20 +441,24 @@
     <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_rom_newton_config</span><span class="p">(</span><span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">full_covariance</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Use the outer Newton curvature settings, otherwise safe Newton defaults.</span>
-
-<span class="sd">    Inner steps are Newton steps even when the outer MFVI optimizer is</span>
-<span class="sd">    gradient/Adam, so no outer Adam moments or lagged curvature are mutated.</span>
-<span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">VINewtonOptimizerConfig</span>
-    <span class="k">if</span> <span class="n">outer_method</span> <span class="o">==</span> <span class="s2">"newton"</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">optimizer_config</span>
-    <span class="k">return</span> <span class="n">VINewtonOptimizerConfig</span><span class="p">(</span>
-        <span class="n">newton_regularization</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>
-        <span class="n">newton_hessian_type</span><span class="o">=</span><span class="s2">"diagonal"</span><span class="p">,</span>
-        <span class="n">newton_metric</span><span class="o">=</span><span class="s2">"natural"</span> <span class="k">if</span> <span class="n">full_covariance</span> <span class="k">else</span> <span class="s2">"standard"</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_rom_optimizer</span><span class="p">(</span><span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">parameter_dimension</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Initialize an independent inner optimizer with the outer configuration."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">AdamSolver</span><span class="p">,</span> <span class="n">SteepestDescentSolver</span><span class="p">,</span>
     <span class="p">)</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">outer_method</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gradient"</span><span class="p">,</span> <span class="s2">"adam"</span><span class="p">,</span> <span class="s2">"newton"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported ROM-only optimizer method: </span><span class="si">{</span><span class="n">outer_method</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"adam"</span><span class="p">:</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="n">AdamSolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">optimizer_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parameter_dimension</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">parameter_dimension</span> <span class="o">=</span> <span class="n">parameter_dimension</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"gradient"</span><span class="p">:</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="n">SteepestDescentSolver</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">method</span><span class="p">,</span> <span class="n">solver</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">apply_diagonal_rom_substeps</span><span class="p">(</span>
@@ -496,7 +502,11 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">vi_drivers</span> <span class="k">as</span> <span class="n">vi</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">vi_sample_reuse</span> <span class="k">as</span> <span class="n">reuse</span>
 
-    <span class="n">config</span> <span class="o">=</span> <span class="n">_rom_newton_config</span><span class="p">(</span><span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">)</span>
+    <span class="n">method</span><span class="p">,</span> <span class="n">solver</span> <span class="o">=</span> <span class="n">_rom_optimizer</span><span class="p">(</span><span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">)</span>
+    <span class="n">gradient_method</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">optimizer_config</span><span class="o">.</span><span class="n">gradient_method</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gradient"</span><span class="p">,</span> <span class="s2">"adam"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"standard"</span>
+    <span class="p">)</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">candidate_mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">log_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">candidate_log_std</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">substep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_rom_substeps</span><span class="p">):</span>
@@ -519,7 +529,7 @@
             <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="n">evaluation_concurrency</span><span class="p">,</span>
             <span class="n">covariance_regularization</span><span class="o">=</span><span class="n">covariance_regularization</span><span class="p">,</span>
             <span class="n">baseline_method</span><span class="o">=</span><span class="n">baseline_method</span><span class="p">,</span>
-            <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"standard"</span><span class="p">,</span>
+            <span class="n">gradient_method</span><span class="o">=</span><span class="n">gradient_method</span><span class="p">,</span>
             <span class="n">bounded_parameter_handling</span><span class="o">=</span><span class="n">bounded_parameter_handling</span><span class="p">,</span>
             <span class="n">min_variational_std</span><span class="o">=</span><span class="n">min_variational_std</span><span class="p">,</span>
             <span class="n">max_variational_std</span><span class="o">=</span><span class="n">max_variational_std</span><span class="p">,</span>
@@ -537,18 +547,41 @@
         <span class="n">std</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_variational_std</span><span class="p">(</span>
             <span class="n">log_std</span><span class="p">,</span> <span class="n">min_variational_std</span><span class="p">,</span> <span class="n">max_variational_std</span>
         <span class="p">)</span>
-        <span class="n">metric_scale</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_newton_metric_scale</span><span class="p">(</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">newton_metric</span><span class="p">,</span> <span class="n">std</span>
-        <span class="p">)</span>
-        <span class="c1"># Gradient AND Hessian are recomputed from ROM samples at every</span>
-        <span class="c1"># substep; use the same regularized solve as ordinary VI Newton.</span>
-        <span class="n">direction_mean</span><span class="p">,</span> <span class="n">direction_log_std</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_newton_step</span><span class="p">(</span>
-            <span class="n">rom_state</span><span class="p">,</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">newton_regularization</span><span class="p">,</span>
-            <span class="n">newton_hessian_type</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">newton_hessian_type</span><span class="p">,</span>
-            <span class="n">newton_regularization_strategy</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">newton_regularization_strategy</span><span class="p">,</span>
-            <span class="n">metric_scale</span><span class="o">=</span><span class="n">metric_scale</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"newton"</span><span class="p">:</span>
+            <span class="n">metric_scale</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_newton_metric_scale</span><span class="p">(</span>
+                <span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_metric</span><span class="p">,</span> <span class="n">std</span>
+            <span class="p">)</span>
+            <span class="c1"># Newton uses both fresh ROM gradient and Hessian every substep.</span>
+            <span class="n">direction_mean</span><span class="p">,</span> <span class="n">direction_log_std</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_newton_step</span><span class="p">(</span>
+                <span class="n">rom_state</span><span class="p">,</span>
+                <span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_regularization</span><span class="p">,</span>
+                <span class="n">newton_hessian_type</span><span class="o">=</span><span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_hessian_type</span><span class="p">,</span>
+                <span class="n">newton_regularization_strategy</span><span class="o">=</span><span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_regularization_strategy</span><span class="p">,</span>
+                <span class="n">newton_additive_regularization</span><span class="o">=</span><span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_additive_regularization</span><span class="p">,</span>
+                <span class="n">newton_regularization_epsilon</span><span class="o">=</span><span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_regularization_epsilon</span><span class="p">,</span>
+                <span class="n">newton_fallback_learning_rate</span><span class="o">=</span><span class="n">optimizer_config</span><span class="o">.</span><span class="n">newton_fallback_learning_rate</span><span class="p">,</span>
+                <span class="n">metric_scale</span><span class="o">=</span><span class="n">metric_scale</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"adam"</span><span class="p">:</span>
+                <span class="c1"># Match outer mean-field Adam: raw score gradient, with</span>
+                <span class="c1"># optional damped Fisher preconditioning. Moments are local.</span>
+                <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span>
+                    <span class="n">rom_state</span><span class="p">[</span><span class="s2">"gradient_mean"</span><span class="p">],</span> <span class="n">rom_state</span><span class="p">[</span><span class="s2">"gradient_log_std"</span><span class="p">]</span>
+                <span class="p">]</span>
+                <span class="n">fisher</span> <span class="o">=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_compute_adam_fisher_diagonal</span><span class="p">(</span>
+                    <span class="n">log_std</span><span class="p">,</span> <span class="n">min_variational_std</span><span class="p">,</span> <span class="n">max_variational_std</span><span class="p">,</span>
+                    <span class="n">gradient_method</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">direction</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="n">fisher</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">direction</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span>
+                    <span class="n">rom_state</span><span class="p">[</span><span class="s2">"update_direction_mean"</span><span class="p">],</span>
+                    <span class="n">rom_state</span><span class="p">[</span><span class="s2">"update_direction_log_std"</span><span class="p">],</span>
+                <span class="p">])</span>
+            <span class="n">dimension</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">direction_mean</span> <span class="o">=</span> <span class="n">direction</span><span class="p">[:</span><span class="n">dimension</span><span class="p">]</span>
+            <span class="n">direction_log_std</span> <span class="o">=</span> <span class="n">direction</span><span class="p">[</span><span class="n">dimension</span><span class="p">:]</span>
         <span class="n">mean</span> <span class="o">+=</span> <span class="n">vi</span><span class="o">.</span><span class="n">_limit_mean_update</span><span class="p">(</span>
             <span class="n">direction_mean</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">max_mean_update_std</span>
         <span class="p">)</span>
@@ -566,7 +599,7 @@
             <span class="n">transform_map</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"  ROM-only VI Newton substep </span><span class="si">{</span><span class="n">substep</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_rom_substeps</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"  ROM-only VI </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> substep </span><span class="si">{</span><span class="n">substep</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_rom_substeps</span><span class="si">}</span><span class="s2"> "</span>
             <span class="sa">f</span><span class="s2">"after outer iteration </span><span class="si">{</span><span class="n">outer_iteration</span><span class="si">}</span><span class="s2">, "</span>
             <span class="sa">f</span><span class="s2">"gradient norm: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">rom_state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span><span class="w"> </span><span class="n">rom_state</span><span class="p">[</span><span class="s1">'gradient_log_std'</span><span class="p">]])</span><span class="si">:</span><span class="s2">.5e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
@@ -616,10 +649,14 @@
         <span class="n">packed_direction_to_covariance</span><span class="p">,</span> <span class="n">retract_covariance</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">config</span> <span class="o">=</span> <span class="n">_rom_newton_config</span><span class="p">(</span>
-        <span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="n">full_covariance</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">candidate_mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">method</span><span class="p">,</span> <span class="n">solver</span> <span class="o">=</span> <span class="n">_rom_optimizer</span><span class="p">(</span>
+        <span class="n">outer_method</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="n">parameter_dimension</span><span class="o">=</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span>
+    <span class="p">)</span>
+    <span class="n">gradient_method</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">optimizer_config</span><span class="o">.</span><span class="n">gradient_method</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gradient"</span><span class="p">,</span> <span class="s2">"adam"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"natural"</span>
+    <span class="p">)</span>
     <span class="n">cholesky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">candidate_cholesky</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">substep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_rom_substeps</span><span class="p">):</span>
         <span class="n">rom_state</span> <span class="o">=</span> <span class="n">fcvi</span><span class="o">.</span><span class="n">_evaluate_single_fidelity_state</span><span class="p">(</span>
@@ -637,7 +674,7 @@
             <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="n">evaluation_concurrency</span><span class="p">,</span>
             <span class="n">covariance_regularization</span><span class="o">=</span><span class="n">covariance_regularization</span><span class="p">,</span>
             <span class="n">baseline_method</span><span class="o">=</span><span class="n">baseline_method</span><span class="p">,</span>
-            <span class="n">gradient_method</span><span class="o">=</span><span class="s2">"natural"</span><span class="p">,</span>
+            <span class="n">gradient_method</span><span class="o">=</span><span class="n">gradient_method</span><span class="p">,</span>
             <span class="n">bounded_parameter_handling</span><span class="o">=</span><span class="n">bounded_parameter_handling</span><span class="p">,</span>
             <span class="n">min_variational_std</span><span class="o">=</span><span class="n">min_variational_std</span><span class="p">,</span>
             <span class="n">max_variational_std</span><span class="o">=</span><span class="n">max_variational_std</span><span class="p">,</span>
@@ -651,16 +688,23 @@
             <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
             <span class="n">score_function_entropy_strategy</span><span class="o">=</span><span class="n">score_function_entropy_strategy</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">hessian</span> <span class="o">=</span> <span class="n">fcnewton</span><span class="o">.</span><span class="n">estimate_ordinary_hessian</span><span class="p">(</span>
-            <span class="n">rom_state</span><span class="p">[</span><span class="s2">"optimizer_samples"</span><span class="p">],</span>
-            <span class="n">mean</span><span class="p">,</span> <span class="n">cholesky</span><span class="p">,</span>
-            <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rom_state</span><span class="p">[</span><span class="s2">"log_joint_terms"</span><span class="p">]),</span>
-            <span class="n">baseline_method</span><span class="p">,</span>
-            <span class="n">elbo_scaling_factor</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">direction</span> <span class="o">=</span> <span class="n">fcnewton</span><span class="o">.</span><span class="n">_newton_step_from_hessian</span><span class="p">(</span>
-            <span class="n">rom_state</span><span class="p">,</span> <span class="n">cholesky</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">hessian</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"newton"</span><span class="p">:</span>
+            <span class="n">hessian</span> <span class="o">=</span> <span class="n">fcnewton</span><span class="o">.</span><span class="n">estimate_ordinary_hessian</span><span class="p">(</span>
+                <span class="n">rom_state</span><span class="p">[</span><span class="s2">"optimizer_samples"</span><span class="p">],</span>
+                <span class="n">mean</span><span class="p">,</span> <span class="n">cholesky</span><span class="p">,</span>
+                <span class="n">elbo_scaling_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rom_state</span><span class="p">[</span><span class="s2">"log_joint_terms"</span><span class="p">]),</span>
+                <span class="n">baseline_method</span><span class="p">,</span>
+                <span class="n">elbo_scaling_factor</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">fcnewton</span><span class="o">.</span><span class="n">_newton_step_from_hessian</span><span class="p">(</span>
+                <span class="n">rom_state</span><span class="p">,</span> <span class="n">cholesky</span><span class="p">,</span> <span class="n">optimizer_config</span><span class="p">,</span> <span class="n">hessian</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gradient</span> <span class="o">=</span> <span class="n">fcvi</span><span class="o">.</span><span class="n">_update_vector</span><span class="p">(</span><span class="n">rom_state</span><span class="p">)</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">solver</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">gradient</span><span class="p">,</span> <span class="n">fisher_diagonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"adam"</span> <span class="k">else</span> <span class="n">solver</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+            <span class="p">)</span>
         <span class="n">dimension</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size</span>
         <span class="n">mean</span> <span class="o">+=</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">direction</span><span class="p">[:</span><span class="n">dimension</span><span class="p">]</span>
         <span class="n">cholesky</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">retract_covariance</span><span class="p">(</span>
@@ -675,7 +719,7 @@
             <span class="n">transform_map</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"  ROM-only full-covariance VI Newton substep "</span>
+            <span class="sa">f</span><span class="s2">"  ROM-only full-covariance VI </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> substep "</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">substep</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_rom_substeps</span><span class="si">}</span><span class="s2"> after outer iteration "</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outer_iteration</span><span class="si">}</span><span class="s2">, gradient norm: "</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">rom_state</span><span class="p">[</span><span class="s1">'gradient_mean'</span><span class="p">],</span><span class="w"> </span><span class="n">rom_state</span><span class="p">[</span><span class="s1">'gradient_covariance_svec'</span><span class="p">]])</span><span class="si">:</span><span class="s2">.5e</span><span class="si">}</span><span class="s2">"</span>
