@@ -169,3 +169,98 @@ def test_full_covariance_substeps_use_fresh_hessian_and_keep_spd(monkeypatch):
     assert not np.array_equal(current_means[0], current_means[1])
     assert mean[0] > 0.0
     assert np.linalg.eigvalsh(chol @ chol.T).min() > 0.0
+
+
+class _LinearModel:
+    def populate_run_directory(self, run_directory, parameter_sample):
+        return None
+
+    def run_model(self, run_directory, parameter_sample):
+        return 0
+
+    def compute_qoi(self, run_directory, parameter_sample):
+        return np.array([parameter_sample["theta"]])
+
+
+class _Builder:
+    def build_from_training_dirs(self, offline_data_dir, training_data_dirs,
+                                 training_parameters, training_qois):
+        return _LinearModel()
+
+
+def _mfvi_kwargs(tmp_path):
+    from romtools.workflows.parameter_spaces import GaussianParameterSpace
+    from romtools.workflows.inverse.vi_optimization_methods import (
+        VIGradientOptimizerConfig, VILegacyLineSearchConfig,
+    )
+    q0 = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.zeros(1),
+        stds=np.ones(1),
+    )
+    return dict(
+        model=_LinearModel(),
+        rom_model_builder=_Builder(),
+        prior_parameter_space=q0,
+        initial_variational_parameter_space=q0,
+        observations=np.array([0.25]),
+        observations_covariance=np.eye(1),
+        parameter_mins=np.array([-5.0]),
+        parameter_maxes=np.array([5.0]),
+        bounded_parameter_handling="transform",
+        absolute_work_dir=str(tmp_path),
+        fom_sample_size=4,
+        rom_extra_sample_size=4,
+        rom_tolerance=np.inf,
+        random_seed=67,
+        optimizer_method="gradient",
+        optimizer_config=VIGradientOptimizerConfig(
+            max_iterations=3, gradient_norm_tolerance=0.0
+        ),
+        line_search_method="legacy",
+        line_search_config=VILegacyLineSearchConfig(
+            initial_step_size=0.01,
+            max_step_size=0.01,
+            step_size_growth_factor=1.0,
+            relaxation_parameter=100.0,
+        ),
+        fom_evaluation_concurrency=1,
+        rom_evaluation_concurrency=1,
+    )
+
+
+@pytest.mark.mpi_skip
+def test_disabled_rom_substeps_preserve_mfvi_results(tmp_path):
+    from romtools.workflows.inverse import run_mf_vi
+    ordinary = run_mf_vi(**_mfvi_kwargs(tmp_path / "original"))
+    disabled = run_mf_vi(
+        **_mfvi_kwargs(tmp_path / "disabled"),
+        rom_substep_start_iteration=1,
+        rom_substep_end_iteration=2,
+        num_rom_substeps=0,
+    )
+    for old, new in zip(ordinary, disabled):
+        assert np.array_equal(old, new)
+
+
+@pytest.mark.mpi_skip
+def test_mfvi_substep_schedule_calls_only_requested_outer_iterations(
+    tmp_path, monkeypatch
+):
+    from romtools.workflows.inverse import mf_vi_drivers
+    seen = []
+
+    def fake_substeps(**kwargs):
+        seen.append(kwargs["outer_iteration"])
+        return kwargs["candidate_mean"], kwargs["candidate_log_std"]
+
+    monkeypatch.setattr(
+        mf_vi_drivers, "apply_diagonal_rom_substeps", fake_substeps
+    )
+    mf_vi_drivers.run_mf_vi(
+        **_mfvi_kwargs(tmp_path / "window"),
+        rom_substep_start_iteration=1,
+        rom_substep_end_iteration=2,
+        num_rom_substeps=2,
+    )
+    assert seen == [1]
