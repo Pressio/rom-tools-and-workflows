@@ -11,6 +11,11 @@ def test_newton_defaults_are_natural_full_lagged_and_regularized():
     assert config.newton_regularization == 5.0e-4
     assert config.newton_curvature_strategy == "lagged"
     assert config.newton_hessian_averaging_factor == 0.25
+    assert config.newton_adaptive_regularization is False
+    assert config.newton_additive_regularization == 0.0
+    assert config.newton_regularization_decrease_factor == 1.25
+    assert config.newton_regularization_increase_factor == 5.0
+    assert config.newton_regularization_max_multiplier == 1e4
 
 
 def test_line_search_initial_step_defaults_to_point_one():

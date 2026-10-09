@@ -382,3 +382,11 @@ def test_public_full_covariance_natural_newton_runs(tmp_path):
         assert covariance_history.shape[1:] == (2, 2)
         for covariance in covariance_history:
             assert np.all(np.linalg.eigvalsh(covariance) > 0.0)
+
+
+def test_full_covariance_newton_passes_fallback_learning_rate():
+    state = {"gradient_mean": np.array([2.0]), "gradient_covariance_svec": np.array([3.0])}
+    config = VINewtonOptimizerConfig(newton_metric="standard", newton_hessian_type="full",
+                                     newton_fallback_learning_rate=0.02)
+    step = _newton_step_from_hessian(state, np.eye(1), config, np.eye(2))
+    np.testing.assert_allclose(step, [0.04, 0.06])

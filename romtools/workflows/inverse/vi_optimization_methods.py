@@ -53,12 +53,19 @@ class VINewtonOptimizerConfig:
     min_variational_std: float = 1e-8
     max_variational_std: float = 1e6
     newton_metric: str = 'standard'
+    newton_fallback_learning_rate: float = 0.02
     newton_regularization: float = 1e-2
     newton_hessian_type: str = 'diagonal'
     newton_curvature_strategy: str = 'same_sample'
     newton_hessian_num_samples: int = None
     newton_hessian_averaging_factor: float = 0.9
     newton_regularization_strategy: str = 'absolute'
+    newton_additive_regularization: float = 0.0
+    newton_regularization_epsilon: float = 1e-12
+    newton_adaptive_regularization: bool = False
+    newton_regularization_increase_factor: float = 5.0
+    newton_regularization_decrease_factor: float = 1.25
+    newton_regularization_max_multiplier: float = 1e4
 
 
 @dataclass
@@ -80,12 +87,12 @@ class VIStochasticNonmonotoneLineSearchConfig:
     max_step_size: float = np.inf
     step_size_growth_factor: float = 1.05
     step_size_decay_factor: float = 2.0
-    max_step_size_decrease_trys: int = 5
+    max_step_size_decrease_trys: int = 15
     relaxation_parameter: float = 3.05
     line_search_objective: str = 'elbo'
     line_search_nonmonotone_window: int = 5
     line_search_armijo_coefficient: float = 1e-6
-    line_search_uncertainty_sigma: float = 4.0
+    line_search_uncertainty_sigma: float = 3.0
     line_search_sample_growth_factor: float = 1.0
     log_std_learning_rate_factor: float = 1.0
 
@@ -147,13 +154,13 @@ def _normalize_newton_hessian_type(newton_hessian_type: str):
 
 
 def _normalize_newton_regularization_strategy(strategy: str) -> str:
-    """Normalize the eigenvalue-floor scaling used by the Newton solve."""
+    """Normalize the curvature-tolerance scaling used by the Newton solve."""
     normalized = strategy.strip().lower()
-    if normalized in ('absolute', 'hessian_norm'):
+    if normalized in ('absolute', 'hessian_norm', 'per_parameter'):
         return normalized
     raise ValueError(
         f"Unsupported newton_regularization_strategy '{strategy}'. "
-        "Supported options are 'absolute' and 'hessian_norm'."
+        "Supported options are 'absolute', 'hessian_norm', and 'per_parameter'."
     )
 
 
@@ -499,12 +506,29 @@ class NewtonSolver:
     def __init__(self,
                  regularization: float,
                  hessian_type: str = 'diagonal',
-                 regularization_strategy: str = 'absolute'):
+                 regularization_strategy: str = 'absolute',
+                 additive_regularization: float = 0.0,
+                 regularization_epsilon: float = 1e-12,
+                 fallback_learning_rate: float = 0.01):
+        if not np.isfinite(regularization) or regularization <= 0.0:
+            raise ValueError("regularization must be finite and positive.")
+        fallback_learning_rate = float(fallback_learning_rate)
+        if (not np.isfinite(fallback_learning_rate)
+                or fallback_learning_rate <= 0.0
+                or not np.isfinite(1.0 / fallback_learning_rate)):
+            raise ValueError("fallback_learning_rate and its reciprocal must be finite and positive.")
+        self.fallback_learning_rate = fallback_learning_rate
         self.regularization = regularization
         self.hessian_type = _normalize_newton_hessian_type(hessian_type)
         self.regularization_strategy = _normalize_newton_regularization_strategy(
             regularization_strategy
         )
+        if not np.isfinite(regularization_epsilon) or regularization_epsilon <= 0.0:
+            raise ValueError("regularization_epsilon must be finite and positive.")
+        if not np.isfinite(additive_regularization) or additive_regularization < 0.0:
+            raise ValueError("additive_regularization must be finite and nonnegative.")
+        self.additive_regularization = additive_regularization
+        self.regularization_epsilon = regularization_epsilon
 
     def _regularization_floor(self, hessian_norm: float) -> float:
         if self.regularization_strategy == 'hessian_norm':
@@ -512,12 +536,17 @@ class NewtonSolver:
             return self.regularization * safe_hessian_norm
         return self.regularization
 
+    def _replace_small_curvature(self, curvature, tolerance):
+        """Use gradient fallback curvature strictly below the tolerance."""
+        return np.where(curvature < tolerance, 1.0 / self.fallback_learning_rate, curvature)
+
     def _project_hessian(self, hessian) -> np.ndarray:
         hessian = np.nan_to_num(hessian, nan=0.0, posinf=0.0, neginf=0.0)
         if hessian.ndim == 1:
             hessian_norm = float(np.max(np.abs(hessian)))
             regularization_floor = self._regularization_floor(hessian_norm)
-            projected_diagonal = np.maximum(np.abs(hessian), regularization_floor)
+            projected_diagonal = self._replace_small_curvature(-hessian, regularization_floor)
+            projected_diagonal += self.additive_regularization
             return np.diag(projected_diagonal)
         if hessian.ndim != 2 or hessian.shape[0] != hessian.shape[1]:
             raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
@@ -526,10 +555,33 @@ class NewtonSolver:
 
         hessian_norm = float(np.max(np.abs(eigenvalues)))
         regularization_floor = self._regularization_floor(hessian_norm)
-        projected_eigenvalues = np.maximum(
-            np.abs(eigenvalues), regularization_floor
-        )
+        projected_eigenvalues = self._replace_small_curvature(-eigenvalues, regularization_floor)
+        projected_eigenvalues += self.additive_regularization
         return (eigenvectors @ np.diag(projected_eigenvalues)) @ eigenvectors.T
+
+    def _per_parameter_curvature(self, hessian: np.ndarray) -> np.ndarray:
+        """Return positive curvature with gradient fallback and direction-wise damping."""
+        if hessian.ndim == 1:
+            diagonal = self._replace_small_curvature(
+                -hessian, self.regularization
+            )
+            diagonal += self.additive_regularization * (
+                np.abs(hessian) + self.regularization_epsilon
+            )
+            return np.diag(diagonal)
+        if hessian.ndim != 2 or hessian.shape[0] != hessian.shape[1]:
+            raise ValueError("Hessian must be a 1D diagonal or a square 2D matrix.")
+        sym_hessian = 0.5 * (hessian + hessian.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(-sym_hessian)
+        replacement_eigenvalues = self._replace_small_curvature(
+            eigenvalues, self.regularization
+        )
+        curvature = (
+            eigenvectors @ np.diag(replacement_eigenvalues) @ eigenvectors.T
+        )
+        parameter_scales = np.abs(np.diag(sym_hessian)) + self.regularization_epsilon
+        curvature += self.additive_regularization * np.diag(parameter_scales)
+        return 0.5 * (curvature + curvature.T)
 
     def step(self,
              gradient: np.ndarray,
@@ -546,11 +598,20 @@ class NewtonSolver:
             sanitized_hessian = np.nan_to_num(
                 hessian, nan=0.0, posinf=0.0, neginf=0.0
             )
-            hessian_norm = float(np.max(np.abs(sanitized_hessian)))
-            regularization_floor = self._regularization_floor(hessian_norm)
-            projected_diagonal = np.maximum(
-                np.abs(sanitized_hessian), regularization_floor
-            )
+            if self.regularization_strategy == 'per_parameter':
+                projected_diagonal = self._replace_small_curvature(
+                    -sanitized_hessian, self.regularization
+                )
+                projected_diagonal += self.additive_regularization * (
+                    np.abs(sanitized_hessian) + self.regularization_epsilon
+                )
+            else:
+                hessian_norm = float(np.max(np.abs(sanitized_hessian)))
+                regularization_floor = self._regularization_floor(hessian_norm)
+                projected_diagonal = self._replace_small_curvature(
+                    -sanitized_hessian, regularization_floor
+                )
+                projected_diagonal += self.additive_regularization
             print(
                 'Gradient and hessian norms:',
                 np.linalg.norm(gradient),
@@ -558,7 +619,13 @@ class NewtonSolver:
             )
             return gradient / projected_diagonal
 
-        projected_hessian = self._project_hessian(hessian)
+        sanitized_hessian = np.nan_to_num(
+            hessian, nan=0.0, posinf=0.0, neginf=0.0
+        )
+        if self.regularization_strategy == 'per_parameter':
+            projected_hessian = self._per_parameter_curvature(sanitized_hessian)
+        else:
+            projected_hessian = self._project_hessian(sanitized_hessian)
         print(
             'Gradient and hessian norms:',
             np.linalg.norm(gradient),

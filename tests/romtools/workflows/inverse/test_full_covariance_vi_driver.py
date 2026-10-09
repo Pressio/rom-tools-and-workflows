@@ -130,6 +130,49 @@ def test_initializer_type_selects_family_independently_of_prior(tmp_path):
 
 
 @pytest.mark.mpi_skip
+def test_full_covariance_rejects_per_parameter_regularization(tmp_path):
+    with pytest.raises(NotImplementedError, match="mean-field Gaussian"):
+        romtools.workflows.run_vi(
+            model=IdentityTwoParameterModel(),
+            prior_parameter_space=_diagonal_space(),
+            initial_variational_parameter_space=_correlated_space(),
+            observations=np.zeros(2),
+            observations_covariance=np.eye(2),
+            absolute_work_dir=str(tmp_path / "unsupported_regularization"),
+            sample_size=6,
+            optimizer_method="newton",
+            optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+                max_iterations=1,
+                newton_regularization_strategy="per_parameter",
+            ),
+            bounded_parameter_handling="clip",
+            evaluation_concurrency=1,
+        )
+
+
+@pytest.mark.mpi_skip
+def test_full_covariance_rejects_adaptive_regularization(tmp_path):
+    with pytest.raises(NotImplementedError, match="Adaptive Newton regularization"):
+        romtools.workflows.run_vi(
+            model=IdentityTwoParameterModel(),
+            prior_parameter_space=_diagonal_space(),
+            initial_variational_parameter_space=_correlated_space(),
+            observations=np.zeros(2),
+            observations_covariance=np.eye(2),
+            absolute_work_dir=str(tmp_path / "unsupported_adaptive_regularization"),
+            sample_size=6,
+            optimizer_method="newton",
+            optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+                max_iterations=1,
+                newton_additive_regularization=1e-4,
+                newton_adaptive_regularization=True,
+            ),
+            bounded_parameter_handling="clip",
+            evaluation_concurrency=1,
+        )
+
+
+@pytest.mark.mpi_skip
 def test_multivariate_initializer_with_diagonal_covariance_can_rotate(tmp_path):
     work_dir = tmp_path / "full_adam"
     initial_q = _correlated_space(covariance=np.eye(2))

@@ -272,6 +272,7 @@ def _newton_step_from_hessian(
     hessian_type = _normalize_newton_hessian_type(config.newton_hessian_type)
     solver = NewtonSolver(
         regularization=config.newton_regularization,
+        fallback_learning_rate=config.newton_fallback_learning_rate,
         hessian_type=hessian_type,
     )
     if hessian_type == "diagonal":

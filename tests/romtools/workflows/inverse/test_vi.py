@@ -562,6 +562,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert "vi_history_loglikelihood" in history
         assert "vi_history_cpu_time_seconds" in history
         assert "vi_history_accepted_step_size" in history
+        assert "vi_history_newton_additive_regularization" in history
         assert "vi_history_gradient" in history
         assert "vi_history_gradient_standard_error" in history
         num_entries = history["vi_history_cpu_time_seconds"].shape[0]
@@ -571,6 +572,7 @@ def test_run_vi_linear_problem(tmp_path, optimizer_method, optimizer_config):
         assert history["vi_history_relative_mse"].shape[0] == num_entries
         assert history["vi_history_loglikelihood"].shape[0] == num_entries
         assert history["vi_history_accepted_step_size"].shape[0] == num_entries
+        assert history["vi_history_newton_additive_regularization"].shape[0] == num_entries
         assert history["vi_history_gradient"].shape == (num_entries, 2)
         assert history["vi_history_gradient_standard_error"].shape == (num_entries, 2)
 
@@ -621,7 +623,25 @@ def test_run_vi_uses_distinct_prior_and_initial_variational_spaces(tmp_path):
 
 
 @pytest.mark.mpi_skip
-def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
+@pytest.mark.parametrize(
+    ("regularization_strategy", "adaptive_regularization"),
+    [
+        ("hessian_norm", False),
+        ("per_parameter", False),
+        ("per_parameter", True),
+    ],
+)
+def test_run_vi_accepts_full_newton_hessian_option(
+    tmp_path, regularization_strategy, adaptive_regularization, monkeypatch
+):
+    import importlib
+    module = importlib.import_module("romtools.workflows.inverse.vi_drivers")
+    original = module._compute_newton_step
+    received_rates = []
+    def capture_step(*args, **kwargs):
+        received_rates.append(kwargs["newton_fallback_learning_rate"])
+        return original(*args, **kwargs)
+    monkeypatch.setattr(module, "_compute_newton_step", capture_step)
     model = LinearQoiModel(slope=1.0)
     variational_parameter_space = GaussianParameterSpace(
         parameter_names=["theta"],
@@ -636,14 +656,19 @@ def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
         initial_variational_parameter_space=variational_parameter_space,
         observations=np.array([0.0]),
         observations_covariance=np.array([[0.2**2]]),
-        absolute_work_dir=str(tmp_path),
+        absolute_work_dir=str(
+            tmp_path / f"{regularization_strategy}_{adaptive_regularization}"
+        ),
         sample_size=8,
         optimizer_method="newton",
         optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
             gradient_norm_tolerance=0.0,
-            max_iterations=1,
+            max_iterations=2,
+            newton_fallback_learning_rate=0.02,
             newton_hessian_type="full",
-            newton_regularization_strategy="hessian_norm",
+            newton_regularization_strategy=regularization_strategy,
+            newton_additive_regularization=(1e-4 if adaptive_regularization else 0.0),
+            newton_adaptive_regularization=adaptive_regularization,
         ),
         line_search_method="legacy",
         line_search_config=romtools.workflows.VILegacyLineSearchConfig(
@@ -660,6 +685,40 @@ def test_run_vi_accepts_full_newton_hessian_option(tmp_path):
     assert stds.shape == (1,)
     assert parameter_samples.shape[1] == 1
     assert qois.shape[0] == 1
+
+    assert received_rates and all(rate == 0.02 for rate in received_rates)
+
+
+@pytest.mark.mpi_skip
+def test_adaptive_newton_regularization_requires_elbo_line_search(tmp_path):
+    parameter_space = GaussianParameterSpace(
+        parameter_names=["theta"],
+        means=np.array([0.0]),
+        stds=np.array([1.0]),
+        sampler=MonteCarloSampler,
+    )
+
+    with pytest.raises(ValueError, match="requires line_search_objective='elbo'"):
+        romtools.workflows.run_vi(
+            model=LinearQoiModel(slope=1.0),
+            prior_parameter_space=parameter_space,
+            initial_variational_parameter_space=parameter_space,
+            observations=np.array([0.0]),
+            observations_covariance=np.array([[1.0]]),
+            absolute_work_dir=str(tmp_path),
+            sample_size=4,
+            optimizer_method="newton",
+            optimizer_config=romtools.workflows.VINewtonOptimizerConfig(
+                max_iterations=1,
+                newton_additive_regularization=1e-4,
+                newton_adaptive_regularization=True,
+            ),
+            line_search_method="legacy",
+            line_search_config=romtools.workflows.VILegacyLineSearchConfig(
+                line_search_objective="mse"
+            ),
+            bounded_parameter_handling="clip",
+        )
 
 
 @pytest.mark.mpi_skip

@@ -80,14 +80,31 @@ score-function estimator for curvature:
 This is the curvature model used by the Newton update path. The implementation
 supports a metric rescaling via ``newton_metric`` and either diagonal or full
 projected Hessian solves via ``newton_hessian_type``. The
-``newton_regularization_strategy`` option selects either the default absolute
-eigenvalue floor or a floor proportional to the Hessian spectral norm. For the
-natural metric, that norm is evaluated after metric rescaling. The
+``newton_regularization_strategy`` option selects a fixed eigenvalue tolerance, a
+tolerance proportional to the Hessian spectral norm, or ``"per_parameter"``
+direction-wise damping. All strategies form curvature from :math:`-H` and replace eigenvalues strictly
+below the tolerance with the reciprocal of ``newton_fallback_learning_rate``
+(default 0.01). Eigenvalues at or above the tolerance are retained.
+``newton_regularization`` controls that tolerance. Before damping and line-search
+scaling, replaced directions take gradient steps with this learning rate. The separate
+``newton_additive_regularization`` adds :math:`\lambda I` for the ``"absolute"``
+and ``"hessian_norm"`` strategies, and adds
+:math:`\lambda\,\mathrm{diag}(|H_{ii}|+\epsilon)` for ``"per_parameter"``, where
+:math:`\epsilon` is ``newton_regularization_epsilon``. For the natural metric,
+regularization is evaluated after metric rescaling. The
 ``newton_curvature_strategy`` option controls stochastic coupling: the default
 ``"same_sample"`` reuses the gradient samples, ``"independent"`` evaluates a
 separate batch (whose size is set by ``newton_hessian_num_samples``), and
 ``"lagged"`` preconditions with the previous exponentially averaged Hessian.
 The lagged averaging weight is set by ``newton_hessian_averaging_factor``.
+When ``newton_adaptive_regularization`` is enabled, a rejected step decreases
+the next step size and increases additive regularization by
+``newton_regularization_increase_factor``. An accepted step with lower ELBO
+instead increases the next step size and divides additive regularization by
+``newton_regularization_decrease_factor``. Both controls stay unchanged after
+an accepted step whose ELBO does not drop. Additive regularization is bounded
+by its configured initial value and
+``newton_regularization_max_multiplier`` times that value.
 
 .. rubric:: Variance Reduction
 
@@ -680,6 +697,7 @@ def _initialize_vi_history():
         'loglikelihood': [],
         'cpu_time_seconds': [],
         'accepted_step_size': [],
+        'newton_additive_regularization': [],
         'gradient': [],
         'gradient_standard_error': [],
         'mfmc_alpha_mean': [],
@@ -711,6 +729,15 @@ def _load_vi_history_from_restart(restart_data):
         ]
     else:
         vi_history['accepted_step_size'] = [
+            np.nan for _ in vi_history['cpu_time_seconds']
+        ]
+    if 'vi_history_newton_additive_regularization' in restart_data:
+        vi_history['newton_additive_regularization'] = [
+            float(entry)
+            for entry in restart_data['vi_history_newton_additive_regularization']
+        ]
+    else:
+        vi_history['newton_additive_regularization'] = [
             np.nan for _ in vi_history['cpu_time_seconds']
         ]
     dimensionality = vi_history['variational_mean'][0].size if vi_history['variational_mean'] else 0
@@ -752,6 +779,7 @@ def _append_vi_history(vi_history,
                        transform_interior_margin: float = 0.0,
                        transform_map: str = 'sigmoid',
                        accepted_step_size: float = np.nan,
+                       newton_additive_regularization: float = np.nan,
                        gradient_mean: np.ndarray = None,
                        gradient_log_std: np.ndarray = None,
                        gradient_standard_error: np.ndarray = None,
@@ -780,6 +808,9 @@ def _append_vi_history(vi_history,
     vi_history['loglikelihood'].append(float(np.mean(log_likelihoods)))
     vi_history['cpu_time_seconds'].append(float(cpu_time_seconds))
     vi_history['accepted_step_size'].append(float(accepted_step_size))
+    vi_history['newton_additive_regularization'].append(
+        float(newton_additive_regularization)
+    )
     gradient = (
         np.full(2 * variational_mean.size, np.nan)
         if gradient_mean is None or gradient_log_std is None
@@ -824,6 +855,9 @@ def _pack_vi_history(vi_history):
         'vi_history_cpu_time_seconds': np.asarray(vi_history['cpu_time_seconds'], dtype=float),
         'vi_history_accepted_step_size': np.asarray(
             vi_history['accepted_step_size'], dtype=float
+        ),
+        'vi_history_newton_additive_regularization': np.asarray(
+            vi_history['newton_additive_regularization'], dtype=float
         ),
         'vi_history_gradient': np.asarray(vi_history['gradient']),
         'vi_history_gradient_standard_error': np.asarray(
@@ -1450,8 +1484,11 @@ def _compute_newton_step(state,
                          newton_regularization: float,
                          newton_hessian_type: str = 'diagonal',
                          newton_regularization_strategy: str = 'absolute',
+                         newton_additive_regularization: float = 0.0,
+                         newton_regularization_epsilon: float = 1e-12,
                          metric_scale: np.ndarray = None,
-                         hessian: np.ndarray = None):
+                         hessian: np.ndarray = None,
+                         newton_fallback_learning_rate: float = 0.01):
     gradient = np.concatenate([state['gradient_mean'], state['gradient_log_std']])
     if hessian is None:
         hessian = _get_state_hessian(state, newton_hessian_type)
@@ -1469,6 +1506,9 @@ def _compute_newton_step(state,
         regularization=newton_regularization,
         hessian_type=newton_hessian_type,
         regularization_strategy=newton_regularization_strategy,
+        additive_regularization=newton_additive_regularization,
+        regularization_epsilon=newton_regularization_epsilon,
+        fallback_learning_rate=newton_fallback_learning_rate,
     )
     step = solver.step(transformed_gradient, transformed_hessian)
     if metric_scale is not None:
@@ -1477,6 +1517,88 @@ def _compute_newton_step(state,
     mean_step = step[:dimensionality]
     log_std_step = step[dimensionality:]
     return mean_step, log_std_step
+
+
+def _update_adaptive_newton_controls(
+        step_size: float,
+        current_additive_regularization: float,
+        initial_additive_regularization: float,
+        accept_step: bool,
+        elbo_dropped: bool,
+        step_size_decay_factor: float,
+        step_size_growth_factor: float,
+        max_step_size: float,
+        regularization_increase_factor: float,
+        regularization_decrease_factor: float,
+        regularization_max_multiplier: float):
+    """Backtrack rejected trials; relax controls after an accepted ELBO drop."""
+    if not accept_step:
+        return (
+            step_size / step_size_decay_factor,
+            min(
+                current_additive_regularization * regularization_increase_factor,
+                initial_additive_regularization * regularization_max_multiplier,
+            ),
+        )
+    if not elbo_dropped:
+        return step_size, current_additive_regularization
+    return (
+        min(step_size * step_size_growth_factor, max_step_size),
+        max(
+            current_additive_regularization / regularization_decrease_factor,
+            initial_additive_regularization,
+        ),
+    )
+
+
+def _restore_adaptive_newton_regularization(
+        restart_data,
+        has_restart: bool,
+        initial_additive_regularization: float,
+        adaptive_regularization: bool,
+        increase_factor: float,
+        decrease_factor: float,
+        max_multiplier: float) -> float:
+    """Validate adaptive damping restart settings and restore additive lambda."""
+    if not has_restart:
+        return initial_additive_regularization
+    if 'newton_adaptive_regularization' not in restart_data:
+        if adaptive_regularization:
+            raise ValueError(
+                "restart_file is missing adaptive Newton regularization state."
+            )
+        return initial_additive_regularization
+    restart_adaptive = bool(restart_data['newton_adaptive_regularization'].item())
+    if restart_adaptive != adaptive_regularization:
+        raise ValueError(
+            "restart_file newton_adaptive_regularization does not match current run."
+        )
+    if not adaptive_regularization:
+        return initial_additive_regularization
+    settings = (
+        ('newton_regularization_increase_factor', increase_factor),
+        ('newton_regularization_decrease_factor', decrease_factor),
+        ('newton_regularization_max_multiplier', max_multiplier),
+    )
+    for key, expected in settings:
+        if key not in restart_data or not np.isclose(
+            float(restart_data[key]), expected
+        ):
+            raise ValueError(f"restart_file {key} does not match current run.")
+    if 'current_newton_additive_regularization' not in restart_data:
+        raise ValueError(
+            "restart_file is missing the current Newton additive regularization."
+        )
+    current = float(restart_data['current_newton_additive_regularization'])
+    if (
+        not np.isfinite(current)
+        or current < initial_additive_regularization
+        or current > initial_additive_regularization * max_multiplier
+    ):
+        raise ValueError(
+            "restart_file contains invalid current Newton additive regularization."
+        )
+    return current
 
 
 def _get_state_hessian(state, newton_hessian_type: str) -> np.ndarray:
@@ -1938,6 +2060,11 @@ def _save_vi_restart(restart_path: str,
                      newton_curvature_strategy: str = 'same_sample',
                      newton_hessian_num_samples: int = None,
                      newton_hessian_averaging_factor: float = 0.9,
+                     current_newton_additive_regularization: float = None,
+                     newton_adaptive_regularization: bool = False,
+                     newton_regularization_increase_factor: float = 5.0,
+                     newton_regularization_decrease_factor: float = 1.25,
+                     newton_regularization_max_multiplier: float = 1e4,
                      running_hessian: np.ndarray = None,
                      accepted_elbo_history=None,
                      adam_restart_data=None,
@@ -1986,6 +2113,21 @@ def _save_vi_restart(restart_path: str,
             -1 if newton_hessian_num_samples is None else int(newton_hessian_num_samples)
         ),
         newton_hessian_averaging_factor=float(newton_hessian_averaging_factor),
+        current_newton_additive_regularization=(
+            np.nan
+            if current_newton_additive_regularization is None
+            else float(current_newton_additive_regularization)
+        ),
+        newton_adaptive_regularization=bool(newton_adaptive_regularization),
+        newton_regularization_decrease_factor=float(
+            newton_regularization_decrease_factor
+        ),
+        newton_regularization_increase_factor=float(
+            newton_regularization_increase_factor
+        ),
+        newton_regularization_max_multiplier=float(
+            newton_regularization_max_multiplier
+        ),
         rng_state=np.array(np.random.get_state(), dtype=object),
     )
     if running_hessian is not None:
@@ -2035,7 +2177,14 @@ def _validate_run_vi_inputs(absolute_work_dir: str,
                             max_mean_update_std: float,
                             newton_regularization: float,
                             newton_regularization_strategy: str,
+                            newton_regularization_epsilon: float,
+                            newton_additive_regularization: float,
+                            newton_adaptive_regularization: bool,
+                            newton_regularization_increase_factor: float,
+                            newton_regularization_decrease_factor: float,
+                            newton_regularization_max_multiplier: float,
                             newton_hessian_type: str,
+                            line_search_objective: str,
                             covariance_regularization: float,
                             restart_files_to_keep: int,
                             observations_covariance: np.ndarray,
@@ -2082,8 +2231,46 @@ def _validate_run_vi_inputs(absolute_work_dir: str,
     assert max_log_std_update > 0.0, "max_log_std_update must be positive"
     if max_mean_update_std is not None:
         assert max_mean_update_std > 0.0, "max_mean_update_std must be positive"
-    assert newton_regularization > 0.0, "newton_regularization must be positive"
+    assert np.isfinite(newton_regularization) and newton_regularization > 0.0, (
+        "newton_regularization must be finite and positive"
+    )
     _normalize_newton_regularization_strategy(newton_regularization_strategy)
+    assert np.isfinite(newton_regularization_epsilon), (
+        "newton_regularization_epsilon must be finite"
+    )
+    assert newton_regularization_epsilon > 0.0, (
+        "newton_regularization_epsilon must be positive"
+    )
+    assert np.isfinite(newton_additive_regularization), (
+        "newton_additive_regularization must be finite"
+    )
+    assert newton_additive_regularization >= 0.0, (
+        "newton_additive_regularization must be non-negative"
+    )
+    assert isinstance(newton_adaptive_regularization, (bool, np.bool_)), (
+        "newton_adaptive_regularization must be a bool"
+    )
+    assert (
+        np.isfinite(newton_regularization_increase_factor)
+        and newton_regularization_increase_factor > 1.0
+    ), "newton_regularization_increase_factor must be finite and greater than 1"
+    assert (
+        np.isfinite(newton_regularization_decrease_factor)
+        and newton_regularization_decrease_factor > 1.0
+    ), "newton_regularization_decrease_factor must be finite and greater than 1"
+    assert (
+        np.isfinite(newton_regularization_max_multiplier)
+        and newton_regularization_max_multiplier >= 1.0
+    ), "newton_regularization_max_multiplier must be finite and at least 1"
+    if newton_adaptive_regularization and line_search_objective != 'elbo':
+        raise ValueError(
+            "Adaptive Newton regularization requires line_search_objective='elbo'."
+        )
+    if newton_adaptive_regularization and newton_additive_regularization <= 0.0:
+        raise ValueError(
+            "Adaptive Newton regularization requires a positive "
+            "newton_additive_regularization."
+        )
     _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
@@ -2316,9 +2503,22 @@ def run_vi(model: QoiModel,
 
     newton_defaults = VINewtonOptimizerConfig()
     newton_metric = _normalize_newton_metric(newton_defaults.newton_metric)
+    newton_fallback_learning_rate = newton_defaults.newton_fallback_learning_rate
     newton_regularization = newton_defaults.newton_regularization
     newton_regularization_strategy = _normalize_newton_regularization_strategy(
         newton_defaults.newton_regularization_strategy
+    )
+    newton_regularization_epsilon = newton_defaults.newton_regularization_epsilon
+    newton_additive_regularization = newton_defaults.newton_additive_regularization
+    newton_adaptive_regularization = newton_defaults.newton_adaptive_regularization
+    newton_regularization_increase_factor = (
+        newton_defaults.newton_regularization_increase_factor
+    )
+    newton_regularization_decrease_factor = (
+        newton_defaults.newton_regularization_decrease_factor
+    )
+    newton_regularization_max_multiplier = (
+        newton_defaults.newton_regularization_max_multiplier
     )
     newton_hessian_type = _normalize_newton_hessian_type(newton_defaults.newton_hessian_type)
     newton_curvature_strategy = _normalize_newton_curvature_strategy(
@@ -2329,9 +2529,32 @@ def run_vi(model: QoiModel,
     if optimization_method == 'newton':
         max_mean_update_std = resolved_optimizer_config.max_mean_update_std
         newton_metric = _normalize_newton_metric(resolved_optimizer_config.newton_metric)
+        newton_fallback_learning_rate = float(resolved_optimizer_config.newton_fallback_learning_rate)
+        if (not np.isfinite(newton_fallback_learning_rate)
+                or newton_fallback_learning_rate <= 0.0
+                or not np.isfinite(1.0 / newton_fallback_learning_rate)):
+            raise ValueError("newton_fallback_learning_rate and its reciprocal must be finite and positive.")
         newton_regularization = resolved_optimizer_config.newton_regularization
         newton_regularization_strategy = _normalize_newton_regularization_strategy(
             resolved_optimizer_config.newton_regularization_strategy
+        )
+        newton_regularization_epsilon = (
+            resolved_optimizer_config.newton_regularization_epsilon
+        )
+        newton_additive_regularization = (
+            resolved_optimizer_config.newton_additive_regularization
+        )
+        newton_adaptive_regularization = (
+            resolved_optimizer_config.newton_adaptive_regularization
+        )
+        newton_regularization_increase_factor = (
+            resolved_optimizer_config.newton_regularization_increase_factor
+        )
+        newton_regularization_decrease_factor = (
+            resolved_optimizer_config.newton_regularization_decrease_factor
+        )
+        newton_regularization_max_multiplier = (
+            resolved_optimizer_config.newton_regularization_max_multiplier
         )
         newton_hessian_type = _normalize_newton_hessian_type(
             resolved_optimizer_config.newton_hessian_type
@@ -2427,7 +2650,14 @@ def run_vi(model: QoiModel,
         max_mean_update_std=max_mean_update_std,
         newton_regularization=newton_regularization,
         newton_regularization_strategy=newton_regularization_strategy,
+        newton_regularization_epsilon=newton_regularization_epsilon,
+        newton_additive_regularization=newton_additive_regularization,
+        newton_adaptive_regularization=newton_adaptive_regularization,
+        newton_regularization_increase_factor=newton_regularization_increase_factor,
+        newton_regularization_decrease_factor=newton_regularization_decrease_factor,
+        newton_regularization_max_multiplier=newton_regularization_max_multiplier,
         newton_hessian_type=newton_hessian_type,
+        line_search_objective=line_search_objective,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
         observations_covariance=observations_covariance,
@@ -2792,6 +3022,15 @@ def run_vi(model: QoiModel,
         if restart_file is not None and 'accepted_elbo_history' in restart_data
         else [float(state['elbo'])]
     )
+    current_newton_additive_regularization = _restore_adaptive_newton_regularization(
+        restart_data if restart_file is not None else {},
+        restart_file is not None and optimization_method == 'newton',
+        newton_additive_regularization,
+        newton_adaptive_regularization,
+        newton_regularization_increase_factor,
+        newton_regularization_decrease_factor,
+        newton_regularization_max_multiplier,
+    )
 
     steepest_descent_solver = (
         AdamSolver.from_config(resolved_optimizer_config)
@@ -2844,6 +3083,19 @@ def run_vi(model: QoiModel,
             newton_curvature_strategy=newton_curvature_strategy,
             newton_hessian_num_samples=newton_hessian_num_samples,
             newton_hessian_averaging_factor=newton_hessian_averaging_factor,
+            current_newton_additive_regularization=(
+                current_newton_additive_regularization
+            ),
+            newton_adaptive_regularization=newton_adaptive_regularization,
+            newton_regularization_increase_factor=(
+                newton_regularization_increase_factor
+            ),
+            newton_regularization_decrease_factor=(
+                newton_regularization_decrease_factor
+            ),
+            newton_regularization_max_multiplier=(
+                newton_regularization_max_multiplier
+            ),
             running_hessian=running_hessian,
             accepted_elbo_history=accepted_elbo_history,
             adam_restart_data=(
@@ -2885,6 +3137,10 @@ def run_vi(model: QoiModel,
             parameter_maxes,
             transform_interior_margin,
             transform_map,
+            newton_additive_regularization=(
+                current_newton_additive_regularization
+                if optimization_method == 'newton' else np.nan
+            ),
             gradient_mean=state['gradient_mean'],
             gradient_log_std=state['gradient_log_std'],
             gradient_standard_error=state['gradient_standard_error'],
@@ -3103,6 +3359,7 @@ def run_vi(model: QoiModel,
                 accept_step = True
             elif line_search_objective == 'elbo':
                 test_state = test_candidate['state']
+                elbo_dropped = test_state['elbo'] < state['elbo']
                 if line_search_method == 'legacy':
                     allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
                     accept_step = test_state['elbo'] >= state['elbo'] - allowable_elbo_drop
@@ -3300,14 +3557,14 @@ def run_vi(model: QoiModel,
                 step_size /= step_size_decay_factor
                 if line_search_objective == 'elbo':
                     print(
-                        f'  Warning, lowering step size, Iteration: {iteration}, '
+                        f'  Warning, rejecting step, Iteration: {iteration}, '
                         f'Relative MSE: {state["mean_relative_mse"]:.5f}, '
                         f'ELBO: {state["elbo"]:.5f}, Step size: {step_size:.5e}, '
                         f'Gradient norm: {gradient_norm:.5f}, Samples: {line_search_sample_size}'
                     )
                 else:
                     print(
-                        f'  Warning, lowering step size, Iteration: {iteration}, '
+                        f'  Warning, rejecting step, Iteration: {iteration}, '
                         f'Relative MSE: {state["mean_relative_mse"]:.5f}, '
                         f'Test Relative MSE: {test_candidate["mean_relative_mse"]:.5f}, '
                         f'ELBO: {state["elbo"]:.5f}, Step size: {step_size:.5e}, '
@@ -3325,10 +3582,18 @@ def run_vi(model: QoiModel,
                     print(f'  Failed to advance after {max_step_size_decrease_trys}, exiting')
                     break
         else:
+            trial_newton_additive_regularization = (
+                current_newton_additive_regularization
+            )
             direction_mean, direction_log_std = _compute_newton_step(
                 state,
                 newton_regularization,
                 newton_regularization_strategy=newton_regularization_strategy,
+                newton_regularization_epsilon=newton_regularization_epsilon,
+                newton_fallback_learning_rate=newton_fallback_learning_rate,
+                newton_additive_regularization=(
+                    current_newton_additive_regularization
+                ),
                 newton_hessian_type=newton_hessian_type,
                 metric_scale=newton_metric_scale,
                 hessian=curvature_hessian,
@@ -3415,6 +3680,7 @@ def run_vi(model: QoiModel,
 
             if line_search_objective == 'elbo':
                 test_state = test_candidate['state']
+                elbo_dropped = test_state['elbo'] < state['elbo']
                 if line_search_method == 'legacy':
                     allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
                     accept_step = test_state['elbo'] >= state['elbo'] - allowable_elbo_drop
@@ -3474,7 +3740,26 @@ def run_vi(model: QoiModel,
                     running_hessian = pending_running_hessian
                 independent_hessian_cache = None
                 accepted_step_size = step_size
-                step_size = min(step_size * step_size_growth_factor, max_step_size)
+                if newton_adaptive_regularization:
+                    step_size, current_newton_additive_regularization = (
+                        _update_adaptive_newton_controls(
+                            step_size,
+                            current_newton_additive_regularization,
+                            newton_additive_regularization,
+                            True,
+                            elbo_dropped,
+                            step_size_decay_factor,
+                            step_size_growth_factor,
+                            max_step_size,
+                            newton_regularization_increase_factor,
+                            newton_regularization_decrease_factor,
+                            newton_regularization_max_multiplier,
+                        )
+                    )
+                else:
+                    step_size = min(
+                        step_size * step_size_growth_factor, max_step_size
+                    )
                 line_search_standard_normal_cache = None
 
                 accepted_elbo_history.append(state['elbo'])
@@ -3505,6 +3790,9 @@ def run_vi(model: QoiModel,
                     transform_interior_margin,
                     transform_map,
                     accepted_step_size=accepted_step_size,
+                    newton_additive_regularization=(
+                        trial_newton_additive_regularization
+                    ),
                     gradient_mean=state['gradient_mean'],
                     gradient_log_std=state['gradient_log_std'],
                     gradient_standard_error=state['gradient_standard_error'],
@@ -3513,6 +3801,8 @@ def run_vi(model: QoiModel,
                     f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, '
                     f'ELBO: {state["elbo"]:.5f}, Relative ELBO (initial ref): {relative_elbo_improvement:.5e}, '
                     f'Step size: {step_size:.5e}, '
+                    f'Newton additive regularization: '
+                    f'{current_newton_additive_regularization:.5e}, '
                     f'Gradient norm: {gradient_norm:.5f}, Samples: {line_search_sample_size}, '
                     f'Wall time: {wall_time:.5f}'
                 )
@@ -3581,6 +3871,19 @@ def run_vi(model: QoiModel,
                     newton_curvature_strategy=newton_curvature_strategy,
                     newton_hessian_num_samples=newton_hessian_num_samples,
                     newton_hessian_averaging_factor=newton_hessian_averaging_factor,
+                    current_newton_additive_regularization=(
+                        current_newton_additive_regularization
+                    ),
+                    newton_adaptive_regularization=newton_adaptive_regularization,
+                    newton_regularization_increase_factor=(
+                        newton_regularization_increase_factor
+                    ),
+                    newton_regularization_decrease_factor=(
+                        newton_regularization_decrease_factor
+                    ),
+                    newton_regularization_max_multiplier=(
+                        newton_regularization_max_multiplier
+                    ),
                     running_hessian=running_hessian,
                     accepted_elbo_history=accepted_elbo_history,
                     dispatcher=dispatcher,
@@ -3595,12 +3898,31 @@ def run_vi(model: QoiModel,
                     break
             else:
                 step_failed_counter += 1
-                step_size /= step_size_decay_factor
+                if newton_adaptive_regularization:
+                    step_size, current_newton_additive_regularization = (
+                        _update_adaptive_newton_controls(
+                            step_size,
+                            current_newton_additive_regularization,
+                            newton_additive_regularization,
+                            False,
+                            elbo_dropped,
+                            step_size_decay_factor,
+                            step_size_growth_factor,
+                            max_step_size,
+                            newton_regularization_increase_factor,
+                            newton_regularization_decrease_factor,
+                            newton_regularization_max_multiplier,
+                        )
+                    )
+                else:
+                    step_size /= step_size_decay_factor
                 if line_search_objective == 'elbo':
                     print(
                         f'  Warning, lowering step size, Iteration: {iteration}, '
                         f'Relative MSE: {state["mean_relative_mse"]:.5f}, '
                         f'ELBO: {state["elbo"]:.5f}, Step size: {step_size:.5e}, '
+                        f'Newton additive regularization: '
+                        f'{current_newton_additive_regularization:.5e}, '
                         f'Gradient norm: {gradient_norm:.5f}, '
                         f'Samples: {line_search_sample_size}'
                     )
@@ -3610,6 +3932,8 @@ def run_vi(model: QoiModel,
                         f'Relative MSE: {state["mean_relative_mse"]:.5f}, '
                         f'Test Relative MSE: {test_candidate["mean_relative_mse"]:.5f}, '
                         f'ELBO: {state["elbo"]:.5f}, Step size: {step_size:.5e}, '
+                        f'Newton additive regularization: '
+                        f'{current_newton_additive_regularization:.5e}, '
                         f'Gradient norm: {gradient_norm:.5f}, '
                         f'Samples: {line_search_sample_size}'
                     )

@@ -176,6 +176,27 @@ def _uses_natural_newton(function, args, kwargs) -> bool:
     return str(getattr(config, "newton_metric", "natural")).strip().lower() == "natural"
 
 
+def _reject_mean_field_only_newton_strategy(function, args, kwargs) -> None:
+    """Reject Newton options that are not defined for full covariance."""
+    arguments = _bound_arguments(function, args, kwargs)
+    if str(arguments.get("optimizer_method", "gradient")).strip().lower() != "newton":
+        return
+    config = arguments.get("optimizer_config")
+    if config is None:
+        return
+    strategy = str(config.newton_regularization_strategy).strip().lower()
+    if strategy == "per_parameter":
+        raise NotImplementedError(
+            "newton_regularization_strategy='per_parameter' is supported only "
+            "for mean-field Gaussian VI/MF-VI."
+        )
+    if config.newton_adaptive_regularization:
+        raise NotImplementedError(
+            "Adaptive Newton regularization is supported only for mean-field "
+            "Gaussian VI/MF-VI."
+        )
+
+
 def _variational_family(initial_variational_parameter_space) -> str:
     """Infer the variational family exclusively from the initializer type."""
     _, _, _, distribution = _vi_drivers._extract_gaussian_parameter_space(
@@ -209,6 +230,7 @@ def run_vi(*args, max_covariance_log_step=1.0, **kwargs):
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_run_vi(*args, **kwargs)
+    _reject_mean_field_only_newton_strategy(_legacy_run_vi, args, kwargs)
     implementation = (
         _full_newton_run_vi
         if _uses_natural_newton(_legacy_run_vi, args, kwargs)
@@ -230,6 +252,7 @@ def run_mf_vi(*args, max_covariance_log_step=1.0, **kwargs):
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_run_mf_vi(*args, **kwargs)
+    _reject_mean_field_only_newton_strategy(_legacy_run_mf_vi, args, kwargs)
     _require_coupled_mf_base(_full_run_mf_vi, args, kwargs)
     implementation = (
         _full_newton_run_mf_vi
@@ -252,6 +275,7 @@ def mf_vi_with_auto_rom(*args, max_covariance_log_step=1.0, **kwargs):
     family = _variational_family(initializer)
     if family == "diagonal":
         return _legacy_auto_mf_vi(*args, **kwargs)
+    _reject_mean_field_only_newton_strategy(_legacy_auto_mf_vi, args, kwargs)
     _require_coupled_mf_base(_full_auto_mf_vi, args, kwargs)
     implementation = (
         _full_newton_auto_mf_vi
