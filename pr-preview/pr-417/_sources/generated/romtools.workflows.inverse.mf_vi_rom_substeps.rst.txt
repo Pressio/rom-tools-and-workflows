@@ -1,0 +1,17 @@
+romtools.workflows.inverse.mf\_vi\_rom\_substeps
+================================================
+
+.. automodule:: romtools.workflows.inverse.mf_vi_rom_substeps
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      apply_diagonal_rom_substeps
+      apply_full_covariance_rom_substeps
+      restore_rom_substeps
+      rom_substep_restart_data
+      rom_substeps_enabled
+      validate_rom_substeps
+   

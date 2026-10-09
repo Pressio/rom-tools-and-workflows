@@ -1,0 +1,12 @@
+romtools.hpc.dispatchers.base\_dispatcher
+=========================================
+
+.. automodule:: romtools.hpc.dispatchers.base_dispatcher
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseDispatcher
+   
