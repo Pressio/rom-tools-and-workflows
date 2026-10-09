@@ -353,8 +353,8 @@ ROM-only Newton substeps
 
 MF-VI can optionally perform a fixed number of inexpensive **ROM-only Newton
 updates** between FOM-anchored iterations, mirroring the MF-EKI substep window.
-For example, add the following keyword arguments to \`run_mf_vi\` or
-\`mf_vi_with_auto_rom\`:
+For example, add the following keyword arguments to ``run_mf_vi`` or
+``mf_vi_with_auto_rom``:
 
 .. code-block:: python
 
@@ -362,7 +362,7 @@ For example, add the following keyword arguments to \`run_mf_vi\` or
    rom_substep_end_iteration=20,
    num_rom_substeps=2,
 
-The defaults are \`0\`, \`None\`, and \`0\`, respectively; therefore ROM
+The defaults are ``0``, ``None``, and ``0``, respectively; therefore ROM
 substeps are disabled unless requested. The start index is inclusive and the
 end index exclusive, counting only outer MF-VI iterations.
 
