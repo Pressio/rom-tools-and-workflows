@@ -124,6 +124,7 @@ def run_mf_vi(*args, **kwargs):
     call_kwargs = dict(kwargs)
     call_kwargs["optimizer_method"] = "gradient"
     call_kwargs["optimizer_config"] = _base._gradient_config_from_newton(config)
+    call_kwargs["rom_substep_newton_config"] = config
     with _accepted_state_hessian_averaging(
         config, "estimate_mf_ordinary_hessian"
     ):
