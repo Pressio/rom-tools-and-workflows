@@ -1,8 +1,10 @@
-"""ROM-only Newton substeps for multifidelity variational inference.
+"""ROM-only optimizer substeps for multifidelity variational inference.
 
-Each substep estimates BOTH the ROM ELBO gradient and Hessian at its own
-variational state. The surrogate is frozen for the duration of the substeps.
-No high-fidelity model calls or multifidelity control variates occur here.
+Substeps inherit the outer optimizer method and configuration. Stateful
+optimizers (e.g., Adam) start with fresh state for each ROM-only sequence,
+without affecting the outer optimizer. Newton substeps recompute both the
+gradient and Hessian at each variational state. No high-fidelity model calls
+or multifidelity control variates occur in these steps.
 """
 from __future__ import annotations
 
@@ -47,20 +49,24 @@ def rom_substep_restart_data(start, end, count):
     )
 
 
-def _rom_newton_config(outer_method, optimizer_config, *, full_covariance=False):
-    """Use the outer Newton curvature settings, otherwise safe Newton defaults.
-
-    Inner steps are Newton steps even when the outer MFVI optimizer is
-    gradient/Adam, so no outer Adam moments or lagged curvature are mutated.
-    """
-    from romtools.workflows.inverse.vi_optimization_methods import VINewtonOptimizerConfig
-    if outer_method == "newton":
-        return optimizer_config
-    return VINewtonOptimizerConfig(
-        newton_regularization=1e-2,
-        newton_hessian_type="diagonal",
-        newton_metric="natural" if full_covariance else "standard",
+def _rom_optimizer(outer_method, optimizer_config, *, parameter_dimension=None):
+    """Initialize an independent inner optimizer with the outer configuration."""
+    from romtools.workflows.inverse.vi_optimization_methods import (
+        AdamSolver, SteepestDescentSolver,
     )
+
+    method = outer_method.strip().lower()
+    if method not in ("gradient", "adam", "newton"):
+        raise ValueError(f"Unsupported ROM-only optimizer method: {outer_method}")
+    if method == "adam":
+        solver = AdamSolver.from_config(optimizer_config)
+        if parameter_dimension is not None:
+            solver.parameter_dimension = parameter_dimension
+    elif method == "gradient":
+        solver = SteepestDescentSolver()
+    else:
+        solver = None
+    return method, solver
 
 
 def apply_diagonal_rom_substeps(
@@ -104,7 +110,11 @@ def apply_diagonal_rom_substeps(
     from romtools.workflows.inverse import vi_drivers as vi
     from romtools.workflows.inverse import vi_sample_reuse as reuse
 
-    config = _rom_newton_config(outer_method, optimizer_config)
+    method, solver = _rom_optimizer(outer_method, optimizer_config)
+    gradient_method = (
+        optimizer_config.gradient_method.strip().lower()
+        if method in ("gradient", "adam") else "standard"
+    )
     mean = np.asarray(candidate_mean, dtype=float).copy()
     log_std = np.asarray(candidate_log_std, dtype=float).copy()
     for substep in range(num_rom_substeps):
@@ -127,7 +137,7 @@ def apply_diagonal_rom_substeps(
             evaluation_concurrency=evaluation_concurrency,
             covariance_regularization=covariance_regularization,
             baseline_method=baseline_method,
-            gradient_method="standard",
+            gradient_method=gradient_method,
             bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
@@ -145,18 +155,41 @@ def apply_diagonal_rom_substeps(
         std, _ = vi._compute_variational_std(
             log_std, min_variational_std, max_variational_std
         )
-        metric_scale = vi._compute_newton_metric_scale(
-            config.newton_metric, std
-        )
-        # Gradient AND Hessian are recomputed from ROM samples at every
-        # substep; use the same regularized solve as ordinary VI Newton.
-        direction_mean, direction_log_std = vi._compute_newton_step(
-            rom_state,
-            config.newton_regularization,
-            newton_hessian_type=config.newton_hessian_type,
-            newton_regularization_strategy=config.newton_regularization_strategy,
-            metric_scale=metric_scale,
-        )
+        if method == "newton":
+            metric_scale = vi._compute_newton_metric_scale(
+                optimizer_config.newton_metric, std
+            )
+            # Newton uses both fresh ROM gradient and Hessian every substep.
+            direction_mean, direction_log_std = vi._compute_newton_step(
+                rom_state,
+                optimizer_config.newton_regularization,
+                newton_hessian_type=optimizer_config.newton_hessian_type,
+                newton_regularization_strategy=optimizer_config.newton_regularization_strategy,
+                newton_additive_regularization=optimizer_config.newton_additive_regularization,
+                newton_regularization_epsilon=optimizer_config.newton_regularization_epsilon,
+                newton_fallback_learning_rate=optimizer_config.newton_fallback_learning_rate,
+                metric_scale=metric_scale,
+            )
+        else:
+            if method == "adam":
+                # Match outer mean-field Adam: raw score gradient, with
+                # optional damped Fisher preconditioning. Moments are local.
+                gradient = np.r_[
+                    rom_state["gradient_mean"], rom_state["gradient_log_std"]
+                ]
+                fisher = vi._compute_adam_fisher_diagonal(
+                    log_std, min_variational_std, max_variational_std,
+                    gradient_method,
+                )
+                direction = solver.step(gradient, fisher_diagonal=fisher)
+            else:
+                direction = solver.step(np.r_[
+                    rom_state["update_direction_mean"],
+                    rom_state["update_direction_log_std"],
+                ])
+            dimension = mean.size
+            direction_mean = direction[:dimension]
+            direction_log_std = direction[dimension:]
         mean += vi._limit_mean_update(
             direction_mean, step_size, std, max_mean_update_std
         )
@@ -174,7 +207,7 @@ def apply_diagonal_rom_substeps(
             transform_map,
         )
         print(
-            f"  ROM-only VI Newton substep {substep + 1}/{num_rom_substeps} "
+            f"  ROM-only VI {method} substep {substep + 1}/{num_rom_substeps} "
             f"after outer iteration {outer_iteration}, "
             f"gradient norm: {np.linalg.norm(np.r_[rom_state['gradient_mean'], rom_state['gradient_log_std']]):.5e}"
         )
@@ -224,10 +257,14 @@ def apply_full_covariance_rom_substeps(
         packed_direction_to_covariance, retract_covariance,
     )
 
-    config = _rom_newton_config(
-        outer_method, optimizer_config, full_covariance=True
-    )
     mean = np.asarray(candidate_mean, dtype=float).copy()
+    method, solver = _rom_optimizer(
+        outer_method, optimizer_config, parameter_dimension=mean.size
+    )
+    gradient_method = (
+        optimizer_config.gradient_method.strip().lower()
+        if method in ("gradient", "adam") else "natural"
+    )
     cholesky = np.asarray(candidate_cholesky, dtype=float).copy()
     for substep in range(num_rom_substeps):
         rom_state = fcvi._evaluate_single_fidelity_state(
@@ -245,7 +282,7 @@ def apply_full_covariance_rom_substeps(
             evaluation_concurrency=evaluation_concurrency,
             covariance_regularization=covariance_regularization,
             baseline_method=baseline_method,
-            gradient_method="natural",
+            gradient_method=gradient_method,
             bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
@@ -259,16 +296,23 @@ def apply_full_covariance_rom_substeps(
             dispatcher=dispatcher,
             score_function_entropy_strategy=score_function_entropy_strategy,
         )
-        hessian = fcnewton.estimate_ordinary_hessian(
-            rom_state["optimizer_samples"],
-            mean, cholesky,
-            elbo_scaling_factor * np.asarray(rom_state["log_joint_terms"]),
-            baseline_method,
-            elbo_scaling_factor,
-        )
-        direction = fcnewton._newton_step_from_hessian(
-            rom_state, cholesky, config, hessian
-        )
+        if method == "newton":
+            hessian = fcnewton.estimate_ordinary_hessian(
+                rom_state["optimizer_samples"],
+                mean, cholesky,
+                elbo_scaling_factor * np.asarray(rom_state["log_joint_terms"]),
+                baseline_method,
+                elbo_scaling_factor,
+            )
+            direction = fcnewton._newton_step_from_hessian(
+                rom_state, cholesky, optimizer_config, hessian
+            )
+        else:
+            gradient = fcvi._update_vector(rom_state)
+            direction = (
+                solver.step(gradient, fisher_diagonal=None)
+                if method == "adam" else solver.step(gradient)
+            )
         dimension = mean.size
         mean += step_size * direction[:dimension]
         cholesky, _ = retract_covariance(
@@ -283,7 +327,7 @@ def apply_full_covariance_rom_substeps(
             transform_map,
         )
         print(
-            f"  ROM-only full-covariance VI Newton substep "
+            f"  ROM-only full-covariance VI {method} substep "
             f"{substep + 1}/{num_rom_substeps} after outer iteration "
             f"{outer_iteration}, gradient norm: "
             f"{np.linalg.norm(np.r_[rom_state['gradient_mean'], rom_state['gradient_covariance_svec']]):.5e}"
