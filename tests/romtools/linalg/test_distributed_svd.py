@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import romtools.linalg as romtools_linalg
-from romtools.linalg import DistributedSvd
+from romtools.linalg import DEFAULT_TSQR_TREE_THRESHOLD, DistributedSvd
 
 
 #############################
@@ -11,6 +11,10 @@ from romtools.linalg import DistributedSvd
 
 def test_distributed_svd_is_exposed_by_linalg_public_api():
     assert romtools_linalg.DistributedSvd is DistributedSvd
+    assert romtools_linalg.DEFAULT_TSQR_TREE_THRESHOLD == (
+        DEFAULT_TSQR_TREE_THRESHOLD
+    )
+    assert DEFAULT_TSQR_TREE_THRESHOLD >= 1
 
 
 ####################
@@ -152,3 +156,11 @@ def test_serial_hermitian_true_is_rejected(compute_uv):
 def test_default_numpy_signature_fails_clearly_for_unsupported_full_svd():
     with pytest.raises(NotImplementedError, match="full_matrices=False"):
         DistributedSvd()(np.eye(3))
+
+
+@pytest.mark.parametrize("tree_threshold", [0, -1, 1.5, True])
+def test_invalid_tree_threshold_raises_value_error(tree_threshold):
+    with pytest.raises(ValueError, match="tree_threshold must be a positive"):
+        DistributedSvd(tree_threshold=tree_threshold)(
+            np.eye(3), full_matrices=False
+        )

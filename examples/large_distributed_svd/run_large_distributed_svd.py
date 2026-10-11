@@ -12,7 +12,10 @@ import time
 import numpy as np
 from mpi4py import MPI
 
-from romtools.linalg.linalg import _distributed_svd
+from romtools.linalg.linalg import (
+    DEFAULT_TSQR_TREE_THRESHOLD,
+    _distributed_svd,
+)
 
 
 def _parse_arguments():
@@ -50,6 +53,15 @@ def _parse_arguments():
         "--verify",
         action="store_true",
         help="also check distributed U and Vh orthogonality",
+    )
+    parser.add_argument(
+        "--tree-threshold",
+        type=int,
+        default=DEFAULT_TSQR_TREE_THRESHOLD,
+        help=(
+            "minimum MPI rank count that uses tree TSQR instead of the "
+            f"rank-zero reduction (default: {DEFAULT_TSQR_TREE_THRESHOLD})"
+        ),
     )
     return parser.parse_args()
 
@@ -104,6 +116,15 @@ def _print_problem_summary(arguments, comm, local_rows, allocation_seconds):
         print(
             "mode: "
             + ("singular values only" if arguments.values_only else "U, s, Vh")
+        )
+        reduction = (
+            "binary tree"
+            if size >= arguments.tree_threshold
+            else "rank-zero gather"
+        )
+        print(
+            f"TSQR reduction: {reduction} "
+            f"(tree threshold: {arguments.tree_threshold} ranks)"
         )
         print(
             "matrix allocation time (slowest rank): "
@@ -168,6 +189,7 @@ def _run(arguments, comm):
             full_matrices=False,
             compute_uv=not arguments.values_only,
             hermitian=False,
+            tree_threshold=arguments.tree_threshold,
         )
         svd_error = None
     except Exception as exception:  # Report collective numerical/MPI failures.
@@ -243,6 +265,8 @@ def main():
         error = "--columns must be positive"
     elif arguments.global_rows < arguments.columns:
         error = "this runner requires --global-rows >= --columns"
+    elif arguments.tree_threshold < 1:
+        error = "--tree-threshold must be positive"
 
     if error is not None:
         if comm.Get_rank() == 0:
