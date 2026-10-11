@@ -56,7 +56,7 @@ a class that meets the required API of the abstract base class.
 Once this class is complete, the user gains access to all of our existing algorithms.
 
 Content
-=======
+-------
 
 The Python library, called `romtools`, contains abstract interfaces and functions required for, e.g.,
 
@@ -81,18 +81,54 @@ Demos/tutorials
 
 Please see the Demos section of the documentation for demos and tutorials.
 
+Public API
+==========
+
+Prefer domain-oriented imports such as ``romtools.vector_space`` and
+``romtools.workflows.inverse``. The root exposes package metadata and major
+subpackages; historical flat aliases remain for backwards compatibility.
+
 License
-=======
+-------
 
 See the :doc:`license information </demos/license>`.
 """
 
-__all__ = ['vector_space', 'workflows', 'hyper_reduction','composite_vector_space']
+from importlib.metadata import PackageNotFoundError, version
+
+# Load the vector-space aliases first because a small amount of legacy code
+# still resolves type annotations through ``romtools.VectorSpace`` at import
+# time. These aliases remain available for backwards compatibility but are not
+# part of the canonical top-level API.
+from . import vector_space
+from .vector_space import (
+    DictionaryVectorSpace,
+    VectorSpace,
+    VectorSpaceFromPOD,
+    VectorSpaceFromStreamingPOD,
+)
+
+from . import composite_vector_space, hpc, hyper_reduction, linalg, rom, workflows
+from .composite_vector_space import CompositeVectorSpace
+from .hyper_reduction import *
+from .rom import *
+from .workflows import *
+
+try:
+    __version__ = version("romtools")
+except PackageNotFoundError:
+    # Keep source-tree imports usable before the package has been installed.
+    __version__ = "0+unknown"
 
 __docformat__ = "restructuredtext" # required to generate the license
 
-from romtools.vector_space import *
-from romtools.hyper_reduction import *
-from romtools.workflows import *
-from romtools.composite_vector_space import *
-from romtools.rom import *
+__all__ = [
+    "__version__",
+    "vector_space",
+    "composite_vector_space",
+    "hyper_reduction",
+    "linalg",
+    "rom",
+    "workflows",
+    "hpc",
+]
