@@ -1,0 +1,12 @@
+romtools.workflows.inverse.vi\_sample\_reuse\_hessian
+=====================================================
+
+.. automodule:: romtools.workflows.inverse.vi_sample_reuse_hessian
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      VISampleReuseConfig
+   
