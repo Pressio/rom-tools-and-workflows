@@ -49,6 +49,16 @@ def _run_qoi_sample(
     return run_time, qoi
 
 
+def validate_evaluation_concurrency(evaluation_concurrency: int) -> None:
+    """Validate the requested concurrency in both preparation and execution."""
+    if (
+        isinstance(evaluation_concurrency, bool)
+        or not isinstance(evaluation_concurrency, Integral)
+        or evaluation_concurrency < 1
+    ):
+        raise ValueError("evaluation_concurrency must be a positive integer")
+
+
 def evaluate_qoi_model(
     model: QoiModel,
     parameter_names: Sequence[str],
@@ -60,12 +70,7 @@ def evaluate_qoi_model(
     starting_sample_index: int = 0,
 ):
     """Evaluate a QoI model while preserving the input sample ordering."""
-    if (
-        isinstance(evaluation_concurrency, bool)
-        or not isinstance(evaluation_concurrency, Integral)
-        or evaluation_concurrency < 1
-    ):
-        raise ValueError("evaluation_concurrency must be a positive integer")
+    validate_evaluation_concurrency(evaluation_concurrency)
     samples = np.asarray(parameter_samples)
     if samples.ndim != 2:
         raise ValueError("parameter_samples must be two-dimensional")
@@ -88,6 +93,8 @@ def evaluate_qoi_model(
                 model, run_directory, parameter_sample
             )
         else:
+            if overwrite and dispatcher.path_exists(passed_file):
+                dispatcher.remove(passed_file)
             model.populate_run_directory(run_directory, parameter_sample)
             samples_to_run.append(
                 (local_index, run_directory, parameter_sample)
@@ -148,6 +155,8 @@ def prepare_qoi_model(
         dispatcher.create_empty_dir(run_directory)
         passed_file = os.path.join(run_directory, "passed.txt")
         if overwrite or not dispatcher.path_exists(passed_file):
+            if overwrite and dispatcher.path_exists(passed_file):
+                dispatcher.remove(passed_file)
             model.populate_run_directory(
                 run_directory, _parameter_dictionary(parameter_names, parameter_values)
             )
