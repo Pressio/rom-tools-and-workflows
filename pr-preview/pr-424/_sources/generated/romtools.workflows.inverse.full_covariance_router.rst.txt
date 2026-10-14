@@ -1,0 +1,14 @@
+romtools.workflows.inverse.full\_covariance\_router
+===================================================
+
+.. automodule:: romtools.workflows.inverse.full_covariance_router
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mf_vi_with_auto_rom
+      run_mf_vi
+      run_vi
+   
