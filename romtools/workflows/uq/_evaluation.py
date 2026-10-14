@@ -125,3 +125,30 @@ def evaluate_qoi_model(
     except ValueError as error:
         raise ValueError("model returned inconsistent QoI dimensions") from error
     return qoi_matrix, run_times
+
+
+def prepare_qoi_model(
+    model: QoiModel,
+    parameter_names: Sequence[str],
+    parameter_samples: np.ndarray,
+    run_directory_base: str,
+    overwrite: bool = False,
+    dispatcher: Optional[BaseDispatcher] = None,
+    starting_sample_index: int = 0,
+) -> tuple[str, ...]:
+    """Prepare model input directories without running simulations or QoIs."""
+    samples = np.asarray(parameter_samples)
+    if samples.ndim != 2 or samples.shape[1] != len(parameter_names):
+        raise ValueError("parameter samples must be two-dimensional and match parameter names")
+    dispatcher = resolve_dispatcher(dispatcher)
+    directories = []
+    for local_index, parameter_values in enumerate(samples):
+        run_directory = f"{run_directory_base}{starting_sample_index + local_index}"
+        directories.append(run_directory)
+        dispatcher.create_empty_dir(run_directory)
+        passed_file = os.path.join(run_directory, "passed.txt")
+        if overwrite or not dispatcher.path_exists(passed_file):
+            model.populate_run_directory(
+                run_directory, _parameter_dictionary(parameter_names, parameter_values)
+            )
+    return tuple(directories)
