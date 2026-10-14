@@ -11,7 +11,11 @@ import numpy as np
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.workflows.uq._evaluation import evaluate_qoi_model, prepare_qoi_model
+from romtools.workflows.uq._evaluation import (
+    evaluate_qoi_model,
+    prepare_qoi_model,
+    validate_evaluation_concurrency,
+)
 from romtools.workflows.uq.sample_allocation import allocate_samples_from_pilot
 from romtools.workflows.uq.statistics import (
     compute_monte_carlo_statistics,
@@ -226,6 +230,7 @@ def run_monte_carlo(
 
     _require_absolute_directory(absolute_work_dir)
     _require_sample_count("number_of_samples", number_of_samples)
+    validate_evaluation_concurrency(evaluation_concurrency)
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_work_dir)
     samples = parameter_space.generate_samples(number_of_samples, seed=random_seed)
@@ -467,6 +472,24 @@ def run_multifidelity_monte_carlo(
     ):
         raise ValueError("low_to_high_fidelity_cost_ratio must be positive")
 
+    validate_evaluation_concurrency(high_fidelity_evaluation_concurrency)
+    validate_evaluation_concurrency(low_fidelity_evaluation_concurrency)
+    if mode == "pilot":
+        if control_variate_coefficients is not None:
+            raise ValueError(
+                "pilot allocation estimates and freezes control-variate coefficients"
+            )
+        if (
+            not np.isfinite(high_fidelity_equivalent_budget)
+            or high_fidelity_equivalent_budget <= 0
+        ):
+            raise ValueError("high_fidelity_equivalent_budget must be positive")
+        if low_to_high_fidelity_cost_ratio is not None:
+            pilot_cost = pilot_sample_count * (1.0 + low_to_high_fidelity_cost_ratio)
+            tolerance = np.finfo(float).eps * max(high_fidelity_equivalent_budget, 1.0) * 100.0
+            if pilot_cost > high_fidelity_equivalent_budget + tolerance:
+                raise ValueError("the paired pilot exceeds the high-fidelity-equivalent budget")
+
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_work_dir)
     high_directory_base = os.path.join(
@@ -552,10 +575,6 @@ def run_multifidelity_monte_carlo(
 
     # Pilot mode.
     pilot_count = int(pilot_sample_count)
-    if control_variate_coefficients is not None:
-        raise ValueError(
-            "pilot allocation estimates and freezes control-variate coefficients"
-        )
     pilot_samples = np.asarray(
         parameter_space.generate_samples(pilot_count, seed=random_seed)
     )
