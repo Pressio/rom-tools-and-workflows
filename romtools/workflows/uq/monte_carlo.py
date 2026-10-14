@@ -11,13 +11,28 @@ import numpy as np
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.workflows.uq._evaluation import evaluate_qoi_model
+from romtools.workflows.uq._evaluation import (
+    evaluate_qoi_model,
+    prepare_qoi_model,
+    validate_evaluation_concurrency,
+)
 from romtools.workflows.uq.sample_allocation import allocate_samples_from_pilot
 from romtools.workflows.uq.statistics import (
     compute_monte_carlo_statistics,
     compute_multifidelity_statistics,
     compute_paired_statistics,
 )
+
+
+@dataclass
+class MonteCarloDryRunResult:
+    """Prepared samples and directory locations; no model evaluations occurred."""
+
+    parameter_samples: np.ndarray
+    run_directories: tuple[str, ...]
+    high_fidelity_run_directories: tuple[str, ...] = ()
+    low_fidelity_run_directories: tuple[str, ...] = ()
+    pilot_only: bool = False
 
 
 @dataclass
@@ -157,7 +172,8 @@ def run_monte_carlo(
     dispatcher: Optional[BaseDispatcher] = None,
     *,
     absolute_uq_directory: Optional[str] = None,
-) -> MonteCarloResult:
+    dry_run: bool = False,
+) -> MonteCarloResult | MonteCarloDryRunResult:
     """Estimate the mean of a model QoI by Monte Carlo sampling.
 
     For every generated parameter sample, the workflow calls the three
@@ -182,9 +198,11 @@ def run_monte_carlo(
             ``passed.txt``. If ``True``, populate and evaluate every sample.
         dispatcher: Filesystem/dispatch implementation. Defaults to
             :class:`~romtools.hpc.dispatchers.LocalDispatcher`.
+        dry_run: Prepare run directories and inputs without executing models,
+            computing QoIs, or writing aggregate statistics.
 
     Returns:
-        MonteCarloResult: Samples, flattened QoI values, sample moments,
+        MonteCarloDryRunResult when dry_run is True, otherwise MonteCarloResult: Samples, flattened QoI values, sample moments,
         standard errors, and measured model run times.
 
     Raises:
@@ -212,9 +230,17 @@ def run_monte_carlo(
 
     _require_absolute_directory(absolute_work_dir)
     _require_sample_count("number_of_samples", number_of_samples)
+    validate_evaluation_concurrency(evaluation_concurrency)
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_work_dir)
     samples = parameter_space.generate_samples(number_of_samples, seed=random_seed)
+    if dry_run:
+        directories = prepare_qoi_model(
+            model, parameter_space.get_names(), samples,
+            os.path.join(absolute_work_dir, "run_"),
+            overwrite=overwrite, dispatcher=dispatcher,
+        )
+        return MonteCarloDryRunResult(np.asarray(samples), directories)
     qois, run_times = evaluate_qoi_model(
         model,
         parameter_space.get_names(),
@@ -347,7 +373,8 @@ def run_multifidelity_monte_carlo(
     dispatcher: Optional[BaseDispatcher] = None,
     *,
     absolute_uq_directory: Optional[str] = None,
-) -> MultifidelityMonteCarloResult:
+    dry_run: bool = False,
+) -> MultifidelityMonteCarloResult | MonteCarloDryRunResult:
     r"""Estimate a QoI mean using two-level multifidelity Monte Carlo.
 
     The first ``N_H`` low-fidelity evaluations are paired with the
@@ -402,9 +429,12 @@ def run_multifidelity_monte_carlo(
             ``passed.txt``; otherwise rerun them.
         dispatcher: Filesystem/dispatch implementation. Defaults to
             :class:`~romtools.hpc.dispatchers.LocalDispatcher`.
+        dry_run: Prepare inputs without model execution or statistics.
+            Pilot-allocation mode prepares only the initial paired pilot;
+            the final allocation requires pilot QoI evaluations.
 
     Returns:
-        MultifidelityMonteCarloResult: Ordered samples and QoIs, mean estimate,
+        MonteCarloDryRunResult when dry_run is True, otherwise MultifidelityMonteCarloResult: Ordered samples and QoIs, mean estimate,
         estimator variance and standard error, allocation metadata,
         correlations, coefficients, and run times.
 
@@ -442,6 +472,24 @@ def run_multifidelity_monte_carlo(
     ):
         raise ValueError("low_to_high_fidelity_cost_ratio must be positive")
 
+    validate_evaluation_concurrency(high_fidelity_evaluation_concurrency)
+    validate_evaluation_concurrency(low_fidelity_evaluation_concurrency)
+    if mode == "pilot":
+        if control_variate_coefficients is not None:
+            raise ValueError(
+                "pilot allocation estimates and freezes control-variate coefficients"
+            )
+        if (
+            not np.isfinite(high_fidelity_equivalent_budget)
+            or high_fidelity_equivalent_budget <= 0
+        ):
+            raise ValueError("high_fidelity_equivalent_budget must be positive")
+        if low_to_high_fidelity_cost_ratio is not None:
+            pilot_cost = pilot_sample_count * (1.0 + low_to_high_fidelity_cost_ratio)
+            tolerance = np.finfo(float).eps * max(high_fidelity_equivalent_budget, 1.0) * 100.0
+            if pilot_cost > high_fidelity_equivalent_budget + tolerance:
+                raise ValueError("the paired pilot exceeds the high-fidelity-equivalent budget")
+
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.create_empty_dir(absolute_work_dir)
     high_directory_base = os.path.join(
@@ -458,6 +506,19 @@ def run_multifidelity_monte_carlo(
                 number_of_low_fidelity_samples, seed=random_seed
             )
         )
+        if dry_run:
+            high_dirs = prepare_qoi_model(
+                high_fidelity_model, parameter_names,
+                samples[:number_of_high_fidelity_samples], high_directory_base,
+                overwrite=overwrite, dispatcher=dispatcher,
+            )
+            low_dirs = prepare_qoi_model(
+                low_fidelity_model, parameter_names, samples, low_directory_base,
+                overwrite=overwrite, dispatcher=dispatcher,
+            )
+            return MonteCarloDryRunResult(
+                samples, (), high_dirs, low_dirs,
+            )
         high_qois, high_times = evaluate_qoi_model(
             high_fidelity_model,
             parameter_names,
@@ -514,13 +575,21 @@ def run_multifidelity_monte_carlo(
 
     # Pilot mode.
     pilot_count = int(pilot_sample_count)
-    if control_variate_coefficients is not None:
-        raise ValueError(
-            "pilot allocation estimates and freezes control-variate coefficients"
-        )
     pilot_samples = np.asarray(
         parameter_space.generate_samples(pilot_count, seed=random_seed)
     )
+    if dry_run:
+        high_dirs = prepare_qoi_model(
+            high_fidelity_model, parameter_names, pilot_samples,
+            high_directory_base, overwrite=overwrite, dispatcher=dispatcher,
+        )
+        low_dirs = prepare_qoi_model(
+            low_fidelity_model, parameter_names, pilot_samples,
+            low_directory_base, overwrite=overwrite, dispatcher=dispatcher,
+        )
+        return MonteCarloDryRunResult(
+            pilot_samples, (), high_dirs, low_dirs, pilot_only=True,
+        )
     pilot_high_qois, pilot_high_times = evaluate_qoi_model(
         high_fidelity_model,
         parameter_names,
