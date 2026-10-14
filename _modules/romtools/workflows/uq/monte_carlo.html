@@ -400,13 +400,31 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.hpc.dispatchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDispatcher</span><span class="p">,</span> <span class="n">resolve_dispatcher</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QoiModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.parameter_spaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterSpace</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq._evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_qoi_model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq._evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">evaluate_qoi_model</span><span class="p">,</span>
+    <span class="n">prepare_qoi_model</span><span class="p">,</span>
+    <span class="n">validate_evaluation_concurrency</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq.sample_allocation</span><span class="w"> </span><span class="kn">import</span> <span class="n">allocate_samples_from_pilot</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">compute_monte_carlo_statistics</span><span class="p">,</span>
     <span class="n">compute_multifidelity_statistics</span><span class="p">,</span>
     <span class="n">compute_paired_statistics</span><span class="p">,</span>
 <span class="p">)</span>
+
+
+<div class="viewcode-block" id="MonteCarloDryRunResult">
+<a class="viewcode-back" href="../../../../generated/romtools.workflows.uq.monte_carlo.html#romtools.workflows.uq.MonteCarloDryRunResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MonteCarloDryRunResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Prepared samples and directory locations; no model evaluations occurred."""</span>
+
+    <span class="n">parameter_samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">run_directories</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">high_fidelity_run_directories</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">low_fidelity_run_directories</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">pilot_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
 
 
 <div class="viewcode-block" id="MonteCarloResult">
@@ -554,7 +572,8 @@
     <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">absolute_uq_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MonteCarloResult</span><span class="p">:</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MonteCarloResult</span> <span class="o">|</span> <span class="n">MonteCarloDryRunResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Estimate the mean of a model QoI by Monte Carlo sampling.</span>
 
 <span class="sd">    For every generated parameter sample, the workflow calls the three</span>
@@ -579,9 +598,11 @@
 <span class="sd">            ``passed.txt``. If ``True``, populate and evaluate every sample.</span>
 <span class="sd">        dispatcher: Filesystem/dispatch implementation. Defaults to</span>
 <span class="sd">            :class:`~romtools.hpc.dispatchers.LocalDispatcher`.</span>
+<span class="sd">        dry_run: Prepare run directories and inputs without executing models,</span>
+<span class="sd">            computing QoIs, or writing aggregate statistics.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        MonteCarloResult: Samples, flattened QoI values, sample moments,</span>
+<span class="sd">        MonteCarloDryRunResult when dry_run is True, otherwise MonteCarloResult: Samples, flattened QoI values, sample moments,</span>
 <span class="sd">        standard errors, and measured model run times.</span>
 
 <span class="sd">    Raises:</span>
@@ -609,9 +630,17 @@
 
     <span class="n">_require_absolute_directory</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">)</span>
     <span class="n">_require_sample_count</span><span class="p">(</span><span class="s2">"number_of_samples"</span><span class="p">,</span> <span class="n">number_of_samples</span><span class="p">)</span>
+    <span class="n">validate_evaluation_concurrency</span><span class="p">(</span><span class="n">evaluation_concurrency</span><span class="p">)</span>
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">dispatcher</span><span class="o">.</span><span class="n">create_empty_dir</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">)</span>
     <span class="n">samples</span> <span class="o">=</span> <span class="n">parameter_space</span><span class="o">.</span><span class="n">generate_samples</span><span class="p">(</span><span class="n">number_of_samples</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">random_seed</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+        <span class="n">directories</span> <span class="o">=</span> <span class="n">prepare_qoi_model</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">parameter_space</span><span class="o">.</span><span class="n">get_names</span><span class="p">(),</span> <span class="n">samples</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">,</span> <span class="s2">"run_"</span><span class="p">),</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">MonteCarloDryRunResult</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="n">directories</span><span class="p">)</span>
     <span class="n">qois</span><span class="p">,</span> <span class="n">run_times</span> <span class="o">=</span> <span class="n">evaluate_qoi_model</span><span class="p">(</span>
         <span class="n">model</span><span class="p">,</span>
         <span class="n">parameter_space</span><span class="o">.</span><span class="n">get_names</span><span class="p">(),</span>
@@ -747,7 +776,8 @@
     <span class="n">dispatcher</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseDispatcher</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">absolute_uq_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MultifidelityMonteCarloResult</span><span class="p">:</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MultifidelityMonteCarloResult</span> <span class="o">|</span> <span class="n">MonteCarloDryRunResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""Estimate a QoI mean using two-level multifidelity Monte Carlo.</span>
 
 <span class="sd">    The first ``N_H`` low-fidelity evaluations are paired with the</span>
@@ -802,9 +832,12 @@
 <span class="sd">            ``passed.txt``; otherwise rerun them.</span>
 <span class="sd">        dispatcher: Filesystem/dispatch implementation. Defaults to</span>
 <span class="sd">            :class:`~romtools.hpc.dispatchers.LocalDispatcher`.</span>
+<span class="sd">        dry_run: Prepare inputs without model execution or statistics.</span>
+<span class="sd">            Pilot-allocation mode prepares only the initial paired pilot;</span>
+<span class="sd">            the final allocation requires pilot QoI evaluations.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        MultifidelityMonteCarloResult: Ordered samples and QoIs, mean estimate,</span>
+<span class="sd">        MonteCarloDryRunResult when dry_run is True, otherwise MultifidelityMonteCarloResult: Ordered samples and QoIs, mean estimate,</span>
 <span class="sd">        estimator variance and standard error, allocation metadata,</span>
 <span class="sd">        correlations, coefficients, and run times.</span>
 
@@ -842,6 +875,24 @@
     <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"low_to_high_fidelity_cost_ratio must be positive"</span><span class="p">)</span>
 
+    <span class="n">validate_evaluation_concurrency</span><span class="p">(</span><span class="n">high_fidelity_evaluation_concurrency</span><span class="p">)</span>
+    <span class="n">validate_evaluation_concurrency</span><span class="p">(</span><span class="n">low_fidelity_evaluation_concurrency</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"pilot"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">control_variate_coefficients</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"pilot allocation estimates and freezes control-variate coefficients"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">high_fidelity_equivalent_budget</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">high_fidelity_equivalent_budget</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"high_fidelity_equivalent_budget must be positive"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">low_to_high_fidelity_cost_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pilot_cost</span> <span class="o">=</span> <span class="n">pilot_sample_count</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">low_to_high_fidelity_cost_ratio</span><span class="p">)</span>
+            <span class="n">tolerance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">high_fidelity_equivalent_budget</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.0</span>
+            <span class="k">if</span> <span class="n">pilot_cost</span> <span class="o">&gt;</span> <span class="n">high_fidelity_equivalent_budget</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the paired pilot exceeds the high-fidelity-equivalent budget"</span><span class="p">)</span>
+
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
     <span class="n">dispatcher</span><span class="o">.</span><span class="n">create_empty_dir</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">)</span>
     <span class="n">high_directory_base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
@@ -858,6 +909,19 @@
                 <span class="n">number_of_low_fidelity_samples</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">random_seed</span>
             <span class="p">)</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="n">high_dirs</span> <span class="o">=</span> <span class="n">prepare_qoi_model</span><span class="p">(</span>
+                <span class="n">high_fidelity_model</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">,</span>
+                <span class="n">samples</span><span class="p">[:</span><span class="n">number_of_high_fidelity_samples</span><span class="p">],</span> <span class="n">high_directory_base</span><span class="p">,</span>
+                <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">low_dirs</span> <span class="o">=</span> <span class="n">prepare_qoi_model</span><span class="p">(</span>
+                <span class="n">low_fidelity_model</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">low_directory_base</span><span class="p">,</span>
+                <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">MonteCarloDryRunResult</span><span class="p">(</span>
+                <span class="n">samples</span><span class="p">,</span> <span class="p">(),</span> <span class="n">high_dirs</span><span class="p">,</span> <span class="n">low_dirs</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">high_qois</span><span class="p">,</span> <span class="n">high_times</span> <span class="o">=</span> <span class="n">evaluate_qoi_model</span><span class="p">(</span>
             <span class="n">high_fidelity_model</span><span class="p">,</span>
             <span class="n">parameter_names</span><span class="p">,</span>
@@ -914,13 +978,21 @@
 
     <span class="c1"># Pilot mode.</span>
     <span class="n">pilot_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pilot_sample_count</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">control_variate_coefficients</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">"pilot allocation estimates and freezes control-variate coefficients"</span>
-        <span class="p">)</span>
     <span class="n">pilot_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
         <span class="n">parameter_space</span><span class="o">.</span><span class="n">generate_samples</span><span class="p">(</span><span class="n">pilot_count</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">random_seed</span><span class="p">)</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+        <span class="n">high_dirs</span> <span class="o">=</span> <span class="n">prepare_qoi_model</span><span class="p">(</span>
+            <span class="n">high_fidelity_model</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">,</span> <span class="n">pilot_samples</span><span class="p">,</span>
+            <span class="n">high_directory_base</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">low_dirs</span> <span class="o">=</span> <span class="n">prepare_qoi_model</span><span class="p">(</span>
+            <span class="n">low_fidelity_model</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">,</span> <span class="n">pilot_samples</span><span class="p">,</span>
+            <span class="n">low_directory_base</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">dispatcher</span><span class="o">=</span><span class="n">dispatcher</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">MonteCarloDryRunResult</span><span class="p">(</span>
+            <span class="n">pilot_samples</span><span class="p">,</span> <span class="p">(),</span> <span class="n">high_dirs</span><span class="p">,</span> <span class="n">low_dirs</span><span class="p">,</span> <span class="n">pilot_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">pilot_high_qois</span><span class="p">,</span> <span class="n">pilot_high_times</span> <span class="o">=</span> <span class="n">evaluate_qoi_model</span><span class="p">(</span>
         <span class="n">high_fidelity_model</span><span class="p">,</span>
         <span class="n">parameter_names</span><span class="p">,</span>
