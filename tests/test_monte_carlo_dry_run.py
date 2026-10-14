@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+import pytest
 
 from romtools.workflows.uq.monte_carlo import (
     MonteCarloDryRunResult,
@@ -94,3 +95,56 @@ def test_multifidelity_pilot_dry_run(tmp_path):
     assert len(result.high_fidelity_run_directories) == 3
     assert len(result.low_fidelity_run_directories) == 3
     assert len(high.prepared) == len(low.prepared) == 3
+
+
+@pytest.mark.parametrize("concurrency", [0, -1, True, 1.5])
+def test_dry_run_rejects_invalid_concurrency(tmp_path, concurrency):
+    model = PreparationOnlyModel()
+    with pytest.raises(ValueError, match="evaluation_concurrency"):
+        run_monte_carlo(model, DummySpace(), str(tmp_path / "mc"),
+                        2, evaluation_concurrency=concurrency, dry_run=True)
+    assert model.prepared == []
+
+
+@pytest.mark.parametrize("which", ["high", "low"])
+def test_multifidelity_dry_run_rejects_invalid_concurrency(tmp_path, which):
+    kwargs = {f"{which}_fidelity_evaluation_concurrency": 0}
+    with pytest.raises(ValueError, match="evaluation_concurrency"):
+        run_multifidelity_monte_carlo(
+            PreparationOnlyModel(), PreparationOnlyModel(), DummySpace(),
+            str(tmp_path / "mf"), number_of_high_fidelity_samples=2,
+            number_of_low_fidelity_samples=3, dry_run=True, **kwargs,
+        )
+
+
+def test_dry_run_overwrite_removes_success_marker(tmp_path):
+    model = PreparationOnlyModel()
+    work_dir = str(tmp_path / "mc")
+    completed = os.path.join(work_dir, "run_0")
+    os.makedirs(completed)
+    with open(os.path.join(completed, "passed.txt"), "w") as output:
+        output.write("0")
+    run_monte_carlo(model, DummySpace(), work_dir, 2, overwrite=True, dry_run=True)
+    assert not os.path.exists(os.path.join(completed, "passed.txt"))
+
+
+@pytest.mark.parametrize("budget,ratio,coefficients", [
+    (4, 1.0, None),
+    (0, 1.0, None),
+    (float("nan"), 1.0, None),
+    (15, 1.0, np.array([1.0])),
+])
+def test_pilot_dry_run_rejects_invalid_configuration(
+    tmp_path, budget, ratio, coefficients,
+):
+    high = PreparationOnlyModel()
+    low = PreparationOnlyModel()
+    with pytest.raises(ValueError):
+        run_multifidelity_monte_carlo(
+            high, low, DummySpace(), str(tmp_path / "pilot"),
+            pilot_sample_count=3, high_fidelity_equivalent_budget=budget,
+            low_to_high_fidelity_cost_ratio=ratio,
+            control_variate_coefficients=coefficients,
+            dry_run=True,
+        )
+    assert not high.prepared and not low.prepared
