@@ -12,4 +12,5 @@ Examples
    :maxdepth: 1
 
    eki_mf_eki_demo
+   solid_dynamics_eki_mf_eki_demo
    h2_air_flame_eki_mf_eki_demo
