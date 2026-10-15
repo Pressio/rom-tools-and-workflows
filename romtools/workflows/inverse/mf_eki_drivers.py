@@ -1376,20 +1376,26 @@ def compute_mf_eki_update(
         observations_covariance,
         regularization_parameter):
     """Compute the update matrices for the MF-EKI algorithm."""
+    # Sample arrays are (n_members, n_parameters); Donoghue and Yano
+    # (2022, Section 2.4) normalize each ensemble covariance by n_members - 1.
     ensemble_sizes = [
-        parameter_sample_sets[0].shape[1],
-        parameter_sample_sets[1].shape[1],
+        parameter_sample_sets[0].shape[0],
+        parameter_sample_sets[1].shape[0],
     ]
+    if any(size < 2 for size in ensemble_sizes):
+        raise ValueError("Both MF-EKI ensembles require at least two samples")
 
+    # The multi-fidelity sample covariances use *empirical* QoI means.
+    # G(mean(theta)), stored as 'mean-qoi', differs for nonlinear models.
     dys_fom = [
         fom_results_for_sample_sets[0]['qois']
-        - fom_results_for_sample_sets[0]['mean-qoi'][:, None]
+        - np.mean(fom_results_for_sample_sets[0]['qois'], axis=1, keepdims=True)
     ]
     dys_rom = [
         rom_results_for_sample_sets[0]['qois']
-        - rom_results_for_sample_sets[0]['mean-qoi'][:, None],
+        - np.mean(rom_results_for_sample_sets[0]['qois'], axis=1, keepdims=True),
         rom_results_for_sample_sets[1]['qois']
-        - rom_results_for_sample_sets[1]['mean-qoi'][:, None],
+        - np.mean(rom_results_for_sample_sets[1]['qois'], axis=1, keepdims=True),
     ]
 
     C = dys_fom[0] @ dys_fom[0].transpose()
@@ -1427,7 +1433,10 @@ def compute_mf_eki_update(
     )
 
     I = np.eye(observations_covariance.shape[1])
-    LHS = C + observations_covariance + regularization_parameter * I
+    # The MF total-variate gain uses Gamma/2 under the control-space
+    # uncertainty convention (Donoghue and Yano, 2022, Section 2.4).
+    # Keep the independent Tikhonov regularization unchanged.
+    LHS = C + 0.5 * observations_covariance + regularization_parameter * I
     RHS = fom_results_for_sample_sets[0]['errors']
     dp = np.linalg.solve(LHS, RHS)
     dp = C_p @ dp
