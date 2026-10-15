@@ -229,3 +229,12 @@ class EuclideanMatrixWeightedL2Orthogonalizer:
         my_array, _ = self.__qr_picked(tmp, mode='reduced')
         my_array = np.linalg.solve(self.__weighting_matrix_sqrt, my_array)
         return my_array
+
+# Supported interfaces; imported numerical and typing helpers are internal.
+__all__ = [
+    "Orthogonalizer",
+    "NoOpOrthogonalizer",
+    "EuclideanL2Orthogonalizer",
+    "EuclideanVectorWeightedL2Orthogonalizer",
+    "EuclideanMatrixWeightedL2Orthogonalizer",
+]

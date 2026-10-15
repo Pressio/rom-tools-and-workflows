@@ -54,5 +54,41 @@ The hyper_reduction module provides these functionalities. Note that certain asp
 problem-dependent. Implementations of these aspects, including the generation of residual snapshots and the construction
 of a sample mesh, are left to the user.
 '''
-from romtools.hyper_reduction.ecsw import *
-from romtools.hyper_reduction.deim import DEIM, QDEIM
+
+from . import deim, ecsw
+from .deim import (
+    DEIM,
+    QDEIM,
+    qdeim_get_indices,
+    deim_get_indices,
+    multi_state_deim_get_indices,
+    deim_get_approximation_matrix,
+    multi_state_deim_get_test_basis,
+    deim_get_test_basis,
+)
+from .ecsw import (
+    ECSWsolver,
+    ECSWsolverNNLS,
+    ecsw_fixed_test_basis,
+    ecsw_varying_test_basis,
+    ecsw_lspg_zero_residual,
+)
+
+# Procedural functions retain their historical imports through the 1.x series.
+__all__ = [
+    "deim",
+    "ecsw",
+    "DEIM",
+    "QDEIM",
+    "ECSWsolver",
+    "ECSWsolverNNLS",
+    "qdeim_get_indices",
+    "deim_get_indices",
+    "multi_state_deim_get_indices",
+    "deim_get_approximation_matrix",
+    "multi_state_deim_get_test_basis",
+    "deim_get_test_basis",
+    "ecsw_fixed_test_basis",
+    "ecsw_varying_test_basis",
+    "ecsw_lspg_zero_residual",
+]

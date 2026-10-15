@@ -20,14 +20,27 @@ romtools currently supports:
 from importlib import import_module as _import_module
 import inspect as _inspect
 
-#from romtools.workflows.inverse.bfgs_drivers import *
-from romtools.workflows.inverse.eki_drivers import *
-from romtools.workflows.inverse.mf_eki_drivers import *
-from romtools.workflows.inverse.mf_vi_drivers import *
-from romtools.workflows.inverse.vi_drivers import *
-from romtools.workflows.inverse.vi_optimization_methods import *
-from romtools.workflows.inverse.ego_drivers import *
-from romtools.workflows.inverse.ego_optimization_methods import *
+from . import (
+    ego_drivers,
+    ego_optimization_methods,
+    eki_drivers,
+    mf_eki_drivers,
+    mf_vi_drivers,
+    vi_drivers,
+    vi_optimization_methods,
+)
+from .ego_drivers import run_batch_ego, run_ego
+from .eki_drivers import run_eki
+from .mf_eki_drivers import mf_eki_with_auto_rom, run_mf_eki
+from .mf_vi_drivers import mf_vi_with_auto_rom, run_mf_vi
+from .vi_drivers import run_vi
+from .vi_optimization_methods import (
+    VIAdamOptimizerConfig,
+    VIGradientOptimizerConfig,
+    VINewtonOptimizerConfig,
+    VILegacyLineSearchConfig,
+    VIStochasticNonmonotoneLineSearchConfig,
+)
 
 # Install the bound-handling wrappers after the legacy EKI modules are loaded.
 # The wrappers delegate the historical ``clip`` path unchanged and adapt the
@@ -203,3 +216,21 @@ _mf_vi_drivers_module.mf_vi_with_auto_rom = mf_vi_with_auto_rom
 # binds to the module instead of the function imported above.
 #run_eki = _import_module("romtools.workflows.inverse.eki_drivers")
 #run_mf_eki = _import_module("romtools.workflows.inverse.mf_eki_drivers")
+
+__all__ = [
+    "VIAdamOptimizerConfig",
+    "VIGradientOptimizerConfig",
+    "VINewtonOptimizerConfig",
+    "VILegacyLineSearchConfig",
+    "VIStochasticNonmonotoneLineSearchConfig",
+
+    "run_eki",
+    "run_mf_eki",
+    "mf_eki_with_auto_rom",
+    "run_vi",
+    "run_mf_vi",
+    "mf_vi_with_auto_rom",
+    "run_ego",
+    "run_batch_ego",
+    "VISampleReuseConfig",
+]

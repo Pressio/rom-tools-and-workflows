@@ -225,3 +225,16 @@ class ConstParameterSpace(HomogeneousParameterSpace):
 
     def __init__(self, parameter_names: Iterable[str], parameter_values):
         super().__init__(parameter_names, MonteCarloSampler, StringParameter, value=parameter_values)
+
+# Supported interfaces; imported numerical and typing helpers are internal.
+__all__ = [
+    "ParameterSpace",
+    "BoundedParameterSpace",
+    "HeterogeneousParameterSpace",
+    "HomogeneousParameterSpace",
+    "EmptyParameterSpace",
+    "UniformParameterSpace",
+    "GaussianParameterSpace",
+    "MultivariateGaussianParameterSpace",
+    "ConstParameterSpace",
+]

@@ -534,3 +534,14 @@ class VariableAndVectorScaler:
         '''
         self.__my_vector_scaler.post_scale(data_tensor)
         self.__my_variable_scaler.post_scale(data_tensor)
+
+# Supported interfaces; imported numerical and typing helpers are internal.
+__all__ = [
+    "Scaler",
+    "StreamingScaler",
+    "NoOpScaler",
+    "VectorScaler",
+    "ScalarScaler",
+    "VariableScaler",
+    "VariableAndVectorScaler",
+]

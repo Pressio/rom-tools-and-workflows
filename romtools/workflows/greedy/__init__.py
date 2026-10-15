@@ -44,4 +44,9 @@
 #
 '''Implementation of the greedy workflow.'''
 
-from romtools.workflows.greedy.run_greedy import *
+from romtools.workflows.greedy.run_greedy import QoIvsErrorIndicatorRegressor, run_greedy
+
+__all__ = [
+    "run_greedy",
+    "QoIvsErrorIndicatorRegressor",
+]

@@ -67,3 +67,10 @@ class QoiModelWithErrorEstimate(QoiModel, Protocol):
         AFTER run_model has been run
         '''
         pass
+
+# Supported interfaces; imported numerical and typing helpers are internal.
+__all__ = [
+    "Model",
+    "QoiModel",
+    "QoiModelWithErrorEstimate",
+]

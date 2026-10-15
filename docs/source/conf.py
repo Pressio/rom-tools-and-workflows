@@ -37,6 +37,44 @@ extensions = [
 ]
 
 autosummary_generate = True
+# Package export lists define the supported reference surface. Do not recurse
+# through every importable implementation module.
+autosummary_ignore_module_all = False
+
+# Document each supported object once, using its preferred domain namespace.
+# Other export locations link to the same page instead of generating duplicate
+# autodoc entries. This also keeps historical aliases visible in the reference.
+from importlib import import_module
+
+_public_api_packages = (
+    "romtools.vector_space.utils",
+    "romtools.vector_space",
+    "romtools.composite_vector_space",
+    "romtools.hyper_reduction",
+    "romtools.linalg",
+    "romtools.rom",
+    "romtools.workflows.inverse",
+    "romtools.workflows.sampling",
+    "romtools.workflows.greedy",
+    "romtools.workflows.uq",
+    "romtools.workflows.models",
+    "romtools.workflows.parameter_spaces",
+    "romtools.workflows",
+    "romtools.vector_space.utils.scaler",
+    "romtools.vector_space.utils.orthogonalizer",
+)
+_public_api_aliases = {}
+_canonical_objects = {}
+for _package_name in _public_api_packages:
+    _package = import_module(_package_name)
+    for _name in _package.__all__:
+        _object = getattr(_package, _name)
+        _export = f"{_package_name}.{_name}"
+        _canonical = _canonical_objects.setdefault(id(_object), _export)
+        _public_api_aliases[_export] = _canonical
+
+autosummary_context = {"public_api_aliases": _public_api_aliases}
+
 autodoc_default_options = {
     "members": True,
     "show-inheritance": False,
