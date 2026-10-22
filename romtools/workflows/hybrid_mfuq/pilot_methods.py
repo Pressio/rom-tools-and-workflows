@@ -47,31 +47,37 @@ def run_model_sample(model, run_dir, params, overwrite=False, verbose=False):
     -------
     qoi : np.ndarray
     runtime : np.ndarray
+    converged: np.ndarray
     """
     qoi_path = os.path.join(run_dir, "qoi.txt")
     time_path = os.path.join(run_dir, "time.txt")
+    passed_file = os.path.join(run_dir, "passed.txt")
 
     if not overwrite and os.path.exists(qoi_path) and os.path.exists(time_path):
         if verbose:
-            print("Reading in QoI value and runtime\n")
-        return np.loadtxt(qoi_path), np.loadtxt(time_path)
+            print("Reading in QoI value and runtime, checking convergence status\n")
+        converged = False
+        if os.path.exists(passed_file):
+            converged = True
+        return np.loadtxt(qoi_path), np.loadtxt(time_path), np.array(converged)
 
     create_empty_dir(run_dir)
     model.populate_run_directory(run_dir, params)
 
-    passed_file = os.path.join(run_dir, "passed.txt")
     t0 = time.time()
     code = model.run_model(run_dir, params)
     qoi = model.compute_qoi(run_dir, params)
     runtime = time.time() - t0
 
+    converged = False
     if code == 0:
         np.savetxt(passed_file, [0], fmt="%i")
+        converged = True
 
     np.savetxt(qoi_path, [qoi])
     np.savetxt(time_path, [runtime])
 
-    return np.array(qoi), np.array(runtime)
+    return np.array(qoi), np.array(runtime), np.array(converged)
 
 
 def pearsonr_with_axis(x, y, axis=0):
@@ -224,7 +230,7 @@ class Pilot:
 
         return train_data, test_data
 
-    def estimate_pairwise_correlations(self, X_test_list, y_test_list):
+    def estimate_pairwise_correlations(self, X_test_list, y_test_list, mask_list=None):
         """
         Mean Pearson correlation between two sets of model outputs, averaged
         over pilot replicates.
@@ -237,9 +243,21 @@ class Pilot:
         """
         corr_s = []
 
-        for X, y in zip(X_test_list, y_test_list):
-            out, _ = pearsonr_with_axis(X, y, axis=1)
-            corr_s.append(np.mean(out, axis=0).squeeze())
+        if mask_list!=None:
+            for X, y, mask in zip(X_test_list, y_test_list, mask_list):
+                print(X.shape,y.shape,mask.shape)
+                n_rows = X.shape[0]
+                out = np.zeros(n_rows)
+                for i in range(n_rows):
+                    mask_i = mask[i,:]
+                    Xi = X[i,mask_i]
+                    yi = y[i,mask_i]
+                    out[i], _ = pearsonr_with_axis(Xi, yi, axis=0)
+                corr_s.append(np.mean(out, axis=0).squeeze())
+        else:
+             for X, y in zip(X_test_list, y_test_list):
+                out, _ = pearsonr_with_axis(X, y, axis=1)
+                corr_s.append(np.mean(out, axis=0).squeeze())
 
         return np.array(corr_s)
 
@@ -586,6 +604,7 @@ class PilotSampler:
             fom_qois, fom_times = [], []
             aux_qois_list = [[] for _ in range(self.n_aux)]
             aux_times_list = [[] for _ in range(self.n_aux)]
+            aux_converged_list = [[] for _ in range(self.n_aux)]
             train_dirs = []
 
             for i, sample in enumerate(param_samples):
@@ -593,7 +612,7 @@ class PilotSampler:
                 params = dict(zip(param_names, sample))
 
                 fom_dir = f"{self.work_dir}/pilot/fom/run_{i}"
-                fom_qoi, fom_time = self._run_model(
+                fom_qoi, fom_time, _ = self._run_model(
                     self.fom_model, fom_dir, params, overwrite
                 )
                 fom_qois.append(fom_qoi)
@@ -602,22 +621,25 @@ class PilotSampler:
 
                 for j, aux_model in enumerate(self.aux_models):
                     aux_dir = f"{self.work_dir}/pilot/aux{j}/run_{i}"
-                    aux_qoi, aux_time = self._run_model(
+                    aux_qoi, aux_time, aux_converged = self._run_model(
                         aux_model, aux_dir, params, overwrite
                     )
                     aux_qois_list[j].append(aux_qoi)
                     aux_times_list[j].append(aux_time)
+                    aux_converged_list[j].append(aux_converged)
 
             fom_qois = np.array(fom_qois)
             fom_times = np.array(fom_times)
             aux_qois_list = [np.array(q) for q in aux_qois_list]
             aux_times_list = [np.array(t) for t in aux_times_list]
+            aux_converged_list = [np.array(w) for w in aux_converged_list]
+
 
             self._log(log_file, "Creating ROM bases")
             rom_models = self._build_roms(train_dirs)
 
             self._log(log_file, "Sampling ROMs on test parameters")
-            rom_qois, rom_times = self._sample_roms(
+            rom_qois, rom_times, rom_converged = self._sample_roms(
                 param_samples, param_names, rom_models, overwrite
             )
 
@@ -627,8 +649,10 @@ class PilotSampler:
                 fom_times,
                 aux_qois_list,
                 aux_times_list,
+                aux_converged_list,
                 rom_qois,
                 rom_times,
+                rom_converged,
                 param_samples,
                 train_dirs,
             )
@@ -684,11 +708,11 @@ class PilotSampler:
         Returns all_qois[t][i] / all_times[t][i] = np.ndarray of shape
         [NpCs, Np-s] for ROM t's i-th basis-size grid point.
         """
-        all_qois, all_times = [], []
+        all_qois, all_times, all_converged = [], [], []
 
         for t in range(self.n_active):
             print(f"===========  ROM {t} ============\n")
-            qois_t, times_t = [], []
+            qois_t, times_t, converged_t = [], [], []
 
             for i, basis_size in enumerate(self.pilot_mgr.s_lists[t]):
                 print(f"ROM {t}, basis size {basis_size}\n")
@@ -696,7 +720,7 @@ class PilotSampler:
                 test_labels = self.pilot_mgr.test_labels[t][i]
                 train_labels = self.pilot_mgr.train_labels[t][i]
 
-                qois_i, times_i = [], []
+                qois_i, times_i, converged_i = [], [], []
 
                 for j, test_label in enumerate(test_labels):
                     print(f"Testing ROM {t} built from samples {train_labels[j]}\n")
@@ -704,26 +728,30 @@ class PilotSampler:
                     rom_dir = os.path.join(base_dir, f"combination_{combo_id}")
                     rom = rom_models[t][i][j]
 
-                    qois_ij, times_ij = [], []
+                    qois_ij, times_ij,converged_ij = [], [], []
 
                     for sample_idx in test_label:
                         print(f"Testing on sample {sample_idx}\n")
                         params = dict(zip(param_names, param_samples[sample_idx]))
                         run_dir = os.path.join(rom_dir, f"run_test_sample_{sample_idx}")
-                        qoi, runtime = self._run_model(rom, run_dir, params, overwrite)
+                        qoi, runtime, converged = self._run_model(rom, run_dir, params, overwrite)
                         qois_ij.append(qoi)
                         times_ij.append(runtime)
+                        converged_ij.append(converged)
 
                     qois_i.append(qois_ij)
                     times_i.append(times_ij)
+                    converged_i.append(converged_ij)
 
                 qois_t.append(np.array(qois_i))
                 times_t.append(np.array(times_i))
+                converged_t.append(np.array(converged_i))
 
             all_qois.append(qois_t)
             all_times.append(times_t)
+            all_converged.append(converged_t)
 
-        return all_qois, all_times
+        return all_qois, all_times, all_converged
 
     def _compute_stats(
         self,
@@ -731,17 +759,19 @@ class PilotSampler:
         fom_times,
         aux_qois_list,
         aux_times_list,
+        aux_converged_list,
         rom_qois,
         rom_times,
+        rom_converged,
         param_samples,
         train_dirs,
     ):
         """Compute correlation and cost statistics and save results."""
         # FOM-aux correlations (unaffected by ROM count)
         fom_aux_corrs = []
-        for aux_qois in aux_qois_list:
+        for aux_qois,aux_converged in zip(aux_qois_list,aux_converged_list):
             corr = self.pilot_mgr.estimate_pairwise_correlations(
-                [fom_qois[None, :]], [aux_qois[None, :]]
+                [fom_qois[None, :]], [aux_qois[None, :]], mask_list=[aux_converged[None,:]]
             )[0]
             fom_aux_corrs.append(corr)
         fom_aux_corrs = np.array(fom_aux_corrs)
@@ -749,8 +779,9 @@ class PilotSampler:
         # Aux-aux correlations (6), stored in model_indices.aux_pairs order.
         aux_aux_corrs = []
         for _, i, j in aux_pairs(self.n_aux):
+            aux_converged = np.logical_and(aux_converged_list[i],aux_converged_list[j])
             corr = self.pilot_mgr.estimate_pairwise_correlations(
-                [aux_qois_list[j][None, :]], [aux_qois_list[i][None, :]]
+                [aux_qois_list[j][None, :]], [aux_qois_list[i][None, :]], mask_list=[aux_converged[None,:]]
             )[0]
             aux_aux_corrs.append(corr)
         aux_aux_corrs = np.array(aux_aux_corrs) if aux_aux_corrs else np.array([])
@@ -766,17 +797,17 @@ class PilotSampler:
         for t in range(self.n_active):
             fom_q_t = self._reshape_data(fom_qois, t)
             fom_rom_corrs_list.append(
-                self.pilot_mgr.estimate_pairwise_correlations(fom_q_t, rom_qois[t])
+                self.pilot_mgr.estimate_pairwise_correlations(fom_q_t, rom_qois[t], mask_list=rom_converged[t])
             )
 
             aux_q_t = [self._reshape_data(aux_qois, t) for aux_qois in aux_qois_list]
             aux_rom_corrs_per_rom.append([
-                self.pilot_mgr.estimate_pairwise_correlations(aux_q, rom_qois[t])
+                self.pilot_mgr.estimate_pairwise_correlations(aux_q, rom_qois[t], mask_list=rom_converged[t])
                 for aux_q in aux_q_t
             ])
 
             norm_rom_times_list.append(
-                self._normalized_rom_times(rom_times[t], fom_times, t)
+                self._normalized_rom_times(rom_times[t], rom_converged[t], fom_times, t)
             )
 
         # Transpose to aux_rom_corrs_list[i][t] (outer index = aux model).
@@ -787,12 +818,13 @@ class PilotSampler:
 
         # Trainable-trainable (ROM-ROM) correlations: empty when
         # n_active == 1, since no ROM pairs exist.
+        # TODO mask on?
         rom_rom_corrs = (
             self._compute_rom_rom_corrs(rom_qois) if self.n_active > 1 else []
         )
 
         # Normalized aux times (unaffected by ROM count)
-        norm_aux_times = [np.mean(aux_times / fom_times) for aux_times in aux_times_list]
+        norm_aux_times = [np.mean(aux_times[aux_converged] / fom_times[aux_converged]) for aux_times,aux_converged in zip(aux_times_list,aux_converged_list)]
 
         pilot_data = PilotData(
             fom_qois=fom_qois,
@@ -815,7 +847,7 @@ class PilotSampler:
 
         return pilot_data
 
-    def _normalized_rom_times(self, rom_times_t, fom_times, t):
+    def _normalized_rom_times(self, rom_times_t, rom_converged_t, fom_times, t):
         """
         Normalized cost of trainable estimator t at each of its pilot basis
         sizes, per writeup Eq. (9):
@@ -844,12 +876,16 @@ class PilotSampler:
 
         normalized = []
 
-        for g, times_g in enumerate(rom_times_t):
+        for g, (times_g, converged_g) in enumerate(zip(rom_times_t,rom_converged_t)):
             replicate_means = []
 
             for combo, validation in enumerate(test_labels_t[g]):
                 w0 = fom_times[np.asarray(validation, dtype=int)]
                 w_rom = np.asarray(times_g[combo], dtype=float).reshape(-1)
+                w_converged = np.asarray(converged_g[combo], dtype=bool).reshape(-1)
+                # mask unconverged cases
+                w0 = w0[w_converged]
+                w_rom = w_rom[w_converged]
 
                 replicate_means.append(float(np.mean(w_rom / w0)))
 

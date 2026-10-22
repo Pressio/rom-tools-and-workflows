@@ -59,16 +59,17 @@ def run_model_on_samples(model, run_dir_prefix: str, param_space, samples: np.nd
                          overwrite: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """Run model on multiple parameter samples. Returns (qois, runtimes)."""
     param_names = param_space.get_names()
-    qois, times = [], []
+    qois, times, converged = [], [], []
     
     for i, sample in enumerate(samples):
         params = dict(zip(param_names, sample))
         run_dir = f"{run_dir_prefix}/run_{i}"
-        qoi, runtime = run_model_sample(model, run_dir, params, overwrite)
+        qoi, runtime, convergence = run_model_sample(model, run_dir, params, overwrite)
         qois.append(qoi)
         times.append(runtime)
-    
-    return np.array(qois), np.array(times)
+        converged.append(convergence)    
+
+    return np.array(qois), np.array(times), np.array(converged)
 
 
 # ============================================================================
@@ -85,7 +86,7 @@ def optimize_single_allocation(
     log_objective: bool,
     hybrid: bool,
     use_torch: bool = True,
-    n_restarts: int = 10,
+    n_restarts: int = 40,
     corr_matrix_fn: Optional[Callable] = None,
     n_active: int = 1,
 ) -> Tuple[float, np.ndarray]:
@@ -111,6 +112,10 @@ def optimize_single_allocation(
         corr_matrix_fn=corr_matrix_fn,
     )
     opt.set_objective_and_constraint(log=log_objective, bounds=bounds)
+
+    print("hf_corrs:",hf_corrs)
+    print("lf_corrs:",lf_corrs)
+    print("costs:",costs)
 
     best_var, best_alloc = float("inf"), None
     n_success = 0
@@ -287,39 +292,41 @@ def train_optimized_roms(fom_model, rom_model_builders, param_space, work_dir: s
             train_dirs.append(fom_dir)
 
     # Build and evaluate every trainable ROM.
-    rom_qois_list, rom_times_list = [], []
+    rom_qois_list, rom_times_list, rom_converged_list = [], [], []
     for t, (rom_builder, rom_basis_num) in enumerate(zip(rom_model_builders, rom_basis_nums)):
         rom_subdir = f'basis_size_{rom_basis_num}' if t == 0 else f'rom{t}_basis_size_{rom_basis_num}'
         rom_dir = f'{work_dir}/pilot/rom_optimized/{rom_subdir}'
         create_empty_dir(rom_dir)
         rom_model = rom_builder.build_from_training_dirs(rom_dir, train_dirs[:rom_basis_num])
 
-        rom_qois, rom_times = run_model_on_samples(
+        rom_qois, rom_times, rom_converged = run_model_on_samples(
             rom_model, rom_dir, param_space, pilot_data.parameter_samples, overwrite
         )
         rom_qois_list.append(rom_qois)
         rom_times_list.append(rom_times)
+        rom_converged_list.append(rom_converged)
 
     with np.load(data_npz) as data:
         fom_qois = data['fom_qois_master']
         fom_times = data['fom_times_master']
 
     fom_rom_corrs = [
-        pilot_mgr.estimate_pairwise_correlations([fom_qois[None, :]], [rom_qois[None, :]])[0]
-        for rom_qois in rom_qois_list
+        pilot_mgr.estimate_pairwise_correlations([fom_qois[None, :]], [rom_qois[None, :]], [rom_converged[None,:]])[0]
+        for rom_qois,rom_converged in zip(rom_qois_list,rom_converged_list)
     ]
     aux_rom_corrs = [
         [
-            pilot_mgr.estimate_pairwise_correlations([aux_qois[None, :]], [rom_qois[None, :]])[0]
-            for rom_qois in rom_qois_list
+            pilot_mgr.estimate_pairwise_correlations([aux_qois[None, :]], [rom_qois[None, :]], [rom_converged[None,:]])[0]
+            for rom_qois,rom_converged in zip(rom_qois_list,rom_converged_list)
         ]
         for aux_qois in pilot_data.aux_qois_list
     ]
     rom_rom_corrs = {}
     for t in range(len(rom_qois_list)):
         for q in range(t + 1, len(rom_qois_list)):
+            rom_converged = np.logical_and(rom_converged_list[t][None,:],rom_converged_list[q][None,:])
             rom_rom_corrs[(t, q)] = pilot_mgr.estimate_pairwise_correlations(
-                [rom_qois_list[t][None, :]], [rom_qois_list[q][None, :]]
+                [rom_qois_list[t][None, :]], [rom_qois_list[q][None, :]], [rom_converged]
             )[0]
 
     normalized_rom_times = [
