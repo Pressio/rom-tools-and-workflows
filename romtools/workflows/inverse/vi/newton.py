@@ -8,21 +8,17 @@ coordinates; the latter is selected with ``newton_metric='natural'``.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import copy
 
 import numpy as np
 
-from romtools.workflows.inverse import mf_vi_drivers as _mf
-from romtools.workflows.inverse import full_covariance_vi_drivers as _fc_vi
-from romtools.workflows.inverse import full_covariance_mf_vi_drivers as _fc_mf
-from romtools.workflows.inverse import full_covariance_auto_mf_vi as _fc_auto
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi import mf_drivers as _mf
+from romtools.workflows.inverse.vi.gaussian import (
     svec,
     svec_inverse,
     svec_size,
 )
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     NewtonSolver,
     VIGradientOptimizerConfig,
     VINewtonOptimizerConfig,
@@ -291,12 +287,21 @@ def _validate_newton_config(optimizer_config) -> VINewtonOptimizerConfig:
         )
     else:
         config = copy.deepcopy(optimizer_config)
-    strategy = _normalize_newton_curvature_strategy(config.newton_curvature_strategy)
-    if strategy != "same_sample":
+
+    strategy = _normalize_newton_curvature_strategy(
+        config.newton_curvature_strategy
+    )
+    if strategy not in ("same_sample", "lagged"):
         raise NotImplementedError(
             "Full-covariance Newton currently supports "
-            "newton_curvature_strategy='same_sample'."
+            "newton_curvature_strategy='same_sample' or 'lagged'."
         )
+    if strategy == "lagged":
+        beta = float(config.newton_hessian_averaging_factor)
+        if not np.isfinite(beta) or not 0.0 <= beta < 1.0:
+            raise ValueError(
+                "newton_hessian_averaging_factor must be finite and in [0, 1)."
+            )
     return config
 
 
@@ -322,44 +327,6 @@ def _natural_gradient_norm(state: dict) -> float:
             )
         )
     )
-
-
-@contextmanager
-def _patched_single_fidelity_newton(config: VINewtonOptimizerConfig):
-    original_upgrade = _fc_vi._upgrade_single_fidelity_state
-    original_gradient_norm = _fc_vi._gradient_norm
-
-    def upgrade(*args, **kwargs):
-        state = original_upgrade(*args, **kwargs)
-        mean = args[1] if len(args) > 1 else kwargs["variational_mean"]
-        cholesky = args[2] if len(args) > 2 else kwargs["cholesky"]
-        baseline_method = args[3] if len(args) > 3 else kwargs["baseline_method"]
-        elbo_scaling_factor = (
-            args[5] if len(args) > 5 else kwargs["elbo_scaling_factor"]
-        )
-        hessian = estimate_ordinary_hessian(
-            state["optimizer_samples"],
-            mean,
-            cholesky,
-            elbo_scaling_factor * np.asarray(state["log_joint_terms"]),
-            baseline_method,
-            elbo_scaling_factor,
-        )
-        step = _newton_step_from_hessian(state, cholesky, config, hessian)
-        dimensionality = np.asarray(mean).size
-        state["update_direction_mean"] = step[:dimensionality]
-        state["update_direction_covariance_svec"] = step[dimensionality:]
-        state["newton_hessian_full"] = hessian
-        state["newton_metric"] = _normalize_newton_metric(config.newton_metric)
-        return state
-
-    _fc_vi._upgrade_single_fidelity_state = upgrade
-    _fc_vi._gradient_norm = _natural_gradient_norm
-    try:
-        yield
-    finally:
-        _fc_vi._upgrade_single_fidelity_state = original_upgrade
-        _fc_vi._gradient_norm = original_gradient_norm
 
 
 def _mf_curvature_terms(
@@ -419,89 +386,69 @@ def estimate_mf_ordinary_hessian(
             elbo_scaling_factor * np.asarray(state["log_joint_terms_rom_only"]),
             baseline_method,
         )
-    estimate, _ = _mf._mfmc_gradient_estimator(
-        high,
-        low_base,
-        low_extra,
-        use_mfmc_control_variate,
-        mfmc_control_variate_mode,
+    _mf._normalize_hessian_gain_estimation_strategy(state['hessian_gain_estimation_strategy'])
+    estimate, gain = _mf._mfmc_gradient_estimator(
+        high, low_base, low_extra,
+        use_mfmc_control_variate and not state.get("bootstrap_rom", False), mfmc_control_variate_mode,
+        mfmc_fixed_gain=(1.0 if state.get("bootstrap_rom", False) and use_mfmc_control_variate
+                         else state.get("mfmc_fixed_gain", 1.0)),
     )
+    state["ordinary_hessian_gain_samples"] = np.broadcast_to(
+        gain, (n_fom,) + np.shape(gain),
+    ).copy()
     estimate = np.asarray(estimate, dtype=float)
     estimate += _entropy_hessian(cholesky, elbo_scaling_factor)
     return 0.5 * (estimate + estimate.T)
 
 
-@contextmanager
-def _patched_mf_newton(config: VINewtonOptimizerConfig):
-    original_upgrade = _fc_mf._upgrade_mf_state
-    original_gradient_norm = _fc_mf._gradient_norm
+class FullCovarianceNewton:
+    """Newton state owned by one run; only accepted states commit curvature."""
 
-    def upgrade(*args, **kwargs):
-        state = original_upgrade(*args, **kwargs)
-        mean = args[1] if len(args) > 1 else kwargs["variational_mean"]
-        cholesky = args[2] if len(args) > 2 else kwargs["cholesky"]
-        baseline_method = args[3] if len(args) > 3 else kwargs["baseline_method"]
-        use_control = (
-            args[4] if len(args) > 4 else kwargs["use_mfmc_control_variate"]
+    def __init__(self, config, *, multifidelity=False):
+        self.config = _validate_newton_config(config)
+        self.config.newton_curvature_strategy = _normalize_newton_curvature_strategy(
+            self.config.newton_curvature_strategy
         )
-        control_mode = (
-            args[5] if len(args) > 5 else kwargs["mfmc_control_variate_mode"]
-        )
-        elbo_scaling_factor = (
-            args[7] if len(args) > 7 else kwargs["elbo_scaling_factor"]
-        )
-        hessian = estimate_mf_ordinary_hessian(
-            state,
-            mean,
-            cholesky,
-            baseline_method,
-            use_control,
-            control_mode,
-            elbo_scaling_factor,
-        )
-        step = _newton_step_from_hessian(state, cholesky, config, hessian)
-        dimensionality = np.asarray(mean).size
-        state["update_direction_mean"] = step[:dimensionality]
-        state["update_direction_covariance_svec"] = step[dimensionality:]
+        self.multifidelity = multifidelity
+        self.running_hessian = None
+
+    def average_hessian(self, current):
+        current = np.asarray(current, dtype=float)
+        if self.config.newton_curvature_strategy == "lagged":
+            beta = float(self.config.newton_hessian_averaging_factor)
+            if self.running_hessian is not None:
+                current = beta * self.running_hessian + (1.0 - beta) * current
+            current = 0.5 * (current + current.T)
+        return current
+
+    def gradient_norm(self, state):
+        if self.config.newton_curvature_strategy == "lagged":
+            saved = state.get("newton_hessian_full")
+            if saved is not None:
+                self.running_hessian = np.asarray(saved, dtype=float).copy()
+        return _natural_gradient_norm(state)
+
+    def upgrade(self, state, *, variational_mean, cholesky, baseline_method,
+                elbo_scaling_factor, **kwargs):
+        if elbo_scaling_factor is None:
+            elbo_scaling_factor = state["elbo_scaling_factor"]
+        if self.multifidelity:
+            hessian = estimate_mf_ordinary_hessian(
+                state, variational_mean, cholesky, baseline_method,
+                kwargs["use_mfmc_control_variate"], kwargs["mfmc_control_variate_mode"],
+                elbo_scaling_factor,
+            )
+        else:
+            hessian = estimate_ordinary_hessian(
+                state["optimizer_samples"], variational_mean, cholesky,
+                elbo_scaling_factor * np.asarray(state["log_joint_terms"]),
+                baseline_method, elbo_scaling_factor,
+            )
+        hessian = self.average_hessian(hessian)
+        step = _newton_step_from_hessian(state, cholesky, self.config, hessian)
+        dimension = np.asarray(variational_mean).size
+        state["update_direction_mean"] = step[:dimension]
+        state["update_direction_covariance_svec"] = step[dimension:]
         state["newton_hessian_full"] = hessian
-        state["newton_metric"] = _normalize_newton_metric(config.newton_metric)
+        state["newton_metric"] = _normalize_newton_metric(self.config.newton_metric)
         return state
-
-    _fc_mf._upgrade_mf_state = upgrade
-    _fc_mf._gradient_norm = _natural_gradient_norm
-    try:
-        yield
-    finally:
-        _fc_mf._upgrade_mf_state = original_upgrade
-        _fc_mf._gradient_norm = original_gradient_norm
-
-
-def run_vi(*args, **kwargs):
-    """Run full-covariance VI with score-function Newton curvature."""
-    config = _validate_newton_config(kwargs.get("optimizer_config"))
-    call_kwargs = dict(kwargs)
-    call_kwargs["optimizer_method"] = "gradient"
-    call_kwargs["optimizer_config"] = _gradient_config_from_newton(config)
-    with _patched_single_fidelity_newton(config):
-        return _fc_vi.run_vi(*args, **call_kwargs)
-
-
-def run_mf_vi(*args, **kwargs):
-    """Run full-covariance MF-VI with multifidelity Newton curvature."""
-    config = _validate_newton_config(kwargs.get("optimizer_config"))
-    call_kwargs = dict(kwargs)
-    call_kwargs["optimizer_method"] = "gradient"
-    call_kwargs["optimizer_config"] = _gradient_config_from_newton(config)
-    call_kwargs["rom_substep_newton_config"] = config
-    with _patched_mf_newton(config):
-        return _fc_mf.run_mf_vi(*args, **call_kwargs)
-
-
-def mf_vi_with_auto_rom(*args, **kwargs):
-    """Run auto-GP full-covariance MF-VI with natural-coordinate Newton."""
-    original_run_mf_vi = _fc_auto.run_mf_vi
-    _fc_auto.run_mf_vi = run_mf_vi
-    try:
-        return _fc_auto.mf_vi_with_auto_rom(*args, **kwargs)
-    finally:
-        _fc_auto.run_mf_vi = original_run_mf_vi

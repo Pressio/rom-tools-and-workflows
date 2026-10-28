@@ -1,6 +1,6 @@
 import numpy as np
 
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi.gaussian import (
     covariance_from_cholesky,
     entropy,
     estimate_natural_gradient,

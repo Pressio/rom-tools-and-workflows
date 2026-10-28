@@ -1,8 +1,10 @@
+from romtools.workflows.inverse.vi import api as vi_api
 import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse import mf_vi_drivers, vi_drivers
+from romtools.workflows.inverse.vi import mf_drivers as mf_vi_drivers
+from romtools.workflows.inverse.vi import drivers as vi_drivers
 from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
 
 
@@ -46,7 +48,7 @@ class LinearQoiRomBuilderWithTrainingData:
         _ = training_data_dirs
         _ = training_parameters
         _ = training_qois
-        return self._model
+        return LinearQoiModel(slope=self._model._slope)
 
 
 def test_compute_mfmc_alpha_matrix_mode_captures_cross_component_coupling():
@@ -203,7 +205,7 @@ def test_mf_vi_with_auto_rom_forwards_prior_and_initializer(monkeypatch):
         captured.update(kwargs)
         return "ok", None, None, None
 
-    monkeypatch.setattr(mf_vi_drivers, "run_mf_vi", fake_run_mf_vi)
+    monkeypatch.setattr(vi_api, "run_mf_vi", fake_run_mf_vi)
 
     prior_parameter_space = GaussianParameterSpace(
         parameter_names=["theta"],
@@ -218,7 +220,7 @@ def test_mf_vi_with_auto_rom_forwards_prior_and_initializer(monkeypatch):
         sampler=MonteCarloSampler,
     )
 
-    mf_vi_drivers.mf_vi_with_auto_rom(
+    vi_api.mf_vi_with_auto_rom(
         model=LinearQoiModel(slope=1.0),
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=initial_variational_parameter_space,
@@ -244,7 +246,7 @@ def test_run_mf_vi_accepts_full_newton_hessian_option(
     tmp_path, regularization_strategy, adaptive_regularization, monkeypatch
 ):
     import importlib
-    module = importlib.import_module("romtools.workflows.inverse.mf_vi_drivers")
+    module = importlib.import_module("romtools.workflows.inverse.vi.mf_drivers")
     original = module._compute_newton_step
     received_rates = []
     def capture_step(*args, **kwargs):
@@ -870,7 +872,7 @@ def test_run_mf_vi_prints_when_rom_is_retrained(tmp_path, capsys):
         optimizer_method="gradient",
         optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
             gradient_norm_tolerance=0.0,
-            max_iterations=1,
+            max_iterations=2,
         ),
         line_search_method="legacy",
         line_search_config=romtools.workflows.VILegacyLineSearchConfig(
@@ -1039,6 +1041,7 @@ def test_run_mf_vi_saves_elbo_relative_tolerance_in_restart(tmp_path):
         bounded_parameter_handling="clip",
         random_seed=13,
         sampling_method="rqmc",
+        gradient_gain_estimation_strategy="same_sample",
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         elbo_relative_tolerance=elbo_relative_tolerance,
@@ -1105,53 +1108,34 @@ def test_run_mf_vi_limits_number_of_restart_files(tmp_path):
         assert remaining_iterations[1] - remaining_iterations[0] == 1
 
 
-@pytest.mark.mpi_skip
-def test_run_mf_vi_kfold_correlation_estimator_runs(tmp_path):
-    model = LinearQoiModel(slope=2.0)
-    rom_builder = LinearQoiRomBuilderWithTrainingData(slope=2.0)
-    variational_parameter_space = GaussianParameterSpace(
-        parameter_names=["theta"],
-        means=np.array([0.0]),
-        stds=np.array([1.0]),
-        sampler=MonteCarloSampler,
-    )
-    observations = np.array([0.5])
-    observations_covariance = np.array([[0.1**2]])
 
-    means, stds, parameter_samples, qois = romtools.workflows.run_mf_vi(
-        model=model,
-        rom_model_builder=rom_builder,
-        prior_parameter_space=variational_parameter_space,
-        initial_variational_parameter_space=variational_parameter_space,
-        observations=observations,
-        observations_covariance=observations_covariance,
-        absolute_work_dir=str(tmp_path),
-        fom_sample_size=6,
-        rom_extra_sample_size=4,
-        rom_tolerance=0.0,
-        max_rom_training_history=1,
-        optimizer_method="gradient",
-        optimizer_config=romtools.workflows.VIGradientOptimizerConfig(
-            gradient_norm_tolerance=0.0,
-            max_iterations=2,
-        ),
-        line_search_method="legacy",
-        line_search_config=romtools.workflows.VILegacyLineSearchConfig(
-            initial_step_size=1e-2,
-            max_step_size=1e-2,
-            step_size_growth_factor=1.0,
-            relaxation_parameter=10.0,
-            line_search_sample_growth_factor=1.0,
-        ),
-        bounded_parameter_handling="clip",
-        random_seed=17,
-        fom_evaluation_concurrency=1,
-        rom_evaluation_concurrency=1,
-        correlation_estimator="kfold",
-        correlation_k_folds=3,
-    )
 
-    assert means.shape == (1,)
-    assert stds.shape == (1,)
-    assert parameter_samples.shape[1] == 1
-    assert qois.shape[0] == 1
+
+
+
+
+
+
+@pytest.mark.parametrize("mode", ["componentwise", "scalar", "matrix"])
+@pytest.mark.parametrize("trailing_shape", [(), (7,), (2, 3)])
+@pytest.mark.parametrize("extra_is_none", [False, True])
+@pytest.mark.parametrize("use_control", [False, True])
+def test_mfmc_no_extra_rom_gain_has_mode_shape(mode, trailing_shape, extra_is_none, use_control):
+    high = np.arange(5 * int(np.prod(trailing_shape)), dtype=float).reshape((5,) + trailing_shape)
+    base = np.empty((0,) + trailing_shape)
+    extra = None if extra_is_none else np.empty((0,) + trailing_shape)
+    estimate, gain = mf_vi_drivers._mfmc_gradient_estimator(high, base, extra, use_control, mode)
+    feature_count = int(np.prod(trailing_shape))
+    expected_shape = {"componentwise": trailing_shape, "scalar": (),
+                      "matrix": (feature_count, feature_count)}[mode]
+    assert gain.shape == expected_shape
+    np.testing.assert_array_equal(gain, np.zeros(expected_shape))
+    np.testing.assert_array_equal(estimate, high.mean(axis=0))
+
+
+def test_mfmc_no_extra_rom_normalizes_gain_mode():
+    high = np.arange(21, dtype=float).reshape(3, 7)
+    _, gain = mf_vi_drivers._mfmc_gradient_estimator(high, np.empty((0, 7)), None, True, " isotropic ")
+    assert gain.shape == ()
+    with pytest.raises(ValueError, match="Unsupported mfmc_control_variate_mode"):
+        mf_vi_drivers._mfmc_gradient_estimator(high, np.empty((0, 7)), None, True, "invalid")

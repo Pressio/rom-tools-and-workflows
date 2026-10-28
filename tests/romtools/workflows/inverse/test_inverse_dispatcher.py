@@ -1,3 +1,4 @@
+from romtools.workflows.inverse.vi import api as vi_api
 """
 Dispatcher wiring for the inverse workflow drivers.
 
@@ -15,7 +16,8 @@ import romtools.workflows
 from romtools.hpc.configuration import Configuration
 from romtools.hpc.dispatchers import BaseDispatcher, LocalDispatcher
 from romtools.rom.qoi_surrogates import GaussianProcessQoiModel
-from romtools.workflows.inverse import mf_eki_drivers, mf_vi_drivers
+from romtools.workflows.inverse import mf_eki_drivers
+from romtools.workflows.inverse.vi import mf_drivers as mf_vi_drivers
 from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
 
 
@@ -171,7 +173,7 @@ def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
 
 def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1):
     parameter_space = _gaussian_parameter_space()
-    return mf_vi_drivers.mf_vi_with_auto_rom(
+    return vi_api.mf_vi_with_auto_rom(
         model=LinearQoiModel(),
         prior_parameter_space=parameter_space,
         initial_variational_parameter_space=parameter_space,

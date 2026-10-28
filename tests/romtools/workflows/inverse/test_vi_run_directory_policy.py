@@ -6,7 +6,7 @@ import pytest
 
 import romtools.workflows as workflows
 from romtools.workflows.inverse import _inverse_utils
-from romtools.workflows.inverse import vi_run_directory_policy as directory_policy
+from romtools.workflows.inverse.vi import evaluation as directory_policy
 
 
 class _InMemoryQoiModel:
@@ -66,31 +66,21 @@ def test_run_vi_iteration_creates_sample_directories_by_default(tmp_path):
     assert (tmp_path / "run_1").is_dir()
 
 
-def test_default_directory_policy_warns(monkeypatch):
-    monkeypatch.setattr(directory_policy, "_BASE_RUN_VI", lambda *args, **kwargs: "done")
-
+def test_default_directory_policy_warns():
     with pytest.warns(UserWarning, match="create_run_directories=True"):
-        assert directory_policy.run_vi() == "done"
+        with directory_policy._run_directory_policy(True) as policy:
+            assert policy is True
+    assert directory_policy._ACTIVE_CREATE_RUN_DIRECTORIES.get() is None
 
 
-def test_disabled_directory_policy_does_not_warn(monkeypatch):
-    observed_policy = []
-
-    def _fake_run_vi(*args, **kwargs):
-        del args, kwargs
-        observed_policy.append(
-            directory_policy._ACTIVE_CREATE_RUN_DIRECTORIES.get()
-        )
-        return "done"
-
-    monkeypatch.setattr(directory_policy, "_BASE_RUN_VI", _fake_run_vi)
-
+def test_disabled_directory_policy_does_not_warn():
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        assert directory_policy.run_vi(create_run_directories=False) == "done"
-
+        with directory_policy._run_directory_policy(False) as policy:
+            assert policy is False
+            assert directory_policy._ACTIVE_CREATE_RUN_DIRECTORIES.get() is False
     assert caught == []
-    assert observed_policy == [False]
+    assert directory_policy._ACTIVE_CREATE_RUN_DIRECTORIES.get() is None
 
 
 def test_public_vi_signatures_expose_create_run_directories():

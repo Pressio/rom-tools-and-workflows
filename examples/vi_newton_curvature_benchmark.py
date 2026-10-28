@@ -16,12 +16,12 @@ import io
 
 import numpy as np
 
-from romtools.workflows.inverse.vi_drivers import (
+from romtools.workflows.inverse.vi.drivers import (
     _average_hessians,
     _compute_reinforce_gradients,
     _compute_reinforce_hessian_full,
 )
-from romtools.workflows.inverse.vi_optimization_methods import NewtonSolver
+from romtools.workflows.inverse.vi.optimization import NewtonSolver
 
 
 def _estimate(rng, sample_count):

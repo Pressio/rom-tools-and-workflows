@@ -1,9 +1,11 @@
+from romtools.workflows.inverse.vi import api as vi_api
 import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse import mf_vi_drivers, vi_drivers
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi import mf_drivers as mf_vi_drivers
+from romtools.workflows.inverse.vi import drivers as vi_drivers
+from romtools.workflows.inverse.vi.optimization import (
     AdamSolver,
     VIAdamOptimizerConfig,
     _resolve_optimizer_config,
@@ -140,7 +142,7 @@ def test_adam_solver_restart_round_trip_preserves_state_and_schedule():
 
 @pytest.mark.mpi_skip
 def test_run_vi_supports_adam_natural_gradient(tmp_path):
-    means, stds, parameter_samples, qois = vi_drivers.run_vi(
+    means, stds, parameter_samples, qois = vi_api.run_vi(
         model=LinearQoiModel(),
         prior_parameter_space=_parameter_space(),
         initial_variational_parameter_space=_parameter_space(),
@@ -167,7 +169,7 @@ def test_run_vi_supports_adam_natural_gradient(tmp_path):
 
 @pytest.mark.mpi_skip
 def test_run_mf_vi_supports_adam_natural_gradient(tmp_path):
-    means, stds, parameter_samples, qois = mf_vi_drivers.run_mf_vi(
+    means, stds, parameter_samples, qois = vi_api.run_mf_vi(
         model=LinearQoiModel(),
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=_parameter_space(),
@@ -228,12 +230,12 @@ def test_run_vi_adam_restart_matches_uninterrupted_run(tmp_path):
         gradient_norm_tolerance=0.0,
         max_iterations=4,
     )
-    uninterrupted = vi_drivers.run_vi(
+    uninterrupted = vi_api.run_vi(
         absolute_work_dir=str(tmp_path / "uninterrupted"),
         optimizer_config=final_config,
         **common,
     )
-    vi_drivers.run_vi(
+    vi_api.run_vi(
         absolute_work_dir=str(tmp_path / "split"),
         optimizer_config=VIAdamOptimizerConfig(
             learning_rate=0.02,
@@ -242,7 +244,7 @@ def test_run_vi_adam_restart_matches_uninterrupted_run(tmp_path):
         ),
         **common,
     )
-    restarted = vi_drivers.run_vi(
+    restarted = vi_api.run_vi(
         absolute_work_dir=str(tmp_path / "split"),
         restart_file=str(tmp_path / "split" / "iteration_1" / "restart.npz"),
         optimizer_config=final_config,
@@ -276,12 +278,12 @@ def test_run_mf_vi_adam_restart_matches_uninterrupted_run(tmp_path):
         gradient_norm_tolerance=0.0,
         max_iterations=4,
     )
-    uninterrupted = mf_vi_drivers.run_mf_vi(
+    uninterrupted = vi_api.run_mf_vi(
         absolute_work_dir=str(tmp_path / "mf_uninterrupted"),
         optimizer_config=final_config,
         **common,
     )
-    mf_vi_drivers.run_mf_vi(
+    vi_api.run_mf_vi(
         absolute_work_dir=str(tmp_path / "mf_split"),
         optimizer_config=VIAdamOptimizerConfig(
             learning_rate=0.02,
@@ -290,7 +292,7 @@ def test_run_mf_vi_adam_restart_matches_uninterrupted_run(tmp_path):
         ),
         **common,
     )
-    restarted = mf_vi_drivers.run_mf_vi(
+    restarted = vi_api.run_mf_vi(
         absolute_work_dir=str(tmp_path / "mf_split"),
         restart_file=str(tmp_path / "mf_split" / "iteration_1" / "restart.npz"),
         optimizer_config=final_config,
@@ -315,7 +317,7 @@ def test_adam_natural_gradient_supports_full_covariance_initializer(tmp_path):
         covariance=np.array([[1.0, 0.4], [0.4, 1.0]]),
         sampler=MonteCarloSampler,
     )
-    means, stds, _, _ = vi_drivers.run_vi(
+    means, stds, _, _ = vi_api.run_vi(
         model=TwoParameterLinearQoiModel(),
         prior_parameter_space=prior,
         initial_variational_parameter_space=initializer,
@@ -339,7 +341,7 @@ def test_adam_natural_gradient_supports_full_covariance_initializer(tmp_path):
 @pytest.mark.mpi_skip
 def test_adam_rejects_explicit_line_search_config(tmp_path):
     with pytest.raises(ValueError, match="line_search_config is not supported"):
-        vi_drivers.run_vi(
+        vi_api.run_vi(
             model=LinearQoiModel(),
             prior_parameter_space=_parameter_space(),
             initial_variational_parameter_space=_parameter_space(),
@@ -354,7 +356,7 @@ def test_adam_rejects_explicit_line_search_config(tmp_path):
 
 @pytest.mark.mpi_skip
 def test_adam_diagnostics_report_learning_rate_not_dummy_step_size(tmp_path, capsys):
-    vi_drivers.run_vi(
+    vi_api.run_vi(
         model=LinearQoiModel(),
         prior_parameter_space=_parameter_space(),
         initial_variational_parameter_space=_parameter_space(),

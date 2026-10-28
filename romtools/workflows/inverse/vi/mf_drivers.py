@@ -125,16 +125,27 @@ import time
 import warnings
 from typing import Optional, Tuple
 
+from .common import _compute_standard_error, _normalize_mfmc_control_variate_mode
+
 import numpy as np
 
+from romtools.workflows.inverse.vi.gains import loo_acv_estimator, gain_folds, validate_gain_num_folds, normalize_strategy, regularized_matrix_gain, validate_gain_sampling
+from romtools.workflows.inverse.vi.gains import (
+    history_weights, fit_history_gain, gaussian_history_kernels,
+    append_training_batch, importance_weights, sample_ids,
+)
+from romtools.workflows.inverse.vi.adaptation import (
+    stage_delayed_rom, activate_delayed_rom, mf_vi_restart_data,
+    validate_mf_vi_restart, restore_mf_vi_state,
+)
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher, resolve_local_dispatcher
-from romtools.workflows.inverse._inverse_utils import run_vi_iteration, require_relative_or_absolute_path
-from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
-from romtools.workflows.inverse.mf_vi_rom_substeps import (
+from romtools.workflows.inverse.vi.evaluation import run_vi_iteration
+from romtools.workflows.inverse._inverse_utils import require_relative_or_absolute_path
+from romtools.workflows.inverse.vi.rom_substeps import (
     apply_diagonal_rom_substeps, validate_rom_substeps, rom_substeps_enabled,
     restore_rom_substeps, rom_substep_restart_data,
 )
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     AdamSolver,
     SteepestDescentSolver,
     VIAdamOptimizerConfig,
@@ -150,7 +161,7 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     _resolve_line_search_config,
     _resolve_optimizer_config,
 )
-from romtools.workflows.inverse.vi_drivers import (
+from romtools.workflows.inverse.vi.drivers import (
     _append_vi_history,
     _compute_component_standard_error,
     _compute_correlation_cholesky_from_samples,
@@ -171,8 +182,9 @@ from romtools.workflows.inverse.vi_drivers import (
     _convert_physical_moments_to_optimizer_moments,
     _compute_newton_metric_scale,
     _compute_newton_step,
-    _update_adaptive_newton_controls,
+    _backtrack_adaptive_newton_controls,
     _restore_adaptive_newton_regularization,
+    _scheduled_newton_regularization,
     _get_state_hessian,
     _average_hessians,
     _limit_mean_update,
@@ -192,6 +204,8 @@ from romtools.workflows.inverse.vi_drivers import (
     _load_vi_history_from_restart,
     _pack_vi_history,
     _resolve_elbo_scaling_factor,
+    _initial_expected_misfit_scale,
+    _restore_initial_expected_misfit_scale,
     _resolve_parameter_bounds,
     _prune_old_restart_files,
     _resolve_restart_file,
@@ -215,30 +229,40 @@ def _compute_rom_relative_error(rom_qois: np.ndarray, fom_qois: np.ndarray, epsi
     return float(np.linalg.norm(rom_qois - fom_qois) / denominator)
 
 
-def _normalize_correlation_estimator(correlation_estimator: str) -> str:
-    estimator = correlation_estimator.strip().lower()
-    if estimator in ('in_sample', 'insample', 'default'):
-        return 'in_sample'
-    if estimator in ('kfold', 'k_fold'):
-        return 'kfold'
-    raise ValueError(
-        f"Unsupported correlation_estimator '{correlation_estimator}'. "
-        "Supported options are 'in_sample' and 'kfold'."
-    )
+def _normalize_rom_retraining_strategy(value):
+    return normalize_strategy(value, 'rom_retraining_strategy', ('same_sample', 'delayed'))
 
 
-def _normalize_mfmc_control_variate_mode(mfmc_control_variate_mode: str) -> str:
-    mode = mfmc_control_variate_mode.strip().lower()
-    if mode in ("componentwise", "component", "diag", "diagonal"):
-        return "componentwise"
-    if mode in ("scalar", "isotropic"):
-        return "scalar"
-    if mode in ("matrix", "joint", "full"):
-        return "matrix"
-    raise ValueError(
-        f"Unsupported mfmc_control_variate_mode '{mfmc_control_variate_mode}'. "
-        "Supported options are 'componentwise', 'scalar', and 'matrix'."
-    )
+def _normalize_mfmc_fixed_gain(value):
+    if (isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, float, np.integer, np.floating))
+            or not np.isfinite(value)):
+        raise ValueError('mfmc_fixed_gain must be a finite real scalar.')
+    return float(value)
+
+
+def _constant_mfmc_gain(value, shape, mode):
+    value = _normalize_mfmc_fixed_gain(value)
+    mode = _normalize_mfmc_control_variate_mode(mode)
+    if mode == 'scalar':
+        return np.array(value)
+    if mode == 'matrix':
+        return value*np.eye(int(np.prod(shape)))
+    return np.full(shape, value)
+
+
+def _validate_gain_sample_size(value):
+    if value is not None and (isinstance(value, (bool, np.bool_))
+            or not isinstance(value, (int, np.integer)) or value < 1):
+        raise ValueError('gain_sample_size must be None or a positive integer.')
+    return None if value is None else int(value)
+
+
+def _normalize_hessian_gain_estimation_strategy(value):
+    return normalize_strategy(value, 'hessian_gain_estimation_strategy', ('same_sample',))
+
+
+def _normalize_gradient_gain_estimation_strategy(value):
+    return normalize_strategy(value, 'gradient_gain_estimation_strategy', ('same_sample', 'loo', 'k_fold', 'history', 'independent'))
 
 
 def _build_iteration_training_data(run_directory_base: str,
@@ -291,11 +315,9 @@ def _compute_mfmc_alpha(high_terms: np.ndarray,
             return np.array(0.0)
         return np.array(numerator / denominator)
 
-    dimensionality = low_flat.shape[1]
     covariance_low = (centered_low.T @ centered_low) / low_flat.shape[0]
     covariance_cross = (centered_low.T @ centered_high) / low_flat.shape[0]
-    regularized_covariance_low = covariance_low + epsilon * np.eye(dimensionality)
-    return np.linalg.pinv(regularized_covariance_low) @ covariance_cross
+    return regularized_matrix_gain(covariance_low, covariance_cross, epsilon, max_rank=low_flat.shape[0]-1)
 
 
 def _mfmc_gradient_estimator(high_terms: np.ndarray,
@@ -303,18 +325,26 @@ def _mfmc_gradient_estimator(high_terms: np.ndarray,
                              low_terms_extra: np.ndarray,
                              use_control_variate: bool,
                              control_variate_mode: str,
-                             high_variance_reference_terms: np.ndarray = None
+                             high_variance_reference_terms: np.ndarray = None,
+                             mfmc_fixed_gain: float = 1.0,
                              ) -> Tuple[np.ndarray, np.ndarray]:
+    # Gain-fitting predictions affect alpha only; correction means use the final ROM.
     trailing_shape = high_terms.shape[1:]
     high_flat = high_terms.reshape(high_terms.shape[0], -1)
-    low_base_flat = low_terms_base.reshape(low_terms_base.shape[0], -1)
+    control_variate_mode = _normalize_mfmc_control_variate_mode(control_variate_mode)
     if low_terms_extra is None or low_terms_extra.shape[0] == 0:
+        if control_variate_mode == "scalar":
+            alpha = np.array(0.0)
+        elif control_variate_mode == "matrix":
+            alpha = np.zeros((high_flat.shape[1], high_flat.shape[1]))
+        else:
+            alpha = np.zeros(trailing_shape)
         return (
             np.mean(high_flat, axis=0).reshape(trailing_shape),
-            np.zeros(high_flat.shape[1]).reshape(trailing_shape),
+            alpha,
         )
 
-    control_variate_mode = _normalize_mfmc_control_variate_mode(control_variate_mode)
+    low_base_flat = low_terms_base.reshape(low_terms_base.shape[0], -1)
     if use_control_variate:
         alpha = _compute_mfmc_alpha(
             high_terms,
@@ -340,13 +370,7 @@ def _mfmc_gradient_estimator(high_terms: np.ndarray,
                 alpha = np.asarray(alpha).copy()
                 alpha.reshape(-1)[negligible] = 0.0
     else:
-        if control_variate_mode == "matrix":
-            dimensionality = high_flat.shape[1]
-            alpha = np.eye(dimensionality)
-        elif control_variate_mode == "scalar":
-            alpha = np.array(1.0)
-        else:
-            alpha = np.ones(trailing_shape)
+        alpha = _constant_mfmc_gain(mfmc_fixed_gain, trailing_shape, control_variate_mode)
 
     # Hierarchical low-fidelity correction using independent low-fidelity samples.
     # low_terms_full = [low_terms_base; low_terms_extra] with low_terms_base size
@@ -380,7 +404,15 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
                                       mfmc_control_variate_mode: str = "componentwise",
                                       variational_correlation_cholesky: np.ndarray = None,
                                       elbo_scaling_factor: float = 1.0,
-                                      score_function_entropy_strategy: str = 'analytic'):
+                                      score_function_entropy_strategy: str = 'analytic',
+                                      gradient_gain_estimation_strategy: str = 'same_sample',
+                                      force_unit_gain: bool = False,
+                                      return_gain_samples: bool = False,
+                                      gain_history_data=None,
+                                      gain_num_folds: int = 5,
+                                      gain_independent_data=None,
+                                      mfmc_fixed_gain: float = 1.0):
+    gradient_gain_estimation_strategy = _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
     def _compute_mfmc_estimator_standard_error(high_terms: np.ndarray,
                                                low_terms_base: np.ndarray,
                                                low_terms_extra: np.ndarray,
@@ -485,6 +517,49 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
                 )
             )
 
+    if _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy) in ('loo', 'k_fold', 'history', 'independent'):
+        references = None
+        if entropy_strategy == 'joint':
+            reference_weights = np.abs(scaled_fom_log_likelihoods) + np.abs(elbo_scaling_factor*fom_log_q)
+            references = (reference_weights[:, None]*np.abs(score_mean_fom),
+                          reference_weights[:, None]*np.abs(score_log_std_fom))
+        separate_fit = (_normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy) in ('history', 'independent') and use_mfmc_control_variate
+                       and not force_unit_gain and len(rom_extra_weights) > 0)
+        gain_fit_data = gain_independent_data if gradient_gain_estimation_strategy == 'independent' else gain_history_data
+        if separate_fit and gradient_gain_estimation_strategy == 'independent' and gain_fit_data is None:
+            raise ValueError('Independent gain estimation requires a separate paired gain dataset.')
+        if separate_fit:
+            history_high, history_low = history_weights(gain_fit_data, elbo_scaling_factor, entropy_strategy)
+            history_scores = gaussian_history_kernels(gain_fit_data)[0]
+        estimates = []
+        gains = []
+        samples = []
+        for index, (scores, extra_scores) in enumerate((
+                (score_mean_fom, score_mean_rom_extra), (score_log_std_fom, score_log_std_rom_extra))):
+            fixed_gain = (fit_history_gain(history_high, history_low, history_scores[index],
+                                           baseline_method, mfmc_control_variate_mode,
+                                           sample_weights=gain_fit_data.get('importance_weights'))
+                          if separate_fit else None)
+            estimate, gain, gain_samples = loo_acv_estimator(
+                fom_weights, rom_base_weights, rom_extra_weights, scores,
+                np.zeros((0, variational_mean.size)) if extra_scores is None else extra_scores,
+                baseline_method, mfmc_control_variate_mode,
+                force_unit_gain=force_unit_gain and use_mfmc_control_variate,
+                high_reference_terms=None if references is None else references[index],
+                fixed_gain=(fixed_gain if use_mfmc_control_variate else
+                            _constant_mfmc_gain(mfmc_fixed_gain, scores.shape[1:], mfmc_control_variate_mode)),
+                num_folds=gain_num_folds if gradient_gain_estimation_strategy == 'k_fold' else None,
+            )
+            estimates.append(estimate)
+            gains.append(gain)
+            samples.append(gain_samples)
+        if entropy_strategy == 'analytic':
+            estimates[1] += elbo_scaling_factor
+        result = (estimates[0], estimates[1], np.full_like(variational_mean, np.nan),
+                  np.full_like(variational_mean, np.nan), gains[0], gains[1], np.nan,
+                  np.full(2*variational_mean.size, np.nan))
+        return result + (dict(mean=samples[0], log_std=samples[1]),) if return_gain_samples else result
+
     # Compute shared baselines and centered likelihood weights.
     # Baselines are estimated from FOM statistics and reused for ROM terms.
     baseline_method = _normalize_baseline_method(baseline_method)
@@ -513,7 +588,7 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         centered_rom_log_likelihoods_base = rom_base_weights
         centered_rom_log_likelihoods_extra = rom_extra_weights
 
-    # High terms use FOM samples; low base terms use an independent low-fidelity sample set.
+    # High and low base terms share the main optimizer samples.
     high_mean_terms = (centered_fom_log_likelihoods[:, None] - baseline_mean[None, :]) * score_mean_fom
     low_mean_terms_base = (
         centered_rom_log_likelihoods_base[:, None] - baseline_mean[None, :]
@@ -542,7 +617,7 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
         high_mean_terms,
         low_mean_terms_base,
         low_mean_terms_extra,
-        use_mfmc_control_variate,
+        use_mfmc_control_variate and not force_unit_gain,
         mfmc_control_variate_mode,
         (
             (np.abs(scaled_fom_log_likelihoods)[:, None]
@@ -550,12 +625,13 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
             * np.abs(score_mean_fom)
             if entropy_strategy == 'joint' else None
         ),
+        mfmc_fixed_gain=1.0 if force_unit_gain and use_mfmc_control_variate else mfmc_fixed_gain,
     )
     gradient_log_std, alpha_log_std = _mfmc_gradient_estimator(
         high_log_std_terms,
         low_log_std_terms_base,
         low_log_std_terms_extra,
-        use_mfmc_control_variate,
+        use_mfmc_control_variate and not force_unit_gain,
         mfmc_control_variate_mode,
         (
             (np.abs(scaled_fom_log_likelihoods)[:, None]
@@ -563,6 +639,7 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
             * np.abs(score_log_std_fom)
             if entropy_strategy == 'joint' else None
         ),
+        mfmc_fixed_gain=1.0 if force_unit_gain and use_mfmc_control_variate else mfmc_fixed_gain,
     )
     gradient_standard_error_mean = _compute_mfmc_estimator_standard_error(
         high_mean_terms,
@@ -588,7 +665,7 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
             gradient_standard_error_log_std.reshape(-1),
         ]),
     )
-    return (
+    result = (
         gradient_mean,
         gradient_log_std,
         baseline_mean,
@@ -601,6 +678,11 @@ def _compute_mfmc_reinforce_gradients(optimizer_samples_fom: np.ndarray,
             gradient_standard_error_log_std.reshape(-1),
         ]),
     )
+    gain_samples = dict(
+        mean=np.broadcast_to(alpha_mean, (optimizer_samples_fom.shape[0],) + np.shape(alpha_mean)),
+        log_std=np.broadcast_to(alpha_log_std, (optimizer_samples_fom.shape[0],) + np.shape(alpha_log_std)),
+    )
+    return result + (gain_samples,) if return_gain_samples else result
 
 
 def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
@@ -615,7 +697,11 @@ def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
                                              use_mfmc_control_variate: bool,
                                              mfmc_control_variate_mode: str = "componentwise",
                                              variational_correlation_cholesky: np.ndarray = None,
-                                             elbo_scaling_factor: float = 1.0):
+                                             elbo_scaling_factor: float = 1.0,
+                                             hessian_gain_estimation_strategy: str = 'same_sample',
+                                             force_unit_gain: bool = False,
+                                             return_gain_samples: bool = False,
+                                             mfmc_fixed_gain: float = 1.0):
     hessian_full = _compute_mfmc_reinforce_hessian_full(
         optimizer_samples_fom,
         optimizer_samples_rom_base,
@@ -630,6 +716,9 @@ def _compute_mfmc_reinforce_hessian_diagonal(optimizer_samples_fom: np.ndarray,
         mfmc_control_variate_mode,
         variational_correlation_cholesky,
         elbo_scaling_factor,
+        hessian_gain_estimation_strategy,
+        force_unit_gain,
+        mfmc_fixed_gain=mfmc_fixed_gain,
     )
     dimensionality = variational_mean.size
     hessian_diagonal_mean = np.diag(hessian_full[:dimensionality, :dimensionality])
@@ -649,7 +738,12 @@ def _compute_mfmc_reinforce_hessian_full(optimizer_samples_fom: np.ndarray,
                                          use_mfmc_control_variate: bool,
                                          mfmc_control_variate_mode: str = "componentwise",
                                          variational_correlation_cholesky: np.ndarray = None,
-                                         elbo_scaling_factor: float = 1.0):
+                                         elbo_scaling_factor: float = 1.0,
+                                         hessian_gain_estimation_strategy: str = 'same_sample',
+                                         force_unit_gain: bool = False,
+                                         return_gain_samples: bool = False,
+                                         mfmc_fixed_gain: float = 1.0):
+    _normalize_hessian_gain_estimation_strategy(hessian_gain_estimation_strategy)
     dimensionality = variational_mean.size
     correlation_inverse = None
     second_mean_template = None
@@ -819,26 +913,29 @@ def _compute_mfmc_reinforce_hessian_full(optimizer_samples_fom: np.ndarray,
         low_log_std_terms_extra = None
         low_cross_terms_extra = None
 
-    hessian_diagonal_mean, _ = _mfmc_gradient_estimator(
+    hessian_diagonal_mean, alpha_mean = _mfmc_gradient_estimator(
         high_mean_terms,
         low_mean_terms_base,
         low_mean_terms_extra,
-        use_mfmc_control_variate,
+        use_mfmc_control_variate and not force_unit_gain,
         mfmc_control_variate_mode,
+        mfmc_fixed_gain=1.0 if force_unit_gain and use_mfmc_control_variate else mfmc_fixed_gain,
     )
-    hessian_diagonal_log_std, _ = _mfmc_gradient_estimator(
+    hessian_diagonal_log_std, alpha_log_std = _mfmc_gradient_estimator(
         high_log_std_terms,
         low_log_std_terms_base,
         low_log_std_terms_extra,
-        use_mfmc_control_variate,
+        use_mfmc_control_variate and not force_unit_gain,
         mfmc_control_variate_mode,
+        mfmc_fixed_gain=1.0 if force_unit_gain and use_mfmc_control_variate else mfmc_fixed_gain,
     )
-    hessian_cross, _ = _mfmc_gradient_estimator(
+    hessian_cross, alpha_cross = _mfmc_gradient_estimator(
         high_cross_terms,
         low_cross_terms_base,
         low_cross_terms_extra,
-        use_mfmc_control_variate,
+        use_mfmc_control_variate and not force_unit_gain,
         mfmc_control_variate_mode,
+        mfmc_fixed_gain=1.0 if force_unit_gain and use_mfmc_control_variate else mfmc_fixed_gain,
     )
 
     hessian_full = np.block([
@@ -846,46 +943,34 @@ def _compute_mfmc_reinforce_hessian_full(optimizer_samples_fom: np.ndarray,
         [hessian_cross.transpose(), hessian_diagonal_log_std],
     ])
     hessian_full = 0.5 * (hessian_full + hessian_full.transpose())
-    return np.nan_to_num(hessian_full, nan=0.0, posinf=0.0, neginf=0.0)
-
-
-def _normalize_rom_base_sampling_strategy(rom_base_sampling_strategy: str) -> str:
-    strategy = rom_base_sampling_strategy.strip().lower()
-    if strategy in ('coupled', 'shared', 'same_as_fom'):
-        return 'coupled'
-    if strategy in ('separate', 'independent'):
-        return 'separate'
-    raise ValueError(
-        f"Unsupported rom_base_sampling_strategy '{rom_base_sampling_strategy}'. "
-        "Supported options are 'coupled' and 'separate'."
-    )
+    hessian_full = np.nan_to_num(hessian_full, nan=0.0, posinf=0.0, neginf=0.0)
+    gain_samples = {name: np.broadcast_to(gain, (optimizer_samples_fom.shape[0],) + np.shape(gain))
+                    for name, gain in (('mean', alpha_mean), ('log_std', alpha_log_std), ('cross', alpha_cross))}
+    return (hessian_full, gain_samples) if return_gain_samples else hessian_full
 
 
 def _normalize_line_search_method(line_search_method: str) -> str:
     return _normalize_line_search_method_shared(line_search_method)
 
 
-def _compute_standard_error(samples: np.ndarray) -> float:
-    sample_count = samples.size
-    if sample_count <= 1:
-        return 0.0
-    return float(np.std(samples, ddof=1) / np.sqrt(sample_count))
-
-
 def _compute_mfmc_standard_error(fom_terms: np.ndarray,
                                  rom_terms_base: np.ndarray,
                                  rom_terms_extra: np.ndarray) -> float:
-    fom_standard_error = _compute_standard_error(fom_terms)
-    if rom_terms_extra.size == 0:
-        return fom_standard_error
-    low_fidelity_full = np.concatenate([rom_terms_base, rom_terms_extra])
-    low_fidelity_full_standard_error = _compute_standard_error(low_fidelity_full)
-    low_fidelity_base_standard_error = _compute_standard_error(rom_terms_base)
-    return float(np.sqrt(
-        fom_standard_error ** 2
-        + low_fidelity_full_standard_error ** 2
-        + low_fidelity_base_standard_error ** 2
-    ))
+    high = np.asarray(fom_terms, dtype=float)
+    low = np.asarray(rom_terms_base, dtype=float)
+    extra = np.asarray(rom_terms_extra, dtype=float)
+    if extra.size == 0:
+        return _compute_standard_error(high)
+    if high.ndim != 1 or low.shape != high.shape or extra.ndim != 1 or high.size == 0:
+        raise ValueError('MF uncertainty requires matching nonempty paired HF/LF vectors.')
+    n, m = high.size, extra.size
+    ratio = m / (n + m)
+    # Var(mean(H) + r*(mean(L_extra)-mean(L_paired))). Center
+    # before forming paired residuals to preserve small variations at large offsets.
+    residual = (high-high[0])-ratio*(low-low[0])
+    paired_se = _compute_standard_error(residual)
+    extra_se = _compute_standard_error(extra-extra[0])
+    return float(np.hypot(paired_se, ratio*extra_se))
 
 
 def _compute_state_elbo_standard_error(state, elbo_scaling_factor: float) -> float:
@@ -895,6 +980,30 @@ def _compute_state_elbo_standard_error(state, elbo_scaling_factor: float) -> flo
         state['log_joint_terms_rom_only'],
     )
     return abs(elbo_scaling_factor) * mfmc_joint_standard_error
+
+
+def _select_mf_elbo_reference(elbo_history, standard_error_history, window):
+    """Select the first maximum and its own uncertainty in the recent window."""
+    start = max(0, len(elbo_history)-window)
+    index = start+int(np.argmax(elbo_history[start:]))
+    return float(elbo_history[index]), float(standard_error_history[index])
+
+
+def _restore_mf_elbo_uncertainty_history(restart_data, elbo_history, state, scale,
+                                         require_history=False):
+    """Restore aligned histories; unused legacy/Adam history can restart locally."""
+    errors = restart_data.get('accepted_elbo_standard_error_history')
+    if errors is None:
+        if require_history:
+            raise ValueError('restart_file is missing accepted ELBO uncertainty history.')
+        return [float(state['elbo'])], [_compute_state_elbo_standard_error(state, scale)]
+    values = np.asarray(elbo_history, dtype=float)
+    errors = np.asarray(errors, dtype=float)
+    if (values.ndim != 1 or values.size == 0 or errors.shape != values.shape
+            or not np.all(np.isfinite(values)) or not np.all(np.isfinite(errors))
+            or np.any(errors < 0)):
+        raise ValueError('restart_file has inconsistent accepted ELBO uncertainty history.')
+    return values.tolist(), errors.tolist()
 
 
 def _save_mf_vi_restart(restart_path: str,
@@ -936,7 +1045,12 @@ def _save_mf_vi_restart(restart_path: str,
                         rom_substep_start_iteration: int = 0,
                         rom_substep_end_iteration: Optional[int] = None,
                         num_rom_substeps: int = 0,
-                        dispatcher: Optional[BaseDispatcher] = None):
+                        dispatcher: Optional[BaseDispatcher] = None,
+                        accepted_elbo_standard_error_history=None,
+                        newton_additive_regularization_growth_factor: float = 1.0,
+                        initial_newton_additive_regularization: float = 0.0,
+                        newton_additive_regularization_max: float = None,
+                        line_search_method=None):
     persisted_variational_mean = _get_persisted_variational_mean(
         variational_mean,
         bounded_parameter_handling,
@@ -946,6 +1060,7 @@ def _save_mf_vi_restart(restart_path: str,
         transform_map,
     )
     save_data = dict(
+        line_search_method=line_search_method,
         log_likelihoods=state['log_likelihoods_fom'],
         log_priors=state['log_priors_fom'],
         mean_relative_mse=float(state['mean_relative_mse']),
@@ -981,6 +1096,16 @@ def _save_mf_vi_restart(restart_path: str,
             if current_newton_additive_regularization is None
             else float(current_newton_additive_regularization)
         ),
+        newton_additive_regularization_max=(
+            np.inf if newton_additive_regularization_max is None
+            else float(newton_additive_regularization_max)
+        ),
+        newton_additive_regularization_growth_factor=float(
+            newton_additive_regularization_growth_factor
+        ),
+        initial_newton_additive_regularization=float(
+            initial_newton_additive_regularization
+        ),
         newton_adaptive_regularization=bool(newton_adaptive_regularization),
         newton_regularization_decrease_factor=float(
             newton_regularization_decrease_factor
@@ -1007,6 +1132,8 @@ def _save_mf_vi_restart(restart_path: str,
         save_data['running_hessian'] = running_hessian
     if accepted_elbo_history is not None:
         save_data['accepted_elbo_history'] = np.asarray(accepted_elbo_history)
+    if accepted_elbo_standard_error_history is not None:
+        save_data['accepted_elbo_standard_error_history'] = np.asarray(accepted_elbo_standard_error_history)
     restart_state_mapping = {
         'optimizer_samples': 'optimizer_samples',
         'parameter_samples': 'parameter_samples',
@@ -1053,43 +1180,8 @@ def _save_mf_vi_restart(restart_path: str,
     if adam_restart_data is not None:
         save_data.update(adam_restart_data)
         save_data['adam_gradient_method'] = adam_gradient_method
+    save_data.update(mf_vi_restart_data(state))
     resolve_dispatcher(dispatcher).np_savez(restart_path, **save_data)
-
-
-def _restart_has_full_state(restart_data) -> bool:
-    required_keys = (
-        'parameter_samples_fom',
-        'parameter_samples_rom_base',
-        'parameter_samples_rom_only',
-        'qois',
-        'qois_rom_base',
-        'qois_rom_only',
-        'mean_qoi',
-        'errors',
-        'log_likelihoods',
-        'log_priors',
-        'log_joint_terms',
-        'log_likelihoods_rom_base',
-        'log_joint_terms_rom_base',
-        'log_likelihoods_rom_only',
-        'log_joint_terms_rom_only',
-        'gradient_mean',
-        'gradient_log_std',
-        'hessian_diagonal_mean',
-        'hessian_diagonal_log_std',
-        'update_direction_mean',
-        'update_direction_log_std',
-        'baseline_mean',
-        'baseline_log_std',
-        'entropy',
-        'elbo',
-        'mean_misfit',
-        'mean_relative_mse',
-        'mfmc_alpha_mean',
-        'mfmc_alpha_log_std',
-        'rom_error',
-    )
-    return all(key in restart_data for key in required_keys)
 
 
 def _evaluate_mf_vi_state(model: QoiModel,
@@ -1118,15 +1210,14 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           bounded_parameter_handling: str,
                           min_variational_std: float,
                           max_variational_std: float,
-                          rom_base_sampling_strategy: str,
                           parameter_mins: np.ndarray,
                           parameter_maxes: np.ndarray,
                           transform_interior_margin: float,
                           transform_map: str,
                           rom_tolerance: float,
                           max_rom_training_dirs: int,
-                          correlation_estimator: str,
-                          correlation_k_folds: int,
+                          rom_retraining_strategy: str,
+                          gradient_gain_estimation_strategy: str,
                           training_dirs: list,
                           training_parameters: np.ndarray,
                           training_qois: np.ndarray,
@@ -1136,9 +1227,79 @@ def _evaluate_mf_vi_state(model: QoiModel,
                           log_likelihood_precision_operator: np.ndarray = None,
                           sampling_method: str = 'mc',
                           dispatcher: Optional[BaseDispatcher] = None,
-                          score_function_entropy_strategy: str = 'analytic'):
+                          score_function_entropy_strategy: str = 'analytic',
+                          allow_rom_retraining: bool = True,
+                          gain_history_state=None,
+                          gain_num_folds: int = 5,
+                          hessian_gain_estimation_strategy: str = "same_sample",
+                          gain_sample_size=None,
+                          mfmc_fixed_gain: float = 1.0):
     dispatcher = resolve_dispatcher(dispatcher)
     rom_dispatcher = resolve_local_dispatcher(dispatcher)
+    rom_retraining_strategy = _normalize_rom_retraining_strategy(rom_retraining_strategy)
+    hessian_gain_estimation_strategy = _normalize_hessian_gain_estimation_strategy(hessian_gain_estimation_strategy)
+    mfmc_fixed_gain = _normalize_mfmc_fixed_gain(mfmc_fixed_gain)
+    gain_sample_size = _validate_gain_sample_size(gain_sample_size)
+    gradient_gain_estimation_strategy = _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
+    if gradient_gain_estimation_strategy == 'k_fold':
+        validate_gain_num_folds(gain_num_folds)
+    gain_history_data = None
+
+    def prepare_history_data(active_rom, reuse_predictions):
+        if gain_history_state is None or not gain_history_state.get('gain_training_batches'):
+            raise ValueError('History gain estimation requires the accepted HF training window.')
+        history = gain_history_state
+        batches = history['gain_training_batches']
+        historical_parameters = np.concatenate([batch['parameter_samples'] for batch in batches])
+        historical_optimizer = np.concatenate([batch['optimizer_samples'] for batch in batches])
+        ids = [identifier for batch in batches for identifier in batch['sample_ids']]
+        priors = np.concatenate([batch['log_priors'] for batch in batches])
+        jacobians = np.concatenate([batch['log_transform_jacobian'] for batch in batches])
+        cache = {}
+        if reuse_predictions and active_rom is history['rom_model']:
+            previous_data = history.get('gain_history_data')
+            if previous_data is not None:
+                cache.update(zip(previous_data['sample_ids'], previous_data['low_log_joint']))
+            cache.update(zip(sample_ids(history['gain_iteration_directory'], len(history['parameter_samples_fom'])),
+                             history['log_joint_terms_rom_base']))
+        missing = np.array([identifier not in cache for identifier in ids])
+        low_joint = np.array([cache.get(identifier, 0.0) for identifier in ids])
+        if np.any(missing):
+            history_results = run_vi_iteration(
+                active_rom, observations, f'{iteration_directory}/run_rom_gain_history_',
+                parameter_names, historical_parameters[missing], rom_evaluation_concurrency, rom_dispatcher,
+            )
+            history_ll, _ = _compute_log_likelihoods(
+                history_results['errors'], observations_covariance, covariance_regularization,
+                precision_operator=log_likelihood_precision_operator,
+            )
+            low_joint[missing] = history_ll+priors[missing]+jacobians[missing]
+        target_std, _ = _compute_variational_std(variational_log_std, min_variational_std, max_variational_std)
+        probabilities, log_weights, ess = importance_weights(
+            historical_optimizer, variational_mean, target_std, variational_correlation_cholesky, batches,
+        )
+        target_cholesky = (np.diag(target_std) if variational_correlation_cholesky is None
+                           else target_std[:, None]*variational_correlation_cholesky)
+        return dict(
+            optimizer_samples=historical_optimizer, parameter_samples=historical_parameters,
+            high_log_joint=np.concatenate([batch['high_log_joint'] for batch in batches]),
+            low_log_joint=low_joint, mean=variational_mean.copy(), std=target_std.copy(),
+            correlation_cholesky=variational_correlation_cholesky,
+            cholesky=target_cholesky, source_directory=batches[-1]['source_directory'],
+            source_directories=[batch['source_directory'] for batch in batches], sample_ids=ids,
+            importance_weights=probabilities, log_importance_weights=log_weights,
+            effective_sample_size=ess, gain_fallback=ess < 2-1e-12,
+            proposal_distributions=[dict(mean=batch['mean'].copy(), std=batch['std'].copy(),
+                                         correlation_cholesky=batch['correlation_cholesky'],
+                                         sample_count=len(batch['parameter_samples'])) for batch in batches],
+        )
+
+    if (gradient_gain_estimation_strategy == 'history' and rom_model is not None
+            and rom_retraining_strategy == 'delayed' and use_mfmc_control_variate
+            and rom_extra_sample_size > 0):
+        # Freeze the historical fitting data before drawing this trial's samples.
+        gain_history_data = prepare_history_data(rom_model, True)
+
     run_directory_base = f'{iteration_directory}/run_fom_sample_set_0_'
     optimizer_samples_fom, parameter_samples_fom = _draw_parameter_samples(
         variational_mean,
@@ -1155,25 +1316,18 @@ def _evaluate_mf_vi_state(model: QoiModel,
         sampling_method=sampling_method,
     )
 
-    if rom_base_sampling_strategy == 'coupled':
-        optimizer_samples_rom_base = optimizer_samples_fom.copy()
-        parameter_samples_rom_base = parameter_samples_fom.copy()
-    else:
-        run_directory_base = f'{iteration_directory}/run_rom_sample_set_0_'
-        optimizer_samples_rom_base, parameter_samples_rom_base = _draw_parameter_samples(
-            variational_mean,
-            variational_log_std,
-            fom_sample_size,
-            min_variational_std,
-            max_variational_std,
-            bounded_parameter_handling,
-            parameter_mins,
-            parameter_maxes,
-            transform_interior_margin=transform_interior_margin,
-            transform_map=transform_map,
-            variational_correlation_cholesky=variational_correlation_cholesky,
-            sampling_method=sampling_method,
-        )
+    rom_retraining_strategy = _normalize_rom_retraining_strategy(rom_retraining_strategy)
+    hessian_gain_estimation_strategy = _normalize_hessian_gain_estimation_strategy(hessian_gain_estimation_strategy)
+    mfmc_fixed_gain = _normalize_mfmc_fixed_gain(mfmc_fixed_gain)
+    gain_sample_size = _validate_gain_sample_size(gain_sample_size)
+    gradient_gain_estimation_strategy = _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
+    if gradient_gain_estimation_strategy == 'k_fold':
+        validate_gain_num_folds(gain_num_folds)
+    validate_gain_sampling(gradient_gain_estimation_strategy, _normalize_sampling_method(sampling_method))
+    optimizer_samples_rom_base = optimizer_samples_fom.copy()
+    parameter_samples_rom_base = parameter_samples_fom.copy()
+    delayed_adaptation = rom_retraining_strategy == 'delayed'
+    bootstrap_rom = rom_model is None
 
     if rom_extra_sample_size > 0:
         optimizer_samples_rom_extra, parameter_samples_rom_extra = _draw_parameter_samples(
@@ -1219,7 +1373,6 @@ def _evaluate_mf_vi_state(model: QoiModel,
     )
 
     rom_model_candidate = rom_model
-    rom_model_uses_current_iteration = rom_model is None
     candidate_rom_training_dirs = copy.deepcopy(rom_training_dirs)
     candidate_rom_training_parameters = (
         None if rom_training_parameters is None else rom_training_parameters.copy()
@@ -1251,9 +1404,9 @@ def _evaluate_mf_vi_state(model: QoiModel,
         rom_results_base['mean-qoi'][:, None],
         fom_results['mean-qoi'][:, None],
     )
-    rom_rebuilt_this_iteration = False
+    rom_rebuilt_this_iteration = bootstrap_rom
 
-    if rom_error >= rom_tolerance:
+    if rom_error >= rom_tolerance and not delayed_adaptation and not bootstrap_rom and allow_rom_retraining:
         candidate_rom_training_dirs = candidate_training_dirs[-max_rom_training_dirs:]
         candidate_rom_training_parameters = candidate_training_parameters[-max_rom_training_dirs:]
         candidate_rom_training_qois = candidate_training_qois[-max_rom_training_dirs:]
@@ -1270,7 +1423,6 @@ def _evaluate_mf_vi_state(model: QoiModel,
             candidate_rom_training_parameters,
             candidate_rom_training_qois,
         )
-        rom_model_uses_current_iteration = True
         rom_rebuilt_this_iteration = True
         rom_results_base = run_vi_iteration(
             rom_model_candidate,
@@ -1310,79 +1462,25 @@ def _evaluate_mf_vi_state(model: QoiModel,
             covariance_regularization,
         )
 
+    if (gradient_gain_estimation_strategy == 'history' and not bootstrap_rom
+            and use_mfmc_control_variate and rom_extra_sample_size > 0
+            and (gain_history_data is None or rom_rebuilt_this_iteration)):
+        gain_history_data = prepare_history_data(rom_model_candidate, not rom_rebuilt_this_iteration)
+
     fom_log_likelihoods, fom_misfits = _compute_log_likelihoods(
         fom_results['errors'],
         observations_covariance,
         covariance_regularization,
         precision_operator=log_likelihood_precision_operator,
     )
-    use_kfold_correlation = (
-        correlation_estimator == 'kfold'
-        and rom_base_sampling_strategy == 'coupled'
-        and rom_model_uses_current_iteration
-        and fom_sample_size >= 2
+    if elbo_scaling_factor is None:
+        elbo_scaling_factor = _initial_expected_misfit_scale(fom_misfits)
+    rom_log_likelihoods_base, _ = _compute_log_likelihoods(
+        rom_results_base['errors'],
+        observations_covariance,
+        covariance_regularization,
+        precision_operator=log_likelihood_precision_operator,
     )
-    if use_kfold_correlation:
-        fold_count = min(correlation_k_folds, fom_sample_size)
-        if fold_count >= 2:
-            rom_errors_base = np.zeros_like(fom_results['errors'])
-            fold_indices = np.array_split(np.arange(fom_sample_size), fold_count)
-            current_iteration_dirs = iteration_training_dirs
-            current_iteration_parameters = iteration_training_parameters
-            current_iteration_qois = iteration_training_qois
-            for fold_id, heldout_indices in enumerate(fold_indices):
-                if heldout_indices.size == 0:
-                    continue
-                in_fold_mask = np.ones(fom_sample_size, dtype=bool)
-                in_fold_mask[heldout_indices] = False
-                in_fold_indices = np.where(in_fold_mask)[0]
-                in_fold_dirs = [current_iteration_dirs[index] for index in in_fold_indices]
-                in_fold_parameters = current_iteration_parameters[in_fold_indices, :]
-                in_fold_qois = current_iteration_qois[in_fold_indices, :]
-                #training_parameters is None or training_qois is None:
-                fold_training_dirs = in_fold_dirs
-                fold_training_parameters = in_fold_parameters
-                fold_training_qois = in_fold_qois
-                #else:
-                #    fold_training_dirs = list(training_dirs) + in_fold_dirs
-                #    fold_training_parameters = np.vstack([training_parameters, in_fold_parameters])
-                #    fold_training_qois = np.vstack([training_qois, in_fold_qois])
-                fold_rom_model = rom_model_builder.build_from_training_dirs(
-                    iteration_directory,
-                    fold_training_dirs,
-                    fold_training_parameters,
-                    fold_training_qois,
-                )
-                fold_results = run_vi_iteration(
-                    fold_rom_model,
-                    observations,
-                    f'{iteration_directory}/run_rom_kfold_{fold_id}_',
-                    parameter_names,
-                    parameter_samples_rom_base[heldout_indices, :],
-                    rom_evaluation_concurrency,
-                    rom_dispatcher,
-                )
-                rom_errors_base[:, heldout_indices] = fold_results['errors']
-            rom_log_likelihoods_base, _ = _compute_log_likelihoods(
-                rom_errors_base,
-                observations_covariance,
-                covariance_regularization,
-                precision_operator=log_likelihood_precision_operator,
-            )
-        else:
-            rom_log_likelihoods_base, _ = _compute_log_likelihoods(
-                rom_results_base['errors'],
-                observations_covariance,
-                covariance_regularization,
-                precision_operator=log_likelihood_precision_operator,
-            )
-    else:
-        rom_log_likelihoods_base, _ = _compute_log_likelihoods(
-            rom_results_base['errors'],
-            observations_covariance,
-            covariance_regularization,
-            precision_operator=log_likelihood_precision_operator,
-        )
     if rom_extra_sample_size > 0:
         rom_log_likelihoods_extra, _ = _compute_log_likelihoods(
             rom_results_extra['errors'],
@@ -1449,6 +1547,45 @@ def _evaluate_mf_vi_state(model: QoiModel,
         min_variational_std,
         max_variational_std,
     )
+    gain_independent_data = None
+    if (gradient_gain_estimation_strategy == 'independent' and not bootstrap_rom
+            and use_mfmc_control_variate and rom_extra_sample_size > 0):
+        count = fom_sample_size if gain_sample_size is None else gain_sample_size
+        gain_x, gain_parameters = _draw_parameter_samples(
+            variational_mean, variational_log_std, count, min_variational_std, max_variational_std,
+            bounded_parameter_handling, parameter_mins, parameter_maxes,
+            transform_interior_margin=transform_interior_margin, transform_map=transform_map,
+            variational_correlation_cholesky=variational_correlation_cholesky, sampling_method=sampling_method,
+        )
+        gain_joints = []
+        for gain_model, concurrency, gain_dispatcher, prefix in (
+                (model, fom_evaluation_concurrency, dispatcher, 'fom'),
+                (rom_model_candidate, rom_evaluation_concurrency, rom_dispatcher, 'rom')):
+            results = run_vi_iteration(
+                gain_model, observations, f'{iteration_directory}/run_{prefix}_gain_independent_',
+                parameter_names, gain_parameters, concurrency, gain_dispatcher,
+            )
+            likelihoods, _ = _compute_log_likelihoods(
+                results['errors'], observations_covariance, covariance_regularization,
+                precision_operator=log_likelihood_precision_operator,
+            )
+            _, _, joint = _compute_log_prior_and_joint_terms(
+                likelihoods, gain_parameters, gain_x, prior_mean, prior_precision_operator,
+                prior_covariance_log_det, bounded_parameter_handling, parameter_mins, parameter_maxes,
+                transform_interior_margin, transform_map,
+            )
+            gain_joints.append(joint)
+        target_std, _ = _compute_variational_std(variational_log_std, min_variational_std, max_variational_std)
+        gain_independent_data = dict(
+            optimizer_samples=gain_x, parameter_samples=gain_parameters,
+            high_log_joint=gain_joints[0], low_log_joint=gain_joints[1],
+            mean=variational_mean.copy(), std=target_std.copy(),
+            correlation_cholesky=(None if variational_correlation_cholesky is None
+                                  else variational_correlation_cholesky.copy()),
+            cholesky=(np.diag(target_std) if variational_correlation_cholesky is None
+                      else target_std[:, None]*variational_correlation_cholesky),
+        )
+
     (
         gradient_mean,
         gradient_log_std,
@@ -1458,6 +1595,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         alpha_log_std,
         gradient_signal_to_noise_ratio,
         gradient_standard_error,
+        gradient_gain_samples,
     ) = (
         _compute_mfmc_reinforce_gradients(
             optimizer_samples_fom,
@@ -1474,9 +1612,16 @@ def _evaluate_mf_vi_state(model: QoiModel,
             variational_correlation_cholesky,
             elbo_scaling_factor,
             score_function_entropy_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
+            force_unit_gain=bootstrap_rom,
+            return_gain_samples=True,
+            gain_history_data=gain_history_data,
+            gain_independent_data=gain_independent_data,
+            mfmc_fixed_gain=mfmc_fixed_gain,
         )
     )
-    hessian_diagonal_mean, hessian_diagonal_log_std = _compute_mfmc_reinforce_hessian_diagonal(
+    hessian_full, hessian_gain_samples = _compute_mfmc_reinforce_hessian_full(
         optimizer_samples_fom,
         optimizer_samples_rom_base,
         optimizer_samples_rom_extra,
@@ -1490,22 +1635,14 @@ def _evaluate_mf_vi_state(model: QoiModel,
         mfmc_control_variate_mode,
         variational_correlation_cholesky,
         elbo_scaling_factor,
+        hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+        force_unit_gain=bootstrap_rom,
+        return_gain_samples=True,
+        mfmc_fixed_gain=mfmc_fixed_gain,
     )
-    hessian_full = _compute_mfmc_reinforce_hessian_full(
-        optimizer_samples_fom,
-        optimizer_samples_rom_base,
-        optimizer_samples_rom_extra,
-        variational_mean,
-        variational_std,
-        fom_log_joint_terms,
-        rom_log_joint_terms_base,
-        rom_log_joint_terms_extra,
-        baseline_method,
-        use_mfmc_control_variate,
-        mfmc_control_variate_mode,
-        variational_correlation_cholesky,
-        elbo_scaling_factor,
-    )
+    dimensionality = variational_mean.size
+    hessian_diagonal_mean = np.diag(hessian_full[:dimensionality, :dimensionality])
+    hessian_diagonal_log_std = np.diag(hessian_full[dimensionality:, dimensionality:])
     update_direction_mean, update_direction_log_std, normalized_gradient_method = _compute_update_directions(
         gradient_mean,
         gradient_log_std,
@@ -1567,6 +1704,7 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'log_joint_terms_rom_only': rom_log_joint_terms_extra,
         'log_transform_jacobian_rom_only': rom_log_transform_jacobian_extra,
         'mean_misfit': np.mean(fom_misfits),
+        'elbo_scaling_factor': elbo_scaling_factor,
         'mean_relative_mse': np.mean(_compute_relative_mse(fom_results['errors'], observations)),
         'entropy': entropy,
         'elbo': elbo,
@@ -1585,8 +1723,35 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'mfmc_alpha_mean': alpha_mean,
         'mfmc_alpha_log_std': alpha_log_std,
         'rom_error': rom_error,
+        'rom_tolerance': rom_tolerance,
         'rom_rebuilt_this_iteration': rom_rebuilt_this_iteration,
         'rom_model': rom_model_candidate,
+        'rom_retraining_strategy': rom_retraining_strategy,
+        'gradient_gain_estimation_strategy': gradient_gain_estimation_strategy,
+        'hessian_gain_estimation_strategy': hessian_gain_estimation_strategy,
+        'gain_num_folds': gain_num_folds,
+        'gain_fold_indices': gain_folds(len(parameter_samples_fom), gain_num_folds) if gradient_gain_estimation_strategy == 'k_fold' else None,
+        'bootstrap_rom': bootstrap_rom,
+        'gain_history_data': gain_history_data,
+        'gain_independent_data': gain_independent_data,
+        'gain_sample_size': gain_sample_size,
+        'use_mfmc_control_variate': bool(use_mfmc_control_variate),
+        'mfmc_fixed_gain': mfmc_fixed_gain,
+        'gain_distribution_mean': variational_mean.copy(),
+        'gain_distribution_std': variational_std.copy(),
+        'gain_distribution_correlation_cholesky': (None if variational_correlation_cholesky is None
+                                                  else variational_correlation_cholesky.copy()),
+        'gain_iteration_directory': iteration_directory,
+        'gradient_gain_samples': gradient_gain_samples,
+        'hessian_gain_samples': hessian_gain_samples,
+        'rom_adaptation_required': delayed_adaptation and (
+            not bootstrap_rom and allow_rom_retraining and rom_error >= rom_tolerance
+        ),
+        'pending_rom_model': None,
+        'pending_rom_training_dirs': [],
+        'pending_rom_training_parameters': None,
+        'pending_rom_training_qois': None,
+
         'training_dirs': candidate_training_dirs,
         'training_parameters': candidate_training_parameters,
         'training_qois': candidate_training_qois,
@@ -1594,6 +1759,20 @@ def _evaluate_mf_vi_state(model: QoiModel,
         'rom_training_parameters': candidate_rom_training_parameters,
         'rom_training_qois': candidate_rom_training_qois,
     }
+    if gradient_gain_estimation_strategy == 'history':
+        batch = dict(
+            parameter_samples=parameter_samples_fom.copy(), optimizer_samples=optimizer_samples_fom.copy(),
+            high_log_joint=fom_log_joint_terms.copy(), log_priors=fom_log_priors.copy(),
+            log_transform_jacobian=fom_log_transform_jacobian.copy(),
+            mean=variational_mean.copy(), std=variational_std.copy(),
+            correlation_cholesky=(None if variational_correlation_cholesky is None
+                                  else variational_correlation_cholesky.copy()),
+            source_directory=iteration_directory,
+            sample_ids=sample_ids(iteration_directory, len(parameter_samples_fom)),
+        )
+        batches = [] if gain_history_state is None else gain_history_state['gain_training_batches']
+        state['gain_training_batches'] = append_training_batch(batches, batch, max_rom_training_dirs)
+        state['gain_history_training_limit'] = max_rom_training_dirs
     return state
 
 
@@ -1625,7 +1804,7 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                newton_hessian_type: str,
                                covariance_regularization: float,
                                restart_files_to_keep: int,
-                               correlation_k_folds: int,
+                               gradient_gain_estimation_strategy: str,
                                observations_covariance: np.ndarray,
                                observations: np.ndarray,
                                elbo_scaling_factor: float,
@@ -1640,7 +1819,9 @@ def _validate_run_mf_vi_inputs(restart_file: str,
                                transform_map: str,
                                min_physical_variational_std_fraction: float,
                                bounded_parameter_handling: str,
-                               dispatcher: Optional[BaseDispatcher] = None) -> None:
+                               dispatcher: Optional[BaseDispatcher] = None,
+                               gain_num_folds: int = 5,
+                               hessian_gain_estimation_strategy: str = "same_sample") -> None:
     if restart_file is not None:
         assert os.path.isfile(restart_file), f"restart_file does not exist ({restart_file})"
     require_relative_or_absolute_path(resolve_dispatcher(dispatcher), absolute_work_dir)
@@ -1708,14 +1889,14 @@ def _validate_run_mf_vi_inputs(restart_file: str,
     _normalize_newton_hessian_type(newton_hessian_type)
     assert covariance_regularization >= 0.0, "covariance_regularization must be non-negative"
     assert restart_files_to_keep >= 1, "restart_files_to_keep must be >= 1"
-    assert correlation_k_folds >= 2, "correlation_k_folds must be >= 2"
+    _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
     assert observations_covariance.shape[0] == observations_covariance.shape[1], (
         "observations_covariance must be square"
     )
     assert observations_covariance.shape[0] == observations.size, (
         "observations_covariance shape must match observations size"
     )
-    assert elbo_scaling_factor > 0.0, "elbo_scaling_factor must be positive"
+    assert elbo_scaling_factor is None or elbo_scaling_factor > 0.0, "elbo_scaling_factor must be positive"
     if elbo_relative_tolerance is not None:
         assert elbo_relative_tolerance >= 0.0, "elbo_relative_tolerance must be non-negative"
     _normalize_sampling_method(sampling_method)
@@ -1792,14 +1973,13 @@ def run_mf_vi(model: QoiModel,
               rom_evaluation_concurrency=1,
               covariance_regularization: float = 1e-7,
               restart_files_to_keep: int = 10,
-              correlation_estimator: str = 'in_sample',
-              correlation_k_folds: int = 5,
+              rom_retraining_strategy: str = 'delayed',
+              gradient_gain_estimation_strategy: str = 'same_sample',
               elbo_scaling_factor='diag_mean',
               elbo_relative_tolerance: float = None,
               baseline_method: str = None,
               use_mfmc_control_variate: bool = True,
               mfmc_control_variate_mode: str = 'componentwise',
-              rom_base_sampling_strategy: str = 'coupled',
               bounded_parameter_handling: str = 'transform',
               transform_interior_margin: float = 1e-8,
               transform_map: str = 'sigmoid',
@@ -1810,7 +1990,12 @@ def run_mf_vi(model: QoiModel,
               score_function_entropy_strategy: str = 'analytic',
               rom_substep_start_iteration: int = 0,
               rom_substep_end_iteration: Optional[int] = None,
-              num_rom_substeps: int = 0):
+              num_rom_substeps: int = 0,
+              gain_num_folds: int = 5,
+              hessian_gain_estimation_strategy: str = "same_sample",
+              gain_sample_size=None,
+              mfmc_fixed_gain: float = 1.0,
+              _reuse_controller=None):
     """
     Run multi-fidelity VI with MFMC variance-reduced score-function gradients.
 
@@ -1820,9 +2005,8 @@ def run_mf_vi(model: QoiModel,
             the Bayesian prior in physical parameter space.
         parameter_mins: Optional lower bounds on parameters.
         parameter_maxes: Optional upper bounds on parameters.
-        initial_variational_parameter_space: Optional Gaussian initializer for
-            the variational state in physical parameter space. Defaults to the
-            prior moments.
+        initial_variational_parameter_space: Required Gaussian initializer for
+            the variational state in physical parameter space.
         restart_file: Optional restart file path. Restart files written by this
             routine store `variational_mean` in physical coordinates.
         optimizer_method: Optimizer used for variational updates. Supported
@@ -1832,21 +2016,41 @@ def run_mf_vi(model: QoiModel,
             `VIAdamOptimizerConfig` for optimizer_method='adam', and
             `VINewtonOptimizerConfig` for optimizer_method='newton'.
         line_search_method: Line-search acceptance strategy. Supported options
-            are 'legacy' and 'stochastic_nonmonotone'. Defaults to
+            are 'none' (fixed-step Newton), 'legacy', and 'stochastic_nonmonotone'. Defaults to
             'stochastic_nonmonotone'.
         line_search_config: Method-specific line-search config. Expected types
             are `VILegacyLineSearchConfig` for line_search_method='legacy' and
             `VIStochasticNonmonotoneLineSearchConfig` for
-            line_search_method='stochastic_nonmonotone'.
+            line_search_method='stochastic_nonmonotone'. For Newton without line search,
+            use ``line_search_method='none'`` and optionally
+            ``line_search_config=VINoLineSearchConfig(step_size=0.5)``.
         sampling_method: Sampling method for variational draws. Supported
             options are 'mc' and 'rqmc'.
         mfmc_control_variate_mode: Control-variate coefficient strategy.
             'componentwise' computes one scalar coefficient per component.
             'scalar' computes one shared scalar coefficient (A = alpha I).
             'matrix' computes a joint linear map across components.
-        rom_base_sampling_strategy: Strategy for ROM-base sample selection.
-            'coupled' (default) reuses the FOM sample set for ROM-base
-            evaluations. 'separate' draws an independent ROM-base sample set.
+        rom_retraining_strategy: 'same_sample' adapts immediately using the
+            current HF batch and history; 'delayed' trains after acceptance
+            and activates replacements in the next outer iteration.
+        gain_num_folds: Number of balanced outer folds for gradient 'k_fold' gain
+            estimation (default 5, capped at the paired sample count).
+        hessian_gain_estimation_strategy: Hessian gain fitting; only
+            'same_sample' is supported, independently of the gradient setting.
+        mfmc_fixed_gain: Finite scalar coefficient used for gradient and Hessian
+            corrections when use_mfmc_control_variate=False (default 1.0).
+            Componentwise gains use this value uniformly; matrix gains use it
+            times the identity. Ignored when fitting gains is enabled.
+        gain_sample_size: Independent gradient gain batch size. None matches
+            the current trial HF sample count; a positive integer fixes the count.
+        gradient_gain_estimation_strategy: Gradient gain fitting. 'same_sample'
+            fits one gain on all pairs;
+            'loo' excludes each held-out pair from its gain and baseline fits;
+            'k_fold' excludes each held-out fold and shares one gain per fold;
+            'independent' fits a gain on fresh, separate paired HF/LF samples;
+            'history' importance-weights the accepted HF training window
+            toward the current variational distribution, using the current ROM.
+            The bootstrap trains immediately and uses a fixed unit gain.
         transform_interior_margin: Margin used by bounded_parameter_handling='transform'
             to keep mapped samples away from exact bounds.
         transform_map: Transform used by bounded_parameter_handling='transform'.
@@ -1869,6 +2073,7 @@ def run_mf_vi(model: QoiModel,
     Returns:
         Tuple of (variational_mean, variational_std, fom_parameter_samples, fom_qois).
     """
+    evaluate_state = _evaluate_mf_vi_state if _reuse_controller is None else _reuse_controller.evaluate_state
     if absolute_vi_directory is not None:
         warnings.warn(
             "'absolute_vi_directory' is deprecated; use 'absolute_work_dir' instead.",
@@ -1905,6 +2110,8 @@ def run_mf_vi(model: QoiModel,
             "line_search_config is not supported with optimizer_method='adam'; "
             "Adam supplies the complete update step."
         )
+    if _normalize_line_search_method(line_search_method) == 'none' and optimization_method != 'newton':
+        raise ValueError("line_search_method='none' requires optimizer_method='newton'")
     line_search_method, resolved_line_search_config = _resolve_line_search_config(
         line_search_method,
         line_search_config,
@@ -1949,6 +2156,10 @@ def run_mf_vi(model: QoiModel,
     )
     newton_regularization_epsilon = newton_defaults.newton_regularization_epsilon
     newton_additive_regularization = newton_defaults.newton_additive_regularization
+    newton_additive_regularization_growth_factor = (
+        newton_defaults.newton_additive_regularization_growth_factor
+    )
+    newton_additive_regularization_max = newton_defaults.newton_additive_regularization_max
     newton_adaptive_regularization = newton_defaults.newton_adaptive_regularization
     newton_regularization_increase_factor = (
         newton_defaults.newton_regularization_increase_factor
@@ -1982,6 +2193,17 @@ def run_mf_vi(model: QoiModel,
         )
         newton_additive_regularization = (
             resolved_optimizer_config.newton_additive_regularization
+        )
+        newton_additive_regularization_growth_factor = (
+            resolved_optimizer_config.newton_additive_regularization_growth_factor
+        )
+        newton_additive_regularization_max = (
+            resolved_optimizer_config.newton_additive_regularization_max
+        )
+        _scheduled_newton_regularization(
+            newton_additive_regularization,
+            newton_additive_regularization_growth_factor, 0,
+            maximum=newton_additive_regularization_max,
         )
         newton_adaptive_regularization = (
             resolved_optimizer_config.newton_adaptive_regularization
@@ -2063,7 +2285,7 @@ def run_mf_vi(model: QoiModel,
             "Gaussian MF-VI. Use VIAdamOptimizerConfig(gradient_method='standard') instead."
         )
     sampling_method = _normalize_sampling_method(sampling_method)
-    correlation_estimator = _normalize_correlation_estimator(correlation_estimator)
+    rom_retraining_strategy = _normalize_rom_retraining_strategy(rom_retraining_strategy)
     if baseline_method is None:
         baseline_method = 'loo'
     baseline_method = _normalize_baseline_method(baseline_method)
@@ -2073,7 +2295,13 @@ def run_mf_vi(model: QoiModel,
     mfmc_control_variate_mode = _normalize_mfmc_control_variate_mode(
         mfmc_control_variate_mode
     )
-    rom_base_sampling_strategy = _normalize_rom_base_sampling_strategy(rom_base_sampling_strategy)
+    hessian_gain_estimation_strategy = _normalize_hessian_gain_estimation_strategy(hessian_gain_estimation_strategy)
+    mfmc_fixed_gain = _normalize_mfmc_fixed_gain(mfmc_fixed_gain)
+    gain_sample_size = _validate_gain_sample_size(gain_sample_size)
+    gradient_gain_estimation_strategy = _normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
+    if gradient_gain_estimation_strategy == 'k_fold':
+        validate_gain_num_folds(gain_num_folds)
+    validate_gain_sampling(gradient_gain_estimation_strategy, _normalize_sampling_method(sampling_method))
     _validate_run_mf_vi_inputs(
         restart_file=restart_file,
         absolute_work_dir=absolute_work_dir,
@@ -2103,7 +2331,9 @@ def run_mf_vi(model: QoiModel,
         newton_hessian_type=newton_hessian_type,
         covariance_regularization=covariance_regularization,
         restart_files_to_keep=restart_files_to_keep,
-        correlation_k_folds=correlation_k_folds,
+        gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+        hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+        gain_num_folds=gain_num_folds,
         observations_covariance=observations_covariance,
         observations=observations,
         elbo_scaling_factor=elbo_scaling_factor,
@@ -2170,7 +2400,8 @@ def run_mf_vi(model: QoiModel,
             transform_map,
         )
 
-        state = _evaluate_mf_vi_state(
+        state = evaluate_state(
+            gain_sample_size=gain_sample_size,
             model=model,
             rom_model=None,
             rom_model_builder=rom_model_builder,
@@ -2197,15 +2428,16 @@ def run_mf_vi(model: QoiModel,
             bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
-            rom_base_sampling_strategy=rom_base_sampling_strategy,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
             transform_map=transform_map,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
-            correlation_estimator=correlation_estimator,
-            correlation_k_folds=correlation_k_folds,
+            rom_retraining_strategy=rom_retraining_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
             training_dirs=[],
             training_parameters=None,
             training_qois=None,
@@ -2216,10 +2448,20 @@ def run_mf_vi(model: QoiModel,
             sampling_method=sampling_method,
             dispatcher=dispatcher,
             score_function_entropy_strategy=score_function_entropy_strategy,
+            mfmc_fixed_gain=mfmc_fixed_gain,
         )
+        if elbo_scaling_factor is None:
+            elbo_scaling_factor = state['elbo_scaling_factor']
         initial_elbo_reference = float(state['elbo'])
     else:
         restart_data = np.load(restart_file, allow_pickle=True)
+        if 'line_search_method' in restart_data:
+            saved_method = restart_data['line_search_method'].item()
+            if saved_method is not None and saved_method != line_search_method:
+                raise ValueError("Restart file line_search_method does not match current run.")
+        elbo_scaling_factor = _restore_initial_expected_misfit_scale(
+            elbo_scaling_factor, restart_data
+        )
         (
             rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
         ) = restore_rom_substeps(
@@ -2232,7 +2474,7 @@ def run_mf_vi(model: QoiModel,
         else:
             np.random.seed(random_seed)
         iteration = int(restart_data['iteration'])
-        step_size = min(float(restart_data['step_size']), max_step_size)
+        step_size = min(initial_step_size, max_step_size)
         variational_mean = _restore_variational_mean_from_restart(
             restart_data,
             bounded_parameter_handling,
@@ -2374,132 +2616,20 @@ def run_mf_vi(model: QoiModel,
         training_qois = restart_data['training_qois']
         rom_training_parameters = restart_data['rom_training_parameters']
         rom_training_qois = restart_data['rom_training_qois']
-        rom_model = rom_model_builder.build_from_training_dirs(
-            f'{absolute_work_dir}/iteration_{iteration}',
-            rom_training_dirs,
-            rom_training_parameters,
-            rom_training_qois,
+        validate_mf_vi_restart(restart_data, rom_retraining_strategy, gradient_gain_estimation_strategy, max_rom_training_dirs, gain_num_folds, hessian_gain_strategy=hessian_gain_estimation_strategy, gain_sample_size=gain_sample_size, use_mfmc_control_variate=use_mfmc_control_variate, mfmc_fixed_gain=mfmc_fixed_gain)
+        state = restore_mf_vi_state(
+            restart_data, rom_model_builder, f'{absolute_work_dir}/iteration_{iteration}', dispatcher,
         )
-
-        if _restart_has_full_state(restart_data):
-            hessian_full = restart_data['hessian_full'] if 'hessian_full' in restart_data else None
-            state = {
-                'optimizer_samples': restart_data['optimizer_samples']
-                if 'optimizer_samples' in restart_data else np.vstack([
-                    restart_data['parameter_samples_fom'],
-                    restart_data['parameter_samples_rom_base'],
-                    restart_data['parameter_samples_rom_only'],
-                ]),
-                'parameter_samples': restart_data['parameter_samples']
-                if 'parameter_samples' in restart_data else np.vstack([
-                    restart_data['parameter_samples_fom'],
-                    restart_data['parameter_samples_rom_base'],
-                    restart_data['parameter_samples_rom_only'],
-                ]),
-                'parameter_samples_fom': restart_data['parameter_samples_fom'],
-                'parameter_samples_rom_base': restart_data['parameter_samples_rom_base'],
-                'parameter_samples_rom_only': restart_data['parameter_samples_rom_only'],
-                'qois_fom': restart_data['qois'],
-                'mean_qoi_fom': restart_data['mean_qoi'],
-                'errors_fom': restart_data['errors'],
-                'qois_rom_base': restart_data['qois_rom_base'],
-                'qois_rom_coupled': restart_data['qois_rom_base'],
-                'qois_rom_only': restart_data['qois_rom_only'],
-                'log_likelihoods_fom': restart_data['log_likelihoods'],
-                'log_priors_fom': restart_data['log_priors'],
-                'log_joint_terms_fom': restart_data['log_joint_terms'],
-                'log_likelihoods_rom_base': restart_data['log_likelihoods_rom_base'],
-                'log_joint_terms_rom_base': restart_data['log_joint_terms_rom_base'],
-                'log_likelihoods_rom_coupled': restart_data['log_likelihoods_rom_base'],
-                'log_likelihoods_rom_only': restart_data['log_likelihoods_rom_only'],
-                'log_joint_terms_rom_only': restart_data['log_joint_terms_rom_only'],
-                'mean_misfit': float(restart_data['mean_misfit']),
-                'mean_relative_mse': float(restart_data['mean_relative_mse']),
-                'entropy': float(restart_data['entropy']),
-                'elbo': float(restart_data['elbo']),
-                'gradient_mean': restart_data['gradient_mean'],
-                'gradient_log_std': restart_data['gradient_log_std'],
-                'hessian_diagonal_mean': restart_data['hessian_diagonal_mean'],
-                'hessian_diagonal_log_std': restart_data['hessian_diagonal_log_std'],
-                'hessian_full': hessian_full,
-                'update_direction_mean': restart_data['update_direction_mean'],
-                'update_direction_log_std': restart_data['update_direction_log_std'],
-                'gradient_method': gradient_method,
-                'baseline_mean': restart_data['baseline_mean'],
-                'baseline_log_std': restart_data['baseline_log_std'],
-                'gradient_signal_to_noise_ratio': float(restart_data['gradient_signal_to_noise_ratio'])
-                if 'gradient_signal_to_noise_ratio' in restart_data else np.nan,
-                'gradient_standard_error': (
-                    restart_data['gradient_standard_error']
-                    if 'gradient_standard_error' in restart_data
-                    else np.full(2 * variational_mean.size, np.nan)
-                ),
-                'mfmc_alpha_mean': restart_data['mfmc_alpha_mean'],
-                'mfmc_alpha_log_std': restart_data['mfmc_alpha_log_std'],
-                'rom_error': float(restart_data['rom_error']),
-                'rom_rebuilt_this_iteration': bool(
-                    restart_data['rom_rebuilt_this_iteration']
-                ) if 'rom_rebuilt_this_iteration' in restart_data else False,
-                'rom_model': rom_model,
-                'training_dirs': training_dirs,
-                'training_parameters': training_parameters,
-                'training_qois': training_qois,
-                'rom_training_dirs': rom_training_dirs,
-                'rom_training_parameters': rom_training_parameters,
-                'rom_training_qois': rom_training_qois,
-            }
-        else:
-            state = _evaluate_mf_vi_state(
-                model=model,
-                rom_model=rom_model,
-                rom_model_builder=rom_model_builder,
-                observations=observations,
-                observations_covariance=observations_covariance,
-                iteration_directory=f'{absolute_work_dir}/iteration_{iteration}',
-                parameter_names=parameter_names,
-                variational_mean=variational_mean,
-                variational_log_std=variational_log_std,
-                prior_mean=prior_mean,
-                prior_precision_operator=prior_precision_operator,
-                prior_covariance_log_det=prior_covariance_log_det,
-                fom_sample_size=fom_sample_size,
-                rom_extra_sample_size=rom_extra_sample_size,
-                fom_evaluation_concurrency=fom_evaluation_concurrency,
-                rom_evaluation_concurrency=rom_evaluation_concurrency,
-                covariance_regularization=covariance_regularization,
-                baseline_method=baseline_method,
-                use_mfmc_control_variate=use_mfmc_control_variate,
-                mfmc_control_variate_mode=mfmc_control_variate_mode,
-                variational_correlation_cholesky=variational_correlation_cholesky,
-                elbo_scaling_factor=elbo_scaling_factor,
-                gradient_method=gradient_method,
-                bounded_parameter_handling=bounded_parameter_handling,
-                min_variational_std=min_variational_std,
-                max_variational_std=max_variational_std,
-                rom_base_sampling_strategy=rom_base_sampling_strategy,
-                parameter_mins=parameter_mins,
-                parameter_maxes=parameter_maxes,
-                transform_interior_margin=transform_interior_margin,
-                transform_map=transform_map,
-                rom_tolerance=rom_tolerance,
-                max_rom_training_dirs=max_rom_training_dirs,
-                correlation_estimator=correlation_estimator,
-                correlation_k_folds=correlation_k_folds,
-                training_dirs=training_dirs,
-                training_parameters=training_parameters,
-                training_qois=training_qois,
-                rom_training_dirs=rom_training_dirs,
-                rom_training_parameters=rom_training_parameters,
-                rom_training_qois=rom_training_qois,
-                log_likelihood_precision_operator=log_likelihood_precision_operator,
-                sampling_method=sampling_method,
-                dispatcher=dispatcher,
-                score_function_entropy_strategy=score_function_entropy_strategy,
-            )
         if 'initial_elbo_reference' in restart_data:
             initial_elbo_reference = float(restart_data['initial_elbo_reference'])
         else:
             initial_elbo_reference = float(state['elbo'])
+
+    if restart_file is None:
+        state = stage_delayed_rom(
+            state, rom_model_builder, f'{absolute_work_dir}/iteration_{iteration}',
+            max_rom_training_dirs, dispatcher,
+        )
 
     running_hessian = None
     if optimization_method == 'newton':
@@ -2543,6 +2673,12 @@ def run_mf_vi(model: QoiModel,
         if restart_file is not None and 'accepted_elbo_history' in restart_data
         else [float(state['elbo'])]
     )
+    accepted_elbo_history, accepted_elbo_standard_error_history = _restore_mf_elbo_uncertainty_history(
+        restart_data if restart_file is not None else {}, accepted_elbo_history,
+        state, elbo_scaling_factor,
+        require_history=(restart_file is not None and optimization_method != 'adam'
+                         and line_search_method == 'stochastic_nonmonotone'),
+    )
     current_newton_additive_regularization = _restore_adaptive_newton_regularization(
         restart_data if restart_file is not None else {},
         restart_file is not None and optimization_method == 'newton',
@@ -2551,6 +2687,14 @@ def run_mf_vi(model: QoiModel,
         newton_regularization_increase_factor,
         newton_regularization_decrease_factor,
         newton_regularization_max_multiplier,
+        growth_factor=newton_additive_regularization_growth_factor,
+        completed_steps=iteration,
+        maximum=newton_additive_regularization_max,
+    )
+    scheduled_newton_base = _scheduled_newton_regularization(
+        newton_additive_regularization,
+        newton_additive_regularization_growth_factor, iteration,
+        maximum=newton_additive_regularization_max,
     )
 
     steepest_descent_solver = (
@@ -2599,6 +2743,13 @@ def run_mf_vi(model: QoiModel,
         current_newton_additive_regularization=(
             current_newton_additive_regularization
         ),
+        newton_additive_regularization_max=newton_additive_regularization_max,
+        newton_additive_regularization_growth_factor=(
+            newton_additive_regularization_growth_factor
+        ),
+        initial_newton_additive_regularization=(
+            newton_additive_regularization
+        ),
         newton_adaptive_regularization=newton_adaptive_regularization,
         newton_regularization_increase_factor=(
             newton_regularization_increase_factor
@@ -2611,6 +2762,7 @@ def run_mf_vi(model: QoiModel,
         ),
         running_hessian=running_hessian,
         accepted_elbo_history=accepted_elbo_history,
+        accepted_elbo_standard_error_history=accepted_elbo_standard_error_history,
         adam_restart_data=(
             steepest_descent_solver.restart_state_dict()
             if optimization_method == 'adam' else None
@@ -2620,6 +2772,7 @@ def run_mf_vi(model: QoiModel,
         rom_substep_end_iteration=rom_substep_end_iteration,
         num_rom_substeps=num_rom_substeps,
         dispatcher=dispatcher,
+        line_search_method=line_search_method,
     )
     _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
 
@@ -2713,6 +2866,7 @@ def run_mf_vi(model: QoiModel,
     independent_hessian_cache = None
 
     while iteration < max_iterations and gradient_norm > gradient_norm_tolerance:
+        iteration_rom_state = activate_delayed_rom(state)
         current_fom_sample_size = int(np.ceil(
             fom_sample_size * (line_search_sample_growth_factor ** step_failed_counter)
         ))
@@ -2751,9 +2905,11 @@ def run_mf_vi(model: QoiModel,
                         hessian_rom_extra_sample_size = max(
                             hessian_rom_extra_sample_size, 1
                         )
-                    hessian_state = _evaluate_mf_vi_state(
+                    hessian_state = evaluate_state(
+                        gain_sample_size=gain_sample_size,
                         model=model,
-                        rom_model=None,
+                        allow_rom_retraining=False,
+                        rom_model=iteration_rom_state['rom_model'],
                         rom_model_builder=rom_model_builder,
                         observations=observations,
                         observations_covariance=observations_covariance,
@@ -2780,25 +2936,29 @@ def run_mf_vi(model: QoiModel,
                         bounded_parameter_handling=bounded_parameter_handling,
                         min_variational_std=min_variational_std,
                         max_variational_std=max_variational_std,
-                        rom_base_sampling_strategy=rom_base_sampling_strategy,
                         parameter_mins=parameter_mins,
                         parameter_maxes=parameter_maxes,
                         transform_interior_margin=transform_interior_margin,
                         transform_map=transform_map,
                         rom_tolerance=rom_tolerance,
                         max_rom_training_dirs=max_rom_training_dirs,
-                        correlation_estimator=correlation_estimator,
-                        correlation_k_folds=correlation_k_folds,
+                        rom_retraining_strategy=rom_retraining_strategy,
+                        gradient_gain_estimation_strategy=('same_sample' if gradient_gain_estimation_strategy == 'independent'
+                                                           else gradient_gain_estimation_strategy),
+                        hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+                        gain_num_folds=gain_num_folds,
+                        gain_history_state=state,
                         training_dirs=[],
                         training_parameters=None,
                         training_qois=None,
-                        rom_training_dirs=[],
-                        rom_training_parameters=None,
-                        rom_training_qois=None,
+                        rom_training_dirs=iteration_rom_state['rom_training_dirs'],
+                        rom_training_parameters=iteration_rom_state['rom_training_parameters'],
+                        rom_training_qois=iteration_rom_state['rom_training_qois'],
                         log_likelihood_precision_operator=log_likelihood_precision_operator,
                         sampling_method=sampling_method,
                         dispatcher=dispatcher,
                         score_function_entropy_strategy=score_function_entropy_strategy,
+                        mfmc_fixed_gain=mfmc_fixed_gain,
                     )
                     independent_hessian_cache = _get_state_hessian(
                         hessian_state, newton_hessian_type
@@ -2875,6 +3035,11 @@ def run_mf_vi(model: QoiModel,
                 metric_scale=newton_metric_scale,
                 hessian=curvature_hessian,
             )
+            if line_search_method == 'none':
+                direction_log_std = (
+                    resolved_line_search_config.log_std_learning_rate_factor
+                    * direction_log_std
+                )
             mean_update = _limit_mean_update(
                 direction_mean,
                 step_size,
@@ -2927,7 +3092,7 @@ def run_mf_vi(model: QoiModel,
         ):
             test_variational_mean, test_variational_log_std = (
                 apply_diagonal_rom_substeps(
-                    rom_model=state['rom_model'],
+                    rom_model=iteration_rom_state['rom_model'],
                     candidate_mean=test_variational_mean,
                     candidate_log_std=test_variational_log_std,
                     outer_iteration=iteration - 1,
@@ -2972,9 +3137,10 @@ def run_mf_vi(model: QoiModel,
                          (test_variational_log_std - variational_log_std) / step_size)
             )
 
-        test_state = _evaluate_mf_vi_state(
+        test_state = evaluate_state(
+            gain_sample_size=gain_sample_size,
             model=model,
-            rom_model=state['rom_model'],
+            rom_model=iteration_rom_state['rom_model'],
             rom_model_builder=rom_model_builder,
             observations=observations,
             observations_covariance=observations_covariance,
@@ -2999,50 +3165,52 @@ def run_mf_vi(model: QoiModel,
             bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
-            rom_base_sampling_strategy=rom_base_sampling_strategy,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
             transform_map=transform_map,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
-            correlation_estimator=correlation_estimator,
-            correlation_k_folds=correlation_k_folds,
+            rom_retraining_strategy=rom_retraining_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
+            gain_history_state=state,
             training_dirs=state['training_dirs'],
             training_parameters=state['training_parameters'],
             training_qois=state['training_qois'],
-            rom_training_dirs=state['rom_training_dirs'],
-            rom_training_parameters=state['rom_training_parameters'],
-            rom_training_qois=state['rom_training_qois'],
+            rom_training_dirs=iteration_rom_state['rom_training_dirs'],
+            rom_training_parameters=iteration_rom_state['rom_training_parameters'],
+            rom_training_qois=iteration_rom_state['rom_training_qois'],
             log_likelihood_precision_operator=log_likelihood_precision_operator,
             sampling_method=sampling_method,
             dispatcher=dispatcher,
             score_function_entropy_strategy=score_function_entropy_strategy,
+            mfmc_fixed_gain=mfmc_fixed_gain,
         )
 
-        if optimization_method == 'adam':
+        if optimization_method == 'adam' or line_search_method == 'none':
             accept_step = True
         elif line_search_method == 'legacy':
             allowable_elbo_drop = (relaxation_parameter - 1.0) * abs(state['elbo'])
             accept_step = test_state['elbo'] >= state['elbo'] - allowable_elbo_drop
         else:
-            reference_elbo = max(accepted_elbo_history[-line_search_nonmonotone_window:])
+            reference_elbo, reference_standard_error = _select_mf_elbo_reference(
+                accepted_elbo_history, accepted_elbo_standard_error_history,
+                line_search_nonmonotone_window,
+            )
             nonnegative_predicted_slope = max(line_search_predicted_slope, 0.0)
             armijo_target = (
                 reference_elbo
                 + line_search_armijo_coefficient * step_size * nonnegative_predicted_slope
             )
-            state_standard_error = _compute_state_elbo_standard_error(state, elbo_scaling_factor)
             test_standard_error = _compute_state_elbo_standard_error(test_state, elbo_scaling_factor)
             delta_standard_error = np.sqrt(
-                state_standard_error ** 2 + test_standard_error ** 2
+                reference_standard_error ** 2 + test_standard_error ** 2
             )
             armijo_target -= line_search_uncertainty_sigma * delta_standard_error
             accept_step = test_state['elbo'] >= armijo_target
 
-        elbo_dropped = (
-            test_state is not None and test_state['elbo'] < state['elbo']
-        )
 
         trial_newton_additive_regularization = (
             current_newton_additive_regularization
@@ -3052,11 +3220,17 @@ def run_mf_vi(model: QoiModel,
             step_failed_counter = 0
             variational_mean = test_variational_mean*1.0
             variational_log_std = test_variational_log_std*1.0
-            state = test_state
+            state = stage_delayed_rom(
+                test_state, rom_model_builder, f'{absolute_work_dir}/iteration_{iteration}',
+                max_rom_training_dirs, dispatcher,
+            )
             if newton_curvature_strategy == 'lagged':
                 running_hessian = pending_running_hessian
             independent_hessian_cache = None
             accepted_elbo_history.append(state['elbo'])
+            accepted_elbo_standard_error_history.append(
+                _compute_state_elbo_standard_error(state, elbo_scaling_factor)
+            )
             relative_elbo_improvement = (
                 float(state['elbo']) / (initial_elbo_reference + 1e-16)
             )
@@ -3067,24 +3241,13 @@ def run_mf_vi(model: QoiModel,
                 elbo_converged = True
 
             accepted_step_size = step_size
-            if optimization_method == 'newton' and newton_adaptive_regularization:
-                step_size, current_newton_additive_regularization = (
-                    _update_adaptive_newton_controls(
-                        step_size,
-                        current_newton_additive_regularization,
-                        newton_additive_regularization,
-                        True,
-                        elbo_dropped,
-                        step_size_decay_factor,
-                        step_size_growth_factor,
-                        max_step_size,
-                        newton_regularization_increase_factor,
-                        newton_regularization_decrease_factor,
-                        newton_regularization_max_multiplier,
-                    )
-                )
-            else:
-                step_size = min(step_size * step_size_growth_factor, max_step_size)
+            step_size = min(initial_step_size, max_step_size)
+            scheduled_newton_base = _scheduled_newton_regularization(
+                newton_additive_regularization,
+                newton_additive_regularization_growth_factor, iteration,
+                maximum=newton_additive_regularization_max,
+            )
+            current_newton_additive_regularization = scheduled_newton_base
 
             if optimization_method == 'adam':
                 adam_learning_rate, gradient_norm = _compute_adam_diagnostics(
@@ -3130,7 +3293,7 @@ def run_mf_vi(model: QoiModel,
                 f'Adam learning rate: {adam_learning_rate:.5e}, '
                 f'Adam input gradient norm: {gradient_norm:.5f}'
                 if optimization_method == 'adam'
-                else f'Step size: {step_size:.5e}, Gradient norm: {gradient_norm:.5f}'
+                else f'Step size: {accepted_step_size:.5e}, Gradient norm: {gradient_norm:.5f}'
             )
             print(
                 f'Iteration: {iteration}, Relative MSE: {state["mean_relative_mse"]:.5f}, ELBO: {state["elbo"]:.5f}, '
@@ -3138,7 +3301,7 @@ def run_mf_vi(model: QoiModel,
                 f'ROM err: {state["rom_error"]:.5f}, alpha_mean: {alpha_mean_scalar:.5f}, '
                 f'alpha_logstd: {alpha_log_scalar:.5f}, {optimizer_status}, '
                 f'Newton additive regularization: '
-                f'{current_newton_additive_regularization:.5e}, '
+                f'{trial_newton_additive_regularization:.5e}, '
                 f'Wall time: {wall_time:.5f}'
             )
             _print_gradient_signal_to_noise_ratio(state)
@@ -3201,6 +3364,13 @@ def run_mf_vi(model: QoiModel,
                 current_newton_additive_regularization=(
                     current_newton_additive_regularization
                 ),
+                newton_additive_regularization_max=newton_additive_regularization_max,
+                newton_additive_regularization_growth_factor=(
+                    newton_additive_regularization_growth_factor
+                ),
+                initial_newton_additive_regularization=(
+                    newton_additive_regularization
+                ),
                 newton_adaptive_regularization=newton_adaptive_regularization,
                 newton_regularization_increase_factor=(
                     newton_regularization_increase_factor
@@ -3213,6 +3383,7 @@ def run_mf_vi(model: QoiModel,
                 ),
                 running_hessian=running_hessian,
                 accepted_elbo_history=accepted_elbo_history,
+                accepted_elbo_standard_error_history=accepted_elbo_standard_error_history,
                 adam_restart_data=(
                     steepest_descent_solver.restart_state_dict()
                     if optimization_method == 'adam' else None
@@ -3224,6 +3395,7 @@ def run_mf_vi(model: QoiModel,
                 rom_substep_end_iteration=rom_substep_end_iteration,
                 num_rom_substeps=num_rom_substeps,
                 dispatcher=dispatcher,
+                line_search_method=line_search_method,
             )
             _prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
             iteration += 1
@@ -3237,18 +3409,14 @@ def run_mf_vi(model: QoiModel,
             step_failed_counter += 1
             if optimization_method == 'newton' and newton_adaptive_regularization:
                 step_size, current_newton_additive_regularization = (
-                    _update_adaptive_newton_controls(
+                    _backtrack_adaptive_newton_controls(
                         step_size,
                         current_newton_additive_regularization,
-                        newton_additive_regularization,
-                        False,
-                        elbo_dropped,
+                        scheduled_newton_base,
                         step_size_decay_factor,
-                        step_size_growth_factor,
-                        max_step_size,
                         newton_regularization_increase_factor,
-                        newton_regularization_decrease_factor,
                         newton_regularization_max_multiplier,
+                        maximum=newton_additive_regularization_max,
                     )
                 )
             else:
@@ -3287,157 +3455,3 @@ def run_mf_vi(model: QoiModel,
     )
     _save_vi_history(absolute_work_dir, vi_history, dispatcher)
     return variational_mean, variational_std, state['parameter_samples_fom'], state['qois_fom']
-
-
-def mf_vi_with_auto_rom(model: QoiModel,
-                        prior_parameter_space,
-                        observations: np.ndarray,
-                        observations_covariance: np.ndarray,
-                        parameter_mins: np.ndarray = None,
-                        parameter_maxes: np.ndarray = None,
-                        initial_variational_parameter_space=None,
-                        restart_file: str = None,
-                        optimizer_method: str = 'gradient',
-                        optimizer_config=None,
-                        line_search_method: str = 'stochastic_nonmonotone',
-                        line_search_config=None,
-                        absolute_work_dir: str = None,
-                        fom_sample_size: int = 10,
-                        rom_extra_sample_size: int = 30,
-                        rom_tolerance: float = 0.005,
-                        max_rom_training_history: int = 1,
-                        random_seed: int = 1,
-                        sampling_method: str = 'mc',
-                        fom_evaluation_concurrency=1,
-                        rom_evaluation_concurrency=1,
-                        covariance_regularization: float = 1e-8,
-                        restart_files_to_keep: int = 10,
-                        correlation_estimator: str = 'in_sample',
-                        correlation_k_folds: int = 5,
-                        elbo_scaling_factor='diag_mean',
-                        elbo_relative_tolerance: float = None,
-                        baseline_method: str = None,
-                        use_mfmc_control_variate: bool = True,
-                        mfmc_control_variate_mode: str = 'componentwise',
-                        rom_base_sampling_strategy: str = 'coupled',
-                        bounded_parameter_handling: str = 'transform',
-                        transform_interior_margin: float = 1e-8,
-                        transform_map: str = 'sigmoid',
-                        min_physical_variational_std_fraction: float = 1e-8,
-                        rom_type: str = "gp",
-                        rom_args: Optional[dict] = None,
-                        dispatcher: Optional[BaseDispatcher] = None,
-                        *,
-                        absolute_vi_directory: str = None,
-                        score_function_entropy_strategy: str = 'analytic',
-                        rom_substep_start_iteration: int = 0,
-                        rom_substep_end_iteration: Optional[int] = None,
-                        num_rom_substeps: int = 0):
-    """
-    Wrapper around run_mf_vi that selects a default ROM surrogate by rom_type.
-    Accepts the same rom_base_sampling_strategy options as run_mf_vi.
-    """
-    if absolute_vi_directory is not None:
-        warnings.warn(
-            "'absolute_vi_directory' is deprecated; use 'absolute_work_dir' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if absolute_work_dir is not None:
-            raise TypeError("Specify only 'absolute_work_dir', not both directory arguments.")
-        absolute_work_dir = absolute_vi_directory
-    if absolute_work_dir is None:
-        absolute_work_dir = os.getcwd() + "/work/"
-
-    parameter_mins, parameter_maxes = _resolve_parameter_bounds(
-        parameter_mins,
-        parameter_maxes,
-    )
-    restart_file = _resolve_restart_file(restart_file)
-    resolved_optimizer_method, resolved_optimizer_config = _resolve_optimizer_config(
-        optimizer_method,
-        optimizer_config,
-        VIGradientOptimizerConfig(),
-        VINewtonOptimizerConfig(newton_regularization=1e-8),
-    )
-    resolved_line_search_method, resolved_line_search_config = _resolve_line_search_config(
-        line_search_method,
-        line_search_config,
-        VILegacyLineSearchConfig(
-            step_size_growth_factor=1.05,
-            max_step_size_decrease_trys=10,
-            relaxation_parameter=1000.0,
-        ),
-        VIStochasticNonmonotoneLineSearchConfig(
-            step_size_growth_factor=1.05,
-            max_step_size_decrease_trys=10,
-            relaxation_parameter=1000.0,
-            line_search_nonmonotone_window=8,
-            line_search_uncertainty_sigma=5.0,
-        ),
-    )
-
-    rom_args = {} if rom_args is None else dict(rom_args)
-    rom_type_normalized = rom_type.strip().lower()
-    if rom_type_normalized == "gp":
-        variational_parameter_names = list(prior_parameter_space.get_names())
-        rom_model_builder = GaussianProcessQoiModelBuilderWithTrainingData(
-            parameter_names=variational_parameter_names,
-            pod_energy_fraction=rom_args.get("pod_energy_fraction", 0.9999),
-            max_pod_modes=rom_args.get("max_pod_modes"),
-            kernel=rom_args.get("kernel"),
-            noise_variance=rom_args.get("noise_variance"),
-            auto_noise_variance=rom_args.get("auto_noise_variance", False),
-            noise_variance_fraction=rom_args.get("noise_variance_fraction", 1e-6),
-            tune_hyperparameters=rom_args.get("tune_hyperparameters", False),
-            length_scale_grid=rom_args.get("length_scale_grid"),
-            signal_variance_grid=rom_args.get("signal_variance_grid"),
-            normalize_parameters=rom_args.get("normalize_parameters", False),
-            normalize_targets=rom_args.get("normalize_targets", False),
-        )
-    else:
-        raise ValueError(f"Unsupported rom_type '{rom_type}'.")
-
-    return run_mf_vi(
-        model=model,
-        rom_model_builder=rom_model_builder,
-        prior_parameter_space=prior_parameter_space,
-        observations=observations,
-        observations_covariance=observations_covariance,
-        parameter_mins=parameter_mins,
-        parameter_maxes=parameter_maxes,
-        initial_variational_parameter_space=initial_variational_parameter_space,
-        restart_file=restart_file,
-        optimizer_method=resolved_optimizer_method,
-        optimizer_config=resolved_optimizer_config,
-        line_search_method=resolved_line_search_method,
-        line_search_config=resolved_line_search_config,
-        absolute_work_dir=absolute_work_dir,
-        fom_sample_size=fom_sample_size,
-        rom_extra_sample_size=rom_extra_sample_size,
-        rom_tolerance=rom_tolerance,
-        max_rom_training_history=max_rom_training_history,
-        random_seed=random_seed,
-        sampling_method=sampling_method,
-        fom_evaluation_concurrency=fom_evaluation_concurrency,
-        rom_evaluation_concurrency=rom_evaluation_concurrency,
-        covariance_regularization=covariance_regularization,
-        restart_files_to_keep=restart_files_to_keep,
-        correlation_estimator=correlation_estimator,
-        correlation_k_folds=correlation_k_folds,
-        elbo_scaling_factor=elbo_scaling_factor,
-        elbo_relative_tolerance=elbo_relative_tolerance,
-        baseline_method=baseline_method,
-        use_mfmc_control_variate=use_mfmc_control_variate,
-        mfmc_control_variate_mode=mfmc_control_variate_mode,
-        rom_base_sampling_strategy=rom_base_sampling_strategy,
-        bounded_parameter_handling=bounded_parameter_handling,
-        transform_interior_margin=transform_interior_margin,
-        transform_map=transform_map,
-        min_physical_variational_std_fraction=min_physical_variational_std_fraction,
-        dispatcher=dispatcher,
-        score_function_entropy_strategy=score_function_entropy_strategy,
-        rom_substep_start_iteration=rom_substep_start_iteration,
-        rom_substep_end_iteration=rom_substep_end_iteration,
-        num_rom_substeps=num_rom_substeps,
-    )

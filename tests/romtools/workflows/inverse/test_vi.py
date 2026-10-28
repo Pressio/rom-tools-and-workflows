@@ -3,7 +3,7 @@ import pytest
 
 import romtools.workflows
 from romtools.workflows.inverse._inverse_utils import run_vi_iteration
-from romtools.workflows.inverse import vi_drivers
+from romtools.workflows.inverse.vi import drivers as vi_drivers
 from romtools.workflows.parameter_spaces import (
     GaussianParameterSpace,
     MultivariateGaussianParameterSpace,
@@ -635,7 +635,7 @@ def test_run_vi_accepts_full_newton_hessian_option(
     tmp_path, regularization_strategy, adaptive_regularization, monkeypatch
 ):
     import importlib
-    module = importlib.import_module("romtools.workflows.inverse.vi_drivers")
+    module = importlib.import_module("romtools.workflows.inverse.vi.drivers")
     original = module._compute_newton_step
     received_rates = []
     def capture_step(*args, **kwargs):

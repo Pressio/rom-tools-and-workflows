@@ -11,7 +11,17 @@ from __future__ import annotations
 import math
 from typing import Optional, Tuple
 
+from .common import (
+    _compute_leave_one_out_baseline as _leave_one_out_baseline,
+    _compute_optimal_baseline,
+    _compute_component_standard_error as _component_standard_error,
+)
+
 import numpy as np
+
+
+def _optimal_component_baseline(values, scores):
+    return _compute_optimal_baseline(values, scores, dtype=float)
 
 
 def svec_size(dimensionality: int) -> int:
@@ -183,27 +193,6 @@ def natural_score_terms(
             np.outer(delta_i, delta_i) - covariance
         )
     return delta, covariance_terms
-
-
-def _leave_one_out_baseline(values: np.ndarray) -> np.ndarray:
-    if values.size <= 1:
-        return np.zeros_like(values)
-    return (np.sum(values) - values) / float(values.size - 1)
-
-
-def _optimal_component_baseline(values: np.ndarray, scores: np.ndarray) -> np.ndarray:
-    numerator = np.mean(values[:, None] * scores**2, axis=0)
-    denominator = np.mean(scores**2, axis=0)
-    baseline = np.zeros(scores.shape[1], dtype=float)
-    nonzero = denominator > 0.0
-    baseline[nonzero] = numerator[nonzero] / denominator[nonzero]
-    return baseline
-
-
-def _component_standard_error(terms: np.ndarray) -> np.ndarray:
-    if terms.shape[0] <= 1:
-        return np.zeros(terms.shape[1], dtype=float)
-    return np.std(terms, axis=0, ddof=1) / np.sqrt(terms.shape[0])
 
 
 def estimate_natural_gradient(

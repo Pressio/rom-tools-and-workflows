@@ -272,6 +272,8 @@ def build_mf_vi_kwargs(absolute_work_dir: str):
         "fom_sample_size": 8,
         "rom_extra_sample_size": 32,
         "rom_tolerance": 0.0,
+        "gradient_gain_estimation_strategy": "loo",
+        "hessian_gain_estimation_strategy": "same_sample",
         "max_rom_training_history": 2,
         "optimizer_method": "newton",
         "optimizer_config": romtools.workflows.VINewtonOptimizerConfig(

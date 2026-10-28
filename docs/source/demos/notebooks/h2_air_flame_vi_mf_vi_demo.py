@@ -3,9 +3,9 @@ import shutil
 import sys
 from pathlib import Path
 import numpy as np
-from romtools.workflows.inverse.vi_drivers import run_vi
-from romtools.workflows.inverse.mf_vi_drivers import mf_vi_with_auto_rom
-from romtools.workflows.inverse.vi_optimization_methods import VINewtonOptimizerConfig, VIStochasticNonmonotoneLineSearchConfig
+from romtools.workflows.inverse.vi import run_vi
+from romtools.workflows.inverse.vi import mf_vi_with_auto_rom
+from romtools.workflows.inverse.vi.optimization import VINewtonOptimizerConfig, VIStochasticNonmonotoneLineSearchConfig
 from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
 from vi_demo_helpers import collect_vi_history, write_vi_plots
 
@@ -29,7 +29,7 @@ def main():
     common = dict(model=model, prior_parameter_space=prior, initial_variational_parameter_space=prior, observations=observations, observations_covariance=np.eye(observations.size) * 1e-4, parameter_mins=mins, parameter_maxes=maxes, optimizer_method="newton", optimizer_config=optimizer, line_search_method="stochastic_nonmonotone", line_search_config=line_search, restart_files_to_keep=50)
     vi_dir, mf_dir = root / "vi", root / "mf_vi"
     run_vi(**common, absolute_work_dir=str(vi_dir), sample_size=8, evaluation_concurrency=4)
-    mf_vi_with_auto_rom(**common, absolute_work_dir=str(mf_dir), fom_sample_size=8, rom_extra_sample_size=64, fom_evaluation_concurrency=4, rom_type="gp", rom_args={"normalize_parameters": True, "normalize_targets": True})
+    mf_vi_with_auto_rom(**common, absolute_work_dir=str(mf_dir), fom_sample_size=8, rom_extra_sample_size=64, fom_evaluation_concurrency=4, rom_retraining_strategy="delayed", gradient_gain_estimation_strategy="loo", hessian_gain_estimation_strategy="same_sample", rom_type="gp", rom_args={"normalize_parameters": True, "normalize_targets": True})
     write_vi_plots(Path(__file__).resolve().parent, "h2_air_flame_vi_mf_vi", names, np.array([truth[name] for name in names]), collect_vi_history(vi_dir), collect_vi_history(mf_dir))
 
 

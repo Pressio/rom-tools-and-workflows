@@ -10,17 +10,23 @@ from __future__ import annotations
 import os
 import warnings
 
+from .common import (
+    _compute_leave_one_out_baseline,
+    _compute_optimal_baseline,
+    _compute_component_standard_error as _component_standard_error,
+)
+
 import numpy as np
 
 from romtools.hpc.dispatchers import resolve_dispatcher, resolve_local_dispatcher
-from romtools.workflows.inverse.mf_vi_rom_substeps import (
+from romtools.workflows.inverse.vi.rom_substeps import (
     apply_full_covariance_rom_substeps, validate_rom_substeps,
     rom_substeps_enabled, restore_rom_substeps, rom_substep_restart_data,
 )
-from romtools.workflows.inverse import mf_vi_drivers as _mf
-from romtools.workflows.inverse import vi_drivers as _vi
-from romtools.workflows.inverse import vi_run_directory_policy as _directory_policy
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi import mf_drivers as _mf
+from romtools.workflows.inverse.vi import drivers as _vi
+from romtools.workflows.inverse.vi import evaluation as _directory_policy
+from romtools.workflows.inverse.vi.gaussian import (
     covariance_from_cholesky,
     entropy as full_covariance_entropy,
     log_density as full_covariance_log_density,
@@ -32,18 +38,15 @@ from romtools.workflows.inverse.full_covariance_vi import (
     svec,
     svec_inverse,
 )
-from romtools.workflows.inverse.full_covariance_vi_drivers import (
-    _FALLBACK_AUTO_MF_VI,
-    _FALLBACK_RUN_MF_VI,
+from romtools.workflows.inverse.vi.full_covariance_drivers import (
     _enforce_full_covariance_scale_bounds,
     _extract_prior_and_initial_moments,
     _gradient_norm,
     _new_history,
     _representation_from_cholesky,
-    _resolve_variational_distribution,
     _update_vector,
 )
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     AdamSolver,
     SteepestDescentSolver,
     VIAdamOptimizerConfig,
@@ -56,26 +59,12 @@ from romtools.workflows.inverse.vi_optimization_methods import (
 )
 
 
-def _loo(values: np.ndarray) -> np.ndarray:
-    values = np.asarray(values, dtype=float)
-    if values.size <= 1:
-        return np.zeros_like(values)
-    return (np.sum(values) - values) / float(values.size - 1)
+def _loo(values):
+    return _compute_leave_one_out_baseline(np.asarray(values, dtype=float))
 
 
-def _optimal_baseline(values: np.ndarray, scores: np.ndarray) -> np.ndarray:
-    numerator = np.mean(values[:, None] * scores**2, axis=0)
-    denominator = np.mean(scores**2, axis=0)
-    result = np.zeros(scores.shape[1], dtype=float)
-    nonzero = denominator > 0.0
-    result[nonzero] = numerator[nonzero] / denominator[nonzero]
-    return result
-
-
-def _component_standard_error(terms: np.ndarray) -> np.ndarray:
-    if terms.shape[0] <= 1:
-        return np.zeros(terms.shape[1], dtype=float)
-    return np.std(terms, axis=0, ddof=1) / np.sqrt(terms.shape[0])
+def _optimal_baseline(values, scores):
+    return _compute_optimal_baseline(values, scores, dtype=float)
 
 
 def _mfmc_standard_error(high_terms, low_base, low_extra, alpha, mode):
@@ -206,14 +195,36 @@ def _upgrade_mf_state(
             + np.abs(elbo_scaling_factor * log_q_fom)[:, None]
         ) * np.abs(score_fom)
 
-    natural_gradient, alpha = _mf._mfmc_gradient_estimator(
-        high_terms,
-        low_base_terms,
-        low_extra_terms,
-        use_mfmc_control_variate,
-        mfmc_control_variate_mode,
-        high_variance_reference_terms=high_reference,
-    )
+    gain_samples = None
+    if state.get("gradient_gain_estimation_strategy", "same_sample") in ("loo", "k_fold", "history", "independent"):
+        fixed_gain = None
+        if (state.get("gradient_gain_estimation_strategy") in ("history", "independent") and use_mfmc_control_variate
+                and not state.get("bootstrap_rom", False) and n_extra):
+            data = state['gain_independent_data'] if state.get('gradient_gain_estimation_strategy') == 'independent' else state['gain_history_data']
+            hh, hl = _mf.history_weights(data, elbo_scaling_factor, entropy_strategy)
+            old_mean, old_covariance = natural_score_terms(data['optimizer_samples'], data['mean'], data['cholesky'])
+            fixed_gain = _mf.fit_history_gain(hh, hl, np.hstack([old_mean, old_covariance]),
+                                              baseline_method, mfmc_control_variate_mode,
+                                              sample_weights=data.get('importance_weights'))
+        natural_gradient, alpha, gain_samples = _mf.loo_acv_estimator(
+            weights_fom, weights_base, weights_extra, score_fom, score_extra,
+            baseline_method, mfmc_control_variate_mode,
+            force_unit_gain=state.get("bootstrap_rom", False) and use_mfmc_control_variate,
+            high_reference_terms=high_reference,
+            fixed_gain=(fixed_gain if use_mfmc_control_variate else _mf._constant_mfmc_gain(
+                state.get("mfmc_fixed_gain", 1.0), score_fom.shape[1:], mfmc_control_variate_mode)),
+            num_folds=state.get("gain_num_folds", 5) if state.get("gradient_gain_estimation_strategy") == "k_fold" else None,
+        )
+    else:
+        natural_gradient, alpha = _mf._mfmc_gradient_estimator(
+            high_terms,
+            low_base_terms,
+            low_extra_terms,
+            use_mfmc_control_variate and not state.get("bootstrap_rom", False),
+            mfmc_control_variate_mode,
+            high_variance_reference_terms=high_reference,
+            mfmc_fixed_gain=1.0 if state.get("bootstrap_rom", False) and use_mfmc_control_variate else state.get("mfmc_fixed_gain", 1.0),
+        )
     natural_gradient = np.asarray(natural_gradient).reshape(-1)
     if entropy_strategy == "analytic":
         covariance = covariance_from_cholesky(cholesky)
@@ -221,13 +232,16 @@ def _upgrade_mf_state(
             elbo_scaling_factor * svec(covariance)
         )
 
-    standard_error = _mfmc_standard_error(
-        high_terms,
-        low_base_terms,
-        low_extra_terms,
-        alpha,
-        mfmc_control_variate_mode,
-    )
+    if state.get("gradient_gain_estimation_strategy", "same_sample") in ("loo", "k_fold", "history", "independent"):
+        standard_error = np.full(score_fom.shape[1], np.nan)
+    else:
+        standard_error = _mfmc_standard_error(
+            high_terms,
+            low_base_terms,
+            low_extra_terms,
+            alpha,
+            mfmc_control_variate_mode,
+        )
     noise_norm = float(np.linalg.norm(standard_error))
     signal_norm = float(np.linalg.norm(natural_gradient))
     if noise_norm == 0.0:
@@ -258,6 +272,8 @@ def _upgrade_mf_state(
         gradient_signal_to_noise_ratio=float(snr),
         gradient_method=gradient_method,
         mfmc_alpha_packed=alpha,
+        mfmc_alpha_packed_samples=gain_samples,
+        gain_distribution_cholesky=np.asarray(cholesky).copy(),
     )
     state["entropy"] = full_covariance_entropy(cholesky, elbo_scaling_factor)
     if n_extra > 0:
@@ -302,15 +318,14 @@ def _evaluate_mf_state(
     bounded_parameter_handling,
     min_variational_std,
     max_variational_std,
-    rom_base_sampling_strategy,
     parameter_mins,
     parameter_maxes,
     transform_interior_margin,
     transform_map,
     rom_tolerance,
     max_rom_training_dirs,
-    correlation_estimator,
-    correlation_k_folds,
+    rom_retraining_strategy,
+    gradient_gain_estimation_strategy,
     training_dirs,
     training_parameters,
     training_qois,
@@ -321,11 +336,17 @@ def _evaluate_mf_state(
     sampling_method,
     dispatcher,
     score_function_entropy_strategy,
+    gain_history_state=None,
+    gain_num_folds: int = 5,
+    hessian_gain_estimation_strategy: str = "same_sample",
+    gain_sample_size=None,
+    mfmc_fixed_gain: float = 1.0,
 ):
     _, _, variational_log_std, correlation_cholesky = (
         _representation_from_cholesky(cholesky)
     )
     state = _mf._evaluate_mf_vi_state(
+        gain_sample_size=gain_sample_size,
         model=model,
         rom_model=rom_model,
         rom_model_builder=rom_model_builder,
@@ -352,15 +373,16 @@ def _evaluate_mf_state(
         bounded_parameter_handling=bounded_parameter_handling,
         min_variational_std=min_variational_std,
         max_variational_std=max_variational_std,
-        rom_base_sampling_strategy=rom_base_sampling_strategy,
         parameter_mins=parameter_mins,
         parameter_maxes=parameter_maxes,
         transform_interior_margin=transform_interior_margin,
         transform_map=transform_map,
         rom_tolerance=rom_tolerance,
         max_rom_training_dirs=max_rom_training_dirs,
-        correlation_estimator=correlation_estimator,
-        correlation_k_folds=correlation_k_folds,
+        rom_retraining_strategy=rom_retraining_strategy,
+        gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+        hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+        gain_num_folds=gain_num_folds,
         training_dirs=training_dirs,
         training_parameters=training_parameters,
         training_qois=training_qois,
@@ -371,7 +393,11 @@ def _evaluate_mf_state(
         sampling_method=sampling_method,
         dispatcher=dispatcher,
         score_function_entropy_strategy=score_function_entropy_strategy,
+        gain_history_state=gain_history_state,
+        mfmc_fixed_gain=mfmc_fixed_gain,
     )
+    if elbo_scaling_factor is None:
+        elbo_scaling_factor = state['elbo_scaling_factor']
     return _upgrade_mf_state(
         state,
         variational_mean,
@@ -412,8 +438,13 @@ def _save_mf_restart(
     rom_substep_start_iteration=0,
     rom_substep_end_iteration=None,
     num_rom_substeps=0,
+    history=None,
+    accepted_elbo_standard_error_history=None,
+    initial_elbo_reference=None,
+    line_search_method=None,
 ):
     data = {
+        "line_search_method": line_search_method,
         "variational_mean": _vi._get_persisted_variational_mean(
             variational_mean,
             bounded_parameter_handling,
@@ -446,12 +477,18 @@ def _save_mf_restart(
         "rom_training_parameters": state["rom_training_parameters"],
         "rom_training_qois": state["rom_training_qois"],
     }
+    if accepted_elbo_standard_error_history is not None:
+        data['accepted_elbo_standard_error_history'] = np.asarray(accepted_elbo_standard_error_history)
+    if initial_elbo_reference is not None:
+        data['initial_elbo_reference'] = float(initial_elbo_reference)
     data.update(rom_substep_restart_data(
         rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
     ))
     if adam_solver is not None:
         data.update(adam_solver.restart_state_dict())
         data["adam_gradient_method"] = gradient_method
+    data.update(_mf.mf_vi_restart_data(state))
+    data["mf_vi_history"] = np.array(history, dtype=object)
     dispatcher.np_savez(path, **data)
 
 
@@ -499,6 +536,7 @@ def _save_history(absolute_work_dir, history, state, dispatcher):
 
 def _run_full_covariance_mf_vi(
     *,
+    _newton=None,
     model,
     rom_model_builder,
     prior_parameter_space,
@@ -523,14 +561,13 @@ def _run_full_covariance_mf_vi(
     rom_evaluation_concurrency,
     covariance_regularization,
     restart_files_to_keep,
-    correlation_estimator,
-    correlation_k_folds,
+    rom_retraining_strategy,
+    gradient_gain_estimation_strategy,
     elbo_scaling_factor,
     elbo_relative_tolerance,
     baseline_method,
     use_mfmc_control_variate,
     mfmc_control_variate_mode,
-    rom_base_sampling_strategy,
     bounded_parameter_handling,
     transform_interior_margin,
     transform_map,
@@ -542,7 +579,16 @@ def _run_full_covariance_mf_vi(
     rom_substep_end_iteration=None,
     num_rom_substeps=0,
     rom_substep_newton_config=None,
+    gain_num_folds: int = 5,
+    hessian_gain_estimation_strategy: str = "same_sample",
+    gain_sample_size=None,
+    mfmc_fixed_gain: float = 1.0,
 ):
+    def evaluate_state(**kwargs):
+        state = _evaluate_mf_state(**kwargs)
+        return state if _newton is None else _newton.upgrade(state, **kwargs)
+
+    compute_gradient_norm = _gradient_norm if _newton is None else _newton.gradient_norm
     validate_rom_substeps(
         rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
     )
@@ -625,12 +671,16 @@ def _run_full_covariance_mf_vi(
     mfmc_control_variate_mode = _mf._normalize_mfmc_control_variate_mode(
         mfmc_control_variate_mode
     )
-    rom_base_sampling_strategy = _mf._normalize_rom_base_sampling_strategy(
-        rom_base_sampling_strategy
+    rom_retraining_strategy = _mf._normalize_rom_retraining_strategy(
+        rom_retraining_strategy
     )
-    correlation_estimator = _mf._normalize_correlation_estimator(
-        correlation_estimator
-    )
+    hessian_gain_estimation_strategy = _mf._normalize_hessian_gain_estimation_strategy(hessian_gain_estimation_strategy)
+    mfmc_fixed_gain = _mf._normalize_mfmc_fixed_gain(mfmc_fixed_gain)
+    gain_sample_size = _mf._validate_gain_sample_size(gain_sample_size)
+    gradient_gain_estimation_strategy = _mf._normalize_gradient_gain_estimation_strategy(gradient_gain_estimation_strategy)
+    if gradient_gain_estimation_strategy == "k_fold":
+        _mf.validate_gain_num_folds(gain_num_folds)
+    _mf.validate_gain_sampling(gradient_gain_estimation_strategy, sampling_method)
     elbo_scaling_factor = _vi._resolve_elbo_scaling_factor(
         elbo_scaling_factor, observations_covariance
     )
@@ -689,6 +739,13 @@ def _run_full_covariance_mf_vi(
         cholesky = robust_cholesky(optimizer_covariance)
     else:
         restart_data = np.load(restart_file, allow_pickle=True)
+        if 'line_search_method' in restart_data:
+            saved_method = restart_data['line_search_method'].item()
+            if saved_method is not None and saved_method != line_search_method:
+                raise ValueError("Restart file line_search_method does not match current run.")
+        elbo_scaling_factor = _vi._restore_initial_expected_misfit_scale(
+            elbo_scaling_factor, restart_data
+        )
         (
             rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
         ) = restore_rom_substeps(
@@ -702,9 +759,7 @@ def _run_full_covariance_mf_vi(
         else:
             np.random.seed(random_seed)
         iteration = int(restart_data["iteration"])
-        step_size = min(
-            float(restart_data["step_size"]), line_config.max_step_size
-        )
+        step_size = min(line_config.initial_step_size, line_config.max_step_size)
         mean = _vi._restore_variational_mean_from_restart(
             restart_data,
             bounded_parameter_handling,
@@ -722,12 +777,13 @@ def _run_full_covariance_mf_vi(
         training_qois = restart_data["training_qois"]
         rom_training_parameters = restart_data["rom_training_parameters"]
         rom_training_qois = restart_data["rom_training_qois"]
-        rom_model = rom_model_builder.build_from_training_dirs(
-            f"{absolute_work_dir}/iteration_{iteration}",
-            rom_training_dirs,
-            rom_training_parameters,
-            rom_training_qois,
+        _mf.validate_mf_vi_restart(restart_data, rom_retraining_strategy, gradient_gain_estimation_strategy, max_rom_training_dirs, gain_num_folds, hessian_gain_strategy=hessian_gain_estimation_strategy, gain_sample_size=gain_sample_size, use_mfmc_control_variate=use_mfmc_control_variate, mfmc_fixed_gain=mfmc_fixed_gain)
+        if "mf_vi_history" not in restart_data:
+            raise ValueError("restart_file is missing MF-VI history.")
+        state = _mf.restore_mf_vi_state(
+            restart_data, rom_model_builder, f"{absolute_work_dir}/iteration_{iteration}", dispatcher,
         )
+        history = dict(restart_data["mf_vi_history"].item())
 
     cholesky = _enforce_full_covariance_scale_bounds(
         mean,
@@ -741,54 +797,75 @@ def _run_full_covariance_mf_vi(
         min_physical_variational_std_fraction,
         transform_map,
     )
-    state = _evaluate_mf_state(
-        model=model,
-        rom_model=rom_model,
-        rom_model_builder=rom_model_builder,
-        observations=observations,
-        observations_covariance=observations_covariance,
-        iteration_directory=f"{absolute_work_dir}/iteration_{iteration}",
-        parameter_names=parameter_names,
-        variational_mean=mean,
-        cholesky=cholesky,
-        prior_mean=prior_mean,
-        prior_precision_operator=prior_precision,
-        prior_covariance_log_det=prior_log_det,
-        fom_sample_size=fom_sample_size,
-        rom_extra_sample_size=rom_extra_sample_size,
-        fom_evaluation_concurrency=fom_evaluation_concurrency,
-        rom_evaluation_concurrency=rom_evaluation_concurrency,
-        covariance_regularization=covariance_regularization,
-        baseline_method=baseline_method,
-        use_mfmc_control_variate=use_mfmc_control_variate,
-        mfmc_control_variate_mode=mfmc_control_variate_mode,
-        elbo_scaling_factor=elbo_scaling_factor,
-        gradient_method=gradient_method,
-        bounded_parameter_handling=bounded_parameter_handling,
-        min_variational_std=min_variational_std,
-        max_variational_std=max_variational_std,
-        rom_base_sampling_strategy=rom_base_sampling_strategy,
-        parameter_mins=parameter_mins,
-        parameter_maxes=parameter_maxes,
-        transform_interior_margin=transform_interior_margin,
-        transform_map=transform_map,
-        rom_tolerance=rom_tolerance,
-        max_rom_training_dirs=max_rom_training_dirs,
-        correlation_estimator=correlation_estimator,
-        correlation_k_folds=correlation_k_folds,
-        training_dirs=training_dirs,
-        training_parameters=training_parameters,
-        training_qois=training_qois,
-        rom_training_dirs=rom_training_dirs,
-        rom_training_parameters=rom_training_parameters,
-        rom_training_qois=rom_training_qois,
-        log_likelihood_precision_operator=log_likelihood_precision,
-        sampling_method=sampling_method,
-        dispatcher=dispatcher,
-        score_function_entropy_strategy=score_function_entropy_strategy,
+    if restart_file is None:
+        state = evaluate_state(
+            gain_sample_size=gain_sample_size,
+            model=model,
+            rom_model=rom_model,
+            rom_model_builder=rom_model_builder,
+            observations=observations,
+            observations_covariance=observations_covariance,
+            iteration_directory=f"{absolute_work_dir}/iteration_{iteration}",
+            parameter_names=parameter_names,
+            variational_mean=mean,
+            cholesky=cholesky,
+            prior_mean=prior_mean,
+            prior_precision_operator=prior_precision,
+            prior_covariance_log_det=prior_log_det,
+            fom_sample_size=fom_sample_size,
+            rom_extra_sample_size=rom_extra_sample_size,
+            fom_evaluation_concurrency=fom_evaluation_concurrency,
+            rom_evaluation_concurrency=rom_evaluation_concurrency,
+            covariance_regularization=covariance_regularization,
+            baseline_method=baseline_method,
+            use_mfmc_control_variate=use_mfmc_control_variate,
+            mfmc_control_variate_mode=mfmc_control_variate_mode,
+            elbo_scaling_factor=elbo_scaling_factor,
+            gradient_method=gradient_method,
+            bounded_parameter_handling=bounded_parameter_handling,
+            min_variational_std=min_variational_std,
+            max_variational_std=max_variational_std,
+            parameter_mins=parameter_mins,
+            parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
+            rom_tolerance=rom_tolerance,
+            max_rom_training_dirs=max_rom_training_dirs,
+            rom_retraining_strategy=rom_retraining_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
+            training_dirs=training_dirs,
+            training_parameters=training_parameters,
+            training_qois=training_qois,
+            rom_training_dirs=rom_training_dirs,
+            rom_training_parameters=rom_training_parameters,
+            rom_training_qois=rom_training_qois,
+            log_likelihood_precision_operator=log_likelihood_precision,
+            sampling_method=sampling_method,
+            dispatcher=dispatcher,
+            score_function_entropy_strategy=score_function_entropy_strategy,
+            mfmc_fixed_gain=mfmc_fixed_gain,
+        )
+        if elbo_scaling_factor is None:
+            elbo_scaling_factor = state["elbo_scaling_factor"]
+        state = _mf.stage_delayed_rom(
+            state, rom_model_builder, f"{absolute_work_dir}/iteration_{iteration}",
+            max_rom_training_dirs, dispatcher,
+        )
+        accepted_elbo_history = [float(state["elbo"])]
+    else:
+        accepted_elbo_history = restart_data["accepted_elbo_history"].tolist()
+    initial_elbo_reference = float(
+        restart_data.get('initial_elbo_reference', accepted_elbo_history[0])
+        if restart_file is not None else accepted_elbo_history[0]
     )
-    accepted_elbo_history = [float(state["elbo"])]
-    initial_elbo_reference = float(state["elbo"])
+    accepted_elbo_history, accepted_elbo_standard_error_history = _mf._restore_mf_elbo_uncertainty_history(
+        restart_data if restart_file is not None else {}, accepted_elbo_history,
+        state, elbo_scaling_factor,
+        require_history=(restart_file is not None and optimization_method != "adam"
+                         and line_search_method == "stochastic_nonmonotone"),
+    )
 
     solver = (
         AdamSolver.from_config(config)
@@ -801,20 +878,21 @@ def _run_full_covariance_mf_vi(
             solver.load_restart_state_dict(restart_data)
     adam_solver = solver if optimization_method == "adam" else None
 
-    gradient_norm = _gradient_norm(state)
-    _append_history(
-        history,
-        mean,
-        cholesky,
-        state,
-        0.0,
-        np.nan,
-        bounded_parameter_handling=bounded_parameter_handling,
-        parameter_mins=parameter_mins,
-        parameter_maxes=parameter_maxes,
-        transform_interior_margin=transform_interior_margin,
-        transform_map=transform_map,
-    )
+    gradient_norm = compute_gradient_norm(state)
+    if restart_file is None:
+        _append_history(
+            history,
+            mean,
+            cholesky,
+            state,
+            0.0,
+            np.nan,
+            bounded_parameter_handling=bounded_parameter_handling,
+            parameter_mins=parameter_mins,
+            parameter_maxes=parameter_maxes,
+            transform_interior_margin=transform_interior_margin,
+            transform_map=transform_map,
+        )
     _save_mf_restart(
         f"{absolute_work_dir}/iteration_{iteration}/restart.npz",
         variational_mean=mean,
@@ -835,12 +913,16 @@ def _run_full_covariance_mf_vi(
         mfmc_control_variate_mode=mfmc_control_variate_mode,
         elbo_scaling_factor=elbo_scaling_factor,
         accepted_elbo_history=accepted_elbo_history,
+        accepted_elbo_standard_error_history=accepted_elbo_standard_error_history,
+        initial_elbo_reference=initial_elbo_reference,
         max_covariance_log_step=max_covariance_log_step,
         adam_solver=adam_solver,
         dispatcher=dispatcher,
         rom_substep_start_iteration=rom_substep_start_iteration,
         rom_substep_end_iteration=rom_substep_end_iteration,
         num_rom_substeps=num_rom_substeps,
+        history=history,
+        line_search_method=line_search_method,
     )
     _vi._prune_old_restart_files(
         absolute_work_dir, restart_files_to_keep, dispatcher
@@ -850,6 +932,7 @@ def _run_full_covariance_mf_vi(
     failed_steps = 0
     elbo_converged = False
     while iteration < max_iterations and gradient_norm > gradient_norm_tolerance:
+        iteration_rom_state = _mf.activate_delayed_rom(state)
         current_fom_size = max(
             2, int(np.ceil(fom_sample_size * sample_growth**failed_steps))
         )
@@ -899,7 +982,7 @@ def _run_full_covariance_mf_vi(
         ):
             candidate_mean, candidate_cholesky = (
                 apply_full_covariance_rom_substeps(
-                    rom_model=state['rom_model'],
+                    rom_model=iteration_rom_state['rom_model'],
                     candidate_mean=candidate_mean,
                     candidate_cholesky=candidate_cholesky,
                     outer_iteration=iteration - 1,
@@ -937,9 +1020,10 @@ def _run_full_covariance_mf_vi(
                 )
             )
 
-        candidate = _evaluate_mf_state(
+        candidate = evaluate_state(
+            gain_sample_size=gain_sample_size,
             model=model,
-            rom_model=state["rom_model"],
+            rom_model=iteration_rom_state["rom_model"],
             rom_model_builder=rom_model_builder,
             observations=observations,
             observations_covariance=observations_covariance,
@@ -963,25 +1047,28 @@ def _run_full_covariance_mf_vi(
             bounded_parameter_handling=bounded_parameter_handling,
             min_variational_std=min_variational_std,
             max_variational_std=max_variational_std,
-            rom_base_sampling_strategy=rom_base_sampling_strategy,
             parameter_mins=parameter_mins,
             parameter_maxes=parameter_maxes,
             transform_interior_margin=transform_interior_margin,
             transform_map=transform_map,
             rom_tolerance=rom_tolerance,
             max_rom_training_dirs=max_rom_training_dirs,
-            correlation_estimator=correlation_estimator,
-            correlation_k_folds=correlation_k_folds,
+            rom_retraining_strategy=rom_retraining_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
+            gain_history_state=state,
             training_dirs=state["training_dirs"],
             training_parameters=state["training_parameters"],
             training_qois=state["training_qois"],
-            rom_training_dirs=state["rom_training_dirs"],
-            rom_training_parameters=state["rom_training_parameters"],
-            rom_training_qois=state["rom_training_qois"],
+            rom_training_dirs=iteration_rom_state["rom_training_dirs"],
+            rom_training_parameters=iteration_rom_state["rom_training_parameters"],
+            rom_training_qois=iteration_rom_state["rom_training_qois"],
             log_likelihood_precision_operator=log_likelihood_precision,
             sampling_method=sampling_method,
             dispatcher=dispatcher,
             score_function_entropy_strategy=score_function_entropy_strategy,
+            mfmc_fixed_gain=mfmc_fixed_gain,
         )
         ordinary_gradient = np.concatenate(
             [state["gradient_mean"], state["gradient_covariance_svec"]]
@@ -1002,7 +1089,7 @@ def _run_full_covariance_mf_vi(
             np.dot(ordinary_gradient, effective_direction)
         )
 
-        if optimization_method == "adam":
+        if optimization_method == "adam" or line_search_method == "none":
             accept = True
         elif line_search_method == "legacy":
             allowed_drop = (
@@ -1010,37 +1097,37 @@ def _run_full_covariance_mf_vi(
             ) * abs(state["elbo"])
             accept = candidate["elbo"] >= state["elbo"] - allowed_drop
         else:
-            reference = max(
-                accepted_elbo_history[-nonmonotone_window:]
+            reference, reference_se = _mf._select_mf_elbo_reference(
+                accepted_elbo_history, accepted_elbo_standard_error_history, nonmonotone_window,
             )
             target = (
                 reference
                 + armijo * step_size * max(predicted_slope, 0.0)
             )
-            current_se = _mf._compute_state_elbo_standard_error(
-                state, elbo_scaling_factor
-            )
             candidate_se = _mf._compute_state_elbo_standard_error(
                 candidate, elbo_scaling_factor
             )
             target -= uncertainty * np.sqrt(
-                current_se**2 + candidate_se**2
+                reference_se**2 + candidate_se**2
             )
             accept = candidate["elbo"] >= target
 
         if accept:
             mean = candidate_mean
             cholesky = candidate_cholesky
-            state = candidate
+            state = _mf.stage_delayed_rom(
+                candidate, rom_model_builder, f"{absolute_work_dir}/iteration_{iteration}",
+                max_rom_training_dirs, dispatcher,
+            )
             accepted_elbo_history.append(float(state["elbo"]))
+            accepted_elbo_standard_error_history.append(
+                _mf._compute_state_elbo_standard_error(state, elbo_scaling_factor)
+            )
             accepted_step = step_size
             failed_steps = 0
             if optimization_method != "adam":
-                step_size = min(
-                    step_size * line_config.step_size_growth_factor,
-                    line_config.max_step_size,
-                )
-            gradient_norm = _gradient_norm(state)
+                step_size = min(line_config.initial_step_size, line_config.max_step_size)
+            gradient_norm = compute_gradient_norm(state)
             _append_history(
                 history,
                 mean,
@@ -1074,12 +1161,16 @@ def _run_full_covariance_mf_vi(
                 mfmc_control_variate_mode=mfmc_control_variate_mode,
                 elbo_scaling_factor=elbo_scaling_factor,
                 accepted_elbo_history=accepted_elbo_history,
+                accepted_elbo_standard_error_history=accepted_elbo_standard_error_history,
+                initial_elbo_reference=initial_elbo_reference,
                 max_covariance_log_step=max_covariance_log_step,
                 adam_solver=adam_solver,
                 dispatcher=dispatcher,
                 rom_substep_start_iteration=rom_substep_start_iteration,
                 rom_substep_end_iteration=rom_substep_end_iteration,
                 num_rom_substeps=num_rom_substeps,
+                history=history,
+                line_search_method=line_search_method,
             )
             _vi._prune_old_restart_files(
                 absolute_work_dir, restart_files_to_keep, dispatcher
@@ -1143,14 +1234,13 @@ def run_mf_vi(
     rom_evaluation_concurrency=1,
     covariance_regularization: float = 1e-7,
     restart_files_to_keep: int = 10,
-    correlation_estimator: str = "in_sample",
-    correlation_k_folds: int = 5,
+    rom_retraining_strategy: str = "delayed",
+    gradient_gain_estimation_strategy: str = "same_sample",
     elbo_scaling_factor="diag_mean",
     elbo_relative_tolerance: float = None,
     baseline_method: str = None,
     use_mfmc_control_variate: bool = True,
     mfmc_control_variate_mode: str = "componentwise",
-    rom_base_sampling_strategy: str = "coupled",
     bounded_parameter_handling: str = "transform",
     transform_interior_margin: float = 1e-8,
     transform_map: str = "sigmoid",
@@ -1159,68 +1249,20 @@ def run_mf_vi(
     *,
     absolute_vi_directory: str = None,
     score_function_entropy_strategy: str = "analytic",
-    variational_distribution: str = None,
     max_covariance_log_step: float = 1.0,
     create_run_directories: bool = True,
     sample_reuse_config=None,
+    _newton=None,
     rom_substep_start_iteration: int = 0,
     rom_substep_end_iteration=None,
     num_rom_substeps: int = 0,
     rom_substep_newton_config=None,
+    gain_num_folds: int = 5,
+    hessian_gain_estimation_strategy: str = "same_sample",
+    gain_sample_size=None,
+    mfmc_fixed_gain: float = 1.0,
 ):
     """Run MF-VI with an optional true full-covariance Gaussian family."""
-    distribution = _resolve_variational_distribution(
-        variational_distribution,
-        prior_parameter_space,
-        initial_variational_parameter_space,
-    )
-    if distribution != "full_covariance":
-        return _FALLBACK_RUN_MF_VI(
-            model,
-            rom_model_builder,
-            prior_parameter_space,
-            observations,
-            observations_covariance,
-            parameter_mins=parameter_mins,
-            parameter_maxes=parameter_maxes,
-            initial_variational_parameter_space=initial_variational_parameter_space,
-            restart_file=restart_file,
-            optimizer_method=optimizer_method,
-            optimizer_config=optimizer_config,
-            line_search_method=line_search_method,
-            line_search_config=line_search_config,
-            absolute_work_dir=absolute_work_dir,
-            fom_sample_size=fom_sample_size,
-            rom_extra_sample_size=rom_extra_sample_size,
-            rom_tolerance=rom_tolerance,
-            max_rom_training_history=max_rom_training_history,
-            random_seed=random_seed,
-            sampling_method=sampling_method,
-            fom_evaluation_concurrency=fom_evaluation_concurrency,
-            rom_evaluation_concurrency=rom_evaluation_concurrency,
-            covariance_regularization=covariance_regularization,
-            restart_files_to_keep=restart_files_to_keep,
-            correlation_estimator=correlation_estimator,
-            correlation_k_folds=correlation_k_folds,
-            elbo_scaling_factor=elbo_scaling_factor,
-            elbo_relative_tolerance=elbo_relative_tolerance,
-            baseline_method=baseline_method,
-            use_mfmc_control_variate=use_mfmc_control_variate,
-            mfmc_control_variate_mode=mfmc_control_variate_mode,
-            rom_base_sampling_strategy=rom_base_sampling_strategy,
-            bounded_parameter_handling=bounded_parameter_handling,
-            transform_interior_margin=transform_interior_margin,
-            transform_map=transform_map,
-            min_physical_variational_std_fraction=min_physical_variational_std_fraction,
-            dispatcher=dispatcher,
-            absolute_vi_directory=absolute_vi_directory,
-            score_function_entropy_strategy=score_function_entropy_strategy,
-            create_run_directories=create_run_directories,
-            sample_reuse_config=sample_reuse_config,
-            rom_substep_start_iteration=rom_substep_start_iteration,
-            rom_substep_end_iteration=rom_substep_end_iteration,
-            num_rom_substeps=num_rom_substeps,
-        )
     if sample_reuse_config is not None:
         raise NotImplementedError(
             "Sample reuse is not yet defined for full-covariance MF-VI"
@@ -1238,6 +1280,8 @@ def run_mf_vi(
         absolute_work_dir = absolute_vi_directory
     with _directory_policy._run_directory_policy(create_run_directories):
         return _run_full_covariance_mf_vi(
+            gain_sample_size=gain_sample_size,
+            _newton=_newton,
             model=model,
             rom_model_builder=rom_model_builder,
             prior_parameter_space=prior_parameter_space,
@@ -1262,14 +1306,15 @@ def run_mf_vi(
             rom_evaluation_concurrency=rom_evaluation_concurrency,
             covariance_regularization=covariance_regularization,
             restart_files_to_keep=restart_files_to_keep,
-            correlation_estimator=correlation_estimator,
-            correlation_k_folds=correlation_k_folds,
+            rom_retraining_strategy=rom_retraining_strategy,
+            gradient_gain_estimation_strategy=gradient_gain_estimation_strategy,
+            hessian_gain_estimation_strategy=hessian_gain_estimation_strategy,
+            gain_num_folds=gain_num_folds,
             elbo_scaling_factor=elbo_scaling_factor,
             elbo_relative_tolerance=elbo_relative_tolerance,
             baseline_method=baseline_method,
             use_mfmc_control_variate=use_mfmc_control_variate,
             mfmc_control_variate_mode=mfmc_control_variate_mode,
-            rom_base_sampling_strategy=rom_base_sampling_strategy,
             bounded_parameter_handling=bounded_parameter_handling,
             transform_interior_margin=transform_interior_margin,
             transform_map=transform_map,
@@ -1281,27 +1326,5 @@ def run_mf_vi(
             rom_substep_end_iteration=rom_substep_end_iteration,
             num_rom_substeps=num_rom_substeps,
             rom_substep_newton_config=rom_substep_newton_config,
+            mfmc_fixed_gain=mfmc_fixed_gain,
         )
-
-
-def mf_vi_with_auto_rom(
-    *args,
-    variational_distribution=None,
-    max_covariance_log_step=1.0,
-    **kwargs,
-):
-    """Delegate the existing auto-ROM API unless full covariance is requested."""
-    prior = kwargs.get(
-        "prior_parameter_space", args[1] if len(args) > 1 else None
-    )
-    distribution = _resolve_variational_distribution(
-        variational_distribution,
-        prior,
-        kwargs.get("initial_variational_parameter_space"),
-    )
-    if distribution == "full_covariance":
-        raise NotImplementedError(
-            "For full-covariance MF-VI, construct the ROM builder explicitly and "
-            "call run_mf_vi. Auto-ROM wiring will be added separately."
-        )
-    return _FALLBACK_AUTO_MF_VI(*args, **kwargs)

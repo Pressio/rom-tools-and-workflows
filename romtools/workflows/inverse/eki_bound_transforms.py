@@ -21,7 +21,6 @@ from romtools.workflows.parameter_spaces import ParameterSpace
 
 _eki_module = import_module("romtools.workflows.inverse.eki_drivers")
 _mf_eki_module = import_module("romtools.workflows.inverse.mf_eki_drivers")
-_vi_module = import_module("romtools.workflows.inverse.vi_drivers")
 
 _legacy_run_eki = _eki_module.run_eki
 _legacy_run_mf_eki = _mf_eki_module.run_mf_eki
@@ -30,12 +29,10 @@ _RUN_EKI_SIGNATURE = inspect.signature(_legacy_run_eki)
 _RUN_MF_EKI_SIGNATURE = inspect.signature(_legacy_run_mf_eki)
 _AUTO_MF_EKI_SIGNATURE = inspect.signature(_legacy_mf_eki_with_auto_rom)
 
-# Reuse VI's implementation so ``transform`` has one definition across inverse
-# workflows.
-_normalize_bounded_parameter_handling = _vi_module._normalize_bounded_parameter_handling
-_normalize_transform_map = _vi_module._normalize_transform_map
-_transform_optimizer_to_parameter = _vi_module._transform_optimizer_to_parameter
-_transform_parameter_to_optimizer = _vi_module._transform_parameter_to_optimizer
+from romtools.workflows.inverse._parameter_transforms import (
+    _normalize_bounded_parameter_handling, _normalize_transform_map,
+    _transform_optimizer_to_parameter, _transform_parameter_to_optimizer,
+)
 
 _PARAMETER_ARRAY_KEYS = (
     "parameter_samples",

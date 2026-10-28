@@ -17,10 +17,10 @@ from typing import Optional
 import numpy as np
 
 from romtools.hpc.dispatchers import resolve_dispatcher
-from romtools.workflows.inverse import vi_drivers as _vi
-from romtools.workflows.inverse import mf_vi_drivers as _mf
-from romtools.workflows.inverse import vi_run_directory_policy as _directory_policy
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi import drivers as _vi
+from romtools.workflows.inverse.vi import mf_drivers as _mf
+from romtools.workflows.inverse.vi import evaluation as _directory_policy
+from romtools.workflows.inverse.vi.gaussian import (
     correlation_cholesky_from_covariance,
     covariance_from_cholesky,
     entropy as full_covariance_entropy,
@@ -35,7 +35,7 @@ from romtools.workflows.inverse.full_covariance_vi import (
     svec,
     svec_inverse,
 )
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     AdamSolver,
     SteepestDescentSolver,
     VIAdamOptimizerConfig,
@@ -47,54 +47,6 @@ from romtools.workflows.inverse.vi_optimization_methods import (
     _resolve_line_search_config,
     _resolve_optimizer_config,
 )
-from romtools.workflows.parameter_spaces import MultivariateGaussianParameterSpace
-
-
-_FALLBACK_RUN_VI = _directory_policy.run_vi
-_FALLBACK_RUN_MF_VI = _directory_policy.run_mf_vi
-_FALLBACK_AUTO_MF_VI = _directory_policy.mf_vi_with_auto_rom
-
-
-def _resolve_variational_distribution(
-    requested,
-    prior_parameter_space,
-    initial_variational_parameter_space,
-) -> str:
-    """Resolve public variational-family semantics.
-
-    For backward compatibility, a multivariate Gaussian initializer/prior now
-    selects the corrected full-covariance implementation when the family is not
-    specified explicitly.  ``multivariate`` is retained as a deprecated alias
-    for ``full_covariance``.
-    """
-    if requested is None:
-        source = (
-            initial_variational_parameter_space
-            if initial_variational_parameter_space is not None
-            else prior_parameter_space
-        )
-        return (
-            "full_covariance"
-            if isinstance(source, MultivariateGaussianParameterSpace)
-            else "diagonal"
-        )
-    normalized = str(requested).strip().lower()
-    if normalized in ("full_covariance", "full-covariance", "full", "multivariate"):
-        if normalized == "multivariate":
-            warnings.warn(
-                "variational_distribution='multivariate' is deprecated; use "
-                "'full_covariance'. The multivariate family now has freely "
-                "evolving covariance rather than fixed correlation.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-        return "full_covariance"
-    if normalized in ("diagonal", "mean_field", "mean-field"):
-        return "diagonal"
-    raise ValueError(
-        f"Unsupported variational_distribution '{requested}'. Supported "
-        "options are 'diagonal' and 'full_covariance'."
-    )
 
 
 def _extract_prior_and_initial_moments(
@@ -328,6 +280,8 @@ def _evaluate_single_fidelity_state(
             score_function_entropy_strategy=score_function_entropy_strategy,
         )
         state = candidate["state"]
+    if elbo_scaling_factor is None:
+        elbo_scaling_factor = state['elbo_scaling_factor']
     return _upgrade_single_fidelity_state(
         state,
         variational_mean,
@@ -450,8 +404,10 @@ def _save_full_covariance_restart(
     max_covariance_log_step,
     adam_solver,
     dispatcher,
+    line_search_method=None,
 ):
     save_data = {
+        "line_search_method": line_search_method,
         "variational_mean": _vi._get_persisted_variational_mean(
             variational_mean,
             bounded_parameter_handling,
@@ -480,6 +436,7 @@ def _save_full_covariance_restart(
         "rng_state": np.array(np.random.get_state(), dtype=object),
     }
     for key in (
+        "newton_hessian_full",
         "optimizer_samples",
         "parameter_samples",
         "qois",
@@ -535,6 +492,8 @@ def _restore_single_state(restart_data, gradient_method):
     if not all(key in restart_data for key in required):
         return None
     state = {key: restart_data[key] for key in required}
+    if "newton_hessian_full" in restart_data:
+        state["newton_hessian_full"] = restart_data["newton_hessian_full"]
     state["mean_misfit"] = float(state["mean_misfit"])
     state["mean_relative_mse"] = float(state["mean_relative_mse"])
     state["entropy"] = float(state["entropy"])
@@ -588,6 +547,7 @@ def _write_iteration_outputs(
 
 def _run_full_covariance_vi(
     *,
+    _newton=None,
     model,
     prior_parameter_space,
     observations,
@@ -618,6 +578,11 @@ def _run_full_covariance_vi(
     score_function_entropy_strategy,
     max_covariance_log_step,
 ):
+    def evaluate_state(**kwargs):
+        state = _evaluate_single_fidelity_state(**kwargs)
+        return state if _newton is None else _newton.upgrade(state, **kwargs)
+
+    compute_gradient_norm = _gradient_norm if _newton is None else _newton.gradient_norm
     dispatcher = resolve_dispatcher(dispatcher)
     dispatcher.require_supported_concurrency(evaluation_concurrency)
     if absolute_work_dir is None:
@@ -756,7 +721,7 @@ def _run_full_covariance_vi(
             min_physical_variational_std_fraction,
             transform_map,
         )
-        state = _evaluate_single_fidelity_state(
+        state = evaluate_state(
             model=model,
             observations=observations,
             observations_covariance=observations_covariance,
@@ -786,9 +751,18 @@ def _run_full_covariance_vi(
             score_function_entropy_strategy=score_function_entropy_strategy,
         )
         accepted_elbo_history = [float(state["elbo"])]
+        if elbo_scaling_factor is None:
+            elbo_scaling_factor = state["elbo_scaling_factor"]
         initial_elbo_reference = float(state["elbo"])
     else:
         restart_data = np.load(restart_file, allow_pickle=True)
+        if 'line_search_method' in restart_data:
+            saved_method = restart_data['line_search_method'].item()
+            if saved_method is not None and saved_method != line_search_method:
+                raise ValueError("Restart file line_search_method does not match current run.")
+        elbo_scaling_factor = _vi._restore_initial_expected_misfit_scale(
+            elbo_scaling_factor, restart_data
+        )
         if str(restart_data["variational_distribution"].item()) != "full_covariance":
             raise ValueError("restart_file is not a full-covariance VI restart")
         if "rng_state" in restart_data:
@@ -796,7 +770,7 @@ def _run_full_covariance_vi(
         else:
             np.random.seed(random_seed)
         iteration = int(restart_data["iteration"])
-        step_size = min(float(restart_data["step_size"]), max_step_size)
+        step_size = min(initial_step_size, max_step_size)
         variational_mean = _vi._restore_variational_mean_from_restart(
             restart_data,
             bounded_parameter_handling,
@@ -808,7 +782,7 @@ def _run_full_covariance_vi(
         cholesky = np.asarray(restart_data["variational_cholesky_optimizer"], dtype=float)
         state = _restore_single_state(restart_data, gradient_method)
         if state is None:
-            state = _evaluate_single_fidelity_state(
+            state = evaluate_state(
                 model=model,
                 observations=observations,
                 observations_covariance=observations_covariance,
@@ -855,7 +829,7 @@ def _run_full_covariance_vi(
         if restart_file is not None and "adam_iteration" in restart_data:
             solver.load_restart_state_dict(restart_data)
 
-    gradient_norm = _gradient_norm(state)
+    gradient_norm = compute_gradient_norm(state)
     wall_time = time.time() - start_time
     cpu_time = time.process_time() - start_cpu_time
     _append_history(
@@ -910,6 +884,7 @@ def _run_full_covariance_vi(
         max_covariance_log_step=max_covariance_log_step,
         adam_solver=adam_solver,
         dispatcher=dispatcher,
+        line_search_method=line_search_method,
     )
     _vi._prune_old_restart_files(absolute_work_dir, restart_files_to_keep, dispatcher)
 
@@ -965,7 +940,7 @@ def _run_full_covariance_vi(
             transform_map,
         )
 
-        candidate_state = _evaluate_single_fidelity_state(
+        candidate_state = evaluate_state(
             model=model,
             observations=observations,
             observations_covariance=observations_covariance,
@@ -1005,7 +980,7 @@ def _run_full_covariance_vi(
         ])
         predicted_slope = float(np.dot(ordinary_gradient, effective_direction))
 
-        if optimization_method == "adam":
+        if optimization_method == "adam" or line_search_method == "none":
             accept_step = True
         elif line_search_objective == "mse":
             accept_step = candidate_state["mean_relative_mse"] <= (
@@ -1038,8 +1013,8 @@ def _run_full_covariance_vi(
             failed_steps = 0
             standard_normal_cache = None
             if optimization_method != "adam":
-                step_size = min(step_size * step_size_growth_factor, max_step_size)
-            gradient_norm = _gradient_norm(state)
+                step_size = min(initial_step_size, max_step_size)
+            gradient_norm = compute_gradient_norm(state)
             wall_time = time.time() - start_time
             cpu_time = time.process_time() - start_cpu_time
             _append_history(
@@ -1094,6 +1069,7 @@ def _run_full_covariance_vi(
                 max_covariance_log_step=max_covariance_log_step,
                 adam_solver=adam_solver,
                 dispatcher=dispatcher,
+                line_search_method=line_search_method,
             )
             _vi._prune_old_restart_files(
                 absolute_work_dir, restart_files_to_keep, dispatcher
@@ -1163,51 +1139,12 @@ def run_vi(
     *,
     absolute_vi_directory: str = None,
     score_function_entropy_strategy: str = "analytic",
-    variational_distribution: str = None,
     max_covariance_log_step: float = 1.0,
     create_run_directories: bool = True,
     sample_reuse_config=None,
+    _newton=None,
 ):
     """Run VI, adding a true full-covariance Gaussian variational family."""
-    distribution = _resolve_variational_distribution(
-        variational_distribution,
-        prior_parameter_space,
-        initial_variational_parameter_space,
-    )
-    if distribution != "full_covariance":
-        return _FALLBACK_RUN_VI(
-            model,
-            prior_parameter_space,
-            observations,
-            observations_covariance,
-            parameter_mins=parameter_mins,
-            parameter_maxes=parameter_maxes,
-            initial_variational_parameter_space=initial_variational_parameter_space,
-            restart_file=restart_file,
-            optimizer_method=optimizer_method,
-            optimizer_config=optimizer_config,
-            line_search_method=line_search_method,
-            line_search_config=line_search_config,
-            absolute_work_dir=absolute_work_dir,
-            sample_size=sample_size,
-            random_seed=random_seed,
-            sampling_method=sampling_method,
-            evaluation_concurrency=evaluation_concurrency,
-            covariance_regularization=covariance_regularization,
-            restart_files_to_keep=restart_files_to_keep,
-            elbo_scaling_factor=elbo_scaling_factor,
-            elbo_relative_tolerance=elbo_relative_tolerance,
-            baseline_method=baseline_method,
-            bounded_parameter_handling=bounded_parameter_handling,
-            transform_interior_margin=transform_interior_margin,
-            transform_map=transform_map,
-            min_physical_variational_std_fraction=min_physical_variational_std_fraction,
-            dispatcher=dispatcher,
-            absolute_vi_directory=absolute_vi_directory,
-            score_function_entropy_strategy=score_function_entropy_strategy,
-            create_run_directories=create_run_directories,
-            sample_reuse_config=sample_reuse_config,
-        )
     if sample_reuse_config is not None:
         raise NotImplementedError(
             "Sample reuse is not yet defined for the full-covariance variational family."
@@ -1223,6 +1160,7 @@ def run_vi(
         absolute_work_dir = absolute_vi_directory
     with _directory_policy._run_directory_policy(create_run_directories):
         return _run_full_covariance_vi(
+            _newton=_newton,
             model=model,
             prior_parameter_space=prior_parameter_space,
             observations=observations,
@@ -1253,27 +1191,3 @@ def run_vi(
             score_function_entropy_strategy=score_function_entropy_strategy,
             max_covariance_log_step=max_covariance_log_step,
         )
-
-
-# MF-VI is installed below in a separate commit so the single-fidelity path can
-# be exercised independently while preserving the public fallback.
-def run_mf_vi(*args, variational_distribution=None, max_covariance_log_step=1.0, **kwargs):
-    distribution = _resolve_variational_distribution(
-        variational_distribution,
-        kwargs.get("prior_parameter_space", args[2] if len(args) > 2 else None),
-        kwargs.get("initial_variational_parameter_space"),
-    )
-    if distribution == "full_covariance":
-        raise NotImplementedError("Full-covariance MF-VI wiring is not installed yet.")
-    return _FALLBACK_RUN_MF_VI(*args, **kwargs)
-
-
-def mf_vi_with_auto_rom(*args, variational_distribution=None, max_covariance_log_step=1.0, **kwargs):
-    distribution = _resolve_variational_distribution(
-        variational_distribution,
-        kwargs.get("prior_parameter_space", args[1] if len(args) > 1 else None),
-        kwargs.get("initial_variational_parameter_space"),
-    )
-    if distribution == "full_covariance":
-        raise NotImplementedError("Full-covariance auto-ROM MF-VI wiring is not installed yet.")
-    return _FALLBACK_AUTO_MF_VI(*args, **kwargs)

@@ -51,7 +51,7 @@ def rom_substep_restart_data(start, end, count):
 
 def _rom_optimizer(outer_method, optimizer_config, *, parameter_dimension=None):
     """Initialize an independent inner optimizer with the outer configuration."""
-    from romtools.workflows.inverse.vi_optimization_methods import (
+    from romtools.workflows.inverse.vi.optimization import (
         AdamSolver, SteepestDescentSolver,
     )
 
@@ -107,8 +107,7 @@ def apply_diagonal_rom_substeps(
     directory,
     dispatcher,
 ):
-    from romtools.workflows.inverse import vi_drivers as vi
-    from romtools.workflows.inverse import vi_sample_reuse as reuse
+    from romtools.workflows.inverse.vi import drivers as vi
 
     method, solver = _rom_optimizer(outer_method, optimizer_config)
     gradient_method = (
@@ -118,9 +117,9 @@ def apply_diagonal_rom_substeps(
     mean = np.asarray(candidate_mean, dtype=float).copy()
     log_std = np.asarray(candidate_log_std, dtype=float).copy()
     for substep in range(num_rom_substeps):
-        # Use the ORIGINAL single-fidelity evaluator: the ABRIS wrapper must
-        # never consult/refresh the high-fidelity archive on a ROM-only step.
-        rom_state = reuse._ORIGINAL_EVALUATE_VI_STATE(
+        # ROM-only steps evaluate the surrogate directly without consulting
+        # or refreshing the high-fidelity reuse archive.
+        rom_state = vi._evaluate_vi_state(
             model=rom_model,
             observations=observations,
             observations_covariance=observations_covariance,
@@ -250,10 +249,10 @@ def apply_full_covariance_rom_substeps(
     directory,
     dispatcher,
 ):
-    from romtools.workflows.inverse import full_covariance_vi_drivers as fcvi
-    from romtools.workflows.inverse import full_covariance_mf_vi_drivers as fcmf
-    from romtools.workflows.inverse import full_covariance_newton as fcnewton
-    from romtools.workflows.inverse.full_covariance_vi import (
+    from romtools.workflows.inverse.vi import full_covariance_drivers as fcvi
+    from romtools.workflows.inverse.vi import full_covariance_mf_drivers as fcmf
+    from romtools.workflows.inverse.vi import newton as fcnewton
+    from romtools.workflows.inverse.vi.gaussian import (
         packed_direction_to_covariance, retract_covariance,
     )
 

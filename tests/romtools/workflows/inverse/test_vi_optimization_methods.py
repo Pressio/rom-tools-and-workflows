@@ -1,16 +1,16 @@
 import numpy as np
 import pytest
 
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     NewtonSolver,
     _normalize_newton_curvature_strategy,
     _normalize_newton_regularization_strategy,
 )
-from romtools.workflows.inverse.vi_drivers import (
+from romtools.workflows.inverse.vi.drivers import (
     _average_hessians,
     _compute_newton_step,
     _restore_adaptive_newton_regularization,
-    _update_adaptive_newton_controls,
+    _backtrack_adaptive_newton_controls,
 )
 
 
@@ -196,17 +196,12 @@ def test_newton_regularization_strategy_validation():
 
 
 def test_adaptive_newton_controls_relax_when_elbo_drops():
-    step_size, regularization = _update_adaptive_newton_controls(
+    step_size, regularization = _backtrack_adaptive_newton_controls(
         step_size=2.0,
         current_additive_regularization=3.0,
         initial_additive_regularization=1.0,
-        accept_step=False,
-        elbo_dropped=True,
         step_size_decay_factor=2.0,
-        step_size_growth_factor=1.5,
-        max_step_size=10.0,
         regularization_increase_factor=5.0,
-        regularization_decrease_factor=1.25,
         regularization_max_multiplier=1e4,
     )
 
@@ -214,41 +209,15 @@ def test_adaptive_newton_controls_relax_when_elbo_drops():
     assert regularization == 15.0
 
 
-def test_adaptive_newton_controls_unchanged_when_elbo_does_not_drop():
-    step_size, regularization = _update_adaptive_newton_controls(
-        step_size=2.0,
-        current_additive_regularization=5.0,
-        initial_additive_regularization=1.0,
-        accept_step=True,
-        elbo_dropped=False,
-        step_size_decay_factor=2.0,
-        step_size_growth_factor=1.5,
-        max_step_size=10.0,
-        regularization_increase_factor=5.0,
-        regularization_decrease_factor=1.25,
-        regularization_max_multiplier=1e4,
+def test_adaptive_newton_retry_damping_is_capped():
+    step_size, regularization = _backtrack_adaptive_newton_controls(
+        2.0, 5.0, 1.0, 2.0, 5.0, 10.0,
     )
-
-    assert step_size == 2.0
-    assert regularization == 5.0
-
-
-def test_adaptive_newton_controls_relax_accepted_elbo_drop():
-    step_size, regularization = _update_adaptive_newton_controls(
-        2.0, 5.0, 1.0, True, True, 2.0, 1.5, 3.0, 5.0, 1.25, 1e4
-    )
-    assert step_size == 3.0
-    assert regularization == 4.0
+    assert step_size == 1.0
+    assert regularization == 10.0
 
 
-def test_adaptive_newton_controls_do_not_reduce_below_initial_regularization():
-    _, regularization = _update_adaptive_newton_controls(
-        1.0, 1.0, 1.0, True, True, 2.0, 1.5, 3.0, 5.0, 1.25, 1e4
-    )
-    assert regularization == 1.0
-
-
-def test_adaptive_newton_regularization_restores_current_value():
+def test_adaptive_newton_regularization_resets_restored_value_to_base():
     restart_data = {
         'newton_adaptive_regularization': np.array(True),
         'newton_regularization_increase_factor': np.array(5.0),
@@ -261,7 +230,7 @@ def test_adaptive_newton_regularization_restores_current_value():
         restart_data, True, 1.0, True, 5.0, 1.25, 1e4
     )
 
-    assert restored == 25.0
+    assert restored == 1.0
 
 
 def test_exponential_hessian_average():

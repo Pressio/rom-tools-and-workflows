@@ -1,9 +1,10 @@
+from romtools.workflows.inverse.vi import api as vi_api
 """Tests for fixed-window ROM-only gradient/Hessian MFVI substeps."""
 import numpy as np
 import pytest
 
-from romtools.workflows.inverse import mf_vi_rom_substeps as substeps
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi import rom_substeps as substeps
+from romtools.workflows.inverse.vi.optimization import (
     VINewtonOptimizerConfig,
 )
 
@@ -39,7 +40,7 @@ def test_rom_substep_restart_round_trip():
 
 @pytest.mark.mpi_skip
 def test_diagonal_substeps_recompute_gradient_and_hessian(monkeypatch):
-    from romtools.workflows.inverse import vi_sample_reuse as reuse
+    from romtools.workflows.inverse.vi import drivers as vi
 
     observed = []
     rom = object()
@@ -57,7 +58,7 @@ def test_diagonal_substeps_recompute_gradient_and_hessian(monkeypatch):
             "hessian_full": -2.0 * np.eye(2),
         }
 
-    monkeypatch.setattr(reuse, "_ORIGINAL_EVALUATE_VI_STATE", fake_evaluate)
+    monkeypatch.setattr(vi, "_evaluate_vi_state", fake_evaluate)
     mean, log_std = substeps.apply_diagonal_rom_substeps(
         rom_model=rom,
         candidate_mean=np.array([0.0]),
@@ -105,8 +106,8 @@ def test_diagonal_substeps_recompute_gradient_and_hessian(monkeypatch):
 
 @pytest.mark.mpi_skip
 def test_full_covariance_substeps_use_fresh_hessian_and_keep_spd(monkeypatch):
-    from romtools.workflows.inverse import full_covariance_vi_drivers as fcvi
-    from romtools.workflows.inverse import full_covariance_newton as fcnewton
+    from romtools.workflows.inverse.vi import full_covariance_drivers as fcvi
+    from romtools.workflows.inverse.vi import newton as fcnewton
 
     current_means = []
     hessian_inputs = []
@@ -190,7 +191,7 @@ class _Builder:
 
 def _mfvi_kwargs(tmp_path):
     from romtools.workflows.parameter_spaces import GaussianParameterSpace, MonteCarloSampler
-    from romtools.workflows.inverse.vi_optimization_methods import (
+    from romtools.workflows.inverse.vi.optimization import (
         VIGradientOptimizerConfig, VILegacyLineSearchConfig,
     )
     q0 = GaussianParameterSpace(
@@ -248,7 +249,7 @@ def test_disabled_rom_substeps_preserve_mfvi_results(tmp_path):
 def test_mfvi_substep_schedule_calls_only_requested_outer_iterations(
     tmp_path, monkeypatch
 ):
-    from romtools.workflows.inverse import mf_vi_drivers
+    from romtools.workflows.inverse.vi import mf_drivers as mf_vi_drivers
     seen = []
 
     def fake_substeps(**kwargs):
@@ -258,7 +259,7 @@ def test_mfvi_substep_schedule_calls_only_requested_outer_iterations(
     monkeypatch.setattr(
         mf_vi_drivers, "apply_diagonal_rom_substeps", fake_substeps
     )
-    mf_vi_drivers.run_mf_vi(
+    vi_api.run_mf_vi(
         **_mfvi_kwargs(tmp_path / "window"),
         rom_substep_start_iteration=1,
         rom_substep_end_iteration=2,
@@ -321,8 +322,8 @@ def _full_covariance_inner_kwargs(method, config):
 
 @pytest.mark.mpi_skip
 def test_diagonal_rom_gradient_inherits_natural_gradient(monkeypatch):
-    from romtools.workflows.inverse import vi_sample_reuse as reuse
-    from romtools.workflows.inverse.vi_optimization_methods import VIGradientOptimizerConfig
+    from romtools.workflows.inverse.vi import drivers as vi
+    from romtools.workflows.inverse.vi.optimization import VIGradientOptimizerConfig
 
     seen_methods = []
 
@@ -336,7 +337,7 @@ def test_diagonal_rom_gradient_inherits_natural_gradient(monkeypatch):
             "update_direction_log_std": np.array([0.0]),
         }
 
-    monkeypatch.setattr(reuse, "_ORIGINAL_EVALUATE_VI_STATE", evaluate)
+    monkeypatch.setattr(vi, "_evaluate_vi_state", evaluate)
     args = _diagonal_inner_kwargs(
         "gradient", VIGradientOptimizerConfig(gradient_method="natural")
     )
@@ -349,8 +350,8 @@ def test_diagonal_rom_gradient_inherits_natural_gradient(monkeypatch):
 
 @pytest.mark.mpi_skip
 def test_diagonal_rom_adam_has_fresh_state_per_sequence(monkeypatch):
-    from romtools.workflows.inverse import vi_sample_reuse as reuse
-    from romtools.workflows.inverse.vi_optimization_methods import (
+    from romtools.workflows.inverse.vi import drivers as vi
+    from romtools.workflows.inverse.vi.optimization import (
         AdamSolver, VIAdamOptimizerConfig,
     )
 
@@ -380,7 +381,7 @@ def test_diagonal_rom_adam_has_fresh_state_per_sequence(monkeypatch):
             "gradient_log_std": np.array([0.0]),
         }
 
-    monkeypatch.setattr(reuse, "_ORIGINAL_EVALUATE_VI_STATE", evaluate)
+    monkeypatch.setattr(vi, "_evaluate_vi_state", evaluate)
     args = _diagonal_inner_kwargs("adam", config)
     first_mean, _ = substeps.apply_diagonal_rom_substeps(**args)
     second_mean, _ = substeps.apply_diagonal_rom_substeps(**args)
@@ -399,8 +400,8 @@ def test_diagonal_rom_adam_has_fresh_state_per_sequence(monkeypatch):
 
 @pytest.mark.mpi_skip
 def test_full_covariance_rom_gradient_inherits_natural_gradient(monkeypatch):
-    from romtools.workflows.inverse import full_covariance_vi_drivers as fcvi
-    from romtools.workflows.inverse.vi_optimization_methods import VIGradientOptimizerConfig
+    from romtools.workflows.inverse.vi import full_covariance_drivers as fcvi
+    from romtools.workflows.inverse.vi.optimization import VIGradientOptimizerConfig
 
     seen_methods = []
 
@@ -427,8 +428,8 @@ def test_full_covariance_rom_gradient_inherits_natural_gradient(monkeypatch):
 
 @pytest.mark.mpi_skip
 def test_full_covariance_rom_adam_keeps_inner_moments_and_resets(monkeypatch):
-    from romtools.workflows.inverse import full_covariance_vi_drivers as fcvi
-    from romtools.workflows.inverse.vi_optimization_methods import (
+    from romtools.workflows.inverse.vi import full_covariance_drivers as fcvi
+    from romtools.workflows.inverse.vi.optimization import (
         AdamSolver, VIAdamOptimizerConfig,
     )
 

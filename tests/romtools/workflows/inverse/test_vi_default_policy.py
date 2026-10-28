@@ -1,7 +1,7 @@
 import inspect
 
 import romtools.workflows.inverse as inverse
-from romtools.workflows.inverse import full_covariance_router as router
+from romtools.workflows.inverse.vi import api as router
 
 
 def test_newton_defaults_are_natural_full_lagged_and_regularized():
@@ -43,7 +43,7 @@ def test_public_mf_vi_signatures_expose_full_training_history_default():
 
 def test_router_materializes_default_newton_config():
     _, kwargs = router._ensure_default_newton_config(
-        router._legacy_run_vi,
+        router.drivers.run_vi,
         (),
         {"optimizer_method": "newton"},
     )
@@ -57,7 +57,7 @@ def test_router_materializes_default_newton_config():
 
 def test_router_uses_effectively_full_mf_training_history_by_default():
     _, kwargs = router._ensure_full_rom_training_history(
-        router._legacy_run_mf_vi,
+        router.mf_drivers.run_mf_vi,
         (),
         {"fom_sample_size": 16},
     )
@@ -66,7 +66,7 @@ def test_router_uses_effectively_full_mf_training_history_by_default():
 
 def test_explicit_mf_training_history_is_preserved():
     _, kwargs = router._ensure_full_rom_training_history(
-        router._legacy_run_mf_vi,
+        router.mf_drivers.run_mf_vi,
         (),
         {"fom_sample_size": 16, "max_rom_training_history": 4},
     )

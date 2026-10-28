@@ -16,7 +16,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import romtools.workflows as workflows
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     VINewtonOptimizerConfig,
     VIStochasticNonmonotoneLineSearchConfig,
 )
@@ -113,6 +113,9 @@ def main(
         fom_evaluation_concurrency=1,
         rom_evaluation_concurrency=1,
         max_rom_training_history=4,
+        rom_retraining_strategy="delayed",
+        gradient_gain_estimation_strategy="loo",
+        hessian_gain_estimation_strategy="same_sample",
         mfmc_control_variate_mode="scalar",
         rom_type="gp",
         rom_args={

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse.full_covariance_newton import (
+from romtools.workflows.inverse.vi.newton import (
     _exponential_retraction_hessian_correction,
     _fisher_whitening_map,
     _newton_step_from_hessian,
@@ -10,13 +10,13 @@ from romtools.workflows.inverse.full_covariance_newton import (
     _precision_from_cholesky,
     _symmetric_basis,
 )
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi.gaussian import (
     covariance_from_cholesky,
     svec,
     svec_inverse,
     svec_size,
 )
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse.vi.optimization import (
     VINewtonOptimizerConfig,
     VIStochasticNonmonotoneLineSearchConfig,
 )

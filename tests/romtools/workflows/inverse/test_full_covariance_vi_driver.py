@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse.full_covariance_mf_vi_drivers import _upgrade_mf_state
-from romtools.workflows.inverse.full_covariance_vi import (
+from romtools.workflows.inverse.vi.full_covariance_mf_drivers import _upgrade_mf_state
+from romtools.workflows.inverse.vi.gaussian import (
     covariance_from_cholesky,
     natural_score_terms,
     svec,

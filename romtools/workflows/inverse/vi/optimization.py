@@ -52,13 +52,13 @@ class VINewtonOptimizerConfig:
     max_mean_update_std: float = None
     min_variational_std: float = 1e-8
     max_variational_std: float = 1e6
-    newton_metric: str = 'standard'
+    newton_metric: str = 'natural'
     newton_fallback_learning_rate: float = 0.02
-    newton_regularization: float = 1e-2
-    newton_hessian_type: str = 'diagonal'
-    newton_curvature_strategy: str = 'same_sample'
+    newton_regularization: float = 5.0e-4
+    newton_hessian_type: str = 'full'
+    newton_curvature_strategy: str = 'lagged'
     newton_hessian_num_samples: int = None
-    newton_hessian_averaging_factor: float = 0.9
+    newton_hessian_averaging_factor: float = 0.25
     newton_regularization_strategy: str = 'absolute'
     newton_additive_regularization: float = 0.0
     newton_regularization_epsilon: float = 1e-12
@@ -66,11 +66,42 @@ class VINewtonOptimizerConfig:
     newton_regularization_increase_factor: float = 5.0
     newton_regularization_decrease_factor: float = 1.25
     newton_regularization_max_multiplier: float = 1e4
+    newton_additive_regularization_growth_factor: float = 1.0
+    newton_additive_regularization_max: float = None
+
+
+@dataclass
+class VINoLineSearchConfig:
+    """Constant Newton step without objective-based acceptance or backtracking.
+
+    Use with ``optimizer_method='newton', line_search_method='none'`` in
+    :func:`run_vi` or :func:`run_mf_vi`. Existing update limits still apply.
+    ``log_std_learning_rate_factor`` scales diagonal-family log-std updates.
+    """
+
+    step_size: float = 1.0
+    log_std_learning_rate_factor: float = 1.0
+
+    # Fixed controls consumed by the shared VI drivers.
+    step_size_growth_factor = 1.0
+    step_size_decay_factor = 1.0
+    max_step_size_decrease_trys = 0
+    relaxation_parameter = 1.0
+    line_search_objective = 'elbo'
+    line_search_sample_growth_factor = 1.0
+
+    @property
+    def initial_step_size(self):
+        return self.step_size
+
+    @property
+    def max_step_size(self):
+        return self.step_size
 
 
 @dataclass
 class VILegacyLineSearchConfig:
-    initial_step_size: float = 1e-2
+    initial_step_size: float = 0.1
     max_step_size: float = np.inf
     step_size_growth_factor: float = 1.01
     step_size_decay_factor: float = 3.0
@@ -83,7 +114,7 @@ class VILegacyLineSearchConfig:
 
 @dataclass
 class VIStochasticNonmonotoneLineSearchConfig:
-    initial_step_size: float = 1e-2
+    initial_step_size: float = 0.1
     max_step_size: float = np.inf
     step_size_growth_factor: float = 1.05
     step_size_decay_factor: float = 2.0
@@ -119,13 +150,15 @@ def _normalize_line_search_objective(line_search_objective: str):
 
 def _normalize_line_search_method(line_search_method: str):
     method = line_search_method.strip().lower()
+    if method == 'none':
+        return 'none'
     if method in ('legacy', 'basic'):
         return 'legacy'
     if method in ('stochastic_nonmonotone', 'stochastic', 'advanced'):
         return 'stochastic_nonmonotone'
     raise ValueError(
         f"Unsupported line_search_method '{line_search_method}'. "
-        "Supported options are 'legacy' and 'stochastic_nonmonotone'."
+        "Supported options are 'none', 'legacy', and 'stochastic_nonmonotone'."
     )
 
 
@@ -230,10 +263,12 @@ def _resolve_line_search_config(line_search_method: str,
         if default_stochastic_config is not None else VIStochasticNonmonotoneLineSearchConfig()
     )
     line_search_type_by_method = {
+        'none': VINoLineSearchConfig,
         'legacy': VILegacyLineSearchConfig,
         'stochastic_nonmonotone': VIStochasticNonmonotoneLineSearchConfig,
     }
     default_config_by_method = {
+        'none': VINoLineSearchConfig(),
         'legacy': legacy_config,
         'stochastic_nonmonotone': stochastic_config,
     }
@@ -249,6 +284,12 @@ def _resolve_line_search_config(line_search_method: str,
                 f"must be of type {expected_line_search_type.__name__}."
             )
         resolved_line_search_config = copy.deepcopy(line_search_config)
+
+    if normalized_line_search_method == 'none':
+        for name in ('step_size', 'log_std_learning_rate_factor'):
+            value = getattr(resolved_line_search_config, name)
+            if not np.isfinite(value) or value <= 0.0:
+                raise ValueError(f"{name} must be finite and positive")
 
     return normalized_line_search_method, resolved_line_search_config
 

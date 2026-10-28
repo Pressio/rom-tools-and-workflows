@@ -119,6 +119,27 @@ training history:
 ``initial_variational_parameter_space`` independently selects the variational
 family and supplies its initial moments.
 
+Newton without line search
+--------------------------
+
+To use a constant Newton step in VI or MF-VI, for either diagonal or full
+covariance, set ``line_search_method="none"``:
+
+.. code-block:: python
+
+   from romtools.workflows import VINoLineSearchConfig
+
+   common_arguments.update(
+       optimizer_method="newton",
+       line_search_method="none",
+       line_search_config=VINoLineSearchConfig(step_size=0.5),
+   )
+
+Omitting ``line_search_config`` uses a fixed step of 1.0. Each candidate is
+accepted without ELBO/MSE backtracking. Existing regularization, update limits,
+and parameter bounds still apply. Candidate states are evaluated for the next
+iteration and diagnostics. Existing line-search defaults remain unchanged.
+
 Example 1: equispaced observations and a diagonal posterior
 ------------------------------------------------------------
 

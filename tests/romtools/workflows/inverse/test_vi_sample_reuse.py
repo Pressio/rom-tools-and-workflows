@@ -1,15 +1,13 @@
+from romtools.workflows.inverse.vi import api as vi_api
 import numpy as np
 import pytest
 
 import romtools.workflows
-from romtools.workflows.inverse import (
-    VISampleReuseConfig,
-    mf_vi_drivers,
-    vi_drivers,
-)
-from romtools.workflows.inverse import vi_sample_reuse
-from romtools.workflows.inverse import vi_sample_reuse_hessian
-from romtools.workflows.inverse.vi_optimization_methods import (
+from romtools.workflows.inverse import VISampleReuseConfig
+from romtools.workflows.inverse.vi import mf_drivers as mf_vi_drivers
+from romtools.workflows.inverse.vi import drivers as vi_drivers
+from romtools.workflows.inverse.vi import sample_reuse as vi_sample_reuse
+from romtools.workflows.inverse.vi.optimization import (
     VIAdamOptimizerConfig,
     VINewtonOptimizerConfig,
     VILegacyLineSearchConfig,
@@ -345,7 +343,7 @@ def test_batch_aware_hessian_standard_error_uses_archive_strata():
     archive.append(_reuse_batch([-2.0, 2.0], iteration=1))
     sample_terms = np.array([1.0, 3.0, 2.0, 6.0]).reshape(-1, 1, 1)
 
-    actual = vi_sample_reuse_hessian._batch_aware_hessian_standard_error(
+    actual = vi_sample_reuse._batch_aware_hessian_standard_error(
         sample_terms, archive
     )
     expected = np.sqrt(1.25)
@@ -365,7 +363,7 @@ def test_reused_hessian_reduces_to_standard_hessian_for_unit_weights():
         "loo",
         None,
     )
-    actual = vi_sample_reuse_hessian._hessian_from_archive(
+    actual = vi_sample_reuse._hessian_from_archive(
         samples,
         values,
         mean,
@@ -401,7 +399,7 @@ def test_reused_mf_hessian_reduces_to_standard_mf_hessian_for_unit_weights():
         None,
         1.0,
     )
-    actual = vi_sample_reuse_hessian._mf_hessian_from_reuse(
+    actual = vi_sample_reuse._mf_hessian_from_reuse(
         samples_fom,
         samples_extra,
         mean,
@@ -424,7 +422,7 @@ def test_reused_mf_hessian_reduces_to_standard_mf_hessian_for_unit_weights():
 def test_run_vi_reuses_high_fidelity_model_evaluations(tmp_path):
     model = CountingLinearQoiModel()
     prior_parameter_space = _parameter_space()
-    result = vi_drivers.run_vi(
+    result = vi_api.run_vi(
         model=model,
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=prior_parameter_space,
@@ -464,7 +462,7 @@ def test_run_vi_refresh_loop_uses_dynamic_budget_and_archive_update(
         return state
 
     monkeypatch.setattr(vi_sample_reuse, "_annotate_reuse_state", record_state)
-    vi_drivers.run_vi(
+    vi_api.run_vi(
         model=model,
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=prior_parameter_space,
@@ -505,7 +503,8 @@ def test_run_vi_refresh_loop_uses_dynamic_budget_and_archive_update(
 def test_run_mf_vi_reuses_fom_and_keeps_fresh_rom_enrichment(tmp_path):
     fom = CountingLinearQoiModel()
     prior_parameter_space = _parameter_space()
-    result = mf_vi_drivers.run_mf_vi(
+    result = vi_api.run_mf_vi(
+        rom_retraining_strategy="same_sample", gradient_gain_estimation_strategy="same_sample",
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=prior_parameter_space,
@@ -547,7 +546,8 @@ def test_run_mf_vi_refresh_loop_carries_training_state(tmp_path, monkeypatch):
         return state
 
     monkeypatch.setattr(vi_sample_reuse, "_annotate_reuse_state", record_state)
-    mf_vi_drivers.run_mf_vi(
+    vi_api.run_mf_vi(
+        rom_retraining_strategy="same_sample", gradient_gain_estimation_strategy="same_sample",
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=prior_parameter_space,
@@ -585,7 +585,7 @@ def test_run_mf_vi_refresh_loop_carries_training_state(tmp_path, monkeypatch):
 def test_run_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
     model = CountingLinearQoiModel()
     prior_parameter_space = _parameter_space()
-    result = vi_drivers.run_vi(
+    result = vi_api.run_vi(
         model=model,
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=prior_parameter_space,
@@ -621,7 +621,7 @@ def test_run_vi_newton_hessian_variance_can_force_refresh(tmp_path, monkeypatch)
         return state
 
     monkeypatch.setattr(vi_sample_reuse, "_annotate_reuse_state", record_state)
-    result = vi_drivers.run_vi(
+    result = vi_api.run_vi(
         model=model,
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=prior_parameter_space,
@@ -655,7 +655,7 @@ def test_run_vi_newton_hessian_variance_can_force_refresh(tmp_path, monkeypatch)
 def test_run_vi_newton_independent_curvature_uses_separate_reuse_archive(tmp_path):
     model = CountingLinearQoiModel()
     prior_parameter_space = _parameter_space()
-    result = vi_drivers.run_vi(
+    result = vi_api.run_vi(
         model=model,
         prior_parameter_space=prior_parameter_space,
         initial_variational_parameter_space=prior_parameter_space,
@@ -685,7 +685,8 @@ def test_run_vi_newton_independent_curvature_uses_separate_reuse_archive(tmp_pat
 def test_run_mf_vi_newton_reuses_hessian_fom_evaluations(tmp_path):
     fom = CountingLinearQoiModel()
     prior_parameter_space = _parameter_space()
-    result = mf_vi_drivers.run_mf_vi(
+    result = vi_api.run_mf_vi(
+        rom_retraining_strategy="same_sample", gradient_gain_estimation_strategy="same_sample",
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=prior_parameter_space,
@@ -725,7 +726,8 @@ def test_run_mf_vi_newton_hessian_variance_can_force_refresh(tmp_path, monkeypat
         return state
 
     monkeypatch.setattr(vi_sample_reuse, "_annotate_reuse_state", record_state)
-    result = mf_vi_drivers.run_mf_vi(
+    result = vi_api.run_mf_vi(
+        rom_retraining_strategy="same_sample", gradient_gain_estimation_strategy="same_sample",
         model=fom,
         rom_model_builder=LinearQoiRomBuilderWithTrainingData(),
         prior_parameter_space=prior_parameter_space,
@@ -768,4 +770,4 @@ def test_sample_reuse_rejects_rqmc(tmp_path):
         sample_reuse_config=_reuse_config(),
     )
     with pytest.raises(NotImplementedError, match="sampling_method='mc'"):
-        vi_drivers.run_vi(sampling_method="rqmc", **common)
+        vi_api.run_vi(sampling_method="rqmc", **common)
