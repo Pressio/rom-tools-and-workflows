@@ -1,0 +1,19 @@
+romtools.workflows.inverse.vi.newton
+====================================
+
+.. automodule:: romtools.workflows.inverse.vi.newton
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      estimate_mf_ordinary_hessian
+      estimate_ordinary_hessian
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FullCovarianceNewton
+   

@@ -384,6 +384,7 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vi-paper-benchmark-configuration">VI-paper benchmark configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#newton-without-line-search">Newton without line search</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
@@ -562,6 +563,24 @@ training history:</p>
 <code class="docutils literal notranslate"><span class="pre">initial_variational_parameter_space</span></code> independently selects the variational
 family and supplies its initial moments.</p>
 </section>
+<section id="newton-without-line-search">
+<h2>Newton without line search<a class="headerlink" href="#newton-without-line-search" title="Link to this heading">#</a></h2>
+<p>To use a constant Newton step in VI or MF-VI, for either diagonal or full
+covariance, set <code class="docutils literal notranslate"><span class="pre">line_search_method=&quot;none&quot;</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows</span><span class="w"> </span><span class="kn">import</span> <span class="n">VINoLineSearchConfig</span>
+
+<span class="n">common_arguments</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="n">optimizer_method</span><span class="o">=</span><span class="s2">"newton"</span><span class="p">,</span>
+    <span class="n">line_search_method</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
+    <span class="n">line_search_config</span><span class="o">=</span><span class="n">VINoLineSearchConfig</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Omitting <code class="docutils literal notranslate"><span class="pre">line_search_config</span></code> uses a fixed step of 1.0. Each candidate is
+accepted without ELBO/MSE backtracking. Existing regularization, update limits,
+and parameter bounds still apply. Candidate states are evaluated for the next
+iteration and diagnostics. Existing line-search defaults remain unchanged.</p>
+</section>
 <section id="example-1-equispaced-observations-and-a-diagonal-posterior">
 <h2>Example 1: equispaced observations and a diagonal posterior<a class="headerlink" href="#example-1-equispaced-observations-and-a-diagonal-posterior" title="Link to this heading">#</a></h2>
 <p>The first example uses <span class="math notranslate nohighlight">\(N=31\)</span> equispaced interior observations,</p>
@@ -634,7 +653,7 @@ truth.</span><a class="headerlink" href="#id7" title="Link to this image">#</a><
 <span class="linenos"> 16</span>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">REPOSITORY_ROOT</span><span class="p">))</span>
 <span class="linenos"> 17</span>
 <span class="linenos"> 18</span><span class="kn">import</span><span class="w"> </span><span class="nn">romtools.workflows</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">workflows</span>
-<span class="linenos"> 19</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="linenos"> 19</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <span class="linenos"> 20</span>    <span class="n">VINewtonOptimizerConfig</span><span class="p">,</span>
 <span class="linenos"> 21</span>    <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">,</span>
 <span class="linenos"> 22</span><span class="p">)</span>
@@ -731,57 +750,60 @@ truth.</span><a class="headerlink" href="#id7" title="Link to this image">#</a><
 <span class="linenos">113</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="linenos">114</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="linenos">115</span>        <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<span class="linenos">116</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
-<span class="linenos">117</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
-<span class="linenos">118</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
-<span class="linenos">119</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">120</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">121</span>        <span class="p">},</span>
-<span class="linenos">122</span>    <span class="p">)</span>
-<span class="linenos">123</span>
-<span class="linenos">124</span>    <span class="n">vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">125</span>    <span class="n">mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">126</span>    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
-<span class="linenos">127</span>        <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="linenos">128</span>        <span class="k">if</span> <span class="n">output_dir</span>
-<span class="linenos">129</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
-<span class="linenos">130</span>    <span class="p">)</span>
-<span class="linenos">131</span>    <span class="n">write_convergence_plot</span><span class="p">(</span>
-<span class="linenos">132</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_convergence.png"</span><span class="p">,</span>
-<span class="linenos">133</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">134</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">135</span>        <span class="s2">"Equispaced observations: convergence to the exact posterior"</span><span class="p">,</span>
-<span class="linenos">136</span>    <span class="p">)</span>
-<span class="linenos">137</span>    <span class="n">write_mean_plot</span><span class="p">(</span>
-<span class="linenos">138</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_mean.png"</span><span class="p">,</span>
-<span class="linenos">139</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">140</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">141</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">142</span>        <span class="s2">"Equispaced observations: posterior mean"</span><span class="p">,</span>
-<span class="linenos">143</span>    <span class="p">)</span>
-<span class="linenos">144</span>    <span class="n">write_diagonal_posterior_plot</span><span class="p">(</span>
-<span class="linenos">145</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_posterior.png"</span><span class="p">,</span>
-<span class="linenos">146</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">147</span>        <span class="n">vi_history</span><span class="p">,</span>
-<span class="linenos">148</span>        <span class="n">mf_history</span><span class="p">,</span>
-<span class="linenos">149</span>    <span class="p">)</span>
-<span class="linenos">150</span>
-<span class="linenos">151</span>
-<span class="linenos">152</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
-<span class="linenos">153</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
-<span class="linenos">154</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--smoke"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
-<span class="linenos">155</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">)</span>
-<span class="linenos">156</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">)</span>
-<span class="linenos">157</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">158</span>
-<span class="linenos">159</span>
-<span class="linenos">160</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">161</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
-<span class="linenos">162</span>    <span class="n">main</span><span class="p">(</span>
-<span class="linenos">163</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
-<span class="linenos">164</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
-<span class="linenos">165</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<span class="linenos">166</span>    <span class="p">)</span>
+<span class="linenos">116</span>        <span class="n">rom_retraining_strategy</span><span class="o">=</span><span class="s2">"delayed"</span><span class="p">,</span>
+<span class="linenos">117</span>        <span class="n">gradient_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"loo"</span><span class="p">,</span>
+<span class="linenos">118</span>        <span class="n">hessian_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"same_sample"</span><span class="p">,</span>
+<span class="linenos">119</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
+<span class="linenos">120</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+<span class="linenos">121</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+<span class="linenos">122</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">123</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">124</span>        <span class="p">},</span>
+<span class="linenos">125</span>    <span class="p">)</span>
+<span class="linenos">126</span>
+<span class="linenos">127</span>    <span class="n">vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">128</span>    <span class="n">mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">129</span>    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">130</span>        <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+<span class="linenos">131</span>        <span class="k">if</span> <span class="n">output_dir</span>
+<span class="linenos">132</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+<span class="linenos">133</span>    <span class="p">)</span>
+<span class="linenos">134</span>    <span class="n">write_convergence_plot</span><span class="p">(</span>
+<span class="linenos">135</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_convergence.png"</span><span class="p">,</span>
+<span class="linenos">136</span>        <span class="n">vi_history</span><span class="p">,</span>
+<span class="linenos">137</span>        <span class="n">mf_history</span><span class="p">,</span>
+<span class="linenos">138</span>        <span class="s2">"Equispaced observations: convergence to the exact posterior"</span><span class="p">,</span>
+<span class="linenos">139</span>    <span class="p">)</span>
+<span class="linenos">140</span>    <span class="n">write_mean_plot</span><span class="p">(</span>
+<span class="linenos">141</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_mean.png"</span><span class="p">,</span>
+<span class="linenos">142</span>        <span class="n">problem</span><span class="p">,</span>
+<span class="linenos">143</span>        <span class="n">vi_history</span><span class="p">,</span>
+<span class="linenos">144</span>        <span class="n">mf_history</span><span class="p">,</span>
+<span class="linenos">145</span>        <span class="s2">"Equispaced observations: posterior mean"</span><span class="p">,</span>
+<span class="linenos">146</span>    <span class="p">)</span>
+<span class="linenos">147</span>    <span class="n">write_diagonal_posterior_plot</span><span class="p">(</span>
+<span class="linenos">148</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_diagonal_posterior.png"</span><span class="p">,</span>
+<span class="linenos">149</span>        <span class="n">problem</span><span class="p">,</span>
+<span class="linenos">150</span>        <span class="n">vi_history</span><span class="p">,</span>
+<span class="linenos">151</span>        <span class="n">mf_history</span><span class="p">,</span>
+<span class="linenos">152</span>    <span class="p">)</span>
+<span class="linenos">153</span>
+<span class="linenos">154</span>
+<span class="linenos">155</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
+<span class="linenos">156</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
+<span class="linenos">157</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--smoke"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
+<span class="linenos">158</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">)</span>
+<span class="linenos">159</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">)</span>
+<span class="linenos">160</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="linenos">161</span>
+<span class="linenos">162</span>
+<span class="linenos">163</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">164</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
+<span class="linenos">165</span>    <span class="n">main</span><span class="p">(</span>
+<span class="linenos">166</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
+<span class="linenos">167</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+<span class="linenos">168</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+<span class="linenos">169</span>    <span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -917,7 +939,7 @@ MF-VI.</span><a class="headerlink" href="#id12" title="Link to this image">#</a>
 <span class="linenos"> 17</span>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">REPOSITORY_ROOT</span><span class="p">))</span>
 <span class="linenos"> 18</span>
 <span class="linenos"> 19</span><span class="kn">import</span><span class="w"> </span><span class="nn">romtools.workflows</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">workflows</span>
-<span class="linenos"> 20</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi_optimization_methods</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="linenos"> 20</span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <span class="linenos"> 21</span>    <span class="n">VINewtonOptimizerConfig</span><span class="p">,</span>
 <span class="linenos"> 22</span>    <span class="n">VIStochasticNonmonotoneLineSearchConfig</span><span class="p">,</span>
 <span class="linenos"> 23</span><span class="p">)</span>
@@ -1140,101 +1162,107 @@ MF-VI.</span><a class="headerlink" href="#id12" title="Link to this image">#</a>
 <span class="linenos">240</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="linenos">241</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="linenos">242</span>        <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<span class="linenos">243</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
-<span class="linenos">244</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
-<span class="linenos">245</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
-<span class="linenos">246</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">247</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">248</span>        <span class="p">},</span>
-<span class="linenos">249</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">mf_vi_optimizer</span><span class="p">,</span>
-<span class="linenos">250</span>    <span class="p">)</span>
-<span class="linenos">251</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
-<span class="linenos">252</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">253</span>        <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">mean_field_initializer</span><span class="p">,</span>
-<span class="linenos">254</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mean_field_vi_dir</span><span class="p">),</span>
-<span class="linenos">255</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos">256</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">257</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">vi_optimizer</span><span class="p">,</span>
-<span class="linenos">258</span>    <span class="p">)</span>
-<span class="linenos">259</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
-<span class="linenos">260</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
-<span class="linenos">261</span>        <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">mean_field_initializer</span><span class="p">,</span>
-<span class="linenos">262</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mean_field_mf_vi_dir</span><span class="p">),</span>
-<span class="linenos">263</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-<span class="linenos">264</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
-<span class="linenos">265</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">266</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="linenos">267</span>        <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<span class="linenos">268</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
-<span class="linenos">269</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
-<span class="linenos">270</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
-<span class="linenos">271</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">272</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="linenos">273</span>        <span class="p">},</span>
-<span class="linenos">274</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">mf_vi_optimizer</span><span class="p">,</span>
-<span class="linenos">275</span>    <span class="p">)</span>
-<span class="linenos">276</span>
-<span class="linenos">277</span>    <span class="n">full_vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">full_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">278</span>    <span class="n">full_mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">full_mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">279</span>    <span class="n">mean_field_vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mean_field_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">280</span>    <span class="n">mean_field_mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mean_field_mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-<span class="linenos">281</span>    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
-<span class="linenos">282</span>        <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="linenos">283</span>        <span class="k">if</span> <span class="n">output_dir</span>
-<span class="linenos">284</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
-<span class="linenos">285</span>    <span class="p">)</span>
-<span class="linenos">286</span>    <span class="n">write_convergence_plot</span><span class="p">(</span>
-<span class="linenos">287</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_convergence.png"</span><span class="p">,</span>
-<span class="linenos">288</span>        <span class="n">full_vi_history</span><span class="p">,</span>
-<span class="linenos">289</span>        <span class="n">full_mf_history</span><span class="p">,</span>
-<span class="linenos">290</span>        <span class="s2">"Non-equispaced observations: full-covariance convergence"</span><span class="p">,</span>
+<span class="linenos">243</span>        <span class="n">rom_retraining_strategy</span><span class="o">=</span><span class="s2">"delayed"</span><span class="p">,</span>
+<span class="linenos">244</span>        <span class="n">gradient_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"loo"</span><span class="p">,</span>
+<span class="linenos">245</span>        <span class="n">hessian_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"same_sample"</span><span class="p">,</span>
+<span class="linenos">246</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
+<span class="linenos">247</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+<span class="linenos">248</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+<span class="linenos">249</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">250</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">251</span>        <span class="p">},</span>
+<span class="linenos">252</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">mf_vi_optimizer</span><span class="p">,</span>
+<span class="linenos">253</span>    <span class="p">)</span>
+<span class="linenos">254</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">run_vi</span><span class="p">(</span>
+<span class="linenos">255</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
+<span class="linenos">256</span>        <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">mean_field_initializer</span><span class="p">,</span>
+<span class="linenos">257</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mean_field_vi_dir</span><span class="p">),</span>
+<span class="linenos">258</span>        <span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
+<span class="linenos">259</span>        <span class="n">evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">260</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">vi_optimizer</span><span class="p">,</span>
+<span class="linenos">261</span>    <span class="p">)</span>
+<span class="linenos">262</span>    <span class="n">workflows</span><span class="o">.</span><span class="n">mf_vi_with_auto_rom</span><span class="p">(</span>
+<span class="linenos">263</span>        <span class="o">**</span><span class="n">common_arguments</span><span class="p">,</span>
+<span class="linenos">264</span>        <span class="n">initial_variational_parameter_space</span><span class="o">=</span><span class="n">mean_field_initializer</span><span class="p">,</span>
+<span class="linenos">265</span>        <span class="n">absolute_work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mean_field_mf_vi_dir</span><span class="p">),</span>
+<span class="linenos">266</span>        <span class="n">fom_sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
+<span class="linenos">267</span>        <span class="n">rom_extra_sample_size</span><span class="o">=</span><span class="n">rom_extra_sample_size</span><span class="p">,</span>
+<span class="linenos">268</span>        <span class="n">fom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">269</span>        <span class="n">rom_evaluation_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="linenos">270</span>        <span class="n">max_rom_training_history</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<span class="linenos">271</span>        <span class="n">rom_retraining_strategy</span><span class="o">=</span><span class="s2">"delayed"</span><span class="p">,</span>
+<span class="linenos">272</span>        <span class="n">gradient_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"loo"</span><span class="p">,</span>
+<span class="linenos">273</span>        <span class="n">hessian_gain_estimation_strategy</span><span class="o">=</span><span class="s2">"same_sample"</span><span class="p">,</span>
+<span class="linenos">274</span>        <span class="n">mfmc_control_variate_mode</span><span class="o">=</span><span class="s2">"scalar"</span><span class="p">,</span>
+<span class="linenos">275</span>        <span class="n">rom_type</span><span class="o">=</span><span class="s2">"gp"</span><span class="p">,</span>
+<span class="linenos">276</span>        <span class="n">rom_args</span><span class="o">=</span><span class="p">{</span>
+<span class="linenos">277</span>            <span class="s2">"normalize_parameters"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">278</span>            <span class="s2">"normalize_targets"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos">279</span>        <span class="p">},</span>
+<span class="linenos">280</span>        <span class="n">optimizer_config</span><span class="o">=</span><span class="n">mf_vi_optimizer</span><span class="p">,</span>
+<span class="linenos">281</span>    <span class="p">)</span>
+<span class="linenos">282</span>
+<span class="linenos">283</span>    <span class="n">full_vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">full_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">284</span>    <span class="n">full_mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">full_mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">285</span>    <span class="n">mean_field_vi_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mean_field_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">286</span>    <span class="n">mean_field_mf_history</span> <span class="o">=</span> <span class="n">collect_history</span><span class="p">(</span><span class="n">mean_field_mf_vi_dir</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+<span class="linenos">287</span>    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+<span class="linenos">288</span>        <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+<span class="linenos">289</span>        <span class="k">if</span> <span class="n">output_dir</span>
+<span class="linenos">290</span>        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
 <span class="linenos">291</span>    <span class="p">)</span>
-<span class="linenos">292</span>    <span class="n">write_mean_plot</span><span class="p">(</span>
-<span class="linenos">293</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_mean.png"</span><span class="p">,</span>
-<span class="linenos">294</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">295</span>        <span class="n">full_vi_history</span><span class="p">,</span>
-<span class="linenos">296</span>        <span class="n">full_mf_history</span><span class="p">,</span>
-<span class="linenos">297</span>        <span class="s2">"Non-equispaced observations: posterior mean"</span><span class="p">,</span>
-<span class="linenos">298</span>    <span class="p">)</span>
-<span class="linenos">299</span>    <span class="n">write_correlated_posterior_plot</span><span class="p">(</span>
-<span class="linenos">300</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_posterior.png"</span><span class="p">,</span>
-<span class="linenos">301</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">302</span>        <span class="n">full_vi_history</span><span class="p">,</span>
-<span class="linenos">303</span>        <span class="n">full_mf_history</span><span class="p">,</span>
+<span class="linenos">292</span>    <span class="n">write_convergence_plot</span><span class="p">(</span>
+<span class="linenos">293</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_convergence.png"</span><span class="p">,</span>
+<span class="linenos">294</span>        <span class="n">full_vi_history</span><span class="p">,</span>
+<span class="linenos">295</span>        <span class="n">full_mf_history</span><span class="p">,</span>
+<span class="linenos">296</span>        <span class="s2">"Non-equispaced observations: full-covariance convergence"</span><span class="p">,</span>
+<span class="linenos">297</span>    <span class="p">)</span>
+<span class="linenos">298</span>    <span class="n">write_mean_plot</span><span class="p">(</span>
+<span class="linenos">299</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_mean.png"</span><span class="p">,</span>
+<span class="linenos">300</span>        <span class="n">problem</span><span class="p">,</span>
+<span class="linenos">301</span>        <span class="n">full_vi_history</span><span class="p">,</span>
+<span class="linenos">302</span>        <span class="n">full_mf_history</span><span class="p">,</span>
+<span class="linenos">303</span>        <span class="s2">"Non-equispaced observations: posterior mean"</span><span class="p">,</span>
 <span class="linenos">304</span>    <span class="p">)</span>
-<span class="linenos">305</span>    <span class="n">_write_family_convergence_plot</span><span class="p">(</span>
-<span class="linenos">306</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_family_convergence.png"</span><span class="p">,</span>
+<span class="linenos">305</span>    <span class="n">write_correlated_posterior_plot</span><span class="p">(</span>
+<span class="linenos">306</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_posterior.png"</span><span class="p">,</span>
 <span class="linenos">307</span>        <span class="n">problem</span><span class="p">,</span>
 <span class="linenos">308</span>        <span class="n">full_vi_history</span><span class="p">,</span>
 <span class="linenos">309</span>        <span class="n">full_mf_history</span><span class="p">,</span>
-<span class="linenos">310</span>        <span class="n">mean_field_vi_history</span><span class="p">,</span>
-<span class="linenos">311</span>        <span class="n">mean_field_mf_history</span><span class="p">,</span>
-<span class="linenos">312</span>    <span class="p">)</span>
-<span class="linenos">313</span>    <span class="n">_write_family_correlation_plot</span><span class="p">(</span>
-<span class="linenos">314</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_family_correlation.png"</span><span class="p">,</span>
-<span class="linenos">315</span>        <span class="n">problem</span><span class="p">,</span>
-<span class="linenos">316</span>        <span class="n">full_vi_history</span><span class="p">,</span>
-<span class="linenos">317</span>        <span class="n">full_mf_history</span><span class="p">,</span>
-<span class="linenos">318</span>        <span class="n">mean_field_vi_history</span><span class="p">,</span>
-<span class="linenos">319</span>        <span class="n">mean_field_mf_history</span><span class="p">,</span>
-<span class="linenos">320</span>    <span class="p">)</span>
-<span class="linenos">321</span>
-<span class="linenos">322</span>
-<span class="linenos">323</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
-<span class="linenos">324</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
-<span class="linenos">325</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--smoke"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
-<span class="linenos">326</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">)</span>
-<span class="linenos">327</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">)</span>
-<span class="linenos">328</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="linenos">329</span>
-<span class="linenos">330</span>
-<span class="linenos">331</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<span class="linenos">332</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
-<span class="linenos">333</span>    <span class="n">main</span><span class="p">(</span>
-<span class="linenos">334</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
-<span class="linenos">335</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
-<span class="linenos">336</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<span class="linenos">337</span>    <span class="p">)</span>
+<span class="linenos">310</span>    <span class="p">)</span>
+<span class="linenos">311</span>    <span class="n">_write_family_convergence_plot</span><span class="p">(</span>
+<span class="linenos">312</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_family_convergence.png"</span><span class="p">,</span>
+<span class="linenos">313</span>        <span class="n">problem</span><span class="p">,</span>
+<span class="linenos">314</span>        <span class="n">full_vi_history</span><span class="p">,</span>
+<span class="linenos">315</span>        <span class="n">full_mf_history</span><span class="p">,</span>
+<span class="linenos">316</span>        <span class="n">mean_field_vi_history</span><span class="p">,</span>
+<span class="linenos">317</span>        <span class="n">mean_field_mf_history</span><span class="p">,</span>
+<span class="linenos">318</span>    <span class="p">)</span>
+<span class="linenos">319</span>    <span class="n">_write_family_correlation_plot</span><span class="p">(</span>
+<span class="linenos">320</span>        <span class="n">output</span> <span class="o">/</span> <span class="s2">"analytic_sine_correlated_family_correlation.png"</span><span class="p">,</span>
+<span class="linenos">321</span>        <span class="n">problem</span><span class="p">,</span>
+<span class="linenos">322</span>        <span class="n">full_vi_history</span><span class="p">,</span>
+<span class="linenos">323</span>        <span class="n">full_mf_history</span><span class="p">,</span>
+<span class="linenos">324</span>        <span class="n">mean_field_vi_history</span><span class="p">,</span>
+<span class="linenos">325</span>        <span class="n">mean_field_mf_history</span><span class="p">,</span>
+<span class="linenos">326</span>    <span class="p">)</span>
+<span class="linenos">327</span>
+<span class="linenos">328</span>
+<span class="linenos">329</span><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">():</span>
+<span class="linenos">330</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="vm">__doc__</span><span class="p">)</span>
+<span class="linenos">331</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--smoke"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
+<span class="linenos">332</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--work-dir"</span><span class="p">)</span>
+<span class="linenos">333</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--output-dir"</span><span class="p">)</span>
+<span class="linenos">334</span>    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="linenos">335</span>
+<span class="linenos">336</span>
+<span class="linenos">337</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="linenos">338</span>    <span class="n">arguments</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
+<span class="linenos">339</span>    <span class="n">main</span><span class="p">(</span>
+<span class="linenos">340</span>        <span class="n">smoke</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">smoke</span><span class="p">,</span>
+<span class="linenos">341</span>        <span class="n">work_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+<span class="linenos">342</span>        <span class="n">output_dir</span><span class="o">=</span><span class="n">arguments</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+<span class="linenos">343</span>    <span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1762,6 +1790,7 @@ oscillation.</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vi-paper-benchmark-configuration">VI-paper benchmark configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#newton-without-line-search">Newton without line search</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1-equispaced-observations-and-a-diagonal-posterior">Example 1: equispaced observations and a diagonal posterior</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convergence">Convergence</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-mean">Posterior mean</a></li>
@@ -1826,7 +1855,7 @@ oscillation.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
       

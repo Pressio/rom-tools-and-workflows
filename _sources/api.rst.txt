@@ -53,5 +53,5 @@ compatibility and emit a ``DeprecationWarning``. New code should use
 
    Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_eki>
    Multifidelity Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_mf_eki>
-   Variational Inference <generated/romtools.workflows.inverse.vi_drivers>
-   Multifidelity Variational Inference <generated/romtools.workflows.inverse.mf_vi_drivers>
+   Variational Inference <generated/romtools.workflows.inverse.run_vi>
+   Multifidelity Variational Inference <generated/romtools.workflows.inverse.run_mf_vi>

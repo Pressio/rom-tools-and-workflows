@@ -410,7 +410,6 @@
 
 <span class="n">_eki_module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">"romtools.workflows.inverse.eki_drivers"</span><span class="p">)</span>
 <span class="n">_mf_eki_module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">"romtools.workflows.inverse.mf_eki_drivers"</span><span class="p">)</span>
-<span class="n">_vi_module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">"romtools.workflows.inverse.vi_drivers"</span><span class="p">)</span>
 
 <span class="n">_legacy_run_eki</span> <span class="o">=</span> <span class="n">_eki_module</span><span class="o">.</span><span class="n">run_eki</span>
 <span class="n">_legacy_run_mf_eki</span> <span class="o">=</span> <span class="n">_mf_eki_module</span><span class="o">.</span><span class="n">run_mf_eki</span>
@@ -419,12 +418,10 @@
 <span class="n">_RUN_MF_EKI_SIGNATURE</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">_legacy_run_mf_eki</span><span class="p">)</span>
 <span class="n">_AUTO_MF_EKI_SIGNATURE</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">_legacy_mf_eki_with_auto_rom</span><span class="p">)</span>
 
-<span class="c1"># Reuse VI's implementation so ``transform`` has one definition across inverse</span>
-<span class="c1"># workflows.</span>
-<span class="n">_normalize_bounded_parameter_handling</span> <span class="o">=</span> <span class="n">_vi_module</span><span class="o">.</span><span class="n">_normalize_bounded_parameter_handling</span>
-<span class="n">_normalize_transform_map</span> <span class="o">=</span> <span class="n">_vi_module</span><span class="o">.</span><span class="n">_normalize_transform_map</span>
-<span class="n">_transform_optimizer_to_parameter</span> <span class="o">=</span> <span class="n">_vi_module</span><span class="o">.</span><span class="n">_transform_optimizer_to_parameter</span>
-<span class="n">_transform_parameter_to_optimizer</span> <span class="o">=</span> <span class="n">_vi_module</span><span class="o">.</span><span class="n">_transform_parameter_to_optimizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse._parameter_transforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_normalize_bounded_parameter_handling</span><span class="p">,</span> <span class="n">_normalize_transform_map</span><span class="p">,</span>
+    <span class="n">_transform_optimizer_to_parameter</span><span class="p">,</span> <span class="n">_transform_parameter_to_optimizer</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">_PARAMETER_ARRAY_KEYS</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"parameter_samples"</span><span class="p">,</span>
@@ -987,7 +984,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
       
