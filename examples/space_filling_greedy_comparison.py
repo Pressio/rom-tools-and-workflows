@@ -4,8 +4,7 @@ Both use the same Galerkin snapshot builder, candidate set, initial two points,
 and FOM budget. Accuracy is measured on a shared independent validation set;
 internal stopping estimators are not compared. Greedy selects by relative FOM
 residual; space filling uses Euclidean distance in user-scaled coordinates.
-The two-argument greedy builder is an adapter around the same four-argument
-builder used by space filling. No production workflow is modified.
+Both workflows call the same four-argument data-array builder.
 
 Run from the checkout:
     python examples/space_filling_greedy_comparison.py --output-dir /tmp/cdr-comparison
@@ -115,7 +114,7 @@ class ProjectionRom:
 
 
 class ProjectionBuilder:
-    """One snapshot-based builder with a directory adapter for greedy."""
+    """One snapshot-based data-array builder shared by both workflows."""
 
     def __init__(self, system, validation_points, validation_qois, budget):
         self.system = system
@@ -124,15 +123,16 @@ class ProjectionBuilder:
         self.history = []
         self.first_points = None
 
-    def build_from_training_dirs(self, offline, directories, parameters=None, qois=None):
-        states, file_parameters = [], []
+    def build_from_training_dirs(self, offline, directories, parameters, qois):
+        states, file_parameters, file_qois = [], [], []
         for directory in directories:
             with np.load(Path(directory) / "solution.npz") as data:
                 states.append(data["state"])
                 file_parameters.append(data["params"])
+                file_qois.append(data["qoi"])
         file_parameters = np.asarray(file_parameters)
-        if parameters is not None:
-            np.testing.assert_allclose(parameters, file_parameters)
+        np.testing.assert_allclose(parameters, file_parameters)
+        np.testing.assert_allclose(qois, file_qois)
         if self.first_points is None:
             self.first_points = file_parameters.copy()
         u, singular, _ = np.linalg.svd(np.column_stack(states), full_matrices=False)
