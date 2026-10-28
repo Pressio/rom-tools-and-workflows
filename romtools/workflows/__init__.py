@@ -50,6 +50,7 @@ construction and ROM exploitation.
 We currently support:
 
 * Greedy sampling for construction of reduced-basis ROMs
+* Concurrent batch space-filling ROM training
 * Random sampling for model exploitation
 * Coupling classes to Dakota for
 
@@ -61,3 +62,4 @@ from romtools.workflows.sampling import *
 from romtools.workflows.inverse import *
 from romtools.workflows.formatting import *
 from romtools.workflows.uq import *
+from romtools.workflows.space_filling import *
