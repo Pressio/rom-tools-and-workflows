@@ -44,7 +44,8 @@ class CandidateSpace:
 
     The greedy driver requests one replacement point after each enrichment.
     Cycling through this same set keeps its candidates in the common pool;
-    already-trained points have negligible residual and need no new FOM solve.
+    with explicit initial data, greedy excludes already-trained points from
+    its adaptation candidates.
     """
 
     def __init__(self, points):
@@ -179,22 +180,22 @@ def compare(output_dir, seeds=(1, 2, 3), validation_size=500,
             validation_strategy=lambda context: sf_builder.history[-1]["maximum"],
             max_fom_samples=budget, max_iterations=budget,
         )
-        # Greedy takes the first initial_sample_size rows. Reorder its common
-        # candidate pool so the two algorithms have identical initial data.
+        # Supply the same initial points directly; greedy draws its separate
+        # adaptation pool from the common finite candidate set.
         initial = sf_builder.first_points
-        initial_ids = [int(np.flatnonzero(np.all(candidates == p, axis=1))[0]) for p in initial]
-        remainder = [i for i in range(candidate_size) if i not in initial_ids]
-        reordered = candidates[initial_ids + remainder]
         print(f"Seed {seed}: running residual greedy...", flush=True)
         greedy_builder = ProjectionBuilder(model.system, validation_points, validation_qois)
         with open(root / "greedy_stdout.log", "w") as log, contextlib.redirect_stdout(log):
-            run_greedy(model, greedy_builder, CandidateSpace(reordered), str(root / "greedy"),
+            greedy_result = run_greedy(model, greedy_builder, CandidateSpace(candidates), str(root / "greedy"),
                        tolerance=0.0, testing_sample_size=candidate_size,
                        random_seed=seed, calibrated_error=False,
-                       initial_sample_size=2, max_iterations=budget - 2)
+                       initial_samples=initial, max_iterations=budget - 2,
+                       create_rom_run_directories=False)
         np.testing.assert_array_equal(sf_builder.first_points, greedy_builder.first_points)
         assert sf_builder.history[-1]["samples"] == budget
         assert greedy_builder.history[-1]["samples"] == budget
+        assert len(greedy_result.training_parameters) == budget
+        assert greedy_result.termination_reason == "max_iterations"
         trials.append(dict(seed=seed, space_filling=sf_builder.history, greedy=greedy_builder.history))
         print(f"Seed {seed}: final maximum errors: greedy={greedy_builder.history[-1]['maximum']:.4g}, "
               f"space filling={sf_builder.history[-1]['maximum']:.4g}", flush=True)
@@ -203,6 +204,7 @@ def compare(output_dir, seeds=(1, 2, 3), validation_size=500,
         seeds=list(seeds), validation_size=validation_size, validation_seed=991,
         candidate_size=candidate_size, training_budget=budget, initial_samples=2,
         space_filling_batch_size=5, max_concurrent_fom_runs=concurrency,
+        greedy_create_rom_run_directories=False,
         parameter_names=NAMES, lower=LOWER.tolist(), upper=UPPER.tolist(),
         distance="Euclidean after explicit user scaling by parameter ranges",
         greedy_indicator="Relative full-order residual, uncalibrated",

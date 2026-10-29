@@ -448,3 +448,260 @@ def test_invalid_initial_size_and_iteration_limit_fail_before_io(tmp_path, optio
         run_greedy(fom, builder, space, str(work), 1e-5, **options)
     assert not work.exists()
     assert not builder.training_calls and fom.compute_calls == 0
+
+
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize('limit', [0, 2])
+def test_greedy_result_contains_final_rom_and_independent_training_data(tmp_path, limit):
+    from romtools.workflows import GreedyResult
+    fom, builder = StrictPreparationFom(), StrictPreparationBuilder()
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    result = run_greedy(fom, builder, space, str(tmp_path), 0.0,
+                        testing_sample_size=5, max_iterations=limit, calibrated_error=False)
+    assert isinstance(result, GreedyResult)
+    assert result.rom_model is builder.roms[-1]
+    assert result.training_dirs == tuple(builder.training_calls[-1][0])
+    np.testing.assert_array_equal(result.training_parameters, builder.training_calls[-1][1])
+    np.testing.assert_array_equal(result.training_qois, builder.training_calls[-1][2])
+    np.testing.assert_array_equal(result.sample_counts, np.arange(2, 3 + limit))
+    assert result.iterations == limit and not result.converged
+    assert result.termination_reason == 'max_iterations'
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        for name in ('training_parameters', 'training_qois', 'sample_counts',
+                     'max_error_indicators', 'qoi_errors', 'predicted_qoi_errors'):
+            np.testing.assert_array_equal(getattr(result, name), stats[name])
+        np.testing.assert_array_equal(result.training_sample_indices, stats['training_samples'])
+    result.training_parameters[:] = -1
+    result.training_qois[:] = -1
+    assert np.all(builder.training_calls[-1][1] >= 0)
+    assert np.all(builder.training_calls[-1][2] > 0)
+
+
+class InMemoryRom(MockQoiModelWithErrorEstimate):
+    def __init__(self, errors, qoi):
+        super().__init__(errors, qoi)
+        self.prepared, self.executed, self.estimated, self.qoi_paths = [], [], [], []
+
+    def populate_run_directory(self, directory, parameters):
+        assert not os.path.exists(directory)
+        self.prepared.append(directory)
+
+    def run_model(self, directory, parameters):
+        assert not os.path.exists(directory)
+        self.executed.append(directory)
+        return 0
+
+    def compute_error_estimate(self, directory, parameters):
+        assert not os.path.exists(directory)
+        self.estimated.append(directory)
+        return super().compute_error_estimate(directory, parameters)
+
+    def compute_qoi(self, directory, parameters):
+        assert not os.path.exists(directory)
+        self.qoi_paths.append(directory)
+        return super().compute_qoi(directory, parameters)
+
+
+class InMemoryBuilder(DataCheckingBuilder):
+    def __init__(self):
+        super().__init__(False)
+        self.roms = []
+
+    def build_from_training_dirs(self, *args):
+        base = super().build_from_training_dirs(*args)
+        rom = InMemoryRom(base.my_error_estimates_, base.my_qoi_)
+        self.roms.append(rom)
+        return rom
+
+
+@pytest.mark.mpi_skip
+def test_skip_rom_directories_keeps_protocol_calls_fom_and_offline_output(tmp_path):
+    fom, builder = StrictPreparationFom(), InMemoryBuilder()
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    result = run_greedy(fom, builder, space, str(tmp_path), 0.0,
+                        testing_sample_size=5, max_iterations=3, calibrated_error=False,
+                        create_rom_run_directories=False)
+    assert len(result.training_dirs) == 5
+    assert all(os.path.isdir(d) for d in result.training_dirs)
+    assert len(list(tmp_path.glob('rom_iteration_*/offline_data'))) == 4
+    assert not list(tmp_path.glob('rom_iteration_*/run_*'))
+    assert (tmp_path / 'greedy_status.log').is_file()
+    assert (tmp_path / 'greedy_stats.npz').is_file()
+    for rom in builder.roms:
+        assert rom.prepared == rom.executed == rom.estimated
+        assert all(os.path.isabs(d) for d in rom.prepared)
+    assert sum(len(r.prepared) for r in builder.roms) == 9
+    assert sum(len(r.qoi_paths) for r in builder.roms) == 3
+    assert result.rom_model is builder.roms[-1]
+
+
+class ExplicitCandidateSpace:
+    def __init__(self, initial):
+        self.initial = initial
+        self.requests = []
+
+    def get_names(self):
+        return ['u', 'v', 'w']
+
+    def generate_samples(self, count):
+        self.requests.append(count)
+        if len(self.requests) == 1:
+            return np.vstack((self.initial, [[1., 2., 3.], [2., 3., 4.], [3., 4., 5.]]))
+        return np.full((count, 3), 10.0 * len(self.requests))
+
+
+@pytest.mark.mpi_skip
+def test_explicit_initial_samples_preserve_order_and_override_size(tmp_path):
+    initial = np.array([[0.2, 1.2, 2.2], [0.3, 1.3, 2.3]])
+    space = ExplicitCandidateSpace(initial.copy())
+    builder = InMemoryBuilder()
+    result = run_greedy(ParameterQoiModel((2,)), builder, space, str(tmp_path), 0.0,
+                        initial_samples=initial, initial_sample_size=99,
+                        testing_sample_size=5, max_iterations=3, calibrated_error=False,
+                        create_rom_run_directories=False)
+    np.testing.assert_array_equal(builder.training_calls[0][1], initial)
+    np.testing.assert_array_equal(result.training_parameters[:2], initial)
+    # Provided initial points are excluded from the separate candidate pool.
+    # The appended candidate index is based on the combined pool's true size.
+    np.testing.assert_array_equal(result.training_sample_indices, [0, 1, 6, 4, 7])
+    np.testing.assert_array_equal(result.sample_counts, [2, 3, 4, 5])
+    assert space.requests == [5, 1, 1]
+    assert len({tuple(row) for row in result.training_parameters}) == 5
+    initial[:] = -100
+    assert np.all(result.training_parameters[:2] > 0)
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        assert stats['initial_sample_size'] == 2
+        assert not bool(stats['create_rom_run_directories'])
+
+
+@pytest.mark.mpi_skip
+def test_provided_initial_data_can_exceed_candidate_pool_size(tmp_path):
+    initial = np.array([[1., 2., 3.], [2., 3., 4.], [3., 4., 5.]])
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    result = run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), space,
+                        str(tmp_path), 0.0, initial_samples=initial,
+                        testing_sample_size=1, max_iterations=0)
+    np.testing.assert_array_equal(result.training_parameters, initial)
+    assert result.iterations == 0
+
+
+@pytest.mark.mpi_skip
+def test_provided_samples_covering_candidate_pool_return_initial_rom(tmp_path):
+    initial = np.array([[1., 2., 3.], [2., 3., 4.]])
+    class RepeatedSpace:
+        def get_names(self):
+            return ['u', 'v', 'w']
+        def generate_samples(self, count):
+            return np.tile(initial[:1], (count, 1))
+    result = run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), RepeatedSpace(),
+                        str(tmp_path), 0.0, initial_samples=initial,
+                        testing_sample_size=3, max_iterations=4)
+    np.testing.assert_array_equal(result.training_parameters, initial)
+    np.testing.assert_array_equal(result.sample_counts, [2])
+    assert result.termination_reason == 'candidate_pool_exhausted'
+    assert not result.converged and result.iterations == 0
+
+
+@pytest.mark.mpi_skip
+def test_provided_initial_samples_filter_replenished_training_duplicates(tmp_path):
+    initial = np.array([[1., 2., 3.]])
+    class ExhaustingSpace:
+        calls = 0
+        def get_names(self):
+            return ['u', 'v', 'w']
+        def generate_samples(self, count):
+            self.calls += 1
+            return np.array([[2., 3., 4.]]) if self.calls == 1 else initial.copy()
+    result = run_greedy(ParameterQoiModel(()), InMemoryBuilder(), ExhaustingSpace(),
+                        str(tmp_path), 0.0, initial_samples=initial,
+                        testing_sample_size=1, max_iterations=3,
+                        calibrated_error=False, create_rom_run_directories=False)
+    assert result.termination_reason == 'candidate_pool_exhausted'
+    assert result.iterations == 1
+    np.testing.assert_array_equal(result.training_parameters, [[1, 2, 3], [2, 3, 4]])
+    np.testing.assert_array_equal(result.sample_counts, [1, 2])
+
+
+@pytest.mark.parametrize('samples', [[], np.empty((0, 3)), [1, 2, 3], [[1, 2]],
+                                     [[1, 2, np.nan]], [[1, np.inf, 3]]])
+def test_bad_explicit_initial_samples_fail_before_io(tmp_path, samples):
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    work = tmp_path / 'unused'
+    with pytest.raises(ValueError, match='initial_samples'):
+        run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), space,
+                   str(work), 1e-5, initial_samples=samples)
+    assert not work.exists()
+
+
+@pytest.mark.parametrize('flag', [None, 0, 1, 'false', np.bool_(False)])
+def test_bad_rom_directory_flag_fails_before_io(tmp_path, flag):
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    work = tmp_path / 'unused'
+    with pytest.raises(TypeError, match='create_rom_run_directories must be a bool'):
+        run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), space,
+                   str(work), 1e-5, create_rom_run_directories=flag)
+    assert not work.exists()
+
+
+@pytest.mark.mpi_skip
+def test_result_reports_convergence_and_keeps_final_predictor(tmp_path):
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    original = os.getcwd()
+    try:
+        result = run_greedy(ParameterQoiModel((2,)), DataCheckingBuilder(False), space,
+                            str(tmp_path), 10.0, testing_sample_size=5,
+                            calibrated_error=False)
+    finally:
+        os.chdir(original)
+    assert result.converged and result.termination_reason == 'tolerance'
+    assert result.iterations == 1
+    np.testing.assert_array_equal(result.sample_counts, [2, 3])
+    assert result.rom_model.compute_qoi('', {}).shape == (2,)
+
+
+@pytest.mark.mpi_skip
+def test_actual_gp_builder_supports_in_memory_rom_and_returned_model(tmp_path):
+    from romtools.workflows.inverse.mf_eki_drivers import GaussianProcessQoiModelBuilderWithTrainingData
+    gp_builder = GaussianProcessQoiModelBuilderWithTrainingData(parameter_names=['u', 'v', 'w'])
+    class GpWithErrorEstimate:
+        def __init__(self, model):
+            self.model = model
+        def populate_run_directory(self, directory, parameters):
+            assert not os.path.exists(directory)
+            self.model.populate_run_directory(directory, parameters)
+        def run_model(self, directory, parameters):
+            assert not os.path.exists(directory)
+            return self.model.run_model(directory, parameters)
+        def compute_qoi(self, directory, parameters):
+            assert not os.path.exists(directory)
+            return self.model.compute_qoi(directory, parameters)
+        def compute_error_estimate(self, directory, parameters):
+            assert not os.path.exists(directory)
+            return float(np.linalg.norm(self.model.compute_qoi_and_var(directory, parameters)[1]))
+    class Builder:
+        def build_from_training_dirs(self, *args):
+            return GpWithErrorEstimate(gp_builder.build_from_training_dirs(*args))
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    initial = np.array([[.1, 1.1, 2.1], [.5, 1.5, 2.5]])
+    result = run_greedy(ParameterQoiModel(()), Builder(), space, str(tmp_path), 0.0,
+                        testing_sample_size=8, max_iterations=2, initial_samples=initial,
+                        calibrated_error=False, create_rom_run_directories=False)
+    prediction = result.rom_model.compute_qoi(str(tmp_path / 'no_directory'),
+                                             {'u': .3, 'v': 1.3, 'w': 2.3})
+    assert prediction.shape == (1,) and np.isfinite(prediction).all()
+    assert len(result.training_dirs) == 4
+    assert not list(tmp_path.glob('rom_iteration_*/run_*'))
+
+
+@pytest.mark.mpi_skip
+def test_supplied_initial_only_run_does_not_draw_unused_candidates(tmp_path):
+    class NamesOnlySpace:
+        def get_names(self):
+            return ['u', 'v', 'w']
+        def generate_samples(self, count):
+            raise AssertionError('initial-only run must not sample adaptation candidates')
+    initial = np.array([[1., 2., 3.], [2., 3., 4.]])
+    result = run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), NamesOnlySpace(),
+                        str(tmp_path), 0, initial_samples=initial, max_iterations=0)
+    np.testing.assert_array_equal(result.training_parameters, initial)
+    assert result.iterations == 0 and result.termination_reason == 'max_iterations'
