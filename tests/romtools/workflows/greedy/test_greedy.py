@@ -274,3 +274,177 @@ def test_greedy_passes_aligned_accumulated_training_data(tmp_path, qoi_shape, fa
         assert np.all(parameters >= 0) and np.all(np.real(qois) > 0)
     # Earlier records remain independent as subsequent FOMs update their buffer.
     np.testing.assert_array_equal(builder.training_calls[0][2], builder.training_calls[-1][2][:2])
+
+
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize('initial_count', [1, 2, 4])
+@pytest.mark.parametrize('iteration_limit', [0, 2])
+def test_configurable_initial_size_and_enrichment_limit(tmp_path, initial_count, iteration_limit):
+    fom = ParameterQoiModel((2,))
+    builder = DataCheckingBuilder(False)
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    # Existing positional arguments (including random_seed and calibrated_error)
+    # retain their meaning; the new controls are keyword-only.
+    original_directory = os.getcwd()
+    try:
+        run_greedy(fom, builder, space, str(tmp_path), 0.0,
+                   initial_count + 3, 7, False,
+                   initial_sample_size=initial_count, max_iterations=iteration_limit)
+    finally:
+        os.chdir(original_directory)
+    assert fom.compute_calls == initial_count + iteration_limit
+    assert [len(c[0]) for c in builder.training_calls] == list(
+        range(initial_count, initial_count + iteration_limit + 1)
+    )
+    assert [int(os.path.basename(d).split('_')[-1]) for d in builder.training_calls[0][0]] == list(range(initial_count))
+    assert len(list(tmp_path.glob('fom/run_*'))) == initial_count + iteration_limit
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        assert stats['initial_sample_size'] == initial_count
+        assert stats['max_iterations'] == iteration_limit
+        assert stats['iterations'] == iteration_limit
+        assert not bool(stats['converged'])
+        assert str(stats['termination_reason']) == 'max_iterations'
+        assert len(stats['qoi_errors']) == iteration_limit
+        assert len(stats['max_error_indicators']) == iteration_limit
+    assert 'Stopped: max_iterations' in (tmp_path / 'greedy_status.log').read_text()
+
+
+class StrictPreparationFom(ParameterQoiModel):
+    def __init__(self):
+        super().__init__((2,))
+        self.prepared, self.executed = [], []
+
+    def populate_run_directory(self, directory, parameters):
+        # Non-idempotent setup exposes duplicate calls immediately.
+        with open(os.path.join(directory, 'setup_once.txt'), 'x') as marker:
+            marker.write('prepared')
+        self.prepared.append(directory)
+        super().populate_run_directory(directory, parameters)
+
+    def run_model(self, directory, parameters):
+        assert os.path.exists(os.path.join(directory, 'setup_once.txt'))
+        self.executed.append(directory)
+        return 0
+
+
+class StrictPreparationRom(MockQoiModelWithErrorEstimate):
+    def __init__(self, errors, qoi):
+        super().__init__(errors, qoi)
+        self.prepared, self.executed = [], []
+
+    def populate_run_directory(self, directory, parameters):
+        with open(os.path.join(directory, 'setup_once.txt'), 'x') as marker:
+            marker.write('prepared')
+        self.prepared.append(directory)
+
+    def run_model(self, directory, parameters):
+        assert os.path.exists(os.path.join(directory, 'setup_once.txt'))
+        self.executed.append(directory)
+        return 0
+
+
+class StrictPreparationBuilder(DataCheckingBuilder):
+    def __init__(self):
+        super().__init__(False)
+        self.roms = []
+
+    def build_from_training_dirs(self, *args):
+        base = super().build_from_training_dirs(*args)
+        rom = StrictPreparationRom(base.my_error_estimates_, base.my_qoi_)
+        self.roms.append(rom)
+        return rom
+
+
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize('limit', [0, 3])
+def test_fom_and_rom_directories_populated_once_only_when_needed(tmp_path, limit):
+    fom, builder = StrictPreparationFom(), StrictPreparationBuilder()
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    run_greedy(fom, builder, space, str(tmp_path), 0.0, testing_sample_size=5,
+               max_iterations=limit, calibrated_error=False)
+    assert fom.prepared == fom.executed
+    assert len(fom.prepared) == 2 + limit
+    assert len(set(fom.prepared)) == 2 + limit
+    for rom in builder.roms:
+        assert rom.prepared == rom.executed
+        assert len(rom.prepared) == len(set(rom.prepared))
+    assert sum(len(rom.prepared) for rom in builder.roms) == 3 * limit
+    # The final rebuilt ROM has no eagerly prepared candidate directories.
+    assert not builder.roms[-1].prepared
+    assert not list((tmp_path / f'rom_iteration_{limit}').glob('run_*'))
+
+
+@pytest.mark.mpi_skip
+def test_default_iteration_limit_stops_nonconverging_model(tmp_path):
+    class NeverConvergingRom:
+        def populate_run_directory(self, directory, parameters):
+            pass
+        def run_model(self, directory, parameters):
+            return 0
+        def compute_qoi(self, directory, parameters):
+            return np.ones(1)
+        def compute_error_estimate(self, directory, parameters):
+            return 1.0
+    class Builder:
+        def __init__(self):
+            self.sizes = []
+        def build_from_training_dirs(self, offline, dirs, parameters, qois):
+            self.sizes.append(len(dirs))
+            return NeverConvergingRom()
+    fom, builder = ParameterQoiModel(()), Builder()
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    run_greedy(fom, builder, space, str(tmp_path), 1e-9, testing_sample_size=3,
+               calibrated_error=False)
+    assert fom.compute_calls == 102
+    assert builder.sizes == list(range(2, 103))
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        assert stats['max_iterations'] == stats['iterations'] == 100
+        assert str(stats['termination_reason']) == 'max_iterations'
+
+
+@pytest.mark.mpi_skip
+def test_convergence_before_iteration_limit_records_tolerance(tmp_path):
+    fom, builder = ParameterQoiModel((2,)), DataCheckingBuilder(False)
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    original_directory = os.getcwd()
+    try:
+        run_greedy(fom, builder, space, str(tmp_path), 10.0, testing_sample_size=5,
+                   initial_sample_size=3, max_iterations=20, calibrated_error=False)
+    finally:
+        os.chdir(original_directory)
+    assert fom.compute_calls == 4  # Preserve the first-check-after-one-enrichment policy.
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        assert stats['iterations'] == 1
+        assert bool(stats['converged'])
+        assert str(stats['termination_reason']) == 'tolerance'
+        assert len(stats['max_error_indicators']) == len(stats['qoi_errors']) == 1
+
+
+@pytest.mark.mpi_skip
+def test_initial_only_can_use_entire_candidate_pool(tmp_path):
+    fom, builder = ParameterQoiModel(()), DataCheckingBuilder(False)
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    run_greedy(fom, builder, space, str(tmp_path), 0,
+               testing_sample_size=1, initial_sample_size=1, max_iterations=0)
+    assert fom.compute_calls == 1
+    assert len(builder.training_calls) == 1
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        np.testing.assert_array_equal(stats['training_samples'], [0])
+
+
+@pytest.mark.parametrize('options', [
+    {'initial_sample_size': 0}, {'initial_sample_size': -1},
+    {'initial_sample_size': True}, {'initial_sample_size': 1.5},
+    {'initial_sample_size': 6, 'testing_sample_size': 5},
+    {'initial_sample_size': 5, 'testing_sample_size': 5},
+    {'testing_sample_size': 0}, {'testing_sample_size': True},
+    {'max_iterations': -1}, {'max_iterations': True}, {'max_iterations': 1.5},
+])
+def test_invalid_initial_size_and_iteration_limit_fail_before_io(tmp_path, options):
+    fom, builder = ParameterQoiModel(()), DataCheckingBuilder(False)
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    work = tmp_path / 'unused'
+    with pytest.raises(ValueError, match='initial_sample_size|testing_sample_size|max_iterations'):
+        run_greedy(fom, builder, space, str(work), 1e-5, **options)
+    assert not work.exists()
+    assert not builder.training_calls and fom.compute_calls == 0

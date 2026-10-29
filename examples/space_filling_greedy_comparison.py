@@ -70,8 +70,7 @@ def weights(parameters):
 
 
 class ProjectionRom:
-    def __init__(self, system, basis, count, budget):
-        self.count, self.budget = count, budget
+    def __init__(self, system, basis):
         self.basis = basis
         self.operator_basis = np.stack([
             system.A_diffusion @ basis, -system.A_advection_x @ basis,
@@ -102,10 +101,6 @@ class ProjectionRom:
         return self.predict([[parameter_sample[name] for name in NAMES]])[0]
 
     def compute_error_estimate(self, run_directory, parameter_sample):
-        # The historical greedy driver has no sample-limit option. A zero
-        # indicator at the externally imposed budget terminates it normally.
-        if self.count >= self.budget:
-            return 0.0
         point = np.array([parameter_sample[name] for name in NAMES])
         coefficients = self.coefficients(point[None])[0]
         residual = np.einsum("c,cni,i->n", weights(point[None])[0],
@@ -116,10 +111,9 @@ class ProjectionRom:
 class ProjectionBuilder:
     """One snapshot-based data-array builder shared by both workflows."""
 
-    def __init__(self, system, validation_points, validation_qois, budget):
+    def __init__(self, system, validation_points, validation_qois):
         self.system = system
         self.validation_points, self.validation_qois = validation_points, validation_qois
-        self.budget = budget
         self.history = []
         self.first_points = None
 
@@ -137,7 +131,7 @@ class ProjectionBuilder:
             self.first_points = file_parameters.copy()
         u, singular, _ = np.linalg.svd(np.column_stack(states), full_matrices=False)
         basis = u[:, singular > singular[0] * 1e-12]
-        rom = ProjectionRom(self.system, basis, len(directories), self.budget)
+        rom = ProjectionRom(self.system, basis)
         prediction = rom.predict(self.validation_points)
         relative_errors = np.linalg.norm(prediction - self.validation_qois, axis=1) / np.maximum(
             np.linalg.norm(self.validation_qois, axis=1), 1e-12,
@@ -163,8 +157,8 @@ def reference_qois(model, points):
 
 def compare(output_dir, seeds=(1, 2, 3), validation_size=500,
             candidate_size=250, budget=32, concurrency=3):
-    if budget < 3 or candidate_size < budget or validation_size < 1 or concurrency < 1 or not seeds:
-        raise ValueError("Require budget >= 3, candidate_size >= budget, positive validation size/concurrency, and seeds")
+    if budget < 2 or candidate_size < budget or validation_size < 1 or concurrency < 1 or not seeds:
+        raise ValueError("Require budget >= 2, candidate_size >= budget, positive validation size/concurrency, and seeds")
     output = Path(output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
     model = SteadyCdrQoiModel(nx=15, ny=15)
@@ -176,7 +170,7 @@ def compare(output_dir, seeds=(1, 2, 3), validation_size=500,
         root = output / f"seed_{seed}"
         root.mkdir()
         print(f"Seed {seed}: running batch space filling...", flush=True)
-        sf_builder = ProjectionBuilder(model.system, validation_points, validation_qois, budget)
+        sf_builder = ProjectionBuilder(model.system, validation_points, validation_qois)
         run_space_filling(
             model, sf_builder, CandidateSpace(candidates), str(root / "space_filling"),
             tolerance=0.0, initial_sample_size=2, batch_size=5,
@@ -185,18 +179,19 @@ def compare(output_dir, seeds=(1, 2, 3), validation_size=500,
             validation_strategy=lambda context: sf_builder.history[-1]["maximum"],
             max_fom_samples=budget, max_iterations=budget,
         )
-        # Greedy always starts with the first two samples. Reorder its common
+        # Greedy takes the first initial_sample_size rows. Reorder its common
         # candidate pool so the two algorithms have identical initial data.
         initial = sf_builder.first_points
         initial_ids = [int(np.flatnonzero(np.all(candidates == p, axis=1))[0]) for p in initial]
         remainder = [i for i in range(candidate_size) if i not in initial_ids]
         reordered = candidates[initial_ids + remainder]
         print(f"Seed {seed}: running residual greedy...", flush=True)
-        greedy_builder = ProjectionBuilder(model.system, validation_points, validation_qois, budget)
+        greedy_builder = ProjectionBuilder(model.system, validation_points, validation_qois)
         with open(root / "greedy_stdout.log", "w") as log, contextlib.redirect_stdout(log):
             run_greedy(model, greedy_builder, CandidateSpace(reordered), str(root / "greedy"),
-                       tolerance=1e-30, testing_sample_size=candidate_size,
-                       random_seed=seed, calibrated_error=False)
+                       tolerance=0.0, testing_sample_size=candidate_size,
+                       random_seed=seed, calibrated_error=False,
+                       initial_sample_size=2, max_iterations=budget - 2)
         np.testing.assert_array_equal(sf_builder.first_points, greedy_builder.first_points)
         assert sf_builder.history[-1]["samples"] == budget
         assert greedy_builder.history[-1]["samples"] == budget

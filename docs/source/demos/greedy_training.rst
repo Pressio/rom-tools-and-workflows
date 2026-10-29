@@ -3,6 +3,44 @@ Greedy Training
 
 Greedy training is an iterative training process where we iteratively add samples at which we believe the ROM is inaccurate.
 
+Initial training and iteration limits
+------------------------------------
+
+``initial_sample_size`` defaults to 2. Greedy runs those first samples from the
+initial candidate pool before constructing the initial ROM. This is separate
+from ``testing_sample_size`` (default 10), which sets the candidate-pool size.
+
+``max_iterations`` defaults to 100 and counts FOM enrichments **after** the
+initial ROM. Thus at most ``initial_sample_size + max_iterations`` training
+FOM simulations run. Setting ``max_iterations=0`` constructs only the initial
+ROM. Both arguments are keyword-only, preserving existing positional calls:
+
+.. code-block:: python
+
+   run_greedy(
+       fom_model, rom_model_builder, parameter_space,
+       absolute_work_dir=work_dir,
+       tolerance=1e-4,
+       testing_sample_size=50,
+       initial_sample_size=8,
+       max_iterations=40,
+   )
+
+Sizes must be positive integers; the iteration limit must be a nonnegative
+integer. ``initial_sample_size`` cannot exceed ``testing_sample_size``. If
+enrichment is enabled, the candidate pool must be strictly larger than the
+initial training set so there is a point to test. Convergence checks retain
+their previous calibration behavior: the first check follows one enrichment.
+The iteration cap stops after the final allowed rebuild; a cap exit does not
+claim convergence or perform another candidate evaluation.
+
+FOM directories are populated once, immediately before their simulation, and
+unselected FOM candidates are not prepared. Each ROM evaluation directory is
+also populated once in its iteration. ``greedy_stats.npz`` is written even for
+an initial-only run and records ``initial_sample_size``, ``max_iterations``,
+completed ``iterations``, ``converged``, and ``termination_reason`` (``tolerance``
+or ``max_iterations``). Error histories describe completed enrichments.
+
 Builder interface
 -----------------
 
@@ -20,7 +58,7 @@ completed training FOM runs:
    )
 
 Directory entries, parameter rows, and QoI rows have matching order, including
-the initial two samples and every subsequent greedy enrichment. Only selected
+the initial training samples and every subsequent greedy enrichment. Only selected
 training samples are passed, rather than the whole candidate pool. Scalar QoIs
 become one-component rows; array QoIs are flattened. The arrays passed to the
 builder are independent copies of the workflow's accumulated data. Full-state
