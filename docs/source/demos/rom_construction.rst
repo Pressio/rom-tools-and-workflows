@@ -13,3 +13,4 @@ Examples
    model_builders
    greedy_training
    space_filling_training
+   hybrid_greedy_training

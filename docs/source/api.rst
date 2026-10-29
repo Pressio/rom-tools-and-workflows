@@ -36,6 +36,7 @@ compatibility and emit a ``DeprecationWarning``. New code should use
    Composite Vector Space <generated/romtools.composite_vector_space>
    Hyper Reduction <generated/romtools.hyper_reduction>
    Batch Space-Filling Training <demos/space_filling_training>
+   Hybrid Greedy Training <demos/hybrid_greedy_training>
 
 .. toctree::
    :maxdepth: 1

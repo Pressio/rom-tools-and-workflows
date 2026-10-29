@@ -21,6 +21,8 @@ Public API
 .. autoclass:: romtools.workflows.space_filling.SpaceFillingResult
    :members:
 
+.. _space-filling-distances:
+
 Parameter spaces and distances
 ------------------------------
 
@@ -61,6 +63,8 @@ seed streams. Sampling does not change the caller's NumPy RNG state. Legacy
 ``generate_samples(n)`` implementations using NumPy's global RNG are supported;
 custom spaces owning independent unseeded RNGs must supply their own reproducible
 behavior. Reproducibility of external solvers remains the model's responsibility.
+
+.. _space-filling-execution:
 
 FOM execution contract
 ----------------------
@@ -108,6 +112,8 @@ offline directory. Two-argument directory-only builders need a user adapter.
 
 Builders, validation strategies, ROM evaluations, and error functors execute
 sequentially in the parent process; they need not be serializable.
+
+.. _space-filling-validation:
 
 Validation and error functors
 ----------------------------

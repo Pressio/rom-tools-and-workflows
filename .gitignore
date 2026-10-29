@@ -18,6 +18,7 @@ docs/source/generated/
 
 # Example outputs
 examples/space_filling_work/
+examples/hybrid_greedy_work/
 examples/uq_cdr_demo/uq_cdr_output/
 examples/eki_mf_eki_demo/eki_mf_eki_work/
 examples/eki_mf_eki_demo/eki_mf_eki_demo.png

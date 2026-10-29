@@ -9,11 +9,11 @@ import numpy as np
 from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from ._execution import _evaluate_batch, _process_state
-from .sampling import _parameter_names, _positive_integer, select_space_filling_samples
-from .validation import (
+from .._adaptive.execution import _evaluate_batch, _process_state
+from .._adaptive.sampling import _parameter_names, _positive_integer, select_space_filling_samples
+from .._adaptive.validation import (
     KFoldValidation, SpaceFillingValidationContext, _build_rom, _error_value,
-    relative_l2_error,
+    relative_l2_error, _readonly_copy,
 )
 
 
@@ -29,12 +29,6 @@ class SpaceFillingResult:
     sample_counts: np.ndarray
     converged: bool
     termination_reason: str
-
-
-def _readonly_copy(array):
-    result = array.copy()
-    result.setflags(write=False)
-    return result
 
 
 def _save_stats(directory, names, parameters, qois, training_dirs, errors,
