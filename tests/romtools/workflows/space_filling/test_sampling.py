@@ -187,3 +187,18 @@ def test_inputs_are_not_modified_and_large_integer_subtraction_does_not_overflow
     np.testing.assert_array_equal(select(space, existing, 1), values[1:])
     np.testing.assert_array_equal(space.samples, values)
     np.testing.assert_array_equal(existing, values[:1])
+
+
+def test_union_parameter_space_maximin_integration():
+    from romtools.workflows.parameter_spaces import UnionParameterSpace
+    union = UnionParameterSpace([
+        UniformParameterSpace(['x', 'y'], [0, 0], [2, 1], MonteCarloSampler),
+        UniformParameterSpace(['x', 'y'], [1, .5], [3, 2], MonteCarloSampler),
+    ])
+    existing = np.array([[0, 0], [3, 2]])
+    first = select(union, existing, 12, candidate_pool_size=250, random_seed=19)
+    second = select(union, np.vstack((existing, first)), 8, candidate_pool_size=250, random_seed=20)
+    assert first.shape == (12, 2) and second.shape == (8, 2)
+    assert union.contains(np.vstack((first, second))).all()
+    assert len(np.unique(np.vstack((existing, first, second)), axis=0)) == 22
+    np.testing.assert_array_equal(first, select(union, existing, 12, candidate_pool_size=250, random_seed=19))

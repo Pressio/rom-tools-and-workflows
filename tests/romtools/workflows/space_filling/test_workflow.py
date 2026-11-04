@@ -418,3 +418,31 @@ def test_nonserializable_fom_reports_failure_without_build(tmp_path):
 def test_bad_fold_counts(folds):
     with pytest.raises(ValueError, match="num_folds"):
         KFoldValidation(folds)
+
+
+@pytest.mark.parametrize('concurrency', [1, 2])
+def test_union_parameter_space_training_integration(tmp_path, concurrency):
+    from romtools.workflows.parameter_spaces import UnionParameterSpace, UniformParameterSpace
+    from romtools.workflows.sampling_methods import MonteCarloSampler
+    union = UnionParameterSpace([
+        UniformParameterSpace(['p0'], [0], [2], MonteCarloSampler),
+        UniformParameterSpace(['p0'], [1], [3], MonteCarloSampler),
+    ])
+    builder = RecordingBuilder(reject_training_eval=True)
+    result = run_space_filling(**request(
+        tmp_path, parameter_space=union, rom_model_builder=builder,
+        initial_sample_size=5, max_fom_samples=7, validation_strategy=KFoldValidation(),
+        # Zero tolerance forces enrichment for this deliberately nonzero
+        # functor; independent folds still predict every held-out sample.
+        error_functor=lambda prediction, reference: 1.0,
+        max_concurrent_fom_runs=concurrency,
+    ))
+    np.testing.assert_array_equal(result.sample_counts, [5, 7])
+    assert result.termination_reason == 'max_fom_samples'
+    assert union.contains(result.training_parameters).all()
+    assert len(np.unique(result.training_parameters, axis=0)) == 7
+    production = [call for call in builder.calls if '/validation/' not in call[0]]
+    assert [len(call[1]) for call in production] == [5, 7]
+    for call in production:
+        np.testing.assert_array_equal(call[2], result.training_parameters[:len(call[2])])
+        np.testing.assert_array_equal(call[3], result.training_qois[:len(call[3])])

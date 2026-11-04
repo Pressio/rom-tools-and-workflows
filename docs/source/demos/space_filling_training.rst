@@ -64,6 +64,60 @@ seed streams. Sampling does not change the caller's NumPy RNG state. Legacy
 custom spaces owning independent unseeded RNGs must supply their own reproducible
 behavior. Reproducibility of external solvers remains the model's responsibility.
 
+Union of rectangular regions
+----------------------------
+
+``UnionParameterSpace`` provides independent uniform Monte Carlo samples over
+possibly overlapping or disconnected axis-aligned boxes:
+
+.. code-block:: python
+
+   import numpy as np
+   from romtools.workflows.parameter_spaces import UniformParameterSpace, UnionParameterSpace
+   from romtools.workflows.sampling_methods import MonteCarloSampler
+   from romtools.workflows.space_filling import run_space_filling
+
+   region_1 = UniformParameterSpace(
+       ["mach", "altitude"], [5.0, 20.0], [10.0, 40.0], MonteCarloSampler,
+   )
+   region_2 = UniformParameterSpace(
+       ["mach", "altitude"], [8.0, 30.0], [15.0, 50.0], MonteCarloSampler,
+   )
+   domain = UnionParameterSpace([region_1, region_2])
+   samples = domain.generate_samples(1000, seed=42)
+   assert domain.contains(samples).all()
+   assert domain.contains([9.0, 35.0])
+
+   # Use application-specific FOM and builder objects implementing the contracts below.
+   result = run_space_filling(
+       fom_model, rom_model_builder, domain, "/absolute/path/to/new/training",
+       tolerance=0.02, initial_sample_size=10, batch_size=5,
+       distance_metric=lambda a, b: np.linalg.norm((a - b) / [10.0, 30.0]),
+       random_seed=42, max_iterations=20, max_fom_samples=100,
+   )
+
+Overlap multiplicity is corrected automatically: proposals choose boxes by
+volume and are accepted with probability one divided by the number of boxes
+containing them. Overlaps are therefore not overrepresented. Heavy overlap
+reduces the acceptance rate; sampling does not use a bounding-box rejection
+scheme. Region names and bounds are copied at construction, and regions must
+have matching ordered names/dimensions and finite bounds with positive widths.
+``UniformParameter.get_bounds()`` and ``UniformParameterSpace.get_bounds()``
+return independent lower/upper coordinate arrays.
+
+The union ignores its regions' sampler choices and uses a local NumPy generator;
+it produces independent Monte Carlo samples, **not a Latin hypercube design**.
+``contains(point)`` returns a Boolean, and ``contains(batch)`` returns a Boolean
+mask; box boundaries are included. Zero requested samples return shape ``(0, d)``.
+Float64-unrepresentable widths or underflowing relative volume probabilities are
+rejected explicitly. As for other parameter spaces, the workflow requires one
+scalar coordinate per parameter name, even though standalone sampling supports
+vector-valued parameters.
+
+Uniform candidate draws and maximin-selected training points are different:
+**maximin-selected points are not generally independent uniform samples**. No
+changes to the space-filling selection or training algorithms are needed.
+
 .. _space-filling-execution:
 
 FOM execution contract

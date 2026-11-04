@@ -1,4 +1,5 @@
 import abc
+from typing import Tuple
 import numpy as np
 from scipy.stats import qmc
 from scipy.stats import norm
@@ -60,6 +61,11 @@ class UniformParameter(Parameter):
 
     def get_dimensionality(self) -> int:
         return self._dimension
+
+    def get_bounds(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Return independent one-dimensional arrays of lower and upper bounds."""
+        return (np.asarray(self._lower_bound).reshape(-1).copy(),
+                np.asarray(self._upper_bound).reshape(-1).copy())
 
     def scale_samples(self, uniform_dist_samples: np.array) -> np.array:
         assert uniform_dist_samples.shape[1] == self.get_dimensionality()

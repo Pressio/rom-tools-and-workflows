@@ -49,7 +49,8 @@ Model reduction is often focused on parameterized PDEs, where
 The ParameterSpace class encapsulates the notion of the parameter space.
 '''
 import abc
-from typing import Iterable
+from numbers import Integral
+from typing import Iterable, Tuple, Union
 import numpy as np
 from scipy.stats import norm
 
@@ -176,6 +177,128 @@ class UniformParameterSpace(HomogeneousParameterSpace):
     def __init__(self, parameter_names: Iterable[str], lower_bounds, upper_bounds, sampler: Sampler):
         super().__init__(parameter_names, sampler=sampler, param_constructor=UniformParameter,
                          lower_bound=lower_bounds, upper_bound=upper_bounds)
+
+    def get_bounds(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Return copies of coordinate bounds, flattened in parameter order."""
+        bounds = [parameter.get_bounds() for parameter in self._get_parameter_list()]
+        if not bounds:
+            return np.empty(0), np.empty(0)
+        return (np.concatenate([lower for lower, _ in bounds]),
+                np.concatenate([upper for _, upper in bounds]))
+
+
+class UnionParameterSpace(ParameterSpace):
+    """Independent uniform Monte Carlo samples over a geometric union of boxes.
+
+    Regions must be ``UniformParameterSpace`` instances with identical ordered
+    names and dimensionality, finite real bounds, and strictly positive widths.
+    Names and bounds are copied at construction. Region samplers are ignored:
+    even LHS-configured regions produce independent Monte Carlo union samples.
+
+    A proposal chooses a box by volume, samples uniformly within it, and is
+    accepted with probability 1 / (number of containing boxes). This corrects
+    overlap bias without rejecting from a potentially sparse bounding box.
+    The acceptance rate is union volume / sum of region volumes, so heavy
+    overlap increases sampling cost. Products of widths are normalized in log
+    space; unrepresentable widths or region probabilities raise ValueError.
+    """
+
+    def __init__(self, regions: Iterable[UniformParameterSpace]) -> None:
+        regions = list(regions)
+        if not regions:
+            raise ValueError("UnionParameterSpace requires at least one region")
+        if not all(isinstance(region, UniformParameterSpace) for region in regions):
+            raise TypeError("every region must be a UniformParameterSpace")
+        self._names = tuple(regions[0].get_names())
+        dimension = regions[0].get_dimensionality()
+        if dimension < 1:
+            raise ValueError("union regions must have positive dimensionality")
+        bounds = []
+        for index, region in enumerate(regions):
+            if tuple(region.get_names()) != self._names or region.get_dimensionality() != dimension:
+                raise ValueError(f"region {index}: parameter names, order, and dimensionality must match")
+            lower, upper = region.get_bounds()
+            lower, upper = np.asarray(lower), np.asarray(upper)
+            if lower.shape != (dimension,) or upper.shape != (dimension,):
+                raise ValueError(f"region {index}: bounds must match dimensionality")
+            if lower.dtype.kind not in "biuf" or upper.dtype.kind not in "biuf":
+                raise ValueError(f"region {index}: bounds must be finite real numbers")
+            lower, upper = lower.astype(float), upper.astype(float)
+            if not np.isfinite(lower).all() or not np.isfinite(upper).all() or np.any(upper <= lower):
+                raise ValueError(f"region {index}: bounds must be finite with strictly positive widths")
+            bounds.append((lower, upper))
+        self._lower = np.stack([lower for lower, _ in bounds])
+        self._upper = np.stack([upper for _, upper in bounds])
+        with np.errstate(over="ignore", invalid="ignore"):
+            self._widths = self._upper - self._lower
+        if not np.isfinite(self._widths).all():
+            raise ValueError("region widths must be representable as finite floats")
+        log_volumes = np.log(self._widths).sum(axis=1)
+        with np.errstate(under="ignore"):
+            weights = np.exp(log_volumes - log_volumes.max())
+            self._probabilities = weights / weights.sum()
+        if not np.isfinite(self._probabilities).all() or np.any(self._probabilities <= 0):
+            raise ValueError("relative region volumes must yield positive finite sampling probabilities")
+        # Bound both proposal count and coordinate-array size; never form a
+        # proposals-by-regions-by-dimensions membership tensor.
+        self._batch_size = max(1, min(8192, 262144 // dimension))
+
+    def get_names(self) -> Iterable[str]:
+        return list(self._names)
+
+    def get_dimensionality(self) -> int:
+        return self._lower.shape[1]
+
+    def _multiplicity(self, samples: np.ndarray) -> np.ndarray:
+        counts = np.zeros(len(samples), dtype=np.intp)
+        for lower, upper in zip(self._lower, self._upper):
+            counts += np.all((samples >= lower) & (samples <= upper), axis=1)
+        return counts
+
+    def contains(self, samples) -> Union[bool, np.ndarray]:
+        """Return membership for a point ``(d,)`` or a batch ``(n, d)``.
+
+        Boundaries are included. NaN/infinite coordinates are outside the
+        union. Other shapes or nonnumeric/complex inputs are rejected.
+        """
+        samples = np.asarray(samples)
+        single = samples.ndim == 1
+        if single:
+            samples = samples[None, :]
+        if samples.ndim != 2 or samples.shape[1] != self.get_dimensionality():
+            raise ValueError("samples must have shape (dimensionality,) or (number_of_samples, dimensionality)")
+        if samples.dtype.kind not in "biuf":
+            raise TypeError("samples must contain real numeric coordinates")
+        membership = np.empty(len(samples), dtype=bool)
+        for start in range(0, len(samples), self._batch_size):
+            membership[start:start + self._batch_size] = self._multiplicity(samples[start:start + self._batch_size]) > 0
+        return bool(membership[0]) if single else membership
+
+    def generate_samples(self, number_of_samples: int, seed=None) -> np.ndarray:
+        """Draw ``(number_of_samples, d)`` independent uniform union samples.
+
+        Uses a local NumPy generator without changing global RNG state.
+        Fixed seeds reproduce draws; these samples are not an LHS design.
+        """
+        if isinstance(number_of_samples, bool) or not isinstance(number_of_samples, Integral):
+            raise TypeError("number_of_samples must be a nonnegative integer")
+        if number_of_samples < 0:
+            raise ValueError("number_of_samples must be a nonnegative integer")
+        rng = np.random.default_rng(seed)
+        samples = np.empty((number_of_samples, self.get_dimensionality()))
+        filled = 0
+        while filled < number_of_samples:
+            count = min(self._batch_size, max(64, number_of_samples - filled))
+            indices = rng.choice(len(self._lower), size=count, p=self._probabilities)
+            proposals = self._lower[indices] + rng.random((count, self.get_dimensionality())) * self._widths[indices]
+            # Guard endpoint roundoff so a proposal stays inside its own box.
+            np.clip(proposals, self._lower[indices], self._upper[indices], out=proposals)
+            multiplicity = self._multiplicity(proposals)
+            accepted = proposals[rng.random(count) < 1.0 / multiplicity]
+            take = min(len(accepted), number_of_samples - filled)
+            samples[filled:filled + take] = accepted[:take]
+            filled += take
+        return samples
 
 
 class GaussianParameterSpace(HomogeneousParameterSpace):
