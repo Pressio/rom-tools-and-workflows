@@ -86,7 +86,15 @@
     "#Now we will construct a model_builder. We will use the one we initiated in the model_builder tutorial\n",
     "from ipynb.fs.full.model_builder import AdrRomModelBuilder\n",
     "myIntrusiveFom = advectionDiffusionProblem(nx=33)\n",
-    "myRomModelBuilder = AdrRomModelBuilder(myIntrusiveFom,adrQoiRomWithErrorEstimate)"
+    "# Greedy supplies matching training directories, parameter rows, and QoI\n",
+    "# rows to each build. This intrusive builder still reads its full-state snapshots\n",
+    "# from the directories, so adapt the earlier directory-only tutorial builder.\n",
+    "class AdrGreedyRomModelBuilder(AdrRomModelBuilder):\n",
+    "    def build_from_training_dirs(self, offline_data_dir, training_dirs,\n",
+    "                                 training_parameters, training_qois):\n",
+    "        return super().build_from_training_dirs(offline_data_dir, training_dirs)\n",
+    "\n",
+    "myRomModelBuilder = AdrGreedyRomModelBuilder(myIntrusiveFom,adrQoiRomWithErrorEstimate)"
    ]
   },
   {
@@ -147,8 +155,10 @@
     "    greedy_work_dir = os.getcwd() + '/greedy_example/'\n",
     "    tolerance = 1.e-6 #tolerance on greedy algorithm\n",
     "    testing_sample_size = 10 #sample size on which to evaluate greedy ROM\n",
-    "    romtools.workflows.greedy.run_greedy(myFom,myRomModelBuilder,myParameterSpace,greedy_work_dir,\n",
-    "    \ttolerance,testing_sample_size)\n"
+    "    result = romtools.workflows.greedy.run_greedy(myFom,myRomModelBuilder,myParameterSpace,greedy_work_dir,\n",
+    "    \ttolerance,testing_sample_size, initial_sample_size=2, max_iterations=100)\n",
+    "\n",
+    "    final_rom = result.rom_model  # Reuse the trained model after the workflow.\n"
    ]
   },
   {

@@ -17,4 +17,5 @@ romtools.workflows.parameter\_spaces
       MultivariateGaussianParameterSpace
       ParameterSpace
       UniformParameterSpace
+      UnionParameterSpace
    
