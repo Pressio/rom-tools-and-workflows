@@ -119,3 +119,14 @@ def test_scipy_multidimensional_gaussian_parameter():
     s = param.scale_samples(germ)
     assert s.shape == germ.shape
     np.testing.assert_allclose(s, gold_param.scale_samples(germ), rtol=1e-5, atol=1e-8)
+
+
+def test_uniform_parameter_bound_copies():
+    scalar = UniformParameter('x', -1, 2)
+    lower, upper = scalar.get_bounds()
+    np.testing.assert_array_equal(lower, [-1])
+    np.testing.assert_array_equal(upper, [2])
+    lower[0], upper[0] = -99, 99
+    np.testing.assert_array_equal(scalar.get_bounds(), [[-1], [2]])
+    vector = UniformParameter('v', [-1, 0], [1, 3])
+    np.testing.assert_array_equal(vector.get_bounds(), [[-1, 0], [1, 3]])

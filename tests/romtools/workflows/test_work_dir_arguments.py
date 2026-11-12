@@ -12,11 +12,13 @@ from romtools.workflows.inverse.mf_eki_drivers import mf_eki_with_auto_rom, run_
 from romtools.workflows.inverse.vi import mf_vi_with_auto_rom, run_mf_vi
 from romtools.workflows.inverse.vi import run_vi
 from romtools.workflows.sampling.sampling import run_sampling
+from romtools.workflows.space_filling import run_space_filling
 from romtools.workflows.sampling_with_holdout.sampling_with_holdout import run_sampling_with_holdout
 from romtools.workflows.uq.monte_carlo import run_monte_carlo, run_multifidelity_monte_carlo
 
 
 WORKFLOWS = (
+    run_space_filling,
     run_sampling,
     run_sampling_with_holdout,
     run_greedy,

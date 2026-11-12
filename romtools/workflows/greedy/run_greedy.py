@@ -97,21 +97,70 @@ Alternatively, if `calibrated_error` is set to `False`, then the scaling factor 
 
 import time
 import warnings
+from dataclasses import dataclass
+from numbers import Integral
+from typing import Optional, Tuple
 import numpy as np
 
 import romtools.linalg.linalg as la
-from romtools.workflows.models import QoiModel
+from romtools.workflows.models import QoiModel, QoiModelWithErrorEstimate
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
-from romtools.workflows.model_builders import QoiModelWithErrorEstimateBuilder
+from romtools.workflows.model_builders import QoiModelBuilderWithTrainingData
+
+
+__all__ = ["GreedyResult", "run_greedy", "QoIvsErrorIndicatorRegressor"]
+
+
+@dataclass
+class GreedyResult:
+    """Final ROM, aligned training data, and completed enrichment histories.
+
+    Error histories describe the ROMs before their corresponding enrichments,
+    rather than independent validation of the final ROM. ``sample_counts``
+    includes the initial build and every subsequent rebuild. Array fields are
+    independent copies of workflow state; the final ROM is returned directly.
+    """
+
+    rom_model: QoiModelWithErrorEstimate
+    training_parameters: np.ndarray
+    training_qois: np.ndarray
+    training_dirs: Tuple[str, ...]
+    training_sample_indices: np.ndarray
+    max_error_indicators: np.ndarray
+    qoi_errors: np.ndarray
+    predicted_qoi_errors: np.ndarray
+    sample_counts: np.ndarray
+    converged: bool
+    termination_reason: str
+
+    @property
+    def iterations(self) -> int:
+        """Number of completed enrichments after the initial build."""
+        return len(self.qoi_errors)
 
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
 
+def _compute_qoi(model, run_directory, parameter_dict):
+    """Keep one independent, flattened QoI row per completed FOM run."""
+    return np.asarray(
+        model.compute_qoi(run_directory, parameter_dict),
+    ).reshape(-1).copy()
+
+
+def _exclude_training_samples(parameters, candidates, training):
+    """Exclude exact matches to explicitly supplied/accumulated training rows."""
+    return np.asarray([
+        index for index in candidates
+        if not any(np.array_equal(parameters[index], parameters[i]) for i in training)
+    ], dtype=int)
+
+
 def run_greedy(fom_model: QoiModel,
-               rom_model_builder: QoiModelWithErrorEstimateBuilder,
+               rom_model_builder: QoiModelBuilderWithTrainingData,
                parameter_space: ParameterSpace,
                absolute_work_dir: str = None,
                tolerance: float = None,
@@ -119,9 +168,48 @@ def run_greedy(fom_model: QoiModel,
                random_seed: int = 1,
                calibrated_error: bool=True,
                *,
-               absolute_greedy_work_directory: str = None):
+               initial_sample_size: int = 2,
+               max_iterations: int = 100,
+               initial_samples: Optional[np.ndarray] = None,
+               create_rom_run_directories: bool = True,
+               absolute_greedy_work_directory: str = None) -> GreedyResult:
     '''
-    Main implementation of the greedy algorithm.
+    Train a ROM using adaptive error-indicator-based sample selection.
+
+    The builder receives ``offline_data_dir``, ``training_data_dirs``,
+    ``training_parameters`` of shape (N, parameter_dimension), and
+    ``training_qois`` of shape (N, qoi_dimension), all in matching training
+    order. Every rebuild includes all completed training FOM runs. Scalars
+    become one-component QoI rows; array QoIs are flattened. Copies of the
+    training arrays are passed so builders cannot modify the sampling pool
+    or accumulated QoI history.
+
+    The returned ROM must implement ``compute_error_estimate`` in addition
+    to the QoiModel methods. Directory-only builders must be adapted to the
+    four-argument QoiModelBuilderWithTrainingData interface.
+
+    ``initial_sample_size`` selects the first training rows from the initial
+    candidate pool (default two). ``max_iterations`` bounds the number of
+    subsequent greedy FOM enrichments and defaults to 100; zero builds only
+    the initial ROM. Without explicit initial samples, ``testing_sample_size``
+    must exceed ``initial_sample_size`` for enrichment so there is an
+    untrained candidate.
+    Calibration and convergence checks retain their existing behavior: the
+    first convergence check follows one enrichment. Run directories are
+    populated once, immediately before their model evaluation.
+
+    ``initial_samples``, if supplied, is a nonempty (N, parameter_dimension)
+    array of parameter rows to simulate before adaptation. Its row count
+    overrides ``initial_sample_size``; ``testing_sample_size`` then controls
+    a separate adaptation candidate pool. Exact matches to accumulated
+    training rows are excluded from this pool. No domain projection or reuse
+    of existing FOM outputs is performed.
+
+    ``create_rom_run_directories=False`` skips only per-evaluation ROM run
+    directory creation. Model methods still receive their nominal paths and
+    must support in-memory execution. FOM, offline-data, log, and statistics
+    directories remain available. Returns the final ROM and training history
+    in a ``GreedyResult``, including for initial-only and limit exits.
     '''
     if absolute_greedy_work_directory is not None:
         warnings.warn(
@@ -136,6 +224,46 @@ def run_greedy(fom_model: QoiModel,
         raise TypeError("'absolute_work_dir' is required")
     if tolerance is None:
         raise TypeError("'tolerance' is required")
+    if not isinstance(create_rom_run_directories, bool):
+        raise TypeError("create_rom_run_directories must be a bool")
+    parameter_names = list(parameter_space.get_names())
+    supplied_initial_samples = initial_samples is not None
+    if supplied_initial_samples:
+        initial_samples = np.asarray(initial_samples).copy()
+        if (initial_samples.ndim != 2 or initial_samples.shape[0] == 0
+                or initial_samples.shape[1] != len(parameter_names)):
+            raise ValueError("initial_samples must be nonempty and have shape (N, parameter_dimension)")
+        if initial_samples.dtype.kind in "biufc" and not np.all(np.isfinite(initial_samples)):
+            raise ValueError("initial_samples must contain finite numeric values")
+        initial_sample_size = len(initial_samples)
+    for name, value, minimum in (
+        ("initial_sample_size", initial_sample_size, 1),
+        ("testing_sample_size", testing_sample_size, 1),
+        ("max_iterations", max_iterations, 0),
+    ):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+            qualifier = "nonnegative" if minimum == 0 else "positive"
+            raise ValueError(f"{name} must be a {qualifier} integer")
+    if not supplied_initial_samples and initial_sample_size > testing_sample_size:
+        raise ValueError("initial_sample_size must not exceed testing_sample_size")
+    if not supplied_initial_samples and max_iterations > 0 and initial_sample_size == testing_sample_size:
+        raise ValueError("testing_sample_size must exceed initial_sample_size for greedy enrichment")
+
+    np.random.seed(random_seed)
+    if supplied_initial_samples and max_iterations == 0:
+        parameter_samples = initial_samples
+    else:
+        parameter_samples = np.asarray(parameter_space.generate_samples(testing_sample_size))
+        if parameter_samples.ndim != 2 or parameter_samples.shape[1] != len(parameter_names):
+            raise ValueError("generated samples must have shape (N, parameter_dimension)")
+        if parameter_samples.shape[0] != testing_sample_size:
+            raise ValueError("parameter_space must generate testing_sample_size candidate rows")
+        if supplied_initial_samples:
+            parameter_samples = np.concatenate((initial_samples, parameter_samples), axis=0)
+    training_samples = np.arange(initial_sample_size)
+    samples_left = np.arange(initial_sample_size, len(parameter_samples))
+    if supplied_initial_samples:
+        samples_left = _exclude_training_samples(parameter_samples, samples_left, training_samples)
 
     greedy_directory = absolute_work_dir
     create_empty_dir(greedy_directory)
@@ -148,26 +276,10 @@ def run_greedy(fom_model: QoiModel,
     rom_time = 0.
     basis_time = 0.
 
-    np.random.seed(random_seed)
-
-    # create parameter samples
-    parameter_samples = parameter_space.generate_samples(testing_sample_size)
-    parameter_names = parameter_space.get_names()
-
-    # Make FOM/ROM directories
-    for sample_index, sample in enumerate(parameter_samples):
-        fom_run_directory =  f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
-
-        create_empty_dir(fom_run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names, sample)
-        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-
-    training_samples = np.array([0, 1], dtype='int')
-    samples_left = np.arange(2, testing_sample_size)
-
     # Run FOM training cases
     t0 = time.time()
     training_dirs = []
+    initial_fom_qois = []
 
     for i in training_samples:
         greedy_file.write(f"Running FOM sample {i} \n")
@@ -177,12 +289,10 @@ def run_greedy(fom_model: QoiModel,
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
         fom_model.run_model(fom_run_directory,parameter_dict)
-        fom_qoi = fom_model.compute_qoi(fom_run_directory,parameter_dict)
-        if i == 0:
-            fom_qois = fom_qoi[None]
-        else:
-            fom_qois = np.append(fom_qois,fom_qoi[None],axis=0)
+        fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
+        initial_fom_qois.append(fom_qoi)
         training_dirs.append(fom_run_directory)
+    fom_qois = np.stack(initial_fom_qois)
     fom_time += time.time() - t0
 
     # Create ROM bases
@@ -193,7 +303,10 @@ def run_greedy(fom_model: QoiModel,
     updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
 
     create_empty_dir(updated_offline_data_dir)
-    rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
+    rom_model = rom_model_builder.build_from_training_dirs(
+        updated_offline_data_dir, list(training_dirs),
+        parameter_samples[training_samples], fom_qois.copy(),
+    )
 
     basis_time += time.time() - t0
 
@@ -204,7 +317,32 @@ def run_greedy(fom_model: QoiModel,
     predicted_qoi_errors = np.zeros(0)
     greedy_file.flush()
 
-    while converged is False:
+    def save_stats(termination_reason):
+        np.savez(f'{greedy_directory}/greedy_stats',
+                 max_error_indicators=max_error_indicators,
+                 qoi_errors=qoi_errors,
+                 predicted_qoi_errors=predicted_qoi_errors,
+                 training_samples=training_samples,
+                 training_parameters=parameter_samples[training_samples],
+                 training_qois=fom_qois,
+                 training_dirs=np.asarray(training_dirs),
+                 sample_counts=np.arange(initial_sample_size, training_samples.size + 1),
+                 fom_time=fom_time,
+                 rom_time=rom_time,
+                 basis_time=basis_time,
+                 initial_sample_size=initial_sample_size,
+                 create_rom_run_directories=create_rom_run_directories,
+                 max_iterations=max_iterations,
+                 iterations=training_samples.size - initial_sample_size,
+                 converged=converged,
+                 termination_reason=termination_reason)
+
+    save_stats("running")
+    termination_reason = "max_iterations"
+    while converged is False and outer_loop_counter < max_iterations:
+        if samples_left.size == 0:
+            termination_reason = "candidate_pool_exhausted"
+            break
         print(f'Greedy iteration # {outer_loop_counter}')
         error_indicators = np.zeros(samples_left.size)
 
@@ -217,7 +355,8 @@ def run_greedy(fom_model: QoiModel,
             greedy_file.flush()
             parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_index])
             rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{run_directory_prefix}{sample_index}'
-            create_empty_dir(rom_run_directory)
+            if create_rom_run_directories:
+                create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
             rom_model.run_model(rom_run_directory,parameter_dict)
             error_indicators[counter] = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
@@ -225,11 +364,10 @@ def run_greedy(fom_model: QoiModel,
         rom_time += time.time() - t0
 
         sample_with_highest_error_indicator = samples_left[la.argmax(error_indicators)]
-        max_error_indicators = np.append(max_error_indicators,
-                                         np.amax(error_indicators))
+        max_error_indicator = np.amax(error_indicators)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator}"
                           " had the highest error indicator of"
-                          f" {max_error_indicators[-1]} \n")
+                          f" {max_error_indicator} \n")
 
         outer_loop_counter += 1
         if outer_loop_counter > 1:
@@ -237,13 +375,17 @@ def run_greedy(fom_model: QoiModel,
             greedy_file.write("Our MLEM error estimate is "
                               f"{predicted_max_qoi_error}\n")
             greedy_file.flush()
-            predicted_qoi_errors = np.append(predicted_qoi_errors,
-                                             predicted_max_qoi_error)
             if np.amax(predicted_max_qoi_error < tolerance):
                 converged = True
                 print('Run converged, max approximate qoi error'
                       f' = {predicted_max_qoi_error}')
                 break
+            predicted_qoi_errors = np.append(predicted_qoi_errors,
+                                             predicted_max_qoi_error)
+
+        # Histories describe completed enrichments, excluding the final
+        # tolerance check that does not select another FOM training sample.
+        max_error_indicators = np.append(max_error_indicators, max_error_indicator)
 
         t0 = time.time()
         greedy_file.write("Running FOM sample"
@@ -253,8 +395,10 @@ def run_greedy(fom_model: QoiModel,
         ## Identify the sample with the highest error and run FOM
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_with_highest_error_indicator}'
         parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_with_highest_error_indicator])
+        create_empty_dir(fom_run_directory)
+        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
         fom_model.run_model(fom_run_directory,parameter_dict)
-        fom_qoi = fom_model.compute_qoi(fom_run_directory,parameter_dict)
+        fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
 
         fom_time += time.time() - t0
 
@@ -264,7 +408,7 @@ def run_greedy(fom_model: QoiModel,
             f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/'
             f'{run_directory_prefix}{sample_with_highest_error_indicator}'
         )
-        rom_qoi = rom_model.compute_qoi(rom_run_directory,parameter_dict)
+        rom_qoi = _compute_qoi(rom_model, rom_run_directory, parameter_dict)
         qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
                           f"an error of {qoi_error}\n")
@@ -274,6 +418,7 @@ def run_greedy(fom_model: QoiModel,
         ## Update our samples
         training_samples = np.append(training_samples,
                                      sample_with_highest_error_indicator)
+        fom_qois = np.vstack((fom_qois, fom_qoi))
         samples_left = np.delete(samples_left, la.argmax(error_indicators))
 
         # Update ROM basis
@@ -284,36 +429,48 @@ def run_greedy(fom_model: QoiModel,
 
         updated_offline_data_dir = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{offline_directory_prefix}/'
         create_empty_dir(updated_offline_data_dir)
-        rom_model = rom_model_builder.build_from_training_dirs(updated_offline_data_dir,training_dirs)
+        rom_model = rom_model_builder.build_from_training_dirs(
+            updated_offline_data_dir, list(training_dirs),
+            parameter_samples[training_samples], fom_qois.copy(),
+        )
 
         basis_time += time.time() - t0
 
-        # Add a new sample
-        new_parameter_sample = parameter_space.generate_samples(1)
-        parameter_samples = np.append(parameter_samples,
-                                      new_parameter_sample, axis=0)
-        new_sample_number = testing_sample_size + outer_loop_counter - 1
-        rom_run_directory = f'{greedy_directory}/rom_iteration_{outer_loop_counter}/{run_directory_prefix}{new_sample_number}'
-        fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{new_sample_number}'
-        create_empty_dir(rom_run_directory)
-        create_empty_dir(fom_run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names,new_parameter_sample[0])
-
-        rom_model.populate_run_directory(rom_run_directory,parameter_dict)
-        fom_model.populate_run_directory(fom_run_directory,parameter_dict)
-
-        samples_left = np.append(samples_left, new_sample_number)
+        # Replenish only if another iteration can run. Directory preparation
+        # is deferred until a candidate actually needs a FOM or ROM evaluation.
+        if outer_loop_counter < max_iterations:
+            new_parameter_sample = parameter_space.generate_samples(1)
+            new_sample_number = len(parameter_samples)
+            parameter_samples = np.append(parameter_samples,
+                                          new_parameter_sample, axis=0)
+            samples_left = np.append(samples_left, new_sample_number)
+            if supplied_initial_samples:
+                samples_left = _exclude_training_samples(parameter_samples, samples_left, training_samples)
         greedy_file.flush()
-        np.savez(f'{greedy_directory}/greedy_stats',
-                 max_error_indicators=max_error_indicators,
-                 qoi_errors=qoi_errors,
-                 predicted_qoi_errors=predicted_qoi_errors,
-                 training_samples=training_samples,
-                 fom_time=fom_time,
-                 rom_time=rom_time,
-                 basis_time=basis_time)
+        save_stats("running")
 
+    if converged:
+        termination_reason = "tolerance"
+    elif termination_reason == "max_iterations":
+        print(f'Maximum greedy iterations ({max_iterations}) reached')
+    else:
+        print('No untrained samples remain in the greedy candidate pool')
+    save_stats(termination_reason)
+    greedy_file.write(f"Stopped: {termination_reason}\n")
     greedy_file.close()
+    return GreedyResult(
+        rom_model=rom_model,
+        training_parameters=parameter_samples[training_samples].copy(),
+        training_qois=fom_qois.copy(),
+        training_dirs=tuple(training_dirs),
+        training_sample_indices=training_samples.copy(),
+        max_error_indicators=max_error_indicators.copy(),
+        qoi_errors=qoi_errors.copy(),
+        predicted_qoi_errors=predicted_qoi_errors.copy(),
+        sample_counts=np.arange(initial_sample_size, training_samples.size + 1),
+        converged=converged,
+        termination_reason=termination_reason,
+    )
 
 
 class QoIvsErrorIndicatorRegressor:
