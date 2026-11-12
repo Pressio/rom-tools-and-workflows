@@ -1,6 +1,0 @@
-romtools.workflows.space\_filling.sampling
-==========================================
-
-.. automodule:: romtools.workflows.space_filling.sampling
-
-   
