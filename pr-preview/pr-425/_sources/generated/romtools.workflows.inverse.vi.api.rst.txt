@@ -1,0 +1,14 @@
+romtools.workflows.inverse.vi.api
+=================================
+
+.. automodule:: romtools.workflows.inverse.vi.api
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mf_vi_with_auto_rom
+      run_mf_vi
+      run_vi
+   

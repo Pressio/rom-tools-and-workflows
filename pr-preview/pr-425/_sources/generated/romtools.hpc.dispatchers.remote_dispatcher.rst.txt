@@ -1,0 +1,12 @@
+romtools.hpc.dispatchers.remote\_dispatcher
+===========================================
+
+.. automodule:: romtools.hpc.dispatchers.remote_dispatcher
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RemoteDispatcher
+   

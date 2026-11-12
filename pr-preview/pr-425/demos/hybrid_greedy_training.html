@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Hybrid greedy / space-filling training &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/thebelab-helper.js"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/hybrid_greedy_training';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Ensemble Kalman Inversion (EKI)" href="../api_inverse_eki.html" />
+    <link rel="prev" title="Batch space-filling ROM training" href="space_filling_training.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html">Sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../remote_execution.html">Remote Execution</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_builders.html">Model builders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="greedy_training.html">Greedy Training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="space_filling_training.html">Batch space-filling ROM training</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">Hybrid greedy / space-filling training</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inverse_problems.html">Inverse problems</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithm-and-interfaces">Algorithm and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-shared-behavior">Validation and shared behavior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api-and-example">Public API and example</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.hybrid_greedy.run_hybrid_greedy"><code class="docutils literal notranslate"><span class="pre">run_hybrid_greedy()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.hybrid_greedy.HybridGreedyResult"><code class="docutils literal notranslate"><span class="pre">HybridGreedyResult</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.select_maximin_samples"><code class="docutils literal notranslate"><span class="pre">select_maximin_samples()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Hybrid greedy / space-filling training</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="hybrid-greedy-space-filling-training">
+<h1>Hybrid greedy / space-filling training<a class="headerlink" href="#hybrid-greedy-space-filling-training" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">run_hybrid_greedy</span></code> combines one error-indicator-selected point per adaptation
+batch with geometric maximin coverage. An independent validation error controls
+termination. It does not calibrate error indicators against QoI errors.</p>
+<section id="algorithm-and-interfaces">
+<h2>Algorithm and interfaces<a class="headerlink" href="#algorithm-and-interfaces" title="Link to this heading">#</a></h2>
+<p>Initialization draws <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span></code> rows directly from
+<code class="docutils literal notranslate"><span class="pre">ParameterSpace.generate_samples</span></code>. The parameter space controls the distribution,
+including LHS when configured; the workflow adds no LHS construction. Repeated or
+metric-equivalent initial rows are removed in sampler order. This differs from
+<a class="reference internal" href="space_filling_training.html"><span class="doc">Batch space-filling ROM training</span></a>, whose initialization remains maximin-based.</p>
+<p>The workflow executes the initial FOM batch, constructs a ROM, and validates it
+<strong>before any adaptation</strong>. Each subsequent round:</p>
+<ol class="arabic simple">
+<li><p>Draws a fresh <code class="docutils literal notranslate"><span class="pre">candidate_pool_size</span></code> pool and excludes points equivalent to
+historical training samples.</p></li>
+<li><p>Evaluates the current ROM’s raw error indicator at every remaining candidate
+and selects the largest, breaking ties by input order.</p></li>
+<li><p>Selects up to <code class="docutils literal notranslate"><span class="pre">batch_size</span> <span class="pre">-</span> <span class="pre">1</span></code> further points by maximin distance, accounting
+for all historical samples, the greedy point, and points already selected in
+this batch. Both selection steps use the same candidate pool.</p></li>
+<li><p>Executes the entire selected FOM batch concurrently, rebuilds using all
+accumulated training data, and validates again.</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">batch_size=1</span></code> gives purely greedy adaptation with the same validation stopping
+rule. A short distinct candidate pool or remaining FOM budget shortens a batch.
+An empty admissible pool stops with <code class="docutils literal notranslate"><span class="pre">candidate_pool_exhausted</span></code>; it does not
+prove the entire parameter domain is exhausted. Accepted FOM training runs are
+retained and never repeated.</p>
+<p>The FOM implements <code class="docutils literal notranslate"><span class="pre">QoiModel</span></code>. The builder implements
+<code class="docutils literal notranslate"><span class="pre">QoiModelBuilderWithTrainingData</span></code> and receives aligned training directories,
+parameter rows, and QoI rows from <strong>all completed batches</strong>. Its production ROM
+must implement <code class="docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimate</span></code>, including
+<code class="docutils literal notranslate"><span class="pre">compute_error_estimate(run_directory,</span> <span class="pre">parameter_dict)</span></code>. Missing methods produce
+a diagnostic error. Indicators must be finite, nonnegative scalars. They rank
+candidates only and need not have the units or normalization of the validation
+error. Indicator failures report candidate parameters, index, path, and model stage.</p>
+</section>
+<section id="validation-and-shared-behavior">
+<h2>Validation and shared behavior<a class="headerlink" href="#validation-and-shared-behavior" title="Link to this heading">#</a></h2>
+<p>Validation reuses <a class="reference internal" href="space_filling_training.html#space-filling-validation"><span class="std std-ref">Validation and error functors</span></a> unchanged: by default, five
+independent fold-specific ROM builds compute the maximum held-out relative L2
+QoI error. Training stops when that error is <strong>less than or equal to</strong>
+<code class="docutils literal notranslate"><span class="pre">tolerance</span></code>. At least five distinct initial samples are required by default.
+<code class="docutils literal notranslate"><span class="pre">error_functor</span></code> replaces the per-sample error; <code class="docutils literal notranslate"><span class="pre">validation_strategy</span></code> accepts
+the existing <code class="docutils literal notranslate"><span class="pre">SpaceFillingValidationContext</span></code> and owns error aggregation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> includes initialization. <code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code> caps training
+FOM evaluations. Termination reasons are <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>, <code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code>,
+<code class="docutils literal notranslate"><span class="pre">max_iterations</span></code>, and <code class="docutils literal notranslate"><span class="pre">candidate_pool_exhausted</span></code>, with tolerance taking
+precedence. Cross-validation costs, fitting independence, and limitations are
+those described in the linked validation documentation.</p>
+<p>Candidates may come from irregular domains. NumPy Euclidean distance is the
+default; there is no automatic normalization. Supply <code class="docutils literal notranslate"><span class="pre">distance_metric(a,</span> <span class="pre">b)</span></code>
+for differing scales, units, non-Euclidean geometry, or nonnumeric parameter
+rows. Zero distance identifies equivalent points. See
+<a class="reference internal" href="space_filling_training.html#space-filling-distances"><span class="std std-ref">Parameter spaces and distances</span></a> for metric, parameter-shape, and seed conventions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">max_concurrent_fom_runs</span></code> limits active FOM processes independently of
+<code class="docutils literal notranslate"><span class="pre">batch_size</span></code>. Each FOM uses an independent directory. All submitted tasks finish
+successfully before rebuilding; failed batches retain diagnostic FOM files and
+never enter a build. Concurrent FOMs must support multiprocessing spawn. See
+<a class="reference internal" href="space_filling_training.html#space-filling-execution"><span class="std std-ref">FOM execution contract</span></a> for the complete execution contract.</p>
+<p>Candidate ROM calls run serially through <code class="docutils literal notranslate"><span class="pre">populate_run_directory</span></code>,
+<code class="docutils literal notranslate"><span class="pre">run_model</span></code> (which must return zero), and <code class="docutils literal notranslate"><span class="pre">compute_error_estimate</span></code>. By default,
+independent temporary run directories support filesystem-backed ROMs. They are
+removed after selection, including on failure, so models must finish all work
+before returning. <code class="docutils literal notranslate"><span class="pre">create_rom_run_directories=False</span></code> skips candidate directory
+creation for in-memory ROMs; methods still receive nominal absolute paths.
+K-fold validation retains its existing directory behavior.</p>
+</section>
+<section id="public-api-and-example">
+<h2>Public API and example<a class="headerlink" href="#public-api-and-example" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.hybrid_greedy.run_hybrid_greedy">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.hybrid_greedy.</span></span><span class="sig-name descname"><span class="pre">run_hybrid_greedy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate_pool_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_concurrent_fom_runs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_functor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_fom_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_rom_run_directories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/hybrid_greedy/run_hybrid_greedy.html#run_hybrid_greedy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.hybrid_greedy.run_hybrid_greedy" title="Link to this definition">#</a></dt>
+<dd><p>Train with one greedy point and up to <code class="docutils literal notranslate"><span class="pre">batch_size</span> <span class="pre">-</span> <span class="pre">1</span></code> maximin points.</p>
+<p>Initialization draws directly from <code class="docutils literal notranslate"><span class="pre">parameter_space.generate_samples</span></code>;
+duplicate/metric-equivalent rows are removed in sampler order. Each later
+round draws a fresh pool, excludes training-equivalent points, ranks raw
+error indicators, and completes the batch by maximin selection from the
+same pool. Ties use candidate order. No parameter normalization is applied.
+A short pool or remaining FOM budget may shorten a batch.</p>
+<p>The four-argument builder receives all accumulated FOM directories,
+parameter rows, and QoI rows. Production ROMs must implement QoiModelWithErrorEstimate.
+Indicators rank candidates only; the unchanged space-filling validation
+strategy controls stopping (default: maximum held-out relative L2 error
+over five folds). Initial training is validated before any adaptation.</p>
+<p>Candidate ROM evaluations are serial and use temporary directories removed
+after selection, including on failure. Set <code class="docutils literal notranslate"><span class="pre">create_rom_run_directories</span></code>
+to False for in-memory models: calls still receive nominal absolute paths,
+which need not exist. Validation retains its existing directory behavior.</p>
+<p>FOM batches use process-isolated execution with independent directories;
+parallel FOM objects must support multiprocessing spawn serialization.
+All tasks finish before any rebuild or failure is reported. Failed batches
+retain FOM files and never enter a ROM build. <code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> includes
+initialization; <code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code> caps training runs, not custom validation
+references. Output must be an absent or empty absolute directory. Restart
+and automatic retries are not supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="../generated/romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelBuilderWithTrainingData" title="romtools.workflows.model_builders.QoiModelBuilderWithTrainingData"><em>QoiModelBuilderWithTrainingData</em></a>)</p></li>
+<li><p><strong>parameter_space</strong> (<a class="reference internal" href="../generated/romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em>)</p></li>
+<li><p><strong>initial_sample_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>candidate_pool_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>distance_metric</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_concurrent_fom_runs</strong> (<em>int</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
+<li><p><strong>error_functor</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>validation_strategy</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
+<li><p><strong>max_fom_samples</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>create_rom_run_directories</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../generated/romtools.workflows.hybrid_greedy.html#romtools.workflows.hybrid_greedy.HybridGreedyResult" title="romtools.workflows.hybrid_greedy.run_hybrid_greedy.HybridGreedyResult"><em>HybridGreedyResult</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.hybrid_greedy.HybridGreedyResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.hybrid_greedy.</span></span><span class="sig-name descname"><span class="pre">HybridGreedyResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_dirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">greedy_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">greedy_error_indicators</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converged</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">termination_reason</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/hybrid_greedy/run_hybrid_greedy.html#HybridGreedyResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.hybrid_greedy.HybridGreedyResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Final ROM, accumulated FOM data, and completed-round selection history.</p>
+<p><code class="docutils literal notranslate"><span class="pre">greedy_parameters</span></code> and <code class="docutils literal notranslate"><span class="pre">greedy_error_indicators</span></code> contain one entry per
+adaptation round, excluding initialization. <code class="docutils literal notranslate"><span class="pre">sample_counts</span></code> and
+<code class="docutils literal notranslate"><span class="pre">validation_errors</span></code> include initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><em>QoiModelWithErrorEstimate</em></a>)</p></li>
+<li><p><strong>training_parameters</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_qois</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_dirs</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>validation_errors</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>sample_counts</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>greedy_parameters</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>greedy_error_indicators</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>converged</strong> (<em>bool</em>)</p></li>
+<li><p><strong>termination_reason</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p>The result holds the final ROM, accumulated training arrays/directories,
+validation errors and cumulative sample counts (including initialization), and
+<code class="docutils literal notranslate"><span class="pre">greedy_parameters</span></code> / <code class="docutils literal notranslate"><span class="pre">greedy_error_indicators</span></code> (one entry per completed
+adaptation round). <code class="docutils literal notranslate"><span class="pre">hybrid_greedy_stats.npz</span></code> records the same histories plus FOM
+run times; <code class="docutils literal notranslate"><span class="pre">hybrid_greedy_status.log</span></code> records progress and failures. Output must
+be an absent or empty absolute directory. There is no restart/resume support.</p>
+<p><code class="docutils literal notranslate"><span class="pre">examples/hybrid_greedy_demo.py</span></code> is a complete surrogate example. It adapts the
+existing scalar Gaussian-process builder to expose predictive standard deviation
+as the greedy indicator. This indicator is distinct from the measured K-fold
+QoI error. Its initial design uses the existing LHS sampler:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">examples.hybrid_greedy_demo</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScalarFom</span><span class="p">,</span> <span class="n">UncertaintyBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_hybrid_greedy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.parameter_spaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformParameterSpace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.sampling_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">LatinHypercubeSampler</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">run_hybrid_greedy</span><span class="p">(</span>
+        <span class="n">ScalarFom</span><span class="p">(),</span> <span class="n">UncertaintyBuilder</span><span class="p">(),</span>
+        <span class="n">UniformParameterSpace</span><span class="p">([</span><span class="s2">"x"</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">LatinHypercubeSampler</span><span class="p">),</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"hybrid_training"</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()),</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+        <span class="n">initial_sample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">candidate_pool_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">max_concurrent_fom_runs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">max_fom_samples</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">create_rom_run_directories</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">termination_reason</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">validation_errors</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Run the complete example from the checkout with a fresh output directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/hybrid_greedy_demo.py<span class="w"> </span>--work-dir<span class="w"> </span>/tmp/hybrid-greedy-demo
+</pre></div>
+</div>
+<p>For a reusable geometric selector that accepts an explicit candidate pool, use
+<code class="docutils literal notranslate"><span class="pre">select_maximin_samples</span></code> (also exported from <code class="docutils literal notranslate"><span class="pre">romtools.workflows</span></code>):</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.select_maximin_samples">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">select_maximin_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/_adaptive/sampling.html#select_maximin_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.select_maximin_samples" title="Link to this definition">#</a></dt>
+<dd><p>Select up to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> distinct rows from an explicit candidate pool.</p>
+<p>Ties use input order; with no existing samples, start at the first candidate.
+Zero distance excludes equivalent points. Euclidean distances are vectorized
+and updated incrementally; custom metrics may use nonnumeric parameter rows.
+Input arrays are never modified.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithm-and-interfaces">Algorithm and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-shared-behavior">Validation and shared behavior</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api-and-example">Public API and example</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.hybrid_greedy.run_hybrid_greedy"><code class="docutils literal notranslate"><span class="pre">run_hybrid_greedy()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.hybrid_greedy.HybridGreedyResult"><code class="docutils literal notranslate"><span class="pre">HybridGreedyResult</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.select_maximin_samples"><code class="docutils literal notranslate"><span class="pre">select_maximin_samples()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/demos/hybrid_greedy_training.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Batch space-filling ROM training &#8212; ROM Tools and Workflows v0.2.0</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
+    <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/thebelab-helper.js"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["\\(", "\\)"], ["$", "$"]], "displayMath": [["\\[", "\\]"], ["$$", "$$"]]}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'demos/space_filling_training';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../_static/ask-repo.js?v=c898c411"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Hybrid greedy / space-filling training" href="hybrid_greedy_training.html" />
+    <link rel="prev" title="Distributed SVD" href="../distributed_svd.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ROM Tools and Workflows v0.2.0</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../full_covariance_vi.html">
+    Full-covariance variational inference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../formatting.html">
+    Formatting Utility
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    ROM Tools and Workflows: Examples and Demos
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../rom_tools_at_scale.html">
+    ROM-Tools at Scale: Example Applications
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../remote_execution.html">
+    Remote Execution
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="projection_rom_utilities.html">Projection-based ROM utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="surrogates.html">Surrogates</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="workflow_concepts.html">Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter_space.html">Parameter spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html">Sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../remote_execution.html">Remote Execution</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_builders.html">Model builders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="greedy_training.html">Greedy Training</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">Batch space-filling ROM training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hybrid_greedy_training.html">Hybrid greedy / space-filling training</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inverse_problems.html">Inverse problems</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Build/install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows">GitHub Repo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/Pressio/rom-tools-and-workflows/issues">Open an issue/feature req.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-3"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api">Public API</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.run_space_filling"><code class="docutils literal notranslate"><span class="pre">run_space_filling()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.select_space_filling_samples"><code class="docutils literal notranslate"><span class="pre">select_space_filling_samples()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.SpaceFillingResult"><code class="docutils literal notranslate"><span class="pre">SpaceFillingResult</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-spaces-and-distances">Parameter spaces and distances</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#union-of-rectangular-regions">Union of rectangular regions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fom-execution-contract">FOM execution contract</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#builders-and-training-data">Builders and training data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-error-functors">Validation and error functors</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.KFoldValidation"><code class="docutils literal notranslate"><span class="pre">KFoldValidation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.SpaceFillingValidationContext"><code class="docutils literal notranslate"><span class="pre">SpaceFillingValidationContext</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#termination-failures-and-output">Termination, failures, and output</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-example">Complete example</a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Batch space-filling ROM training</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="batch-space-filling-rom-training">
+<h1>Batch space-filling ROM training<a class="headerlink" href="#batch-space-filling-rom-training" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">run_space_filling</span></code> constructs a ROM through sequential batches of geometrically
+selected FOM simulations. Unlike greedy training, sample selection uses parameter
+coverage rather than an error indicator. Validation controls when training stops.</p>
+<p>Each round selects its complete batch, executes the FOMs concurrently, builds a
+ROM from all accumulated successful training runs, and validates it. The initial
+batch defaults to 10 samples; subsequent batches default to 5. <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>
+and <code class="docutils literal notranslate"><span class="pre">max_concurrent_fom_runs</span></code> are independent: a batch of 10 can execute with
+at most 3 active FOM tasks.</p>
+<section id="public-api">
+<h2>Public API<a class="headerlink" href="#public-api" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.run_space_filling">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">run_space_filling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate_pool_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_concurrent_fom_runs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_functor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_fom_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/space_filling/run_space_filling.html#run_space_filling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.run_space_filling" title="Link to this definition">#</a></dt>
+<dd><p>Train a ROM by alternating complete maximin FOM batches and validation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> controls new training points independently of the active
+process limit <code class="docutils literal notranslate"><span class="pre">max_concurrent_fom_runs</span></code>. Concurrent FOM objects must be
+serializable with multiprocessing’s spawn context. All three model methods
+execute in one worker task and may use that task’s independent directory.
+Builders and validation run sequentially in the parent process.</p>
+<p>The builder receives directories, parameter rows, and QoI rows in matching
+order, using QoiModelBuilderWithTrainingData’s four-argument method. It must
+build independent models from only the supplied data. Default validation
+rebuilds five fold-specific ROMs and returns maximum held-out relative L2
+QoI error. <code class="docutils literal notranslate"><span class="pre">error_functor(qoi_rom,</span> <span class="pre">qoi_fom)</span></code> replaces that per-sample error
+completely; no normalization is applied to a custom functor’s result.
+A custom <code class="docutils literal notranslate"><span class="pre">validation_strategy(context)</span></code> owns validation and aggregation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> includes the initial batch; <code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code> bounds
+training FOM runs scheduled here, excluding any references prepared by a
+custom validation strategy. Short candidate pools and final budget-limited
+batches are allowed. No restart, automatic retry, or overwrite is performed.
+Output must be an absent or empty absolute directory. Failed batches retain
+all run files and never trigger a rebuild or enter accepted training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="../generated/romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelBuilderWithTrainingData" title="romtools.workflows.model_builders.QoiModelBuilderWithTrainingData"><em>QoiModelBuilderWithTrainingData</em></a>)</p></li>
+<li><p><strong>parameter_space</strong> (<a class="reference internal" href="../generated/romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em>)</p></li>
+<li><p><strong>initial_sample_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>candidate_pool_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>distance_metric</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_concurrent_fom_runs</strong> (<em>int</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
+<li><p><strong>error_functor</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>validation_strategy</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_iterations</strong> (<em>int</em>)</p></li>
+<li><p><strong>max_fom_samples</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../generated/romtools.workflows.space_filling.html#romtools.workflows.space_filling.SpaceFillingResult" title="romtools.workflows.space_filling.run_space_filling.SpaceFillingResult"><em>SpaceFillingResult</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.select_space_filling_samples">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">select_space_filling_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate_pool_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/_adaptive/sampling.html#select_space_filling_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.select_space_filling_samples" title="Link to this definition">#</a></dt>
+<dd><p>Select up to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> maximin-separated candidate rows.</p>
+<p>Candidates come exclusively from <code class="docutils literal notranslate"><span class="pre">parameter_space.generate_samples</span></code>.
+No bounds or parameter normalization are assumed. With no existing rows,
+the first point is selected randomly; subsequent ties use candidate order.
+A short result means the sampled pool has insufficient distinct points,
+not that the entire domain is exhausted. Zero metric distance identifies
+duplicates, including points coincident with existing training data.</p>
+<p>The default metric is Euclidean and requires finite numeric arrays. A
+custom <code class="docutils literal notranslate"><span class="pre">distance_metric(candidate,</span> <span class="pre">reference)</span></code> must return a finite,
+nonnegative scalar and may operate on string/object rows. Use it when
+parameter units, scales, or geometry make raw Euclidean distance unsuitable.</p>
+<p>Sampling is reproducible when the space honors its seed argument or uses
+NumPy’s legacy RNG. Independent, unseeded RNGs owned by custom spaces cannot
+be controlled by this function. The caller’s NumPy RNG state is preserved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter_space</strong> (<a class="reference internal" href="../generated/romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.ParameterSpace" title="romtools.workflows.parameter_spaces.ParameterSpace"><em>ParameterSpace</em></a>)</p></li>
+<li><p><strong>existing_samples</strong> (<em>ndarray</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>candidate_pool_size</strong> (<em>int</em>)</p></li>
+<li><p><strong>distance_metric</strong> (<em>Callable</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.SpaceFillingResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">SpaceFillingResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_dirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converged</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">termination_reason</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/space_filling/run_space_filling.html#SpaceFillingResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.SpaceFillingResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Final production ROM and ordered data from completed training rounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>training_parameters</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_qois</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_dirs</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>validation_errors</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>sample_counts</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>converged</strong> (<em>bool</em>)</p></li>
+<li><p><strong>termination_reason</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="parameter-spaces-and-distances">
+<span id="space-filling-distances"></span><h2>Parameter spaces and distances<a class="headerlink" href="#parameter-spaces-and-distances" title="Link to this heading">#</a></h2>
+<p>Candidates come exclusively from <code class="docutils literal notranslate"><span class="pre">ParameterSpace.generate_samples</span></code>. The
+workflow does not inspect bounds, project into a box, or assume a uniform
+sampling distribution. Constrained domains can implement their own sampler;
+unbounded distributions are also accepted. Coverage is always relative to the
+finite candidate pool: rare regions not sampled by the space cannot be selected.</p>
+<p>Maximin selection maintains each candidate’s nearest distance to existing and
+already-selected training points. The first point is seeded randomly when there
+is no training data; subsequent points maximize that nearest distance. Euclidean
+distances use vectorized NumPy operations without a candidate-by-training matrix.
+A custom metric uses a slower general path.</p>
+<p>There is <strong>no automatic parameter normalization</strong>. For different units/scales,
+provide a suitable metric, for example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scales</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">])</span>
+<span class="n">distance_metric</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="n">scales</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The default metric requires finite numeric parameters. Custom metrics can handle
+string/object rows, including heterogeneous spaces. Each sample row must have
+one column per parameter name for FOM dictionary construction. Distances must be
+finite, nonnegative scalars. Zero distance identifies duplicate/equivalent points.</p>
+<p>The sampling utility returns <strong>up to</strong> the requested batch size. Short or empty
+results mean the candidate pool lacks enough distinct points; this does not prove
+that the whole domain is exhausted. Constant and zero-dimensional spaces contain
+at most one distinct point under the default metric. The default five-fold
+validation needs at least five distinct initial points; choose a different
+validation strategy for smaller datasets.</p>
+<p><code class="docutils literal notranslate"><span class="pre">random_seed</span></code> controls independent sampling, validation, build, and FOM NumPy
+seed streams. Sampling does not change the caller’s NumPy RNG state. Legacy
+<code class="docutils literal notranslate"><span class="pre">generate_samples(n)</span></code> implementations using NumPy’s global RNG are supported;
+custom spaces owning independent unseeded RNGs must supply their own reproducible
+behavior. Reproducibility of external solvers remains the model’s responsibility.</p>
+</section>
+<section id="union-of-rectangular-regions">
+<h2>Union of rectangular regions<a class="headerlink" href="#union-of-rectangular-regions" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">UnionParameterSpace</span></code> provides independent uniform Monte Carlo samples over
+possibly overlapping or disconnected axis-aligned boxes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.parameter_spaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformParameterSpace</span><span class="p">,</span> <span class="n">UnionParameterSpace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.sampling_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloSampler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.space_filling</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_space_filling</span>
+
+<span class="n">region_1</span> <span class="o">=</span> <span class="n">UniformParameterSpace</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">"mach"</span><span class="p">,</span> <span class="s2">"altitude"</span><span class="p">],</span> <span class="p">[</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">],</span> <span class="n">MonteCarloSampler</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">region_2</span> <span class="o">=</span> <span class="n">UniformParameterSpace</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">"mach"</span><span class="p">,</span> <span class="s2">"altitude"</span><span class="p">],</span> <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">15.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">],</span> <span class="n">MonteCarloSampler</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">domain</span> <span class="o">=</span> <span class="n">UnionParameterSpace</span><span class="p">([</span><span class="n">region_1</span><span class="p">,</span> <span class="n">region_2</span><span class="p">])</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">generate_samples</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">domain</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">domain</span><span class="o">.</span><span class="n">contains</span><span class="p">([</span><span class="mf">9.0</span><span class="p">,</span> <span class="mf">35.0</span><span class="p">])</span>
+
+<span class="c1"># Use application-specific FOM and builder objects implementing the contracts below.</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">run_space_filling</span><span class="p">(</span>
+    <span class="n">fom_model</span><span class="p">,</span> <span class="n">rom_model_builder</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="s2">"/absolute/path/to/new/training"</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">initial_sample_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">distance_metric</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">]),</span>
+    <span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_fom_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Overlap multiplicity is corrected automatically: proposals choose boxes by
+volume and are accepted with probability one divided by the number of boxes
+containing them. Overlaps are therefore not overrepresented. Heavy overlap
+reduces the acceptance rate; sampling does not use a bounding-box rejection
+scheme. Region names and bounds are copied at construction, and regions must
+have matching ordered names/dimensions and finite bounds with positive widths.
+<code class="docutils literal notranslate"><span class="pre">UniformParameter.get_bounds()</span></code> and <code class="docutils literal notranslate"><span class="pre">UniformParameterSpace.get_bounds()</span></code>
+return independent lower/upper coordinate arrays.</p>
+<p>The union ignores its regions’ sampler choices and uses a local NumPy generator;
+it produces independent Monte Carlo samples, <strong>not a Latin hypercube design</strong>.
+<code class="docutils literal notranslate"><span class="pre">contains(point)</span></code> returns a Boolean, and <code class="docutils literal notranslate"><span class="pre">contains(batch)</span></code> returns a Boolean
+mask; box boundaries are included. Zero requested samples return shape <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">d)</span></code>.
+Float64-unrepresentable widths or underflowing relative volume probabilities are
+rejected explicitly. As for other parameter spaces, the workflow requires one
+scalar coordinate per parameter name, even though standalone sampling supports
+vector-valued parameters.</p>
+<p>Uniform candidate draws and maximin-selected training points are different:
+<strong>maximin-selected points are not generally independent uniform samples</strong>. No
+changes to the space-filling selection or training algorithms are needed.</p>
+</section>
+<section id="fom-execution-contract">
+<span id="space-filling-execution"></span><h2>FOM execution contract<a class="headerlink" href="#fom-execution-contract" title="Link to this heading">#</a></h2>
+<p>For each sample, the workflow creates an independent absolute run directory and
+calls <code class="docutils literal notranslate"><span class="pre">populate_run_directory</span></code>, <code class="docutils literal notranslate"><span class="pre">run_model</span></code>, then <code class="docutils literal notranslate"><span class="pre">compute_qoi</span></code> in the same
+worker task. <code class="docutils literal notranslate"><span class="pre">run_model</span></code> must return 0 for success. Nonzero return codes and
+exceptions fail the batch. QoIs must be nonempty finite real numeric values;
+scalars are flattened to one-element vectors, with consistent dimensions across
+all samples and rounds.</p>
+<p>Execution uses <code class="docutils literal notranslate"><span class="pre">ProcessPoolExecutor</span></code> with <code class="docutils literal notranslate"><span class="pre">spawn</span></code>, isolating working-directory
+changes and Python object state. Concurrent FOM objects must be serializable;
+define model classes at module scope and guard executable scripts with
+<code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">__name__</span> <span class="pre">==</span> <span class="pre">&quot;__main__&quot;:</span></code>. With concurrency one, execution is direct and
+does not require serialization. Model calls restore the previous working
+directory, including on failure.</p>
+<p>Per-run state can live in the worker’s model or its run directory, but model
+mutations are not returned to the parent process. Do not rely on shared mutable
+state across samples or write to common external filenames. Models launching MPI
+or threaded solvers must account for their own resource use: the concurrency
+limit counts FOM tasks, not MPI ranks or BLAS threads.</p>
+</section>
+<section id="builders-and-training-data">
+<h2>Builders and training data<a class="headerlink" href="#builders-and-training-data" title="Link to this heading">#</a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">QoiModelBuilderWithTrainingData</span></code>. Each build receives:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rom</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
+    <span class="n">offline_data_dir</span><span class="p">,</span>
+    <span class="n">training_data_dirs</span><span class="p">,</span>
+    <span class="n">training_parameters</span><span class="p">,</span>  <span class="c1"># (N, parameter_dimension)</span>
+    <span class="n">training_qois</span><span class="p">,</span>        <span class="c1"># (N, qoi_dimension)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Directory, parameter, and QoI entries have matching row order. Directories retain
+application-specific full-state snapshots and other files; QoIs supplement those
+artifacts and do not replace the snapshots a projection-based builder needs.
+Builders must read only their supplied training directories, fit independent
+models from only their supplied data, and write artifacts under their supplied
+offline directory. Two-argument directory-only builders need a user adapter.</p>
+<p>Builders, validation strategies, ROM evaluations, and error functors execute
+sequentially in the parent process; they need not be serializable.</p>
+</section>
+<section id="validation-and-error-functors">
+<span id="space-filling-validation"></span><h2>Validation and error functors<a class="headerlink" href="#validation-and-error-functors" title="Link to this heading">#</a></h2>
+<p>The default strategy is five-fold cross-validation. Every fold builds a new ROM
+from the complementary training subset and predicts the held-out samples using
+their cached FOM reference QoIs. All fitted preprocessing, including POD bases,
+normalization, truncation, and hyperparameters, must use only that fold’s training
+subset. The returned production ROM is built from the complete dataset.</p>
+<p>The default per-sample error is relative L2:</p>
+<div class="math notranslate nohighlight">
+\[e_i = \frac{\lVert q_{\mathrm{ROM},i} - q_{\mathrm{FOM},i}\rVert_2}
+                {\max(\lVert q_{\mathrm{FOM},i}\rVert_2, 10^{-12})}.\]</div>
+<p>The denominator floor avoids division by zero; errors near zero reference norms
+can consequently be large. The maximum held-out sample error is compared with
+<code class="docutils literal notranslate"><span class="pre">tolerance</span></code>, and convergence occurs when error is less than or equal to it.</p>
+<p>To change the per-sample measure, supply <code class="docutils literal notranslate"><span class="pre">error_functor(qoi_rom,</span> <span class="pre">qoi_fom)</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_space_filling</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">error_functor</span><span class="o">=</span><span class="k">lambda</span> <span class="n">q_rom</span><span class="p">,</span> <span class="n">q_fom</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">q_rom</span> <span class="o">-</span> <span class="n">q_fom</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments are matching flattened QoI vectors. The functor returns the complete,
+finite nonnegative scalar error; <strong>no further normalization</strong> is applied.
+Tolerance follows that error’s units/meaning. Functor failures report fold and
+sample context.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.KFoldValidation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">KFoldValidation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_folds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/_adaptive/validation.html#KFoldValidation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.KFoldValidation" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Maximum held-out sample error from independent subset-trained ROMs.</p>
+<p>No additional FOM evaluations are performed. Each validation uses
+<code class="docutils literal notranslate"><span class="pre">num_folds</span></code> builds and one held-out ROM evaluation per training sample.
+The error functor comes from the context; its result is not renormalized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_folds</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>For example, <code class="docutils literal notranslate"><span class="pre">validation_strategy=KFoldValidation(num_folds=3)</span></code> uses three
+folds. Each round costs one production build, one build per fold, and one
+held-out ROM evaluation per training sample, with no extra FOM evaluations.</p>
+<p>For a custom validation procedure, pass a callable returning a finite nonnegative
+scalar. It receives the production ROM, builder, read-only training arrays,
+directories, parameter names, validation seed/directory, iteration index, and
+resolved error functor:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.space_filling.SpaceFillingValidationContext">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.space_filling.</span></span><span class="sig-name descname"><span class="pre">SpaceFillingValidationContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rom_model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_dirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iteration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_functor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/_adaptive/validation.html#SpaceFillingValidationContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.space_filling.SpaceFillingValidationContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Inputs to a validation callable returning one nonnegative scalar error.</p>
+<p>Parameter/QoI rows and training directories have matching order. Arrays are
+read-only copies. Builders must fit independent models using only their
+supplied subsets; a fold must not reuse the production ROM’s fitted basis.
+A custom strategy owns aggregation and can use <code class="docutils literal notranslate"><span class="pre">error_functor</span></code> to compare
+its predictions with independently prepared reference QoIs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>rom_model_builder</strong> (<a class="reference internal" href="../generated/romtools.workflows.model_builders.html#romtools.workflows.model_builders.QoiModelBuilderWithTrainingData" title="romtools.workflows.model_builders.QoiModelBuilderWithTrainingData"><em>QoiModelBuilderWithTrainingData</em></a>)</p></li>
+<li><p><strong>parameter_names</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>training_parameters</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_qois</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>training_dirs</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>iteration</strong> (<em>int</em>)</p></li>
+<li><p><strong>validation_directory</strong> (<em>str</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
+<li><p><strong>error_functor</strong> (<em>Callable</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p>A callback can close over independently prepared holdout samples and reference
+QoIs and use <code class="docutils literal notranslate"><span class="pre">context.error_functor</span></code> for comparisons. It owns aggregation and
+any extra FOM costs; the workflow’s FOM budget covers training runs only.</p>
+<p>Cross-validation on a geometric design is not a distribution-weighted estimate
+or a worst-case error certificate. Repeated stopping checks can introduce
+selection bias. Independent holdout references offer a separate accuracy check
+at additional FOM cost. QoI convergence does not establish full-state accuracy.</p>
+</section>
+<section id="termination-failures-and-output">
+<h2>Termination, failures, and output<a class="headerlink" href="#termination-failures-and-output" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> defaults to 20 and includes the initial training round.
+<code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code> optionally caps training FOM evaluations; the final batch is
+shortened to respect the cap. Results distinguish <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>,
+<code class="docutils literal notranslate"><span class="pre">max_iterations</span></code>, <code class="docutils literal notranslate"><span class="pre">max_fom_samples</span></code>, and <code class="docutils literal notranslate"><span class="pre">candidate_pool_exhausted</span></code>.
+Tolerance takes precedence when limits are reached in a converged round;
+otherwise the sample limit takes precedence over the iteration limit.</p>
+<p>The absolute output directory must be absent or empty. No overwrite, restart,
+remote dispatcher, or automatic retry is supported. Layout:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>fom/run_&lt;global_sample_id&gt;/
+iteration_&lt;k&gt;/offline_data/
+iteration_&lt;k&gt;/validation/fold_&lt;f&gt;/offline_data/
+iteration_&lt;k&gt;/validation/fold_&lt;f&gt;/run_&lt;sample_id&gt;/
+space_filling_status.log
+space_filling_stats.npz
+</pre></div>
+</div>
+<p>Only the parent writes campaign logs/history. Each successful sample has its own
+<code class="docutils literal notranslate"><span class="pre">passed.txt</span></code> marker. All submitted FOM tasks finish before a batch failure is
+reported, and a failed batch never enters a ROM build. Successful and failed run
+files remain for diagnosis; workers are shut down. Builder or validation errors
+also propagate, preserving the previous completed round’s statistics and
+artifacts. Statistics are diagnostic output, not a restart interface. Object
+parameter arrays stored in NPZ require NumPy’s pickle-enabled loading; load such
+files only when trusted.</p>
+</section>
+<section id="complete-example">
+<h2>Complete example<a class="headerlink" href="#complete-example" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">examples/space_filling_demo.py</span></code> demonstrates an irregular disk domain,
+file-backed FOM tasks, the existing Gaussian-process data-array builder, and
+maximum relative L2 K-fold validation. From the checkout:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/space_filling_demo.py<span class="w"> </span>--work-dir<span class="w"> </span>/tmp/space-filling-demo
+</pre></div>
+</div>
+<p>The example prints sample counts, validation errors, and the termination reason,
+and saves its full training history. Use a fresh output directory for each run.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-4"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#public-api">Public API</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.run_space_filling"><code class="docutils literal notranslate"><span class="pre">run_space_filling()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.select_space_filling_samples"><code class="docutils literal notranslate"><span class="pre">select_space_filling_samples()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.SpaceFillingResult"><code class="docutils literal notranslate"><span class="pre">SpaceFillingResult</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-spaces-and-distances">Parameter spaces and distances</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#union-of-rectangular-regions">Union of rectangular regions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fom-execution-contract">FOM execution contract</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#builders-and-training-data">Builders and training data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-error-functors">Validation and error functors</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.KFoldValidation"><code class="docutils literal notranslate"><span class="pre">KFoldValidation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.space_filling.SpaceFillingValidationContext"><code class="docutils literal notranslate"><span class="pre">SpaceFillingValidationContext</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#termination-failures-and-output">Termination, failures, and output</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-example">Complete example</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/demos/space_filling_training.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2019, National Technology &amp; Engineering Solutions of Sandia, LLC.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

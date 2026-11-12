@@ -1,0 +1,16 @@
+romtools.workflows.inverse.vi.adaptation
+========================================
+
+.. automodule:: romtools.workflows.inverse.vi.adaptation
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      activate_delayed_rom
+      mf_vi_restart_data
+      restore_mf_vi_state
+      stage_delayed_rom
+      validate_mf_vi_restart
+   

@@ -1,0 +1,13 @@
+romtools.hpc.dispatchers.resolve
+================================
+
+.. automodule:: romtools.hpc.dispatchers.resolve
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      resolve_dispatcher
+      resolve_local_dispatcher
+   
