@@ -10,7 +10,7 @@ import numpy as np
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
 from romtools.workflows.model_execution import (
-    ModelEvaluation, execute_models, require_supported_concurrency,
+    ModelEvaluation, execute_models,
 )
 
 
@@ -69,7 +69,6 @@ def evaluate_qoi_model(
         raise ValueError("parameter sample dimension does not match parameter names")
 
     dispatcher = resolve_dispatcher(dispatcher)
-    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
     qoi_values = [None] * samples.shape[0]
     run_times = np.full(samples.shape[0], np.nan)
     samples_to_run = []

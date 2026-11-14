@@ -201,3 +201,11 @@ def test_nonblocking_completion_uses_each_submission_directory(tmp_path, fail_ba
 
     assert os.getcwd() == cwd
     assert [sample.output for sample in samples] == ["first", "second"]
+
+
+def test_legacy_blocking_status_override_still_checks_job_handles():
+    with pytest.raises(RuntimeError, match="exit status 7"):
+        execute_models(
+            NonBlockingModel(), evaluations({"ticks": 1, "exit_code": 7}),
+            ignore_blocking_status=True,
+        )

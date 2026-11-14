@@ -290,7 +290,7 @@ def run_greedy(fom_model: QoiModel,
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
         execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
         )
         fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
         initial_fom_qois.append(fom_qoi)
@@ -362,7 +362,7 @@ def run_greedy(fom_model: QoiModel,
                 create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
             execute_models(
-                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], allow_implicit_success=True,
+                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], ignore_blocking_status=True,
             )
             error_indicators[counter] = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
 
@@ -403,7 +403,7 @@ def run_greedy(fom_model: QoiModel,
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
         execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
         )
         fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
 

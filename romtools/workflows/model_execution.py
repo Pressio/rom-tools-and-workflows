@@ -38,24 +38,24 @@ def require_supported_concurrency(model, dispatcher, concurrency):
         dispatcher.require_supported_concurrency(concurrency)
 
 
-def _finish(model, evaluation, status, start, postprocess):
+def _finish(model, evaluation, status, start, postprocess, *, require_integer_status=True):
     evaluation.run_time = time.monotonic() - start
-    if not isinstance(status, Integral) or status != 0:
+    if (require_integer_status and not isinstance(status, Integral)) or status != 0:
         raise ModelRunError(evaluation.run_directory, status, evaluation.run_time)
     if postprocess is not None:
         evaluation.output = postprocess(model, evaluation)
     return evaluation
 
 
-def _run_blocking(model, evaluation, prepare, postprocess, scope, allow_implicit_success):
+def _run_blocking(model, evaluation, prepare, postprocess, scope, ignore_blocking_status):
     with scope(evaluation) if scope is not None else nullcontext():
         if prepare is not None:
             prepare(model, evaluation)
         start = time.monotonic()
         status = model.run_model(evaluation.run_directory, evaluation.parameter_sample)
-        if status is None and allow_implicit_success:
+        if ignore_blocking_status:
             status = 0
-        return _finish(model, evaluation, status, start, postprocess)
+        return _finish(model, evaluation, status, start, postprocess, require_integer_status=False)
 
 
 @contextmanager
@@ -152,7 +152,7 @@ def _drain(model, evaluation, job, scope, postprocess=None):
 
 def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1, *,
                    prepare=None, postprocess=None, scope=None, start_method="spawn",
-                   return_exceptions=False, allow_implicit_success=False):
+                   return_exceptions=False, ignore_blocking_status=False):
     """Execute evaluations and return results in input order.
 
     Optional prepare and postprocess callbacks take (model, evaluation).
@@ -167,7 +167,8 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1, *,
 
     By default failures raise. With return_exceptions, failed entries contain
     exceptions and the remaining evaluations continue. Workflows that used
-    to ignore blocking return values can opt in to accepting a legacy None.
+    to ignore blocking return values can preserve that behavior with
+    ignore_blocking_status. Non-blocking exit statuses are always checked.
     After a non-blocking batch error, successful in-flight siblings still
     run postprocessing before the original error is raised.
     """
@@ -194,7 +195,7 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1, *,
             return error
 
     def arguments(evaluation):
-        return model, evaluation, prepare, postprocess, scope, allow_implicit_success
+        return model, evaluation, prepare, postprocess, scope, ignore_blocking_status
 
     if max_concurrent == 1:
         return [

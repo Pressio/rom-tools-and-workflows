@@ -137,7 +137,7 @@ def run_sampling_with_holdout(
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
         execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
         )
         fom_qoi = fom_model.compute_qoi(fom_run_directory, parameter_dict)
         if sample_index == 0:
@@ -173,7 +173,7 @@ def run_sampling_with_holdout(
     sampling_file.write(f"Running training FOM sample {sample_index} \n")
     sampling_file.flush()
     execute_models(
-        fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+        fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
     )
     fom_time += time.time() - t0
 
@@ -202,7 +202,7 @@ def run_sampling_with_holdout(
         sampling_file.write(f"Running training FOM sample {sample_index} \n")
         sampling_file.flush()
         execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
         )
         fom_time += time.time() - t0
 
@@ -242,7 +242,7 @@ def run_sampling_with_holdout(
             create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory, parameter_dict)
             execute_models(
-                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], allow_implicit_success=True,
+                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], ignore_blocking_status=True,
             )
             rom_qois_holdout_set[holdout_sample_index] = rom_model.compute_qoi(
                 rom_run_directory, parameter_dict

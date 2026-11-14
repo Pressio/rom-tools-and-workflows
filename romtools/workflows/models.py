@@ -23,10 +23,9 @@ class Model(Protocol):
     '''
     Baseline model protocol.
 
-    Models without a blocking attribute are treated as blocking by the
-    shared executor, preserving compatibility with structural implementations.
+    Set ``blocking = False`` on models that return a JobHandle.
+    The executor defaults to blocking when the attribute is absent.
     '''
-    blocking: bool = True
 
     def __init__(self) -> None:
         '''

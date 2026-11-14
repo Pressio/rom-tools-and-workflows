@@ -45,7 +45,7 @@ def prepare_and_run_batch(model, observations, run_directories, parameter_names,
         prepare=partial(_prepare_evaluation, dispatcher=dispatcher,
                         create_run_directory=create_run_directories),
         postprocess=partial(_finish_evaluation, observations=observations),
-        allow_implicit_success=True,
+        ignore_blocking_status=True,
     )
     return [evaluation.output for evaluation in completed]
 

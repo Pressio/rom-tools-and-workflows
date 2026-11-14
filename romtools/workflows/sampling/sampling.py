@@ -50,7 +50,7 @@ import numpy as np
 from typing import Optional
 
 from romtools.workflows.model_execution import (
-    ModelEvaluation, ModelRunError, execute_models, require_supported_concurrency,
+    ModelEvaluation, ModelRunError, execute_models,
 )
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
@@ -117,8 +117,6 @@ def run_sampling(model: Model,
         raise TypeError("'absolute_work_dir' is required")
 
     dispatcher = resolve_dispatcher(dispatcher)
-
-    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
 
     np.random.seed(random_seed)
 
@@ -188,7 +186,7 @@ def run_sampling(model: Model,
 
     qoi_samples = [qoi for qoi in qois if qoi is not None]
     qoi_stats = _compute_qoi_statistics(qoi_samples) if qoi_samples else {}
-    if qoi_stats or not serial or not samples_to_run:
+    if qoi_stats or not serial:
         dispatcher.np_savez(stats_path, run_times=run_times, **qoi_stats)
     if qoi_stats:
         print("QoI statistics:")

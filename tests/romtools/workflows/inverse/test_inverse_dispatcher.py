@@ -450,3 +450,19 @@ def test_nonblocking_inverse_batch_uses_remote_dispatcher_in_parent(tmp_path, it
     np.testing.assert_array_equal(results["qois"], [[6.0, 2.0]])
     np.testing.assert_array_equal(results["errors"], [[4.0, 8.0]])
     np.testing.assert_array_equal(results["mean-qoi"], [4.0])
+
+
+@pytest.mark.parametrize("status", [None, 1])
+def test_inverse_blocking_models_keep_legacy_return_value_handling(tmp_path, status):
+    from romtools.workflows.inverse._inverse_utils import prepare_and_run
+
+    class LegacyModel(LinearQoiModel):
+        def run_model(self, run_directory, parameter_sample):
+            return status
+
+    qoi, error, _ = prepare_and_run(
+        LegacyModel(), np.array([5.0]), str(tmp_path / "run_0"), ["theta"], [1.5]
+    )
+
+    np.testing.assert_array_equal(qoi, [3.0])
+    np.testing.assert_array_equal(error, [2.0])

@@ -100,7 +100,7 @@ def run_model_for_dakota(
     parameter_sample = _create_parameter_dict(parameter_names, parameter_values)
     model.populate_run_directory(run_directory, parameter_sample)
     evaluation = execute_models(
-        model, [ModelEvaluation(run_directory, parameter_sample)], allow_implicit_success=True,
+        model, [ModelEvaluation(run_directory, parameter_sample)], ignore_blocking_status=True,
     )[0]
 
     # Compute model QoI and save it to file
