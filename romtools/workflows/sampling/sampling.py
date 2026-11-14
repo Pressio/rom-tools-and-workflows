@@ -195,7 +195,7 @@ def _finish_sample(model, evaluation, compute_qoi, dispatcher):
     if compute_qoi:
         qoi = _compute_qoi_for_sample(model, run_directory, evaluation.parameter_sample)
     dispatcher.np_savetxt(os.path.join(run_directory, "passed.txt"), np.array([0]), "%i")
-    return qoi.copy()
+    return qoi
 
 
 def _sample_result(run_id, result):
