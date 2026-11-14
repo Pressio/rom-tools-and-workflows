@@ -172,12 +172,16 @@ def test_nonblocking_holdout_reads_relative_fom_and_rom_outputs(tmp_path, deferr
         def compute_qoi(self, directory, parameters):
             return np.atleast_1d(np.load("solution.npy"))
 
+    class ScalarQoiModel(FileQoiModel):
+        def compute_qoi(self, directory, parameters):
+            return np.load("solution.npy").item()
+
     class Builder:
         def __init__(self):
             self.models = []
 
         def build_from_training_dirs(self, offline, training_dirs):
-            model = deferred_model(FileQoiModel(1.25))
+            model = deferred_model(ScalarQoiModel(1.25))
             self.models.append(model)
             return model
 
