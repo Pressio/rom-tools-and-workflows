@@ -457,10 +457,13 @@
 
 
 <span class="nd">@contextmanager</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_restore_directory</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_nonblocking_scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">yield</span>
+        <span class="k">with</span> <span class="n">scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">)</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">working_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_directory</span><span class="p">)</span>
+            <span class="k">yield</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
 
@@ -478,7 +481,7 @@
                 <span class="n">next_index</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">evaluation</span> <span class="o">=</span> <span class="n">evaluations</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="n">scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">)</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_restore_directory</span><span class="p">():</span>
+                    <span class="k">with</span> <span class="n">_nonblocking_scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
                         <span class="k">if</span> <span class="n">prepare</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="n">prepare</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">)</span>
                         <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
@@ -489,21 +492,21 @@
                             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
                                 <span class="sa">f</span><span class="s2">"Non-blocking model must return a JobHandle, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="si">!r}</span><span class="s2">"</span>
                             <span class="p">)</span>
-                        <span class="n">pending</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span>
+                        <span class="n">pending</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">return_exceptions</span><span class="p">:</span>
                         <span class="n">failed_index</span> <span class="o">=</span> <span class="n">index</span>
                         <span class="k">raise</span>
                     <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
-                        <span class="n">handle</span><span class="p">,</span> <span class="n">start</span> <span class="o">=</span> <span class="n">pending</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
-                        <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span>
+                        <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">pending</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">scope</span><span class="p">)</span>
                     <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span>
 
             <span class="n">completed</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">pending</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">job</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">pending</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
                 <span class="n">evaluation</span> <span class="o">=</span> <span class="n">evaluations</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">working_directory</span> <span class="o">=</span> <span class="n">job</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="n">scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">)</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_restore_directory</span><span class="p">():</span>
+                    <span class="k">with</span> <span class="n">_nonblocking_scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">working_directory</span><span class="p">):</span>
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">handle</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
                             <span class="k">continue</span>
                         <span class="n">completed</span> <span class="o">=</span> <span class="kc">True</span>
@@ -517,7 +520,7 @@
                         <span class="k">raise</span>
                     <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
                         <span class="k">del</span> <span class="n">pending</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
-                        <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span>
+                        <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span>
                     <span class="n">completed</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span>
             <span class="k">if</span> <span class="n">pending</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">completed</span><span class="p">:</span>
@@ -527,16 +530,17 @@
         <span class="c1"># finish successful siblings so restartable workflows can reuse them.</span>
         <span class="c1"># On interruption, wait for the handles without running callbacks.</span>
         <span class="n">finish_pending</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pending</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">pending</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">callback</span> <span class="o">=</span> <span class="n">postprocess</span> <span class="k">if</span> <span class="n">finish_pending</span> <span class="ow">and</span> <span class="n">index</span> <span class="o">!=</span> <span class="n">failed_index</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluations</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
+            <span class="n">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluations</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">job</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
         <span class="k">raise</span>
     <span class="k">return</span> <span class="n">results</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">postprocess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_drain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">postprocess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">handle</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">working_directory</span> <span class="o">=</span> <span class="n">job</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">with</span> <span class="n">scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">)</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_restore_directory</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">_nonblocking_scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">working_directory</span><span class="p">):</span>
             <span class="n">status</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">postprocess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">)</span>
@@ -558,6 +562,8 @@
 <span class="sd">    Non-blocking models use the caller's process and keep at most</span>
 <span class="sd">    max_concurrent handles in flight. An optional scope wraps each blocking</span>
 <span class="sd">    evaluation or each submission and completion phase of a non-blocking one.</span>
+<span class="sd">    Non-blocking polling and completion resume in the working directory left</span>
+<span class="sd">    by submission and restore the caller's directory afterward.</span>
 
 <span class="sd">    By default failures raise. With return_exceptions, failed entries contain</span>
 <span class="sd">    exceptions and the remaining evaluations continue. Workflows that used</span>
