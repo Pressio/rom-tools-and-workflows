@@ -1,7 +1,5 @@
 """Ordered execution of QoI models for UQ workflows."""
 
-import concurrent.futures
-import multiprocessing
 from numbers import Integral
 import os
 import time
@@ -11,6 +9,7 @@ import numpy as np
 
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
+from romtools.workflows.model_execution import ModelEvaluation, execute_models
 
 
 def _parameter_dictionary(parameter_names: Sequence[str], values: np.ndarray) -> dict:
@@ -100,32 +99,26 @@ def evaluate_qoi_model(
                 (local_index, run_directory, parameter_sample)
             )
 
-    if evaluation_concurrency == 1:
+    if samples_to_run:
+        evaluations = [
+            ModelEvaluation(run_directory, parameter_sample)
+            for _, run_directory, parameter_sample in samples_to_run
+        ]
+        start_time = time.time()
+        execute_models(model, evaluations, max_concurrent=evaluation_concurrency)
+        elapsed = time.time() - start_time
+        # Completion is guaranteed before QoI evaluation or success markers.
         for local_index, run_directory, parameter_sample in samples_to_run:
-            run_time, qoi = _run_qoi_sample(
-                model, run_directory, parameter_sample, dispatcher
+            qoi_values[local_index] = _flatten_qoi(
+                model, run_directory, parameter_sample
             )
-            run_times[local_index] = run_time
-            qoi_values[local_index] = qoi
-    elif samples_to_run:
-        mp_context = multiprocessing.get_context("spawn")
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=evaluation_concurrency, mp_context=mp_context
-        ) as executor:
-            futures = {
-                executor.submit(
-                    _run_qoi_sample,
-                    model,
-                    run_directory,
-                    parameter_sample,
-                    dispatcher,
-                ): local_index
-                for local_index, run_directory, parameter_sample in samples_to_run
-            }
-            for future, local_index in futures.items():
-                run_time, qoi = future.result()
-                run_times[local_index] = run_time
-                qoi_values[local_index] = qoi
+            dispatcher.np_savetxt(
+                os.path.join(run_directory, "passed.txt"), np.array([0]), "%i"
+            )
+            # Individual job durations are unavailable from a minimal JobHandle.
+            # Report batch wall time rather than fabricate per-job timings.
+            run_times[local_index] = elapsed
+
 
     try:
         qoi_matrix = np.vstack(qoi_values)
