@@ -47,6 +47,9 @@ import time
 import warnings
 import numpy as np
 
+from romtools.workflows.model_execution import (
+    ModelEvaluation, compute_evaluation_qoi, execute_models,
+)
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -135,8 +138,10 @@ def run_sampling_with_holdout(
         )
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-        fom_model.run_model(fom_run_directory, parameter_dict)
-        fom_qoi = fom_model.compute_qoi(fom_run_directory, parameter_dict)
+        fom_qoi = execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)],
+            postprocess=compute_evaluation_qoi, ignore_blocking_status=True,
+        )[0].output
         if sample_index == 0:
             fom_qois_holdout_set = fom_qoi[None]
         else:
@@ -169,7 +174,9 @@ def run_sampling_with_holdout(
     t0 = time.time()
     sampling_file.write(f"Running training FOM sample {sample_index} \n")
     sampling_file.flush()
-    fom_model.run_model(fom_run_directory, parameter_dict)
+    execute_models(
+        fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
+    )
     fom_time += time.time() - t0
 
     sampling_file.write(f"Adding training FOM sample {sample_index} to basis \n")
@@ -196,7 +203,9 @@ def run_sampling_with_holdout(
         t0 = time.time()
         sampling_file.write(f"Running training FOM sample {sample_index} \n")
         sampling_file.flush()
-        fom_model.run_model(fom_run_directory, parameter_dict)
+        execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
+        )
         fom_time += time.time() - t0
 
         sampling_file.write(f"Adding training FOM sample {sample_index} to basis \n")
@@ -234,10 +243,10 @@ def run_sampling_with_holdout(
             )
             create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory, parameter_dict)
-            rom_model.run_model(rom_run_directory, parameter_dict)
-            rom_qois_holdout_set[holdout_sample_index] = rom_model.compute_qoi(
-                rom_run_directory, parameter_dict
-            )
+            rom_qois_holdout_set[holdout_sample_index] = execute_models(
+                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)],
+                postprocess=compute_evaluation_qoi, ignore_blocking_status=True,
+            )[0].output
         rom_time += time.time() - t0
 
         # If Max QOI error is less than tolerance, converged = True

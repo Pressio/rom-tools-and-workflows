@@ -430,3 +430,34 @@ def test_existing_gp_builder_integration(tmp_path):
     assert len(result.greedy_parameters) == 1
     assert np.isfinite(result.validation_errors).all()
     assert result.training_qois.shape == (7, 1)
+
+
+def test_nonblocking_candidate_reads_relative_output(tmp_path):
+    class Job:
+        def done(self):
+            return True
+
+        def result(self):
+            return 0
+
+    class RelativeOutputRom(IndicatorRom):
+        blocking = False
+
+        def run_model(self, directory, parameters):
+            os.chdir(directory)
+            Path("indicator.txt").write_text(str(parameters["p0"]))
+            return Job()
+
+        def compute_error_estimate(self, directory, parameters):
+            return float(Path("indicator.txt").read_text())
+
+    class Builder(RecordingBuilder):
+        def build_from_training_dirs(self, *args):
+            rom = super().build_from_training_dirs(*args)
+            return RelativeOutputRom(rom, [], None, None, False)
+
+    original_directory = os.getcwd()
+    result = run_hybrid_greedy(**request(tmp_path, rom_model_builder=Builder()))
+
+    np.testing.assert_array_equal(result.greedy_parameters, [[.75]])
+    assert os.getcwd() == original_directory

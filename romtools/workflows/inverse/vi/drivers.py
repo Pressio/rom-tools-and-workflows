@@ -155,6 +155,7 @@ still using gradient- and Hessian-based updates in the variational
 parameters.
 """
 
+from romtools.workflows.model_execution import require_supported_concurrency
 from romtools.workflows.inverse._parameter_transforms import (
     _normalize_bounded_parameter_handling,
     _sigmoid,
@@ -2389,7 +2390,7 @@ def run_vi(model: QoiModel,
         absolute_work_dir = os.getcwd() + "/work/"
 
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
 
     start_time = time.time()
     start_cpu_time = time.process_time()

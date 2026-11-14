@@ -1,12 +1,14 @@
-"""Process-isolated model evaluation; workers never write campaign files."""
+"""Process-isolated model evaluation for adaptive sampling."""
 
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import contextmanager
-import multiprocessing
+from dataclasses import dataclass
 import os
 import time
+from typing import Optional
 
 import numpy as np
+
+from romtools.workflows.model_execution import ModelEvaluation, ModelRunError, execute_models
 
 
 @contextmanager
@@ -23,72 +25,70 @@ def _process_state(seed=None):
         np.random.set_state(random_state)
 
 
+@dataclass
+class _AdaptiveEvaluation(ModelEvaluation):
+    seed: Optional[int] = None
+    start: float = 0.0
+
+
+def _evaluation_scope(evaluation):
+    return _process_state(evaluation.seed)
+
+
+def _prepare_sample(model, evaluation):
+    evaluation.start = time.perf_counter()
+    directory = evaluation.run_directory
+    os.makedirs(directory, exist_ok=False)
+    model.populate_run_directory(directory, evaluation.parameter_sample)
+
+
+def _finish_sample(model, evaluation):
+    directory = evaluation.run_directory
+    raw = model.compute_qoi(directory, evaluation.parameter_sample)
+    if np.iscomplexobj(raw):
+        raise ValueError("QoI must be real-valued")
+    qoi = np.asarray(raw, dtype=float).reshape(-1)
+    if not qoi.size or not np.all(np.isfinite(qoi)):
+        raise ValueError("QoI must be a nonempty finite numeric vector")
+    np.savetxt(os.path.join(directory, "passed.txt"), [0], fmt="%i")
+    return qoi.copy(), time.perf_counter() - evaluation.start
+
+
+def _failure_message(error):
+    if isinstance(error, ModelRunError):
+        return f"nonzero model return code: {error}"
+    return str(error)
+
+
 def _evaluate_sample(model, names, values, directory, sample_id, seed=None):
-    """Run preparation, execution, and QoI extraction together in one process."""
-    stage = "directory creation"
-    start = time.perf_counter()
+    evaluation = _AdaptiveEvaluation(directory, dict(zip(names, values)), seed=seed)
     try:
-        with _process_state(seed):
-            os.makedirs(directory, exist_ok=False)
-            parameters = dict(zip(names, values))
-            stage = "populate_run_directory"
-            model.populate_run_directory(directory, parameters)
-            stage = "run_model"
-            flag = model.run_model(directory, parameters)
-            if flag != 0:
-                raise RuntimeError(f"nonzero model return code: {flag!r}")
-            stage = "compute_qoi"
-            raw = model.compute_qoi(directory, parameters)
-            if np.iscomplexobj(raw):
-                raise ValueError("QoI must be real-valued")
-            qoi = np.asarray(raw, dtype=float).reshape(-1)
-            if not qoi.size or not np.all(np.isfinite(qoi)):
-                raise ValueError("QoI must be a nonempty finite numeric vector")
-            np.savetxt(os.path.join(directory, "passed.txt"), [0], fmt="%i")
-        return qoi, time.perf_counter() - start
+        return execute_models(
+            model, [evaluation], prepare=_prepare_sample, postprocess=_finish_sample,
+            scope=_evaluation_scope,
+        )[0].output
     except Exception as error:
-        raise RuntimeError(
-            f"sample {sample_id} failed during {stage} in {directory}: {error}"
-        ) from error
+        raise RuntimeError(f"sample {sample_id} failed in {directory}: {_failure_message(error)}") from error
 
 
 def _evaluate_batch(model, names, samples, directories, sample_ids, seeds,
                     max_concurrent_fom_runs, qoi_dimension=None):
-    results = [None] * len(samples)
-    failures = []
-    arguments = list(zip([model] * len(samples), [names] * len(samples),
-                         samples, directories, sample_ids, seeds))
-    if max_concurrent_fom_runs == 1:
-        for index, args in enumerate(arguments):
-            try:
-                results[index] = _evaluate_sample(*args)
-            except Exception as error:
-                failures.append((index, error))
-    else:
-        with ProcessPoolExecutor(
-            max_workers=min(max_concurrent_fom_runs, len(samples)),
-            mp_context=multiprocessing.get_context("spawn"),
-        ) as executor:
-            futures = {}
-            for index, args in enumerate(arguments):
-                try:
-                    futures[executor.submit(_evaluate_sample, *args)] = index
-                except Exception as error:
-                    failures.append((index, error))
-            for future in as_completed(futures):
-                index = futures[future]
-                try:
-                    results[index] = future.result()
-                except Exception as error:
-                    failures.append((index, error))
-    # All submitted work has finished before an error is reported or a builder
-    # can see this batch. Preserve every directory for diagnosis.
+    evaluations = [
+        _AdaptiveEvaluation(directory, dict(zip(names, values)), seed=seed)
+        for values, directory, seed in zip(samples, directories, seeds)
+    ]
+    results = execute_models(
+        model, evaluations, max_concurrent_fom_runs, prepare=_prepare_sample,
+        postprocess=_finish_sample, scope=_evaluation_scope, return_exceptions=True,
+    )
+    failures = [(i, result) for i, result in enumerate(results) if isinstance(result, Exception)]
+    # All work has finished before an error is reported or a builder sees this batch.
     if failures:
-        failures.sort(key=lambda item: item[0])
         details = "\n".join(
-            f"sample {sample_ids[i]} ({directories[i]}): {error}" for i, error in failures
+            f"sample {sample_ids[i]} ({directories[i]}): {_failure_message(error)}" for i, error in failures
         )
         raise RuntimeError(f"FOM batch failed; no ROM was rebuilt:\n{details}") from failures[0][1]
+    results = [evaluation.output for evaluation in results]
     dimension = len(results[0][0]) if qoi_dimension is None else qoi_dimension
     for index, (qoi, _) in enumerate(results):
         if len(qoi) != dimension:

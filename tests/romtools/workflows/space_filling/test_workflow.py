@@ -446,3 +446,38 @@ def test_union_parameter_space_training_integration(tmp_path, concurrency):
     for call in production:
         np.testing.assert_array_equal(call[2], result.training_parameters[:len(call[2])])
         np.testing.assert_array_equal(call[3], result.training_qois[:len(call[3])])
+
+
+def test_nonblocking_fom_finishes_before_qoi_and_rom_build(tmp_path):
+    class Handle:
+        def __init__(self, model, directory, parameters):
+            self.model = model
+            self.directory = directory
+            self.parameters = parameters
+
+        def done(self):
+            return True
+
+        def result(self):
+            self.model.active -= 1
+            return FileModel.run_model(self.model, self.directory, self.parameters)
+
+    class NonBlockingFom(FileModel):
+        blocking = False
+        active = 0
+        peak = 0
+
+        def run_model(self, directory, parameters):
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+            return Handle(self, directory, parameters)
+
+    model = NonBlockingFom()
+    result = run_space_filling(**request(
+        tmp_path, fom_model=model, initial_sample_size=3,
+        parameter_space=FixedSpace([[0], [1], [2]]),
+        max_concurrent_fom_runs=2, tolerance=1,
+    ))
+    assert model.peak == 2 and model.active == 0
+    np.testing.assert_array_equal(result.training_qois[:, 0], 1 + result.training_parameters[:, 0])
+    assert all(Path(directory, "passed.txt").exists() for directory in result.training_dirs)

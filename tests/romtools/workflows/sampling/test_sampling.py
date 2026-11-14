@@ -146,6 +146,107 @@ def test_sampler_qoi_stats(tmp_path):
     np.testing.assert_allclose(stats["qoi_max"], np.array([3.0]))
     np.testing.assert_array_equal(stats["qoi_num_samples"], np.array([4]))
 
+def test_nonblocking_sampling_restart_and_failed_overwrite(tmp_path):
+    class OrderedSpace(ConstParameterSpace):
+        def generate_samples(self, number_of_samples):
+            return np.arange(number_of_samples).reshape(-1, 1)
+
+    class Handle:
+        def __init__(self, model, directory, status):
+            self.model = model
+            self.directory = directory
+            self.status = status
+
+        def done(self):
+            return True
+
+        def result(self):
+            self.model.finished.add(self.directory)
+            return self.status
+
+    class NonBlockingModel(MockQoiModel):
+        blocking = False
+
+        def __init__(self):
+            self.finished = set()
+            self.submitted = []
+            self.fail_first = False
+
+        def run_model(self, directory, parameters):
+            self.submitted.append(directory)
+            return Handle(self, directory, int(self.fail_first and parameters["x"] == 0))
+
+        def compute_qoi(self, directory, parameters):
+            assert directory in self.finished
+            return super().compute_qoi(directory, parameters)
+
+    model = NonBlockingModel()
+    space = OrderedSpace(["x"], [0])
+    options = dict(absolute_work_dir=tmp_path, number_of_samples=3, evaluation_concurrency=2)
+    directories = run_sampling(model, space, **options)
+    assert model.submitted == directories
+
+    os.remove(tmp_path / "run_0" / "passed.txt")
+    model.submitted.clear()
+    run_sampling(model, space, **options)
+    assert model.submitted == [directories[0]]
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[0.0], [1.0], [2.0]])
+
+    model.fail_first = True
+    run_sampling(model, space, overwrite=True, **options)
+    assert not (tmp_path / "run_0" / "passed.txt").exists()
+    assert (tmp_path / "run_1" / "passed.txt").exists()
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[1.0], [2.0]])
+
+
+@pytest.mark.mpi_skip
+def test_dry_run_overwrite_invalidates_existing_success_marker(tmp_path):
+    class SolutionModel(MockQoiModel):
+        def run_model(self, directory, parameters):
+            np.save(os.path.join(directory, "solution.npy"), super().compute_qoi(directory, parameters))
+            return 0
+
+        def compute_qoi(self, directory, parameters):
+            return np.load(os.path.join(directory, "solution.npy"))
+
+    model = SolutionModel()
+    first_space = ConstParameterSpace(["x"], [1])
+    second_space = ConstParameterSpace(["x"], [2])
+    options = dict(absolute_work_dir=tmp_path, number_of_samples=1)
+
+    run_sampling(model, first_space, **options)
+    marker = tmp_path / "run_0" / "passed.txt"
+    assert marker.exists()
+
+    run_sampling(model, second_space, overwrite=True, dry_run=True, **options)
+    assert not marker.exists()
+
+    run_sampling(model, second_space, **options)
+    assert marker.exists()
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[2.0]])
+
+
+@pytest.mark.mpi_skip
+def test_serial_sampling_checkpoints_before_later_sample_fails(tmp_path):
+    class Model(MockQoiModel):
+        def run_model(self, directory, parameters):
+            if directory.endswith("run_1"):
+                with np.load(tmp_path / "sampling_stats.npz") as stats:
+                    assert stats["run_times"][0] > 0
+                    np.testing.assert_array_equal(stats["run_times"][1:], [0, 0])
+                raise RuntimeError("solver failed")
+            return super().run_model(directory, parameters)
+
+    with pytest.raises(RuntimeError, match="solver failed"):
+        run_sampling(Model(), ConstParameterSpace(["x"], [1]), tmp_path, number_of_samples=3)
+
+    assert (tmp_path / "run_0" / "passed.txt").exists()
+    assert not (tmp_path / "run_2" / "passed.txt").exists()
+
+
 if __name__ == "__main__":
     test_sampler()
     test_sampler_dry_run()

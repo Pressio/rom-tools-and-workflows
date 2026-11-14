@@ -399,3 +399,70 @@ def test_mf_eki_with_a_relative_directory_keeps_rom_directories_local(monkeypatc
     assert any("run_fom_sample_set" in name for name in dispatcher.created_dirs)
     assert not any("run_rom_sample_set" in name for name in dispatcher.created_dirs)
     assert (tmp_path / "relative_work" / "iteration_0" / "run_rom_sample_set_0_mean").is_dir()
+
+
+@pytest.mark.parametrize("iteration_name", ["run_eki_iteration", "run_vi_iteration"])
+def test_nonblocking_inverse_batch_uses_remote_dispatcher_in_parent(tmp_path, iteration_name):
+    from romtools.workflows.inverse import _inverse_utils
+
+    class Handle:
+        def __init__(self, directory, model):
+            self.directory = directory
+            self.model = model
+
+        def done(self):
+            return True
+
+        def result(self):
+            self.model.finished.add(self.directory)
+            return 0
+
+    class NonBlockingModel(LinearQoiModel):
+        blocking = False
+
+        def __init__(self):
+            self.finished = set()
+            self.submitted = []
+
+        def run_model(self, directory, parameters):
+            self.submitted.append(directory)
+            if len(self.submitted) == 2:
+                assert not self.finished
+            return Handle(directory, self)
+
+        def compute_qoi(self, directory, parameters):
+            assert directory in self.finished
+            return super().compute_qoi(directory, parameters)
+
+    model = NonBlockingModel()
+    dispatcher = RemoteLikeDispatcher()
+    base = str(tmp_path / "run_")
+    iteration = getattr(_inverse_utils, iteration_name)
+    results = iteration(
+        model, np.array([10.0]), base, ["theta"], np.array([[3.0], [1.0]]),
+        2, dispatcher,
+    )
+
+    expected_directories = [base + "0", base + "1"]
+    if iteration_name == "run_eki_iteration":
+        expected_directories.insert(0, base + "mean")
+    assert dispatcher.created_dirs == model.submitted == expected_directories
+    np.testing.assert_array_equal(results["qois"], [[6.0, 2.0]])
+    np.testing.assert_array_equal(results["errors"], [[4.0, 8.0]])
+    np.testing.assert_array_equal(results["mean-qoi"], [4.0])
+
+
+@pytest.mark.parametrize("status", [None, 1])
+def test_inverse_blocking_models_keep_legacy_return_value_handling(tmp_path, status):
+    from romtools.workflows.inverse._inverse_utils import prepare_and_run
+
+    class LegacyModel(LinearQoiModel):
+        def run_model(self, run_directory, parameter_sample):
+            return status
+
+    qoi, error, _ = prepare_and_run(
+        LegacyModel(), np.array([5.0]), str(tmp_path / "run_0"), ["theta"], [1.5]
+    )
+
+    np.testing.assert_array_equal(qoi, [3.0])
+    np.testing.assert_array_equal(error, [2.0])

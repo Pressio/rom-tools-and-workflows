@@ -1,14 +1,13 @@
-import concurrent.futures
-import multiprocessing
-import numpy as np
-import time
-
+from functools import partial
 from typing import Optional
 
-from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
+import numpy as np
 
-def _create_parameter_dict(parameter_names, parameter_values):
-    return dict(zip(parameter_names, parameter_values))
+from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
+from romtools.workflows.model_execution import (
+    ModelEvaluation, execute_models, require_supported_concurrency,
+)
+
 
 def require_relative_or_absolute_path(dispatcher: BaseDispatcher, directory: str):
     """Check that a working directory is usable by both the FOM and ROM dispatcher.
@@ -19,21 +18,46 @@ def require_relative_or_absolute_path(dispatcher: BaseDispatcher, directory: str
     dispatcher.require_absolute_path(directory)
     dispatcher.require_relative_path(directory)
 
-def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample, dispatcher: Optional[BaseDispatcher] = None, create_run_directory: bool = True):
-    """Prepare the model run and compute the QoI and error."""
-    dispatcher = resolve_dispatcher(dispatcher)
-    if create_run_directory:
-        dispatcher.create_empty_dir(run_directory)
-    parameter_dict = _create_parameter_dict(parameter_names, parameter_sample)
-    model.populate_run_directory(run_directory, parameter_dict)
-    ts = time.time()
-    flag = model.run_model(run_directory, parameter_dict)
-    qoi = model.compute_qoi(run_directory, parameter_dict)
-    assert isinstance(qoi,np.ndarray), "Error, compute_qoi must return an np.ndarray"
-    error = observations - qoi
-    run_time = time.time() - ts
 
-    return qoi, error, run_time
+def _prepare_evaluation(model, evaluation, dispatcher, create_run_directory):
+    if create_run_directory:
+        dispatcher.create_empty_dir(evaluation.run_directory)
+    model.populate_run_directory(evaluation.run_directory, evaluation.parameter_sample)
+
+
+def _finish_evaluation(model, evaluation, observations):
+    qoi = model.compute_qoi(evaluation.run_directory, evaluation.parameter_sample)
+    assert isinstance(qoi, np.ndarray), "Error, compute_qoi must return an np.ndarray"
+    return qoi.copy(), observations - qoi, evaluation.run_time
+
+
+def prepare_and_run_batch(model, observations, run_directories, parameter_names,
+                          parameter_samples, evaluation_concurrency,
+                          dispatcher=None, create_run_directories=True, start_method="spawn"):
+    dispatcher = resolve_dispatcher(dispatcher)
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
+    evaluations = (
+        ModelEvaluation(directory, dict(zip(parameter_names, sample)))
+        for directory, sample in zip(run_directories, parameter_samples)
+    )
+    completed = execute_models(
+        model, evaluations, evaluation_concurrency, start_method=start_method,
+        prepare=partial(_prepare_evaluation, dispatcher=dispatcher,
+                        create_run_directory=create_run_directories),
+        postprocess=partial(_finish_evaluation, observations=observations),
+        ignore_blocking_status=True,
+    )
+    return [evaluation.output for evaluation in completed]
+
+
+def prepare_and_run(model, observations, run_directory, parameter_names, parameter_sample,
+                    dispatcher: Optional[BaseDispatcher] = None, create_run_directory: bool = True):
+    """Prepare the model run and compute the QoI and error."""
+    return prepare_and_run_batch(
+        model, observations, [run_directory], parameter_names, [parameter_sample], 1,
+        dispatcher, create_run_directory,
+    )[0]
+
 
 def bound_samples(samples,samples_min,samples_max):
     if samples_max is not None:
@@ -43,133 +67,40 @@ def bound_samples(samples,samples_min,samples_max):
     return samples
 
 
-def run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
+def run_eki_iteration(model, observations, run_directory_base, parameter_names, parameter_samples,
+                      evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None):
     """Run the EKI iteration for the specified parameters."""
-    dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(evaluation_concurrency)
-    mp_cntxt = multiprocessing.get_context("fork")
-    ensemble_size = np.shape(parameter_samples)[0]
-
-    if evaluation_concurrency == 1:
-        # Run at parameter mean
-        run_directory = f'{run_directory_base}mean'
-        parameter_means = np.mean(parameter_samples, axis=0)
-        mean_qoi, mean_error, run_time = prepare_and_run(model, observations, run_directory, parameter_names, parameter_means, dispatcher)
-        qois = np.zeros((mean_qoi.size, ensemble_size))
-        errors = np.zeros((mean_qoi.size, ensemble_size))
-        for ensemble_member in range(ensemble_size):
-            run_directory = f'{run_directory_base}{ensemble_member}'
-            qois[:, ensemble_member], errors[:, ensemble_member], run_time = prepare_and_run(model, observations, run_directory, parameter_names, parameter_samples[ensemble_member], dispatcher)
-    else:
-        samples_to_run = list(range(ensemble_size))
-        with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
-            #these_futures = [executor.submit(my_print,ensemble_member) for ensemble_member in samples_to_run]
-            parameter_means = np.mean(parameter_samples, axis=0)
-            run_directory = f'{run_directory_base}mean'
-            these_futures = [
-                executor.submit(
-                    prepare_and_run,
-                        model,
-                        observations,
-                        run_directory,
-                        parameter_names,
-                        parameter_means,
-                        dispatcher
-                )
-            ]
-            these_futures.extend([
-                executor.submit(
-                    prepare_and_run,
-                        model,
-                        observations,
-                        f'{run_directory_base}{ensemble_member}',
-                        parameter_names,
-                        parameter_samples[ensemble_member],
-                        dispatcher
-                ) for ensemble_member in samples_to_run
-            ])
-            concurrent.futures.wait(these_futures)
-
-        for i, future in enumerate(these_futures):
-            if i == 0:
-                mean_qoi, mean_error, run_time = future.result()
-                qois = np.zeros((mean_qoi.size, ensemble_size))
-                errors = np.zeros((mean_qoi.size, ensemble_size))
-            else:
-                qois[:, i-1], errors[:, i-1], run_time = future.result()
-
-    results = {}
-    results['qois'] = qois
-    results['mean-qoi'] = mean_qoi
-    results['errors'] = errors
-    return results
+    ensemble_size = len(parameter_samples)
+    parameter_mean = np.mean(parameter_samples, axis=0)
+    directories = [f"{run_directory_base}mean"]
+    directories.extend(f"{run_directory_base}{i}" for i in range(ensemble_size))
+    mean, *members = prepare_and_run_batch(
+        model, observations, directories, parameter_names, [parameter_mean, *parameter_samples],
+        evaluation_concurrency, dispatcher, start_method="fork",
+    )
+    mean_qoi = mean[0]
+    qois = np.zeros((mean_qoi.size, ensemble_size))
+    errors = np.zeros_like(qois)
+    for i, (qoi, error, _) in enumerate(members):
+        qois[:, i] = qoi
+        errors[:, i] = error
+    return {"qois": qois, "mean-qoi": mean_qoi, "errors": errors}
 
 
-def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples, evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None, create_run_directories: bool = True):
+def run_vi_iteration(model, observations, run_directory_base, parameter_names, parameter_samples,
+                     evaluation_concurrency, dispatcher: Optional[BaseDispatcher] = None,
+                     create_run_directories: bool = True):
     """Run a VI iteration for sampled parameters only (no explicit mean run)."""
-    dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(evaluation_concurrency)
-    mp_cntxt = multiprocessing.get_context("spawn")
-    ensemble_size = np.shape(parameter_samples)[0]
+    ensemble_size = len(parameter_samples)
     assert ensemble_size > 0, "parameter_samples must contain at least one sample"
-
-    if evaluation_concurrency == 1:
-        first_run_directory = f'{run_directory_base}0'
-        first_qoi, first_error, run_time = prepare_and_run(
-            model,
-            observations,
-            first_run_directory,
-            parameter_names,
-            parameter_samples[0],
-            dispatcher,
-            create_run_directories,
-        )
-        qois = np.zeros((first_qoi.size, ensemble_size))
-        errors = np.zeros((first_qoi.size, ensemble_size))
-        qois[:, 0] = first_qoi
-        errors[:, 0] = first_error
-        for ensemble_member in range(1, ensemble_size):
-            run_directory = f'{run_directory_base}{ensemble_member}'
-            qois[:, ensemble_member], errors[:, ensemble_member], run_time = prepare_and_run(
-                model,
-                observations,
-                run_directory,
-                parameter_names,
-                parameter_samples[ensemble_member],
-                dispatcher,
-                create_run_directories,
-            )
-    else:
-        samples_to_run = list(range(ensemble_size))
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=evaluation_concurrency,
-            mp_context=mp_cntxt,
-        ) as executor:
-            these_futures = [
-                executor.submit(
-                    prepare_and_run,
-                    model,
-                    observations,
-                    f'{run_directory_base}{ensemble_member}',
-                    parameter_names,
-                    parameter_samples[ensemble_member],
-                    dispatcher,
-                    create_run_directories,
-                )
-                for ensemble_member in samples_to_run
-            ]
-            concurrent.futures.wait(these_futures)
-
-        first_qoi, first_error, run_time = these_futures[0].result()
-        qois = np.zeros((first_qoi.size, ensemble_size))
-        errors = np.zeros((first_qoi.size, ensemble_size))
-        qois[:, 0] = first_qoi
-        errors[:, 0] = first_error
-        for i, future in enumerate(these_futures[1:], start=1):
-            qois[:, i], errors[:, i], run_time = future.result()
-
-    results = {}
-    results['qois'] = qois
-    results['mean-qoi'] = np.mean(qois, axis=1)
-    results['errors'] = errors
-    return results
+    members = prepare_and_run_batch(
+        model, observations, (f"{run_directory_base}{i}" for i in range(ensemble_size)),
+        parameter_names, parameter_samples, evaluation_concurrency, dispatcher,
+        create_run_directories,
+    )
+    qois = np.zeros((members[0][0].size, ensemble_size))
+    errors = np.zeros_like(qois)
+    for i, (qoi, error, _) in enumerate(members):
+        qois[:, i] = qoi
+        errors[:, i] = error
+    return {"qois": qois, "mean-qoi": np.mean(qois, axis=1), "errors": errors}

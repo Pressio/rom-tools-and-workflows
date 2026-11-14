@@ -705,3 +705,48 @@ def test_supplied_initial_only_run_does_not_draw_unused_candidates(tmp_path):
                         str(tmp_path), 0, initial_samples=initial, max_iterations=0)
     np.testing.assert_array_equal(result.training_parameters, initial)
     assert result.iterations == 0 and result.termination_reason == 'max_iterations'
+
+
+@pytest.mark.mpi_skip
+def test_nonblocking_greedy_reads_selected_rom_qoi_from_its_run_directory(tmp_path):
+    class Job:
+        def done(self):
+            return True
+
+        def result(self):
+            return 0
+
+    class Rom:
+        blocking = False
+
+        def populate_run_directory(self, directory, parameters):
+            pass
+
+        def run_model(self, directory, parameters):
+            os.chdir(directory)
+            np.save("solution.npy", [sum(parameters.values())])
+            return Job()
+
+        def compute_qoi(self, directory, parameters):
+            qoi = np.load("solution.npy")
+            np.testing.assert_allclose(qoi, [sum(parameters.values())])
+            return qoi
+
+        def compute_error_estimate(self, directory, parameters):
+            return float(self.compute_qoi(directory, parameters)[0])
+
+    class Builder:
+        def build_from_training_dirs(self, *args):
+            return Rom()
+
+    space = UniformParameterSpace(
+        ['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], sampler=MonteCarloSampler,
+    )
+    original_directory = os.getcwd()
+    result = run_greedy(
+        ParameterQoiModel(()), Builder(), space, str(tmp_path), tolerance=0,
+        testing_sample_size=5, calibrated_error=False, max_iterations=1,
+    )
+
+    assert result.iterations == 1
+    assert os.getcwd() == original_directory

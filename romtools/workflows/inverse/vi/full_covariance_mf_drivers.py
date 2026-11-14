@@ -19,6 +19,7 @@ from .common import (
 import numpy as np
 
 from romtools.hpc.dispatchers import resolve_dispatcher, resolve_local_dispatcher
+from romtools.workflows.model_execution import require_supported_concurrency
 from romtools.workflows.inverse.vi.rom_substeps import (
     apply_full_covariance_rom_substeps, validate_rom_substeps,
     rom_substeps_enabled, restore_rom_substeps, rom_substep_restart_data,
@@ -593,7 +594,7 @@ def _run_full_covariance_mf_vi(
         rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
     )
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, fom_evaluation_concurrency)
     if absolute_work_dir is None:
         absolute_work_dir = os.getcwd() + "/work/"
     if max_covariance_log_step <= 0.0:

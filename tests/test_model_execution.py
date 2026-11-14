@@ -1,0 +1,211 @@
+"""Tests for shared blocking and non-blocking model execution."""
+
+import os
+
+import pytest
+
+from romtools.workflows.model_execution import ModelEvaluation, execute_models
+
+
+class BlockingModel:
+    def run_model(self, directory, parameters):
+        self.value = parameters.get("x", 0)
+        self.pid = os.getpid()
+        return parameters.get("exit_code", 0)
+
+
+def _blocking_output(model, evaluation):
+    return model.pid, model.value
+
+
+class Handle:
+    def __init__(self, model, directory, parameters):
+        self.model = model
+        self.directory = directory
+        self.ticks = parameters["ticks"]
+        self.status = parameters.get("exit_code", 0)
+        self.failure = parameters.get("failure")
+        self.chdir = parameters.get("chdir", False)
+
+    def done(self):
+        if self.failure == "poll":
+            raise LookupError("poll failed")
+        self.ticks -= 1
+        return self.ticks <= 0
+
+    def result(self):
+        if self.chdir:
+            os.chdir(self.directory)
+        self.model.active -= 1
+        self.model.finished.append(self.directory)
+        if self.failure == "result":
+            raise LookupError("result failed")
+        return self.status
+
+
+class NonBlockingModel:
+    blocking = False
+
+    def __init__(self):
+        self.active = 0
+        self.max_active = 0
+        self.finished = []
+        self.pid = os.getpid()
+
+    def run_model(self, directory, parameters):
+        assert self.pid == os.getpid()
+        if parameters.get("failure") == "submit":
+            raise LookupError("submit failed")
+        self.active += 1
+        self.max_active = max(self.max_active, self.active)
+        return Handle(self, directory, parameters)
+
+
+def evaluations(*parameters):
+    return [
+        ModelEvaluation(f"run_{index}", parameter)
+        for index, parameter in enumerate(parameters)
+    ]
+
+
+def test_blocking_default_and_order():
+    samples = evaluations({}, {}, {})
+    assert execute_models(BlockingModel(), samples) == samples
+
+
+def test_blocking_worker_preserves_model_state_for_postprocessing():
+    samples = evaluations({"x": 1}, {"x": 2})
+    completed = execute_models(BlockingModel(), samples, 2, postprocess=_blocking_output)
+    pids, values = zip(*(evaluation.output for evaluation in completed))
+    assert values == (1, 2)
+    assert all(pid != os.getpid() for pid in pids)
+
+
+def test_blocking_failure():
+    with pytest.raises(RuntimeError, match="run_0"):
+        execute_models(BlockingModel(), evaluations({"exit_code": 2}))
+
+
+def test_nonblocking_out_of_order_and_bounded_submission():
+    model = NonBlockingModel()
+    samples = evaluations({"ticks": 5}, {"ticks": 1}, {"ticks": 2})
+
+    def postprocess(model, evaluation):
+        assert evaluation.run_directory in model.finished
+        return evaluation.run_directory
+
+    completed = execute_models(
+        model, samples, max_concurrent=2, poll_interval=0, postprocess=postprocess,
+    )
+    assert [sample.output for sample in completed] == ["run_0", "run_1", "run_2"]
+    assert model.finished == ["run_1", "run_2", "run_0"]
+    assert model.max_active == 2
+    assert model.active == 0
+
+
+@pytest.mark.parametrize(("failure", "error_type", "message"), [
+    ("submit", LookupError, "submit failed"),
+    ("poll", LookupError, "poll failed"),
+    ("result", LookupError, "result failed"),
+    ("status", RuntimeError, "exit status 7"),
+])
+def test_nonblocking_failure_drains_submitted_jobs(tmp_path, failure, error_type, message):
+    model = NonBlockingModel()
+    samples = [
+        ModelEvaluation(str(tmp_path), {"ticks": 10, "chdir": True}),
+        ModelEvaluation("failed", {"ticks": 1, "failure": failure, "exit_code": 7 if failure == "status" else 0}),
+        ModelEvaluation("unsubmitted", {"ticks": 1}),
+    ]
+    cwd = os.getcwd()
+    processed = []
+
+    def postprocess(model, evaluation):
+        assert os.getcwd() == str(tmp_path)
+        processed.append(evaluation.run_directory)
+
+    with pytest.raises(error_type, match=message):
+        execute_models(model, samples, 2, poll_interval=0, postprocess=postprocess)
+
+    assert model.active == 0
+    assert str(tmp_path) in model.finished
+    assert "unsubmitted" not in model.finished
+    assert processed == [str(tmp_path)]
+    assert os.getcwd() == cwd
+
+
+def test_nonblocking_can_finish_other_evaluations_after_failure(tmp_path):
+    model = NonBlockingModel()
+    samples = evaluations({"ticks": 3, "failure": "poll", "chdir": True}, {"ticks": 1}, {"ticks": 1})
+    samples[0].run_directory = str(tmp_path)
+    cwd = os.getcwd()
+
+    results = execute_models(model, samples, 2, poll_interval=0, return_exceptions=True)
+
+    assert isinstance(results[0], LookupError)
+    assert results[1:] == samples[1:]
+    assert set(model.finished) == {str(tmp_path), "run_1", "run_2"}
+    assert os.getcwd() == cwd
+    assert model.active == 0
+
+
+def test_invalid_concurrency():
+    with pytest.raises(ValueError):
+        execute_models(BlockingModel(), evaluations({}), max_concurrent=0)
+
+
+@pytest.mark.parametrize("fail_batch", [False, True])
+def test_nonblocking_completion_uses_each_submission_directory(tmp_path, fail_batch):
+    class Job:
+        def __init__(self, directory, ticks):
+            self.directory = directory
+            self.ticks = ticks
+
+        def done(self):
+            assert os.getcwd() == self.directory
+            self.ticks -= 1
+            return self.ticks == 0
+
+        def result(self):
+            assert os.getcwd() == self.directory
+            return 0
+
+    class Model:
+        blocking = False
+
+        def run_model(self, directory, parameters):
+            if parameters.get("fail"):
+                raise LookupError("submission failed")
+            os.chdir(directory)
+            with open("solution.txt", "w") as solution:
+                solution.write(parameters["value"])
+            return Job(directory, parameters["ticks"])
+
+    def postprocess(model, evaluation):
+        with open("solution.txt") as solution:
+            return solution.read()
+
+    cwd = os.getcwd()
+    samples = [
+        ModelEvaluation(str(tmp_path / "first"), {"value": "first", "ticks": 2}),
+        ModelEvaluation(str(tmp_path / "second"), {"value": "second", "ticks": 1}),
+    ]
+    for sample in samples:
+        os.mkdir(sample.run_directory)
+    options = dict(max_concurrent=3, poll_interval=0, postprocess=postprocess)
+    if fail_batch:
+        failure = ModelEvaluation(str(tmp_path), {"fail": True})
+        with pytest.raises(LookupError, match="submission failed"):
+            execute_models(Model(), [*samples, failure], **options)
+    else:
+        execute_models(Model(), samples, **options)
+
+    assert os.getcwd() == cwd
+    assert [sample.output for sample in samples] == ["first", "second"]
+
+
+def test_legacy_blocking_status_override_still_checks_job_handles():
+    with pytest.raises(RuntimeError, match="exit status 7"):
+        execute_models(
+            NonBlockingModel(), evaluations({"ticks": 1, "exit_code": 7}),
+            ignore_blocking_status=True,
+        )
