@@ -104,20 +104,16 @@ def evaluate_qoi_model(
             ModelEvaluation(run_directory, parameter_sample)
             for _, run_directory, parameter_sample in samples_to_run
         ]
-        start_time = time.time()
-        execute_models(model, evaluations, max_concurrent=evaluation_concurrency)
-        elapsed = time.time() - start_time
+        completed = execute_models(model, evaluations, max_concurrent=evaluation_concurrency)
         # Completion is guaranteed before QoI evaluation or success markers.
-        for local_index, run_directory, parameter_sample in samples_to_run:
+        for (local_index, run_directory, parameter_sample), evaluation in zip(samples_to_run, completed):
             qoi_values[local_index] = _flatten_qoi(
                 model, run_directory, parameter_sample
             )
             dispatcher.np_savetxt(
                 os.path.join(run_directory, "passed.txt"), np.array([0]), "%i"
             )
-            # Individual job durations are unavailable from a minimal JobHandle.
-            # Report batch wall time rather than fabricate per-job timings.
-            run_times[local_index] = elapsed
+            run_times[local_index] = evaluation.run_time
 
 
     try:
