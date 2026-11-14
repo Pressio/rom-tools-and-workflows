@@ -479,5 +479,5 @@ def test_nonblocking_fom_finishes_before_qoi_and_rom_build(tmp_path):
         max_concurrent_fom_runs=2, tolerance=1,
     ))
     assert model.peak == 2 and model.active == 0
-    np.testing.assert_array_equal(result.training_qois[:, 0], [1, 2, 3])
+    np.testing.assert_array_equal(result.training_qois[:, 0], 1 + result.training_parameters[:, 0])
     assert all(Path(directory, "passed.txt").exists() for directory in result.training_dirs)
