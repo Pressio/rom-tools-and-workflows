@@ -139,9 +139,9 @@ def _gaussian_parameter_space():
     )
 
 
-def _run_eki(directory, dispatcher=None, evaluation_concurrency=1):
+def _run_eki(directory, dispatcher=None, evaluation_concurrency=1, *, model=None):
     return romtools.workflows.run_eki(
-        model=LinearQoiModel(),
+        model=LinearQoiModel() if model is None else model,
         parameter_space=SingleParameterSpace(),
         observations=np.array([0.0]),
         observations_covariance=np.eye(1),
@@ -153,10 +153,10 @@ def _run_eki(directory, dispatcher=None, evaluation_concurrency=1):
     )
 
 
-def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
+def _run_vi(directory, dispatcher=None, evaluation_concurrency=1, *, model=None):
     parameter_space = _gaussian_parameter_space()
     return romtools.workflows.run_vi(
-        model=LinearQoiModel(),
+        model=LinearQoiModel() if model is None else model,
         prior_parameter_space=parameter_space,
         initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
@@ -171,10 +171,10 @@ def _run_vi(directory, dispatcher=None, evaluation_concurrency=1):
     )
 
 
-def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1):
+def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1, *, model=None):
     parameter_space = _gaussian_parameter_space()
     return vi_api.mf_vi_with_auto_rom(
-        model=LinearQoiModel(),
+        model=LinearQoiModel() if model is None else model,
         prior_parameter_space=parameter_space,
         initial_variational_parameter_space=parameter_space,
         observations=np.array([0.0]),
@@ -192,9 +192,9 @@ def _run_mf_vi(directory, dispatcher=None, fom_evaluation_concurrency=1):
     )
 
 
-def _run_mf_eki(directory, dispatcher=None):
+def _run_mf_eki(directory, dispatcher=None, fom_evaluation_concurrency=1, *, model=None):
     return mf_eki_drivers.mf_eki_with_auto_rom(
-        model=TwoParameterLinearQoiModel(),
+        model=TwoParameterLinearQoiModel() if model is None else model,
         parameter_space=TwoParameterSpace(),
         observations=np.zeros(2),
         observations_covariance=np.eye(2),
@@ -202,7 +202,7 @@ def _run_mf_eki(directory, dispatcher=None):
         fom_ensemble_size=4,
         rom_extra_ensemble_size=4,
         max_iterations=2,
-        fom_evaluation_concurrency=1,
+        fom_evaluation_concurrency=fom_evaluation_concurrency,
         rom_evaluation_concurrency=1,
         dispatcher=dispatcher,
     )
@@ -466,3 +466,21 @@ def test_inverse_blocking_models_keep_legacy_return_value_handling(tmp_path, sta
 
     np.testing.assert_array_equal(qoi, [3.0])
     np.testing.assert_array_equal(error, [2.0])
+
+
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize("workflow, blocking_model, concurrency_option", [
+    (_run_eki, LinearQoiModel, "evaluation_concurrency"),
+    (_run_vi, LinearQoiModel, "evaluation_concurrency"),
+    (_run_mf_eki, TwoParameterLinearQoiModel, "fom_evaluation_concurrency"),
+    (_run_mf_vi, LinearQoiModel, "fom_evaluation_concurrency"),
+])
+def test_inverse_workflow_nonblocking_model(tmp_path, workflow, blocking_model, concurrency_option, deferred_model):
+    model = deferred_model(blocking_model())
+
+    workflow(str(tmp_path), model=model, **{concurrency_option: 2})
+
+    assert model.peak_pending == 2
+    assert not model.pending
+    assert model.completed
+    assert list(tmp_path.glob("iteration_*/restart.npz"))

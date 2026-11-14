@@ -126,15 +126,22 @@ def test_nonfinite_qoi_does_not_write_passed_marker(tmp_path):
 
 
 @pytest.mark.mpi_skip
-def test_fixed_multifidelity_workflow(tmp_path):
+@pytest.mark.parametrize("nonblocking", [False, True], ids=["blocking", "nonblocking"])
+def test_fixed_multifidelity_workflow(tmp_path, nonblocking, deferred_model):
+    high = AnalyticQoiModel()
+    low = AnalyticQoiModel()
+    if nonblocking:
+        high, low = deferred_model(high), deferred_model(low)
     result = run_multifidelity_monte_carlo(
-        AnalyticQoiModel(linear=1.0),
-        AnalyticQoiModel(linear=1.0),
+        high,
+        low,
         DeterministicParameterSpace(),
         str(tmp_path),
         number_of_high_fidelity_samples=4,
         number_of_low_fidelity_samples=10,
         random_seed=4,
+        high_fidelity_evaluation_concurrency=2,
+        low_fidelity_evaluation_concurrency=2,
         low_to_high_fidelity_cost_ratio=0.1,
     )
 
@@ -145,6 +152,10 @@ def test_fixed_multifidelity_workflow(tmp_path):
     assert result.used_multifidelity_estimator
     assert result.high_fidelity_sample_count == 4
     assert result.low_fidelity_sample_count == 10
+
+    if nonblocking:
+        assert high.peak_pending == low.peak_pending == 2
+        assert not high.pending and not low.pending
 
 
 @pytest.mark.mpi_skip

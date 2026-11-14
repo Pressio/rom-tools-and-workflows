@@ -155,5 +155,50 @@ def test_sampling_with_holdout(tmp_path):
     )
 
 
+@pytest.mark.mpi_skip
+def test_nonblocking_holdout_reads_relative_fom_and_rom_outputs(tmp_path, deferred_model):
+    class FileQoiModel:
+        def __init__(self, qoi):
+            self.qoi = qoi
+
+        def populate_run_directory(self, directory, parameters):
+            pass
+
+        def run_model(self, directory, parameters):
+            os.chdir(directory)
+            np.save("solution.npy", self.qoi)
+            return 0
+
+        def compute_qoi(self, directory, parameters):
+            return np.atleast_1d(np.load("solution.npy"))
+
+    class ScalarQoiModel(FileQoiModel):
+        def compute_qoi(self, directory, parameters):
+            return np.load("solution.npy").item()
+
+    class Builder:
+        def __init__(self):
+            self.models = []
+
+        def build_from_training_dirs(self, offline, training_dirs):
+            model = deferred_model(ScalarQoiModel(1.25))
+            self.models.append(model)
+            return model
+
+    fom = deferred_model(FileQoiModel(1.0))
+    builder = Builder()
+    space = UniformParameterSpace(["x"], [0], [1], sampler=MonteCarloSampler)
+    original_directory = os.getcwd()
+
+    run_sampling_with_holdout(fom, builder, space, str(tmp_path), 3, 3, 1e-5, 1)
+
+    assert os.getcwd() == original_directory
+    assert len(fom.completed) == 6
+    assert len(builder.models) == 2
+    assert all(len(model.completed) == 3 for model in builder.models)
+    with np.load(tmp_path / "holdout_stats.npz") as stats:
+        np.testing.assert_allclose(stats["holdout_set_errs"], [0.75, 0.75])
+
+
 if __name__ == "__main__":
     test_sampling_with_holdout(os.getcwd() + "/sampling_with_holdout_test_tmp/")
