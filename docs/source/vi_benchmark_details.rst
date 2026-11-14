@@ -175,7 +175,7 @@ Convergence
 The convergence plot reports the exact Gaussian
 :math:`D_{\rm KL}(q\|p_{\rm post})` for the accepted VI and MF-VI states.
 
-.. figure:: notebooks/analytic_sine_diagonal_convergence.png
+.. figure:: demos/notebooks/analytic_sine_diagonal_convergence.png
    :alt: KL convergence for VI and MF-VI on the equispaced analytic sine problem
    :align: center
    :width: 78%
@@ -185,7 +185,7 @@ The convergence plot reports the exact Gaussian
 Posterior mean
 ~~~~~~~~~~~~~~
 
-.. figure:: notebooks/analytic_sine_diagonal_mean.png
+.. figure:: demos/notebooks/analytic_sine_diagonal_mean.png
    :alt: Posterior mean comparison for the diagonal analytic sine problem
    :align: center
    :width: 82%
@@ -196,7 +196,7 @@ Posterior mean
 Posterior
 ~~~~~~~~~
 
-.. figure:: notebooks/analytic_sine_diagonal_posterior.png
+.. figure:: demos/notebooks/analytic_sine_diagonal_posterior.png
    :alt: Posterior marginal densities for the diagonal analytic sine problem
    :align: center
    :width: 96%
@@ -208,7 +208,7 @@ Posterior
 Implementation
 ~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../examples/vi_mf_vi_demo/diagonal_example.py
+.. literalinclude:: ../../examples/vi_mf_vi_demo/diagonal_example.py
    :language: python
    :linenos:
 
@@ -255,7 +255,7 @@ For the full-covariance family, Newton curvature is formed in
 :math:`(\mu,\operatorname{svec}(\Sigma))` coordinates and locally whitened with
 the exact Gaussian Fisher metric before the regularized Newton solve. The
 covariance update is then applied with the SPD-preserving exponential
-retraction described in :doc:`../full_covariance_vi`.
+retraction described in :doc:`full_covariance_vi`.
 
 Run the example with
 
@@ -266,7 +266,7 @@ Run the example with
 Convergence
 ~~~~~~~~~~~
 
-.. figure:: notebooks/analytic_sine_correlated_convergence.png
+.. figure:: demos/notebooks/analytic_sine_correlated_convergence.png
    :alt: KL convergence for full-covariance VI and MF-VI
    :align: center
    :width: 78%
@@ -276,7 +276,7 @@ Convergence
 Posterior mean
 ~~~~~~~~~~~~~~
 
-.. figure:: notebooks/analytic_sine_correlated_mean.png
+.. figure:: demos/notebooks/analytic_sine_correlated_mean.png
    :alt: Posterior mean comparison for the non-equispaced analytic sine problem
    :align: center
    :width: 82%
@@ -287,7 +287,7 @@ Posterior mean
 Posterior
 ~~~~~~~~~
 
-.. figure:: notebooks/analytic_sine_correlated_posterior.png
+.. figure:: demos/notebooks/analytic_sine_correlated_posterior.png
    :alt: Posterior correlation and two-dimensional marginal for the non-equispaced sine problem
    :align: center
    :width: 96%
@@ -317,7 +317,7 @@ mean-field VI/MF-VI histories and marks this floor. A mean-field method that
 converges to the horizontal line has exhausted its optimization error; the
 remaining KL discrepancy is caused by the diagonal covariance restriction.
 
-.. figure:: notebooks/analytic_sine_correlated_family_convergence.png
+.. figure:: demos/notebooks/analytic_sine_correlated_family_convergence.png
    :alt: Full-covariance and mean-field VI and MF-VI KL convergence on the correlated sine problem
    :align: center
    :width: 84%
@@ -331,7 +331,7 @@ The exact target and full-covariance approximations can represent the induced
 cross-correlations, whereas the optimal mean-field approximation and both
 mean-field numerical runs are diagonal by construction.
 
-.. figure:: notebooks/analytic_sine_correlated_family_correlation.png
+.. figure:: demos/notebooks/analytic_sine_correlated_family_correlation.png
    :alt: Correlation matrices for exact, full-covariance, and mean-field VI and MF-VI approximations
    :align: center
    :width: 96%
@@ -343,7 +343,7 @@ mean-field numerical runs are diagonal by construction.
 Implementation
 ~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../examples/vi_mf_vi_demo/full_covariance_example.py
+.. literalinclude:: ../../examples/vi_mf_vi_demo/full_covariance_example.py
    :language: python
    :linenos:
 
@@ -353,7 +353,7 @@ Shared problem definition
 The forward model, exact posterior calculation, history processing, and plotting
 utilities are shared by both examples:
 
-.. literalinclude:: ../../../examples/vi_mf_vi_demo/analytic_sine_support.py
+.. literalinclude:: ../../examples/vi_mf_vi_demo/analytic_sine_support.py
    :language: python
    :linenos:
 
