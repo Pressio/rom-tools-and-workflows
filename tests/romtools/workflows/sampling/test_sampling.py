@@ -229,6 +229,24 @@ def test_dry_run_overwrite_invalidates_existing_success_marker(tmp_path):
         np.testing.assert_array_equal(stats["qoi_values"], [[2.0]])
 
 
+@pytest.mark.mpi_skip
+def test_serial_sampling_checkpoints_before_later_sample_fails(tmp_path):
+    class Model(MockQoiModel):
+        def run_model(self, directory, parameters):
+            if directory.endswith("run_1"):
+                with np.load(tmp_path / "sampling_stats.npz") as stats:
+                    assert stats["run_times"][0] > 0
+                    np.testing.assert_array_equal(stats["run_times"][1:], [0, 0])
+                raise RuntimeError("solver failed")
+            return super().run_model(directory, parameters)
+
+    with pytest.raises(RuntimeError, match="solver failed"):
+        run_sampling(Model(), ConstParameterSpace(["x"], [1]), tmp_path, number_of_samples=3)
+
+    assert (tmp_path / "run_0" / "passed.txt").exists()
+    assert not (tmp_path / "run_2" / "passed.txt").exists()
+
+
 if __name__ == "__main__":
     test_sampler()
     test_sampler_dry_run()

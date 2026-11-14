@@ -161,22 +161,35 @@ def run_sampling(model: Model,
     Warning: If you are using your model with MPI via a direct call to `mpirun -n ...`,
     be aware that this may or may not work for issues that are purely related to MPI.
     """)
-    completed = execute_models(
-        model, (evaluation for _, evaluation in samples_to_run), evaluation_concurrency,
-        postprocess=partial(_finish_sample, compute_qoi=model_has_qoi, dispatcher=dispatcher),
-        return_exceptions=True,
-    )
-    separate_run_times = evaluation_concurrency != 1
-    run_times = np.zeros(len(completed) if separate_run_times else len(parameter_samples))
+    stats_path = os.path.join(absolute_work_dir, "sampling_stats")
+    postprocess = partial(_finish_sample, compute_qoi=model_has_qoi, dispatcher=dispatcher)
+    serial = evaluation_concurrency == 1
+    if serial:
+        # Yield one result at a time so we checkpoint before running the next sample.
+        completed = (
+            execute_models(
+                model, [evaluation], evaluation_concurrency, postprocess=postprocess,
+                return_exceptions=True,
+            )[0]
+            for _, evaluation in samples_to_run
+        )
+    else:
+        completed = execute_models(
+            model, (evaluation for _, evaluation in samples_to_run), evaluation_concurrency,
+            postprocess=postprocess, return_exceptions=True,
+        )
+    run_times = np.zeros(len(parameter_samples) if serial else len(samples_to_run))
     for result_index, ((sample_index, _), result) in enumerate(zip(samples_to_run, completed)):
         run_time, qoi = _sample_result(sample_index, result)
-        run_times[result_index if separate_run_times else sample_index] = run_time
+        run_times[sample_index if serial else result_index] = run_time
         qois[sample_index] = qoi
+        if serial:
+            dispatcher.np_savez(stats_path, run_times=run_times)
 
     qoi_samples = [qoi for qoi in qois if qoi is not None]
     qoi_stats = _compute_qoi_statistics(qoi_samples) if qoi_samples else {}
-    dispatcher.np_savez(os.path.join(absolute_work_dir, "sampling_stats"),
-                        run_times=run_times, **qoi_stats)
+    if qoi_stats or not serial or not samples_to_run:
+        dispatcher.np_savez(stats_path, run_times=run_times, **qoi_stats)
     if qoi_stats:
         print("QoI statistics:")
         print(f"  count: {qoi_stats['qoi_num_samples'][0]}")

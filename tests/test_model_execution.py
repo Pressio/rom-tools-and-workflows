@@ -151,3 +151,53 @@ def test_nonblocking_can_finish_other_evaluations_after_failure(tmp_path):
 def test_invalid_concurrency():
     with pytest.raises(ValueError):
         execute_models(BlockingModel(), evaluations({}), max_concurrent=0)
+
+
+@pytest.mark.parametrize("fail_batch", [False, True])
+def test_nonblocking_completion_uses_each_submission_directory(tmp_path, fail_batch):
+    class Job:
+        def __init__(self, directory, ticks):
+            self.directory = directory
+            self.ticks = ticks
+
+        def done(self):
+            assert os.getcwd() == self.directory
+            self.ticks -= 1
+            return self.ticks == 0
+
+        def result(self):
+            assert os.getcwd() == self.directory
+            return 0
+
+    class Model:
+        blocking = False
+
+        def run_model(self, directory, parameters):
+            if parameters.get("fail"):
+                raise LookupError("submission failed")
+            os.chdir(directory)
+            with open("solution.txt", "w") as solution:
+                solution.write(parameters["value"])
+            return Job(directory, parameters["ticks"])
+
+    def postprocess(model, evaluation):
+        with open("solution.txt") as solution:
+            return solution.read()
+
+    cwd = os.getcwd()
+    samples = [
+        ModelEvaluation(str(tmp_path / "first"), {"value": "first", "ticks": 2}),
+        ModelEvaluation(str(tmp_path / "second"), {"value": "second", "ticks": 1}),
+    ]
+    for sample in samples:
+        os.mkdir(sample.run_directory)
+    options = dict(max_concurrent=3, poll_interval=0, postprocess=postprocess)
+    if fail_batch:
+        failure = ModelEvaluation(str(tmp_path), {"fail": True})
+        with pytest.raises(LookupError, match="submission failed"):
+            execute_models(Model(), [*samples, failure], **options)
+    else:
+        execute_models(Model(), samples, **options)
+
+    assert os.getcwd() == cwd
+    assert [sample.output for sample in samples] == ["first", "second"]

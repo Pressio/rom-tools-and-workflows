@@ -59,10 +59,13 @@ def _run_blocking(model, evaluation, prepare, postprocess, scope, allow_implicit
 
 
 @contextmanager
-def _restore_directory():
+def _nonblocking_scope(evaluation, scope, working_directory=None):
     directory = os.getcwd()
     try:
-        yield
+        with scope(evaluation) if scope is not None else nullcontext():
+            if working_directory is not None:
+                os.chdir(working_directory)
+            yield
     finally:
         os.chdir(directory)
 
@@ -80,7 +83,7 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                 next_index += 1
                 evaluation = evaluations[index]
                 try:
-                    with scope(evaluation) if scope is not None else _restore_directory():
+                    with _nonblocking_scope(evaluation, scope):
                         if prepare is not None:
                             prepare(model, evaluation)
                         start = time.monotonic()
@@ -91,21 +94,21 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                             raise TypeError(
                                 f"Non-blocking model must return a JobHandle, got {type(handle)!r}"
                             )
-                        pending[index] = (handle, start)
+                        pending[index] = (handle, start, os.getcwd())
                 except Exception as error:
                     if not return_exceptions:
                         failed_index = index
                         raise
                     if index in pending:
-                        handle, start = pending.pop(index)
-                        _drain(model, evaluation, handle, start, scope)
+                        _drain(model, evaluation, pending.pop(index), scope)
                     results[index] = error
 
             completed = False
-            for index, (handle, start) in list(pending.items()):
+            for index, job in list(pending.items()):
                 evaluation = evaluations[index]
+                handle, start, working_directory = job
                 try:
-                    with scope(evaluation) if scope is not None else _restore_directory():
+                    with _nonblocking_scope(evaluation, scope, working_directory):
                         if not handle.done():
                             continue
                         completed = True
@@ -119,7 +122,7 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                         raise
                     if index in pending:
                         del pending[index]
-                        _drain(model, evaluation, handle, start, scope)
+                        _drain(model, evaluation, job, scope)
                     completed = True
                     results[index] = error
             if pending and not completed:
@@ -129,16 +132,17 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
         # finish successful siblings so restartable workflows can reuse them.
         # On interruption, wait for the handles without running callbacks.
         finish_pending = isinstance(error, Exception)
-        for index, (handle, start) in pending.items():
+        for index, job in pending.items():
             callback = postprocess if finish_pending and index != failed_index else None
-            _drain(model, evaluations[index], handle, start, scope, callback)
+            _drain(model, evaluations[index], job, scope, callback)
         raise
     return results
 
 
-def _drain(model, evaluation, handle, start, scope, postprocess=None):
+def _drain(model, evaluation, job, scope, postprocess=None):
+    handle, start, working_directory = job
     try:
-        with scope(evaluation) if scope is not None else _restore_directory():
+        with _nonblocking_scope(evaluation, scope, working_directory):
             status = handle.result()
             if postprocess is not None:
                 _finish(model, evaluation, status, start, postprocess)
@@ -158,6 +162,8 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1, *,
     Non-blocking models use the caller's process and keep at most
     max_concurrent handles in flight. An optional scope wraps each blocking
     evaluation or each submission and completion phase of a non-blocking one.
+    Non-blocking polling and completion resume in the working directory left
+    by submission and restore the caller's directory afterward.
 
     By default failures raise. With return_exceptions, failed entries contain
     exceptions and the remaining evaluations continue. Workflows that used
