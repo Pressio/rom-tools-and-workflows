@@ -1,0 +1,18 @@
+romtools.workflows.inverse.vi.sample\_reuse
+===========================================
+
+.. automodule:: romtools.workflows.inverse.vi.sample_reuse
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_controller
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      VISampleReuseConfig
+   

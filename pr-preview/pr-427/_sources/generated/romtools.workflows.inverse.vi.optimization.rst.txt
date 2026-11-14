@@ -1,0 +1,20 @@
+romtools.workflows.inverse.vi.optimization
+==========================================
+
+.. automodule:: romtools.workflows.inverse.vi.optimization
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AdamSolver
+      NewtonSolver
+      SteepestDescentSolver
+      VIAdamOptimizerConfig
+      VIGradientOptimizerConfig
+      VILegacyLineSearchConfig
+      VINewtonOptimizerConfig
+      VINoLineSearchConfig
+      VIStochasticNonmonotoneLineSearchConfig
+   
