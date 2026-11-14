@@ -18,6 +18,8 @@ For background on full-covariance VI, see :doc:`full_covariance_vi`.
    :hidden:
 
    api_inverse_eki
+   vi_implementation_notes
+   vi_benchmark_details
 
 Examples
 --------

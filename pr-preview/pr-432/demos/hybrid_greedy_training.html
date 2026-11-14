@@ -497,7 +497,7 @@ error. Indicator failures report candidate parameters, index, path, and model st
 </section>
 <section id="validation-and-shared-behavior">
 <h2>Validation and shared behavior<a class="headerlink" href="#validation-and-shared-behavior" title="Link to this heading">#</a></h2>
-<p>Validation reuses <a class="reference internal" href="space_filling_training.html#space-filling-validation"><span class="std std-ref">Validation and error functors</span></a> unchanged: by default, five
+<p>Validation reuses <a class="reference internal" href="space_filling_training_details.html#space-filling-validation"><span class="std std-ref">Validation and error functors</span></a> unchanged: by default, five
 independent fold-specific ROM builds compute the maximum held-out relative L2
 QoI error. Training stops when that error is <strong>less than or equal to</strong>
 <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>. At least five distinct initial samples are required by default.
@@ -512,12 +512,12 @@ those described in the linked validation documentation.</p>
 default; there is no automatic normalization. Supply <code class="docutils literal notranslate"><span class="pre">distance_metric(a,</span> <span class="pre">b)</span></code>
 for differing scales, units, non-Euclidean geometry, or nonnumeric parameter
 rows. Zero distance identifies equivalent points. See
-<a class="reference internal" href="space_filling_training.html#space-filling-distances"><span class="std std-ref">Parameter spaces and distances</span></a> for metric, parameter-shape, and seed conventions.</p>
+<a class="reference internal" href="space_filling_training_details.html#space-filling-distances"><span class="std std-ref">Parameter spaces and distances</span></a> for metric, parameter-shape, and seed conventions.</p>
 <p><code class="docutils literal notranslate"><span class="pre">max_concurrent_fom_runs</span></code> limits active FOM processes independently of
 <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>. Each FOM uses an independent directory. All submitted tasks finish
 successfully before rebuilding; failed batches retain diagnostic FOM files and
 never enter a build. Concurrent FOMs must support multiprocessing spawn. See
-<a class="reference internal" href="space_filling_training.html#space-filling-execution"><span class="std std-ref">FOM execution contract</span></a> for the complete execution contract.</p>
+<a class="reference internal" href="space_filling_training_details.html#space-filling-execution"><span class="std std-ref">FOM execution contract</span></a> for the complete execution contract.</p>
 <p>Candidate ROM calls run serially through <code class="docutils literal notranslate"><span class="pre">populate_run_directory</span></code>,
 <code class="docutils literal notranslate"><span class="pre">run_model</span></code> (which must return zero), and <code class="docutils literal notranslate"><span class="pre">compute_error_estimate</span></code>. By default,
 independent temporary run directories support filesystem-backed ROMs. They are
