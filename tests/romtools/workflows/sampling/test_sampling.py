@@ -201,6 +201,34 @@ def test_nonblocking_sampling_restart_and_failed_overwrite(tmp_path):
         np.testing.assert_array_equal(stats["qoi_values"], [[1.0], [2.0]])
 
 
+@pytest.mark.mpi_skip
+def test_dry_run_overwrite_invalidates_existing_success_marker(tmp_path):
+    class SolutionModel(MockQoiModel):
+        def run_model(self, directory, parameters):
+            np.save(os.path.join(directory, "solution.npy"), super().compute_qoi(directory, parameters))
+            return 0
+
+        def compute_qoi(self, directory, parameters):
+            return np.load(os.path.join(directory, "solution.npy"))
+
+    model = SolutionModel()
+    first_space = ConstParameterSpace(["x"], [1])
+    second_space = ConstParameterSpace(["x"], [2])
+    options = dict(absolute_work_dir=tmp_path, number_of_samples=1)
+
+    run_sampling(model, first_space, **options)
+    marker = tmp_path / "run_0" / "passed.txt"
+    assert marker.exists()
+
+    run_sampling(model, second_space, overwrite=True, dry_run=True, **options)
+    assert not marker.exists()
+
+    run_sampling(model, second_space, **options)
+    assert marker.exists()
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[2.0]])
+
+
 if __name__ == "__main__":
     test_sampler()
     test_sampler_dry_run()

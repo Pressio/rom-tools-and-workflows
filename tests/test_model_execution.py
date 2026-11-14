@@ -25,6 +25,7 @@ class Handle:
         self.ticks = parameters["ticks"]
         self.status = parameters.get("exit_code", 0)
         self.failure = parameters.get("failure")
+        self.chdir = parameters.get("chdir", False)
 
     def done(self):
         if self.failure == "poll":
@@ -33,6 +34,8 @@ class Handle:
         return self.ticks <= 0
 
     def result(self):
+        if self.chdir:
+            os.chdir(self.directory)
         self.model.active -= 1
         self.model.finished.append(self.directory)
         if self.failure == "result":
@@ -106,32 +109,42 @@ def test_nonblocking_out_of_order_and_bounded_submission():
     ("result", LookupError, "result failed"),
     ("status", RuntimeError, "exit status 7"),
 ])
-def test_nonblocking_failure_drains_submitted_jobs(failure, error_type, message):
+def test_nonblocking_failure_drains_submitted_jobs(tmp_path, failure, error_type, message):
     model = NonBlockingModel()
-    samples = evaluations(
-        {"ticks": 10}, {"ticks": 1, "failure": failure, "exit_code": 7}, {"ticks": 1},
-    )
+    samples = [
+        ModelEvaluation(str(tmp_path), {"ticks": 10, "chdir": True}),
+        ModelEvaluation("failed", {"ticks": 1, "failure": failure, "exit_code": 7 if failure == "status" else 0}),
+        ModelEvaluation("unsubmitted", {"ticks": 1}),
+    ]
+    cwd = os.getcwd()
+    processed = []
 
     def postprocess(model, evaluation):
-        pytest.fail("failed or drained jobs must not be postprocessed")
+        assert os.getcwd() == str(tmp_path)
+        processed.append(evaluation.run_directory)
 
     with pytest.raises(error_type, match=message):
         execute_models(model, samples, 2, poll_interval=0, postprocess=postprocess)
 
     assert model.active == 0
-    assert "run_0" in model.finished
-    assert "run_2" not in model.finished
+    assert str(tmp_path) in model.finished
+    assert "unsubmitted" not in model.finished
+    assert processed == [str(tmp_path)]
+    assert os.getcwd() == cwd
 
 
-def test_nonblocking_can_finish_other_evaluations_after_failure():
+def test_nonblocking_can_finish_other_evaluations_after_failure(tmp_path):
     model = NonBlockingModel()
-    samples = evaluations({"ticks": 3, "failure": "poll"}, {"ticks": 1}, {"ticks": 1})
+    samples = evaluations({"ticks": 3, "failure": "poll", "chdir": True}, {"ticks": 1}, {"ticks": 1})
+    samples[0].run_directory = str(tmp_path)
+    cwd = os.getcwd()
 
     results = execute_models(model, samples, 2, poll_interval=0, return_exceptions=True)
 
     assert isinstance(results[0], LookupError)
     assert results[1:] == samples[1:]
-    assert set(model.finished) == {"run_0", "run_1", "run_2"}
+    assert set(model.finished) == {str(tmp_path), "run_1", "run_2"}
+    assert os.getcwd() == cwd
     assert model.active == 0
 
 

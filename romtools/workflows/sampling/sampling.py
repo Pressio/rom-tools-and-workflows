@@ -150,8 +150,7 @@ def run_sampling(model: Model,
                 if model_has_qoi and not dry_run:
                     qois[sample_index] = _compute_qoi_for_sample(model, run_directory, parameter_dict)
                 continue
-            if not dry_run:
-                dispatcher.remove(passed_file)
+            dispatcher.remove(passed_file)
         model.populate_run_directory(run_directory, parameter_dict)
         samples_to_run.append((sample_index, ModelEvaluation(run_directory, parameter_dict)))
 

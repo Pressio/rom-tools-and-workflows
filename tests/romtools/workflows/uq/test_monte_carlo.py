@@ -226,3 +226,48 @@ def test_sample_counts_must_be_integers(tmp_path):
             pilot_sample_count=2.5,
             high_fidelity_equivalent_budget=10.0,
         )
+
+
+@pytest.mark.mpi_skip
+def test_nonblocking_monte_carlo_restarts_without_rerunning_successful_sibling(tmp_path):
+    class Model(CountingQoiModel):
+        blocking = False
+        fail_first_run = True
+
+        def __init__(self):
+            super().__init__()
+            self.submitted = []
+
+        def run_model(self, directory, parameters):
+            self.submitted.append(os.path.basename(directory))
+            return Job(self, directory, parameters)
+
+    class Job:
+        def __init__(self, model, directory, parameters):
+            self.model = model
+            self.directory = directory
+            self.parameters = parameters
+
+        def done(self):
+            return True
+
+        def result(self):
+            if self.model.fail_first_run and self.directory.endswith("run_0"):
+                return 7
+            return CountingQoiModel.run_model(self.model, self.directory, self.parameters)
+
+    model = Model()
+    options = dict(number_of_samples=3, random_seed=5, evaluation_concurrency=2)
+    args = (model, DeterministicParameterSpace(), str(tmp_path))
+    with pytest.raises(RuntimeError, match="exit status 7"):
+        run_monte_carlo(*args, **options)
+
+    assert model.submitted == ["run_0", "run_1"]
+    assert not (tmp_path / "run_0" / "passed.txt").exists()
+    assert (tmp_path / "run_1" / "passed.txt").exists()
+
+    model.fail_first_run = False
+    model.submitted.clear()
+    result = run_monte_carlo(*args, **options)
+    assert model.submitted == ["run_0", "run_2"]
+    np.testing.assert_allclose(result.qoi_values[:, 0], result.parameter_samples[:, 0])

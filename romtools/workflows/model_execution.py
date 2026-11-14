@@ -72,6 +72,7 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
     results = [None] * len(evaluations)
     pending = {}
     next_index = 0
+    failed_index = None
     try:
         while next_index < len(evaluations) or pending:
             while next_index < len(evaluations) and len(pending) < max_concurrent:
@@ -93,7 +94,11 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                         pending[index] = (handle, start)
                 except Exception as error:
                     if not return_exceptions:
+                        failed_index = index
                         raise
+                    if index in pending:
+                        handle, start = pending.pop(index)
+                        _drain(model, evaluation, handle, start, scope)
                     results[index] = error
 
             completed = False
@@ -110,25 +115,33 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                         )
                 except Exception as error:
                     if not return_exceptions:
+                        failed_index = index
                         raise
                     if index in pending:
                         del pending[index]
-                        _drain(handle)
+                        _drain(model, evaluation, handle, start, scope)
                     completed = True
                     results[index] = error
             if pending and not completed:
                 time.sleep(poll_interval)
-    finally:
-        # The minimal handle has no cancellation API. Wait for work that was
-        # already submitted before unwinding and preserve the original error.
-        for handle, _ in pending.values():
-            _drain(handle)
+    except BaseException as error:
+        # The minimal handle cannot cancel submitted work. On a batch error,
+        # finish successful siblings so restartable workflows can reuse them.
+        # On interruption, wait for the handles without running callbacks.
+        finish_pending = isinstance(error, Exception)
+        for index, (handle, start) in pending.items():
+            callback = postprocess if finish_pending and index != failed_index else None
+            _drain(model, evaluations[index], handle, start, scope, callback)
+        raise
     return results
 
 
-def _drain(handle):
+def _drain(model, evaluation, handle, start, scope, postprocess=None):
     try:
-        handle.result()
+        with scope(evaluation) if scope is not None else _restore_directory():
+            status = handle.result()
+            if postprocess is not None:
+                _finish(model, evaluation, status, start, postprocess)
     except Exception:
         pass
 
@@ -149,6 +162,8 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1, *,
     By default failures raise. With return_exceptions, failed entries contain
     exceptions and the remaining evaluations continue. Workflows that used
     to ignore blocking return values can opt in to accepting a legacy None.
+    After a non-blocking batch error, successful in-flight siblings still
+    run postprocessing before the original error is raised.
     """
     if (isinstance(max_concurrent, bool) or not isinstance(max_concurrent, Integral)
             or max_concurrent < 1):
