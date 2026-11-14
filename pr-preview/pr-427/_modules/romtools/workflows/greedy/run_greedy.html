@@ -537,11 +537,15 @@
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">))</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Keep one independent, flattened QoI row per completed FOM run."""</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">),</span>
+        <span class="n">evaluation</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">),</span>
     <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_error_estimate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_error_estimate</span><span class="p">(</span><span class="n">evaluation</span><span class="o">.</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">parameter_sample</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_exclude_training_samples</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">training</span><span class="p">):</span>
@@ -683,10 +687,10 @@
         <span class="n">fom_run_directory</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">greedy_directory</span><span class="si">}</span><span class="s1">/fom/</span><span class="si">{</span><span class="n">run_directory_prefix</span><span class="si">}{</span><span class="n">sample_index</span><span class="si">}</span><span class="s1">'</span>
         <span class="n">create_empty_dir</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">)</span>
         <span class="n">fom_model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span><span class="n">parameter_dict</span><span class="p">)</span>
-        <span class="n">execute_models</span><span class="p">(</span>
-            <span class="n">fom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">fom_qoi</span> <span class="o">=</span> <span class="n">_compute_qoi</span><span class="p">(</span><span class="n">fom_model</span><span class="p">,</span> <span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)</span>
+        <span class="n">fom_qoi</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
+            <span class="n">fom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span>
+            <span class="n">postprocess</span><span class="o">=</span><span class="n">_compute_qoi</span><span class="p">,</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output</span>
         <span class="n">initial_fom_qois</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fom_qoi</span><span class="p">)</span>
         <span class="n">training_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">)</span>
     <span class="n">fom_qois</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">initial_fom_qois</span><span class="p">)</span>
@@ -742,6 +746,7 @@
             <span class="k">break</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Greedy iteration # </span><span class="si">{</span><span class="n">outer_loop_counter</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
         <span class="n">error_indicators</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">samples_left</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">rom_evaluations</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">greedy_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Greedy iteration # </span><span class="si">{</span><span class="n">outer_loop_counter</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span>
@@ -755,10 +760,12 @@
             <span class="k">if</span> <span class="n">create_rom_run_directories</span><span class="p">:</span>
                 <span class="n">create_empty_dir</span><span class="p">(</span><span class="n">rom_run_directory</span><span class="p">)</span>
             <span class="n">rom_model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">rom_run_directory</span><span class="p">,</span><span class="n">parameter_dict</span><span class="p">)</span>
-            <span class="n">execute_models</span><span class="p">(</span>
-                <span class="n">rom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">rom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">error_indicators</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">=</span> <span class="n">rom_model</span><span class="o">.</span><span class="n">compute_error_estimate</span><span class="p">(</span><span class="n">rom_run_directory</span><span class="p">,</span><span class="n">parameter_dict</span><span class="p">)</span>
+            <span class="n">evaluation</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
+                <span class="n">rom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">rom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span>
+                <span class="n">postprocess</span><span class="o">=</span><span class="n">_compute_error_estimate</span><span class="p">,</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">error_indicators</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">output</span>
+            <span class="n">rom_evaluations</span><span class="p">[</span><span class="n">sample_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">evaluation</span>
 
         <span class="n">rom_time</span> <span class="o">+=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
 
@@ -796,20 +803,15 @@
         <span class="n">parameter_dict</span> <span class="o">=</span> <span class="n">_create_parameter_dict</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span><span class="n">parameter_samples</span><span class="p">[</span><span class="n">sample_with_highest_error_indicator</span><span class="p">])</span>
         <span class="n">create_empty_dir</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">)</span>
         <span class="n">fom_model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)</span>
-        <span class="n">execute_models</span><span class="p">(</span>
-            <span class="n">fom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">fom_qoi</span> <span class="o">=</span> <span class="n">_compute_qoi</span><span class="p">(</span><span class="n">fom_model</span><span class="p">,</span> <span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)</span>
+        <span class="n">fom_qoi</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
+            <span class="n">fom_model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">fom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)],</span>
+            <span class="n">postprocess</span><span class="o">=</span><span class="n">_compute_qoi</span><span class="p">,</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output</span>
 
         <span class="n">fom_time</span> <span class="o">+=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
 
         <span class="c1"># Get ROM QoI to calibrate our error estimator</span>
-        <span class="n">outer_loop_counter_m_1</span> <span class="o">=</span> <span class="n">outer_loop_counter</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="n">rom_run_directory</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">greedy_directory</span><span class="si">}</span><span class="s1">/rom_iteration_</span><span class="si">{</span><span class="n">outer_loop_counter_m_1</span><span class="si">}</span><span class="s1">/'</span>
-            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">run_directory_prefix</span><span class="si">}{</span><span class="n">sample_with_highest_error_indicator</span><span class="si">}</span><span class="s1">'</span>
-        <span class="p">)</span>
-        <span class="n">rom_qoi</span> <span class="o">=</span> <span class="n">_compute_qoi</span><span class="p">(</span><span class="n">rom_model</span><span class="p">,</span> <span class="n">rom_run_directory</span><span class="p">,</span> <span class="n">parameter_dict</span><span class="p">)</span>
+        <span class="n">rom_qoi</span> <span class="o">=</span> <span class="n">_compute_qoi</span><span class="p">(</span><span class="n">rom_model</span><span class="p">,</span> <span class="n">rom_evaluations</span><span class="p">[</span><span class="n">sample_with_highest_error_indicator</span><span class="p">])</span>
         <span class="n">qoi_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rom_qoi</span> <span class="o">-</span> <span class="n">fom_qoi</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">fom_qoi</span><span class="p">)</span>
         <span class="n">greedy_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">sample_with_highest_error_indicator</span><span class="si">}</span><span class="s2"> had "</span>
                           <span class="sa">f</span><span class="s2">"an error of </span><span class="si">{</span><span class="n">qoi_error</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>

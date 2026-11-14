@@ -449,11 +449,18 @@
                 <span class="n">stage</span> <span class="o">=</span> <span class="s2">"populate_run_directory"</span>
                 <span class="n">rom</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
                 <span class="n">stage</span> <span class="o">=</span> <span class="s2">"run_model"</span>
-                <span class="n">execute_models</span><span class="p">(</span><span class="n">rom</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)])</span>
-                <span class="n">stage</span> <span class="o">=</span> <span class="s2">"compute_error_estimate"</span>
-                <span class="n">indicators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_error_value</span><span class="p">(</span>
-                    <span class="n">rom</span><span class="o">.</span><span class="n">compute_error_estimate</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameters</span><span class="p">),</span> <span class="s2">"error indicator"</span><span class="p">,</span>
-                <span class="p">))</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">compute_indicator</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">):</span>
+                    <span class="k">nonlocal</span> <span class="n">stage</span>
+                    <span class="n">stage</span> <span class="o">=</span> <span class="s2">"compute_error_estimate"</span>
+                    <span class="k">return</span> <span class="n">_error_value</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">.</span><span class="n">compute_error_estimate</span><span class="p">(</span><span class="n">evaluation</span><span class="o">.</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">parameter_sample</span><span class="p">),</span>
+                        <span class="s2">"error indicator"</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">completed</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
+                    <span class="n">rom</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)],</span> <span class="n">postprocess</span><span class="o">=</span><span class="n">compute_indicator</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">indicators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">completed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"candidate </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">, parameters=</span><span class="si">{</span><span class="n">parameters</span><span class="si">!r}</span><span class="s2">, directory=</span><span class="si">{</span><span class="n">run_directory</span><span class="si">}</span><span class="s2">: "</span>

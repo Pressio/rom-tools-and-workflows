@@ -429,8 +429,12 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation.compute_qoi"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation.compute_qoi()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelRunError"><code class="docutils literal notranslate"><span class="pre">ModelRunError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.compute_evaluation_qoi"><code class="docutils literal notranslate"><span class="pre">compute_evaluation_qoi()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.execute_models"><code class="docutils literal notranslate"><span class="pre">execute_models()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.require_supported_concurrency"><code class="docutils literal notranslate"><span class="pre">require_supported_concurrency()</span></code></a></li>
 </ul>
@@ -504,10 +508,13 @@
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.execute_models" title="romtools.workflows.model_execution.execute_models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute_models</span></code></a>(model, evaluations[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.compute_evaluation_qoi" title="romtools.workflows.model_execution.compute_evaluation_qoi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_evaluation_qoi</span></code></a>(model, evaluation)</p></td>
+<td><p>Read a model's QoI as an executor completion callback.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.execute_models" title="romtools.workflows.model_execution.execute_models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute_models</span></code></a>(model, evaluations[, ...])</p></td>
 <td><p>Execute evaluations and return results in input order.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.require_supported_concurrency" title="romtools.workflows.model_execution.require_supported_concurrency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_supported_concurrency</span></code></a>(model, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.require_supported_concurrency" title="romtools.workflows.model_execution.require_supported_concurrency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_supported_concurrency</span></code></a>(model, ...)</p></td>
 <td><p>Apply dispatcher process-safety restrictions to blocking models.</p></td>
 </tr>
 </tbody>
@@ -545,6 +552,12 @@
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.model_execution.ModelEvaluation.compute_qoi">
+<span class="sig-name descname"><span class="pre">compute_qoi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#ModelEvaluation.compute_qoi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.ModelEvaluation.compute_qoi" title="Link to this definition">#</a></dt>
+<dd><p>Read the QoI in the completion directory of a non-blocking run.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py exception">
@@ -552,6 +565,12 @@
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">ModelRunError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#ModelRunError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.ModelRunError" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
 <p>A model returned an unsuccessful exit status.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.model_execution.compute_evaluation_qoi">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">compute_evaluation_qoi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#compute_evaluation_qoi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.compute_evaluation_qoi" title="Link to this definition">#</a></dt>
+<dd><p>Read a model’s QoI as an executor completion callback.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -606,8 +625,12 @@ run postprocessing before the original error is raised.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation.compute_qoi"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation.compute_qoi()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelRunError"><code class="docutils literal notranslate"><span class="pre">ModelRunError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.compute_evaluation_qoi"><code class="docutils literal notranslate"><span class="pre">compute_evaluation_qoi()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.execute_models"><code class="docutils literal notranslate"><span class="pre">execute_models()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.require_supported_concurrency"><code class="docutils literal notranslate"><span class="pre">require_supported_concurrency()</span></code></a></li>
 </ul>

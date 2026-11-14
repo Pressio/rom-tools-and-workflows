@@ -391,12 +391,12 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span><span class="p">,</span> <span class="n">nullcontext</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numbers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Integral</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">JobHandle</span>
 
@@ -408,7 +408,26 @@
     <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span>
     <span class="n">run_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
-    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_completion_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModelEvaluation.compute_qoi">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.model_execution.html#romtools.workflows.model_execution.ModelEvaluation.compute_qoi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_qoi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Read the QoI in the completion directory of a non-blocking run."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_completion_directory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">compute_evaluation_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">_nonblocking_scope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_completion_directory</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">compute_evaluation_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="compute_evaluation_qoi">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.model_execution.html#romtools.workflows.model_execution.compute_evaluation_qoi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_evaluation_qoi</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Read a model's QoI as an executor completion callback."""</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="n">evaluation</span><span class="o">.</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">parameter_sample</span><span class="p">)</span></div>
 
 
 
@@ -511,8 +530,10 @@
                             <span class="k">continue</span>
                         <span class="n">completed</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="k">del</span> <span class="n">pending</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+                        <span class="n">status</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                        <span class="n">evaluation</span><span class="o">.</span><span class="n">_completion_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
                         <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">_finish</span><span class="p">(</span>
-                            <span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">handle</span><span class="o">.</span><span class="n">result</span><span class="p">(),</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span>
+                            <span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span>
                         <span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">return_exceptions</span><span class="p">:</span>
@@ -543,6 +564,7 @@
         <span class="k">with</span> <span class="n">_nonblocking_scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">working_directory</span><span class="p">):</span>
             <span class="n">status</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">postprocess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">evaluation</span><span class="o">.</span><span class="n">_completion_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
                 <span class="n">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">pass</span>

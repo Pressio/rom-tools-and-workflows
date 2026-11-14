@@ -8,6 +8,7 @@ romtools.workflows.model\_execution
 
    .. autosummary::
    
+      compute_evaluation_qoi
       execute_models
       require_supported_concurrency
    
