@@ -5,13 +5,7 @@ Greedy training
 
 **Example.** The notebook demonstrates iterative sample selection, ROM rebuilding, and error monitoring.
 
-Notebook
---------
-
-.. toctree::
-   :maxdepth: 1
-
-   notebooks/greedy_training.ipynb
+Notebook: :doc:`notebooks/greedy_training`.
 
 For algorithm details, settings, and full source listings, see
 :doc:`greedy_training_details`.
