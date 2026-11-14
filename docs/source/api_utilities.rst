@@ -14,3 +14,9 @@ Execution on remote resources and supporting numerical utilities.
    Remote execution <remote_execution>
    Distributed SVD <distributed_svd>
    Formatting <formatting>
+
+Examples
+--------
+
+- :doc:`External model execution <demos/notebooks/external_model>`
+- :doc:`External QoI model execution <demos/notebooks/external_qoi_model>`
