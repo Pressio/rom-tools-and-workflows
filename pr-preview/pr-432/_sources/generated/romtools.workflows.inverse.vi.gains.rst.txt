@@ -1,0 +1,24 @@
+romtools.workflows.inverse.vi.gains
+===================================
+
+.. automodule:: romtools.workflows.inverse.vi.gains
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      append_training_batch
+      fit_history_gain
+      gain_folds
+      gaussian_history_kernels
+      history_weights
+      importance_weights
+      k_fold_acv_estimator
+      loo_acv_estimator
+      normalize_strategy
+      regularized_matrix_gain
+      sample_ids
+      validate_gain_num_folds
+      validate_gain_sampling
+   
