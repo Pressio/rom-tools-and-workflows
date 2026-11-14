@@ -567,7 +567,9 @@ max_concurrent handles in flight. An optional scope wraps each blocking
 evaluation or each submission and completion phase of a non-blocking one.</p>
 <p>By default failures raise. With return_exceptions, failed entries contain
 exceptions and the remaining evaluations continue. Workflows that used
-to ignore blocking return values can opt in to accepting a legacy None.</p>
+to ignore blocking return values can opt in to accepting a legacy None.
+After a non-blocking batch error, successful in-flight siblings still
+run postprocessing before the original error is raised.</p>
 </dd></dl>
 
 <dl class="py function">
