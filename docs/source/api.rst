@@ -1,59 +1,58 @@
 API Reference
 =============
 
-Workflow working directories
-----------------------------
+Find public interfaces by capability rather than by Python package layout.
 
-Workflow drivers use ``absolute_work_dir`` for their working-directory argument.
-Previous workflow-specific keyword names remain accepted for backwards
-compatibility and emit a ``DeprecationWarning``. New code should use
-``absolute_work_dir``.
+.. grid:: 2
+   :gutter: 2
 
-.. autosummary::
-   :toctree: generated
-   :recursive:
+   .. grid-item-card:: ROM Construction
+      :link: api_rom_construction
+      :link-type: doc
 
-   romtools
-   romtools.composite_vector_space
-   romtools.hyper_reduction
-   romtools.linalg
-   romtools.rom
-   romtools.vector_space
-   romtools.workflows
+      Trial spaces, composite vector spaces, and ROM operators.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Utilities
+   .. grid-item-card:: Hyper-reduction
+      :link: api_hyper_reduction
+      :link-type: doc
 
-   formatting
-   Distributed SVD <distributed_svd>
+      Residual sampling and hyper-reduction algorithms.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: ROM Construction
+   .. grid-item-card:: Sampling & Execution
+      :link: api_sampling_execution
+      :link-type: doc
 
-   Vector Space <generated/romtools.vector_space>
-   Composite Vector Space <generated/romtools.composite_vector_space>
-   Hyper Reduction <generated/romtools.hyper_reduction>
-   Batch Space-Filling Training <demos/space_filling_training>
-   Hybrid Greedy Training <demos/hybrid_greedy_training>
+      Models, parameter spaces, and sampling workflows.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Inverse Workflows
+   .. grid-item-card:: Inverse Problems
+      :link: api_inverse
+      :link-type: doc
 
-   api_inverse_eki
+      EKI, variational inference, and multifidelity drivers.
+
+   .. grid-item-card:: Uncertainty Quantification
+      :link: api_uq
+      :link-type: doc
+
+      Monte Carlo and multifidelity estimators.
+
+   .. grid-item-card:: HPC & Utilities
+      :link: api_utilities
+      :link-type: doc
+
+      Remote execution, linear algebra, and formatting.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Uncertainty Quantification
-
-   api_uq
-
-.. toctree::
    :hidden:
 
-   Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_eki>
-   Multifidelity Ensemble Kalman Inversion <generated/romtools.workflows.inverse.run_mf_eki>
-   Variational Inference <generated/romtools.workflows.inverse.run_vi>
-   Multifidelity Variational Inference <generated/romtools.workflows.inverse.run_mf_vi>
+   api_rom_construction
+   api_hyper_reduction
+   api_sampling_execution
+   api_inverse
+   api_uq
+   api_utilities
+   api_modules
+
+For runnable examples, see :doc:`demos/index`. For the full package
+hierarchy and legacy deep links, see :doc:`api_modules`.
