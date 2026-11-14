@@ -567,8 +567,8 @@
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.models.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><a class="reference internal" href="../_modules/romtools/workflows/models.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.Model" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
 <p>Baseline model protocol.</p>
-<p>Models without a blocking attribute are treated as blocking by the
-shared executor, preserving compatibility with structural implementations.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">blocking</span> <span class="pre">=</span> <span class="pre">False</span></code> on models that return a JobHandle.
+The executor defaults to blocking when the attribute is absent.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">

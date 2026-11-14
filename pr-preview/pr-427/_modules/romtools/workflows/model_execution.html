@@ -436,24 +436,24 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">require_integer_status</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="n">evaluation</span><span class="o">.</span><span class="n">run_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">Integral</span><span class="p">)</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">require_integer_status</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">Integral</span><span class="p">))</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">ModelRunError</span><span class="p">(</span><span class="n">evaluation</span><span class="o">.</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">run_time</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">postprocess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">evaluation</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">postprocess</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">evaluation</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_run_blocking</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">prepare</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">allow_implicit_success</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_blocking</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">prepare</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">ignore_blocking_status</span><span class="p">):</span>
     <span class="k">with</span> <span class="n">scope</span><span class="p">(</span><span class="n">evaluation</span><span class="p">)</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">prepare</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">prepare</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">)</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
         <span class="n">status</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="n">evaluation</span><span class="o">.</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">parameter_sample</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">allow_implicit_success</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ignore_blocking_status</span><span class="p">:</span>
             <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_finish</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="n">require_integer_status</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
 <span class="nd">@contextmanager</span>
@@ -552,7 +552,7 @@
 <a class="viewcode-back" href="../../../generated/romtools.workflows.model_execution.html#romtools.workflows.model_execution.execute_models">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">execute_models</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluations</span><span class="p">,</span> <span class="n">max_concurrent</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
                    <span class="n">prepare</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">postprocess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_method</span><span class="o">=</span><span class="s2">"spawn"</span><span class="p">,</span>
-                   <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_implicit_success</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                   <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Execute evaluations and return results in input order.</span>
 
 <span class="sd">    Optional prepare and postprocess callbacks take (model, evaluation).</span>
@@ -567,7 +567,8 @@
 
 <span class="sd">    By default failures raise. With return_exceptions, failed entries contain</span>
 <span class="sd">    exceptions and the remaining evaluations continue. Workflows that used</span>
-<span class="sd">    to ignore blocking return values can opt in to accepting a legacy None.</span>
+<span class="sd">    to ignore blocking return values can preserve that behavior with</span>
+<span class="sd">    ignore_blocking_status. Non-blocking exit statuses are always checked.</span>
 <span class="sd">    After a non-blocking batch error, successful in-flight siblings still</span>
 <span class="sd">    run postprocessing before the original error is raised.</span>
 <span class="sd">    """</span>
@@ -594,7 +595,7 @@
             <span class="k">return</span> <span class="n">error</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">arguments</span><span class="p">(</span><span class="n">evaluation</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">prepare</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">allow_implicit_success</span>
+        <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">evaluation</span><span class="p">,</span> <span class="n">prepare</span><span class="p">,</span> <span class="n">postprocess</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">ignore_blocking_status</span>
 
     <span class="k">if</span> <span class="n">max_concurrent</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span>

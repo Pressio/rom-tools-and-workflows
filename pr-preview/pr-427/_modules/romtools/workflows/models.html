@@ -423,10 +423,9 @@
 <span class="w">    </span><span class="sd">'''</span>
 <span class="sd">    Baseline model protocol.</span>
 
-<span class="sd">    Models without a blocking attribute are treated as blocking by the</span>
-<span class="sd">    shared executor, preserving compatibility with structural implementations.</span>
+<span class="sd">    Set ``blocking = False`` on models that return a JobHandle.</span>
+<span class="sd">    The executor defaults to blocking when the attribute is absent.</span>
 <span class="sd">    '''</span>
-    <span class="n">blocking</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>

@@ -491,7 +491,7 @@
     <span class="n">parameter_sample</span> <span class="o">=</span> <span class="n">_create_parameter_dict</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)</span>
     <span class="n">evaluation</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
-        <span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)],</span> <span class="n">allow_implicit_success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)],</span> <span class="n">ignore_blocking_status</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># Compute model QoI and save it to file</span>
