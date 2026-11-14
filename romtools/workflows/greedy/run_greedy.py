@@ -145,11 +145,15 @@ def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
 
 
-def _compute_qoi(model, run_directory, parameter_dict):
+def _compute_qoi(model, evaluation):
     """Keep one independent, flattened QoI row per completed FOM run."""
     return np.asarray(
-        model.compute_qoi(run_directory, parameter_dict),
+        evaluation.compute_qoi(model),
     ).reshape(-1).copy()
+
+
+def _compute_error_estimate(model, evaluation):
+    return model.compute_error_estimate(evaluation.run_directory, evaluation.parameter_sample)
 
 
 def _exclude_training_samples(parameters, candidates, training):
@@ -289,10 +293,10 @@ def run_greedy(fom_model: QoiModel,
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
-        execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
-        )
-        fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
+        fom_qoi = execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)],
+            postprocess=_compute_qoi, ignore_blocking_status=True,
+        )[0].output
         initial_fom_qois.append(fom_qoi)
         training_dirs.append(fom_run_directory)
     fom_qois = np.stack(initial_fom_qois)
@@ -348,6 +352,7 @@ def run_greedy(fom_model: QoiModel,
             break
         print(f'Greedy iteration # {outer_loop_counter}')
         error_indicators = np.zeros(samples_left.size)
+        rom_evaluations = {}
 
         t0 = time.time()
         greedy_file.write(f"Greedy iteration # {outer_loop_counter}\n" +
@@ -361,10 +366,12 @@ def run_greedy(fom_model: QoiModel,
             if create_rom_run_directories:
                 create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
-            execute_models(
-                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], ignore_blocking_status=True,
-            )
-            error_indicators[counter] = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
+            evaluation = execute_models(
+                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)],
+                postprocess=_compute_error_estimate, ignore_blocking_status=True,
+            )[0]
+            error_indicators[counter] = evaluation.output
+            rom_evaluations[sample_index] = evaluation
 
         rom_time += time.time() - t0
 
@@ -402,20 +409,15 @@ def run_greedy(fom_model: QoiModel,
         parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_with_highest_error_indicator])
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-        execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], ignore_blocking_status=True,
-        )
-        fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
+        fom_qoi = execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)],
+            postprocess=_compute_qoi, ignore_blocking_status=True,
+        )[0].output
 
         fom_time += time.time() - t0
 
         # Get ROM QoI to calibrate our error estimator
-        outer_loop_counter_m_1 = outer_loop_counter - 1
-        rom_run_directory = (
-            f'{greedy_directory}/rom_iteration_{outer_loop_counter_m_1}/'
-            f'{run_directory_prefix}{sample_with_highest_error_indicator}'
-        )
-        rom_qoi = _compute_qoi(rom_model, rom_run_directory, parameter_dict)
+        rom_qoi = _compute_qoi(rom_model, rom_evaluations[sample_with_highest_error_indicator])
         qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
         greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
                           f"an error of {qoi_error}\n")

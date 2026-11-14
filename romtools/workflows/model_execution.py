@@ -2,12 +2,12 @@
 
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager, nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numbers import Integral
 import multiprocessing
 import os
 import time
-from typing import Any
+from typing import Any, Optional
 
 from .models import JobHandle
 
@@ -18,6 +18,19 @@ class ModelEvaluation:
     parameter_sample: dict
     run_time: float = float("nan")
     output: Any = None
+    _completion_directory: Optional[str] = field(default=None, init=False, repr=False, compare=False)
+
+    def compute_qoi(self, model):
+        """Read the QoI in the completion directory of a non-blocking run."""
+        if self._completion_directory is None:
+            return compute_evaluation_qoi(model, self)
+        with _nonblocking_scope(self, None, self._completion_directory):
+            return compute_evaluation_qoi(model, self)
+
+
+def compute_evaluation_qoi(model, evaluation):
+    """Read a model's QoI as an executor completion callback."""
+    return model.compute_qoi(evaluation.run_directory, evaluation.parameter_sample)
 
 
 class ModelRunError(RuntimeError):
@@ -113,8 +126,10 @@ def _execute_nonblocking(model, evaluations, max_concurrent, poll_interval,
                             continue
                         completed = True
                         del pending[index]
+                        status = handle.result()
+                        evaluation._completion_directory = os.getcwd()
                         results[index] = _finish(
-                            model, evaluation, handle.result(), start, postprocess
+                            model, evaluation, status, start, postprocess
                         )
                 except Exception as error:
                     if not return_exceptions:
@@ -145,6 +160,7 @@ def _drain(model, evaluation, job, scope, postprocess=None):
         with _nonblocking_scope(evaluation, scope, working_directory):
             status = handle.result()
             if postprocess is not None:
+                evaluation._completion_directory = os.getcwd()
                 _finish(model, evaluation, status, start, postprocess)
     except Exception:
         pass

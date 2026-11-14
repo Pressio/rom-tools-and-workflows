@@ -57,11 +57,18 @@ def _candidate_indicators(rom, names, candidates, directory, rng, create_directo
                 stage = "populate_run_directory"
                 rom.populate_run_directory(run_directory, parameters)
                 stage = "run_model"
-                execute_models(rom, [ModelEvaluation(run_directory, parameters)])
-                stage = "compute_error_estimate"
-                indicators.append(_error_value(
-                    rom.compute_error_estimate(run_directory, parameters), "error indicator",
-                ))
+                def compute_indicator(model, evaluation):
+                    nonlocal stage
+                    stage = "compute_error_estimate"
+                    return _error_value(
+                        model.compute_error_estimate(evaluation.run_directory, evaluation.parameter_sample),
+                        "error indicator",
+                    )
+
+                completed = execute_models(
+                    rom, [ModelEvaluation(run_directory, parameters)], postprocess=compute_indicator,
+                )
+                indicators.append(completed[0].output)
         except Exception as error:
             raise RuntimeError(
                 f"candidate {index}, parameters={parameters!r}, directory={run_directory}: "
