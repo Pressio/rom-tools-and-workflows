@@ -16,10 +16,13 @@ from .models import JobHandle
 class ModelEvaluation:
     run_directory: str
     parameter_sample: dict
+    run_time: float = float('nan')
 
 
 def _run_blocking(model, evaluation):
+    start = time.monotonic()
     status = model.run_model(evaluation.run_directory, evaluation.parameter_sample)
+    evaluation.run_time = time.monotonic() - start
     if not isinstance(status, Integral) or status != 0:
         raise RuntimeError(
             f"Model failed in {evaluation.run_directory}: exit status {status!r}"
@@ -60,6 +63,7 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1):
 
     results = [None] * len(evaluations)
     pending = {}
+    submitted_at = {}
     next_index = 0
     while next_index < len(evaluations) or pending:
         while next_index < len(evaluations) and len(pending) < max_concurrent:
@@ -72,6 +76,7 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1):
                     f"Non-blocking model must return a JobHandle, got {type(handle)!r}"
                 )
             pending[next_index] = handle
+            submitted_at[next_index] = time.monotonic()
             next_index += 1
         completed = [index for index, handle in pending.items() if handle.done()]
         for index in completed:
@@ -81,6 +86,7 @@ def execute_models(model, evaluations, max_concurrent=1, poll_interval=0.1):
                     f"Model failed in {evaluations[index].run_directory}: "
                     f"exit status {status!r}"
                 )
+            evaluations[index].run_time = time.monotonic() - submitted_at.pop(index)
             results[index] = evaluations[index]
         if pending and not completed:
             time.sleep(poll_interval)
