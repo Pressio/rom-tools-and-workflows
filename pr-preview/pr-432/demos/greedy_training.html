@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Greedy Training &#8212; ROM Tools and Workflows v0.2.0</title>
+    <title>Greedy training &#8212; ROM Tools and Workflows v0.2.0</title>
   
   
   
@@ -352,9 +352,9 @@
 <li class="toctree-l2"><a class="reference internal" href="../remote_execution.html">Remote Execution</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="rom_construction.html">ROM construction and adaptation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="model_builders.html">Model builders</a></li>
-<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">Greedy Training</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">Greedy training</a></li>
 <li class="toctree-l3"><a class="reference internal" href="space_filling_training.html">Batch space-filling ROM training</a></li>
-<li class="toctree-l3"><a class="reference internal" href="hybrid_greedy_training.html">Hybrid greedy / space-filling training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hybrid_greedy_training.html">Hybrid greedy and space-filling training</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="uncertainty_quantification.html">Uncertainty quantification</a></li>
@@ -383,19 +383,9 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-training-and-iteration-limits">Initial training and iteration limits</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#explicit-initial-samples">Explicit initial samples</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#in-memory-rom-evaluation">In-memory ROM evaluation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#returned-result">Returned result</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.greedy.GreedyResult"><code class="docutils literal notranslate"><span class="pre">GreedyResult</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.greedy.GreedyResult.iterations"><code class="docutils literal notranslate"><span class="pre">GreedyResult.iterations</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#builder-interface">Builder interface</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#migration-from-directory-only-builders">Migration from directory-only builders</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial">Tutorial</a></li>
 </ul>
   </nav></div>
     </div>
@@ -444,7 +434,7 @@
     
     <li class="breadcrumb-item"><a href="rom_construction.html" class="nav-link">ROM construction and adaptation</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Greedy Training</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Greedy training</span></li>
   </ul>
 </nav>
 </div>
@@ -462,189 +452,19 @@
                 <article class="bd-article">
                   
   <section id="greedy-training">
-<h1>Greedy Training<a class="headerlink" href="#greedy-training" title="Link to this heading">#</a></h1>
-<p>Greedy training is an iterative training process where we iteratively add samples at which we believe the ROM is inaccurate.</p>
-<section id="initial-training-and-iteration-limits">
-<h2>Initial training and iteration limits<a class="headerlink" href="#initial-training-and-iteration-limits" title="Link to this heading">#</a></h2>
-<p>Without explicit initial samples, <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span></code> defaults to 2. Greedy
-runs those first samples from the initial candidate pool before constructing
-the initial ROM. This is separate
-from <code class="docutils literal notranslate"><span class="pre">testing_sample_size</span></code> (default 10), which sets the candidate-pool size.</p>
-<p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> defaults to 100 and counts FOM enrichments <strong>after</strong> the
-initial ROM. Thus at most <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span> <span class="pre">+</span> <span class="pre">max_iterations</span></code> training
-FOM simulations run. Setting <code class="docutils literal notranslate"><span class="pre">max_iterations=0</span></code> constructs only the initial
-ROM. Both arguments are keyword-only, preserving existing positional calls:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">run_greedy</span><span class="p">(</span>
-    <span class="n">fom_model</span><span class="p">,</span> <span class="n">rom_model_builder</span><span class="p">,</span> <span class="n">parameter_space</span><span class="p">,</span>
-    <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span>
-    <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
-    <span class="n">testing_sample_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
-    <span class="n">initial_sample_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-    <span class="n">max_iterations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Sizes must be positive integers; the iteration limit must be a nonnegative
-integer. When <code class="docutils literal notranslate"><span class="pre">initial_samples</span></code> is absent, <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span></code> cannot
-exceed <code class="docutils literal notranslate"><span class="pre">testing_sample_size</span></code>; if enrichment is enabled, the candidate pool
-must be strictly larger than the initial training set. Convergence checks retain
-their previous calibration behavior: the first check follows one enrichment.
-The iteration cap stops after the final allowed rebuild; a cap exit does not
-claim convergence or perform another candidate evaluation.</p>
-<p>FOM directories are populated once, immediately before their simulation, and
-unselected FOM candidates are not prepared. Each ROM evaluation directory is
-also populated once in its iteration. <code class="docutils literal notranslate"><span class="pre">greedy_stats.npz</span></code> is written even for
-an initial-only run and records <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span></code>, <code class="docutils literal notranslate"><span class="pre">max_iterations</span></code>,
-completed <code class="docutils literal notranslate"><span class="pre">iterations</span></code>, <code class="docutils literal notranslate"><span class="pre">converged</span></code>, and <code class="docutils literal notranslate"><span class="pre">termination_reason</span></code> (<code class="docutils literal notranslate"><span class="pre">tolerance</span></code>,
-<code class="docutils literal notranslate"><span class="pre">max_iterations</span></code>, or <code class="docutils literal notranslate"><span class="pre">candidate_pool_exhausted</span></code>). Error histories describe
-completed enrichments.</p>
-</section>
-<section id="explicit-initial-samples">
-<h2>Explicit initial samples<a class="headerlink" href="#explicit-initial-samples" title="Link to this heading">#</a></h2>
-<p>Pass <code class="docutils literal notranslate"><span class="pre">initial_samples</span></code> as a nonempty two-dimensional array of parameter rows,
-with columns in <code class="docutils literal notranslate"><span class="pre">parameter_space.get_names()</span></code> order:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_greedy</span><span class="p">(</span>
-    <span class="n">fom_model</span><span class="p">,</span> <span class="n">rom_model_builder</span><span class="p">,</span> <span class="n">parameter_space</span><span class="p">,</span>
-    <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span>
-    <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
-    <span class="n">initial_samples</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]]),</span>
-    <span class="n">testing_sample_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>The workflow runs FOM simulations at these points in supplied order before any
-adaptation. This supplies parameter values, not previously computed FOM outputs.
-The row count overrides <code class="docutils literal notranslate"><span class="pre">initial_sample_size</span></code>. The workflow draws a separate
-pool of <code class="docutils literal notranslate"><span class="pre">testing_sample_size</span></code> adaptation candidates, so the supplied training
-set may be larger than that pool. Supplied rows are copied and are not projected
-into the parameter domain; numeric values must be finite and the caller is
-responsible for domain validity.</p>
-<p>When explicit initial samples are used, exact matches to accumulated training
-rows are excluded from adaptation candidates, including replenished candidates.
-If no untrained candidates remain, the workflow returns the current ROM with
-<code class="docutils literal notranslate"><span class="pre">candidate_pool_exhausted</span></code> and <code class="docutils literal notranslate"><span class="pre">converged=False</span></code>. This describes the finite
-sampled pool, not a proof of domain coverage. Repeated rows explicitly supplied
-by the caller are run as requested.</p>
-</section>
-<section id="in-memory-rom-evaluation">
-<h2>In-memory ROM evaluation<a class="headerlink" href="#in-memory-rom-evaluation" title="Link to this heading">#</a></h2>
-<p>Set <code class="docutils literal notranslate"><span class="pre">create_rom_run_directories=False</span></code> for ROMs that do not require per-run
-files, such as an in-memory GP with a suitable error-indicator wrapper:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_greedy</span><span class="p">(</span>
-    <span class="n">fom_model</span><span class="p">,</span> <span class="n">rom_model_builder</span><span class="p">,</span> <span class="n">parameter_space</span><span class="p">,</span>
-    <span class="n">absolute_work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span>
-    <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
-    <span class="n">create_rom_run_directories</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>The default is <code class="docutils literal notranslate"><span class="pre">True</span></code>. Only per-candidate <code class="docutils literal notranslate"><span class="pre">rom_iteration_*/run_*</span></code> creation
-is skipped; FOM run directories, offline-data directories, logs, and statistics
-are still created. ROM methods are still called with their nominal absolute
-run paths, and must work without those directories or writing per-run files.
-Builders still receive an existing offline-data directory. A GP used by greedy
-must provide <code class="docutils literal notranslate"><span class="pre">compute_error_estimate</span></code> in addition to its usual QoI interface.</p>
-</section>
-<section id="returned-result">
-<h2>Returned result<a class="headerlink" href="#returned-result" title="Link to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">run_greedy</span></code> returns <code class="docutils literal notranslate"><span class="pre">GreedyResult</span></code> on convergence, iteration-limit exit,
-candidate-pool exhaustion, and initial-only runs. Existing callers can continue
-to ignore the return value. Access the final model as <code class="docutils literal notranslate"><span class="pre">result.rom_model</span></code>.</p>
-<p>The result includes aligned <code class="docutils literal notranslate"><span class="pre">training_parameters</span></code>, <code class="docutils literal notranslate"><span class="pre">training_qois</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">training_dirs</span></code>, plus <code class="docutils literal notranslate"><span class="pre">training_sample_indices</span></code> into the workflow’s combined
-sample array. It also provides <code class="docutils literal notranslate"><span class="pre">sample_counts</span></code> (initial build and each rebuild),
-<code class="docutils literal notranslate"><span class="pre">max_error_indicators</span></code>, <code class="docutils literal notranslate"><span class="pre">qoi_errors</span></code>, <code class="docutils literal notranslate"><span class="pre">predicted_qoi_errors</span></code>, <code class="docutils literal notranslate"><span class="pre">iterations</span></code>,
-<code class="docutils literal notranslate"><span class="pre">converged</span></code>, and <code class="docutils literal notranslate"><span class="pre">termination_reason</span></code>. Arrays are independent copies; the
-final model is the actual object returned by the last builder call.</p>
-<p>Error histories describe the ROMs before their corresponding enrichments and
-are not independent validation of the final ROM. Training data, directories,
-and sample-count history are also saved in <code class="docutils literal notranslate"><span class="pre">greedy_stats.npz</span></code>. File-backed
-returned models may still depend on their offline-data directories.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="romtools.workflows.greedy.GreedyResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.greedy.</span></span><span class="sig-name descname"><span class="pre">GreedyResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rom_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_qois</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_dirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_sample_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_error_indicators</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qoi_errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predicted_qoi_errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converged</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">termination_reason</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/greedy/run_greedy.html#GreedyResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.greedy.GreedyResult" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Final ROM, aligned training data, and completed enrichment histories.</p>
-<p>Error histories describe the ROMs before their corresponding enrichments,
-rather than independent validation of the final ROM. <code class="docutils literal notranslate"><span class="pre">sample_counts</span></code>
-includes the initial build and every subsequent rebuild. Array fields are
-independent copies of workflow state; the final ROM is returned directly.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>rom_model</strong> (<a class="reference internal" href="../generated/romtools.workflows.models.html#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><em>QoiModelWithErrorEstimate</em></a>)</p></li>
-<li><p><strong>training_parameters</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>training_qois</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>training_dirs</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
-<li><p><strong>training_sample_indices</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>max_error_indicators</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>qoi_errors</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>predicted_qoi_errors</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>sample_counts</strong> (<em>ndarray</em>)</p></li>
-<li><p><strong>converged</strong> (<em>bool</em>)</p></li>
-<li><p><strong>termination_reason</strong> (<em>str</em>)</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py property">
-<dt class="sig sig-object py" id="romtools.workflows.greedy.GreedyResult.iterations">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">iterations</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#romtools.workflows.greedy.GreedyResult.iterations" title="Link to this definition">#</a></dt>
-<dd><p>Number of completed enrichments after the initial build.</p>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-<section id="builder-interface">
-<h2>Builder interface<a class="headerlink" href="#builder-interface" title="Link to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">run_greedy</span></code> uses <code class="docutils literal notranslate"><span class="pre">QoiModelBuilderWithTrainingData</span></code>, the same data-aware
-builder interface as batch space-filling training. Every build receives all
-completed training FOM runs:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rom</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
-    <span class="n">offline_data_dir</span><span class="p">,</span>
-    <span class="n">training_data_dirs</span><span class="p">,</span>
-    <span class="n">training_parameters</span><span class="p">,</span>  <span class="c1"># shape (N, parameter_dimension)</span>
-    <span class="n">training_qois</span><span class="p">,</span>        <span class="c1"># shape (N, qoi_dimension)</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Directory entries, parameter rows, and QoI rows have matching order, including
-the initial training samples and every subsequent greedy enrichment. Only selected
-training samples are passed, rather than the whole candidate pool. Scalar QoIs
-become one-component rows; array QoIs are flattened. The arrays passed to the
-builder are independent copies of the workflow’s accumulated data. Full-state
-snapshots remain available in the training directories.</p>
-<p>The returned ROM must still provide <code class="docutils literal notranslate"><span class="pre">compute_error_estimate</span></code> as well as the
-<code class="docutils literal notranslate"><span class="pre">QoiModel</span></code> methods. This change does not alter greedy’s sample selection,
-calibration, or convergence criteria.</p>
-</section>
-<section id="migration-from-directory-only-builders">
-<h2>Migration from directory-only builders<a class="headerlink" href="#migration-from-directory-only-builders" title="Link to this heading">#</a></h2>
-<p>Greedy now always calls the four-argument interface. Existing builders must add
-the two array arguments or use an adapter when their construction only needs
-directory-based snapshots:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">DataAwareBuilder</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory_builder</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">directory_builder</span> <span class="o">=</span> <span class="n">directory_builder</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_from_training_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offline_data_dir</span><span class="p">,</span> <span class="n">training_data_dirs</span><span class="p">,</span>
-                                 <span class="n">training_parameters</span><span class="p">,</span> <span class="n">training_qois</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory_builder</span><span class="o">.</span><span class="n">build_from_training_dirs</span><span class="p">(</span>
-            <span class="n">offline_data_dir</span><span class="p">,</span> <span class="n">training_data_dirs</span>
-        <span class="p">)</span>
-</pre></div>
-</div>
-<p>The existing <code class="docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimateBuilder</span></code> remains a directory-only
-protocol for callers that need it; it is no longer the builder interface used
-by <code class="docutils literal notranslate"><span class="pre">run_greedy</span></code>.</p>
-</section>
-<section id="tutorial">
-<h2>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading">#</a></h2>
+<h1>Greedy training<a class="headerlink" href="#greedy-training" title="Link to this heading">#</a></h1>
+<p><strong>Method.</strong> Greedy ROM training adds full-order samples where the current ROM has the largest estimated error. The model is rebuilt until a stopping criterion is reached.</p>
+<p><strong>Example.</strong> The notebook demonstrates iterative sample selection, ROM rebuilding, and error monitoring.</p>
+<section id="notebook">
+<h2>Notebook<a class="headerlink" href="#notebook" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/greedy_training.html">Greedy training tutorial</a></li>
 </ul>
+</div>
+<p>For algorithm details, settings, and full source listings, see
+<a class="reference internal" href="greedy_training_details.html"><span class="doc">greedy training — detailed notes</span></a>.</p>
+<div class="toctree-wrapper compound">
 </div>
 </section>
 </section>
@@ -672,19 +492,9 @@ by <code class="docutils literal notranslate"><span class="pre">run_greedy</span
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-training-and-iteration-limits">Initial training and iteration limits</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#explicit-initial-samples">Explicit initial samples</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#in-memory-rom-evaluation">In-memory ROM evaluation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#returned-result">Returned result</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.greedy.GreedyResult"><code class="docutils literal notranslate"><span class="pre">GreedyResult</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.greedy.GreedyResult.iterations"><code class="docutils literal notranslate"><span class="pre">GreedyResult.iterations</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#builder-interface">Builder interface</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#migration-from-directory-only-builders">Migration from directory-only builders</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial">Tutorial</a></li>
 </ul>
   </nav></div>
 
