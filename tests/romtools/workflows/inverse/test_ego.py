@@ -158,6 +158,29 @@ def test_quadratic_batch(tmp_path):
     assert( qoi_min < 0.1 )
     assert( np.linalg.norm(parameter_sample_min-np.array([1.0,1.0])) < 0.25 )
 
+@pytest.mark.mpi_skip
+@pytest.mark.parametrize("batch_size", [None, 2], ids=["sequential-acquisition", "batch-acquisition"])
+def test_ego_accepts_nonblocking_model(tmp_path, batch_size, deferred_model):
+    model = deferred_model(QuadraticModel(a=1, b=4))
+    space = QuadraticParameterSpace()
+    options = dict(
+        model=model, parameter_space=space, observations=np.array([0.0]),
+        number_of_iterations=2, parameter_mins=space.parameter_mins,
+        parameter_maxes=space.parameter_maxes, absolute_work_dir=tmp_path,
+        number_initial_samples=6, evaluation_concurrency=2, random_seed=0,
+        use_relative_error=False,
+    )
+    if batch_size is None:
+        sample, _, qoi = romtools.workflows.run_ego(**options)
+    else:
+        sample, _, qoi = romtools.workflows.run_batch_ego(batch_size=batch_size, **options)
+
+    assert model.peak_pending == 2
+    assert not model.pending
+    assert len(model.completed) == 6 + (batch_size or 1)
+    np.testing.assert_allclose(qoi, model.model.compute_qoi("", dict(zip(space.get_names(), sample))))
+
+
 if __name__=='__main__':
     test_quadratic(os.getcwd() + "/work")
     test_quadratic_gp(os.getcwd() + "/work_gp")
