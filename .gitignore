@@ -25,3 +25,9 @@ examples/eki_mf_eki_demo/eki_mf_eki_demo.png
 examples/vi_mf_vi_demo/vi_mf_vi_work/
 examples/vi_mf_vi_demo/vi_mf_vi_elbo_convergence.png
 examples/vi_mf_vi_demo/vi_mf_vi_parameter_convergence.png
+
+# Coverage artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
