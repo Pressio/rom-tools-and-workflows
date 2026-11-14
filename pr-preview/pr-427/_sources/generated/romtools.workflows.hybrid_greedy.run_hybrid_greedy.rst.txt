@@ -1,6 +1,0 @@
-romtools.workflows.hybrid\_greedy.run\_hybrid\_greedy
-=====================================================
-
-.. currentmodule:: romtools.workflows.hybrid_greedy
-
-.. autofunction:: run_hybrid_greedy
