@@ -6,6 +6,7 @@ import time
 from typing import Optional
 
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
+from romtools.workflows.model_execution import ModelEvaluation, execute_models
 
 def _create_parameter_dict(parameter_names, parameter_values):
     return dict(zip(parameter_names, parameter_values))
@@ -26,12 +27,13 @@ def prepare_and_run(model, observations, run_directory, parameter_names, paramet
         dispatcher.create_empty_dir(run_directory)
     parameter_dict = _create_parameter_dict(parameter_names, parameter_sample)
     model.populate_run_directory(run_directory, parameter_dict)
-    ts = time.time()
-    flag = model.run_model(run_directory, parameter_dict)
+    evaluation = execute_models(
+        model, [ModelEvaluation(run_directory, parameter_dict)]
+    )[0]
     qoi = model.compute_qoi(run_directory, parameter_dict)
     assert isinstance(qoi,np.ndarray), "Error, compute_qoi must return an np.ndarray"
     error = observations - qoi
-    run_time = time.time() - ts
+    run_time = evaluation.run_time
 
     return qoi, error, run_time
 
