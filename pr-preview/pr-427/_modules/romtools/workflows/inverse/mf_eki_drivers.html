@@ -426,7 +426,10 @@
     <span class="n">LipschitzConfig</span><span class="p">,</span>
     <span class="n">NeuralNetworkQoiModelBuilderWithTrainingData</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse._inverse_utils</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.model_execution</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_supported_concurrency</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse._inverse_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">bound_samples</span><span class="p">,</span> <span class="n">require_relative_or_absolute_path</span><span class="p">,</span> <span class="n">run_eki_iteration</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.eki_drivers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_adaptive_rejuvenation_cooldown_active</span><span class="p">,</span>
     <span class="n">_compute_ensemble_covariance</span><span class="p">,</span>
@@ -877,7 +880,7 @@
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
     <span class="n">require_relative_or_absolute_path</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">,</span> <span class="n">absolute_work_dir</span><span class="p">)</span>
-    <span class="n">dispatcher</span><span class="o">.</span><span class="n">require_supported_concurrency</span><span class="p">(</span><span class="n">fom_evaluation_concurrency</span><span class="p">)</span>
+    <span class="n">require_supported_concurrency</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">fom_evaluation_concurrency</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">step_size_growth_factor</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span>
         <span class="s2">"step_size_growth_factor must be greater than 1.0"</span>
     <span class="p">)</span>

@@ -9,10 +9,17 @@ romtools.workflows.model\_execution
    .. autosummary::
    
       execute_models
+      require_supported_concurrency
    
    .. rubric:: Classes
 
    .. autosummary::
    
       ModelEvaluation
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ModelRunError
    

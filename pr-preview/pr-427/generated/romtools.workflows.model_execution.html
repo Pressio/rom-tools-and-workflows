@@ -430,7 +430,9 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelRunError"><code class="docutils literal notranslate"><span class="pre">ModelRunError</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.execute_models"><code class="docutils literal notranslate"><span class="pre">execute_models()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.require_supported_concurrency"><code class="docutils literal notranslate"><span class="pre">require_supported_concurrency()</span></code></a></li>
 </ul>
   </nav></div>
     </div>
@@ -498,14 +500,15 @@
                   
   <section id="module-romtools.workflows.model_execution">
 <span id="romtools-workflows-model-execution"></span><h1>romtools.workflows.model_execution<a class="headerlink" href="#module-romtools.workflows.model_execution" title="Link to this heading">#</a></h1>
-<p>Shared model execution primitives.</p>
-<p>This module deliberately does not own workflow-specific directory naming,
-restart markers, or QoI aggregation.</p>
+<p>Shared execution of blocking models and scheduler-backed job handles.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.execute_models" title="romtools.workflows.model_execution.execute_models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute_models</span></code></a>(model, evaluations[, ...])</p></td>
-<td><p>Execute model evaluations, returning them in input order.</p></td>
+<td><p>Execute evaluations and return results in input order.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.require_supported_concurrency" title="romtools.workflows.model_execution.require_supported_concurrency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_supported_concurrency</span></code></a>(model, ...)</p></td>
+<td><p>Apply dispatcher process-safety restrictions to blocking models.</p></td>
 </tr>
 </tbody>
 </table>
@@ -519,9 +522,18 @@ restart markers, or QoI aggregation.</p>
 </tbody>
 </table>
 </div>
+<p class="rubric">Exceptions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.model_execution.ModelRunError" title="romtools.workflows.model_execution.ModelRunError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ModelRunError</span></code></a>(directory, status, run_time)</p></td>
+<td><p>A model returned an unsuccessful exit status.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <dl class="py class">
 <dt class="sig sig-object py" id="romtools.workflows.model_execution.ModelEvaluation">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">ModelEvaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#ModelEvaluation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.ModelEvaluation" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">ModelEvaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">nan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#ModelEvaluation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.ModelEvaluation" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -529,19 +541,39 @@ restart markers, or QoI aggregation.</p>
 <li><p><strong>run_directory</strong> (<em>str</em>)</p></li>
 <li><p><strong>parameter_sample</strong> (<em>dict</em>)</p></li>
 <li><p><strong>run_time</strong> (<em>float</em>)</p></li>
+<li><p><strong>output</strong> (<em>Any</em>)</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="py exception">
+<dt class="sig sig-object py" id="romtools.workflows.model_execution.ModelRunError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">ModelRunError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#ModelRunError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.ModelRunError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+<p>A model returned an unsuccessful exit status.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="romtools.workflows.model_execution.execute_models">
-<span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">execute_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_concurrent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#execute_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.execute_models" title="Link to this definition">#</a></dt>
-<dd><p>Execute model evaluations, returning them in input order.</p>
-<p>Run-directory population is intentionally the caller’s responsibility.
-Blocking models use spawned worker processes. Non-blocking models submit
-handles in the calling process, with at most max_concurrent in flight.
-QoIs must be evaluated by the caller after this function returns.</p>
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">execute_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_concurrent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">postprocess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_exceptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_implicit_success</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#execute_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.execute_models" title="Link to this definition">#</a></dt>
+<dd><p>Execute evaluations and return results in input order.</p>
+<p>Optional prepare and postprocess callbacks take (model, evaluation).
+Postprocessing runs only after a successful exit and its return value is
+stored in evaluation.output. Blocking model callbacks run in the same
+process as the model, using a process pool when concurrency exceeds one.
+Non-blocking models use the caller’s process and keep at most
+max_concurrent handles in flight. An optional scope wraps each blocking
+evaluation or each submission and completion phase of a non-blocking one.</p>
+<p>By default failures raise. With return_exceptions, failed entries contain
+exceptions and the remaining evaluations continue. Workflows that used
+to ignore blocking return values can opt in to accepting a legacy None.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.model_execution.require_supported_concurrency">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.model_execution.</span></span><span class="sig-name descname"><span class="pre">require_supported_concurrency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/model_execution.html#require_supported_concurrency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.model_execution.require_supported_concurrency" title="Link to this definition">#</a></dt>
+<dd><p>Apply dispatcher process-safety restrictions to blocking models.</p>
 </dd></dl>
 
 </section>
@@ -570,7 +602,9 @@ QoIs must be evaluated by the caller after this function returns.</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelEvaluation"><code class="docutils literal notranslate"><span class="pre">ModelEvaluation</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.ModelRunError"><code class="docutils literal notranslate"><span class="pre">ModelRunError</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.execute_models"><code class="docutils literal notranslate"><span class="pre">execute_models()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.model_execution.require_supported_concurrency"><code class="docutils literal notranslate"><span class="pre">require_supported_concurrency()</span></code></a></li>
 </ul>
   </nav></div>
 

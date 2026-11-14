@@ -441,9 +441,9 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.model_execution</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelEvaluation</span><span class="p">,</span> <span class="n">execute_models</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QoiModel</span>
 
 
@@ -490,9 +490,9 @@
     <span class="c1"># Initialize and run ROM</span>
     <span class="n">parameter_sample</span> <span class="o">=</span> <span class="n">_create_parameter_dict</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">populate_run_directory</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)</span>
-    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">run_model</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+    <span class="n">evaluation</span> <span class="o">=</span> <span class="n">execute_models</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">ModelEvaluation</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)],</span> <span class="n">allow_implicit_success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># Compute model QoI and save it to file</span>
     <span class="n">qoi</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_qoi</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">)</span>
@@ -501,7 +501,7 @@
         <span class="k">assert</span> <span class="n">qoi</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"For MF UQ, a scalar QoI is required"</span>
 
     <span class="k">if</span> <span class="n">add_core_time_metadata</span><span class="p">:</span>
-        <span class="n">qoi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qoi</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>  <span class="c1"># Cost metadata for Q</span>
+        <span class="n">qoi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qoi</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">run_time</span><span class="p">)</span>  <span class="c1"># Cost metadata for Q</span>
 
     <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">results_file</span><span class="p">,</span> <span class="n">qoi</span><span class="p">)</span></div>
 

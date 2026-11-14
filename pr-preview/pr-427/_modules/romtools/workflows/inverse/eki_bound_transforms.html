@@ -527,6 +527,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_margin</span> <span class="o">=</span> <span class="n">margin</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transform_map</span> <span class="o">=</span> <span class="n">transform_map</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="s2">"blocking"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_physical_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">):</span>
         <span class="n">optimizer_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
             <span class="p">[</span><span class="n">parameter_sample</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>

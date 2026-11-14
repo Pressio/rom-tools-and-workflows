@@ -518,6 +518,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.model_execution</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_supported_concurrency</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi.gains</span><span class="w"> </span><span class="kn">import</span> <span class="n">loo_acv_estimator</span><span class="p">,</span> <span class="n">gain_folds</span><span class="p">,</span> <span class="n">validate_gain_num_folds</span><span class="p">,</span> <span class="n">normalize_strategy</span><span class="p">,</span> <span class="n">regularized_matrix_gain</span><span class="p">,</span> <span class="n">validate_gain_sampling</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.inverse.vi.gains</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">history_weights</span><span class="p">,</span> <span class="n">fit_history_gain</span><span class="p">,</span> <span class="n">gaussian_history_kernels</span><span class="p">,</span>
@@ -2481,7 +2482,7 @@
         <span class="n">rom_substep_start_iteration</span><span class="p">,</span> <span class="n">rom_substep_end_iteration</span><span class="p">,</span> <span class="n">num_rom_substeps</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">dispatcher</span> <span class="o">=</span> <span class="n">resolve_dispatcher</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">)</span>
-    <span class="n">dispatcher</span><span class="o">.</span><span class="n">require_supported_concurrency</span><span class="p">(</span><span class="n">fom_evaluation_concurrency</span><span class="p">)</span>
+    <span class="n">require_supported_concurrency</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">fom_evaluation_concurrency</span><span class="p">)</span>
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">start_cpu_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">process_time</span><span class="p">()</span>
     <span class="n">parameter_mins</span><span class="p">,</span> <span class="n">parameter_maxes</span> <span class="o">=</span> <span class="n">_resolve_parameter_bounds</span><span class="p">(</span>
