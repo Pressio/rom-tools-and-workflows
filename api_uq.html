@@ -61,7 +61,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="romtools.workflows.uq.run_monte_carlo" href="generated/romtools.workflows.uq.run_monte_carlo.html" />
-    <link rel="prev" title="Ensemble Kalman Inversion (EKI)" href="api_inverse_eki.html" />
+    <link rel="prev" title="Analytic sine VI benchmark details" href="vi_benchmark_details.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -344,34 +344,11 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.html">romtools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.html">romtools.workflows</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="formatting.html">Formatting Utility</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_svd.html">Distributed SVD</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">Composite Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">Hyper Reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/space_filling_training.html">Batch Space-Filling Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/hybrid_greedy_training.html">Hybrid Greedy Training</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
-<ul class="current nav bd-sidenav">
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="api_rom_construction.html">ROM Construction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_hyper_reduction.html">Hyper-reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_sampling_execution.html">Sampling &amp; Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_inverse.html">Inverse Problems</a></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">Uncertainty Quantification Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_monte_carlo.html">romtools.workflows.uq.run_monte_carlo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_multifidelity_monte_carlo.html">romtools.workflows.uq.run_multifidelity_monte_carlo</a></li>
@@ -379,6 +356,8 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelityMonteCarloResult.html">romtools.workflows.uq.MultifidelityMonteCarloResult</a></li>
 </ul>
 </details></li>
+<li class="toctree-l1"><a class="reference internal" href="api_utilities.html">HPC &amp; Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_modules.html">Complete Module Index</a></li>
 </ul>
 </div>
 </nav></div>
@@ -523,7 +502,7 @@ component. If <code class="docutils literal notranslate"><span class="pre">low_t
 estimates it from measured model run times.</p>
 <p>A complete single- and multifidelity example using the existing steady
 convection-diffusion-reaction model is available in
-<a class="reference internal" href="demos/uq_cdr_demo.html"><span class="doc">Monte Carlo UQ for Convection-Diffusion-Reaction</span></a>.</p>
+<a class="reference internal" href="demos/uq_cdr_demo.html"><span class="doc">Monte Carlo UQ for convection-diffusion-reaction</span></a>.</p>
 </section>
 <section id="results-and-restart-behavior">
 <h2>Results and restart behavior<a class="headerlink" href="#results-and-restart-behavior" title="Link to this heading">#</a></h2>

@@ -58,7 +58,7 @@
     <script src="_static/ask-repo.js?v=c898c411"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="romtools" href="generated/romtools.html" />
+    <link rel="next" title="ROM Construction" href="api_rom_construction.html" />
     <link rel="prev" title="ROM Tools and Workflows" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
@@ -343,50 +343,16 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.html">romtools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.workflows.html">romtools.workflows</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="formatting.html">Formatting Utility</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_svd.html">Distributed SVD</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">Composite Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">Hyper Reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/space_filling_training.html">Batch Space-Filling Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/hybrid_greedy_training.html">Hybrid Greedy Training</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
-<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="api_rom_construction.html">ROM Construction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_hyper_reduction.html">Hyper-reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_sampling_execution.html">Sampling &amp; Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_inverse.html">Inverse Problems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api_uq.html">Uncertainty Quantification Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_utilities.html">HPC &amp; Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_modules.html">Complete Module Index</a></li>
 </ul>
 </div>
 </nav></div>
-        <div class="sidebar-primary-item">
-<div
-    id="pst-page-navigation-heading-3"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#workflow-working-directories">Workflow working directories</a><ul class="nav section-nav flex-column">
-</ul>
-</li>
-</ul>
-  </nav></div>
     </div>
   
   
@@ -443,70 +409,69 @@
                   
   <section id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">#</a></h1>
-<section id="workflow-working-directories">
-<h2>Workflow working directories<a class="headerlink" href="#workflow-working-directories" title="Link to this heading">#</a></h2>
-<p>Workflow drivers use <code class="docutils literal notranslate"><span class="pre">absolute_work_dir</span></code> for their working-directory argument.
-Previous workflow-specific keyword names remain accepted for backwards
-compatibility and emit a <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>. New code should use
-<code class="docutils literal notranslate"><span class="pre">absolute_work_dir</span></code>.</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.html#module-romtools" title="romtools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools</span></code></a></p></td>
-<td><p>Scope, Design and Philosophy</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.composite_vector_space.html#module-romtools.composite_vector_space" title="romtools.composite_vector_space"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.composite_vector_space</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.hyper_reduction.html#module-romtools.hyper_reduction" title="romtools.hyper_reduction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.hyper_reduction</span></code></a></p></td>
-<td><p>The hyper-reduction library comprises a set of routines for hyper-reduction.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.linalg.html#module-romtools.linalg" title="romtools.linalg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.linalg</span></code></a></p></td>
-<td><p>This module defines the linear algebra functions used throughout the romtools library.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.rom.html#module-romtools.rom" title="romtools.rom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.rom</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.vector_space.html#module-romtools.vector_space" title="romtools.vector_space"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.vector_space</span></code></a></p></td>
-<td><p>This module defines the API to work with a vector subspace.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.html#module-romtools.workflows" title="romtools.workflows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows</span></code></a></p></td>
-<td><p>The workflows module contains all of our &quot;outerloop&quot; workflows used for ROM construction and ROM exploitation.</p></td>
-</tr>
-</tbody>
-</table>
+<p>Find public interfaces by capability rather than by Python package layout.</p>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-2 sd-row-cols-xs-2 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-2 sd-g-xs-2 sd-g-sm-2 sd-g-md-2 sd-g-lg-2 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+ROM Construction</div>
+<p class="sd-card-text">Trial spaces, composite vector spaces, and ROM operators.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_rom_construction.html"><span class="doc">ROM Construction</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Hyper-reduction</div>
+<p class="sd-card-text">Residual sampling and hyper-reduction algorithms.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_hyper_reduction.html"><span class="doc">Hyper-reduction</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Sampling &amp; Execution</div>
+<p class="sd-card-text">Models, parameter spaces, and sampling workflows.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_sampling_execution.html"><span class="doc">Sampling &amp; Execution</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Inverse Problems</div>
+<p class="sd-card-text">EKI, variational inference, and multifidelity drivers.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_inverse.html"><span class="doc">Inverse Problems</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Uncertainty Quantification</div>
+<p class="sd-card-text">Monte Carlo and multifidelity estimators.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_uq.html"><span class="doc">Uncertainty Quantification Workflows</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+HPC &amp; Utilities</div>
+<p class="sd-card-text">Remote execution, linear algebra, and formatting.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api_utilities.html"><span class="doc">HPC &amp; Utilities</span></a></div>
+</div>
+</div>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="formatting.html">Formatting Utility</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_svd.html">Distributed SVD</a></li>
-</ul>
 </div>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.vector_space.html">Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.composite_vector_space.html">Composite Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/romtools.hyper_reduction.html">Hyper Reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/space_filling_training.html">Batch Space-Filling Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demos/hybrid_greedy_training.html">Hybrid Greedy Training</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api_uq.html">Uncertainty Quantification Workflows</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-</div>
-</section>
+<p>For runnable examples, see <a class="reference internal" href="demos/index.html"><span class="doc">ROM Tools and Workflows: Examples and Demos</span></a>. For the full package
+hierarchy and legacy deep links, see <a class="reference internal" href="api_modules.html"><span class="doc">Complete Module Index</span></a>.</p>
 </section>
 
 
@@ -523,20 +488,6 @@ compatibility and emit a <code class="docutils literal notranslate"><span class=
                 <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-4"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#workflow-working-directories">Workflow working directories</a><ul class="nav section-nav flex-column">
-</ul>
-</li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

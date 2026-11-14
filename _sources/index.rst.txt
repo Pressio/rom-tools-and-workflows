@@ -31,7 +31,7 @@ Choose your path
       :link: api
       :link-type: doc
 
-      Explore the full Python API, organized by package.
+      Explore public Python interfaces by capability.
 
    .. grid-item-card:: Demos
       :link: demos/index
@@ -53,21 +53,21 @@ Capabilities
    :class-container: docs-home-grid
 
    .. grid-item-card:: Trial Space Construction
-      :link: generated/romtools.vector_space
+      :link: api_rom_construction
       :link-type: doc
 
       Build reduced trial spaces through vector-space construction, shifting,
       scaling, orthogonalization, and truncation tools.
 
    .. grid-item-card:: Inverse Workflows
-      :link: generated/romtools.workflows.inverse
+      :link: api_inverse
       :link-type: doc
 
       Explore ensemble Kalman inversion, variational inference, and
       multifidelity inverse workflows.
 
    .. grid-item-card:: Sampling Workflows
-      :link: generated/romtools.workflows.sampling
+      :link: api_sampling_execution
       :link-type: doc
 
       Access parameter sampling workflows and related workflow interfaces for
