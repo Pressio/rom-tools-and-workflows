@@ -59,7 +59,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="romtools.workflows.parameter_spaces" href="romtools.workflows.parameter_spaces.html" />
-    <link rel="prev" title="romtools.workflows.model_builders" href="romtools.workflows.model_builders.html" />
+    <link rel="prev" title="romtools.workflows.model_execution" href="romtools.workflows.model_execution.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -357,6 +357,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.hybrid_greedy.html">romtools.workflows.hybrid_greedy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_execution.html">romtools.workflows.model_execution</a></li>
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
@@ -383,6 +384,7 @@
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.hybrid_greedy.html">romtools.workflows.hybrid_greedy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_execution.html">romtools.workflows.model_execution</a></li>
 <li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
@@ -427,6 +429,11 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle"><code class="docutils literal notranslate"><span class="pre">JobHandle</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.done"><code class="docutils literal notranslate"><span class="pre">JobHandle.done()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.result"><code class="docutils literal notranslate"><span class="pre">JobHandle.result()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.populate_run_directory"><code class="docutils literal notranslate"><span class="pre">Model.populate_run_directory()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.run_model"><code class="docutils literal notranslate"><span class="pre">Model.run_model()</span></code></a></li>
@@ -511,23 +518,57 @@
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Model</span></code></a>()</p></td>
-<td><p>Baseline model protocol</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.JobHandle" title="romtools.workflows.models.JobHandle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JobHandle</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Minimal handle returned by a non-blocking model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModel</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Model</span></code></a>()</p></td>
+<td><p>Baseline model protocol.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModel</span></code></a>()</p></td>
 <td><p>Protocol for a model that has a return_qoi implementation</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimate</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimate</span></code></a>()</p></td>
 <td><p>Protocol for a model that has a return_qoi and compute_error_estimate</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.models.</span></span><span class="sig-name descname"><span class="pre">JobHandle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Minimal handle returned by a non-blocking model.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle.done">
+<span class="sig-name descname"><span class="pre">done</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle.done"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle.done" title="Link to this definition">#</a></dt>
+<dd><p>Return whether execution has completed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle.result" title="Link to this definition">#</a></dt>
+<dd><p>Wait if needed and return the process exit status.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="romtools.workflows.models.Model">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.models.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><a class="reference internal" href="../_modules/romtools/workflows/models.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.Model" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
-<p>Baseline model protocol</p>
+<p>Baseline model protocol.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">blocking</span> <span class="pre">=</span> <span class="pre">False</span></code> on models that return a JobHandle.
+The executor defaults to blocking when the attribute is absent.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
@@ -552,8 +593,8 @@ responsible for populating the run directory located at run_directory.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="romtools.workflows.models.Model.run_model">
 <span class="sig-name descname"><span class="pre">run_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_sample</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#Model.run_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.Model.run_model" title="Link to this definition">#</a></dt>
-<dd><p>This function is called from the base directory. It needs to execute our
-model. If the model runs successfully, return 0. If fails, return 1.</p>
+<dd><p>Execute the model. Blocking models return an integer exit status.
+Non-blocking models return a JobHandle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -562,7 +603,7 @@ model. If the model runs successfully, return 0. If fails, return 1.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int</p>
+<dd class="field-even"><p>int | <a class="reference internal" href="#romtools.workflows.models.JobHandle" title="romtools.workflows.models.JobHandle"><em>JobHandle</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -648,6 +689,11 @@ AFTER run_model has been run</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle"><code class="docutils literal notranslate"><span class="pre">JobHandle</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.done"><code class="docutils literal notranslate"><span class="pre">JobHandle.done()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.result"><code class="docutils literal notranslate"><span class="pre">JobHandle.result()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.populate_run_directory"><code class="docutils literal notranslate"><span class="pre">Model.populate_run_directory()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.run_model"><code class="docutils literal notranslate"><span class="pre">Model.run_model()</span></code></a></li>

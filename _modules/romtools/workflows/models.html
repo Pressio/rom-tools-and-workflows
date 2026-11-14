@@ -391,16 +391,42 @@
 <span class="sd">Protocol for interfacing with external applications</span>
 <span class="sd">'''</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<div class="viewcode-block" id="JobHandle">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.JobHandle">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JobHandle</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Minimal handle returned by a non-blocking model."""</span>
+
+<div class="viewcode-block" id="JobHandle.done">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.JobHandle.done">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">done</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return whether execution has completed."""</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="JobHandle.result">
+<a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.JobHandle.result">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Wait if needed and return the process exit status."""</span>
+        <span class="o">...</span></div>
+</div>
+
 
 
 <div class="viewcode-block" id="Model">
 <a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.Model">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">'''</span>
-<span class="sd">    Baseline model protocol</span>
+<span class="sd">    Baseline model protocol.</span>
+
+<span class="sd">    Set ``blocking = False`` on models that return a JobHandle.</span>
+<span class="sd">    The executor defaults to blocking when the attribute is absent.</span>
 <span class="sd">    '''</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">'''</span>
 <span class="sd">        Initialize coupler</span>
@@ -426,10 +452,10 @@
 
 <div class="viewcode-block" id="Model.run_model">
 <a class="viewcode-back" href="../../../generated/romtools.workflows.models.html#romtools.workflows.models.Model.run_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parameter_sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">JobHandle</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">'''</span>
-<span class="sd">        This function is called from the base directory. It needs to execute our</span>
-<span class="sd">        model. If the model runs successfully, return 0. If fails, return 1.</span>
+<span class="sd">        Execute the model. Blocking models return an integer exit status.</span>
+<span class="sd">        Non-blocking models return a JobHandle.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">          run_directory (str): Absolute path to run_directory.</span>

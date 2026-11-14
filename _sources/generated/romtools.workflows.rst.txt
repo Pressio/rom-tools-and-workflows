@@ -16,6 +16,7 @@ romtools.workflows
    hybrid_greedy
    inverse
    model_builders
+   model_execution
    models
    parameter_spaces
    parameters

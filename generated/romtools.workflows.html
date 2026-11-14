@@ -359,6 +359,7 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.hybrid_greedy.html">romtools.workflows.hybrid_greedy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_execution.html">romtools.workflows.model_execution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
@@ -385,6 +386,7 @@
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.hybrid_greedy.html">romtools.workflows.hybrid_greedy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_execution.html">romtools.workflows.model_execution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.models.html">romtools.workflows.models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
@@ -518,34 +520,37 @@ construction and ROM exploitation.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.model_builders.html#module-romtools.workflows.model_builders" title="romtools.workflows.model_builders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_builders</span></code></a></p></td>
 <td><p>Protocol for building a model This is mainly used for constructing data-driven models in iterative workflows like greedy</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.models.html#module-romtools.workflows.models" title="romtools.workflows.models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">models</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.model_execution.html#module-romtools.workflows.model_execution" title="romtools.workflows.model_execution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_execution</span></code></a></p></td>
+<td><p>Shared execution of blocking models and scheduler-backed job handles.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.models.html#module-romtools.workflows.models" title="romtools.workflows.models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">models</span></code></a></p></td>
 <td><p>Protocol for interfacing with external applications</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.parameter_spaces.html#module-romtools.workflows.parameter_spaces" title="romtools.workflows.parameter_spaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_spaces</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.parameter_spaces.html#module-romtools.workflows.parameter_spaces" title="romtools.workflows.parameter_spaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_spaces</span></code></a></p></td>
 <td><p>Model reduction is often focused on parameterized PDEs, where <span class="math notranslate nohighlight">\(\boldsymbol \mu\)</span> is the parameter set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.parameters.html#module-romtools.workflows.parameters" title="romtools.workflows.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.parameters.html#module-romtools.workflows.parameters" title="romtools.workflows.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.residual_evaluator.html#module-romtools.workflows.residual_evaluator" title="romtools.workflows.residual_evaluator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residual_evaluator</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.residual_evaluator.html#module-romtools.workflows.residual_evaluator" title="romtools.workflows.residual_evaluator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residual_evaluator</span></code></a></p></td>
 <td><p>Protocol for interfacing with external application to compute residual snapshots corresponding to existing state snapshots.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling.html#module-romtools.workflows.sampling" title="romtools.workflows.sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling.html#module-romtools.workflows.sampling" title="romtools.workflows.sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling</span></code></a></p></td>
 <td><p>Implementation of basic sampling workflow.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling_methods.html#module-romtools.workflows.sampling_methods" title="romtools.workflows.sampling_methods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_methods</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling_methods.html#module-romtools.workflows.sampling_methods" title="romtools.workflows.sampling_methods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_methods</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html#module-romtools.workflows.sampling_with_holdout" title="romtools.workflows.sampling_with_holdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_with_holdout</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html#module-romtools.workflows.sampling_with_holdout" title="romtools.workflows.sampling_with_holdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sampling_with_holdout</span></code></a></p></td>
 <td><p>Implementation of basic sampling workflow with a holdout set.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.space_filling.html#module-romtools.workflows.space_filling" title="romtools.workflows.space_filling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">space_filling</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.space_filling.html#module-romtools.workflows.space_filling" title="romtools.workflows.space_filling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">space_filling</span></code></a></p></td>
 <td><p>Batch maximin ROM training with process-isolated FOM runs.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.html#module-romtools.workflows.uq" title="romtools.workflows.uq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uq</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.html#module-romtools.workflows.uq" title="romtools.workflows.uq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uq</span></code></a></p></td>
 <td><p>Monte Carlo uncertainty-quantification workflows.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.workflow_utils.html#module-romtools.workflows.workflow_utils" title="romtools.workflows.workflow_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflow_utils</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.workflow_utils.html#module-romtools.workflows.workflow_utils" title="romtools.workflows.workflow_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">workflow_utils</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
