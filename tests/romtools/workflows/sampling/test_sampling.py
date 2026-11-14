@@ -146,6 +146,61 @@ def test_sampler_qoi_stats(tmp_path):
     np.testing.assert_allclose(stats["qoi_max"], np.array([3.0]))
     np.testing.assert_array_equal(stats["qoi_num_samples"], np.array([4]))
 
+def test_nonblocking_sampling_restart_and_failed_overwrite(tmp_path):
+    class OrderedSpace(ConstParameterSpace):
+        def generate_samples(self, number_of_samples):
+            return np.arange(number_of_samples).reshape(-1, 1)
+
+    class Handle:
+        def __init__(self, model, directory, status):
+            self.model = model
+            self.directory = directory
+            self.status = status
+
+        def done(self):
+            return True
+
+        def result(self):
+            self.model.finished.add(self.directory)
+            return self.status
+
+    class NonBlockingModel(MockQoiModel):
+        blocking = False
+
+        def __init__(self):
+            self.finished = set()
+            self.submitted = []
+            self.fail_first = False
+
+        def run_model(self, directory, parameters):
+            self.submitted.append(directory)
+            return Handle(self, directory, int(self.fail_first and parameters["x"] == 0))
+
+        def compute_qoi(self, directory, parameters):
+            assert directory in self.finished
+            return super().compute_qoi(directory, parameters)
+
+    model = NonBlockingModel()
+    space = OrderedSpace(["x"], [0])
+    options = dict(absolute_work_dir=tmp_path, number_of_samples=3, evaluation_concurrency=2)
+    directories = run_sampling(model, space, **options)
+    assert model.submitted == directories
+
+    os.remove(tmp_path / "run_0" / "passed.txt")
+    model.submitted.clear()
+    run_sampling(model, space, **options)
+    assert model.submitted == [directories[0]]
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[0.0], [1.0], [2.0]])
+
+    model.fail_first = True
+    run_sampling(model, space, overwrite=True, **options)
+    assert not (tmp_path / "run_0" / "passed.txt").exists()
+    assert (tmp_path / "run_1" / "passed.txt").exists()
+    with np.load(tmp_path / "sampling_stats.npz") as stats:
+        np.testing.assert_array_equal(stats["qoi_values"], [[1.0], [2.0]])
+
+
 if __name__ == "__main__":
     test_sampler()
     test_sampler_dry_run()

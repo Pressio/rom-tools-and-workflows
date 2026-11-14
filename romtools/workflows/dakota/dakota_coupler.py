@@ -52,9 +52,9 @@ To couple to Dakota, a user should
 
 import os
 import sys
-import time
 import numpy as np
 
+from romtools.workflows.model_execution import ModelEvaluation, execute_models
 from romtools.workflows.models import QoiModel
 
 
@@ -99,9 +99,9 @@ def run_model_for_dakota(
     # Initialize and run ROM
     parameter_sample = _create_parameter_dict(parameter_names, parameter_values)
     model.populate_run_directory(run_directory, parameter_sample)
-    t0 = time.time()
-    model.run_model(run_directory, parameter_sample)
-    t = time.time() - t0
+    evaluation = execute_models(
+        model, [ModelEvaluation(run_directory, parameter_sample)], allow_implicit_success=True,
+    )[0]
 
     # Compute model QoI and save it to file
     qoi = model.compute_qoi(run_directory, parameter_sample)
@@ -110,6 +110,6 @@ def run_model_for_dakota(
         assert qoi.size == 1, "For MF UQ, a scalar QoI is required"
 
     if add_core_time_metadata:
-        qoi = np.append(qoi, t)  # Cost metadata for Q
+        qoi = np.append(qoi, evaluation.run_time)  # Cost metadata for Q
 
     np.savetxt(results_file, qoi)

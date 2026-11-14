@@ -1,15 +1,17 @@
 """Ordered execution of QoI models for UQ workflows."""
 
+from functools import partial
 from numbers import Integral
 import os
-import time
 from typing import Optional, Sequence
 
 import numpy as np
 
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
 from romtools.workflows.models import QoiModel
-from romtools.workflows.model_execution import ModelEvaluation, execute_models
+from romtools.workflows.model_execution import (
+    ModelEvaluation, execute_models, require_supported_concurrency,
+)
 
 
 def _parameter_dictionary(parameter_names: Sequence[str], values: np.ndarray) -> dict:
@@ -27,25 +29,15 @@ def _flatten_qoi(model: QoiModel, run_directory: str, parameter_sample: dict) ->
         raise ValueError("model returned an empty QoI")
     if not np.all(np.isfinite(qoi)):
         raise ValueError("model returned a nonfinite QoI")
-    return qoi
+    return qoi.copy()
 
 
-def _run_qoi_sample(
-    model: QoiModel,
-    run_directory: str,
-    parameter_sample: dict,
-    dispatcher: BaseDispatcher,
-):
-    start_time = time.time()
-    flag = model.run_model(run_directory, parameter_sample)
-    run_time = time.time() - start_time
-    if flag != 0:
-        raise RuntimeError(f"model evaluation failed in {run_directory} with flag {flag}")
-    qoi = _flatten_qoi(model, run_directory, parameter_sample)
+def _finish_qoi_sample(model, evaluation, dispatcher):
+    qoi = _flatten_qoi(model, evaluation.run_directory, evaluation.parameter_sample)
     dispatcher.np_savetxt(
-        os.path.join(run_directory, "passed.txt"), np.array([0]), "%i"
+        os.path.join(evaluation.run_directory, "passed.txt"), np.array([0]), "%i"
     )
-    return run_time, qoi
+    return qoi
 
 
 def validate_evaluation_concurrency(evaluation_concurrency: int) -> None:
@@ -77,6 +69,7 @@ def evaluate_qoi_model(
         raise ValueError("parameter sample dimension does not match parameter names")
 
     dispatcher = resolve_dispatcher(dispatcher)
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
     qoi_values = [None] * samples.shape[0]
     run_times = np.full(samples.shape[0], np.nan)
     samples_to_run = []
@@ -87,34 +80,24 @@ def evaluate_qoi_model(
         passed_file = os.path.join(run_directory, "passed.txt")
         parameter_sample = _parameter_dictionary(parameter_names, parameter_values)
         dispatcher.create_empty_dir(run_directory)
-        if dispatcher.path_exists(passed_file) and not overwrite:
+        passed = dispatcher.path_exists(passed_file)
+        if passed and not overwrite:
             qoi_values[local_index] = _flatten_qoi(
                 model, run_directory, parameter_sample
             )
         else:
-            if overwrite and dispatcher.path_exists(passed_file):
+            if passed:
                 dispatcher.remove(passed_file)
             model.populate_run_directory(run_directory, parameter_sample)
-            samples_to_run.append(
-                (local_index, run_directory, parameter_sample)
-            )
+            samples_to_run.append((local_index, ModelEvaluation(run_directory, parameter_sample)))
 
-    if samples_to_run:
-        evaluations = [
-            ModelEvaluation(run_directory, parameter_sample)
-            for _, run_directory, parameter_sample in samples_to_run
-        ]
-        completed = execute_models(model, evaluations, max_concurrent=evaluation_concurrency)
-        # Completion is guaranteed before QoI evaluation or success markers.
-        for (local_index, run_directory, parameter_sample), evaluation in zip(samples_to_run, completed):
-            qoi_values[local_index] = _flatten_qoi(
-                model, run_directory, parameter_sample
-            )
-            dispatcher.np_savetxt(
-                os.path.join(run_directory, "passed.txt"), np.array([0]), "%i"
-            )
-            run_times[local_index] = evaluation.run_time
-
+    completed = execute_models(
+        model, (evaluation for _, evaluation in samples_to_run), evaluation_concurrency,
+        postprocess=partial(_finish_qoi_sample, dispatcher=dispatcher),
+    )
+    for (local_index, _), evaluation in zip(samples_to_run, completed):
+        qoi_values[local_index] = evaluation.output
+        run_times[local_index] = evaluation.run_time
 
     try:
         qoi_matrix = np.vstack(qoi_values)

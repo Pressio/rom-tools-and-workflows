@@ -37,7 +37,10 @@ from romtools.rom.neural_network_surrogate import (
     LipschitzConfig,
     NeuralNetworkQoiModelBuilderWithTrainingData,
 )
-from romtools.workflows.inverse._inverse_utils import *
+from romtools.workflows.model_execution import require_supported_concurrency
+from romtools.workflows.inverse._inverse_utils import (
+    bound_samples, require_relative_or_absolute_path, run_eki_iteration,
+)
 from romtools.workflows.inverse.eki_drivers import (
     _adaptive_rejuvenation_cooldown_active,
     _compute_ensemble_covariance,
@@ -488,7 +491,7 @@ def run_mf_eki(model: QoiModel,
     start_time = time.time()
 
     require_relative_or_absolute_path(dispatcher, absolute_work_dir)
-    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, fom_evaluation_concurrency)
     assert step_size_growth_factor > 1.0, (
         "step_size_growth_factor must be greater than 1.0"
     )

@@ -43,14 +43,15 @@
 # ************************************************************************
 #
 
+from functools import partial
 import os
-import time
 import warnings
 import numpy as np
-import concurrent.futures
-import multiprocessing
 from typing import Optional
 
+from romtools.workflows.model_execution import (
+    ModelEvaluation, ModelRunError, execute_models, require_supported_concurrency,
+)
 from romtools.workflows.models import Model
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
@@ -74,7 +75,7 @@ def _compute_qoi_for_sample(model: Model, run_directory: str, parameter_sample: 
         qoi = qoi.reshape(1)
     else:
         qoi = qoi.reshape(-1)
-    return qoi
+    return qoi.copy()
 
 
 def _compute_qoi_statistics(qoi_samples):
@@ -117,17 +118,7 @@ def run_sampling(model: Model,
 
     dispatcher = resolve_dispatcher(dispatcher)
 
-    # we use here spawn because the default fork causes issues with mpich,
-    # see here: https://github.com/Pressio/rom-tools-and-workflows/pull/206
-    #
-    # to read more about fork/spawn:
-    #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing-start-methods
-    #
-    # and
-    #   https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
-    #
-
-    mp_cntxt=multiprocessing.get_context("spawn")
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
 
     np.random.seed(random_seed)
 
@@ -143,132 +134,91 @@ def run_sampling(model: Model,
     fmt = "%s "*parameter_space.get_dimensionality()
     dispatcher.np_savetxt(samples_file, parameter_samples, fmt)
 
-    # Set up model directories
-    run_directory_base = f'{absolute_work_dir}/run_'
+    model_has_qoi = _model_has_compute_qoi(model)
     run_directories = []
-    starting_sample_index = 0
-    end_sample_index = starting_sample_index + parameter_samples.shape[0]
-    for sample_index in range(starting_sample_index, end_sample_index):
-        run_directory = f'{run_directory_base}{sample_index}'
-        dispatcher.create_empty_dir(run_directory)
-        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index - starting_sample_index])
-        model.populate_run_directory(run_directory, parameter_dict)
+    samples_to_run = []
+    qois = [None] * len(parameter_samples)
+    for sample_index, sample in enumerate(parameter_samples):
+        run_directory = os.path.join(absolute_work_dir, f"run_{sample_index}")
         run_directories.append(run_directory)
+        dispatcher.create_empty_dir(run_directory)
+        parameter_dict = _create_parameter_dict(parameter_names, sample)
+        passed_file = os.path.join(run_directory, "passed.txt")
+        if dispatcher.path_exists(passed_file):
+            if not overwrite:
+                print(f"Skipping sample {sample_index} (Sample has already run successfully)")
+                if model_has_qoi and not dry_run:
+                    qois[sample_index] = _compute_qoi_for_sample(model, run_directory, parameter_dict)
+                continue
+            if not dry_run:
+                dispatcher.remove(passed_file)
+        model.populate_run_directory(run_directory, parameter_dict)
+        samples_to_run.append((sample_index, ModelEvaluation(run_directory, parameter_dict)))
 
-    # Print MPI warnings
+    if dry_run:
+        return run_directories
+
     print("""
     Warning: If you are using your model with MPI via a direct call to `mpirun -n ...`,
     be aware that this may or may not work for issues that are purely related to MPI.
     """)
-    model_has_qoi = _model_has_compute_qoi(model)
-    qoi_samples = []
+    completed = execute_models(
+        model, (evaluation for _, evaluation in samples_to_run), evaluation_concurrency,
+        postprocess=partial(_finish_sample, compute_qoi=model_has_qoi, dispatcher=dispatcher),
+        return_exceptions=True,
+    )
+    separate_run_times = evaluation_concurrency != 1
+    run_times = np.zeros(len(completed) if separate_run_times else len(parameter_samples))
+    for result_index, ((sample_index, _), result) in enumerate(zip(samples_to_run, completed)):
+        run_time, qoi = _sample_result(sample_index, result)
+        run_times[result_index if separate_run_times else sample_index] = run_time
+        qois[sample_index] = qoi
 
-    if not dry_run:
-        # Run cases
-        if evaluation_concurrency == 1:
-            run_times = np.zeros(number_of_samples)
-            for sample_index in range(0, number_of_samples):
-                print("=======  Sample " + str(sample_index) + " ============")
-                run_directory = f'{run_directory_base}{sample_index}'
-                passed_file = os.path.join(run_directory, 'passed.txt')
-                if dispatcher.path_exists(passed_file) and not overwrite:
-                    print("Skipping (Sample has already run successfully)")
-                    if model_has_qoi:
-                        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                        qoi = _compute_qoi_for_sample(model, run_directory, parameter_dict)
-                        print(f"Sample {sample_index} QoI = {qoi}")
-                        qoi_samples.append(qoi)
-                else:
-                    print("Running")
-                    parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                    sample_result = run_sample(run_directory, model, parameter_dict, compute_qoi=model_has_qoi, dispatcher=dispatcher)
-                    if model_has_qoi:
-                        run_times[sample_index], qoi = sample_result
-                        if qoi is not None:
-                            print(f"Sample {sample_index} QoI = {qoi}")
-                            qoi_samples.append(qoi)
-                    else:
-                        run_times[sample_index] = sample_result
-
-                    sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-                    dispatcher.np_savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
-        else:
-            #Identify samples to run
-            samples_to_run = []
-            for sample_index in range(0, number_of_samples):
-                run_directory = f'{run_directory_base}{sample_index}'
-                passed_file = os.path.join(run_directory, 'passed.txt')
-                if dispatcher.path_exists(passed_file) and not overwrite:
-                    print(f"Skipping sample {sample_index} (Sample has already run successfully)")
-                    if model_has_qoi:
-                        parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
-                        qoi = _compute_qoi_for_sample(model, run_directory, parameter_dict)
-                        print(f"Sample {sample_index} QoI = {qoi}")
-                        qoi_samples.append(qoi)
-                else:
-                    samples_to_run.append(sample_index)
-            with concurrent.futures.ProcessPoolExecutor(max_workers=evaluation_concurrency, mp_context=mp_cntxt) as executor:
-                these_futures = {
-                    executor.submit(
-                        run_sample,
-                        f'{run_directory_base}{sample_id}',
-                        model,
-                        _create_parameter_dict(parameter_names, parameter_samples[sample_id]),
-                        model_has_qoi,
-                        dispatcher
-                    ): sample_id for sample_id in samples_to_run
-                }
-
-                # Wait for all processes to finish
-                concurrent.futures.wait(these_futures.keys())
-
-            run_times = []
-            for future, sample_id in these_futures.items():
-                sample_result = future.result()
-                if model_has_qoi:
-                    run_time, qoi = sample_result
-                    if qoi is not None:
-                        print(f"Sample {sample_id} QoI = {qoi}")
-                        qoi_samples.append(qoi)
-                else:
-                    run_time = sample_result
-                run_times.append(run_time)
-
-            sample_stats_save_directory = f'{run_directory_base}{sample_index}/../'
-            dispatcher.np_savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times)
-
-        if model_has_qoi and qoi_samples:
-            qoi_stats = _compute_qoi_statistics(qoi_samples)
-            sample_stats_save_directory = f'{run_directory_base}0/../'
-            dispatcher.np_savez(f'{sample_stats_save_directory}/sampling_stats', run_times=run_times, **qoi_stats)
-            print("QoI statistics:")
-            print(f"  count: {qoi_stats['qoi_num_samples'][0]}")
-            print(f"  mean: {qoi_stats['qoi_mean']}")
-            print(f"  std: {qoi_stats['qoi_std']}")
-            print(f"  min: {qoi_stats['qoi_min']}")
-            print(f"  max: {qoi_stats['qoi_max']}")
+    qoi_samples = [qoi for qoi in qois if qoi is not None]
+    qoi_stats = _compute_qoi_statistics(qoi_samples) if qoi_samples else {}
+    dispatcher.np_savez(os.path.join(absolute_work_dir, "sampling_stats"),
+                        run_times=run_times, **qoi_stats)
+    if qoi_stats:
+        print("QoI statistics:")
+        print(f"  count: {qoi_stats['qoi_num_samples'][0]}")
+        print(f"  mean: {qoi_stats['qoi_mean']}")
+        print(f"  std: {qoi_stats['qoi_std']}")
+        print(f"  min: {qoi_stats['qoi_min']}")
+        print(f"  max: {qoi_stats['qoi_max']}")
 
     return run_directories
 
 
-def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False, dispatcher: Optional[BaseDispatcher] = None):
-    dispatcher = resolve_dispatcher(dispatcher)
-    run_id = _get_run_id_from_run_dir(run_directory)
-    ts = time.time()
-    flag = model.run_model(run_directory, parameter_sample)
-    tf = time.time()
-    run_time = tf - ts
+def _finish_sample(model, evaluation, compute_qoi, dispatcher):
+    run_directory = evaluation.run_directory
     qoi = None
+    if compute_qoi:
+        qoi = _compute_qoi_for_sample(model, run_directory, evaluation.parameter_sample)
+    dispatcher.np_savetxt(os.path.join(run_directory, "passed.txt"), np.array([0]), "%i")
+    return qoi.copy()
 
-    if flag == 0:
-        print(f"Sample {run_id} is complete, run time = {run_time}")
-        passed_file = os.path.join(run_directory, 'passed.txt')
-        dispatcher.np_savetxt(passed_file, np.array([0]), '%i')
-        if compute_qoi:
-            qoi = _compute_qoi_for_sample(model, run_directory, parameter_sample)
-    else:
-        print(f"Sample {run_id} failed, run time = {run_time}")
-        print(" ")
+
+def _sample_result(run_id, result):
+    if isinstance(result, ModelRunError):
+        print(f"Sample {run_id} failed, run time = {result.run_time}")
+        return result.run_time, None
+    if isinstance(result, Exception):
+        raise result
+    print(f"Sample {run_id} is complete, run time = {result.run_time}")
+    if result.output is not None:
+        print(f"Sample {run_id} QoI = {result.output}")
+    return result.run_time, result.output
+
+
+def run_sample(run_directory: str, model: Model, parameter_sample: dict, compute_qoi: bool = False,
+               dispatcher: Optional[BaseDispatcher] = None):
+    dispatcher = resolve_dispatcher(dispatcher)
+    result = execute_models(
+        model, [ModelEvaluation(run_directory, parameter_sample)],
+        postprocess=partial(_finish_sample, compute_qoi=compute_qoi, dispatcher=dispatcher),
+        return_exceptions=True,
+    )[0]
+    run_time, qoi = _sample_result(_get_run_id_from_run_dir(run_directory), result)
     if compute_qoi:
         return run_time, qoi
     return run_time

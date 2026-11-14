@@ -103,6 +103,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 import romtools.linalg.linalg as la
+from romtools.workflows.model_execution import ModelEvaluation, execute_models
 from romtools.workflows.models import QoiModel, QoiModelWithErrorEstimate
 from romtools.workflows.parameter_spaces import ParameterSpace
 from romtools.workflows.workflow_utils import create_empty_dir
@@ -288,7 +289,9 @@ def run_greedy(fom_model: QoiModel,
         fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory,parameter_dict)
-        fom_model.run_model(fom_run_directory,parameter_dict)
+        execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+        )
         fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
         initial_fom_qois.append(fom_qoi)
         training_dirs.append(fom_run_directory)
@@ -358,7 +361,9 @@ def run_greedy(fom_model: QoiModel,
             if create_rom_run_directories:
                 create_empty_dir(rom_run_directory)
             rom_model.populate_run_directory(rom_run_directory,parameter_dict)
-            rom_model.run_model(rom_run_directory,parameter_dict)
+            execute_models(
+                rom_model, [ModelEvaluation(rom_run_directory, parameter_dict)], allow_implicit_success=True,
+            )
             error_indicators[counter] = rom_model.compute_error_estimate(rom_run_directory,parameter_dict)
 
         rom_time += time.time() - t0
@@ -397,7 +402,9 @@ def run_greedy(fom_model: QoiModel,
         parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_with_highest_error_indicator])
         create_empty_dir(fom_run_directory)
         fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-        fom_model.run_model(fom_run_directory,parameter_dict)
+        execute_models(
+            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)], allow_implicit_success=True,
+        )
         fom_qoi = _compute_qoi(fom_model, fom_run_directory, parameter_dict)
 
         fom_time += time.time() - t0

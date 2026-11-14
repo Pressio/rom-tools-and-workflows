@@ -124,7 +124,10 @@ from typing import Optional
 import numpy as np
 
 from romtools.hpc.dispatchers import BaseDispatcher, resolve_dispatcher
-from romtools.workflows.inverse._inverse_utils import *
+from romtools.workflows.model_execution import require_supported_concurrency
+from romtools.workflows.inverse._inverse_utils import (
+    bound_samples, run_eki_iteration,
+)
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
 
@@ -585,7 +588,7 @@ def run_eki(model: QoiModel,
     start_time = time.time()
 
     dispatcher.require_absolute_path(absolute_work_dir)
-    dispatcher.require_supported_concurrency(evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
     assert step_size_growth_factor > 1.0, (
         "step_size_growth_factor must be greater than 1.0"
     )

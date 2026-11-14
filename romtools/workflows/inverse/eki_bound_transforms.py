@@ -138,6 +138,10 @@ class _PhysicalParameterQoiModel:
         self._margin = margin
         self._transform_map = transform_map
 
+    @property
+    def blocking(self):
+        return getattr(self._model, "blocking", True)
+
     def _physical_dict(self, parameter_sample):
         optimizer_values = np.asarray(
             [parameter_sample[name] for name in self._names], dtype=float

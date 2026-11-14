@@ -17,6 +17,7 @@ from typing import Optional
 import numpy as np
 
 from romtools.hpc.dispatchers import resolve_dispatcher
+from romtools.workflows.model_execution import require_supported_concurrency
 from romtools.workflows.inverse.vi import drivers as _vi
 from romtools.workflows.inverse.vi import mf_drivers as _mf
 from romtools.workflows.inverse.vi import evaluation as _directory_policy
@@ -584,7 +585,7 @@ def _run_full_covariance_vi(
 
     compute_gradient_norm = _gradient_norm if _newton is None else _newton.gradient_norm
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, evaluation_concurrency)
     if absolute_work_dir is None:
         absolute_work_dir = os.getcwd() + "/work/"
     dispatcher.require_absolute_path(absolute_work_dir)

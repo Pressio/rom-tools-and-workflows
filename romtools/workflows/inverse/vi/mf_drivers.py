@@ -129,6 +129,7 @@ from .common import _compute_standard_error, _normalize_mfmc_control_variate_mod
 
 import numpy as np
 
+from romtools.workflows.model_execution import require_supported_concurrency
 from romtools.workflows.inverse.vi.gains import loo_acv_estimator, gain_folds, validate_gain_num_folds, normalize_strategy, regularized_matrix_gain, validate_gain_sampling
 from romtools.workflows.inverse.vi.gains import (
     history_weights, fit_history_gain, gaussian_history_kernels,
@@ -2090,7 +2091,7 @@ def run_mf_vi(model: QoiModel,
         rom_substep_start_iteration, rom_substep_end_iteration, num_rom_substeps,
     )
     dispatcher = resolve_dispatcher(dispatcher)
-    dispatcher.require_supported_concurrency(fom_evaluation_concurrency)
+    require_supported_concurrency(model, dispatcher, fom_evaluation_concurrency)
     start_time = time.time()
     start_cpu_time = time.process_time()
     parameter_mins, parameter_maxes = _resolve_parameter_bounds(
