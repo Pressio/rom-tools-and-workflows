@@ -18,3 +18,10 @@ For background on full-covariance VI, see :doc:`full_covariance_vi`.
    :hidden:
 
    api_inverse_eki
+
+Examples
+--------
+
+- :doc:`EKI and multifidelity EKI <demos/eki_mf_eki_demo>`
+- :doc:`H2-air flame EKI and MF-EKI <demos/h2_air_flame_eki_mf_eki_demo>`
+- :doc:`Variational inference examples <demos/variational_inference>`

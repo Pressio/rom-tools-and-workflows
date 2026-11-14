@@ -18,5 +18,11 @@ argument. Previous workflow-specific keyword names remain accepted for
 backwards compatibility and emit a ``DeprecationWarning``. New code should
 use ``absolute_work_dir``.
 
-For worked sampling examples, see :doc:`demos/space_filling_training` and
-:doc:`demos/hybrid_greedy_training`.
+Examples
+--------
+
+- :doc:`Model interfaces <demos/models>`
+- :doc:`Parameter-space sampling <demos/notebooks/parameter_space>`
+- :doc:`Basic sampling workflow <demos/notebooks/basic_sampling>`
+- :doc:`Space-filling training <demos/space_filling_training>`
+- :doc:`Hybrid greedy training <demos/hybrid_greedy_training>`
