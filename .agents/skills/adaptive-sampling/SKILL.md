@@ -1,6 +1,23 @@
 ---
 name: adaptive-sampling
-description: Use for greedy, space-filling, hybrid adaptive sampling, acquisition criteria, and termination behavior.
+description: Use for greedy, space-filling, hybrid adaptive algorithms, acquisition rules, and stopping criteria.
 ---
 # Adaptive sampling
-Inspect `romtools/workflows/_adaptive/`, `romtools/workflows/greedy/`, `romtools/workflows/space_filling/`, and `romtools/workflows/hybrid_greedy/`. Check matching tests and demos. Keep candidate selection, distance metrics, initialization, batch sizing, and termination criteria explicit; avoid silently changing sampling distributions.
+
+## When to use
+Use for greedy, space-filling, hybrid adaptive algorithms, acquisition rules, and stopping criteria.
+
+## Read first
+`romtools/workflows/_adaptive/`; `romtools/workflows/greedy/run_greedy.py`; `romtools/workflows/space_filling/`; `romtools/workflows/hybrid_greedy/run_hybrid_greedy.py`; `examples/hybrid_greedy_demo.py`; `tests/romtools/workflows/greedy/test_greedy.py`.
+
+## Procedure
+1. Identify whether candidates are discrete or continuously sampled; document the parameter-space metric and normalization.
+2. Separate initialization, candidate scoring, selection, evaluation, and stopping logic; inspect shared `_adaptive` utilities before adding duplicated code.
+3. Greedy scores model error indicators; space filling prioritizes geometric coverage. Hybrid batches combine policies; do not conflate their termination criteria.
+4. Check duplicate prevention, deterministic ties, batch sizes, concurrency, and checkpoint/resume semantics.
+
+## Verification
+Use small known candidate sets to verify selected indices and distances; test fixed seeds, overlapping regions, stopping thresholds, and serial-versus-concurrent behavior where supported.
+
+## Handoff
+State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

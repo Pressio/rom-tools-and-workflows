@@ -1,6 +1,23 @@
 ---
 name: hyper-reduction
-description: Use for DEIM, QDEIM, ECSW, sampling meshes, and hyper-reduced operator construction.
+description: Use for DEIM, QDEIM, ECSW, sampling meshes, interpolation, and weighted residual approximations.
 ---
 # Hyper-reduction
-Inspect `romtools/hyper_reduction/` and `tests/romtools/hyper_reduction/` before changes. Validate indexing, snapshot conventions, rank assumptions, conditioning, and reconstructed operators; prefer small numerical reference tests over only smoke tests.
+
+## When to use
+Use for DEIM, QDEIM, ECSW, sampling meshes, interpolation, and weighted residual approximations.
+
+## Read first
+`romtools/hyper_reduction/`; `examples/h2_air_flame_deim/example.py`; `examples/h2_air_flame_qdeim/example.py`; `tests/romtools/hyper_reduction/`.
+
+## Procedure
+1. Identify whether the method approximates a nonlinear vector, operator, or weighted residual/Jacobian; choose the correct snapshots.
+2. Verify basis orientation, selected row/element indices, rank, conditioning, and reconstruction dimensions.
+3. For DEIM/QDEIM check interpolation solvability and deterministic selection; for ECSW check nonnegative weights, tolerances, and mesh/element consistency.
+4. Do not assume vector-entry sampling and finite-element integration-point sampling are equivalent.
+
+## Verification
+Use exact low-rank synthetic operators, reconstruction error, residual norms, positivity where required, and rank-deficient edge cases. Compare with a non-hyper-reduced reference.
+
+## Handoff
+State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

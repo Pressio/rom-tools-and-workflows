@@ -1,23 +1,27 @@
 # ROM Tools agent guide
 
-This file is a navigation aid, not a substitute for the current source code or tests.
+This is a short router; authoritative contracts live in source code and tests.
+
+## Start here
+1. Locate the requested subsystem, public exports, nearest tests, and a runnable example before editing.
+2. Load the one most relevant skill under `.agents/skills/<topic>/SKILL.md`; load a second only for a real cross-subsystem dependency. Do not preload all skills.
+3. Preserve public interfaces, numerical results, file conventions, and backward compatibility unless explicitly instructed otherwise.
+4. Prefer a minimal reproducible test and numerical oracle. Report commands run and distinguish passing, failing, and unexecuted checks.
+5. Never submit HPC jobs, use paid compute, or change remote state without authorization.
+
+## Task routing
+- Adapt an external solver or QoI → `model-interfaces`; then `sampling-workflows` for sampling.
+- Parameter bounds/distributions → `parameter-spaces`.
+- Monte Carlo or run directories → `sampling-workflows`.
+- Greedy, space-filling, hybrid selection → `adaptive-sampling`.
+- EKI, EGO, VI → `inverse-workflows`; MF-EKI/MF-VI also → `multifidelity-methods`.
+- POD, projection, basis → `rom-construction`; DEIM/QDEIM/ECSW → `hyper-reduction`.
+- Slurm, dispatcher, concurrency → `hpc-execution`.
+- Sphinx or demo pages → `documentation`.
+- Test failures or regression gold → `testing-and-ci`.
 
 ## Repository map
-- `romtools/workflows/`: sampling, adaptive sampling, inverse methods, and UQ
-- `romtools/rom/`, `romtools/vector_space/`, `romtools/linalg/`: reduced models, bases, and linear algebra
-- `romtools/hyper_reduction/`: hyper-reduction methods
-- `romtools/hpc/`: dispatchers and remote execution
-- `tests/romtools/`: unit and regression tests
-- `examples/`: runnable demonstrations
-- `docs/source/`: user and API documentation
+`romtools/workflows/`: models, sampling, inverse, adaptive; `romtools/rom/`, `romtools/vector_space/`, `romtools/linalg/`: ROM foundations; `romtools/hyper_reduction/`: hyper-reduction; `romtools/hpc/`: dispatch; `tests/romtools/`: tests; `examples/`: demos; `docs/source/`: documentation.
 
-## Working conventions
-1. Inspect the current implementation, public exports, and nearest tests before editing.
-2. Preserve public interfaces and existing workflow behavior unless the task explicitly changes them.
-3. Add focused tests for bug fixes; run the relevant tests before claiming success.
-4. For changes affecting numerical results, check regression baselines and justify any updated gold data.
-5. Do not launch remote jobs or consume HPC allocations without explicit authorization.
-6. Prefer links to canonical code, tests, and demos over duplicating detailed APIs here.
-
-## Task-specific guidance
-Load only the relevant skill in `.agents/skills/`. Each `SKILL.md` declares when it applies and identifies authoritative source and test locations. Read additional skills only when the task spans subsystems.
+## Completion report
+Summarize changed files, behavior and compatibility, numerical validation, exact tests and results, and unverified assumptions. Do not claim an agent discovered or used a skill merely because its files were present.
