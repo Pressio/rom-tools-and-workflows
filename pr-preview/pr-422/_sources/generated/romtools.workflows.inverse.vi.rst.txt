@@ -1,0 +1,26 @@
+romtools.workflows.inverse.vi
+=============================
+
+.. automodule:: romtools.workflows.inverse.vi
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adaptation
+   api
+   common
+   drivers
+   evaluation
+   full_covariance_drivers
+   full_covariance_mf_drivers
+   gains
+   gaussian
+   mf_drivers
+   newton
+   optimization
+   rom_substeps
+   sample_reuse

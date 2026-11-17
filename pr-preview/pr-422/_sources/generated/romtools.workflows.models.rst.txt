@@ -8,6 +8,7 @@ romtools.workflows.models
 
    .. autosummary::
    
+      JobHandle
       Model
       QoiModel
       QoiModelWithErrorEstimate

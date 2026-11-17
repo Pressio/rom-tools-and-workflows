@@ -13,8 +13,10 @@ romtools.workflows
    dakota
    formatting
    greedy
+   hybrid_greedy
    inverse
    model_builders
+   model_execution
    models
    parameter_spaces
    parameters
@@ -22,5 +24,6 @@ romtools.workflows
    sampling
    sampling_methods
    sampling_with_holdout
+   space_filling
    uq
    workflow_utils

@@ -26,23 +26,23 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2e7c21eb" />
     <link rel="stylesheet" type="text/css" href="../_static/demos.css?v=e2825856" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
     <script src="../_static/documentation_options.js?v=938c9ccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -50,7 +50,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/thebelab-helper.js"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/romtools.workflows.models';</script>
@@ -59,7 +59,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="romtools.workflows.parameter_spaces" href="romtools.workflows.parameter_spaces.html" />
-    <link rel="prev" title="romtools.workflows.model_builders" href="romtools.workflows.model_builders.html" />
+    <link rel="prev" title="Sampling &amp; Execution" href="../api_sampling_execution.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -111,7 +111,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -209,14 +209,14 @@
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
   <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -236,7 +236,7 @@
   
 
   
-    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -250,7 +250,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
@@ -321,14 +321,14 @@
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
   <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -343,9 +343,24 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../api_rom_construction.html">ROM Construction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_hyper_reduction.html">Hyper-reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_sampling_execution.html">Sampling &amp; Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_inverse.html">Inverse Problems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_utilities.html">HPC &amp; Utilities</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_modules.html">Complete Module Index</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="romtools.html">romtools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
+<li class="toctree-l3 current active"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.hpc.html">romtools.hpc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
 <li class="toctree-l2"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
@@ -354,8 +369,10 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.hybrid_greedy.html">romtools.workflows.hybrid_greedy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.model_execution.html">romtools.workflows.model_execution</a></li>
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
@@ -363,57 +380,13 @@
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="romtools.workflows.space_filling.html">romtools.workflows.space_filling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
 <li class="toctree-l3"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
 </ul>
 </details></li>
 </ul>
 </details></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">romtools.composite_vector_space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">romtools.hyper_reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.linalg.html">romtools.linalg</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.rom.html">romtools.rom</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">romtools.vector_space</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="romtools.workflows.html">romtools.workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.dakota.html">romtools.workflows.dakota</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.formatting.html">romtools.workflows.formatting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.greedy.html">romtools.workflows.greedy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.inverse.html">romtools.workflows.inverse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.model_builders.html">romtools.workflows.model_builders</a></li>
-<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">romtools.workflows.models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameter_spaces.html">romtools.workflows.parameter_spaces</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.parameters.html">romtools.workflows.parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.residual_evaluator.html">romtools.workflows.residual_evaluator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling.html">romtools.workflows.sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_methods.html">romtools.workflows.sampling_methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.sampling_with_holdout.html">romtools.workflows.sampling_with_holdout</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.uq.html">romtools.workflows.uq</a></li>
-<li class="toctree-l2"><a class="reference internal" href="romtools.workflows.workflow_utils.html">romtools.workflows.workflow_utils</a></li>
-</ul>
-</details></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Utilities</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../formatting.html">Formatting Utility</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../distributed_svd.html">Distributed SVD</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">ROM Construction</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.vector_space.html">Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.composite_vector_space.html">Composite Vector Space</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.hyper_reduction.html">Hyper Reduction</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Inverse Workflows</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../api_inverse_eki.html">Ensemble Kalman Inversion (EKI)</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Uncertainty Quantification</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../api_uq.html">Uncertainty Quantification Workflows</a></li>
-</ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.vi_drivers.html">Variational Inference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="romtools.workflows.inverse.mf_vi_drivers.html">Multifidelity Variational Inference</a></li>
 </ul>
 </div>
 </nav></div>
@@ -425,6 +398,11 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-3">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle"><code class="docutils literal notranslate"><span class="pre">JobHandle</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.done"><code class="docutils literal notranslate"><span class="pre">JobHandle.done()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.result"><code class="docutils literal notranslate"><span class="pre">JobHandle.result()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.populate_run_directory"><code class="docutils literal notranslate"><span class="pre">Model.populate_run_directory()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.run_model"><code class="docutils literal notranslate"><span class="pre">Model.run_model()</span></code></a></li>
@@ -474,17 +452,14 @@
     
     <li class="breadcrumb-item breadcrumb-home">
       <a href="../index.html" class="nav-link" aria-label="Home">
-        <i class="fa-solid fa-home"></i>
+        <i class="fa-solid fa-house"></i>
       </a>
     </li>
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
     
     
-    <li class="breadcrumb-item"><a href="romtools.html" class="nav-link">romtools</a></li>
-    
-    
-    <li class="breadcrumb-item"><a href="romtools.workflows.html" class="nav-link">romtools.workflows</a></li>
+    <li class="breadcrumb-item"><a href="../api_sampling_execution.html" class="nav-link">Sampling &amp; Execution</a></li>
     
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">romtools.workflows.models</span></li>
   </ul>
@@ -509,23 +484,57 @@
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Model</span></code></a>()</p></td>
-<td><p>Baseline model protocol</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.JobHandle" title="romtools.workflows.models.JobHandle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JobHandle</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Minimal handle returned by a non-blocking model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModel</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.Model" title="romtools.workflows.models.Model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Model</span></code></a>()</p></td>
+<td><p>Baseline model protocol.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModel</span></code></a>()</p></td>
 <td><p>Protocol for a model that has a return_qoi implementation</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimate</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#romtools.workflows.models.QoiModelWithErrorEstimate" title="romtools.workflows.models.QoiModelWithErrorEstimate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QoiModelWithErrorEstimate</span></code></a>()</p></td>
 <td><p>Protocol for a model that has a return_qoi and compute_error_estimate</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.models.</span></span><span class="sig-name descname"><span class="pre">JobHandle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Minimal handle returned by a non-blocking model.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle.done">
+<span class="sig-name descname"><span class="pre">done</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle.done"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle.done" title="Link to this definition">#</a></dt>
+<dd><p>Return whether execution has completed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="romtools.workflows.models.JobHandle.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#JobHandle.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.JobHandle.result" title="Link to this definition">#</a></dt>
+<dd><p>Wait if needed and return the process exit status.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="romtools.workflows.models.Model">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.models.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><a class="reference internal" href="../_modules/romtools/workflows/models.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.Model" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
-<p>Baseline model protocol</p>
+<p>Baseline model protocol.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">blocking</span> <span class="pre">=</span> <span class="pre">False</span></code> on models that return a JobHandle.
+The executor defaults to blocking when the attribute is absent.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
@@ -550,8 +559,8 @@ responsible for populating the run directory located at run_directory.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="romtools.workflows.models.Model.run_model">
 <span class="sig-name descname"><span class="pre">run_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_sample</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/models.html#Model.run_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.models.Model.run_model" title="Link to this definition">#</a></dt>
-<dd><p>This function is called from the base directory. It needs to execute our
-model. If the model runs successfully, return 0. If fails, return 1.</p>
+<dd><p>Execute the model. Blocking models return an integer exit status.
+Non-blocking models return a JobHandle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -560,7 +569,7 @@ model. If the model runs successfully, return 0. If fails, return 1.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int</p>
+<dd class="field-even"><p>int | <a class="reference internal" href="#romtools.workflows.models.JobHandle" title="romtools.workflows.models.JobHandle"><em>JobHandle</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -634,7 +643,7 @@ AFTER run_model has been run</p>
             
             
               
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
@@ -646,6 +655,11 @@ AFTER run_model has been run</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-4">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle"><code class="docutils literal notranslate"><span class="pre">JobHandle</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.done"><code class="docutils literal notranslate"><span class="pre">JobHandle.done()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.JobHandle.result"><code class="docutils literal notranslate"><span class="pre">JobHandle.result()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.populate_run_directory"><code class="docutils literal notranslate"><span class="pre">Model.populate_run_directory()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.models.Model.run_model"><code class="docutils literal notranslate"><span class="pre">Model.run_model()</span></code></a></li>
@@ -684,8 +698,8 @@ AFTER run_model has been run</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -705,7 +719,7 @@ AFTER run_model has been run</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
       
@@ -718,7 +732,7 @@ AFTER run_model has been run</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
 </p></div>
       
     </div>

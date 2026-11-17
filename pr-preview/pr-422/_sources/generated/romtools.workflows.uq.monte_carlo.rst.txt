@@ -15,6 +15,7 @@ romtools.workflows.uq.monte\_carlo
 
    .. autosummary::
    
+      MonteCarloDryRunResult
       MonteCarloResult
       MultifidelityMonteCarloResult
    

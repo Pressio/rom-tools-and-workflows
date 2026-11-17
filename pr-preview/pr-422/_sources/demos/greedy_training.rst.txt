@@ -1,15 +1,16 @@
-Greedy Training
-=======================
+Greedy training
+===============
 
-Greedy training is an iterative training process where we iteratively add samples at which we believe the ROM is inaccurate.
+**Method.** Greedy ROM training adds full-order samples where the current ROM has the largest estimated error. The model is rebuilt until a stopping criterion is reached.
+
+**Example.** The notebook demonstrates iterative sample selection, ROM rebuilding, and error monitoring.
+
+Notebook: :doc:`notebooks/greedy_training`.
+
+For algorithm details, settings, and full source listings, see
+:doc:`greedy_training_details`.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :hidden:
 
-   notebooks/greedy_training.ipynb
-
-
-
-
-
+   greedy_training_details
