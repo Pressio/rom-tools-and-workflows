@@ -52,7 +52,8 @@ def run_one(model, condition, trial, task, output):
         archive_rc = archive.wait()
         if archive_rc or extract.returncode:
             raise RuntimeError("Failed to export repository snapshot")
-        # The grader is kept in the trusted checkout, never exported to the agent.
+        # Withhold reference implementation and grading tests from the agent.
+        shutil.rmtree(work / "benchmarks/agent_skills/reference", ignore_errors=True)
         for testdir in (work / "benchmarks/agent_skills/tasks").glob("*/tests"):
             shutil.rmtree(testdir)
         prepare(work, condition)
