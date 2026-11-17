@@ -1,0 +1,11 @@
+{
+  "id": "cdr_model_adapter",
+  "timeout_seconds": 600,
+  "verify": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "benchmarks/agent_skills/tasks/cdr_model_adapter/tests"
+  ]
+}
