@@ -19,5 +19,8 @@ Use for DEIM, QDEIM, ECSW, sampling meshes, interpolation, and weighted residual
 ## Verification
 Use exact low-rank synthetic operators, reconstruction error, residual norms, positivity where required, and rank-deficient edge cases. Compare with a non-hyper-reduced reference.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record snapshot shapes, selected indices/elements, basis rank, condition metrics, weight tolerances, and reconstruction error against a baseline.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

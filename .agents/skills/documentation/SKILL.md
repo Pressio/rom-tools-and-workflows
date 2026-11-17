@@ -19,5 +19,8 @@ Use for API documentation, Sphinx navigation, demo descriptions, examples, and c
 ## Verification
 Build docs when dependencies are available; check warnings, broken references, duplicated toctree entries, and representative rendered demo/API pages. Do not claim links work based only on source syntax.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record public symbols/pages inspected, cross-reference changes, documentation build command, warnings, and links checked.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

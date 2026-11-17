@@ -20,5 +20,8 @@ Use for adding tests, debugging GitHub Actions, numerical regression updates, or
 ## Verification
 Report passed/failed/skipped/not-run accurately, including missing dependencies. For skills changes, run the validator and inspect symlink adapters; actual Codex/Claude discovery remains a separate integration check.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record exact commands, environment/dependency versions when relevant, pass/fail/skip counts, regression comparisons, and unresolved failures.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

@@ -19,5 +19,8 @@ Use for dispatchers, Slurm, remote execution, model concurrency, and blocking/no
 ## Verification
 Mock scheduler and dispatcher boundaries; test failed submission, pending/completed/failed states, cleanup, concurrent runs, and local fallback. A scheduler job ID is not proof of success.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record authorization scope, dispatcher configuration (without credentials), job IDs, state transitions, completion exit codes, retries, and cleanup; redact host/user secrets.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

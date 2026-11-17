@@ -19,5 +19,8 @@ Use for EKI, EGO, variational inference, observation operators, and inverse work
 ## Verification
 Verify a small analytic inverse problem and noise scaling, covariance shapes, finite updates, and convergence behavior. Numerical algorithm changes require the regression suite under `tests/romtools/workflows/regression/inverse/`; EKI spread is not automatically a calibrated posterior.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record observation/QoI dimensions, covariance conventions, random seed, algorithm settings, iteration objective/misfit history, and termination reason.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

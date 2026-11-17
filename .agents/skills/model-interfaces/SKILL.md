@@ -19,5 +19,8 @@ Use when wrapping a solver, implementing model execution, computing QoIs, or deb
 ## Verification
 Test direct method calls and a real `run_sampling` integration. Compare state and QoI against a solver reference; test failures, reruns, and saved files. For the CDR adapter benchmark, never edit the legacy solver.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record original solver contract, mapping to each required Model/QoI method, staged inputs, exit status, saved outputs, and direct-solver comparison.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

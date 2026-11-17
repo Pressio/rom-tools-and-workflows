@@ -19,5 +19,8 @@ Use for MF-EKI, MF-VI, surrogate coupling, control variates, and high/low-fideli
 ## Verification
 Compare with a direct full-fidelity baseline on a small analytic problem; test unequal ensemble sizes, zero/weak correlation, covariance symmetry and finite gains, and regression gold data before numerical changes.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record HF/LF sample pairing, sample counts, covariance normalization, control-variate/gain choices, model evaluation counts, and baseline discrepancy.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

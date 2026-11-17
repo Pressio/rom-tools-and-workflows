@@ -1,16 +1,16 @@
 # Repository agent skills
 
-The canonical content is `.agents/skills/<name>/SKILL.md`. Root `AGENTS.md` routes tasks to skills; each skill contains a trigger, source-of-truth paths, a procedure, verification criteria, and a handoff checklist.
+Canonical skills live in `.agents/skills/<name>/SKILL.md`. Root `AGENTS.md` routes tasks to skills. `.agents/TRACE_PROTOCOL.md` defines the common plan → inspect → implement → verify → review evidence trail.
 
 ## Design rules
-- **Progressive disclosure:** keep `AGENTS.md` short and load only relevant skills.
-- **Source first:** never duplicate full signatures that may drift; inspect the current code.
-- **Actionable guidance:** state decisions, failure modes, numerical checks, and expected artifacts rather than generic advice.
-- **Honest evidence:** report tests actually executed and distinguish structural skill presence from runtime discovery.
-- **Harness neutrality:** no vendor-specific CLI commands in canonical skills; harness adapters only point to them.
+- Progressive disclosure: load only relevant skills; do not preload all eleven.
+- Source first: inspect actual signatures and tests.
+- Reviewable behavior: follow explicit stages, leave concise evidence of decisions, tests, deviations, and unresolved work.
+- Distinguish installed skills from confirmed skill discovery.
+- Do not record hidden reasoning, credentials, or full tool transcripts.
 
-## Adapters
-Codex uses root `AGENTS.md` as a navigation entry point; do not assume it automatically discovers `.agents/skills` without explicit verification. Claude Code uses root `CLAUDE.md` and symlinks in `.claude/skills/`. Other harnesses should link, not duplicate, canonical skill content.
+## Harness adapters
+Codex uses root `AGENTS.md` as a navigation entry point; native skill discovery must be checked in the installed version. Claude uses root `CLAUDE.md` and symlinks in `.claude/skills/`. Keep canonical skills harness-neutral.
 
-## Maintenance
-Run `python helper_scripts/validate_agent_skills.py`. When changing an API, update the relevant skill's entry points and numerical checks. Confirm paths and actual harness discovery in a real agent run; static validation alone cannot prove skill use.
+## Validation
+Run `python helper_scripts/validate_agent_skills.py`; separately check actual harness discovery and trace generation in a pilot agent run.

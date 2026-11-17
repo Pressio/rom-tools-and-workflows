@@ -20,5 +20,8 @@ Use when assembling a sampling study, running parameter sweeps, computing QoI st
 ## Verification
 Assert sample bounds/order and deterministic seeding; compare saved state/QoI to a direct solve, and test resume/failure behavior when changing execution logic. Do not assume `random_seed` reaches every custom sampler identically.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record parameter-space configuration, seed, model API mapping, run-directory inventory, per-run statuses, QoI statistics, and failed sample IDs.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

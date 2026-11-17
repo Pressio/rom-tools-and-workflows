@@ -19,5 +19,8 @@ Use for greedy, space-filling, hybrid adaptive algorithms, acquisition rules, an
 ## Verification
 Use small known candidate sets to verify selected indices and distances; test fixed seeds, overlapping regions, stopping thresholds, and serial-versus-concurrent behavior where supported.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record candidate pool/seed, metric, acquisition values or selected indices, batch decisions, termination reason, and checkpoint paths.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

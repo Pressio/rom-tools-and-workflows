@@ -20,5 +20,8 @@ Use when selecting distributions, bounds, sampling algorithms, or defining custo
 ## Verification
 Test shape, ordering, ranges, deterministic repeats, and edge cases. For `run_sampling`, inspect how its `random_seed` interacts with NumPy and the selected sampler.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record parameter names/order, distributions/bounds, sampler, seed, generated sample shape and a reproducibility check; avoid storing sensitive input samples.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.

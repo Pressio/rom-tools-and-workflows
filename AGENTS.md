@@ -23,5 +23,8 @@ This is a short router; authoritative contracts live in source code and tests.
 ## Repository map
 `romtools/workflows/`: models, sampling, inverse, adaptive; `romtools/rom/`, `romtools/vector_space/`, `romtools/linalg/`: ROM foundations; `romtools/hyper_reduction/`: hyper-reduction; `romtools/hpc/`: dispatch; `tests/romtools/`: tests; `examples/`: demos; `docs/source/`: documentation.
 
+## Accountability and audit trail
+For nontrivial work, follow `.agents/TRACE_PROTOCOL.md`: write a brief task plan before editing, preserve decision and verification evidence, and finish with a trace summary. Do not claim unobserved steps or fabricate tool traces. Use native tool logs when available; do not duplicate sensitive transcripts.
+
 ## Completion report
 Summarize changed files, behavior and compatibility, numerical validation, exact tests and results, and unverified assumptions. Do not claim an agent discovered or used a skill merely because its files were present.

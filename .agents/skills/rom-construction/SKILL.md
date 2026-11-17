@@ -19,5 +19,8 @@ Use for POD/SVD, projection, reduced operators, basis/vector-space construction,
 ## Verification
 Test basis rank/orthogonality, projection reconstruction on known subspaces, reduced operator dimensions, and deterministic small-matrix references; test MPI-specific paths only in authorized environments.
 
+## Reviewable execution trace
+Follow the common protocol in `.agents/TRACE_PROTOCOL.md`. For this task specifically: Record snapshot/basis shapes, centering/weighting, rank criteria, singular values or truncation metric, and reconstruction/projection error.
+
 ## Handoff
 State which implementation and tests were inspected, what changed, commands actually run, numerical comparisons, and remaining uncertainty. Prefer loading only this skill plus directly relevant neighboring skills.
