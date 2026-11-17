@@ -1,0 +1,12 @@
+{
+  "id": "parameter_space",
+  "description": "Implement a deterministic parameter-space utility",
+  "timeout_seconds": 300,
+  "verify": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "benchmarks/agent_skills/tasks/parameter_space/tests"
+  ]
+}
