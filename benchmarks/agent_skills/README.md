@@ -1,42 +1,46 @@
-# Agent skill evaluation (pilot)
+# Agent skills benchmark
 
-This pilot measures (1) efficiency and (2) task completion across model tiers.
-It uses the **Codex CLI** as a fixed harness. Model names are configurable:
-the names discussed in conversation (such as "6.1 Sol" and "Tara") are
-*not* assumed to be valid API/Codex model IDs. Verify accessible model IDs
-and supply them through `--models`.
+The pilot evaluates task success and token efficiency across three conditions:
+no guidance, root AGENTS.md only, and full agent skills. Default task:
+`cdr_model_adapter`, which adapts an intentionally nonconforming legacy CDR
+solver to the current ROM Tools Model/QoI API and executes a sampling workflow.
 
-## Design
-- Conditions: `none` (no skill files), `guide` (root AGENTS.md only), `full` (AGENTS.md and canonical skills).
-- Models: user-supplied Codex-supported IDs, e.g. `--models MODEL_A MODEL_B`.
-- Tasks: versioned task directories with `prompt.md`, `tests/`, and `task.json`.
-- Repeats: run at least 5 independent trials per cell, randomize condition order
-  during analysis, and report confidence intervals.
-- Metrics: verified pass/fail, input/output/cached tokens when emitted by
-  Codex JSON events, tool/runtime duration, and cost when known.
-- Do not equate fewer tokens with improved performance: report success rates
-  and total tokens per success alongside median tokens for successful runs.
-
-## Usage
-Install and authenticate Codex CLI separately. From a trusted machine with
-the required dependencies, run:
+## First validate the benchmark oracle
 
 ```bash
-python benchmarks/agent_skills/run.py --models MODEL_A MODEL_B --trials 5 --output /tmp/romtools-agent-eval
-python benchmarks/agent_skills/summarize.py /tmp/romtools-agent-eval/results.jsonl
+python -m pytest -q benchmarks/agent_skills/reference/tests
 ```
 
-The runner makes temporary git worktrees from the current checked-out commit.
-It never modifies the source checkout, but **agents execute code**; use an
-isolated machine/container with no secrets, no HPC credentials, and no
-production filesystem mounts. The runner uses Codex's default sandbox
-restrictions and never passes a bypass-approval flag. The test verifier runs
-in the isolated environment too.
+The trusted reference adapter and tests live under `reference/` and are **not
+copied to the agent workspace**. The task grader under `tasks/*/tests` is also
+removed from the exported workspace and copied in only after the agent exits.
+This is withheld grading, not cryptographic secrecy: prompts and source code
+remain public, and benchmarks should not be used for high-stakes ranking.
 
-## Interpreting results
-A run is successful only when the independent verifier exits zero. A missing
-token-usage event is recorded as null, not zero. The benchmark excludes
-network access and remote HPC runs. Model availability, pricing, and Codex
-CLI flags must be checked against the installed version before a full run.
-Benchmark tasks are intentionally small pilots; expand to EKI and MF-EKI
-workflows once deterministic gold-standard fixtures are prepared.
+## Run the pilot
+
+With an installed, authenticated Codex CLI and verified model IDs:
+
+```bash
+python benchmarks/agent_skills/run.py --models MODEL_ID_A MODEL_ID_B \
+  --tasks cdr_model_adapter --trials 5 --output /tmp/romtools-eval
+python benchmarks/agent_skills/summarize.py /tmp/romtools-eval/results.jsonl
+```
+
+The runner exports a Git snapshot without `.git`, randomizes run order with
+a fixed seed, enforces timeouts, records the final turn token usage when emitted,
+and grades independently. Null usage means missing instrumentation, not zero.
+Model names and CLI compatibility must be checked against the installed CLI.
+
+**Security:** agents execute code. Use a disposable container or machine
+without credentials, sensitive files, or HPC access. Codex's own sandbox
+settings and permissions still apply. No agent execution has been performed
+by adding these files.
+
+## Interpretation
+
+Primary outcomes: pass rate and total tokens per successful run. Also report
+median tokens conditional on success, elapsed time, and failure categories.
+Use multiple trials, compare matched tasks, and report uncertainty intervals.
+Do not infer skill use merely from the presence of skill files; a separate
+skill-discovery trace check is needed before making that claim.

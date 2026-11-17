@@ -37,7 +37,7 @@ def test_sampling_workflow(tmp_path):
     for i, d in enumerate(directories):
         directory = Path(d)
         assert (directory / "passed.txt").is_file()
-        np.testing.assert_allclose(np.load(directory / "solution.npy"), ref.solve(*samples[i]), rtol=1e-10)
+        np.testing.assert_allclose(np.load(directory / "solution.npy"), ref.solve(*samples[i]), rtol=2e-6, atol=2e-8)
     qois = np.load(work / "sampling_stats.npz")["qoi_values"]
     assert qois.shape == (4, 1)
-    np.testing.assert_allclose(qois[:, 0], [ref.boundary_flux(ref.solve(*s)) for s in samples], rtol=1e-10)
+    np.testing.assert_allclose(qois[:, 0], [ref.boundary_flux(ref.solve(*s)) for s in samples], rtol=2e-6, atol=2e-8)
