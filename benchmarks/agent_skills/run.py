@@ -37,7 +37,7 @@ def prepare(work, condition):
         (work / "AGENTS.md").unlink(missing_ok=True)
 
 
-def run_one(model, condition, trial, task, output):
+def run_one(model, condition, trial, task, output, keep_workspaces=False):
     task_dir = TASKS / task
     spec = json.loads((task_dir / "task.json").read_text())
     with tempfile.TemporaryDirectory(prefix="romtools-eval-") as temp:
@@ -59,7 +59,8 @@ def run_one(model, condition, trial, task, output):
         prepare(work, condition)
         prompt = (task_dir / "prompt.md").read_text()
         log = output / f"{task}-{model.replace('/', '_')}-{condition}-{trial}.jsonl"
-        cmd = ["codex", "exec", "--json", "--skip-git-repo-check", "--model", model,
+        cmd = ["codex", "exec", "--json", "--skip-git-repo-check",
+               "--sandbox", "workspace-write", "--ephemeral", "--model", model,
                "--cd", str(work), prompt]
         start = time.monotonic()
         timeout = False
@@ -67,11 +68,26 @@ def run_one(model, condition, trial, task, output):
             try:
                 result = subprocess.run(cmd, cwd=work, stdout=stream,
                                         stderr=subprocess.PIPE, text=True,
+                                        stdin=subprocess.DEVNULL,
                                         timeout=spec["timeout_seconds"])
                 agent_rc, stderr = result.returncode, result.stderr[-2000:]
             except subprocess.TimeoutExpired:
                 timeout, agent_rc, stderr = True, None, "Agent timeout"
         elapsed = time.monotonic() - start
+        # Retain the submission before introducing trusted grading files.
+        retained = None
+        if keep_workspaces:
+            retained = output / (log.stem + "-workspace")
+            shutil.copytree(work, retained)
+        # A CLI startup error or timeout is not a failed numerical solution.
+        # Do not run the grader against a missing/partial submission in that case.
+        if agent_rc != 0:
+            return dict(task=task, model=model, condition=condition, trial=trial,
+                        passed=False, status="timeout" if timeout else "agent_error",
+                        graded=False, agent_returncode=agent_rc, timed_out=timeout,
+                        seconds=elapsed, usage=parse_usage(log), stderr=stderr,
+                        workspace=str(retained) if retained else None,
+                        verifier_output="Not run: agent did not exit successfully")
         # Restore trusted tests from the checkout after the agent exits.
         grader = task_dir / "tests"
         if grader.is_dir():
@@ -85,8 +101,10 @@ def run_one(model, condition, trial, task, output):
         except subprocess.TimeoutExpired:
             passed, verify_log = False, "Verifier timeout"
         return dict(task=task, model=model, condition=condition, trial=trial,
-                    passed=passed, agent_returncode=agent_rc, timed_out=timeout,
+                    passed=passed, status="passed" if passed else "verification_failed",
+                    graded=True, agent_returncode=agent_rc, timed_out=timeout,
                     seconds=elapsed, usage=parse_usage(log), stderr=stderr,
+                    workspace=str(retained) if retained else None,
                     verifier_output=verify_log)
 
 
@@ -96,6 +114,9 @@ def main():
     parser.add_argument("--trials", type=int, default=5)
     parser.add_argument("--tasks", nargs="+", default=["cdr_model_adapter"])
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--conditions", nargs="+", choices=("none", "guide", "full"),
+                        default=["none", "guide", "full"])
+    parser.add_argument("--keep-workspaces", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.trials < 1:
@@ -104,19 +125,21 @@ def main():
         parser.error("Codex CLI not found")
     if not shutil.which("tar"):
         parser.error("tar not found")
+    args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=True)
     jobs = [(task, model, condition, trial)
             for task in args.tasks for model in args.models
-            for condition in ("none", "guide", "full")
+            for condition in args.conditions
             for trial in range(args.trials)]
     random.Random(args.seed).shuffle(jobs)
     with (args.output / "results.jsonl").open("a") as results:
         for task, model, condition, trial in jobs:
-            record = run_one(model, condition, trial, task, args.output)
+            record = run_one(model, condition, trial, task, args.output,
+                             keep_workspaces=args.keep_workspaces)
             results.write(json.dumps(record) + "\n")
             results.flush()
             print(task, model, condition, trial,
-                  "PASS" if record["passed"] else "FAIL")
+                  record["status"])
 
 
 if __name__ == "__main__":

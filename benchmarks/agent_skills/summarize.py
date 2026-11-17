@@ -11,8 +11,11 @@ for line in Path(sys.argv[1]).read_text().splitlines():
         groups[(r["task"], r["model"], r["condition"])].append(r)
 for key, rows in sorted(groups.items()):
     successes = [r for r in rows if r["passed"]]
-    total_tokens = [r["usage"].get("input_tokens", 0) + r["usage"].get("output_tokens", 0)
-                    for r in rows if "input_tokens" in r["usage"] and "output_tokens" in r["usage"]]
+    total_tokens = [r["usage"]["input_tokens"] + r["usage"]["output_tokens"]
+                    for r in rows if isinstance(r.get("usage"), dict)
+                    and "input_tokens" in r["usage"] and "output_tokens" in r["usage"]]
+    ungraded = sum(not r.get("graded", True) for r in rows)
     print(*key, f"success={len(successes)}/{len(rows)}",
+          f"ungraded={ungraded}",
           f"tokens_per_success={sum(total_tokens)/len(successes):.0f}" if successes and len(total_tokens) == len(rows)
           else "tokens_per_success=NA")
