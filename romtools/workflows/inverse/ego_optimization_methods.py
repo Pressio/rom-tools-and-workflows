@@ -20,8 +20,8 @@ def _expected_improvement(gp_regressor: GaussianProcessQoiModel,
                           epsilon: float=0.0):
 
     mu, sigma = gp_regressor.compute_qoi_and_var("", parameter_sample)
-    mu = np.asarray(mu, dtype=float)
-    sigma = np.asarray(sigma, dtype=float)
+    mu = np.asarray(mu, dtype=float).ravel()
+    sigma = np.asarray(sigma, dtype=float).ravel()
 
     # Expected improvement for minimization, retaining the existing
     # convention that epsilon increases the improvement threshold.
