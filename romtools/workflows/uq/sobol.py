@@ -46,6 +46,37 @@ class SobolIndicesResult:
     run_times: np.ndarray
 
 
+def _validate_base_count(name, value):
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise ValueError(f"{name} must be a power of two of at least 2")
+    count = int(value)
+    if count < 2 or count & (count - 1):
+        raise ValueError(f"{name} must be a power of two of at least 2")
+    return count
+
+
+def _validate_sobol_inputs(parameter_space, absolute_work_dir, random_seed):
+    if not os.path.isabs(absolute_work_dir):
+        raise ValueError("absolute_work_dir must be an absolute path")
+    if isinstance(random_seed, bool) or not isinstance(random_seed, Integral) or random_seed < 0:
+        raise ValueError("random_seed must be a nonnegative integer")
+    if not isinstance(parameter_space, HeterogeneousParameterSpace):
+        raise ValueError("Sobol indices require a HeterogeneousParameterSpace with independent inputs")
+    names = tuple(parameter_space.get_names())
+    if not names or len(names) != parameter_space.get_dimensionality() or len(set(names)) != len(names):
+        raise ValueError("Sobol indices require distinct names for independent scalar parameters")
+    return names
+
+
+def _sobol_run_prefix(dispatcher, directory, names, samples):
+    # The design determines which inputs correspond to cached run directories.
+    digest = hashlib.sha256(repr((names, samples.shape, samples.dtype.str)).encode())
+    digest.update(memoryview(samples).cast("B"))
+    design_directory = os.path.join(directory, f"design_{digest.hexdigest()}")
+    dispatcher.create_empty_dir(design_directory)
+    return os.path.join(design_directory, "run_")
+
+
 def _pick_freeze_samples(parameter_space, number_of_base_samples, random_seed):
     dimension = parameter_space.get_dimensionality()
     unit_samples = RandomizedQuasiMonteCarloSampler(
@@ -62,7 +93,10 @@ def _pick_freeze_samples(parameter_space, number_of_base_samples, random_seed):
     blocks[1] = b
     for i in range(dimension):
         blocks[2 + i, :, i] = b[:, i]
-    return blocks.reshape(-1, dimension)
+    samples = blocks.reshape(-1, dimension)
+    if samples.dtype.kind not in "biuf" or not np.all(np.isfinite(samples)):
+        raise ValueError("Sobol indices require finite numeric parameter samples")
+    return samples
 
 
 def _estimate_indices(qoi_values, number_of_base_samples):
@@ -110,33 +144,13 @@ def run_sobol_indices(
     Constant QoI components return NaN indices. Finite-sample estimates are
     returned without clipping.
     """
-    if not os.path.isabs(absolute_work_dir):
-        raise ValueError("absolute_work_dir must be an absolute path")
-    if isinstance(number_of_base_samples, bool) or not isinstance(number_of_base_samples, Integral):
-        raise ValueError("number_of_base_samples must be a power of two of at least 2")
-    number_of_base_samples = int(number_of_base_samples)
-    if number_of_base_samples < 2 or number_of_base_samples & (number_of_base_samples - 1):
-        raise ValueError("number_of_base_samples must be a power of two of at least 2")
-    if isinstance(random_seed, bool) or not isinstance(random_seed, Integral) or random_seed < 0:
-        raise ValueError("random_seed must be a nonnegative integer")
-    if not isinstance(parameter_space, HeterogeneousParameterSpace):
-        raise ValueError("Sobol indices require a HeterogeneousParameterSpace with independent inputs")
-    names = tuple(parameter_space.get_names())
-    if not names or len(names) != parameter_space.get_dimensionality() or len(set(names)) != len(names):
-        raise ValueError("Sobol indices require distinct names for independent scalar parameters")
+    names = _validate_sobol_inputs(parameter_space, absolute_work_dir, random_seed)
+    number_of_base_samples = _validate_base_count("number_of_base_samples", number_of_base_samples)
     validate_evaluation_concurrency(evaluation_concurrency)
 
     samples = _pick_freeze_samples(parameter_space, number_of_base_samples, int(random_seed))
-    if samples.dtype.kind not in "biuf" or not np.all(np.isfinite(samples)):
-        raise ValueError("Sobol indices require finite numeric parameter samples")
-
-    # The design determines which inputs correspond to cached run directories.
-    digest = hashlib.sha256(repr((names, samples.shape, samples.dtype.str)).encode())
-    digest.update(memoryview(samples).cast("B"))
     dispatcher = resolve_dispatcher(dispatcher)
-    design_directory = os.path.join(absolute_work_dir, f"design_{digest.hexdigest()}")
-    dispatcher.create_empty_dir(design_directory)
-    run_prefix = os.path.join(design_directory, "run_")
+    run_prefix = _sobol_run_prefix(dispatcher, absolute_work_dir, names, samples)
     if dry_run:
         directories = prepare_qoi_model(
             model, names, samples, run_prefix, overwrite=overwrite, dispatcher=dispatcher
@@ -159,6 +173,6 @@ def run_sobol_indices(
         run_times=result.run_times,
         number_of_base_samples=np.asarray(number_of_base_samples),
         random_seed=np.asarray(str(random_seed)),
-        design_directory=np.asarray(os.path.basename(design_directory)),
+        design_directory=np.asarray(os.path.basename(os.path.dirname(run_prefix))),
     )
     return result

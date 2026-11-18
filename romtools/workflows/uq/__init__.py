@@ -7,6 +7,11 @@ from romtools.workflows.uq.monte_carlo import (
     run_multifidelity_monte_carlo,
 )
 
+from romtools.workflows.uq.multifidelity_sobol import (
+    MultifidelitySobolIndicesDryRunResult,
+    MultifidelitySobolIndicesResult,
+    run_multifidelity_sobol_indices,
+)
 from romtools.workflows.uq.sobol import (
     SobolIndicesDryRunResult,
     SobolIndicesResult,
@@ -16,6 +21,9 @@ from romtools.workflows.uq.sobol import (
 __all__ = [
     "MonteCarloResult",
     "MultifidelityMonteCarloResult",
+    "MultifidelitySobolIndicesDryRunResult",
+    "MultifidelitySobolIndicesResult",
+    "run_multifidelity_sobol_indices",
     "SobolIndicesDryRunResult",
     "SobolIndicesResult",
     "run_sobol_indices",

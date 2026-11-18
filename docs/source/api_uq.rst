@@ -122,6 +122,50 @@ be reused on restart. Set ``overwrite=True`` after changing the model or QoI.
 After execution, ``sobol_stats.npz`` records the indices, ordered design,
 QoI values, and run metadata.
 
+Multifidelity Sobol sensitivity analysis
+----------------------------------------
+
+``run_multifidelity_sobol_indices`` estimates high-fidelity indices with a
+second, cheaper model that computes the same QoIs. For each pick-freeze
+block, the high-fidelity production rows are a prefix of the low-fidelity
+rows. A separately scrambled, paired pilot estimates one coefficient per
+variance or sensitivity-numerator term and QoI component.
+
+.. code-block:: python
+
+   from romtools.workflows.uq import run_multifidelity_sobol_indices
+
+   result = run_multifidelity_sobol_indices(
+       full_order_model,
+       reduced_order_model,
+       parameter_space,
+       "/absolute/path/to/multifidelity_sobol",
+       number_of_high_fidelity_base_samples=64,
+       number_of_low_fidelity_base_samples=512,
+       pilot_sample_count=32,
+   )
+   print(result.first_order, result.total_effect)
+   print(result.pilot_correlations, result.used_high_fidelity_only)
+
+The multifidelity correction adds the pilot coefficient times the difference
+between the full and paired low-fidelity term means. The workflow corrects
+the first-order and total-effect numerators and the output variance
+separately, then forms each ratio. The variance term is
+:math:`[f(A)-f(B)]^2/2`. A nonpositive corrected variance, a nonfinite
+estimate, or inactive coefficients lead to a high-fidelity-only estimate
+for the affected QoI. Inspect the pilot correlation of the individual terms
+when assessing a reduced model, especially for interaction effects.
+
+All counts are powers of two. The pilot is additional. For :math:`d`
+parameters, the high- and low-fidelity costs are proportional to
+:math:`(N_H+N_P)(d+2)` and :math:`(N_L+N_P)(d+2)` model evaluations,
+respectively. A dry run prepares all four batches. Completed runs save
+``multifidelity_sobol_stats.npz`` with the estimates, pilot diagnostics,
+sample designs, QoIs, and run times.
+
+For the multifidelity control-variate construction, see
+`Qian et al. (2018) <https://doi.org/10.1137/17M1151006>`_.
+
 API
 ---
 
@@ -135,3 +179,6 @@ API
    romtools.workflows.uq.run_sobol_indices
    romtools.workflows.uq.SobolIndicesResult
    romtools.workflows.uq.SobolIndicesDryRunResult
+   romtools.workflows.uq.run_multifidelity_sobol_indices
+   romtools.workflows.uq.MultifidelitySobolIndicesResult
+   romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult
