@@ -84,9 +84,43 @@ convection-diffusion-reaction model is available in
 Results and restart behavior
 ----------------------------
 
-Each workflow returns a result dataclass and saves the same statistics and
+Each Monte Carlo workflow returns a result dataclass and saves the same statistics and
 allocation metadata in ``uq_stats.npz``. Individual successful evaluations
 are marked in their run directories and reused unless ``overwrite=True``.
+
+Sobol sensitivity analysis
+--------------------------
+
+``run_sobol_indices`` estimates the fraction of each QoI's variance attributable
+to each input alone (first order) and to that input including its interactions
+(total effect). Use a parameter space with independent scalar numeric inputs,
+such as ``UniformParameterSpace`` or ``GaussianParameterSpace``.
+
+.. code-block:: python
+
+   from romtools.workflows.uq import run_sobol_indices
+
+   result = run_sobol_indices(
+       qoi_model,
+       parameter_space,
+       "/absolute/path/to/sobol",
+       number_of_base_samples=256,
+       evaluation_concurrency=4,
+   )
+   print(result.parameter_names, result.first_order, result.total_effect)
+
+The workflow constructs a scrambled pick-freeze design using the space's
+marginal distributions. For :math:`d` inputs and :math:`N` base samples, it
+prepares :math:`N(d+2)` model evaluations. Choose a power of two for :math:`N`.
+Each index array has one row per named parameter and one column per flattened
+QoI component. Constant QoI components have undefined indices, represented by
+NaN. Other finite-sample estimates are returned without clipping.
+
+Use ``dry_run=True`` to prepare the design and model inputs before execution.
+Successful evaluations live in directories keyed by the sample design and can
+be reused on restart. Set ``overwrite=True`` after changing the model or QoI.
+After execution, ``sobol_stats.npz`` records the indices, ordered design,
+QoI values, and run metadata.
 
 API
 ---
@@ -98,3 +132,6 @@ API
    romtools.workflows.uq.run_multifidelity_monte_carlo
    romtools.workflows.uq.MonteCarloResult
    romtools.workflows.uq.MultifidelityMonteCarloResult
+   romtools.workflows.uq.run_sobol_indices
+   romtools.workflows.uq.SobolIndicesResult
+   romtools.workflows.uq.SobolIndicesDryRunResult

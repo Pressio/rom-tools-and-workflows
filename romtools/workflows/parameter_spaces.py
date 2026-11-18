@@ -131,11 +131,15 @@ class HeterogeneousParameterSpace(ParameterSpace):
 
     def generate_samples(self, number_of_samples: int, seed=None) -> np.array:
         iid_samples = self._sampler(number_of_samples, self.get_dimensionality(), seed)
+        return self.transform_unit_samples(iid_samples)
+
+    def transform_unit_samples(self, unit_samples: np.ndarray) -> np.ndarray:
+        """Map unit-cube samples through this space's parameter distributions."""
         samples = []
         param_idx = 0
         for param in self._get_parameter_list():
             next_param_idx = param_idx + param.get_dimensionality()
-            param_samples = param.scale_samples(iid_samples[:, param_idx:next_param_idx])
+            param_samples = param.scale_samples(unit_samples[:, param_idx:next_param_idx])
             samples.append(param_samples)
             param_idx = next_param_idx
         return np.concatenate(samples, axis=1)
