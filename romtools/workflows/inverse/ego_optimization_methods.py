@@ -19,14 +19,19 @@ def _expected_improvement(gp_regressor: GaussianProcessQoiModel,
                           parameter_sample: np.ndarray,
                           epsilon: float=0.0):
 
-    mu,sigma = gp_regressor.compute_qoi_and_var("",parameter_sample)
+    mu, sigma = gp_regressor.compute_qoi_and_var("", parameter_sample)
+    mu = np.asarray(mu, dtype=float).ravel()
+    sigma = np.asarray(sigma, dtype=float).ravel()
 
-    Z = (mu - obj_min - epsilon) / sigma
-
-    norm = stats.norm
-    EI = (obj_min + epsilon - mu) * norm.cdf(Z)+ sigma * norm.pdf(Z)
-    mask = sigma < 1e-12
-    EI[mask] = 0.0
+    # Expected improvement for minimization, retaining the existing
+    # convention that epsilon increases the improvement threshold.
+    improvement = obj_min + epsilon - mu
+    EI = np.maximum(improvement, 0.0)
+    mask = sigma > 1e-12
+    if np.any(mask):
+        Z = improvement[mask] / sigma[mask]
+        EI[mask] = (improvement[mask] * stats.norm.cdf(Z)
+                    + sigma[mask] * stats.norm.pdf(Z))
     return EI
 
 def argmax_expected_improvement(gp_regressor: GaussianProcessQoiModel,

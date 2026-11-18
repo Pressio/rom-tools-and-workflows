@@ -151,15 +151,17 @@ class GaussianProcessQoiModel:
         x = self._parameter_sample_to_array(parameter_sample)
 
         predictions = [gp.predict_mean_and_std(x[None, :]) for gp in self._gps]
-        mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
-        std_coeffs = np.array([prediction[1] for prediction in predictions], dtype=float)
+        mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float).ravel()
+        std_coeffs = np.array([prediction[1] for prediction in predictions], dtype=float).ravel()
         mean_coeffs = self._unscale_targets(mean_coeffs)
-        std_coeffs = self._unscale_targets(std_coeffs)
+        # Standard deviations scale multiplicatively; unlike means they are not shifted.
+        if self.normalize_targets and self._target_scale is not None:
+            std_coeffs = std_coeffs.ravel() * np.abs(self._target_scale)
         if self._pod_modes is None:
             return np.asarray([mean_coeffs[0]]), np.asarray([std_coeffs[0]])
         qoi_mean = self._mean_qoi + self._pod_modes @ mean_coeffs
-        # assume pod modes are not correlated (should revisit this assumption)
-        qoi_std = np.sqrt(self._pod_modes @ (std_coeffs * std_coeffs))
+        # Independent coefficient GPs: Var(Phi @ a)_i = sum_j Phi_ij**2 Var(a_j).
+        qoi_std = np.sqrt((self._pod_modes ** 2) @ (std_coeffs ** 2))
         return np.asarray(qoi_mean).ravel(), np.asarray(qoi_std).ravel()
 
     def _parameter_sample_to_array(self, parameter_sample: dict) -> np.ndarray:
