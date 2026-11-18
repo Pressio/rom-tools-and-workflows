@@ -1,0 +1,19 @@
+romtools.workflows.uq.sobol
+===========================
+
+.. automodule:: romtools.workflows.uq.sobol
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      run_sobol_indices
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SobolIndicesDryRunResult
+      SobolIndicesResult
+   

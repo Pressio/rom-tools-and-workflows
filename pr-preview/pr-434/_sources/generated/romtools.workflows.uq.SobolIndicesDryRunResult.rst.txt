@@ -1,0 +1,29 @@
+﻿romtools.workflows.uq.SobolIndicesDryRunResult
+==============================================
+
+.. currentmodule:: romtools.workflows.uq
+
+.. autoclass:: SobolIndicesDryRunResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SobolIndicesDryRunResult.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SobolIndicesDryRunResult.parameter_samples
+      ~SobolIndicesDryRunResult.run_directories
+   
+   

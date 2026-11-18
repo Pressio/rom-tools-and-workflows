@@ -1,0 +1,6 @@
+﻿romtools.workflows.uq.run\_sobol\_indices
+=========================================
+
+.. currentmodule:: romtools.workflows.uq
+
+.. autofunction:: run_sobol_indices

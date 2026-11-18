@@ -1,0 +1,33 @@
+﻿romtools.workflows.uq.SobolIndicesResult
+========================================
+
+.. currentmodule:: romtools.workflows.uq
+
+.. autoclass:: SobolIndicesResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SobolIndicesResult.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SobolIndicesResult.parameter_names
+      ~SobolIndicesResult.parameter_samples
+      ~SobolIndicesResult.qoi_values
+      ~SobolIndicesResult.first_order
+      ~SobolIndicesResult.total_effect
+      ~SobolIndicesResult.run_times
+   
+   
