@@ -11,6 +11,7 @@ romtools.workflows.uq
    :recursive:
 
    monte_carlo
+   multifidelity_sobol
    sample_allocation
    sobol
    statistics

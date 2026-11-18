@@ -1,0 +1,19 @@
+romtools.workflows.uq.multifidelity\_sobol
+==========================================
+
+.. automodule:: romtools.workflows.uq.multifidelity_sobol
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      run_multifidelity_sobol_indices
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MultifidelitySobolIndicesDryRunResult
+      MultifidelitySobolIndicesResult
+   

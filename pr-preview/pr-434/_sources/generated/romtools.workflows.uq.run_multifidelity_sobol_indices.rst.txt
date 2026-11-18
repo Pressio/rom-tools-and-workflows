@@ -1,0 +1,6 @@
+﻿romtools.workflows.uq.run\_multifidelity\_sobol\_indices
+========================================================
+
+.. currentmodule:: romtools.workflows.uq
+
+.. autofunction:: run_multifidelity_sobol_indices

@@ -402,10 +402,13 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MonteCarloResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelityMonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MultifidelityMonteCarloResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult"><code class="docutils literal notranslate"><span class="pre">MultifidelitySobolIndicesDryRunResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelitySobolIndicesResult"><code class="docutils literal notranslate"><span class="pre">MultifidelitySobolIndicesResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.SobolIndicesDryRunResult"><code class="docutils literal notranslate"><span class="pre">SobolIndicesDryRunResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.SobolIndicesResult"><code class="docutils literal notranslate"><span class="pre">SobolIndicesResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_monte_carlo()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_multifidelity_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_monte_carlo()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_multifidelity_sobol_indices"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_sobol_indices()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_sobol_indices"><code class="docutils literal notranslate"><span class="pre">run_sobol_indices()</span></code></a></li>
 </ul>
   </nav></div>
@@ -530,6 +533,64 @@ The first <code class="docutils literal notranslate"><span class="pre">high_fide
 <li><p><strong>used_multifidelity_estimator</strong> (<em>bool</em>)</p></li>
 <li><p><strong>high_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
 <li><p><strong>low_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.uq.</span></span><span class="sig-name descname"><span class="pre">MultifidelitySobolIndicesDryRunResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">high_fidelity_pilot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_pilot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/multifidelity_sobol.html#MultifidelitySobolIndicesDryRunResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Prepared pilot and production inputs at both fidelities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>high_fidelity_pilot</strong> (<a class="reference internal" href="romtools.workflows.uq.sobol.html#romtools.workflows.uq.sobol.SobolIndicesDryRunResult" title="romtools.workflows.uq.sobol.SobolIndicesDryRunResult"><em>SobolIndicesDryRunResult</em></a>)</p></li>
+<li><p><strong>low_fidelity_pilot</strong> (<a class="reference internal" href="romtools.workflows.uq.sobol.html#romtools.workflows.uq.sobol.SobolIndicesDryRunResult" title="romtools.workflows.uq.sobol.SobolIndicesDryRunResult"><em>SobolIndicesDryRunResult</em></a>)</p></li>
+<li><p><strong>high_fidelity</strong> (<a class="reference internal" href="romtools.workflows.uq.sobol.html#romtools.workflows.uq.sobol.SobolIndicesDryRunResult" title="romtools.workflows.uq.sobol.SobolIndicesDryRunResult"><em>SobolIndicesDryRunResult</em></a>)</p></li>
+<li><p><strong>low_fidelity</strong> (<a class="reference internal" href="romtools.workflows.uq.sobol.html#romtools.workflows.uq.sobol.SobolIndicesDryRunResult" title="romtools.workflows.uq.sobol.SobolIndicesDryRunResult"><em>SobolIndicesDryRunResult</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="romtools.workflows.uq.MultifidelitySobolIndicesResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">romtools.workflows.uq.</span></span><span class="sig-name descname"><span class="pre">MultifidelitySobolIndicesResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_effect</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_variate_coefficients</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pilot_correlations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">used_high_fidelity_only</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_parameter_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_parameter_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pilot_parameter_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_pilot_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_pilot_qoi_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_qoi_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_qoi_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_run_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_run_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_pilot_run_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_pilot_run_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/multifidelity_sobol.html#MultifidelitySobolIndicesResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.uq.MultifidelitySobolIndicesResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Indices and diagnostics for the fixed-count multifidelity estimate.</p>
+<p>Indices have shape (number of parameters, number of QoIs). Coefficients
+and pilot correlations have one row for the variance, followed by the
+first-order and total-effect numerator rows in parameter order. Coefficients
+apply to terms computed from QoIs rescaled by the corresponding fidelity’s
+QoI scale. A component flagged in <code class="docutils literal notranslate"><span class="pre">used_high_fidelity_only</span></code> has the
+single-fidelity indices from the high-fidelity production design.</p>
+<p>Samples, QoIs, and timings are ordered by pick-freeze block (A, B, and
+AB_i in parameter order). Within each low-fidelity production block, the
+first high-fidelity sample count rows match the high-fidelity block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter_names</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>first_order</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>total_effect</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>control_variate_coefficients</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>pilot_correlations</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>used_high_fidelity_only</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_parameter_samples</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_parameter_samples</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>pilot_parameter_samples</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_qoi_values</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_qoi_values</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_pilot_qoi_values</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_pilot_qoi_values</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_qoi_scale</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_qoi_scale</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_run_times</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>high_fidelity_pilot_run_times</strong> (<em>ndarray</em>)</p></li>
+<li><p><strong>low_fidelity_pilot_run_times</strong> (<em>ndarray</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -710,6 +771,50 @@ to their application.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="romtools.workflows.uq.run_multifidelity_sobol_indices">
+<span class="sig-prename descclassname"><span class="pre">romtools.workflows.uq.</span></span><span class="sig-name descname"><span class="pre">run_multifidelity_sobol_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">high_fidelity_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_high_fidelity_base_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_low_fidelity_base_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pilot_sample_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_fidelity_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_fidelity_evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/multifidelity_sobol.html#run_multifidelity_sobol_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.uq.run_multifidelity_sobol_indices" title="Link to this definition">#</a></dt>
+<dd><p>Estimate high-fidelity Sobol indices using paired low-fidelity runs.</p>
+<p>All counts refer to base rows and must be powers of two of at least two.
+The low-fidelity production design must be at least as large as the
+high-fidelity design. An independently scrambled paired pilot fits a
+control coefficient for each term and QoI component. The pilot is
+additional to the specified production sample counts. Both models must
+return the same deterministic QoI components at independent scalar inputs.</p>
+<p>For each term, the correction adds the pilot coefficient times the
+difference between the full and paired low-fidelity production means to
+the high-fidelity production mean. Ratios are formed after correction.
+A QoI with a nonpositive variance, a nonfinite estimate, or no active
+correction uses its high-fidelity-only estimate.</p>
+<p>With d inputs, each fidelity runs (production count + pilot count) *
+(d + 2) evaluations. Successful evaluations can be reused by rerunning
+with the same design. Set overwrite=True when a model or QoI changes.
+Dry runs prepare both designs at both fidelities. Completed runs write
+multifidelity_sobol_stats.npz under absolute_work_dir.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>high_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>low_fidelity_model</strong> (<a class="reference internal" href="romtools.workflows.models.html#romtools.workflows.models.QoiModel" title="romtools.workflows.models.QoiModel"><em>QoiModel</em></a>)</p></li>
+<li><p><strong>parameter_space</strong> (<a class="reference internal" href="romtools.workflows.parameter_spaces.html#romtools.workflows.parameter_spaces.HeterogeneousParameterSpace" title="romtools.workflows.parameter_spaces.HeterogeneousParameterSpace"><em>HeterogeneousParameterSpace</em></a>)</p></li>
+<li><p><strong>absolute_work_dir</strong> (<em>str</em>)</p></li>
+<li><p><strong>number_of_high_fidelity_base_samples</strong> (<em>int</em>)</p></li>
+<li><p><strong>number_of_low_fidelity_base_samples</strong> (<em>int</em>)</p></li>
+<li><p><strong>pilot_sample_count</strong> (<em>int</em>)</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em>)</p></li>
+<li><p><strong>high_fidelity_evaluation_concurrency</strong> (<em>int</em>)</p></li>
+<li><p><strong>low_fidelity_evaluation_concurrency</strong> (<em>int</em>)</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>)</p></li>
+<li><p><strong>dispatcher</strong> (<a class="reference internal" href="romtools.hpc.dispatchers.base_dispatcher.html#romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher" title="romtools.hpc.dispatchers.base_dispatcher.BaseDispatcher"><em>BaseDispatcher</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>dry_run</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="romtools.workflows.uq.multifidelity_sobol.html#romtools.workflows.uq.multifidelity_sobol.MultifidelitySobolIndicesResult" title="romtools.workflows.uq.multifidelity_sobol.MultifidelitySobolIndicesResult"><em>MultifidelitySobolIndicesResult</em></a> | <a class="reference internal" href="romtools.workflows.uq.multifidelity_sobol.html#romtools.workflows.uq.multifidelity_sobol.MultifidelitySobolIndicesDryRunResult" title="romtools.workflows.uq.multifidelity_sobol.MultifidelitySobolIndicesDryRunResult"><em>MultifidelitySobolIndicesDryRunResult</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="romtools.workflows.uq.run_sobol_indices">
 <span class="sig-prename descclassname"><span class="pre">romtools.workflows.uq.</span></span><span class="sig-name descname"><span class="pre">run_sobol_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_base_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_concurrency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispatcher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/romtools/workflows/uq/sobol.html#run_sobol_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#romtools.workflows.uq.run_sobol_indices" title="Link to this definition">#</a></dt>
 <dd><p>Estimate first-order and total-effect Sobol indices for each flattened QoI.</p>
@@ -751,13 +856,16 @@ returned without clipping.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.monte_carlo.html#module-romtools.workflows.uq.monte_carlo" title="romtools.workflows.uq.monte_carlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monte_carlo</span></code></a></p></td>
 <td><p>Monte Carlo and two-level multifidelity Monte Carlo workflows.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.sample_allocation.html#module-romtools.workflows.uq.sample_allocation" title="romtools.workflows.uq.sample_allocation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_allocation</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.multifidelity_sobol.html#module-romtools.workflows.uq.multifidelity_sobol" title="romtools.workflows.uq.multifidelity_sobol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multifidelity_sobol</span></code></a></p></td>
+<td><p>Two-level multifidelity Sobol sensitivity analysis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.sample_allocation.html#module-romtools.workflows.uq.sample_allocation" title="romtools.workflows.uq.sample_allocation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_allocation</span></code></a></p></td>
 <td><p>Pilot-based sample allocation for two-level MFMC.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.sobol.html#module-romtools.workflows.uq.sobol" title="romtools.workflows.uq.sobol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sobol</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.sobol.html#module-romtools.workflows.uq.sobol" title="romtools.workflows.uq.sobol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sobol</span></code></a></p></td>
 <td><p>Variance-based global sensitivity analysis for independent inputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="romtools.workflows.uq.statistics.html#module-romtools.workflows.uq.statistics" title="romtools.workflows.uq.statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistics</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="romtools.workflows.uq.statistics.html#module-romtools.workflows.uq.statistics" title="romtools.workflows.uq.statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistics</span></code></a></p></td>
 <td><p>Statistical estimators used by Monte Carlo UQ workflows.</p></td>
 </tr>
 </tbody>
@@ -790,10 +898,13 @@ returned without clipping.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MonteCarloResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelityMonteCarloResult"><code class="docutils literal notranslate"><span class="pre">MultifidelityMonteCarloResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult"><code class="docutils literal notranslate"><span class="pre">MultifidelitySobolIndicesDryRunResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.MultifidelitySobolIndicesResult"><code class="docutils literal notranslate"><span class="pre">MultifidelitySobolIndicesResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.SobolIndicesDryRunResult"><code class="docutils literal notranslate"><span class="pre">SobolIndicesDryRunResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.SobolIndicesResult"><code class="docutils literal notranslate"><span class="pre">SobolIndicesResult</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_monte_carlo()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_multifidelity_monte_carlo"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_monte_carlo()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_multifidelity_sobol_indices"><code class="docutils literal notranslate"><span class="pre">run_multifidelity_sobol_indices()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#romtools.workflows.uq.run_sobol_indices"><code class="docutils literal notranslate"><span class="pre">run_sobol_indices()</span></code></a></li>
 </ul>
   </nav></div>

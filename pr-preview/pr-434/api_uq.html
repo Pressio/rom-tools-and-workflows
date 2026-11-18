@@ -357,6 +357,9 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_sobol_indices.html">romtools.workflows.uq.run_sobol_indices</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.SobolIndicesResult.html">romtools.workflows.uq.SobolIndicesResult</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.SobolIndicesDryRunResult.html">romtools.workflows.uq.SobolIndicesDryRunResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.run_multifidelity_sobol_indices.html">romtools.workflows.uq.run_multifidelity_sobol_indices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelitySobolIndicesResult.html">romtools.workflows.uq.MultifidelitySobolIndicesResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult.html">romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="api_utilities.html">HPC &amp; Utilities</a></li>
@@ -377,6 +380,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-allocation">Pilot allocation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results-and-restart-behavior">Results and restart behavior</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sobol-sensitivity-analysis">Sobol sensitivity analysis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multifidelity-sobol-sensitivity-analysis">Multifidelity Sobol sensitivity analysis</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
 </ul>
   </nav></div>
@@ -544,6 +548,45 @@ be reused on restart. Set <code class="docutils literal notranslate"><span class
 After execution, <code class="docutils literal notranslate"><span class="pre">sobol_stats.npz</span></code> records the indices, ordered design,
 QoI values, and run metadata.</p>
 </section>
+<section id="multifidelity-sobol-sensitivity-analysis">
+<h2>Multifidelity Sobol sensitivity analysis<a class="headerlink" href="#multifidelity-sobol-sensitivity-analysis" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">run_multifidelity_sobol_indices</span></code> estimates high-fidelity indices with a
+second, cheaper model that computes the same QoIs. For each pick-freeze
+block, the high-fidelity production rows are a prefix of the low-fidelity
+rows. A separately scrambled, paired pilot estimates one coefficient per
+variance or sensitivity-numerator term and QoI component.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">romtools.workflows.uq</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_multifidelity_sobol_indices</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">run_multifidelity_sobol_indices</span><span class="p">(</span>
+    <span class="n">full_order_model</span><span class="p">,</span>
+    <span class="n">reduced_order_model</span><span class="p">,</span>
+    <span class="n">parameter_space</span><span class="p">,</span>
+    <span class="s2">"/absolute/path/to/multifidelity_sobol"</span><span class="p">,</span>
+    <span class="n">number_of_high_fidelity_base_samples</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">number_of_low_fidelity_base_samples</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">pilot_sample_count</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">first_order</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">total_effect</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">pilot_correlations</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">used_high_fidelity_only</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The multifidelity correction adds the pilot coefficient times the difference
+between the full and paired low-fidelity term means. The workflow corrects
+the first-order and total-effect numerators and the output variance
+separately, then forms each ratio. The variance term is
+<span class="math notranslate nohighlight">\([f(A)-f(B)]^2/2\)</span>. A nonpositive corrected variance, a nonfinite
+estimate, or inactive coefficients lead to a high-fidelity-only estimate
+for the affected QoI. Inspect the pilot correlation of the individual terms
+when assessing a reduced model, especially for interaction effects.</p>
+<p>All counts are powers of two. The pilot is additional. For <span class="math notranslate nohighlight">\(d\)</span>
+parameters, the high- and low-fidelity costs are proportional to
+<span class="math notranslate nohighlight">\((N_H+N_P)(d+2)\)</span> and <span class="math notranslate nohighlight">\((N_L+N_P)(d+2)\)</span> model evaluations,
+respectively. A dry run prepares all four batches. Completed runs save
+<code class="docutils literal notranslate"><span class="pre">multifidelity_sobol_stats.npz</span></code> with the estimates, pilot diagnostics,
+sample designs, QoIs, and run times.</p>
+<p>For the multifidelity control-variate construction, see
+<a class="reference external" href="https://doi.org/10.1137/17M1151006">Qian et al. (2018)</a>.</p>
+</section>
 <section id="api">
 <h2>API<a class="headerlink" href="#api" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
@@ -568,6 +611,15 @@ QoI values, and run metadata.</p>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.SobolIndicesDryRunResult.html#romtools.workflows.uq.SobolIndicesDryRunResult" title="romtools.workflows.uq.SobolIndicesDryRunResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.SobolIndicesDryRunResult</span></code></a>(...)</p></td>
 <td><p>Ordered sample rows and their prepared model run directories.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.run_multifidelity_sobol_indices.html#romtools.workflows.uq.run_multifidelity_sobol_indices" title="romtools.workflows.uq.run_multifidelity_sobol_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.run_multifidelity_sobol_indices</span></code></a>(...)</p></td>
+<td><p>Estimate high-fidelity Sobol indices using paired low-fidelity runs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelitySobolIndicesResult.html#romtools.workflows.uq.MultifidelitySobolIndicesResult" title="romtools.workflows.uq.MultifidelitySobolIndicesResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.MultifidelitySobolIndicesResult</span></code></a>(...)</p></td>
+<td><p>Indices and diagnostics for the fixed-count multifidelity estimate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult.html#romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult" title="romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">romtools.workflows.uq.MultifidelitySobolIndicesDryRunResult</span></code></a>(...)</p></td>
+<td><p>Prepared pilot and production inputs at both fidelities.</p></td>
 </tr>
 </tbody>
 </table>
@@ -603,6 +655,7 @@ QoI values, and run metadata.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pilot-allocation">Pilot allocation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#results-and-restart-behavior">Results and restart behavior</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sobol-sensitivity-analysis">Sobol sensitivity analysis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multifidelity-sobol-sensitivity-analysis">Multifidelity Sobol sensitivity analysis</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api">API</a></li>
 </ul>
   </nav></div>

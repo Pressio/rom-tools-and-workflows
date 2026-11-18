@@ -1,0 +1,46 @@
+﻿romtools.workflows.uq.MultifidelitySobolIndicesResult
+=====================================================
+
+.. currentmodule:: romtools.workflows.uq
+
+.. autoclass:: MultifidelitySobolIndicesResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MultifidelitySobolIndicesResult.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MultifidelitySobolIndicesResult.parameter_names
+      ~MultifidelitySobolIndicesResult.first_order
+      ~MultifidelitySobolIndicesResult.total_effect
+      ~MultifidelitySobolIndicesResult.control_variate_coefficients
+      ~MultifidelitySobolIndicesResult.pilot_correlations
+      ~MultifidelitySobolIndicesResult.used_high_fidelity_only
+      ~MultifidelitySobolIndicesResult.high_fidelity_parameter_samples
+      ~MultifidelitySobolIndicesResult.low_fidelity_parameter_samples
+      ~MultifidelitySobolIndicesResult.pilot_parameter_samples
+      ~MultifidelitySobolIndicesResult.high_fidelity_qoi_values
+      ~MultifidelitySobolIndicesResult.low_fidelity_qoi_values
+      ~MultifidelitySobolIndicesResult.high_fidelity_pilot_qoi_values
+      ~MultifidelitySobolIndicesResult.low_fidelity_pilot_qoi_values
+      ~MultifidelitySobolIndicesResult.high_fidelity_qoi_scale
+      ~MultifidelitySobolIndicesResult.low_fidelity_qoi_scale
+      ~MultifidelitySobolIndicesResult.high_fidelity_run_times
+      ~MultifidelitySobolIndicesResult.low_fidelity_run_times
+      ~MultifidelitySobolIndicesResult.high_fidelity_pilot_run_times
+      ~MultifidelitySobolIndicesResult.low_fidelity_pilot_run_times
+   
+   
