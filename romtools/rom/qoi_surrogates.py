@@ -151,8 +151,8 @@ class GaussianProcessQoiModel:
         x = self._parameter_sample_to_array(parameter_sample)
 
         predictions = [gp.predict_mean_and_std(x[None, :]) for gp in self._gps]
-        mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float)
-        std_coeffs = np.array([prediction[1] for prediction in predictions], dtype=float)
+        mean_coeffs = np.array([prediction[0] for prediction in predictions], dtype=float).ravel()
+        std_coeffs = np.array([prediction[1] for prediction in predictions], dtype=float).ravel()
         mean_coeffs = self._unscale_targets(mean_coeffs)
         # Standard deviations scale multiplicatively; unlike means they are not shifted.
         if self.normalize_targets and self._target_scale is not None:
