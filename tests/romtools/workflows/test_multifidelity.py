@@ -97,7 +97,7 @@ def test_budget_stops_before_unaffordable_round(tmp_path):
 def test_initial_budget_is_validated_before_execution(tmp_path):
     with pytest.raises(ValueError, match="initial sample allocation"):
         run_adaptive_multifidelity(**make_options(tmp_path, budget=35.0))
-    assert not tmp_path.exists()
+    assert not (tmp_path / "multifidelity_status.log").exists()
 
 
 def test_paired_counts_must_be_nonincreasing(tmp_path):
