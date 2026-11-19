@@ -65,6 +65,17 @@ def _decode_parameters(values, encoding):
     return np.asarray(restored, dtype=object).reshape(values.shape)
 
 
+def _component_signature(component):
+    """Record an informative stable identity without serializing user callables."""
+    if component is None:
+        return None
+    target = component if isinstance(component, type) else type(component)
+    # For functions, use the function identity rather than 'builtins.function'.
+    if callable(component) and hasattr(component, "__qualname__"):
+        target = component
+    return f"{target.__module__}.{target.__qualname__}"
+
+
 def _seed_description(random_seed):
     """Stable JSON representation for scalar and sequence SeedSequence inputs."""
     if random_seed is None:
@@ -186,6 +197,9 @@ def run_space_filling(
     parameters are stored without pickle, alongside ordinary NumPy arrays.
     Pass the same builder, parameter
     space, validation strategy, distance metric, and error functor.
+    Checkpoints compare the stable Python type/function identities of these
+    components, but cannot detect changes in mutable internal configuration
+    or function closures; callers must preserve their semantics.
     Automatic retry/overwrite of a partially completed round is unsupported:
     its files must be inspected and cleared before restarting. Completed
     FOM samples are never rerun. Each restart creates a persistent
@@ -228,6 +242,10 @@ def run_space_filling(
         "initial_sample_size": initial_sample_size,
         "batch_size": batch_size,
         "candidate_pool_size": candidate_pool_size,
+        "parameter_space_type": _component_signature(parameter_space),
+        "distance_metric_type": _component_signature(distance_metric),
+        "validation_strategy_type": _component_signature(validation_strategy),
+        "error_functor_type": _component_signature(error_functor),
     }
     directory = os.fspath(absolute_work_dir)
     if not os.path.isabs(directory):
@@ -303,6 +321,9 @@ def run_space_filling(
                     if not len(batch):
                         reason = "candidate_pool_exhausted"
                         break
+                    # Do not run expensive FOMs if the selected parameters
+                    # cannot be stored in a safe, pickle-free checkpoint.
+                    _encode_parameters(batch)
                     start = len(training_dirs)
                     ids = list(range(start, start + len(batch)))
                     batch_dirs = [os.path.join(directory, "fom", f"run_{i}") for i in ids]
