@@ -317,6 +317,8 @@ def mf_vi_with_auto_rom(model: QoiModel,
                 signal_variance_grid=rom_args.get("signal_variance_grid"),
                 normalize_parameters=rom_args.get("normalize_parameters", False),
                 normalize_targets=rom_args.get("normalize_targets", False),
+                anisotropic=rom_args.get("anisotropic", False),
+                optimizer_restarts=rom_args.get("optimizer_restarts", 4),
             )
         else:
             raise ValueError(f"Unsupported rom_type '{rom_type}'.")
