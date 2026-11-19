@@ -173,3 +173,22 @@ def test_ard_hyperparameter_tuning_fits_anisotropic_function():
     assert scales.shape == (2,)
     assert np.all(scales > 0)
     assert scales[0] < scales[1]
+
+
+def test_ard_kernel_preserves_small_separations_at_large_offsets():
+    # Norm-square/dot-product distance formulas incorrectly round this
+    # squared separation to zero after division by a small length scale.
+    x = np.array([[1e5, 1e5], [1e5 + 1e-3, 1e5]])
+    kernel = GaussianProcessKernel(length_scale=1e-3)
+    covariance = kernel(x, x)
+    expected = np.exp(-0.5)
+    np.testing.assert_allclose(covariance[0, 1], expected, rtol=1e-7)
+    np.testing.assert_allclose(covariance[1, 0], expected, rtol=1e-7)
+    np.testing.assert_allclose(np.diag(covariance), 1.0, rtol=0, atol=1e-14)
+
+
+def test_ard_kernel_large_offset_with_anisotropic_scales_and_cross_covariance():
+    x = np.array([[1e5, -2e5], [1e5 + 1e-3, -2e5 + 2e-3]])
+    kernel = GaussianProcessKernel(length_scale=[1e-3, 2e-3], signal_variance=1.5)
+    expected = 1.5 * np.exp(-1.0)
+    np.testing.assert_allclose(kernel(x[:1], x[1:])[0, 0], expected, rtol=1e-7)
