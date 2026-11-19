@@ -33,6 +33,45 @@ class SpaceFillingResult:
     termination_reason: str
 
 
+def _encode_parameters(parameters):
+    """Serialize object-valued scalar parameters without using pickle.
+
+    Numeric and Unicode arrays retain their original NPZ representation.
+    Mixed object arrays are encoded cell-by-cell as JSON scalars with an
+    explicit marker so types can be reconstructed safely.
+    """
+    if parameters.dtype.kind != "O":
+        return parameters, "native"
+    cells = []
+    for cell in parameters.flat:
+        value = cell.item() if isinstance(cell, np.generic) else cell
+        if value is not None and not isinstance(value, (str, bool, int, float)):
+            raise TypeError(
+                "restart checkpoint supports only JSON scalar object parameters "
+                "(str, bool, int, finite float, None)"
+            )
+        if isinstance(value, float) and not np.isfinite(value):
+            raise ValueError("object parameter values must be finite")
+        cells.append(json.dumps(value, allow_nan=False))
+    return np.asarray(cells, dtype=str).reshape(parameters.shape), "json_scalars_v1"
+
+
+def _decode_parameters(values, encoding):
+    if encoding == "native":
+        return values
+    if encoding != "json_scalars_v1" or values.dtype.kind not in "US":
+        raise ValueError("unsupported restart parameter encoding")
+    restored = [json.loads(str(cell)) for cell in values.flat]
+    return np.asarray(restored, dtype=object).reshape(values.shape)
+
+
+def _seed_description(random_seed):
+    """Stable JSON representation for scalar and sequence SeedSequence inputs."""
+    if random_seed is None:
+        return None
+    return np.asarray(random_seed).tolist()
+
+
 def _rng_states(streams):
     """JSON-compatible PCG64 states, recorded after each committed round."""
     return json.dumps([stream.bit_generator.state for stream in streams])
@@ -54,7 +93,8 @@ def _load_restart(directory, names, config, streams):
             raise ValueError("restart parameter names do not match the checkpoint")
         if json.loads(str(saved["run_config"])) != config:
             raise ValueError("restart sampling configuration differs from checkpoint")
-        parameters = saved["training_parameters"].copy()
+        encoding = str(saved["parameter_encoding"]) if "parameter_encoding" in saved.files else "native"
+        parameters = _decode_parameters(saved["training_parameters"].copy(), encoding)
         qois = saved["training_qois"].copy()
         training_dirs = saved["training_dirs"].tolist()
         errors = saved["validation_errors"].tolist()
@@ -85,8 +125,10 @@ def _load_restart(directory, names, config, streams):
 def _save_stats(directory, names, parameters, qois, training_dirs, errors,
                 counts, run_times, reason, streams, config, last_build_seed):
     temporary = os.path.join(directory, ".space_filling_stats.tmp.npz")
+    encoded_parameters, parameter_encoding = _encode_parameters(parameters)
     np.savez(
-        temporary, parameter_names=np.asarray(names), training_parameters=parameters,
+        temporary, parameter_names=np.asarray(names),
+        training_parameters=encoded_parameters, parameter_encoding=parameter_encoding,
         training_qois=qois, training_dirs=np.asarray(training_dirs),
         validation_errors=np.asarray(errors), sample_counts=np.asarray(counts),
         fom_run_times=np.asarray(run_times), converged=reason == "tolerance",
@@ -140,11 +182,15 @@ def run_space_filling(
     in that directory, using the saved sampling/RNG states and rebuilding the
     production ROM from accepted FOM data. ``max_iterations`` and
     ``max_fom_samples`` may be increased on restart; sampling settings and
-    parameter names must remain unchanged. Pass the same builder, parameter
+    parameter names must remain unchanged. JSON-compatible scalar object
+    parameters are stored without pickle, alongside ordinary NumPy arrays.
+    Pass the same builder, parameter
     space, validation strategy, distance metric, and error functor.
     Automatic retry/overwrite of a partially completed round is unsupported:
     its files must be inspected and cleared before restarting. Completed
-    FOM samples are never rerun.
+    FOM samples are never rerun. Each restart creates a persistent
+    ``.restart_build_*`` directory for the reconstructed production ROM,
+    because some builders retain references to their offline-data files.
     """
     for name, value in (
         ("initial_sample_size", initial_sample_size), ("batch_size", batch_size),
@@ -178,7 +224,7 @@ def run_space_filling(
     streams = list(map(np.random.default_rng, np.random.SeedSequence(random_seed).spawn(4)))
     sampling_rng, fom_rng, validation_rng, build_rng = streams
     config = {
-        "random_seed": None if random_seed is None else int(random_seed),
+        "random_seed": _seed_description(random_seed),
         "initial_sample_size": initial_sample_size,
         "batch_size": batch_size,
         "candidate_pool_size": candidate_pool_size,
@@ -223,6 +269,7 @@ def run_space_filling(
         try:
             if restart:
                 log.write(f"Restarting after {next_iteration} completed rounds\n")
+                log.write(f"Recovered production ROM in {rebuild_dir}\n")
                 if errors[-1] <= tolerance:
                     reason = "tolerance"
                 elif max_fom_samples is not None and len(training_dirs) >= max_fom_samples:
