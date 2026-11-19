@@ -481,3 +481,100 @@ def test_nonblocking_fom_finishes_before_qoi_and_rom_build(tmp_path):
     assert model.peak == 2 and model.active == 0
     np.testing.assert_array_equal(result.training_qois[:, 0], 1 + result.training_parameters[:, 0])
     assert all(Path(directory, "passed.txt").exists() for directory in result.training_dirs)
+
+
+
+def test_restart_matches_uninterrupted_space_filling_and_reuses_fom(tmp_path):
+    """Continuing a checkpoint must preserve selected points and histories."""
+    samples = np.arange(30, dtype=float)[:, None]
+    single = run_space_filling(**request(
+        tmp_path / "single", parameter_space=FixedSpace(samples),
+        max_iterations=4, random_seed=19,
+    ))
+    short = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        max_iterations=2, random_seed=19,
+    ))
+    assert short.termination_reason == "max_iterations"
+    assert len(short.training_dirs) == 5
+    existing_run_files = {
+        str(path): path.stat().st_mtime_ns
+        for path in (tmp_path / "split" / "fom").glob("run_*/solution.npz")
+    }
+    resumed_builder = RecordingBuilder()
+    resumed = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        rom_model_builder=resumed_builder,
+        max_iterations=4, random_seed=19, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.training_parameters, single.training_parameters)
+    np.testing.assert_array_equal(resumed.training_qois, single.training_qois)
+    np.testing.assert_array_equal(resumed.validation_errors, single.validation_errors)
+    np.testing.assert_array_equal(resumed.sample_counts, single.sample_counts)
+    assert resumed.termination_reason == single.termination_reason
+    assert len(resumed.training_dirs) == len(single.training_dirs)
+    assert all(Path(p, "passed.txt").is_file() for p in resumed.training_dirs)
+    assert existing_run_files == {
+        str(path): path.stat().st_mtime_ns
+        for path in (tmp_path / "split" / "fom").glob("run_*/solution.npz")
+        if str(path) in existing_run_files
+    }
+    # One recovery build and two newly accepted rounds; no replay of old FOMs.
+    assert len(resumed_builder.calls) == 3
+    np.testing.assert_allclose(
+        resumed.rom_model.compute_qoi("", {"p0": 2.5}),
+        single.rom_model.compute_qoi("", {"p0": 2.5}),
+    )
+    with np.load(tmp_path / "split" / "space_filling_stats.npz", allow_pickle=False) as stats:
+        assert "rng_states" in stats.files
+        np.testing.assert_array_equal(stats["training_parameters"], single.training_parameters)
+
+
+def test_restart_can_extend_fom_budget(tmp_path):
+    samples = np.arange(30, dtype=float)[:, None]
+    first = run_space_filling(**request(
+        tmp_path, parameter_space=FixedSpace(samples),
+        max_iterations=4, max_fom_samples=5,
+    ))
+    assert first.termination_reason == "max_fom_samples"
+    resumed = run_space_filling(**request(
+        tmp_path, parameter_space=FixedSpace(samples),
+        max_iterations=4, max_fom_samples=7, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.sample_counts, [3, 5, 7])
+    assert len(resumed.training_dirs) == 7
+
+
+@pytest.mark.parametrize("changed", [
+    {"random_seed": 123}, {"batch_size": 3}, {"candidate_pool_size": 11},
+])
+def test_restart_rejects_changed_sampling_configuration(tmp_path, changed):
+    options = request(tmp_path, max_iterations=1)
+    run_space_filling(**options)
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, max_iterations=3, restart=True, **changed,
+        ))
+    with np.load(tmp_path / "space_filling_stats.npz") as checkpoint:
+        np.testing.assert_array_equal(checkpoint["sample_counts"], [3])
+
+
+def test_restart_rejects_incomplete_iteration_without_overwriting(tmp_path):
+    run_space_filling(**request(tmp_path, max_iterations=1))
+    incomplete = tmp_path / "iteration_1"
+    incomplete.mkdir()
+    (incomplete / "partial.out").write_text("preserve")
+    with pytest.raises(ValueError, match="uncommitted work"):
+        run_space_filling(**request(tmp_path, max_iterations=3, restart=True))
+    assert (incomplete / "partial.out").read_text() == "preserve"
+
+
+def test_restart_on_converged_checkpoint_does_not_run_new_fom(tmp_path):
+    result = run_space_filling(**request(tmp_path, tolerance=1.0, max_iterations=4))
+    assert result.converged
+    resumed = run_space_filling(**request(
+        tmp_path, tolerance=1.0, max_iterations=8, restart=True,
+    ))
+    assert resumed.converged and resumed.termination_reason == "tolerance"
+    np.testing.assert_array_equal(resumed.training_parameters, result.training_parameters)
+    assert len(list((tmp_path / "fom").glob("run_*"))) == len(result.training_dirs)
