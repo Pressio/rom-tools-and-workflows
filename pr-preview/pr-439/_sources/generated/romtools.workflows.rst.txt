@@ -18,6 +18,7 @@ romtools.workflows
    model_builders
    model_execution
    models
+   multifidelity
    parameter_spaces
    parameters
    residual_evaluator

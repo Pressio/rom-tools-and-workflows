@@ -1,0 +1,21 @@
+romtools.workflows.multifidelity
+================================
+
+.. automodule:: romtools.workflows.multifidelity
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      run_adaptive_multifidelity
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AdaptiveMultiFidelityResult
+      FidelityLevel
+      MultiFidelityKFoldValidation
+      MultiFidelityValidationContext
+   
