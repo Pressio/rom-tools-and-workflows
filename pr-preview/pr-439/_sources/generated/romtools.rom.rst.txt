@@ -1,0 +1,16 @@
+romtools.rom
+============
+
+.. automodule:: romtools.rom
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   multifidelity
+   neural_network_surrogate
+   projections
+   qoi_surrogates

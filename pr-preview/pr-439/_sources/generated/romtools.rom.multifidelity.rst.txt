@@ -1,0 +1,16 @@
+romtools.rom.multifidelity
+==========================
+
+.. automodule:: romtools.rom.multifidelity
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AutoregressiveGPBuilder
+      AutoregressiveGPConfig
+      AutoregressiveGPQoiModel
+      FidelityData
+      GPLevelConfig
+   
