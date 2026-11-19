@@ -25,9 +25,11 @@ class GaussianProcessKernel:
             raise ValueError("signal_variance must be positive and finite.")
         x1_scaled = x1 / scales
         x2_scaled = x2 / scales
-        sq_dist = np.sum(x1_scaled ** 2, axis=1)[:, None] + np.sum(
-            x2_scaled ** 2, axis=1)[None, :] - 2.0 * x1_scaled @ x2_scaled.T
-        return self.signal_variance * np.exp(-0.5 * np.maximum(sq_dist, 0.0))
+        # Squared norms minus a dot product suffers catastrophic cancellation
+        # when coordinates are large relative to the length scales.
+        from scipy.spatial.distance import cdist
+        sq_dist = cdist(x1_scaled, x2_scaled, metric="sqeuclidean")
+        return self.signal_variance * np.exp(-0.5 * sq_dist)
 
 
 class GaussianProcessRegressorLite:
