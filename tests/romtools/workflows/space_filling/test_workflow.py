@@ -578,3 +578,88 @@ def test_restart_on_converged_checkpoint_does_not_run_new_fom(tmp_path):
     assert resumed.converged and resumed.termination_reason == "tolerance"
     np.testing.assert_array_equal(resumed.training_parameters, result.training_parameters)
     assert len(list((tmp_path / "fom").glob("run_*"))) == len(result.training_dirs)
+
+
+class ObjectParameterFom:
+    """Spawn-safe FOM that exercises mixed object-valued parameters."""
+
+    def populate_run_directory(self, directory, parameters):
+        pass
+
+    def run_model(self, directory, parameters):
+        return 0
+
+    def compute_qoi(self, directory, parameters):
+        return np.array([float(parameters["p1"])])
+
+
+class ObjectParameterRom(ObjectParameterFom):
+    pass
+
+
+class ObjectParameterBuilder:
+    def build_from_training_dirs(self, offline, directories, parameters, qois):
+        assert Path(offline).is_dir()
+        assert parameters.dtype.kind == "O"
+        assert len(directories) == len(parameters) == len(qois)
+        return ObjectParameterRom()
+
+
+def test_restart_round_trips_mixed_object_parameters_without_pickle(tmp_path):
+    points = np.array([
+        ["red", 1.0], ["blue", 2.0], ["green", 3.0],
+        ["yellow", 4.0], ["purple", 5.0], ["orange", 6.0],
+    ], dtype=object)
+    distance = lambda a, b: float(a[0] != b[0]) + abs(a[1] - b[1])
+    opts = dict(
+        fom_model=ObjectParameterFom(),
+        rom_model_builder=ObjectParameterBuilder(),
+        parameter_space=FixedSpace(points),
+        absolute_work_dir=str(tmp_path),
+        tolerance=0.0,
+        initial_sample_size=2,
+        batch_size=2,
+        candidate_pool_size=6,
+        max_concurrent_fom_runs=1,
+        max_iterations=1,
+        distance_metric=distance,
+        validation_strategy=lambda _: 1.0,
+    )
+    original = run_space_filling(**opts)
+    assert original.training_parameters.dtype.kind == "O"
+    with np.load(tmp_path / "space_filling_stats.npz", allow_pickle=False) as saved:
+        assert str(saved["parameter_encoding"]) == "json_scalars_v1"
+        assert saved["training_parameters"].dtype.kind in "US"
+    resumed = run_space_filling(**dict(opts, max_iterations=2, restart=True))
+    np.testing.assert_array_equal(resumed.training_parameters[:2], original.training_parameters)
+    assert resumed.training_parameters.dtype.kind == "O"
+    assert len(resumed.training_dirs) == 4
+
+
+def test_restart_preserves_sequence_seed_and_sampling(tmp_path):
+    samples = np.arange(25, dtype=float)[:, None]
+    seed = (13, 17, 19)
+    full = run_space_filling(**request(
+        tmp_path / "full", parameter_space=FixedSpace(samples),
+        random_seed=seed, max_iterations=3,
+    ))
+    run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        random_seed=seed, max_iterations=1,
+    ))
+    resumed = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        random_seed=list(seed), max_iterations=3, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.training_parameters, full.training_parameters)
+    np.testing.assert_array_equal(resumed.sample_counts, full.sample_counts)
+
+
+def test_restart_records_persistent_recovery_directory(tmp_path):
+    run_space_filling(**request(tmp_path, max_iterations=1))
+    run_space_filling(**request(tmp_path, max_iterations=2, restart=True))
+    recovery_directories = list(tmp_path.glob(".restart_build_*"))
+    assert len(recovery_directories) == 1
+    assert (recovery_directories[0] / "offline_data").is_dir()
+    log = (tmp_path / "space_filling_status.log").read_text()
+    assert "Recovered production ROM in" in log
