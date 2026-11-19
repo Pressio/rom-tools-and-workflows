@@ -425,6 +425,45 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_encode_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serialize object-valued scalar parameters without using pickle.</span>
+
+<span class="sd">    Numeric and Unicode arrays retain their original NPZ representation.</span>
+<span class="sd">    Mixed object arrays are encoded cell-by-cell as JSON scalars with an</span>
+<span class="sd">    explicit marker so types can be reconstructed safely.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"O"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">parameters</span><span class="p">,</span> <span class="s2">"native"</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">)</span> <span class="k">else</span> <span class="n">cell</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"restart checkpoint supports only JSON scalar object parameters "</span>
+                <span class="s2">"(str, bool, int, finite float, None)"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"object parameter values must be finite"</span><span class="p">)</span>
+        <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">allow_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s2">"json_scalars_v1"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_decode_parameters</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s2">"native"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">values</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="o">!=</span> <span class="s2">"json_scalars_v1"</span> <span class="ow">or</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="s2">"US"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"unsupported restart parameter encoding"</span><span class="p">)</span>
+    <span class="n">restored</span> <span class="o">=</span> <span class="p">[</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="p">))</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">flat</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">restored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_seed_description</span><span class="p">(</span><span class="n">random_seed</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Stable JSON representation for scalar and sequence SeedSequence inputs."""</span>
+    <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_rng_states</span><span class="p">(</span><span class="n">streams</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""JSON-compatible PCG64 states, recorded after each committed round."""</span>
     <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="n">stream</span><span class="o">.</span><span class="n">bit_generator</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">])</span>
@@ -446,7 +485,8 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"restart parameter names do not match the checkpoint"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">saved</span><span class="p">[</span><span class="s2">"run_config"</span><span class="p">]))</span> <span class="o">!=</span> <span class="n">config</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"restart sampling configuration differs from checkpoint"</span><span class="p">)</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">saved</span><span class="p">[</span><span class="s2">"training_parameters"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">saved</span><span class="p">[</span><span class="s2">"parameter_encoding"</span><span class="p">])</span> <span class="k">if</span> <span class="s2">"parameter_encoding"</span> <span class="ow">in</span> <span class="n">saved</span><span class="o">.</span><span class="n">files</span> <span class="k">else</span> <span class="s2">"native"</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">_decode_parameters</span><span class="p">(</span><span class="n">saved</span><span class="p">[</span><span class="s2">"training_parameters"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">encoding</span><span class="p">)</span>
         <span class="n">qois</span> <span class="o">=</span> <span class="n">saved</span><span class="p">[</span><span class="s2">"training_qois"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">training_dirs</span> <span class="o">=</span> <span class="n">saved</span><span class="p">[</span><span class="s2">"training_dirs"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">errors</span> <span class="o">=</span> <span class="n">saved</span><span class="p">[</span><span class="s2">"validation_errors"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -477,8 +517,10 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_save_stats</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">qois</span><span class="p">,</span> <span class="n">training_dirs</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span>
                 <span class="n">counts</span><span class="p">,</span> <span class="n">run_times</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">streams</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">last_build_seed</span><span class="p">):</span>
     <span class="n">temporary</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">".space_filling_stats.tmp.npz"</span><span class="p">)</span>
+    <span class="n">encoded_parameters</span><span class="p">,</span> <span class="n">parameter_encoding</span> <span class="o">=</span> <span class="n">_encode_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
     <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span>
-        <span class="n">temporary</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">names</span><span class="p">),</span> <span class="n">training_parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+        <span class="n">temporary</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">names</span><span class="p">),</span>
+        <span class="n">training_parameters</span><span class="o">=</span><span class="n">encoded_parameters</span><span class="p">,</span> <span class="n">parameter_encoding</span><span class="o">=</span><span class="n">parameter_encoding</span><span class="p">,</span>
         <span class="n">training_qois</span><span class="o">=</span><span class="n">qois</span><span class="p">,</span> <span class="n">training_dirs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">training_dirs</span><span class="p">),</span>
         <span class="n">validation_errors</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">errors</span><span class="p">),</span> <span class="n">sample_counts</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">counts</span><span class="p">),</span>
         <span class="n">fom_run_times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">run_times</span><span class="p">),</span> <span class="n">converged</span><span class="o">=</span><span class="n">reason</span> <span class="o">==</span> <span class="s2">"tolerance"</span><span class="p">,</span>
@@ -534,11 +576,15 @@
 <span class="sd">    in that directory, using the saved sampling/RNG states and rebuilding the</span>
 <span class="sd">    production ROM from accepted FOM data. ``max_iterations`` and</span>
 <span class="sd">    ``max_fom_samples`` may be increased on restart; sampling settings and</span>
-<span class="sd">    parameter names must remain unchanged. Pass the same builder, parameter</span>
+<span class="sd">    parameter names must remain unchanged. JSON-compatible scalar object</span>
+<span class="sd">    parameters are stored without pickle, alongside ordinary NumPy arrays.</span>
+<span class="sd">    Pass the same builder, parameter</span>
 <span class="sd">    space, validation strategy, distance metric, and error functor.</span>
 <span class="sd">    Automatic retry/overwrite of a partially completed round is unsupported:</span>
 <span class="sd">    its files must be inspected and cleared before restarting. Completed</span>
-<span class="sd">    FOM samples are never rerun.</span>
+<span class="sd">    FOM samples are never rerun. Each restart creates a persistent</span>
+<span class="sd">    ``.restart_build_*`` directory for the reconstructed production ROM,</span>
+<span class="sd">    because some builders retain references to their offline-data files.</span>
 <span class="sd">    """</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span>
         <span class="p">(</span><span class="s2">"initial_sample_size"</span><span class="p">,</span> <span class="n">initial_sample_size</span><span class="p">),</span> <span class="p">(</span><span class="s2">"batch_size"</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">),</span>
@@ -572,7 +618,7 @@
     <span class="n">streams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">SeedSequence</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
     <span class="n">sampling_rng</span><span class="p">,</span> <span class="n">fom_rng</span><span class="p">,</span> <span class="n">validation_rng</span><span class="p">,</span> <span class="n">build_rng</span> <span class="o">=</span> <span class="n">streams</span>
     <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"random_seed"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">random_seed</span><span class="p">),</span>
+        <span class="s2">"random_seed"</span><span class="p">:</span> <span class="n">_seed_description</span><span class="p">(</span><span class="n">random_seed</span><span class="p">),</span>
         <span class="s2">"initial_sample_size"</span><span class="p">:</span> <span class="n">initial_sample_size</span><span class="p">,</span>
         <span class="s2">"batch_size"</span><span class="p">:</span> <span class="n">batch_size</span><span class="p">,</span>
         <span class="s2">"candidate_pool_size"</span><span class="p">:</span> <span class="n">candidate_pool_size</span><span class="p">,</span>
@@ -617,6 +663,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">restart</span><span class="p">:</span>
                 <span class="n">log</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Restarting after </span><span class="si">{</span><span class="n">next_iteration</span><span class="si">}</span><span class="s2"> completed rounds</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Recovered production ROM in </span><span class="si">{</span><span class="n">rebuild_dir</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">errors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">tolerance</span><span class="p">:</span>
                     <span class="n">reason</span> <span class="o">=</span> <span class="s2">"tolerance"</span>
                 <span class="k">elif</span> <span class="n">max_fom_samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">training_dirs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">max_fom_samples</span><span class="p">:</span>
