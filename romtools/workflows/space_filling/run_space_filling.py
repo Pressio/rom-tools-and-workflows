@@ -222,7 +222,7 @@ def run_space_filling(
     with open(os.path.join(directory, "space_filling_status.log"), mode, encoding="utf-8") as log:
         try:
             if restart:
-                log.write(f"Restarting after {next_iteration} completed rounds\\n")
+                log.write(f"Restarting after {next_iteration} completed rounds\n")
                 if errors[-1] <= tolerance:
                     reason = "tolerance"
                 elif max_fom_samples is not None and len(training_dirs) >= max_fom_samples:
@@ -260,7 +260,7 @@ def run_space_filling(
                     ids = list(range(start, start + len(batch)))
                     batch_dirs = [os.path.join(directory, "fom", f"run_{i}") for i in ids]
                     seeds = [int(fom_rng.integers(0, 2**32)) for _ in ids]
-                    log.write(f"Round {iteration}: selected {len(batch)} FOM samples\\n")
+                    log.write(f"Round {iteration}: selected {len(batch)} FOM samples\n")
                     log.flush()
                     batch_qois, times = _evaluate_batch(
                         fom_model, names, batch, batch_dirs, ids, seeds,
@@ -288,7 +288,7 @@ def run_space_filling(
                         error = _error_value(strategy(context), "validation strategy result")
                     errors.append(error)
                     counts.append(len(training_dirs))
-                    log.write(f"Round {iteration}: {len(training_dirs)} training samples, error={error:.16g}\\n")
+                    log.write(f"Round {iteration}: {len(training_dirs)} training samples, error={error:.16g}\n")
                     log.flush()
                     if error <= tolerance:
                         reason = "tolerance"
