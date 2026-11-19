@@ -138,3 +138,57 @@ if __name__=='__main__':
     test_predict_mean_and_std_vector_query_matches_reference()
     test_predict_mean_and_std_mean_matches_predict()
     test_predict_mean_and_std_raises_before_fit()
+
+
+def test_ard_kernel_matches_manual_covariance():
+    kernel = GaussianProcessKernel(length_scale=[0.2, 2.0], signal_variance=1.5)
+    x = np.array([[0.0, 0.0], [0.2, 2.0]])
+    expected = 1.5 * np.exp(-1.0)
+    np.testing.assert_allclose(kernel(x, x)[0, 1], expected)
+
+
+def test_scalar_and_repeated_vector_length_scales_agree():
+    x = np.array([[0.0, 0.5], [1.0, 2.0], [0.3, 1.0]])
+    np.testing.assert_allclose(
+        GaussianProcessKernel(length_scale=0.7)(x, x),
+        GaussianProcessKernel(length_scale=[0.7, 0.7])(x, x))
+
+
+@pytest.mark.parametrize("length_scale", [[1.0], [1.0, -2.0], [1.0, np.nan]])
+def test_ard_rejects_invalid_length_scales(length_scale):
+    with pytest.raises(ValueError, match="length_scale"):
+        GaussianProcessKernel(length_scale=length_scale)(
+            np.array([[0.0, 0.0]]), np.array([[1.0, 1.0]]))
+
+
+def test_ard_hyperparameter_tuning_fits_anisotropic_function():
+    rng = np.random.default_rng(123)
+    x = rng.uniform(0, 1, (28, 2))
+    y = np.sin(12 * x[:, 0]) + 0.05 * x[:, 1]
+    model = GaussianProcessQoiModel(
+        x, y, tune_hyperparameters=True, anisotropic=True,
+        normalize_parameters=True, normalize_targets=True,
+        optimizer_restarts=3)
+    scales = np.asarray(model._gps[0].kernel.length_scale)
+    assert scales.shape == (2,)
+    assert np.all(scales > 0)
+    assert scales[0] < scales[1]
+
+
+def test_ard_kernel_preserves_small_separations_at_large_offsets():
+    # Norm-square/dot-product distance formulas incorrectly round this
+    # squared separation to zero after division by a small length scale.
+    x = np.array([[1e5, 1e5], [1e5 + 1e-3, 1e5]])
+    kernel = GaussianProcessKernel(length_scale=1e-3)
+    covariance = kernel(x, x)
+    expected = np.exp(-0.5)
+    np.testing.assert_allclose(covariance[0, 1], expected, rtol=1e-7)
+    np.testing.assert_allclose(covariance[1, 0], expected, rtol=1e-7)
+    np.testing.assert_allclose(np.diag(covariance), 1.0, rtol=0, atol=1e-14)
+
+
+def test_ard_kernel_large_offset_with_anisotropic_scales_and_cross_covariance():
+    x = np.array([[1e5, -2e5], [1e5 + 1e-3, -2e5 + 2e-3]])
+    kernel = GaussianProcessKernel(length_scale=[1e-3, 2e-3], signal_variance=1.5)
+    expected = 1.5 * np.exp(-1.0)
+    np.testing.assert_allclose(kernel(x[:1], x[1:])[0, 0], expected, rtol=1e-7)

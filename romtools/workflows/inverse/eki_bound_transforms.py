@@ -500,6 +500,8 @@ def _auto_rom_builder(parameter_space, rom_type, rom_args):
             signal_variance_grid=rom_args.get("signal_variance_grid"),
             normalize_parameters=rom_args.get("normalize_parameters", False),
             normalize_targets=rom_args.get("normalize_targets", False),
+            anisotropic=rom_args.get("anisotropic", False),
+            optimizer_restarts=rom_args.get("optimizer_restarts", 4),
         )
     if rom_type in ("nn", "neural_network", "neural-network"):
         return _mf_eki_module.NeuralNetworkQoiModelBuilderWithTrainingData(
