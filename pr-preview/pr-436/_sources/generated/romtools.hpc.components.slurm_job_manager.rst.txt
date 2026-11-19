@@ -1,0 +1,12 @@
+romtools.hpc.components.slurm\_job\_manager
+===========================================
+
+.. automodule:: romtools.hpc.components.slurm_job_manager
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SlurmJobManager
+   
