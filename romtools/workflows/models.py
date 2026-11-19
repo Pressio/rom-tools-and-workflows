@@ -84,3 +84,33 @@ class QoiModelWithErrorEstimate(QoiModel, Protocol):
         AFTER run_model has been run
         '''
         pass
+
+
+@runtime_checkable
+class MultiFidelityQoiModel(QoiModel, Protocol):
+    """A QoI surrogate with predictions selectable by fidelity.
+
+    Fidelity indices are ordered from lowest (0) to highest (-1).
+    Omitting fidelity preserves the original QoiModel call signature.
+    """
+
+    @property
+    def num_fidelities(self) -> int:
+        ...
+
+    def compute_qoi(
+        self, run_directory: str, parameter_sample: dict, fidelity: int = -1,
+    ) -> np.ndarray:
+        ...
+
+
+@runtime_checkable
+class MultiFidelityQoiModelWithErrorEstimate(
+    MultiFidelityQoiModel, QoiModelWithErrorEstimate, Protocol
+):
+    """Fidelity-selectable QoIs and scalar error/uncertainty indicators."""
+
+    def compute_error_estimate(
+        self, run_directory: str, parameter_sample: dict, fidelity: int = -1,
+    ) -> float:
+        ...

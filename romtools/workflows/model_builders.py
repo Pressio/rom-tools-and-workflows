@@ -65,3 +65,14 @@ class QoiModelWithErrorEstimateBuilder(Protocol):
 
     def build_from_training_dirs(self,offline_data_dir: str, training_data_dirs: List[str]) -> QoiModelWithErrorEstimate:
         return QoiModelWithErrorEstimate
+
+
+class MultiFidelityQoiModelBuilder(Protocol):
+    """Construct a multifidelity surrogate from ordered per-level datasets.
+
+    The builder must not execute fidelity models itself. The adaptive workflow
+    owns data acquisition and provides accepted observations at all levels.
+    """
+
+    def build(self, offline_data_dir: str, training_data) -> QoiModel:
+        ...
