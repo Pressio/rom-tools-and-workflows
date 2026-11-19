@@ -663,3 +663,76 @@ def test_restart_records_persistent_recovery_directory(tmp_path):
     assert (recovery_directories[0] / "offline_data").is_dir()
     log = (tmp_path / "space_filling_status.log").read_text()
     assert "Recovered production ROM in" in log
+
+
+def test_stochastic_space_filling_restart_exactly_matches_continuous_run(tmp_path):
+    """A real stochastic sampler exercises checkpointed RNG state restoration."""
+    from romtools.workflows.parameter_spaces import UniformParameterSpace
+    from romtools.workflows.sampling_methods import MonteCarloSampler
+
+    def space():
+        return UniformParameterSpace(
+            ["p0"], [0.0], [1.0], MonteCarloSampler
+        )
+
+    base = dict(initial_sample_size=3, batch_size=2,
+                candidate_pool_size=23, random_seed=51,
+                max_iterations=4)
+    continuous = run_space_filling(**request(
+        tmp_path / "continuous", parameter_space=space(), **base,
+    ))
+    first_stage = run_space_filling(**request(
+        tmp_path / "resumed", parameter_space=space(),
+        **dict(base, max_iterations=2),
+    ))
+    assert len(first_stage.training_dirs) == 5
+    second_stage = run_space_filling(**request(
+        tmp_path / "resumed", parameter_space=space(), restart=True, **base,
+    ))
+    np.testing.assert_array_equal(
+        second_stage.training_parameters, continuous.training_parameters
+    )
+    np.testing.assert_array_equal(second_stage.training_qois, continuous.training_qois)
+    np.testing.assert_array_equal(second_stage.sample_counts, continuous.sample_counts)
+    np.testing.assert_array_equal(
+        second_stage.validation_errors, continuous.validation_errors
+    )
+    assert not np.array_equal(
+        continuous.training_parameters[3:5], continuous.training_parameters[5:7]
+    )
+
+
+def test_unserializable_object_parameters_rejected_before_fom(tmp_path):
+    unsupported = np.asarray([[object()], [object()]], dtype=object)
+    options = request(
+        tmp_path, parameter_space=FixedSpace(unsupported),
+        initial_sample_size=1, max_iterations=1, batch_size=1,
+        distance_metric=lambda a, b: float(a[0] is not b[0]),
+    )
+    with pytest.raises(TypeError, match="JSON scalar object parameters"):
+        run_space_filling(**options)
+    assert not list((tmp_path / "fom").glob("run_*"))
+
+
+def test_restart_rejects_changed_parameter_space_and_metric_identity(tmp_path):
+    from romtools.workflows.parameter_spaces import UniformParameterSpace
+    from romtools.workflows.sampling_methods import MonteCarloSampler
+
+    samples = np.arange(20, dtype=float)[:, None]
+    run_space_filling(**request(tmp_path, parameter_space=FixedSpace(samples),
+                                max_iterations=1, distance_metric=None))
+    changed_space = UniformParameterSpace(["p0"], [0], [1], MonteCarloSampler)
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, parameter_space=changed_space,
+            max_iterations=3, restart=True,
+        ))
+
+    def alternative_metric(a, b):
+        return float(np.linalg.norm(a - b))
+
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, parameter_space=FixedSpace(samples),
+            max_iterations=3, distance_metric=alternative_metric, restart=True,
+        ))
