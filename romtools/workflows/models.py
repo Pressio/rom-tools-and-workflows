@@ -86,6 +86,7 @@ class QoiModelWithErrorEstimate(QoiModel, Protocol):
         pass
 
 
+@runtime_checkable
 class MultiFidelityQoiModel(QoiModel, Protocol):
     """A QoI surrogate with predictions selectable by fidelity.
 
@@ -103,6 +104,7 @@ class MultiFidelityQoiModel(QoiModel, Protocol):
         ...
 
 
+@runtime_checkable
 class MultiFidelityQoiModelWithErrorEstimate(
     MultiFidelityQoiModel, QoiModelWithErrorEstimate, Protocol
 ):
