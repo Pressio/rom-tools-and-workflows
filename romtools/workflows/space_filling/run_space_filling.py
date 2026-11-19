@@ -1,7 +1,9 @@
 """Sequential batches of geometrically selected FOM runs for ROM training."""
 
 from dataclasses import dataclass
+import json
 import os
+from tempfile import mkdtemp
 from typing import Callable, Optional, Tuple
 
 import numpy as np
@@ -31,15 +33,119 @@ class SpaceFillingResult:
     termination_reason: str
 
 
+def _encode_parameters(parameters):
+    """Serialize object-valued scalar parameters without using pickle.
+
+    Numeric and Unicode arrays retain their original NPZ representation.
+    Mixed object arrays are encoded cell-by-cell as JSON scalars with an
+    explicit marker so types can be reconstructed safely.
+    """
+    if parameters.dtype.kind != "O":
+        return parameters, "native"
+    cells = []
+    for cell in parameters.flat:
+        value = cell.item() if isinstance(cell, np.generic) else cell
+        if value is not None and not isinstance(value, (str, bool, int, float)):
+            raise TypeError(
+                "restart checkpoint supports only JSON scalar object parameters "
+                "(str, bool, int, finite float, None)"
+            )
+        if isinstance(value, float) and not np.isfinite(value):
+            raise ValueError("object parameter values must be finite")
+        cells.append(json.dumps(value, allow_nan=False))
+    return np.asarray(cells, dtype=str).reshape(parameters.shape), "json_scalars_v1"
+
+
+def _decode_parameters(values, encoding):
+    if encoding == "native":
+        return values
+    if encoding != "json_scalars_v1" or values.dtype.kind not in "US":
+        raise ValueError("unsupported restart parameter encoding")
+    restored = [json.loads(str(cell)) for cell in values.flat]
+    return np.asarray(restored, dtype=object).reshape(values.shape)
+
+
+def _component_signature(component):
+    """Record an informative stable identity without serializing user callables."""
+    if component is None:
+        return None
+    target = component if isinstance(component, type) else type(component)
+    # For functions, use the function identity rather than 'builtins.function'.
+    if callable(component) and hasattr(component, "__qualname__"):
+        target = component
+    return f"{target.__module__}.{target.__qualname__}"
+
+
+def _seed_description(random_seed):
+    """Stable JSON representation for scalar and sequence SeedSequence inputs."""
+    if random_seed is None:
+        return None
+    return np.asarray(random_seed).tolist()
+
+
+def _rng_states(streams):
+    """JSON-compatible PCG64 states, recorded after each committed round."""
+    return json.dumps([stream.bit_generator.state for stream in streams])
+
+
+def _load_restart(directory, names, config, streams):
+    checkpoint = os.path.join(directory, "space_filling_stats.npz")
+    if not os.path.isfile(checkpoint):
+        raise ValueError("restart requires an existing space_filling_stats.npz checkpoint")
+    with np.load(checkpoint, allow_pickle=False) as saved:
+        required = {
+            "parameter_names", "training_parameters", "training_qois",
+            "training_dirs", "validation_errors", "sample_counts",
+            "fom_run_times", "rng_states", "run_config", "last_build_seed",
+        }
+        if not required.issubset(saved.files):
+            raise ValueError("checkpoint predates restart support or is incomplete")
+        if tuple(saved["parameter_names"].tolist()) != tuple(names):
+            raise ValueError("restart parameter names do not match the checkpoint")
+        if json.loads(str(saved["run_config"])) != config:
+            raise ValueError("restart sampling configuration differs from checkpoint")
+        encoding = str(saved["parameter_encoding"]) if "parameter_encoding" in saved.files else "native"
+        parameters = _decode_parameters(saved["training_parameters"].copy(), encoding)
+        qois = saved["training_qois"].copy()
+        training_dirs = saved["training_dirs"].tolist()
+        errors = saved["validation_errors"].tolist()
+        counts = saved["sample_counts"].tolist()
+        run_times = saved["fom_run_times"].tolist()
+        last_build_seed = int(saved["last_build_seed"])
+        states = json.loads(str(saved["rng_states"]))
+    if (not counts or len(errors) != len(counts)
+            or counts[-1] != len(training_dirs)
+            or len(parameters) != len(qois)
+            or len(parameters) != len(training_dirs)
+            or len(run_times) != len(training_dirs)
+            or parameters.ndim != 2 or parameters.shape[1] != len(names)
+            or qois.ndim != 2 or len(states) != len(streams)):
+        raise ValueError("restart checkpoint contains inconsistent training history")
+    root = os.path.realpath(directory)
+    for run_directory in training_dirs:
+        resolved = os.path.realpath(run_directory)
+        if os.path.commonpath((root, resolved)) != root or not os.path.isfile(
+            os.path.join(resolved, "passed.txt")
+        ):
+            raise ValueError(f"restart FOM directory is missing or invalid: {run_directory}")
+    for stream, state in zip(streams, states):
+        stream.bit_generator.state = state
+    return parameters, qois, training_dirs, errors, counts, run_times, last_build_seed
+
+
 def _save_stats(directory, names, parameters, qois, training_dirs, errors,
-                counts, run_times, reason):
+                counts, run_times, reason, streams, config, last_build_seed):
     temporary = os.path.join(directory, ".space_filling_stats.tmp.npz")
+    encoded_parameters, parameter_encoding = _encode_parameters(parameters)
     np.savez(
-        temporary, parameter_names=np.asarray(names), training_parameters=parameters,
+        temporary, parameter_names=np.asarray(names),
+        training_parameters=encoded_parameters, parameter_encoding=parameter_encoding,
         training_qois=qois, training_dirs=np.asarray(training_dirs),
         validation_errors=np.asarray(errors), sample_counts=np.asarray(counts),
         fom_run_times=np.asarray(run_times), converged=reason == "tolerance",
         termination_reason=reason,
+        rng_states=_rng_states(streams), run_config=json.dumps(config),
+        last_build_seed=last_build_seed,
     )
     os.replace(temporary, os.path.join(directory, "space_filling_stats.npz"))
 
@@ -61,6 +167,7 @@ def run_space_filling(
     validation_strategy: Optional[Callable] = None,
     max_iterations: int = 20,
     max_fom_samples: Optional[int] = None,
+    restart: bool = False,
 ) -> SpaceFillingResult:
     """Train a ROM by alternating complete maximin FOM batches and validation.
 
@@ -81,9 +188,23 @@ def run_space_filling(
     ``max_iterations`` includes the initial batch; ``max_fom_samples`` bounds
     training FOM runs scheduled here, excluding any references prepared by a
     custom validation strategy. Short candidate pools and final budget-limited
-    batches are allowed. No restart, automatic retry, or overwrite is performed.
-    Output must be an absent or empty absolute directory. Failed batches retain
-    all run files and never trigger a rebuild or enter accepted training data.
+    batches are allowed. Fresh runs require an absent or empty absolute
+    directory. Set ``restart=True`` to resume from the last *completed* round
+    in that directory, using the saved sampling/RNG states and rebuilding the
+    production ROM from accepted FOM data. ``max_iterations`` and
+    ``max_fom_samples`` may be increased on restart; sampling settings and
+    parameter names must remain unchanged. JSON-compatible scalar object
+    parameters are stored without pickle, alongside ordinary NumPy arrays.
+    Pass the same builder, parameter
+    space, validation strategy, distance metric, and error functor.
+    Checkpoints compare the stable Python type/function identities of these
+    components, but cannot detect changes in mutable internal configuration
+    or function closures; callers must preserve their semantics.
+    Automatic retry/overwrite of a partially completed round is unsupported:
+    its files must be inspected and cleared before restarting. Completed
+    FOM samples are never rerun. Each restart creates a persistent
+    ``.restart_build_*`` directory for the reconstructed production ROM,
+    because some builders retain references to their offline-data files.
     """
     for name, value in (
         ("initial_sample_size", initial_sample_size), ("batch_size", batch_size),
@@ -94,6 +215,8 @@ def run_space_filling(
         _positive_integer(value, name)
     if max_fom_samples is not None:
         _positive_integer(max_fom_samples, "max_fom_samples")
+    if not isinstance(restart, bool):
+        raise TypeError("restart must be a bool")
     tolerance = _error_value(tolerance, "tolerance")
     for name, value in (("distance_metric", distance_metric),
                         ("error_functor", error_functor),
@@ -112,85 +235,144 @@ def run_space_filling(
     if isinstance(strategy, KFoldValidation) and initial_count < strategy.num_folds:
         raise ValueError("initial sample count/budget must be at least num_folds")
     # Separate streams make sampling independent of validation/build activity.
-    streams = np.random.SeedSequence(random_seed).spawn(4)
-    sampling_rng, fom_rng, validation_rng, build_rng = map(np.random.default_rng, streams)
+    streams = list(map(np.random.default_rng, np.random.SeedSequence(random_seed).spawn(4)))
+    sampling_rng, fom_rng, validation_rng, build_rng = streams
+    config = {
+        "random_seed": _seed_description(random_seed),
+        "initial_sample_size": initial_sample_size,
+        "batch_size": batch_size,
+        "candidate_pool_size": candidate_pool_size,
+        "parameter_space_type": _component_signature(parameter_space),
+        "distance_metric_type": _component_signature(distance_metric),
+        "validation_strategy_type": _component_signature(validation_strategy),
+        "error_functor_type": _component_signature(error_functor),
+    }
     directory = os.fspath(absolute_work_dir)
     if not os.path.isabs(directory):
         raise ValueError("absolute_work_dir must be absolute")
-    if os.path.exists(directory) and (not os.path.isdir(directory) or os.listdir(directory)):
-        raise ValueError("absolute_work_dir must be absent or empty; overwrite/restart is unsupported")
-    os.makedirs(directory, exist_ok=True)
-    parameters = None
-    qois = None
-    training_dirs, errors, counts, run_times = [], [], [], []
-    rom = None
-    reason = "max_iterations"
-    with open(os.path.join(directory, "space_filling_status.log"), "w", encoding="utf-8") as log:
+    if restart:
+        if not os.path.isdir(directory):
+            raise ValueError("restart requires an existing work directory")
+        (parameters, qois, training_dirs, errors, counts, run_times,
+         last_build_seed) = _load_restart(directory, names, config, streams)
+        if max_fom_samples is not None and max_fom_samples < len(training_dirs):
+            raise ValueError("max_fom_samples cannot be smaller than completed training runs")
+        next_iteration = len(counts)
+        # Never silently overwrite work from a failed/incomplete iteration.
+        if os.path.exists(os.path.join(directory, f"iteration_{next_iteration}")):
+            raise ValueError(
+                f"iteration_{next_iteration} contains uncommitted work; "
+                "inspect/clear the incomplete iteration and orphan FOM directories before restart"
+            )
+        # The previous in-memory ROM was not serialized. Rebuild it using the
+        # same random seed, without advancing the restored RNG stream.
+        rebuild_dir = mkdtemp(prefix=".restart_build_", dir=directory)
+        rom = _build_rom(
+            rom_model_builder, os.path.join(rebuild_dir, "offline_data"),
+            training_dirs, parameters, qois, last_build_seed,
+        )
+        reason = "running"
+    else:
+        if os.path.exists(directory) and (not os.path.isdir(directory) or os.listdir(directory)):
+            raise ValueError("absolute_work_dir must be absent or empty; use restart=True to resume")
+        os.makedirs(directory, exist_ok=True)
+        parameters = qois = rom = None
+        training_dirs, errors, counts, run_times = [], [], [], []
+        last_build_seed = -1
+        next_iteration = 0
+        reason = "max_iterations"
+
+    mode = "a" if restart else "w"
+    with open(os.path.join(directory, "space_filling_status.log"), mode, encoding="utf-8") as log:
         try:
-            for iteration in range(max_iterations):
-                target = initial_sample_size if iteration == 0 else batch_size
-                if max_fom_samples is not None:
-                    target = min(target, max_fom_samples - len(training_dirs))
-                batch = select_space_filling_samples(
-                    parameter_space, parameters, target, candidate_pool_size,
-                    distance_metric, int(sampling_rng.integers(0, 2**32)),
-                )
-                if iteration == 0:
-                    if not len(batch):
-                        raise ValueError("initial candidate pool contains no samples")
-                    if isinstance(strategy, KFoldValidation) and len(batch) < strategy.num_folds:
-                        raise ValueError("initial candidate pool has fewer distinct samples than num_folds")
-                if not len(batch):
-                    reason = "candidate_pool_exhausted"
-                    break
-                start = len(training_dirs)
-                ids = list(range(start, start + len(batch)))
-                batch_dirs = [os.path.join(directory, "fom", f"run_{i}") for i in ids]
-                seeds = [int(fom_rng.integers(0, 2**32)) for _ in ids]
-                log.write(f"Round {iteration}: selected {len(batch)} FOM samples\n")
-                log.flush()
-                batch_qois, times = _evaluate_batch(
-                    fom_model, names, batch, batch_dirs, ids, seeds,
-                    max_concurrent_fom_runs, None if qois is None else qois.shape[1],
-                )
-                parameters = batch if parameters is None else np.concatenate((parameters, batch))
-                qois = batch_qois if qois is None else np.concatenate((qois, batch_qois))
-                training_dirs.extend(batch_dirs)
-                run_times.extend(times)
-                round_directory = os.path.join(directory, f"iteration_{iteration}")
-                rom = _build_rom(
-                    rom_model_builder, os.path.join(round_directory, "offline_data"),
-                    training_dirs, parameters, qois, int(build_rng.integers(0, 2**32)),
-                )
-                validation_directory = os.path.join(round_directory, "validation")
-                os.makedirs(validation_directory)
-                validation_seed = int(validation_rng.integers(0, 2**32))
-                context = SpaceFillingValidationContext(
-                    rom, rom_model_builder, names, _readonly_copy(parameters),
-                    _readonly_copy(qois), tuple(training_dirs), iteration,
-                    validation_directory, validation_seed, error_functor,
-                )
-                with _process_state(validation_seed):
-                    error = _error_value(strategy(context), "validation strategy result")
-                errors.append(error)
-                counts.append(len(training_dirs))
-                log.write(f"Round {iteration}: {len(training_dirs)} training samples, error={error:.16g}\n")
-                log.flush()
-                if error <= tolerance:
+            if restart:
+                log.write(f"Restarting after {next_iteration} completed rounds\n")
+                log.write(f"Recovered production ROM in {rebuild_dir}\n")
+                if errors[-1] <= tolerance:
                     reason = "tolerance"
                 elif max_fom_samples is not None and len(training_dirs) >= max_fom_samples:
                     reason = "max_fom_samples"
-                elif iteration + 1 == max_iterations:
+                elif next_iteration >= max_iterations:
                     reason = "max_iterations"
-                else:
-                    reason = "running"
-                _save_stats(directory, names, parameters, qois, training_dirs,
-                            errors, counts, run_times, reason)
-                if reason != "running":
-                    break
+            if reason == "running" or not restart:
+                for iteration in range(next_iteration, max_iterations):
+                    target = initial_sample_size if iteration == 0 else batch_size
+                    if max_fom_samples is not None:
+                        target = min(target, max_fom_samples - len(training_dirs))
+                    if target <= 0:
+                        reason = "max_fom_samples"
+                        break
+                    # Refuse to overwrite an incomplete round, even if only
+                    # its FOM run directories survived a failed build.
+                    if os.path.exists(os.path.join(directory, f"iteration_{iteration}")):
+                        raise ValueError(f"iteration_{iteration} already exists")
+                    if any(os.path.exists(os.path.join(directory, "fom", f"run_{i}"))
+                           for i in range(len(training_dirs), len(training_dirs) + target)):
+                        raise ValueError("uncommitted FOM directories exist; inspect/clear them before restart")
+                    batch = select_space_filling_samples(
+                        parameter_space, parameters, target, candidate_pool_size,
+                        distance_metric, int(sampling_rng.integers(0, 2**32)),
+                    )
+                    if iteration == 0:
+                        if not len(batch):
+                            raise ValueError("initial candidate pool contains no samples")
+                        if isinstance(strategy, KFoldValidation) and len(batch) < strategy.num_folds:
+                            raise ValueError("initial candidate pool has fewer distinct samples than num_folds")
+                    if not len(batch):
+                        reason = "candidate_pool_exhausted"
+                        break
+                    # Do not run expensive FOMs if the selected parameters
+                    # cannot be stored in a safe, pickle-free checkpoint.
+                    _encode_parameters(batch)
+                    start = len(training_dirs)
+                    ids = list(range(start, start + len(batch)))
+                    batch_dirs = [os.path.join(directory, "fom", f"run_{i}") for i in ids]
+                    seeds = [int(fom_rng.integers(0, 2**32)) for _ in ids]
+                    log.write(f"Round {iteration}: selected {len(batch)} FOM samples\n")
+                    log.flush()
+                    batch_qois, times = _evaluate_batch(
+                        fom_model, names, batch, batch_dirs, ids, seeds,
+                        max_concurrent_fom_runs, None if qois is None else qois.shape[1],
+                    )
+                    parameters = batch if parameters is None else np.concatenate((parameters, batch))
+                    qois = batch_qois if qois is None else np.concatenate((qois, batch_qois))
+                    training_dirs.extend(batch_dirs)
+                    run_times.extend(times)
+                    round_directory = os.path.join(directory, f"iteration_{iteration}")
+                    last_build_seed = int(build_rng.integers(0, 2**32))
+                    rom = _build_rom(
+                        rom_model_builder, os.path.join(round_directory, "offline_data"),
+                        training_dirs, parameters, qois, last_build_seed,
+                    )
+                    validation_directory = os.path.join(round_directory, "validation")
+                    os.makedirs(validation_directory)
+                    validation_seed = int(validation_rng.integers(0, 2**32))
+                    context = SpaceFillingValidationContext(
+                        rom, rom_model_builder, names, _readonly_copy(parameters),
+                        _readonly_copy(qois), tuple(training_dirs), iteration,
+                        validation_directory, validation_seed, error_functor,
+                    )
+                    with _process_state(validation_seed):
+                        error = _error_value(strategy(context), "validation strategy result")
+                    errors.append(error)
+                    counts.append(len(training_dirs))
+                    log.write(f"Round {iteration}: {len(training_dirs)} training samples, error={error:.16g}\n")
+                    log.flush()
+                    if error <= tolerance:
+                        reason = "tolerance"
+                    elif max_fom_samples is not None and len(training_dirs) >= max_fom_samples:
+                        reason = "max_fom_samples"
+                    elif iteration + 1 == max_iterations:
+                        reason = "max_iterations"
+                    else:
+                        reason = "running"
+                    _save_stats(directory, names, parameters, qois, training_dirs,
+                                errors, counts, run_times, reason, streams, config, last_build_seed)
+                    if reason != "running":
+                        break
             # Pool exhaustion is detected before another round is built.
             _save_stats(directory, names, parameters, qois, training_dirs,
-                        errors, counts, run_times, reason)
+                        errors, counts, run_times, reason, streams, config, last_build_seed)
             log.write(f"Stopped: {reason}\n")
         except Exception as exception:
             log.write(f"Failed: {exception}\n")

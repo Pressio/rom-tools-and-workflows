@@ -481,3 +481,258 @@ def test_nonblocking_fom_finishes_before_qoi_and_rom_build(tmp_path):
     assert model.peak == 2 and model.active == 0
     np.testing.assert_array_equal(result.training_qois[:, 0], 1 + result.training_parameters[:, 0])
     assert all(Path(directory, "passed.txt").exists() for directory in result.training_dirs)
+
+
+
+def test_restart_matches_uninterrupted_space_filling_and_reuses_fom(tmp_path):
+    """Continuing a checkpoint must preserve selected points and histories."""
+    samples = np.arange(30, dtype=float)[:, None]
+    single = run_space_filling(**request(
+        tmp_path / "single", parameter_space=FixedSpace(samples),
+        max_iterations=4, random_seed=19,
+    ))
+    short = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        max_iterations=2, random_seed=19,
+    ))
+    assert short.termination_reason == "max_iterations"
+    assert len(short.training_dirs) == 5
+    existing_run_files = {
+        str(path): path.stat().st_mtime_ns
+        for path in (tmp_path / "split" / "fom").glob("run_*/solution.npz")
+    }
+    resumed_builder = RecordingBuilder()
+    resumed = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        rom_model_builder=resumed_builder,
+        max_iterations=4, random_seed=19, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.training_parameters, single.training_parameters)
+    np.testing.assert_array_equal(resumed.training_qois, single.training_qois)
+    np.testing.assert_array_equal(resumed.validation_errors, single.validation_errors)
+    np.testing.assert_array_equal(resumed.sample_counts, single.sample_counts)
+    assert resumed.termination_reason == single.termination_reason
+    assert len(resumed.training_dirs) == len(single.training_dirs)
+    assert all(Path(p, "passed.txt").is_file() for p in resumed.training_dirs)
+    assert existing_run_files == {
+        str(path): path.stat().st_mtime_ns
+        for path in (tmp_path / "split" / "fom").glob("run_*/solution.npz")
+        if str(path) in existing_run_files
+    }
+    # One recovery build and two newly accepted rounds; no replay of old FOMs.
+    assert len(resumed_builder.calls) == 3
+    np.testing.assert_allclose(
+        resumed.rom_model.compute_qoi("", {"p0": 2.5}),
+        single.rom_model.compute_qoi("", {"p0": 2.5}),
+    )
+    with np.load(tmp_path / "split" / "space_filling_stats.npz", allow_pickle=False) as stats:
+        assert "rng_states" in stats.files
+        np.testing.assert_array_equal(stats["training_parameters"], single.training_parameters)
+
+
+def test_restart_can_extend_fom_budget(tmp_path):
+    samples = np.arange(30, dtype=float)[:, None]
+    first = run_space_filling(**request(
+        tmp_path, parameter_space=FixedSpace(samples),
+        max_iterations=4, max_fom_samples=5,
+    ))
+    assert first.termination_reason == "max_fom_samples"
+    resumed = run_space_filling(**request(
+        tmp_path, parameter_space=FixedSpace(samples),
+        max_iterations=4, max_fom_samples=7, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.sample_counts, [3, 5, 7])
+    assert len(resumed.training_dirs) == 7
+
+
+@pytest.mark.parametrize("changed", [
+    {"random_seed": 123}, {"batch_size": 3}, {"candidate_pool_size": 11},
+])
+def test_restart_rejects_changed_sampling_configuration(tmp_path, changed):
+    options = request(tmp_path, max_iterations=1)
+    run_space_filling(**options)
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, max_iterations=3, restart=True, **changed,
+        ))
+    with np.load(tmp_path / "space_filling_stats.npz") as checkpoint:
+        np.testing.assert_array_equal(checkpoint["sample_counts"], [3])
+
+
+def test_restart_rejects_incomplete_iteration_without_overwriting(tmp_path):
+    run_space_filling(**request(tmp_path, max_iterations=1))
+    incomplete = tmp_path / "iteration_1"
+    incomplete.mkdir()
+    (incomplete / "partial.out").write_text("preserve")
+    with pytest.raises(ValueError, match="uncommitted work"):
+        run_space_filling(**request(tmp_path, max_iterations=3, restart=True))
+    assert (incomplete / "partial.out").read_text() == "preserve"
+
+
+def test_restart_on_converged_checkpoint_does_not_run_new_fom(tmp_path):
+    result = run_space_filling(**request(tmp_path, tolerance=1.0, max_iterations=4))
+    assert result.converged
+    resumed = run_space_filling(**request(
+        tmp_path, tolerance=1.0, max_iterations=8, restart=True,
+    ))
+    assert resumed.converged and resumed.termination_reason == "tolerance"
+    np.testing.assert_array_equal(resumed.training_parameters, result.training_parameters)
+    assert len(list((tmp_path / "fom").glob("run_*"))) == len(result.training_dirs)
+
+
+class ObjectParameterFom:
+    """Spawn-safe FOM that exercises mixed object-valued parameters."""
+
+    def populate_run_directory(self, directory, parameters):
+        pass
+
+    def run_model(self, directory, parameters):
+        return 0
+
+    def compute_qoi(self, directory, parameters):
+        return np.array([float(parameters["p1"])])
+
+
+class ObjectParameterRom(ObjectParameterFom):
+    pass
+
+
+class ObjectParameterBuilder:
+    def build_from_training_dirs(self, offline, directories, parameters, qois):
+        assert Path(offline).is_dir()
+        assert parameters.dtype.kind == "O"
+        assert len(directories) == len(parameters) == len(qois)
+        return ObjectParameterRom()
+
+
+def test_restart_round_trips_mixed_object_parameters_without_pickle(tmp_path):
+    points = np.array([
+        ["red", 1.0], ["blue", 2.0], ["green", 3.0],
+        ["yellow", 4.0], ["purple", 5.0], ["orange", 6.0],
+    ], dtype=object)
+    distance = lambda a, b: float(a[0] != b[0]) + abs(a[1] - b[1])
+    opts = dict(
+        fom_model=ObjectParameterFom(),
+        rom_model_builder=ObjectParameterBuilder(),
+        parameter_space=FixedSpace(points),
+        absolute_work_dir=str(tmp_path),
+        tolerance=0.0,
+        initial_sample_size=2,
+        batch_size=2,
+        candidate_pool_size=6,
+        max_concurrent_fom_runs=1,
+        max_iterations=1,
+        distance_metric=distance,
+        validation_strategy=lambda _: 1.0,
+    )
+    original = run_space_filling(**opts)
+    assert original.training_parameters.dtype.kind == "O"
+    with np.load(tmp_path / "space_filling_stats.npz", allow_pickle=False) as saved:
+        assert str(saved["parameter_encoding"]) == "json_scalars_v1"
+        assert saved["training_parameters"].dtype.kind in "US"
+    resumed = run_space_filling(**dict(opts, max_iterations=2, restart=True))
+    np.testing.assert_array_equal(resumed.training_parameters[:2], original.training_parameters)
+    assert resumed.training_parameters.dtype.kind == "O"
+    assert len(resumed.training_dirs) == 4
+
+
+def test_restart_preserves_sequence_seed_and_sampling(tmp_path):
+    samples = np.arange(25, dtype=float)[:, None]
+    seed = (13, 17, 19)
+    full = run_space_filling(**request(
+        tmp_path / "full", parameter_space=FixedSpace(samples),
+        random_seed=seed, max_iterations=3,
+    ))
+    run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        random_seed=seed, max_iterations=1,
+    ))
+    resumed = run_space_filling(**request(
+        tmp_path / "split", parameter_space=FixedSpace(samples),
+        random_seed=list(seed), max_iterations=3, restart=True,
+    ))
+    np.testing.assert_array_equal(resumed.training_parameters, full.training_parameters)
+    np.testing.assert_array_equal(resumed.sample_counts, full.sample_counts)
+
+
+def test_restart_records_persistent_recovery_directory(tmp_path):
+    run_space_filling(**request(tmp_path, max_iterations=1))
+    run_space_filling(**request(tmp_path, max_iterations=2, restart=True))
+    recovery_directories = list(tmp_path.glob(".restart_build_*"))
+    assert len(recovery_directories) == 1
+    assert (recovery_directories[0] / "offline_data").is_dir()
+    log = (tmp_path / "space_filling_status.log").read_text()
+    assert "Recovered production ROM in" in log
+
+
+def test_stochastic_space_filling_restart_exactly_matches_continuous_run(tmp_path):
+    """A real stochastic sampler exercises checkpointed RNG state restoration."""
+    from romtools.workflows.parameter_spaces import UniformParameterSpace
+    from romtools.workflows.sampling_methods import MonteCarloSampler
+
+    def space():
+        return UniformParameterSpace(
+            ["p0"], [0.0], [1.0], MonteCarloSampler
+        )
+
+    base = dict(initial_sample_size=3, batch_size=2,
+                candidate_pool_size=23, random_seed=51,
+                max_iterations=4)
+    continuous = run_space_filling(**request(
+        tmp_path / "continuous", parameter_space=space(), **base,
+    ))
+    first_stage = run_space_filling(**request(
+        tmp_path / "resumed", parameter_space=space(),
+        **dict(base, max_iterations=2),
+    ))
+    assert len(first_stage.training_dirs) == 5
+    second_stage = run_space_filling(**request(
+        tmp_path / "resumed", parameter_space=space(), restart=True, **base,
+    ))
+    np.testing.assert_array_equal(
+        second_stage.training_parameters, continuous.training_parameters
+    )
+    np.testing.assert_array_equal(second_stage.training_qois, continuous.training_qois)
+    np.testing.assert_array_equal(second_stage.sample_counts, continuous.sample_counts)
+    np.testing.assert_array_equal(
+        second_stage.validation_errors, continuous.validation_errors
+    )
+    assert not np.array_equal(
+        continuous.training_parameters[3:5], continuous.training_parameters[5:7]
+    )
+
+
+def test_unserializable_object_parameters_rejected_before_fom(tmp_path):
+    unsupported = np.asarray([[object()], [object()]], dtype=object)
+    options = request(
+        tmp_path, parameter_space=FixedSpace(unsupported),
+        initial_sample_size=1, max_iterations=1, batch_size=1,
+        distance_metric=lambda a, b: float(a[0] is not b[0]),
+    )
+    with pytest.raises(TypeError, match="JSON scalar object parameters"):
+        run_space_filling(**options)
+    assert not list((tmp_path / "fom").glob("run_*"))
+
+
+def test_restart_rejects_changed_parameter_space_and_metric_identity(tmp_path):
+    from romtools.workflows.parameter_spaces import UniformParameterSpace
+    from romtools.workflows.sampling_methods import MonteCarloSampler
+
+    samples = np.arange(20, dtype=float)[:, None]
+    run_space_filling(**request(tmp_path, parameter_space=FixedSpace(samples),
+                                max_iterations=1, distance_metric=None))
+    changed_space = UniformParameterSpace(["p0"], [0], [1], MonteCarloSampler)
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, parameter_space=changed_space,
+            max_iterations=3, restart=True,
+        ))
+
+    def alternative_metric(a, b):
+        return float(np.linalg.norm(a - b))
+
+    with pytest.raises(ValueError, match="configuration differs"):
+        run_space_filling(**request(
+            tmp_path, parameter_space=FixedSpace(samples),
+            max_iterations=3, distance_metric=alternative_metric, restart=True,
+        ))
