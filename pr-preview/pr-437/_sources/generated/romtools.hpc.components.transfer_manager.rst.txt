@@ -1,0 +1,14 @@
+romtools.hpc.components.transfer\_manager
+=========================================
+
+.. automodule:: romtools.hpc.components.transfer_manager
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseTransferManager
+      LocalTransferManager
+      RemoteTransferManager
+   
