@@ -138,3 +138,38 @@ if __name__=='__main__':
     test_predict_mean_and_std_vector_query_matches_reference()
     test_predict_mean_and_std_mean_matches_predict()
     test_predict_mean_and_std_raises_before_fit()
+
+
+def test_ard_kernel_matches_manual_covariance():
+    kernel = GaussianProcessKernel(length_scale=[0.2, 2.0], signal_variance=1.5)
+    x = np.array([[0.0, 0.0], [0.2, 2.0]])
+    expected = 1.5 * np.exp(-1.0)
+    np.testing.assert_allclose(kernel(x, x)[0, 1], expected)
+
+
+def test_scalar_and_repeated_vector_length_scales_agree():
+    x = np.array([[0.0, 0.5], [1.0, 2.0], [0.3, 1.0]])
+    np.testing.assert_allclose(
+        GaussianProcessKernel(length_scale=0.7)(x, x),
+        GaussianProcessKernel(length_scale=[0.7, 0.7])(x, x))
+
+
+@pytest.mark.parametrize("length_scale", [[1.0], [1.0, -2.0], [1.0, np.nan]])
+def test_ard_rejects_invalid_length_scales(length_scale):
+    with pytest.raises(ValueError, match="length_scale"):
+        GaussianProcessKernel(length_scale=length_scale)(
+            np.array([[0.0, 0.0]]), np.array([[1.0, 1.0]]))
+
+
+def test_ard_hyperparameter_tuning_fits_anisotropic_function():
+    rng = np.random.default_rng(123)
+    x = rng.uniform(0, 1, (28, 2))
+    y = np.sin(12 * x[:, 0]) + 0.05 * x[:, 1]
+    model = GaussianProcessQoiModel(
+        x, y, tune_hyperparameters=True, anisotropic=True,
+        normalize_parameters=True, normalize_targets=True,
+        optimizer_restarts=3)
+    scales = np.asarray(model._gps[0].kernel.length_scale)
+    assert scales.shape == (2,)
+    assert np.all(scales > 0)
+    assert scales[0] < scales[1]
