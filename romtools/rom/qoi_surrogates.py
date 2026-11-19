@@ -8,16 +8,26 @@ import numpy as np
 
 @dataclass
 class GaussianProcessKernel:
-    length_scale: float = 1.0
+    length_scale: float | Sequence[float] = 1.0
     signal_variance: float = 1.0
 
     def __call__(self, x1: np.ndarray, x2: np.ndarray) -> np.ndarray:
-        x1 = np.atleast_2d(x1)
-        x2 = np.atleast_2d(x2)
-        x1_sq = np.sum(x1 * x1, axis=1)[:, None]
-        x2_sq = np.sum(x2 * x2, axis=1)[None, :]
-        sq_dist = x1_sq + x2_sq - 2.0 * x1 @ x2.T
-        return self.signal_variance * np.exp(-0.5 * sq_dist / (self.length_scale ** 2))
+        x1 = np.atleast_2d(np.asarray(x1, dtype=float))
+        x2 = np.atleast_2d(np.asarray(x2, dtype=float))
+        if x1.shape[1] != x2.shape[1]:
+            raise ValueError("Input parameter dimensions must match.")
+        scales = np.asarray(self.length_scale, dtype=float)
+        if scales.ndim > 1 or (scales.ndim == 1 and scales.size != x1.shape[1]):
+            raise ValueError("length_scale must be a scalar or one value per parameter.")
+        if not np.all(np.isfinite(scales)) or np.any(scales <= 0):
+            raise ValueError("length_scale must contain positive finite values.")
+        if not np.isfinite(self.signal_variance) or self.signal_variance <= 0:
+            raise ValueError("signal_variance must be positive and finite.")
+        x1_scaled = x1 / scales
+        x2_scaled = x2 / scales
+        sq_dist = np.sum(x1_scaled ** 2, axis=1)[:, None] + np.sum(
+            x2_scaled ** 2, axis=1)[None, :] - 2.0 * x1_scaled @ x2_scaled.T
+        return self.signal_variance * np.exp(-0.5 * np.maximum(sq_dist, 0.0))
 
 
 class GaussianProcessRegressorLite:
@@ -106,7 +116,9 @@ class GaussianProcessQoiModel:
                  length_scale_grid: Optional[Sequence[float]] = None,
                  signal_variance_grid: Optional[Sequence[float]] = None,
                  normalize_parameters: bool = False,
-                 normalize_targets: bool = False) -> None:
+                 normalize_targets: bool = False,
+                 anisotropic: bool = False,
+                 optimizer_restarts: int = 4) -> None:
         self.parameter_names = list(parameter_names) if parameter_names is not None else None
         self.parameters = np.asarray(parameters, dtype=float)
         self.qois = np.asarray(qois, dtype=float)
@@ -121,6 +133,10 @@ class GaussianProcessQoiModel:
         self.signal_variance_grid = signal_variance_grid
         self.normalize_parameters = normalize_parameters
         self.normalize_targets = normalize_targets
+        self.anisotropic = anisotropic
+        self.optimizer_restarts = optimizer_restarts
+        if optimizer_restarts < 1:
+            raise ValueError("optimizer_restarts must be positive")
 
         self._mean_qoi: Optional[np.ndarray] = None
         self._pod_modes: Optional[np.ndarray] = None
@@ -289,6 +305,42 @@ class GaussianProcessQoiModel:
         signal_variances = (self.signal_variance_grid
                             if self.signal_variance_grid is not None
                             else np.logspace(-6, 2, 9))
+        if self.anisotropic:
+            from scipy.optimize import minimize
+
+            dimension = parameters.shape[1]
+            scales = np.asarray(self.kernel.length_scale, dtype=float)
+            if scales.ndim == 0:
+                scales = np.full(dimension, float(scales))
+            if scales.shape != (dimension,) or np.any(scales <= 0):
+                raise ValueError("Initial ARD length scales must match input dimension.")
+            length_bounds = (float(np.min(length_scales)), float(np.max(length_scales)))
+            variance_bounds = (float(np.min(signal_variances)), float(np.max(signal_variances)))
+            if length_bounds[0] <= 0 or variance_bounds[0] <= 0:
+                raise ValueError("GP hyperparameter bounds must be positive.")
+            bounds = [tuple(np.log(length_bounds))] * dimension + [tuple(np.log(variance_bounds))]
+            initial = np.log(np.r_[scales, self.kernel.signal_variance])
+            initial = np.clip(initial, [b[0] for b in bounds], [b[1] for b in bounds])
+            rng = np.random.default_rng(0)
+            starts = [initial]
+            starts.extend(rng.uniform([b[0] for b in bounds],
+                                      [b[1] for b in bounds])
+                          for _ in range(self.optimizer_restarts - 1))
+
+            def objective(log_params):
+                candidate = GaussianProcessKernel(
+                    length_scale=np.exp(log_params[:-1]),
+                    signal_variance=float(np.exp(log_params[-1])))
+                lml = GaussianProcessRegressorLite.log_marginal_likelihood(
+                    parameters, target, candidate, noise_variance)
+                return -lml if np.isfinite(lml) else 1e100
+
+            best = min((minimize(objective, start, method="L-BFGS-B", bounds=bounds)
+                        for start in starts), key=lambda result: result.fun)
+            return GaussianProcessKernel(
+                length_scale=np.exp(best.x[:-1]),
+                signal_variance=float(np.exp(best.x[-1])))
+
         best_kernel = self.kernel
         best_lml = float("-inf")
         for length_scale in length_scales:
