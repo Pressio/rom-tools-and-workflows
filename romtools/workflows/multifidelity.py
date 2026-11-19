@@ -14,7 +14,7 @@ import numpy as np
 from romtools.rom.multifidelity import FidelityData
 from romtools.workflows.models import QoiModel
 from romtools.workflows.parameter_spaces import ParameterSpace
-from romtools.workflows._adaptive.execution import _evaluate_batch, _process_state
+from romtools.workflows._adaptive.execution import _evaluate_batch, _evaluate_sample, _process_state
 from romtools.workflows._adaptive.sampling import (
     _parameter_names, _positive_integer,
 )
@@ -88,17 +88,13 @@ class MultiFidelityKFoldValidation:
             for held in holdout:
                 row = hf.parameters[int(held)]
                 parameter_sample = dict(zip(context.parameter_names, row))
-                # The surrogate is a QoiModel: preserve the workflow's
-                # established populate/run/compute execution contract.
-                run_dir = os.path.join(fold_dir, f"run_{int(held)}")
-                os.makedirs(run_dir, exist_ok=False)
-                with _process_state(int(rng.integers(0, 2**32))):
-                    model.populate_run_directory(run_dir, parameter_sample)
-                    status = model.run_model(run_dir, parameter_sample)
-                    if status != 0:
-                        raise RuntimeError(f"fold {index} surrogate evaluation failed: {status}")
-                    predicted = np.asarray(model.compute_qoi(run_dir, parameter_sample),
-                                           dtype=float).reshape(-1)
+                # Reuse the same blocking/nonblocking model execution contract
+                # as the existing single-fidelity K-fold validator.
+                predicted, _ = _evaluate_sample(
+                    model, context.parameter_names, row,
+                    os.path.join(fold_dir, f"run_{int(held)}"),
+                    int(held), int(rng.integers(0, 2**32)),
+                )
                 reference = np.asarray(hf.qois[int(held)], dtype=float).reshape(-1)
                 if predicted.shape != reference.shape:
                     raise ValueError("held-out QoI dimension mismatch")
