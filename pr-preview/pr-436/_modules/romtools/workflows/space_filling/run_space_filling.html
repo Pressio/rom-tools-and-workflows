@@ -457,6 +457,17 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">restored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_component_signature</span><span class="p">(</span><span class="n">component</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Record an informative stable identity without serializing user callables."""</span>
+    <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">component</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="k">else</span> <span class="nb">type</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+    <span class="c1"># For functions, use the function identity rather than 'builtins.function'.</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">component</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">component</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">"</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_seed_description</span><span class="p">(</span><span class="n">random_seed</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Stable JSON representation for scalar and sequence SeedSequence inputs."""</span>
     <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -580,6 +591,9 @@
 <span class="sd">    parameters are stored without pickle, alongside ordinary NumPy arrays.</span>
 <span class="sd">    Pass the same builder, parameter</span>
 <span class="sd">    space, validation strategy, distance metric, and error functor.</span>
+<span class="sd">    Checkpoints compare the stable Python type/function identities of these</span>
+<span class="sd">    components, but cannot detect changes in mutable internal configuration</span>
+<span class="sd">    or function closures; callers must preserve their semantics.</span>
 <span class="sd">    Automatic retry/overwrite of a partially completed round is unsupported:</span>
 <span class="sd">    its files must be inspected and cleared before restarting. Completed</span>
 <span class="sd">    FOM samples are never rerun. Each restart creates a persistent</span>
@@ -622,6 +636,10 @@
         <span class="s2">"initial_sample_size"</span><span class="p">:</span> <span class="n">initial_sample_size</span><span class="p">,</span>
         <span class="s2">"batch_size"</span><span class="p">:</span> <span class="n">batch_size</span><span class="p">,</span>
         <span class="s2">"candidate_pool_size"</span><span class="p">:</span> <span class="n">candidate_pool_size</span><span class="p">,</span>
+        <span class="s2">"parameter_space_type"</span><span class="p">:</span> <span class="n">_component_signature</span><span class="p">(</span><span class="n">parameter_space</span><span class="p">),</span>
+        <span class="s2">"distance_metric_type"</span><span class="p">:</span> <span class="n">_component_signature</span><span class="p">(</span><span class="n">distance_metric</span><span class="p">),</span>
+        <span class="s2">"validation_strategy_type"</span><span class="p">:</span> <span class="n">_component_signature</span><span class="p">(</span><span class="n">validation_strategy</span><span class="p">),</span>
+        <span class="s2">"error_functor_type"</span><span class="p">:</span> <span class="n">_component_signature</span><span class="p">(</span><span class="n">error_functor</span><span class="p">),</span>
     <span class="p">}</span>
     <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">absolute_work_dir</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
@@ -697,6 +715,9 @@
                     <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
                         <span class="n">reason</span> <span class="o">=</span> <span class="s2">"candidate_pool_exhausted"</span>
                         <span class="k">break</span>
+                    <span class="c1"># Do not run expensive FOMs if the selected parameters</span>
+                    <span class="c1"># cannot be stored in a safe, pickle-free checkpoint.</span>
+                    <span class="n">_encode_parameters</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
                     <span class="n">start</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">training_dirs</span><span class="p">)</span>
                     <span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)))</span>
                     <span class="n">batch_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">"fom"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"run_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>

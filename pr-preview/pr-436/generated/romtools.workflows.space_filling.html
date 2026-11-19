@@ -585,6 +585,9 @@ parameter names must remain unchanged. JSON-compatible scalar object
 parameters are stored without pickle, alongside ordinary NumPy arrays.
 Pass the same builder, parameter
 space, validation strategy, distance metric, and error functor.
+Checkpoints compare the stable Python type/function identities of these
+components, but cannot detect changes in mutable internal configuration
+or function closures; callers must preserve their semantics.
 Automatic retry/overwrite of a partially completed round is unsupported:
 its files must be inspected and cleared before restarting. Completed
 FOM samples are never rerun. Each restart creates a persistent
