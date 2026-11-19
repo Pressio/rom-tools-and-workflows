@@ -69,7 +69,9 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
                  length_scale_grid: Optional[list] = None,
                  signal_variance_grid: Optional[list] = None,
                  normalize_parameters: bool = False,
-                 normalize_targets: bool = False) -> None:
+                 normalize_targets: bool = False,
+                 anisotropic: bool = False,
+                 optimizer_restarts: int = 4) -> None:
         self.parameter_names = (
             list(parameter_names) if parameter_names is not None else None
         )
@@ -84,6 +86,8 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
         self.signal_variance_grid = signal_variance_grid
         self.normalize_parameters = normalize_parameters
         self.normalize_targets = normalize_targets
+        self.anisotropic = anisotropic
+        self.optimizer_restarts = optimizer_restarts
 
     def build_from_training_dirs(self,
                                  offline_data_dir: str,
@@ -105,6 +109,8 @@ class GaussianProcessQoiModelBuilderWithTrainingData:
             signal_variance_grid=self.signal_variance_grid,
             normalize_parameters=self.normalize_parameters,
             normalize_targets=self.normalize_targets,
+            anisotropic=self.anisotropic,
+            optimizer_restarts=self.optimizer_restarts,
         )
 
 
@@ -1317,6 +1323,8 @@ def mf_eki_with_auto_rom(model: QoiModel,
             signal_variance_grid=rom_args.get("signal_variance_grid"),
             normalize_parameters=rom_args.get("normalize_parameters", False),
             normalize_targets=rom_args.get("normalize_targets", False),
+            anisotropic=rom_args.get("anisotropic", False),
+            optimizer_restarts=rom_args.get("optimizer_restarts", 4),
         )
     elif rom_type_normalized in ("nn", "neural_network", "neural-network"):
         rom_model_builder = NeuralNetworkQoiModelBuilderWithTrainingData(
