@@ -261,7 +261,7 @@ class AutoregressiveGPQoiModel:
         mean = k_star @ self._alpha
         if not return_std:
             return mean
-        variance = np.diag(self._cov(x, level, x, level))
+        variance = np.diag(self._cov(x, level, x, level)).copy()
         variance -= np.sum(k_star * cho_solve(self._chol, k_star.T).T, axis=1)
         return mean, np.sqrt(np.maximum(variance, 0.0))
 
