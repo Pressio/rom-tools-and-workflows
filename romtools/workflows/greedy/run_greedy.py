@@ -391,7 +391,7 @@ def run_greedy(fom_model: QoiModel,
         selected_indicators = error_indicators[selected_positions]
         greedy_file.write(
             f"Selected batch {selected_samples.tolist()} with error indicators "
-            f"{selected_indicators.tolist()}\\n"
+            f"{selected_indicators.tolist()}\n"
         )
 
         outer_loop_counter += 1
