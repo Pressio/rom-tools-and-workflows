@@ -397,7 +397,7 @@ def run_greedy(fom_model: QoiModel,
         outer_loop_counter += 1
         if outer_loop_counter > 1:
             predicted_max_qoi_error = reg.predict(selected_indicators[0])
-            greedy_file.write(f"Our MLEM error estimate is {predicted_max_qoi_error}\\n")
+            greedy_file.write(f"Our MLEM error estimate is {predicted_max_qoi_error}\n")
             greedy_file.flush()
             if np.all(predicted_max_qoi_error < tolerance):
                 converged = True
@@ -411,7 +411,7 @@ def run_greedy(fom_model: QoiModel,
         batch_qois = []
         batch_qoi_errors = []
         for sample_index in selected_samples:
-            greedy_file.write(f"Running FOM sample {sample_index}\\n")
+            greedy_file.write(f"Running FOM sample {sample_index}\n")
             greedy_file.flush()
             fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
             parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
@@ -423,7 +423,7 @@ def run_greedy(fom_model: QoiModel,
             )[0].output
             rom_qoi = _compute_qoi(rom_model, rom_evaluations[sample_index])
             qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
-            greedy_file.write(f"Sample {sample_index} had an error of {qoi_error}\\n")
+            greedy_file.write(f"Sample {sample_index} had an error of {qoi_error}\n")
             batch_qois.append(fom_qoi)
             batch_qoi_errors.append(qoi_error)
         fom_time += time.time() - t0
