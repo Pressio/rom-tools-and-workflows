@@ -138,7 +138,7 @@ class GreedyResult:
     @property
     def iterations(self) -> int:
         """Number of completed enrichments after the initial build."""
-        return len(self.qoi_errors)
+        return len(self.sample_counts) - 1
 
 
 def _create_parameter_dict(parameter_names, parameter_values):
@@ -174,6 +174,7 @@ def run_greedy(fom_model: QoiModel,
                calibrated_error: bool=True,
                *,
                initial_sample_size: int = 2,
+               batch_size: int = 1,
                max_iterations: int = 100,
                initial_samples: Optional[np.ndarray] = None,
                create_rom_run_directories: bool = True,
@@ -192,6 +193,11 @@ def run_greedy(fom_model: QoiModel,
     The returned ROM must implement ``compute_error_estimate`` in addition
     to the QoiModel methods. Directory-only builders must be adapted to the
     four-argument QoiModelBuilderWithTrainingData interface.
+
+    ``batch_size`` selects up to that many highest-error candidates using the
+    same ROM before rebuilding once per batch. The default of one retains the
+    existing sequential greedy selection. FOM evaluations within a batch are
+    performed sequentially. ``max_iterations`` counts batches, not samples.
 
     ``initial_sample_size`` selects the first training rows from the initial
     candidate pool (default two). ``max_iterations`` bounds the number of
@@ -243,6 +249,7 @@ def run_greedy(fom_model: QoiModel,
         initial_sample_size = len(initial_samples)
     for name, value, minimum in (
         ("initial_sample_size", initial_sample_size, 1),
+        ("batch_size", batch_size, 1),
         ("testing_sample_size", testing_sample_size, 1),
         ("max_iterations", max_iterations, 0),
     ):
@@ -321,6 +328,7 @@ def run_greedy(fom_model: QoiModel,
     max_error_indicators = np.zeros(0)
     reg = QoIvsErrorIndicatorRegressor(calibrated_error)
     qoi_errors = np.zeros(0)
+    sample_counts = [initial_sample_size]
     predicted_qoi_errors = np.zeros(0)
     greedy_file.flush()
 
@@ -333,14 +341,15 @@ def run_greedy(fom_model: QoiModel,
                  training_parameters=parameter_samples[training_samples],
                  training_qois=fom_qois,
                  training_dirs=np.asarray(training_dirs),
-                 sample_counts=np.arange(initial_sample_size, training_samples.size + 1),
+                 sample_counts=np.asarray(sample_counts),
                  fom_time=fom_time,
                  rom_time=rom_time,
                  basis_time=basis_time,
                  initial_sample_size=initial_sample_size,
+                 batch_size=batch_size,
                  create_rom_run_directories=create_rom_run_directories,
                  max_iterations=max_iterations,
-                 iterations=training_samples.size - initial_sample_size,
+                 iterations=len(sample_counts) - 1,
                  converged=converged,
                  termination_reason=termination_reason)
 
@@ -375,60 +384,57 @@ def run_greedy(fom_model: QoiModel,
 
         rom_time += time.time() - t0
 
-        sample_with_highest_error_indicator = samples_left[la.argmax(error_indicators)]
-        max_error_indicator = np.amax(error_indicators)
-        greedy_file.write(f"Sample {sample_with_highest_error_indicator}"
-                          " had the highest error indicator of"
-                          f" {max_error_indicator} \n")
+        # All members of a batch are ranked against the same, unchanged ROM.
+        # Stable ordering preserves the original argmax tie-break for N=1.
+        selected_positions = np.argsort(-error_indicators, kind="stable")[:batch_size]
+        selected_samples = samples_left[selected_positions]
+        selected_indicators = error_indicators[selected_positions]
+        greedy_file.write(
+            f"Selected batch {selected_samples.tolist()} with error indicators "
+            f"{selected_indicators.tolist()}\n"
+        )
 
         outer_loop_counter += 1
         if outer_loop_counter > 1:
-            predicted_max_qoi_error = reg.predict(error_indicators[la.argmax(error_indicators)])
-            greedy_file.write("Our MLEM error estimate is "
-                              f"{predicted_max_qoi_error}\n")
+            predicted_max_qoi_error = reg.predict(selected_indicators[0])
+            greedy_file.write(f"Our MLEM error estimate is {predicted_max_qoi_error}\n")
             greedy_file.flush()
-            if np.amax(predicted_max_qoi_error < tolerance):
+            if np.all(predicted_max_qoi_error < tolerance):
                 converged = True
-                print('Run converged, max approximate qoi error'
-                      f' = {predicted_max_qoi_error}')
+                print(f'Run converged, max approximate qoi error = {predicted_max_qoi_error}')
                 break
-            predicted_qoi_errors = np.append(predicted_qoi_errors,
-                                             predicted_max_qoi_error)
+            predicted_qoi_errors = np.append(predicted_qoi_errors, predicted_max_qoi_error)
 
-        # Histories describe completed enrichments, excluding the final
-        # tolerance check that does not select another FOM training sample.
-        max_error_indicators = np.append(max_error_indicators, max_error_indicator)
-
+        # Evaluate all selected FOM points before building the new ROM.
+        # Calibration pairs align each selected indicator with its own QoI error.
         t0 = time.time()
-        greedy_file.write("Running FOM sample"
-                          f" {sample_with_highest_error_indicator}\n")
-        greedy_file.flush()
-
-        ## Identify the sample with the highest error and run FOM
-        fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_with_highest_error_indicator}'
-        parameter_dict = _create_parameter_dict(parameter_names,parameter_samples[sample_with_highest_error_indicator])
-        create_empty_dir(fom_run_directory)
-        fom_model.populate_run_directory(fom_run_directory, parameter_dict)
-        fom_qoi = execute_models(
-            fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)],
-            postprocess=_compute_qoi, ignore_blocking_status=True,
-        )[0].output
-
+        batch_qois = []
+        batch_qoi_errors = []
+        for sample_index in selected_samples:
+            greedy_file.write(f"Running FOM sample {sample_index}\n")
+            greedy_file.flush()
+            fom_run_directory = f'{greedy_directory}/fom/{run_directory_prefix}{sample_index}'
+            parameter_dict = _create_parameter_dict(parameter_names, parameter_samples[sample_index])
+            create_empty_dir(fom_run_directory)
+            fom_model.populate_run_directory(fom_run_directory, parameter_dict)
+            fom_qoi = execute_models(
+                fom_model, [ModelEvaluation(fom_run_directory, parameter_dict)],
+                postprocess=_compute_qoi, ignore_blocking_status=True,
+            )[0].output
+            rom_qoi = _compute_qoi(rom_model, rom_evaluations[sample_index])
+            qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
+            greedy_file.write(f"Sample {sample_index} had an error of {qoi_error}\n")
+            batch_qois.append(fom_qoi)
+            batch_qoi_errors.append(qoi_error)
         fom_time += time.time() - t0
 
-        # Get ROM QoI to calibrate our error estimator
-        rom_qoi = _compute_qoi(rom_model, rom_evaluations[sample_with_highest_error_indicator])
-        qoi_error = np.linalg.norm(rom_qoi - fom_qoi) / np.linalg.norm(fom_qoi)
-        greedy_file.write(f"Sample {sample_with_highest_error_indicator} had "
-                          f"an error of {qoi_error}\n")
-        qoi_errors = np.append(qoi_errors, qoi_error)
+        max_error_indicators = np.append(max_error_indicators, selected_indicators)
+        qoi_errors = np.append(qoi_errors, batch_qoi_errors)
         reg.fit(max_error_indicators, qoi_errors)
-
-        ## Update our samples
-        training_samples = np.append(training_samples,
-                                     sample_with_highest_error_indicator)
-        fom_qois = np.vstack((fom_qois, fom_qoi))
-        samples_left = np.delete(samples_left, la.argmax(error_indicators))
+        training_samples = np.append(training_samples, selected_samples)
+        fom_qois = np.vstack((fom_qois, np.stack(batch_qois)))
+        samples_left = np.delete(samples_left, selected_positions)
+        sample_counts.append(len(training_samples))
 
         # Update ROM basis
         t0 = time.time()
@@ -448,11 +454,14 @@ def run_greedy(fom_model: QoiModel,
         # Replenish only if another iteration can run. Directory preparation
         # is deferred until a candidate actually needs a FOM or ROM evaluation.
         if outer_loop_counter < max_iterations:
-            new_parameter_sample = parameter_space.generate_samples(1)
-            new_sample_number = len(parameter_samples)
-            parameter_samples = np.append(parameter_samples,
-                                          new_parameter_sample, axis=0)
-            samples_left = np.append(samples_left, new_sample_number)
+            new_parameter_samples = np.asarray(parameter_space.generate_samples(batch_size))
+            if (new_parameter_samples.ndim != 2 or
+                    new_parameter_samples.shape != (batch_size, len(parameter_names))):
+                raise ValueError("parameter_space must generate batch_size candidate rows")
+            new_sample_numbers = np.arange(len(parameter_samples),
+                                           len(parameter_samples) + batch_size)
+            parameter_samples = np.concatenate((parameter_samples, new_parameter_samples), axis=0)
+            samples_left = np.append(samples_left, new_sample_numbers)
             if supplied_initial_samples:
                 samples_left = _exclude_training_samples(parameter_samples, samples_left, training_samples)
         greedy_file.flush()
@@ -476,7 +485,7 @@ def run_greedy(fom_model: QoiModel,
         max_error_indicators=max_error_indicators.copy(),
         qoi_errors=qoi_errors.copy(),
         predicted_qoi_errors=predicted_qoi_errors.copy(),
-        sample_counts=np.arange(initial_sample_size, training_samples.size + 1),
+        sample_counts=np.asarray(sample_counts),
         converged=converged,
         termination_reason=termination_reason,
     )

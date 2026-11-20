@@ -750,3 +750,56 @@ def test_nonblocking_greedy_reads_selected_rom_qoi_from_its_run_directory(tmp_pa
 
     assert result.iterations == 1
     assert os.getcwd() == original_directory
+
+
+@pytest.mark.mpi_skip
+def test_batch_greedy_rebuilds_once_per_batch_and_tracks_all_samples(tmp_path):
+    fom, builder = StrictPreparationFom(), StrictPreparationBuilder()
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    result = run_greedy(
+        fom, builder, space, str(tmp_path), 0.0,
+        testing_sample_size=7, batch_size=3, max_iterations=2,
+        calibrated_error=False,
+    )
+    assert result.iterations == 2
+    assert len(builder.roms) == 3  # Initial build plus one rebuild per batch.
+    assert len(fom.prepared) == 8
+    assert fom.prepared == fom.executed
+    np.testing.assert_array_equal(result.sample_counts, [2, 5, 8])
+    assert len(result.qoi_errors) == len(result.max_error_indicators) == 6
+    assert result.training_qois.shape[0] == len(result.training_dirs) == 8
+    for rom in builder.roms:
+        assert rom.prepared == rom.executed
+    with np.load(tmp_path / 'greedy_stats.npz') as stats:
+        assert stats['batch_size'] == 3
+        assert stats['iterations'] == 2
+        np.testing.assert_array_equal(stats['sample_counts'], [2, 5, 8])
+
+
+@pytest.mark.mpi_skip
+def test_batch_greedy_uses_partial_final_batch_when_candidates_exhausted(tmp_path):
+    class FiniteSpace:
+        def get_names(self):
+            return ['u', 'v', 'w']
+        def generate_samples(self, count):
+            # Replenishment is requested only between iterations.
+            return np.arange(count * 3, dtype=float).reshape(count, 3) + 1
+
+    result = run_greedy(
+        ParameterQoiModel(()), DataCheckingBuilder(False), FiniteSpace(),
+        str(tmp_path), 0.0, testing_sample_size=4,
+        batch_size=5, max_iterations=1, calibrated_error=False,
+    )
+    np.testing.assert_array_equal(result.sample_counts, [2, 4])
+    assert result.iterations == 1
+    assert len(result.max_error_indicators) == len(result.qoi_errors) == 2
+
+
+@pytest.mark.parametrize('batch_size', [0, -1, True, 1.5])
+def test_invalid_batch_size_rejected_before_io(tmp_path, batch_size):
+    space = UniformParameterSpace(['u', 'v', 'w'], [0, 1, 2], [1, 2, 3], MonteCarloSampler)
+    work = tmp_path / 'unused'
+    with pytest.raises(ValueError, match='batch_size'):
+        run_greedy(ParameterQoiModel(()), DataCheckingBuilder(False), space,
+                   str(work), 1e-5, batch_size=batch_size)
+    assert not work.exists()
