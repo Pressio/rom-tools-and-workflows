@@ -14,9 +14,12 @@ runs those first samples from the initial candidate pool before constructing
 the initial ROM. This is separate
 from ``testing_sample_size`` (default 10), which sets the candidate-pool size.
 
-``max_iterations`` defaults to 100 and counts FOM enrichments **after** the
-initial ROM. Thus at most ``initial_sample_size + max_iterations`` training
-FOM simulations run. Setting ``max_iterations=0`` constructs only the initial
+``batch_size`` (default 1) selects the top-N candidate error indicators from
+one unchanged ROM, evaluates the selected FOM points, and rebuilds once per
+batch. FOM jobs within each batch run sequentially. The batch is not adjusted
+for diversity or covariance reduction. ``max_iterations`` defaults to 100 and
+counts enrichment **batches** after the initial ROM. Thus at most
+``initial_sample_size + batch_size * max_iterations`` training FOM runs occur. Setting ``max_iterations=0`` constructs only the initial
 ROM. Both arguments are keyword-only, preserving existing positional calls:
 
 .. code-block:: python
@@ -27,6 +30,7 @@ ROM. Both arguments are keyword-only, preserving existing positional calls:
        tolerance=1e-4,
        testing_sample_size=50,
        initial_sample_size=8,
+       batch_size=4,
        max_iterations=40,
    )
 
@@ -41,10 +45,12 @@ claim convergence or perform another candidate evaluation.
 FOM directories are populated once, immediately before their simulation, and
 unselected FOM candidates are not prepared. Each ROM evaluation directory is
 also populated once in its iteration. ``greedy_stats.npz`` is written even for
-an initial-only run and records ``initial_sample_size``, ``max_iterations``,
+an initial-only run and records ``initial_sample_size``, ``batch_size``, ``max_iterations``,
 completed ``iterations``, ``converged``, and ``termination_reason`` (``tolerance``,
 ``max_iterations``, or ``candidate_pool_exhausted``). Error histories describe
-completed enrichments.
+all completed selected points; ``sample_counts`` records the initial build and
+one entry for each completed batch. A partial batch is allowed when the
+remaining candidate pool has fewer than ``batch_size`` entries.
 
 Explicit initial samples
 ------------------------
@@ -145,8 +151,10 @@ builder are independent copies of the workflow's accumulated data. Full-state
 snapshots remain available in the training directories.
 
 The returned ROM must still provide ``compute_error_estimate`` as well as the
-``QoiModel`` methods. This change does not alter greedy's sample selection,
-calibration, or convergence criteria.
+``QoiModel`` methods. With ``batch_size=1`` this retains the original greedy selection and stopping
+behavior. With larger batches, calibration includes an indicator/QoI-error pair
+for every selected point, while the tolerance check still uses the maximum
+predicted candidate error after the first completed batch.
 
 Migration from directory-only builders
 -------------------------------------
