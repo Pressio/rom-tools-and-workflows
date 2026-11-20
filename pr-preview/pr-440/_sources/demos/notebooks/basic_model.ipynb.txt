@@ -1,0 +1,123 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "f389f465-1007-443d-873b-d27bfa74cbc7",
+   "metadata": {},
+   "source": [
+    "# Basic model tutorial\n",
+    "\n",
+    "In this tutorial you will learn the basics of the model interface for a simple inline Python model. The API for the model interface is documented in the romtools workflow model reference.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "358fb709-9c81-45a3-a871-2549de121580",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# First, import the relevant modules.\n",
+    "import numpy as np\n",
+    "from matplotlib import pyplot as plt\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b1ffa4be-246c-44a9-b486-f517b9f7acb9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "'''\n",
+    "Here, we will interface around a basic model for solving the 1D\n",
+    "advection-diffusion equation\n",
+    "\n",
+    "    c u_x - nu u_xx = 1.\n",
+    "'''\n",
+    "\n",
+    "class AdvectionDiffusionProblem:\n",
+    "    def __init__(self, nx):\n",
+    "        self.x = np.linspace(0, 1, nx)\n",
+    "        dx = 1.0 / (nx - 1)\n",
+    "\n",
+    "        # Assemble diffusion and advection operators.\n",
+    "        self.Ad = np.zeros((nx, nx))\n",
+    "        self.Ad[0, 0] = -2.0 / dx**2\n",
+    "        self.Ad[0, 1] = 1.0 / dx**2\n",
+    "        self.Ad[-1, -1] = -2.0 / dx**2\n",
+    "        self.Ad[-1, -2] = 1.0 / dx**2\n",
+    "        for i in range(1, nx - 1):\n",
+    "            self.Ad[i, i] = -2.0 / dx**2\n",
+    "            self.Ad[i, i - 1] = 1.0 / dx**2\n",
+    "            self.Ad[i, i + 1] = 1.0 / dx**2\n",
+    "\n",
+    "        self.Ac = np.zeros((nx, nx))\n",
+    "        self.Ac[0, 0] = 1.0 / dx\n",
+    "        for i in range(1, nx - 1):\n",
+    "            self.Ac[i, i] = 1.0 / dx\n",
+    "            self.Ac[i, i - 1] = -1.0 / dx\n",
+    "\n",
+    "        self.f = np.ones(nx)\n",
+    "\n",
+    "    def solve(self, c, nu):\n",
+    "        A = c * self.Ac - nu * self.Ad\n",
+    "        return np.linalg.solve(A, self.f)\n",
+    "\n",
+    "\n",
+    "problem = AdvectionDiffusionProblem(nx=33)\n",
+    "u = problem.solve(c=1.0, nu=1.0e-2)\n",
+    "plt.plot(problem.x, u)\n",
+    "plt.xlabel(r'$x$')\n",
+    "plt.ylabel(r'$u$');\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8f7130af-84d5-4a1e-bd0c-d1f205d2d312",
+   "metadata": {},
+   "source": [
+    "A romtools model provides methods for populating a run directory and running the model for a parameter sample. For an inline Python model, the run-directory setup can be empty.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "217759fb-6ec9-4488-897b-e5b4db9f4b2c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class AdrRomToolsModel:\n",
+    "    def __init__(self, problem: AdvectionDiffusionProblem):\n",
+    "        self.problem = problem\n",
+    "\n",
+    "    def populate_run_directory(self, run_directory: str, parameter_sample: dict):\n",
+    "        # This inline model needs no offline data.\n",
+    "        pass\n",
+    "\n",
+    "    def run_model(self, run_directory: str, parameter_sample: dict):\n",
+    "        c = parameter_sample['c']\n",
+    "        nu = parameter_sample['nu']\n",
+    "        self.problem.solve(c, nu)\n",
+    "        return 0\n",
+    "\n",
+    "\n",
+    "model = AdrRomToolsModel(problem)\n",
+    "assert model.run_model('.', {'c': 1.0, 'nu': 1.0e-2}) == 0\n"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
