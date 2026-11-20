@@ -34,7 +34,7 @@ Find public interfaces by capability rather than by Python package layout.
       :link: api_uq
       :link-type: doc
 
-      Monte Carlo and multifidelity estimators.
+      Monte Carlo, multifidelity estimation, and Sobol sensitivity analysis.
 
    .. grid-item-card:: HPC & Utilities
       :link: api_utilities
